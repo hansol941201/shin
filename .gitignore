@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+build/
+dist/
+*.spec
+output/*
+!output/.gitkeep
+temp/*
+!temp/.gitkeep
+tests/fixtures/
+.DS_Store
