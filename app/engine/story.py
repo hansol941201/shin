@@ -2,6 +2,8 @@
 """
 콘텐츠 그룹(사건/공정 단위)과 원본 문구 라이브러리로부터 입주민 설명자료의 스토리를
 구성한다. 페이지 수는 고정하지 않고 실제로 확보된 콘텐츠 양에 따라 결정한다.
+사진은 A(핵심, 반드시 사용)/B(선택적 활용) 등급 순으로 우선 배치한다(C등급은
+이 단계에 들어오기 전에 이미 제외되어 있다).
 """
 from typing import Dict, List
 
@@ -15,13 +17,21 @@ CATEGORY_TO_STEP = {
     "지붕_작업": "지붕재 시공", "코킹_실링": "코킹·실링", "양생": "양생",
 }
 
-MIN_IMAGES_PER_PAGE = 2
-MAX_IMAGES_PER_PAGE = 4
-FLOW_MAX_IMAGES_PER_PAGE = 6
-MIN_TEXT_BULLETS_FOR_TEXT_PAGE = 3
+DEFAULT_SETTINGS = {
+    "min_images_per_page": 2,
+    "max_images_per_page": 4,
+    "flow_max_images_per_page": 6,
+    "min_text_bullets_for_text_page": 3,
+    "gallery_min_per": 2,
+}
 
 
-def _paginate(images: List, min_per=MIN_IMAGES_PER_PAGE, max_per=MAX_IMAGES_PER_PAGE, hard_max=None):
+def _sort_grade(imgs: List) -> List:
+    """A등급을 항상 먼저 배치해 핵심 사진이 우선적으로 본문에 들어가도록 한다."""
+    return sorted(imgs, key=lambda i: (0 if getattr(i, "grade", "B") == "A" else 1))
+
+
+def _paginate(images: List, min_per=2, max_per=4, hard_max=None):
     hard_max = hard_max or max_per
     chunks, i, n = [], 0, len(images)
     while i < n:
@@ -39,7 +49,7 @@ def _group_images(groups: List[dict], families) -> List:
     for g in groups:
         if g["family"] in families:
             out.extend(g["images"])
-    return out
+    return _sort_grade(out)
 
 
 def _group_text_bullets(groups: List[dict], max_n=6) -> List[str]:
@@ -52,18 +62,6 @@ def _group_text_bullets(groups: List[dict], max_n=6) -> List[str]:
             if len(out) >= max_n:
                 return out
     return out
-
-
-def _page_ok(images: List, bullets: List[str]) -> bool:
-    """페이지 생성 최소 기준(요청 스펙 9): 사진 2장 이상, 또는 사진1장+구체설명2개 이상,
-    또는 핵심 설명 문구 3개 이상."""
-    if len(images) >= 2:
-        return True
-    if len(images) == 1 and len(bullets) >= 2:
-        return True
-    if len(bullets) >= MIN_TEXT_BULLETS_FOR_TEXT_PAGE:
-        return True
-    return False
 
 
 def _layout_for(n_images: int, is_flow=False) -> str:
@@ -82,7 +80,20 @@ def _layout_for(n_images: int, is_flow=False) -> str:
 
 def build_pages(apartment_name: str, work_type: str, groups: List[dict],
                  content_library: Dict[str, List[str]], ba_pairs: List, cover_image,
-                 used_ids: set, images_by_id: Dict[str, object]) -> List[dict]:
+                 used_ids: set, images_by_id: Dict[str, object],
+                 settings: Dict = None, change_log: List[str] = None) -> List[dict]:
+    s = {**DEFAULT_SETTINGS, **(settings or {})}
+    change_log = change_log if change_log is not None else []
+
+    def _page_ok(images: List, bullets: List[str]) -> bool:
+        if len(images) >= 2:
+            return True
+        if len(images) == 1 and len(bullets) >= 2:
+            return True
+        if len(bullets) >= s["min_text_bullets_for_text_page"]:
+            return True
+        return False
+
     pages: List[dict] = []
 
     # ---------- 표지 ----------
@@ -102,10 +113,8 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     other_groups = [g for g in groups if g["family"] == "other"]
 
     def take_unused(imgs, limit=None):
-        """미사용 이미지만 골라 사용 처리한다. limit을 넘는 나머지는 여기서 소비하지
-        않고 그대로 남겨두어(used_ids에 추가하지 않음) 다른 섹션/갤러리에서 계속 쓸 수
-        있게 한다(중요: limit으로 자르기 전에 전부 used 처리해버리면 사진이 조용히
-        유실되는 버그가 생기므로 반드시 limit 자체를 여기서 적용해야 한다)."""
+        """미사용 이미지만 골라 사용 처리한다(A등급 우선). limit을 넘는 나머지는
+        used_ids에 추가하지 않고 그대로 남겨 다른 섹션/갤러리에서 계속 쓸 수 있게 한다."""
         out = []
         for im in imgs:
             if limit is not None and len(out) >= limit:
@@ -115,35 +124,41 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
                 used_ids.add(im.id)
         return out
 
-    # ---------- 우리 아파트에서 확인된 문제 (하자 현황) ----------
-    defect_images = take_unused(_group_images(defect_groups, {"defect"}))
-    defect_bullets = _group_text_bullets(defect_groups, max_n=4) or content_library.get("하자_현상", [])[:4]
-    if defect_images or len(defect_bullets) >= MIN_TEXT_BULLETS_FOR_TEXT_PAGE:
-        chunks = _paginate(defect_images, hard_max=MAX_IMAGES_PER_PAGE) or [[]]
+    def _paged_section(page_type, base_title, images, bullets, max_per, is_flow=False):
+        """이미지가 많으면 잘라내지 않고 여러 페이지로 나눈다(사진 손실 방지 + 사진 과밀 방지)."""
+        if not images and len(bullets) < s["min_text_bullets_for_text_page"]:
+            return
+        chunks = _paginate(images, max_per=max_per, hard_max=max_per) or [[]]
         for idx, chunk in enumerate(chunks):
-            if not _page_ok(chunk, defect_bullets):
+            if not _page_ok(chunk, bullets if idx == 0 else []):
                 for im in chunk:
                     used_ids.discard(im.id)
                 continue
             pages.append({
-                "type": "defect",
-                "title": "제공된 자료에서 확인된 주요 보수 대상"
-                          + (f" ({idx+1}/{len(chunks)})" if len(chunks) > 1 else ""),
-                "subtitle": "", "images": chunk, "bullets": defect_bullets if idx == 0 else [],
-                "layout": _layout_for(len(chunk)),
+                "type": page_type,
+                "title": base_title + (f" ({idx+1}/{len(chunks)})" if len(chunks) > 1 else ""),
+                "subtitle": "", "images": chunk, "bullets": bullets if idx == 0 else [],
+                "layout": _layout_for(len(chunk), is_flow=is_flow),
             })
+
+    # ---------- 우리 아파트에서 확인된 문제 (하자 현황) ----------
+    defect_images = take_unused(_group_images(defect_groups, {"defect"}))
+    defect_bullets = _group_text_bullets(defect_groups, max_n=4) or content_library.get("하자_현상", [])[:4]
+    _paged_section("defect", "제공된 자료에서 확인된 주요 보수 대상", defect_images, defect_bullets,
+                    max_per=s["max_images_per_page"])
 
     # ---------- 공법 선정 이유 / 핵심 원리 (문구 중심 + 대표 사진 1장) ----------
     reason_bullets = (content_library.get("필요성", []) + content_library.get("공법_설명", []))[:4]
     method_lead_img = None
     for g in process_groups:
-        cand = [i for i in g["images"] if i.id not in used_ids]
+        cand = [i for i in _sort_grade(g["images"]) if i.id not in used_ids]
         if cand:
             method_lead_img = cand[0]
             break
     if reason_bullets or method_lead_img:
         imgs = [method_lead_img] if method_lead_img else []
-        if imgs and _page_ok(imgs, reason_bullets) or (not imgs and len(reason_bullets) >= MIN_TEXT_BULLETS_FOR_TEXT_PAGE):
+        if (imgs and _page_ok(imgs, reason_bullets)) or \
+           (not imgs and len(reason_bullets) >= s["min_text_bullets_for_text_page"]):
             if method_lead_img:
                 used_ids.add(method_lead_img.id)
             pages.append({
@@ -153,53 +168,28 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
 
     # ---------- 공법 특징 ----------
     feature_bullets = content_library.get("공법_특징", [])[:6]
-    feature_images = take_unused(_group_images(process_groups + material_groups, {"process", "material"}), limit=4)
-    if feature_bullets or feature_images:
-        if _page_ok(feature_images, feature_bullets):
-            pages.append({
-                "type": "features", "title": "적용 공법의 핵심 원리", "subtitle": "",
-                "images": feature_images, "bullets": feature_bullets,
-                "layout": _layout_for(len(feature_images)),
-            })
-        else:
-            for im in feature_images:
-                used_ids.discard(im.id)
+    feature_images = take_unused(_group_images(process_groups + material_groups, {"process", "material"}))
+    _paged_section("features", "적용 공법의 핵심 원리", feature_images, feature_bullets,
+                    max_per=s["max_images_per_page"])
 
-    # ---------- 세부 시공 순서 (공정 그룹을 표준 순서대로 배치) ----------
+    # ---------- 세부 시공 순서 (공정 그룹을 표준 순서대로 배치, 같은 공정은 파일 간 통합됨) ----------
     order_index = {name: i for i, (name, _) in enumerate(PROCESS_MASTER_SEQUENCE)}
     process_groups_sorted = sorted(
         process_groups,
         key=lambda g: order_index.get(CATEGORY_TO_STEP.get(g["category"], ""), 999),
     )
     for g in process_groups_sorted:
-        imgs = take_unused(g["images"])
+        imgs = take_unused(_sort_grade(g["images"]))
         bullets = _group_text_bullets([g], max_n=3)
-        if not _page_ok(imgs, bullets):
-            for im in imgs:
-                used_ids.discard(im.id)
-            continue
         step_name = CATEGORY_TO_STEP.get(g["category"], g["category"].replace("_", " "))
-        chunks = _paginate(imgs, max_per=FLOW_MAX_IMAGES_PER_PAGE, hard_max=FLOW_MAX_IMAGES_PER_PAGE) or [[]]
-        for idx, chunk in enumerate(chunks):
-            pages.append({
-                "type": "process", "title": step_name
-                          + (f" ({idx+1}/{len(chunks)})" if len(chunks) > 1 else ""),
-                "subtitle": "", "images": chunk, "bullets": bullets if idx == 0 else [],
-                "layout": _layout_for(len(chunk), is_flow=True),
-            })
+        _paged_section("process", step_name, imgs, bullets,
+                        max_per=s["flow_max_images_per_page"], is_flow=True)
 
     # ---------- 품질관리 및 안전관리 ----------
-    safety_images = take_unused(_group_images(safety_groups, {"safety"}), limit=4)
+    safety_images = take_unused(_group_images(safety_groups, {"safety"}))
     safety_bullets = _group_text_bullets(safety_groups, max_n=3)
-    if _page_ok(safety_images, safety_bullets):
-        pages.append({
-            "type": "safety", "title": "품질관리 및 안전관리", "subtitle": "",
-            "images": safety_images, "bullets": safety_bullets,
-            "layout": _layout_for(len(safety_images)),
-        })
-    else:
-        for im in safety_images:
-            used_ids.discard(im.id)
+    _paged_section("safety", "품질관리 및 안전관리", safety_images, safety_bullets,
+                    max_per=s["max_images_per_page"])
 
     # ---------- 시공 전후 / 유사 사례 ----------
     case_note_pool = (content_library.get("사례_설명", []) + content_library.get("시공_후_효과", [])) or \
@@ -217,26 +207,19 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
 
     # ---------- 공사 후 기대되는 변화 ----------
     effect_bullets = (content_library.get("기대_효과", []) + content_library.get("시공_후_효과", []))[:6]
-    effect_images = take_unused(_group_images(overview_groups, {"overview"}), limit=4)
-    if effect_bullets or effect_images:
-        if _page_ok(effect_images, effect_bullets) or len(effect_bullets) >= MIN_TEXT_BULLETS_FOR_TEXT_PAGE:
-            pages.append({
-                "type": "effects", "title": "공사 후 기대되는 변화", "subtitle": "",
-                "images": effect_images, "bullets": effect_bullets,
-                "layout": _layout_for(len(effect_images)),
-            })
-        else:
-            for im in effect_images:
-                used_ids.discard(im.id)
+    effect_images = take_unused(_group_images(overview_groups, {"overview"}))
+    _paged_section("effects", "공사 후 기대되는 변화", effect_images, effect_bullets,
+                    max_per=s["max_images_per_page"])
 
-    # ---------- 남은 사진: 참고 시공 사진 갤러리 (버리지 않고 최대한 활용) ----------
+    # ---------- 남은 사진: 참고 시공 사진 갤러리 (단순히 수를 채우기 위함이 아니라
+    #            아직 배치되지 않은 A/B등급 사진을 마지막으로 소비하기 위함) ----------
     leftover = take_unused(_group_images(other_groups + defect_groups + process_groups +
                                            material_groups + safety_groups + overview_groups,
                                            {"other", "defect", "process", "material", "safety", "overview"}))
     if leftover:
-        chunks = _paginate(leftover, min_per=2, max_per=6, hard_max=6)
+        chunks = _paginate(leftover, min_per=s["gallery_min_per"], max_per=6, hard_max=6)
         for idx, chunk in enumerate(chunks):
-            if len(chunk) < 2:
+            if len(chunk) < s["gallery_min_per"]:
                 for im in chunk:
                     used_ids.discard(im.id)
                 continue

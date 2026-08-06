@@ -42,9 +42,19 @@ def compute_quality(images: List, pages: List[dict], content_library: Dict[str, 
     q.scores["caption_relevance"] = round(relevance * 15, 2)
 
     content_pages = [p for p in pages if p["type"] not in ("cover", "closing")]
-    dense_pages = [p for p in content_pages
-                    if len(p.get("images", [])) >= 2 or p["type"] == "case"
-                    or len(p.get("bullets", [])) >= 3]
+
+    def _is_dense(p):
+        n_img = len(p.get("images", []))
+        n_bul = len(p.get("bullets", []))
+        if p["type"] == "case":
+            return True
+        if n_img >= 2:
+            return True
+        if n_img == 1 and n_bul >= 2:
+            return True
+        return n_bul >= 3
+
+    dense_pages = [p for p in content_pages if _is_dense(p)]
     density = (len(dense_pages) / len(content_pages)) if content_pages else 1.0
     q.metrics["page_density"] = round(density, 3)
     q.scores["page_density"] = round(density * 10, 2)

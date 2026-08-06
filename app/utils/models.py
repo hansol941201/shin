@@ -40,6 +40,8 @@ class ImageAsset:
     selected_slide: Optional[int] = None  # v2 엔진: 삽입된 결과 슬라이드 번호(1-base)
     group_id: Optional[str] = None  # v2 엔진: 소속된 콘텐츠 그룹(공정/사건 단위) id
     caption_is_original: bool = False  # v2 엔진: 캡션이 원본 문구 기반인지(품질 점수용)
+    grade: str = "B"            # v2 엔진: A(핵심 필수) / B(선택적 활용) / C(제외 대상)
+    grade_reason: str = ""      # v2 엔진: C등급 판정 사유(로그/CSV 기록용)
 
 
 @dataclass

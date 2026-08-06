@@ -107,3 +107,38 @@ def dump_content_groups_json(groups: List[dict], out_path: str) -> str:
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(groups, f, ensure_ascii=False, indent=2, default=str)
     return out_path
+
+
+def dump_slide_content_mapping_csv(pages: List[dict], out_path: str) -> str:
+    """결과 슬라이드 번호별로 어떤 원본 PPT/슬라이드의 사진·문구를 사용했는지 추적표(v2)."""
+    rows = []
+    page_no = 0
+    for page in pages:
+        if page["type"] == "cover":
+            no = 1
+        else:
+            page_no += 1
+            no = page_no + 1  # 표지가 1페이지이므로 본문은 2페이지부터
+        imgs = list(page.get("images", []))
+        if page["type"] == "case" and page.get("pair"):
+            pair = page["pair"]
+            imgs_ids = [pair.before_image_id, pair.after_image_id] + list(pair.process_image_ids or [])
+        else:
+            imgs_ids = None
+        text_used = " / ".join(page.get("bullets", []))
+        if imgs:
+            for im in imgs:
+                rows.append([no, page["type"], page["title"], im.source_file, im.slide_index + 1,
+                             im.id, im.grade, im.real_caption or "", text_used])
+        elif imgs_ids:
+            for iid in imgs_ids:
+                rows.append([no, page["type"], page["title"], "", "", iid, "", "", text_used])
+        else:
+            rows.append([no, page["type"], page["title"], "", "", "", "", "", text_used])
+
+    with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f)
+        w.writerow(["결과슬라이드번호", "슬라이드유형", "제목", "원본PPT", "원본슬라이드번호",
+                     "사용이미지ID", "이미지등급", "캡션", "사용문구"])
+        w.writerows(rows)
+    return out_path

@@ -171,10 +171,18 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
         # ---------- 완료 후 버튼 ----------
         self.post_frame = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        self.open_result_btn = self._secondary_button(self.post_frame, "결과 PPT 열기", self._open_result, width=110, height=32)
-        self.open_folder_btn = self._secondary_button(self.post_frame, "저장 폴더 열기", self._open_folder, width=110, height=32)
-        self.retry_btn = self._secondary_button(self.post_frame, "다시 만들기", self._reset, width=100, height=32)
+        post_row1 = ctk.CTkFrame(self.post_frame, fg_color=COLOR_BG)
+        post_row1.pack(fill="x", pady=(0, 4))
+        post_row2 = ctk.CTkFrame(self.post_frame, fg_color=COLOR_BG)
+        post_row2.pack(fill="x")
+        self.open_result_btn = self._secondary_button(post_row1, "결과 PPT 열기", self._open_result, width=120, height=32)
+        self.open_preview_btn = self._secondary_button(post_row1, "전체 미리보기 열기", self._open_preview, width=140, height=32)
+        self.open_validation_btn = self._secondary_button(post_row2, "검수 결과 열기", self._open_validation, width=120, height=32)
+        self.open_folder_btn = self._secondary_button(post_row2, "저장 폴더 열기", self._open_folder, width=120, height=32)
+        self.retry_btn = self._secondary_button(post_row2, "다시 만들기", self._reset, width=100, height=32)
         self.open_result_btn.pack(side="left", padx=(0, 6))
+        self.open_preview_btn.pack(side="left")
+        self.open_validation_btn.pack(side="left", padx=(0, 6))
         self.open_folder_btn.pack(side="left", padx=(0, 6))
         self.retry_btn.pack(side="left")
 
@@ -307,6 +315,19 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
     def _open_result(self):
         if self.result and self.result.get("pptx") and os.path.exists(self.result["pptx"]):
             self._open_path(self.result["pptx"])
+
+    def _open_preview(self):
+        path = self.result.get("preview_png") if self.result else None
+        if path and os.path.exists(path):
+            self._open_path(path)
+        else:
+            messagebox.showinfo("안내", "전체 미리보기 이미지가 생성되지 않았습니다"
+                                          "(LibreOffice 미설치 시 생략됩니다).")
+
+    def _open_validation(self):
+        path = self.result.get("validation_report") if self.result else None
+        if path and os.path.exists(path):
+            self._open_path(path)
 
     def _open_folder(self):
         if self.result and self.result.get("pptx"):

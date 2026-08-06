@@ -97,16 +97,53 @@ def build_groups(images: List, text_candidates: List) -> List[dict]:
     if cur:
         groups.append(cur)
 
-    for img in images:
-        pass
-    # group_id 를 이미지/텍스트 객체에 기록해 추적 가능하게 함
+    groups = _merge_across_files(groups)
+
+    # group_id 를 이미지 객체에 기록해 추적 가능하게 함
     for g in groups:
         for img in g["images"]:
             img.group_id = g["id"]
-        for t in g["texts"]:
-            pass
 
     return groups
+
+
+# 서로 다른 파일에서 나온 같은 공정/카테고리를 하나의 섹션으로 통합할 계열.
+# beforeafter(전후 사진)는 현장별 짝을 유지해야 하므로 통합하지 않는다.
+MERGEABLE_FAMILIES = {"process", "defect", "material", "safety", "overview"}
+
+
+def _merge_across_files(groups: List[dict]) -> List[dict]:
+    """같은 공정명(카테고리)이 서로 다른 PPT 파일에 흩어져 있으면 하나의 섹션으로
+    합친다(예: PPT1의 하도 사진 3장 + PPT2의 하도 사진 4장 -> '하도 도장' 섹션 하나).
+    이렇게 하면 같은 제목의 페이지가 반복 생성되는 것을 막을 수 있다."""
+    from collections import defaultdict
+
+    buckets = defaultdict(list)
+    standalone = []
+    for g in groups:
+        if g["family"] in MERGEABLE_FAMILIES:
+            buckets[(g["family"], g["category"])].append(g)
+        else:
+            standalone.append(g)
+
+    merged = []
+    for (family, category), glist in buckets.items():
+        if len(glist) == 1:
+            merged.append(glist[0])
+            continue
+        source_files = sorted({g["source_file"] for g in glist})
+        combined = {
+            "id": f"m_{family}_{category}",
+            "source_file": "+".join(source_files),
+            "slide_indices": sorted({i for g in glist for i in g["slide_indices"]}),
+            "family": family, "category": category,
+            "images": [im for g in glist for im in g["images"]],
+            "texts": [t for g in glist for t in g["texts"]],
+            "merged_from": [g["id"] for g in glist],
+        }
+        merged.append(combined)
+
+    return merged + standalone
 
 
 def groups_to_json(groups: List[dict]) -> List[dict]:
