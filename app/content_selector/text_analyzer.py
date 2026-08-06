@@ -10,7 +10,7 @@
 """
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from app.anonymizer.anonymizer import Blacklist, clean_text, text_contains_banned
 from app.utils.config import TEXT_PURPOSE_KEYWORDS
@@ -29,6 +29,11 @@ class TextCandidate:
     cleaned: str
     sensitive: bool
     usable: bool
+    text_id: str = ""
+    shape_index: int = 0
+    importance: float = 0.0     # v2 엔진: 길이/구체성 기반 중요도 점수
+    selected: bool = False      # v2 엔진: 최종 결과물에 실제로 사용되었는지
+    selected_slide: Optional[int] = None
 
 
 def classify_text_purpose(text: str) -> str:
@@ -46,9 +51,29 @@ def _normalize(text: str) -> str:
     return re.sub(r"\s+", "", text).strip("·-• \t\n")
 
 
+def _is_banned_generic(cleaned: str) -> bool:
+    from app.utils.config import BANNED_GENERIC_CAPTIONS, BANNED_GENERIC_PHRASES
+    low = cleaned.replace(" ", "")
+    for phrase in BANNED_GENERIC_CAPTIONS + BANNED_GENERIC_PHRASES:
+        if phrase.replace(" ", "") == low:
+            return True
+    return False
+
+
+def _importance(cleaned: str) -> float:
+    """길이와 구체성(숫자/공정 전문용어 포함 여부)을 기반으로 문구 중요도를 매긴다."""
+    score = min(len(cleaned), 60) / 60.0
+    if re.search(r"\d", cleaned):
+        score += 0.2
+    if any(k in cleaned for k in ("후", "하여", "통해", "적용", "위해", "도포", "충진", "제거")):
+        score += 0.15
+    return round(min(score, 1.5), 3)
+
+
 def build_text_candidates(text_runs: List[TextRun], blacklist: Blacklist) -> List[TextCandidate]:
     """모든 텍스트 런을 용도별로 분류하고, 민감정보를 제거한 재사용 가능 문구 후보를 만든다."""
     candidates: List[TextCandidate] = []
+    counters: Dict[tuple, int] = {}
     for run in text_runs:
         for line in re.split(r"[\n]", run.text):
             line = line.strip(" \t·-•")
@@ -57,10 +82,14 @@ def build_text_candidates(text_runs: List[TextRun], blacklist: Blacklist) -> Lis
             sensitive = text_contains_banned(line, blacklist)
             cleaned = clean_text(line, blacklist)
             purpose = classify_text_purpose(line)
+            banned_generic = _is_banned_generic(cleaned)
             usable = (
                 len(cleaned) >= MIN_USABLE_LEN
                 and not sensitive_leftover(cleaned)
+                and not banned_generic
             )
+            key = (run.source_file, run.slide_index)
+            counters[key] = counters.get(key, 0) + 1
             candidates.append(TextCandidate(
                 source_file=run.source_file,
                 slide_index=run.slide_index,
@@ -69,6 +98,9 @@ def build_text_candidates(text_runs: List[TextRun], blacklist: Blacklist) -> Lis
                 cleaned=cleaned[:MAX_PHRASE_LEN],
                 sensitive=sensitive,
                 usable=usable,
+                text_id=f"{run.source_file}_s{run.slide_index}_t{counters[key]}",
+                shape_index=counters[key],
+                importance=_importance(cleaned) if usable else 0.0,
             ))
     return candidates
 

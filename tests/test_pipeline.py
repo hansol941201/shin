@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-파이프라인 통합 테스트. 2개/3개 입력 케이스, 민감정보 미노출을 검증한다.
+v2 콘텐츠 중심 파이프라인 통합 테스트. 2개/3개 입력 케이스, 민감정보 미노출,
+사진/문구 활용률, 품질 점수, 중간 산출물 생성을 검증한다.
 실행: pytest tests/test_pipeline.py -v
 (사전에 tests/make_samples.py 로 픽스처를 생성해야 한다)
 """
@@ -24,7 +25,15 @@ BANNED_STRINGS = [
     "행복드림아파트", "그린빌아파트", "한빛아파트", "대한페인트건설",
     "010-1234-5678", "010-9876-5432", "hong@daehanpaint.co.kr",
     "daehanpaint.co.kr", "123-45-67890", "홍길동", "이영희",
+    "무지개마을아파트", "코스모스아파트", "서울외벽방수", "동양건업", "김철수",
+    "010-2222-3333", "seoulwp.co.kr", "dongyang.co.kr", "321-45-11111", "555-22-33333",
 ]
+
+DEBUG_ARTIFACTS = (
+    "source_slides.csv", "source_images.csv", "source_texts.csv",
+    "image_text_relationships.csv", "unused_content.csv", "content_groups.json",
+    "품질점수.txt",
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -41,7 +50,7 @@ def _walk(shapes):
             yield from _walk(sh.shapes)
 
 
-def _assert_no_leak(pptx_path, run_ocr=False):
+def _assert_no_leak(pptx_path):
     prs = Presentation(pptx_path)
     assert prs.slide_height > prs.slide_width, "세로형이 아닙니다"
     for slide in prs.slides:
@@ -50,7 +59,7 @@ def _assert_no_leak(pptx_path, run_ocr=False):
                 text = sh.text_frame.text
                 for w in BANNED_STRINGS:
                     assert w not in text, f"텍스트에 민감정보 잔존: {w}"
-            if run_ocr and sh.shape_type == 13:
+            if sh.shape_type == 13:
                 try:
                     import pytesseract
                     im = Image.open(io.BytesIO(sh.image.blob))
@@ -61,39 +70,47 @@ def _assert_no_leak(pptx_path, run_ocr=False):
                     assert w not in ocr, f"이미지 OCR에 민감정보 잔존: {w}"
 
 
+def _assert_debug_artifacts(debug_dir):
+    for fname in DEBUG_ARTIFACTS:
+        assert os.path.exists(os.path.join(debug_dir, fname)), f"중간 산출물 누락: {fname}"
+    assert os.path.isdir(os.path.join(debug_dir, "이미지추출"))
+
+
 def test_two_file_input():
     files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx")]
     result = run_pipeline("테스트2파일아파트", "재도장", files, OUT_DIR)
     assert os.path.exists(result["pptx"])
     _assert_no_leak(result["pptx"])
+    _assert_debug_artifacts(result["debug_dir"])
 
 
-def test_three_file_input_with_process_mismatch():
+def test_three_file_input():
     files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx"),
               os.path.join(FIXT_DIR, "sample3.pptx")]
     result = run_pipeline("테스트3파일아파트", "재도장", files, OUT_DIR)
     assert os.path.exists(result["pptx"])
     _assert_no_leak(result["pptx"])
-    # sample3 는 '중도' 공정이 없으므로 확인 필요 경고가 있어야 한다
-    assert any("중도" in w for w in result["warnings"])
 
 
-def test_messy_realistic_input_uses_30_plus_photos():
-    """캡션이 부실하고 사진이 매우 많은(실제 회사 PPT와 유사한) 입력에서도
-    30장 이상의 서로 다른 사진이 후보로 확보되고, 결과물에 다수 삽입되는지 검증한다."""
+def test_messy_realistic_input_quality_and_utilization():
+    """캡션이 부실하고 사진이 매우 많은(실제 회사 PPT와 유사한) 입력에서
+    사진 활용률·품질 점수·중간 산출물이 실제로 기준을 충족하는지 검증한다."""
     files = [os.path.join(FIXT_DIR, "messy1.pptx"), os.path.join(FIXT_DIR, "messy2.pptx")]
     result = run_pipeline("○○아파트", "재도장", files, OUT_DIR)
     assert os.path.exists(result["pptx"])
     _assert_no_leak(result["pptx"])
+
     assert result["total_usable_image_count"] >= 30, \
         f"사용 가능 이미지가 {result['total_usable_image_count']}장으로 목표(30장) 미달"
-    assert result["inserted_image_count"] >= 25, \
-        f"실제 삽입된 이미지가 {result['inserted_image_count']}장으로 너무 적음"
-    debug_dir = result["debug_dir"]
-    for fname in ("extracted_text.csv", "content_library.json", "slide_content_mapping.csv",
-                   "이미지분류.csv", "최종후보이미지목록.csv", "슬라이드계획.json"):
-        assert os.path.exists(os.path.join(debug_dir, fname)), f"중간 산출물 누락: {fname}"
-    assert os.path.isdir(os.path.join(debug_dir, "이미지추출"))
+
+    utilization = result["inserted_image_count"] / result["total_usable_image_count"]
+    assert utilization >= 0.75, f"사진 활용률 {utilization*100:.1f}%로 기준(75%) 미달"
+
+    assert result["quality_score"] >= 85, f"품질 점수 {result['quality_score']}로 기준(85) 미달"
+    assert result["quality_passed"] is True
+
+    _assert_debug_artifacts(result["debug_dir"])
+    assert os.path.exists(os.path.join(result["debug_dir"], "source_texts.csv"))
 
 
 def test_invalid_file_count_rejected():

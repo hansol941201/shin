@@ -35,6 +35,11 @@ class ImageAsset:
     left: int = 0
     top: int = 0
     real_caption: Optional[str] = None  # 같은 슬라이드의 실제 원본 문구에서 뽑은 캡션(익명화 완료)
+    confidence: float = 0.0     # v2 엔진: 카테고리 분류 신뢰도(0~1)
+    selected: bool = False      # v2 엔진: 최종 결과물에 실제로 삽입되었는지
+    selected_slide: Optional[int] = None  # v2 엔진: 삽입된 결과 슬라이드 번호(1-base)
+    group_id: Optional[str] = None  # v2 엔진: 소속된 콘텐츠 그룹(공정/사건 단위) id
+    caption_is_original: bool = False  # v2 엔진: 캡션이 원본 문구 기반인지(품질 점수용)
 
 
 @dataclass

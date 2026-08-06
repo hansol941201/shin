@@ -9,28 +9,34 @@ from typing import Dict, List
 
 import imagehash
 
-from app.utils.config import IMAGE_CATEGORIES
+from app.utils.config import IMAGE_CATEGORIES, UNCONFIRMED_LABEL
 from app.utils.models import ImageAsset, SlideRecord
 
+# 이론상 얻을 수 있는 최대 점수 근사치(신뢰도 정규화용) - 가장 긴 키워드 조합 기준
+_MAX_PLAUSIBLE_SCORE = 12.0
 
-def classify_image(img: ImageAsset) -> str:
+
+def classify_image(img: ImageAsset):
     """카테고리 판정: 키워드 '개수'가 아니라 '매칭된 글자 수 합'으로 점수를 매긴다.
     예) "균열 보수" 슬라이드는 "균열"(외벽 하자)과 "균열보수"(공정)를 동시에 포함하는 경우가
     많은데, 더 구체적이고 긴 키워드가 우선하도록 하여 하자 카테고리로 잘못 쏠리는 것을 막는다.
+    매칭되는 키워드가 전혀 없으면 즉시 폐기하지 않고 "미확정_참고사진"으로 보류한다(v2 원칙).
+    반환값: (카테고리, 신뢰도 0~1)
     """
     haystack = f"{img.nearby_text}\n{img.ocr_text}\n{img.shape_name}".lower().replace(" ", "")
-    best_cat, best_score = "기타", 0
+    best_cat, best_score = UNCONFIRMED_LABEL, 0
     for cat, keywords in IMAGE_CATEGORIES.items():
         matched = [kw for kw in keywords if kw.replace(" ", "").lower() in haystack]
         score = sum(len(kw.replace(" ", "")) for kw in matched)
         if score > best_score:
             best_cat, best_score = cat, score
-    return best_cat
+    confidence = min(1.0, best_score / _MAX_PLAUSIBLE_SCORE) if best_score else 0.0
+    return best_cat, confidence
 
 
 def classify_all(images: List[ImageAsset]) -> None:
     for img in images:
-        img.category = classify_image(img)
+        img.category, img.confidence = classify_image(img)
         # 해상도 기반 품질 점수(선명도 근사치 포함 X, 픽셀 수 기준)
         img.quality_score = float(img.width * img.height)
 
