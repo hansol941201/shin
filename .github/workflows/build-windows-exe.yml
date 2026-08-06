@@ -1,0 +1,105 @@
+name: Windows EXE 빌드 및 배포
+
+on:
+  push:
+    branches:
+      - "claude/resident-ppt-auto-generator-08t86b"
+    paths:
+      - "app/**"
+      - "run_app.py"
+      - "requirements.txt"
+      - "assets/**"
+      - ".github/workflows/build-windows-exe.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: PyInstaller로 EXE 빌드
+        run: |
+          pyinstaller run_app.py `
+            --name "ResidentPPTMaker" `
+            --noconsole `
+            --onedir `
+            --clean `
+            --add-data "assets;assets" `
+            --hidden-import "PIL._tkinter_finder" `
+            --collect-all "customtkinter"
+
+      - name: 배포 폴더 구성
+        run: |
+          $dist = "dist/ResidentPPTMaker"
+          Copy-Item "README.md" "$dist/README.md"
+          Copy-Item "USER_GUIDE.md" "$dist/USER_GUIDE.md"
+          New-Item -ItemType Directory -Force -Path "$dist/output" | Out-Null
+          $readme = @"
+입주민 설명자료 자동 제작 프로그램
+====================================
+
+1) ResidentPPTMaker.exe 파일을 더블클릭하면 바로 실행됩니다.
+   (Python, Git, PowerShell 명령어 입력이 전혀 필요 없습니다)
+
+2) 실행 후 프로그램 창에서
+   - 새 아파트명 입력
+   - 기존 PPT 파일 2~3개 선택
+   - 출력 폴더 선택
+   - "새 설명자료 만들기" 클릭
+   순서로 진행하시면 됩니다.
+
+3) 결과물(PPTX, 가능하면 PDF/미리보기 이미지, 검수결과, 처리로그)은
+   지정한 출력 폴더에 생성됩니다.
+
+4) LibreOffice, Tesseract-OCR이 설치되어 있지 않아도 PPTX 생성 기능은
+   정상적으로 동작합니다. (PDF 미리보기 및 사진 속 문구 자동 인식 기능만
+   생략됩니다)
+
+5) 실행 중 오류가 발생하면 이 폴더에 "오류로그.txt" 파일이 자동으로
+   생성됩니다. 문제가 발생하면 이 파일 내용을 함께 전달해주세요.
+"@
+          Set-Content -Path "$dist/실행방법.txt" -Value $readme -Encoding UTF8
+
+      - name: 배포용 ZIP 생성
+        run: |
+          Compress-Archive -Path "dist/ResidentPPTMaker/*" -DestinationPath "ResidentPPTMaker_Windows.zip" -Force
+
+      - name: 빌드 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: ResidentPPTMaker-Windows
+          path: ResidentPPTMaker_Windows.zip
+          retention-days: 90
+
+      - name: GitHub Release 게시(업데이트)
+        uses: ncipollo/release-action@v1
+        with:
+          tag: windows-build
+          name: "입주민 설명자료 자동 제작 - Windows 실행 파일"
+          body: |
+            더블클릭만으로 실행되는 Windows용 프로그램입니다.
+            `ResidentPPTMaker_Windows.zip` 을 내려받아 압축 해제 후
+            `ResidentPPTMaker.exe` 를 실행하세요. (Python/Git 설치 불필요)
+
+            커밋: ${{ github.sha }}
+          artifacts: "ResidentPPTMaker_Windows.zip"
+          allowUpdates: true
+          replacesArtifacts: true
+          makeLatest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
