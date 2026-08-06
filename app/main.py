@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-입주민용 공종 설명자료 PPT 자동 제작 프로그램 - 파이프라인 오케스트레이터 + CLI.
+자동화 자료취합 - 파이프라인 오케스트레이터 + CLI.
 
 사용법:
     python -m app.main --apt "행복아파트" --work 재도장 --output ./output file1.pptx file2.pptx [file3.pptx]
@@ -334,7 +334,7 @@ def run_pipeline(apartment_name: str, work_type: str, input_paths: List[str], ou
 
 
 def main():
-    parser = argparse.ArgumentParser(description="입주민 설명자료 자동 제작")
+    parser = argparse.ArgumentParser(description="자동화 자료취합")
     parser.add_argument("files", nargs="+", help="기존 PPT 파일 2~3개")
     parser.add_argument("--apt", required=True, help="새 아파트명")
     parser.add_argument("--work", default="재도장", choices=["재도장", "방수", "보수·보강", "아스콘", "기타"])

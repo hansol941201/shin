@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-입주민 설명자료 자동 제작 - 데스크톱 GUI (CustomTkinter 기반)
+자동화 자료취합 - 데스크톱 GUI (CustomTkinter 기반)
 대기업 사내 업무도구 톤의 절제된 디자인: 흰 배경 + 짙은 남색 포인트, 작은 창, 얇은 테두리.
 Windows 10/11에서 Python 없이도 동작하도록 PyInstaller로 패키징하는 것을 전제로 한다.
 """
@@ -49,10 +49,10 @@ def _f(size, weight="normal"):
     return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=weight)
 
 
-class ResidentPPTApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
+class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
     def __init__(self):
         super().__init__()
-        self.title("입주민 설명자료 자동 제작")
+        self.title("자동화 자료취합")
         try:
             self.configure(fg_color=COLOR_BG)
         except Exception:
@@ -97,9 +97,9 @@ class ResidentPPTApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         outer.pack(fill="both", expand=True, padx=20, pady=16)
 
         # ---------- 상단: 제목 + 짧은 설명 ----------
-        ctk.CTkLabel(outer, text="입주민 설명자료 자동 제작",
+        ctk.CTkLabel(outer, text="자동화 자료취합",
                      font=_f(19, "bold"), text_color=COLOR_TEXT, anchor="w").pack(fill="x")
-        ctk.CTkLabel(outer, text="기존 PPT 2~3개를 분석하여 새로운 설명자료를 만듭니다.",
+        ctk.CTkLabel(outer, text="기존 PPT 2~3개의 사진과 문구를 분석하여 새로운 자료로 재구성합니다.",
                      font=_f(11), text_color=COLOR_SUBTEXT, anchor="w").pack(fill="x", pady=(2, 14))
 
         # ---------- 새 아파트명 / 공종 ----------
@@ -182,7 +182,7 @@ class ResidentPPTApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         bottom = ctk.CTkFrame(outer, fg_color=COLOR_BG)
         bottom.pack(fill="x", side="bottom", pady=(12, 0))
         self.run_btn = ctk.CTkButton(
-            bottom, text="설명자료 생성", height=42, width=180, corner_radius=6,
+            bottom, text="새 자료 만들기", height=42, width=180, corner_radius=6,
             fg_color=COLOR_NAVY, hover_color=COLOR_NAVY_HOVER, text_color="white",
             font=_f(13, "bold"), command=self._on_run,
         )
@@ -287,7 +287,7 @@ class ResidentPPTApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
             self.after(0, self._on_failure, str(e))
 
     def _on_success(self, result):
-        self.run_btn.configure(state="normal", text="설명자료 생성")
+        self.run_btn.configure(state="normal", text="새 자료 만들기")
         self.post_frame.pack(fill="x", pady=(8, 0))
         self._log("\n=== 생성 완료 ===")
         self._log(f"PPTX: {result['pptx']}")
@@ -297,10 +297,10 @@ class ResidentPPTApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
             self._log("\n[확인이 필요한 항목]")
             for w in result["warnings"]:
                 self._log(f" - {w}")
-        messagebox.showinfo("완료", "새 설명자료 생성이 완료되었습니다.")
+        messagebox.showinfo("완료", "새 자료 생성이 완료되었습니다.")
 
     def _on_failure(self, msg):
-        self.run_btn.configure(state="normal", text="설명자료 생성")
+        self.run_btn.configure(state="normal", text="새 자료 만들기")
         self._log(f"\n[오류] {msg}")
         messagebox.showerror("오류", f"처리 중 오류가 발생했습니다:\n{msg}")
 
@@ -334,7 +334,7 @@ class ResidentPPTApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
 
 def main():
-    app = ResidentPPTApp()
+    app = AutoMaterialApp()
     app.mainloop()
 
 

@@ -1,4 +1,4 @@
-# 입주민 설명자료 자동 제작 프로그램 (resident-ppt-automation)
+# 자동화 자료취합 (resident-ppt-automation)
 
 같은 공종의 기존 PowerPoint 자료 2~3개를 분석하여, 회사 정보·기존 현장 정보를 모두 제거하고
 새 아파트명이 적용된 **입주민용 설명자료 1개**를 자동으로 생성하는 프로그램입니다.
@@ -51,7 +51,7 @@ python run_app.py
 2. 공종 선택(재도장/방수/보수·보강/아스콘/기타)
 3. 기존 PPT 2~3개 추가(드래그 앤 드롭 또는 파일 선택)
 4. 출력 폴더 지정
-5. "새 설명자료 만들기" 클릭 → 진행 단계가 표시되며 완료 후 결과 파일/폴더 열기 가능
+5. "새 자료 만들기" 클릭 → 진행 단계가 표시되며 완료 후 결과 파일/폴더 열기 가능
 
 ### CLI로 실행
 ```bash
@@ -110,7 +110,7 @@ py -3 -m venv .venv
 pip install -r requirements.txt
 .\build_exe.ps1
 ```
-결과: `dist\ResidentPPTMaker\ResidentPPTMaker.exe`
+결과: `dist\AutoMaterialCollector\AutoMaterialCollector.exe`
 
 ## 9. 한계 및 주의사항
 

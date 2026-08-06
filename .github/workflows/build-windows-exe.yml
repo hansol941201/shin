@@ -36,7 +36,7 @@ jobs:
       - name: PyInstaller로 EXE 빌드
         run: |
           pyinstaller run_app.py `
-            --name "ResidentPPTMaker" `
+            --name "AutoMaterialCollector" `
             --noconsole `
             --onedir `
             --clean `
@@ -46,35 +46,36 @@ jobs:
 
       - name: 배포 폴더 구성
         run: |
-          $dist = "dist/ResidentPPTMaker"
+          $dist = "dist/AutoMaterialCollector"
           Copy-Item "README.md" "$dist/README.md"
           Copy-Item "USER_GUIDE.md" "$dist/USER_GUIDE.md"
           Copy-Item "assets/templates/실행방법.txt" "$dist/실행방법.txt"
           New-Item -ItemType Directory -Force -Path "$dist/output" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$dist/logs" | Out-Null
 
       - name: 배포용 ZIP 생성
         run: |
-          Compress-Archive -Path "dist/ResidentPPTMaker/*" -DestinationPath "ResidentPPTMaker_Windows.zip" -Force
+          Compress-Archive -Path "dist/AutoMaterialCollector/*" -DestinationPath "AutoMaterialCollector_Windows.zip" -Force
 
       - name: 빌드 아티팩트 업로드
         uses: actions/upload-artifact@v4
         with:
-          name: ResidentPPTMaker-Windows
-          path: ResidentPPTMaker_Windows.zip
+          name: AutoMaterialCollector-Windows
+          path: AutoMaterialCollector_Windows.zip
           retention-days: 90
 
       - name: GitHub Release 게시(업데이트)
         uses: ncipollo/release-action@v1
         with:
           tag: windows-build
-          name: "입주민 설명자료 자동 제작 - Windows 실행 파일"
+          name: "자동화 자료취합 - Windows 실행 파일"
           body: |
             더블클릭만으로 실행되는 Windows용 프로그램입니다.
-            `ResidentPPTMaker_Windows.zip` 을 내려받아 압축 해제 후
-            `ResidentPPTMaker.exe` 를 실행하세요. (Python/Git 설치 불필요)
+            `AutoMaterialCollector_Windows.zip` 을 내려받아 압축 해제 후
+            `AutoMaterialCollector.exe` 를 실행하세요. (Python/Git 설치 불필요)
 
             커밋: ${{ github.sha }}
-          artifacts: "ResidentPPTMaker_Windows.zip"
+          artifacts: "AutoMaterialCollector_Windows.zip"
           allowUpdates: true
           replacesArtifacts: true
           makeLatest: true

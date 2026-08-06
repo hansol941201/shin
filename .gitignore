@@ -11,3 +11,6 @@ temp/*
 tests/fixtures/
 .DS_Store
 tests/_test_output/
+logs/*
+!logs/.gitkeep
+오류로그*.txt
