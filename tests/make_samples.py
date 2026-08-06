@@ -218,12 +218,116 @@ def build_ppt_3(path):
     prs.save(path)
 
 
+def _generic_photo(path, w, h, bg, tag, seed):
+    """실제 회사 PPT에서 흔한, 키워드가 없는 무성의한 사진명(사진1, IMG_001 등)을 재현."""
+    return make_image(path, w, h, bg, tag, seed=seed)
+
+
+def build_messy_ppt(path, variant):
+    """사진이 매우 많고(장당 3~4장), 캡션은 대부분 일반적("사진1" 등)이며,
+    슬라이드 제목에만 실제 기술 문구가 담긴, 흔한 회사 PPT 스타일을 재현한다.
+    회사/현장 정보는 여전히 포함되어 있어 개인정보 제거 로직도 함께 검증한다.
+    """
+    prs = Presentation()
+    prs.slide_width = Cm(19.05)
+    prs.slide_height = Cm(25.4)
+    img_dir = os.path.join(FIXT_DIR, f"messy_images_{variant}")
+    os.makedirs(img_dir, exist_ok=True)
+
+    apt = "무지개마을아파트" if variant == "a" else "코스모스아파트"
+    company = "㈜서울외벽방수" if variant == "a" else "동양건업㈜"
+    seed_base = 100 if variant == "a" else 300
+
+    def pic(tag, bg, i):
+        return _generic_photo(f"{img_dir}/img_{i:03d}.jpg", 900, 700, bg, tag, seed_base + i)
+
+    n = 0
+    # 표지(현장정보 포함, 반드시 제거 대상)
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_text(s, f"{apt} 외벽 재도장 공사", 1, 1, 17, 2, size=26, title=True)
+    _add_text(s, f"{company} / 담당 김철수 부장 010-2222-3333", 1, 3, 17, 1, size=12)
+    n += 1
+    _add_pic(s, pic("현장전경", (90, 130, 175), n), 2, 6, 13, 12)
+
+    # 하자 현황: 캡션은 "사진1"류로 무성의, 제목에만 키워드
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_text(s, "외벽 균열 및 오염 등 하자 현황", 1, 0.5, 17, 1.5, size=20, title=True)
+    _add_text(s, "외벽 균열부를 V컷팅한 후 탄성퍼티로 보수한다.", 1, 2, 17, 1, size=13)
+    positions = [(1, 4, 8.5, 6), (9.5, 4, 8.5, 6), (1, 10.5, 8.5, 6), (9.5, 10.5, 8.5, 6)]
+    for i, (x, y, w, h) in enumerate(positions, start=1):
+        n += 1
+        s2 = pic(f"사진{i}", (120 + i * 5, 110, 100), n)
+        _add_pic(s, s2, x, y, w, h)
+
+    # 공법 설명: 실제 기술 문구 + 무성의 캡션 사진 다수
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_text(s, "재도장 공법 및 사용 자재 안내", 1, 0.5, 17, 1.5, size=20, title=True)
+    _add_text(s, "균열 부위 보수 후 하도·중도·상도 순으로 도장한다. 탄성도료를 사용하여 방수 성능을 함께 확보한다.",
+                1, 2, 17, 1.6, size=13)
+    for i in range(1, 5):
+        n += 1
+        x = 1 + (i - 1 % 2) * 0  # simple grid
+        row, col = divmod(i - 1, 2)
+        s2 = pic(f"IMG_{n:03d}", (150 + i * 3, 140, 120), n)
+        _add_pic(s, s2, 1 + col * 8.5, 4 + row * 6.5, 8, 6)
+
+    # 시공 순서 슬라이드 다수 (공정별로 3장씩, 캡션 무성의)
+    steps = [("사전 점검", "사전점검을 통해 하자 부위 전체 물량을 산출한다."),
+              ("고압세척 작업", "고압수 세정으로 표면 이물질을 완전히 제거한다."),
+              ("균열 보수 및 퍼티", "균열부 실링 및 전체 면 퍼티 작업을 진행한다."),
+              ("하도 시공", "하도재를 균일하게 도포하여 부착력을 높인다."),
+              ("중도 시공", "중도재로 두께를 확보하고 색상을 안정화한다."),
+              ("상도 마감", "상도 마감재로 최종 색상과 광택을 완성한다.")]
+    for step_name, desc in steps:
+        s = prs.slides.add_slide(prs.slide_layouts[6])
+        _add_text(s, step_name, 1, 0.5, 17, 1.3, size=19, title=True)
+        _add_text(s, desc, 1, 2, 17, 1.2, size=12)
+        for i in range(1, 4):
+            n += 1
+            x = 1 + (i - 1) * 6
+            s2 = pic(f"현장사진{n}", (100 + n % 50, 120, 140), n)
+            _add_pic(s, s2, x, 3.5, 5.5, 5.5)
+
+    # 시공 전/후 사례 2쌍
+    for case_i in range(2):
+        s = prs.slides.add_slide(prs.slide_layouts[6])
+        _add_text(s, f"{apt} 시공 전후 비교 {case_i+1}", 1, 0.5, 17, 1.3, size=19, title=True)
+        _add_text(s, "시공 전", 1, 2, 8, 0.8, size=13)
+        n += 1
+        b = pic(f"before_{case_i}", (130, 90, 70 + case_i * 10), n)
+        _add_pic(s, b, 1, 3, 8.5, 6.5)
+        _add_text(s, "시공 후", 9.5, 2, 8, 0.8, size=13)
+        n += 1
+        a = pic(f"after_{case_i}", (70, 150, 210 - case_i * 10), n)
+        _add_pic(s, a, 9.5, 3, 8.5, 6.5)
+
+    # 완공/전경 추가 사진(효과 페이지용, 대부분 무성의 캡션)
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_text(s, "시공 완료 후 단지 전경", 1, 0.5, 17, 1.5, size=19, title=True)
+    _add_text(s, "재도장 완료 후 외관이 개선되어 입주민 만족도가 향상되었다.", 1, 2, 17, 1.3, size=12)
+    for i in range(1, 4):
+        n += 1
+        s2 = pic(f"완공사진{i}", (80, 150 + i * 5, 190), n)
+        _add_pic(s, s2, 1 + (i - 1) * 6, 4, 5.5, 5.5)
+
+    # 회사 소개(제거 대상)
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_text(s, f"{company} 소개", 1, 1, 17, 1.5, size=20, title=True)
+    _add_text(s, f"홈페이지 www.{('seoulwp' if variant=='a' else 'dongyang')}.co.kr "
+                  f"사업자등록번호 {'321-45-11111' if variant=='a' else '555-22-33333'}", 1, 3, 17, 1, size=12)
+
+    prs.save(path)
+    return n
+
+
 def main():
     os.makedirs(FIXT_DIR, exist_ok=True)
     build_ppt_1(os.path.join(FIXT_DIR, "sample1.pptx"))
     build_ppt_2(os.path.join(FIXT_DIR, "sample2.pptx"))
     build_ppt_3(os.path.join(FIXT_DIR, "sample3.pptx"))
-    print("샘플 생성 완료:", FIXT_DIR)
+    n1 = build_messy_ppt(os.path.join(FIXT_DIR, "messy1.pptx"), "a")
+    n2 = build_messy_ppt(os.path.join(FIXT_DIR, "messy2.pptx"), "b")
+    print("샘플 생성 완료:", FIXT_DIR, f"(messy1={n1}장, messy2={n2}장)")
 
 
 if __name__ == "__main__":

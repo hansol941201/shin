@@ -34,6 +34,7 @@ class ImageAsset:
     ba_group: Optional[str] = None  # 같은 슬라이드 내 전후 쌍 식별자
     left: int = 0
     top: int = 0
+    real_caption: Optional[str] = None  # 같은 슬라이드의 실제 원본 문구에서 뽑은 캡션(익명화 완료)
 
 
 @dataclass
@@ -78,3 +79,9 @@ class ContentPlan:
     ba_pairs: List[BeforeAfterPair]
     effect_image_ids: List[str]
     warnings: List[str] = field(default_factory=list)
+    gallery_image_ids: List[str] = field(default_factory=list)
+    method_items: List[str] = field(default_factory=list)
+    feature_items: list = field(default_factory=list)
+    effect_items: List[str] = field(default_factory=list)
+    reason_note: str = ""
+    case_notes: list = field(default_factory=list)

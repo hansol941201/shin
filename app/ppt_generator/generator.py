@@ -195,22 +195,30 @@ def _photo_grid(slide, image_ids, images_by_id, top, area_h, captions=None, cols
                   size=FONT_SIZE_CAPTION, color=COLOR_TEXT_SUB, align=PP_ALIGN.CENTER)
 
 
+DEFECT_LABEL_MAP = {
+    "외벽_하자_균열": "외벽 균열", "외벽_하자_박리": "박리 및 들뜸",
+    "외벽_하자_오염": "오염 및 얼룩", "외벽_하자_곰팡이": "곰팡이 및 백태",
+    "외벽_하자_변색": "변색 및 백화",
+}
+
+
 def render_reasons(prs, data, images_by_id, page_no):
     slide = _blank_slide(prs)
     _header(slide, data["title"], page_no)
+    ids = data["image_ids"]
     labels = []
-    for iid in data["image_ids"]:
+    for iid in ids:
         img = images_by_id.get(iid)
-        cat = img.category if img else ""
-        label_map = {
-            "외벽_하자_균열": "외벽 균열", "외벽_하자_박리": "박리 및 들뜸",
-            "외벽_하자_오염": "오염 및 얼룩", "외벽_하자_곰팡이": "곰팡이 및 백태",
-            "외벽_하자_변색": "변색 및 백화",
-        }
-        labels.append(label_map.get(cat, "외벽 손상"))
-    _photo_grid(slide, data["image_ids"], images_by_id, Mm(28), Mm(220), captions=labels, cols=2)
-    add_rect(slide, MARGIN, Mm(258), CONTENT_W, Mm(24), COLOR_GRAY_LIGHT)
-    add_text(slide, MARGIN + Mm(4), Mm(263), CONTENT_W - Mm(8), Mm(16), data["note"],
+        if img and img.real_caption:
+            labels.append(img.real_caption)
+        else:
+            labels.append(DEFECT_LABEL_MAP.get(img.category if img else "", "외벽 손상"))
+    cols = 3 if len(ids) > 4 else 2
+    grid_h = Mm(210) if len(ids) > 4 else Mm(220)
+    _photo_grid(slide, ids, images_by_id, Mm(28), grid_h, captions=labels, cols=cols)
+    note_top = Mm(28) + grid_h + Mm(6)
+    add_rect(slide, MARGIN, note_top, CONTENT_W, Mm(24), COLOR_GRAY_LIGHT)
+    add_text(slide, MARGIN + Mm(4), note_top + Mm(5), CONTENT_W - Mm(8), Mm(16), data["note"],
               size=FONT_SIZE_BODY, color=COLOR_TEXT_BODY, anchor=MSO_ANCHOR.MIDDLE)
     return slide
 
@@ -221,7 +229,8 @@ def render_method_overview(prs, data, images_by_id, page_no):
     items = data["items"]
     imgs = [i for i in data["image_ids"] if i in images_by_id]
     y = Mm(28)
-    row_h = Mm(45)
+    available = SLIDE_HEIGHT - Mm(30)
+    row_h = min(Mm(45), Emu(int(available / max(len(items), 1))))
     for idx, item in enumerate(items):
         add_rect(slide, MARGIN, y, Mm(3), row_h - Mm(4), COLOR_GOLD)
         img_id = imgs[idx] if idx < len(imgs) else None
@@ -231,8 +240,8 @@ def render_method_overview(prs, data, images_by_id, page_no):
             text_x = MARGIN + Mm(50)
         else:
             text_x = MARGIN + Mm(8)
-        add_text(slide, text_x, y + Mm(6), CONTENT_W - (text_x - MARGIN) - Mm(2), row_h - Mm(10),
-                  item, size=Pt(14), color=COLOR_TEXT_BODY, bold=True, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, text_x, y + Mm(4), CONTENT_W - (text_x - MARGIN) - Mm(2), row_h - Mm(8),
+                  item, size=Pt(13), color=COLOR_TEXT_BODY, bold=True, anchor=MSO_ANCHOR.MIDDLE)
         y += row_h
     return slide
 
@@ -243,7 +252,8 @@ def render_features(prs, data, images_by_id, page_no):
     items = data["items"]
     imgs = [i for i in data["image_ids"] if i in images_by_id]
     y = Mm(28)
-    row_h = Mm(47)
+    available = SLIDE_HEIGHT - Mm(30)
+    row_h = min(Mm(47), Emu(int(available / max(len(items), 1))))
     for idx, (title, desc) in enumerate(items):
         img_id = imgs[idx] if idx < len(imgs) else None
         if img_id:
@@ -254,10 +264,24 @@ def render_features(prs, data, images_by_id, page_no):
             add_rect(slide, MARGIN, y, Mm(42), row_h - Mm(5), COLOR_GRAY_LIGHT)
             text_x = MARGIN + Mm(46)
         add_text(slide, text_x, y + Mm(2), CONTENT_W - Mm(46), Mm(8), title,
-                  size=Pt(14.5), color=COLOR_NAVY, bold=True)
-        add_text(slide, text_x, y + Mm(11), CONTENT_W - Mm(46), row_h - Mm(15), desc,
-                  size=FONT_SIZE_BODY, color=COLOR_TEXT_BODY)
+                  size=Pt(13.5), color=COLOR_NAVY, bold=True)
+        add_text(slide, text_x, y + Mm(10), CONTENT_W - Mm(46), row_h - Mm(13), desc,
+                  size=FONT_SIZE_CAPTION, color=COLOR_TEXT_BODY)
         y += row_h
+    return slide
+
+
+def render_gallery(prs, data, images_by_id, page_no):
+    """다른 섹션에서 쓰이지 않은 사진을 최대한 활용하기 위한 참고용 갤러리 페이지."""
+    slide = _blank_slide(prs)
+    _header(slide, data["title"], page_no)
+    ids = data["image_ids"]
+    captions = []
+    for i, iid in enumerate(ids):
+        img = images_by_id.get(iid)
+        captions.append(img.real_caption if img and img.real_caption else _neutral_caption(i))
+    cols = 3 if len(ids) > 4 else 2
+    _photo_grid(slide, ids, images_by_id, Mm(28), Mm(255), captions=captions, cols=cols)
     return slide
 
 
@@ -330,8 +354,13 @@ def render_case(prs, data, images_by_id, page_no):
 def render_effects(prs, data, images_by_id, page_no):
     slide = _blank_slide(prs)
     _header(slide, data["title"], page_no)
-    _photo_grid(slide, data["image_ids"], images_by_id, Mm(28), Mm(110),
-                captions=[_neutral_caption(i) for i in range(len(data["image_ids"]))], cols=2)
+    ids = data["image_ids"][:6]
+    captions = []
+    for i, iid in enumerate(ids):
+        img = images_by_id.get(iid)
+        captions.append(img.real_caption if img and img.real_caption else _neutral_caption(i))
+    cols = 3 if len(ids) > 4 else 2
+    _photo_grid(slide, ids, images_by_id, Mm(28), Mm(110), captions=captions, cols=cols)
     y = Mm(148)
     items = data["items"]
     cols = 2
@@ -362,6 +391,7 @@ RENDERERS = {
     "process": render_process,
     "case": render_case,
     "effects": render_effects,
+    "gallery": render_gallery,
 }
 
 

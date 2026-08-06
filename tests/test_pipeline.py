@@ -78,6 +78,24 @@ def test_three_file_input_with_process_mismatch():
     assert any("중도" in w for w in result["warnings"])
 
 
+def test_messy_realistic_input_uses_30_plus_photos():
+    """캡션이 부실하고 사진이 매우 많은(실제 회사 PPT와 유사한) 입력에서도
+    30장 이상의 서로 다른 사진이 후보로 확보되고, 결과물에 다수 삽입되는지 검증한다."""
+    files = [os.path.join(FIXT_DIR, "messy1.pptx"), os.path.join(FIXT_DIR, "messy2.pptx")]
+    result = run_pipeline("○○아파트", "재도장", files, OUT_DIR)
+    assert os.path.exists(result["pptx"])
+    _assert_no_leak(result["pptx"])
+    assert result["total_usable_image_count"] >= 30, \
+        f"사용 가능 이미지가 {result['total_usable_image_count']}장으로 목표(30장) 미달"
+    assert result["inserted_image_count"] >= 25, \
+        f"실제 삽입된 이미지가 {result['inserted_image_count']}장으로 너무 적음"
+    debug_dir = result["debug_dir"]
+    for fname in ("extracted_text.csv", "content_library.json", "slide_content_mapping.csv",
+                   "이미지분류.csv", "최종후보이미지목록.csv", "슬라이드계획.json"):
+        assert os.path.exists(os.path.join(debug_dir, fname)), f"중간 산출물 누락: {fname}"
+    assert os.path.isdir(os.path.join(debug_dir, "이미지추출"))
+
+
 def test_invalid_file_count_rejected():
     files = [os.path.join(FIXT_DIR, "sample1.pptx")]
     with pytest.raises(ValueError):

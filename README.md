@@ -58,15 +58,28 @@ python run_app.py
 python -m app.main --apt "은하수아파트" --work 재도장 --output ./output file1.pptx file2.pptx [file3.pptx]
 ```
 
-## 4. 결과물
+## 4. 중간 산출물 (PPTX 생성 전 검증용)
+
+최종 PPT를 만들기 전에 `output/[아파트명]_중간산출물/` 폴더에 아래 자료를 먼저 저장하여,
+사진·문구 선별 과정을 검증할 수 있게 한다.
+
+- `이미지추출/` — PPT별 추출된 전체 이미지(배제/중복 사유가 파일명에 표시됨)
+- `이미지분류.csv` — 이미지별 카테고리, 배제 여부/사유, 중복 여부, 실제 캡션
+- `최종후보이미지목록.csv` — 섹션별 최종 선정 이미지
+- `슬라이드계획.json` — 최종 슬라이드 구조 계획
+- `extracted_text.csv` — 원본 PPT의 모든 문구, 용도 분류, 민감정보 여부, 사용 가능 여부
+- `content_library.json` — 용도별로 정리된 실제 원본 문구 라이브러리
+- `slide_content_mapping.csv` — 결과 슬라이드별로 어떤 원본 PPT/슬라이드의 사진·문구를 사용했는지 추적표
+
+## 5. 결과물
 
 - `[아파트명]_[공종]_입주민설명자료.pptx` — 최종 PowerPoint (A4 세로형)
 - `[아파트명]_[공종]_입주민설명자료.pdf` — PDF 미리보기 (LibreOffice 필요)
 - `[아파트명]_미리보기.png` — 전체 슬라이드 축소 미리보기 이미지
-- `[아파트명]_처리로그.txt` — 처리 단계 로그
+- `[아파트명]_처리로그.txt` — 처리 단계 로그 (슬라이드/이미지/텍스트 집계 포함)
 - `[아파트명]_검수결과.txt` — 자동 검수 결과 보고서
 
-## 5. 파이프라인 개요
+## 6. 파이프라인 개요
 
 1. PPT 2~3개를 임시 작업 폴더에 복사(원본 절대 수정 안 함) 후 분석
 2. 모든 사진/텍스트를 요소 단위로 추출
@@ -81,7 +94,7 @@ python -m app.main --apt "은하수아파트" --work 재도장 --output ./output
 8. 저장 전 자동 검수(민감정보 잔존 여부, 슬라이드 이탈 요소, 중복 사진, 세로형 여부 등) 및
    가능한 항목은 자동 수정, 불가능한 항목은 검수 보고서에 기록
 
-## 6. 테스트
+## 7. 테스트
 
 ```bash
 python tests/make_samples.py   # 회사/현장 정보가 섞인 가짜 PPT 2~3개 생성
@@ -89,7 +102,7 @@ python -m app.main --apt "테스트아파트" --work 재도장 --output ./output
     tests/fixtures/sample1.pptx tests/fixtures/sample2.pptx tests/fixtures/sample3.pptx
 ```
 
-## 7. EXE 빌드 (Windows)
+## 8. EXE 빌드 (Windows)
 
 ```powershell
 py -3 -m venv .venv
@@ -99,7 +112,7 @@ pip install -r requirements.txt
 ```
 결과: `dist\ResidentPPTMaker\ResidentPPTMaker.exe`
 
-## 8. 한계 및 주의사항
+## 9. 한계 및 주의사항
 
 `USER_GUIDE.md`의 "아직 자동 판별이 어려운 항목"을 참고하세요. 이미지 분류와 회사/현장 정보
 탐지는 텍스트(OCR 포함) 기반 규칙과 지각적 해시에 의존하며, 판별이 불확실한 요소는 자동으로

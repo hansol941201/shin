@@ -10,3 +10,4 @@ temp/*
 !temp/.gitkeep
 tests/fixtures/
 .DS_Store
+tests/_test_output/

@@ -14,12 +14,17 @@ from app.utils.models import ImageAsset, SlideRecord
 
 
 def classify_image(img: ImageAsset) -> str:
+    """카테고리 판정: 키워드 '개수'가 아니라 '매칭된 글자 수 합'으로 점수를 매긴다.
+    예) "균열 보수" 슬라이드는 "균열"(외벽 하자)과 "균열보수"(공정)를 동시에 포함하는 경우가
+    많은데, 더 구체적이고 긴 키워드가 우선하도록 하여 하자 카테고리로 잘못 쏠리는 것을 막는다.
+    """
     haystack = f"{img.nearby_text}\n{img.ocr_text}\n{img.shape_name}".lower().replace(" ", "")
-    best_cat, best_hits = "기타", 0
+    best_cat, best_score = "기타", 0
     for cat, keywords in IMAGE_CATEGORIES.items():
-        hits = sum(1 for kw in keywords if kw.replace(" ", "").lower() in haystack)
-        if hits > best_hits:
-            best_cat, best_hits = cat, hits
+        matched = [kw for kw in keywords if kw.replace(" ", "").lower() in haystack]
+        score = sum(len(kw.replace(" ", "")) for kw in matched)
+        if score > best_score:
+            best_cat, best_score = cat, score
     return best_cat
 
 
@@ -30,7 +35,7 @@ def classify_all(images: List[ImageAsset]) -> None:
         img.quality_score = float(img.width * img.height)
 
 
-def dedupe_images(images: List[ImageAsset], hamming_threshold: int = 6) -> None:
+def dedupe_images(images: List[ImageAsset], hamming_threshold: int = 3) -> None:
     """perceptual hash 기준으로 거의 동일한 사진을 찾아 대표 이미지 1장만 남긴다."""
     valid = [i for i in images if i.phash and not i.banned]
     valid.sort(key=lambda i: i.quality_score, reverse=True)

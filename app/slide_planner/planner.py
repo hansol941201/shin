@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-선별된 콘텐츠를 바탕으로 최종 PPT의 슬라이드 구조(8~12페이지 내외)를 계획한다.
-입력 자료의 양에 따라 유동적으로 페이지 수를 조정한다(부족하면 축소, 사례가 많으면 확장하지 않고 상한 유지).
+선별된 콘텐츠를 바탕으로 최종 PPT의 슬라이드 구조(10~15페이지 내외)를 계획한다.
+입력 자료의 양에 따라 유동적으로 페이지 수를 조정하되, 원본 사진을 최대한 활용하기 위해
+분량이 많으면 하자/갤러리 페이지를 여러 장으로 나눈다.
 """
 from typing import Dict, List
 
@@ -30,14 +31,22 @@ TOC_ITEMS = [
     "공법 특징",
     "시공 순서",
     "유사 시공 사례",
+    "참고 시공 사진",
     "기대 효과",
 ]
+
+DEFECT_PAGE_SIZE = 6      # 하자 사진 한 페이지당 최대 장 수 (6~9장 요구 시 2페이지로 분할)
+GALLERY_PAGE_SIZE = 6
+MAX_TOTAL_PAGES = 15
 
 
 def build_content_plan(apartment_name: str, work_type: str, cover_image_id,
                         defect_ids: List[str], method_ids: List[str], feature_ids: List[str],
                         process_steps: List[ProcessStep], ba_pairs: List[BeforeAfterPair],
-                        effect_ids: List[str], warnings: List[str]) -> ContentPlan:
+                        effect_ids: List[str], warnings: List[str],
+                        gallery_ids: List[str] = None, method_items: List[str] = None,
+                        feature_items=None, effect_items: List[str] = None,
+                        reason_note: str = "", case_notes: List[str] = None) -> ContentPlan:
     return ContentPlan(
         apartment_name=apartment_name,
         work_type=work_type,
@@ -49,7 +58,17 @@ def build_content_plan(apartment_name: str, work_type: str, cover_image_id,
         ba_pairs=ba_pairs,
         effect_image_ids=effect_ids,
         warnings=warnings,
+        gallery_image_ids=gallery_ids or [],
+        method_items=method_items or [],
+        feature_items=feature_items or [],
+        effect_items=effect_items or [],
+        reason_note=reason_note,
+        case_notes=case_notes or [],
     )
+
+
+def _chunk(lst: List[str], size: int) -> List[List[str]]:
+    return [lst[i:i + size] for i in range(0, len(lst), size)] or [[]]
 
 
 def plan_slides(plan: ContentPlan) -> List[Dict]:
@@ -64,46 +83,34 @@ def plan_slides(plan: ContentPlan) -> List[Dict]:
         "highlights": ["안전성 향상", "건물 수명 연장", "미관 개선", "자산 가치 향상"],
     })
 
-    slides.append({
-        "type": "toc",
-        "items": TOC_ITEMS,
-    })
+    slides.append({"type": "toc", "items": TOC_ITEMS})
 
-    if plan.defect_image_ids:
+    # 재도장이 필요한 이유: 6~9장 목표 -> 페이지당 6장씩 분할
+    defect_chunks = _chunk(plan.defect_image_ids, DEFECT_PAGE_SIZE)
+    for idx, chunk in enumerate(defect_chunks):
+        if not chunk:
+            continue
         slides.append({
             "type": "reasons",
-            "title": "공사가 필요한 이유",
-            "image_ids": plan.defect_image_ids,
-            "note": "외벽 노후화는 미관 저하뿐 아니라 균열과 수분 침투를 유발할 수 있으므로 "
-                    "적절한 보수와 공사가 필요합니다.",
+            "title": "공사가 필요한 이유" + (f" ({idx+1}/{len(defect_chunks)})" if len(defect_chunks) > 1 else ""),
+            "image_ids": chunk,
+            "note": plan.reason_note,
         })
 
-    if plan.method_image_ids:
+    if plan.method_image_ids or plan.method_items:
         slides.append({
             "type": "method_overview",
             "title": "공법 개요",
             "image_ids": plan.method_image_ids,
-            "items": [
-                "내구성 높은 시공 시스템",
-                "체계적인 시공 관리",
-                "균열 및 손상부 선보수",
-                "안전한 작업 절차",
-                "외벽 미관 개선",
-            ],
+            "items": plan.method_items,
         })
 
-    if plan.feature_image_ids:
+    if plan.feature_image_ids or plan.feature_items:
         slides.append({
             "type": "features",
             "title": "공법 특징",
             "image_ids": plan.feature_image_ids,
-            "items": [
-                ("우수한 내구성", "오랜 기간 성능이 유지되는 시공 시스템을 적용합니다."),
-                ("뛰어난 방수성", "표면을 보호하여 수분 침투를 최소화합니다."),
-                ("균열 및 손상부 보수", "선보수를 통해 하자 부위를 안정적으로 정리합니다."),
-                ("미관 개선", "깨끗하고 균일한 외관으로 마감합니다."),
-                ("유지관리 용이", "표면 관리가 쉬운 마감으로 시공합니다."),
-            ],
+            "items": plan.feature_items,
         })
 
     if plan.process_steps:
@@ -113,22 +120,34 @@ def plan_slides(plan: ContentPlan) -> List[Dict]:
             "steps": plan.process_steps,
         })
 
+    notes_pool = plan.case_notes or ["노후화되고 오염된 외벽을 보수한 후 재시공하여 건물 외관과 내구성을 개선한 사례입니다."]
     for i, pair in enumerate(plan.ba_pairs, start=1):
         slides.append({
             "type": "case",
-            "title": f"유사 시공 사례 {['①','②','③','④','⑤'][min(i-1,4)]}",
+            "title": f"유사 시공 사례 {['①','②','③','④','⑤','⑥'][min(i-1,5)]}",
             "work_desc": f"외벽 전면 {plan.work_type}",
             "pair": pair,
-            "note": "노후화되고 오염된 외벽을 보수한 후 재시공하여 건물 외관과 내구성을 개선한 사례입니다.",
+            "note": notes_pool[(i - 1) % len(notes_pool)],
         })
 
-    if plan.effect_image_ids:
+    # 남은 사진을 최대한 활용하는 참고 시공 사진 갤러리 페이지(중립 캡션)
+    gallery_chunks = _chunk(plan.gallery_image_ids, GALLERY_PAGE_SIZE)
+    remaining_page_budget = max(0, MAX_TOTAL_PAGES - len(slides) - 2)  # 효과/마무리 페이지 몫 확보
+    for idx, chunk in enumerate(gallery_chunks[:remaining_page_budget]):
+        if not chunk:
+            continue
+        slides.append({
+            "type": "gallery",
+            "title": "참고 시공 사진" + (f" ({idx+1}/{len(gallery_chunks)})" if len(gallery_chunks) > 1 else ""),
+            "image_ids": chunk,
+        })
+
+    if plan.effect_image_ids or plan.effect_items:
         slides.append({
             "type": "effects",
             "title": "기대 효과",
             "image_ids": plan.effect_image_ids,
-            "items": ["건물 가치 향상", "외벽 수명 연장", "주거 만족도 향상",
-                       "미관 개선", "유지관리 비용 절감", "안전성 향상"],
+            "items": plan.effect_items,
         })
 
     slides.append({
