@@ -218,3 +218,32 @@ def test_no_site_photos_falls_back_to_original_flow():
         return ""
 
     assert "현장사진" not in _slide_title(slides[1])
+
+
+def test_generation_failure_raises_and_logs_stage(monkeypatch):
+    """generate_pptx_v2가 실패해도(혹은 저장 후 파일이 사라져도) 파이프라인이
+    "정상 완료"를 반환해서는 안 되며, 처리로그.txt 마지막 줄에 실패 단계가
+    남아야 한다(중간산출물만 만들고 조용히 끝나는 것을 금지)."""
+    import app.engine.pipeline as pipeline_mod
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("강제 저장 실패(테스트)")
+
+    monkeypatch.setattr(pipeline_mod, "generate_pptx_v2", _boom)
+
+    files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx")]
+    with pytest.raises(pipeline_mod.PptGenerationFailedError) as exc_info:
+        run_pipeline("저장실패테스트아파트", "재도장", files, OUT_DIR)
+
+    assert "스토리 구성/PPT 생성" in str(exc_info.value)
+
+    safe_name = "저장실패테스트아파트"
+    log_path = os.path.join(OUT_DIR, f"{safe_name}_처리로그.txt")
+    assert os.path.exists(log_path), "실패 시에도 처리로그.txt는 반드시 생성돼야 함"
+    with open(log_path, encoding="utf-8") as f:
+        content = f.read()
+    assert "[파이프라인] 종료 단계:" in content
+    assert "스토리 구성/PPT 생성" in content.strip().splitlines()[-1]
+
+    out_pptx = os.path.join(OUT_DIR, f"{safe_name}_재도장_입주민설명자료.pptx")
+    assert not os.path.exists(out_pptx), "저장이 실패했는데 PPT 파일이 존재하면 안 됨"

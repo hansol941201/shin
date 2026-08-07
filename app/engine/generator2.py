@@ -426,7 +426,18 @@ SEMANTIC_RENDERERS = {
 }
 
 
-def generate_pptx_v2(pages: List[dict], images_by_id: Dict[str, object], out_path: str) -> str:
+def generate_pptx_v2(pages: List[dict], images_by_id: Dict[str, object], out_path: str,
+                       log_fn=None) -> str:
+    """PPTX를 생성해 out_path에 저장한다. 저장 직후 반드시 파일이 실제로 존재하고
+    크기가 0보다 큰지 확인한 뒤 로그를 남긴다 - "저장했다고 believe"하는 대신
+    os.path.exists()로 실제 결과를 확인한다. 저장이 실패했으면 예외를 던져
+    호출자(pipeline.py)가 "정상 완료"로 처리하지 못하게 한다."""
+    def _log(msg):
+        if log_fn:
+            log_fn(msg)
+        else:
+            print(msg, flush=True)
+
     prs = new_presentation()
     page_no = 0
     for page in pages:
@@ -460,5 +471,15 @@ def generate_pptx_v2(pages: List[dict], images_by_id: Dict[str, object], out_pat
                 im.selected_slide = page_no
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    _log(f"[generator2] Presentation.save() 호출 직전 - 총 {len(prs.slides)}슬라이드, 저장 경로={out_path}")
     prs.save(out_path)
+
+    saved_ok = os.path.exists(out_path)
+    size = os.path.getsize(out_path) if saved_ok else 0
+    if not saved_ok or size == 0:
+        _log(f"[generator2] PPT 저장 실패 - 경로={out_path}, 존재={saved_ok}, 크기={size} bytes")
+        raise RuntimeError(
+            f"PPTX 저장에 실패했습니다(파일이 생성되지 않았거나 비어 있음): {out_path}"
+        )
+    _log(f"[generator2] PPT 저장 완료 - 경로={out_path}, 파일크기={size:,} bytes")
     return out_path

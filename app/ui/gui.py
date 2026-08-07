@@ -514,11 +514,21 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
                                    progress_cb=lambda s: self.after(0, self._set_stage, s),
                                    extra_logs=list(self.selection_logs),
                                    site_photo_paths=list(self.site_photo_work_paths) or None)
+            # 파이프라인이 "성공"을 반환했더라도, GUI 단에서 다시 한번 최종 PPT 파일이
+            # 실제로 존재하는지 확인한다("정상 완료"로 잘못 표시하지 않기 위한 이중 확인).
+            pptx_path = result.get("pptx")
+            if not pptx_path or not os.path.exists(pptx_path) or os.path.getsize(pptx_path) == 0:
+                self.after(0, self._on_ppt_failure,
+                           f"파이프라인은 끝까지 실행됐지만 최종 PPT 파일을 찾을 수 없습니다.\n"
+                           f"예상 경로: {pptx_path}\n"
+                           f"처리 로그: {result.get('log')}")
+                return
             self.result = result
             self.after(0, self._on_success, result)
         except Exception as e:
             traceback.print_exc()
-            self.after(0, self._on_failure, str(e))
+            is_ppt_failure = type(e).__name__ == "PptGenerationFailedError"
+            self.after(0, self._on_ppt_failure if is_ppt_failure else self._on_failure, str(e))
 
     def _on_success(self, result):
         self.run_btn.configure(state="normal", text="새 자료 만들기")
@@ -537,6 +547,14 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self.run_btn.configure(state="normal", text="새 자료 만들기")
         self._log(f"\n[오류] {msg}")
         messagebox.showerror("오류", f"처리 중 오류가 발생했습니다:\n{msg}")
+
+    def _on_ppt_failure(self, msg):
+        """최종 PPT 파일이 생성되지 않은 경우 전용 처리. "완료"로 보이지 않도록
+        상태 문구와 오류 대화상자 제목을 명확히 "PPT 생성 실패"로 표시한다."""
+        self.run_btn.configure(state="normal", text="새 자료 만들기")
+        self.status_label.configure(text="PPT 생성 실패")
+        self._log(f"\n[PPT 생성 실패] {msg}")
+        messagebox.showerror("PPT 생성 실패", f"최종 PPT 생성에 실패했습니다.\n\n{msg}")
 
     def _open_result(self):
         if self.result and self.result.get("pptx") and os.path.exists(self.result["pptx"]):

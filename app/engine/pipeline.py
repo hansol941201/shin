@@ -34,6 +34,12 @@ from app.validator.validator import validate_and_fix
 
 PIPELINE_NAME = "run_pipeline_v2"
 
+
+class PptGenerationFailedError(RuntimeError):
+    """최종 PPTX 파일이 실제로 생성되지 않았을 때(예외 없이 조용히 끝났더라도) 던진다.
+    GUI는 이 예외를 받으면 "완료"가 아니라 "PPT 생성 실패"로 명확히 표시해야 한다."""
+    pass
+
 STAGES_V2 = [
     "PPT 분석 중", "이미지 추출 중", "문구 분석 중", "기존 정보 제거 중",
     "사진 분류 중", "사진·문구 관계 분석 중", "스토리 구성 중",
@@ -243,150 +249,202 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
     cover_image = images_by_id.get(cover_id) if cover_id else None
     ba_pairs = cs.build_before_after_cases(all_images, max_cases=10)
 
-    # ---------- 7. 스토리 구성 (품질 미달 시 조건을 바꿔 재구성, 최대 3회) ----------
-    _report(progress_cb, STAGES_V2[6])
-    attempt = 0
-    settings = {}
-    quality_report = None
-    pages = None
+    # 이 시점 이후 예외가 발생하면 "어느 단계에서 종료됐는지"를 처리로그 마지막 줄에
+    # 반드시 남긴다. current_stage는 각 단계 진입 시 갱신한다.
     out_pptx = os.path.join(output_dir, f"{safe_name}_{work_type}_입주민설명자료.pptx")
-    while attempt < 3:
-        attempt += 1
-        for img in all_images:
-            img.selected = False
-            img.selected_slide = None
-            img.caption_is_original = False
-        for img in site_images:
-            img.selected = False
-            img.selected_slide = None
-        used_ids = set()
-        pages = build_pages(apartment_name, work_type, groups, content_library, ba_pairs,
-                              cover_image, used_ids, images_by_id, settings=settings,
-                              site_photos=site_images)
-        _log(logs, f"[시도 {attempt}] 스토리 구성 완료 - 총 {len(pages)}페이지 (설정: {settings or '기본값'})")
-
-        generate_pptx_v2(pages, images_by_id, out_pptx)
-        report = validate_and_fix(out_pptx, blacklist, apartment_name)
-
-        used_original_phrases = {b for p in pages for b in p.get("bullets", [])}
-        quality_report = qmod.compute_quality(all_images, pages, content_library,
-                                                used_original_phrases, report)
-        _log(logs, f"[시도 {attempt}] 품질 점수: {quality_report.total}/100 "
-                   f"({'PASS' if quality_report.passed else 'FAIL'})")
-        if quality_report.passed or attempt >= 3:
-            break
-        _log(logs, f"[시도 {attempt}] 기준 미달 사유: {', '.join(quality_report.fail_reasons)}")
-        settings = _adjust_settings_for_retry(settings, quality_report, content_library, logs)
-
-    _report(progress_cb, STAGES_V2[7])
-
-    # ---------- 8. 검수 (최종본 재검수) ----------
-    _report(progress_cb, STAGES_V2[8])
-    final_validation = validate_and_fix(out_pptx, blacklist, apartment_name)
-
-    # ---------- 9. 품질 평가 결과 + 원본 인벤토리 저장 ----------
-    _report(progress_cb, STAGES_V2[9])
-    debug_dir = os.path.join(output_dir, f"{safe_name}_중간산출물")
-    os.makedirs(debug_dir, exist_ok=True)
-    dd.dump_image_extraction_folder(all_images, debug_dir)
-    inv.dump_source_slides_csv(all_slides, os.path.join(debug_dir, "source_slides.csv"))
-    inv.dump_source_images_csv(all_images, os.path.join(debug_dir, "source_images.csv"))
-    inv.dump_source_texts_csv(text_candidates, relationships, os.path.join(debug_dir, "source_texts.csv"))
-    inv.dump_image_text_relationships_csv(relationships,
-                                            os.path.join(debug_dir, "image_text_relationships.csv"))
-    inv.dump_unused_content_csv(all_images, text_candidates, os.path.join(debug_dir, "unused_content.csv"))
-    inv.dump_content_groups_json(groups_to_json(groups), os.path.join(debug_dir, "content_groups.json"))
-    inv.dump_slide_content_mapping_csv(pages, os.path.join(debug_dir, "slide_content_mapping.csv"))
-    # 요청된 정확한 파일명(v1 호환) 별도 생성
-    dd.dump_image_classification_csv(all_images, os.path.join(debug_dir, "이미지분류.csv"))
-    dd.dump_extracted_text_csv(text_candidates, os.path.join(debug_dir, "extracted_text.csv"))
-
-    quality_json_path = os.path.join(output_dir, f"{safe_name}_품질평가.json")
-    with open(quality_json_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "total": quality_report.total, "passed": quality_report.passed,
-            "scores": quality_report.scores, "metrics": quality_report.metrics,
-            "fail_reasons": quality_report.fail_reasons, "attempts": attempt,
-        }, f, ensure_ascii=False, indent=2)
-    with open(os.path.join(debug_dir, "품질점수.txt"), "w", encoding="utf-8") as f:
-        f.write(qmod.report_text(quality_report))
-
-    # ---------- 10. 시각 검증 ----------
-    _report(progress_cb, STAGES_V2[10])
-    pdf_path = convert_to_pdf(out_pptx, output_dir)
-    contact_sheet_path, slide_png_paths = (None, [])
-    visual = None
-    if pdf_path:
-        wanted_pdf = os.path.join(output_dir, f"{safe_name}_{work_type}_입주민설명자료.pdf")
-        if pdf_path != wanted_pdf:
-            os.replace(pdf_path, wanted_pdf)
-            pdf_path = wanted_pdf
-        render_dir = os.path.join(debug_dir, "슬라이드렌더링")
-        os.makedirs(render_dir, exist_ok=True)
-        contact_sheet_path, slide_png_paths = rc.render_slides_and_contact_sheet(pdf_path, render_dir, safe_name)
-        visual = rc.visual_validation(out_pptx)
-        rc.dump_visual_validation_json(visual, os.path.join(debug_dir, "visual_validation.json"))
-        _log(logs, f"시각 검증 완료 - contact_sheet: {contact_sheet_path}")
-
-        wanted_contact_sheet = os.path.join(output_dir, f"{safe_name}_contact_sheet.png")
-        if contact_sheet_path and os.path.exists(contact_sheet_path):
-            import shutil
-            shutil.copy2(contact_sheet_path, wanted_contact_sheet)
-            contact_sheet_path = wanted_contact_sheet
-    else:
-        _log(logs, "LibreOffice를 찾을 수 없어 PDF/시각 검증을 건너뛰었습니다.")
-
-    inserted_count = sum(s["picture_count"] for s in visual["slides"]) if visual else \
-        sum(1 for i in all_images if i.selected)
-    total_ab = len(a_list) + len(b_list)
-    _log(logs, f"[집계] 최종 페이지 수: {len(pages) - 1}")
-    _log(logs, f"[집계] 실제 PPT 삽입 이미지 수(재오픈 검증): {inserted_count}장")
-    _log(logs, f"[집계] 사진 활용률(A+B 대비): "
-               f"{inserted_count/total_ab*100 if total_ab else 100:.1f}%")
-    a_selected = sum(1 for i in a_list if i.selected)
-    _log(logs, f"[집계] A등급 활용률: {a_selected}/{len(a_list)} "
-               f"({a_selected/len(a_list)*100 if a_list else 100:.1f}%)")
-    _log(logs, f"[집계] 원본 문구 활용률: {quality_report.metrics.get('text_utilization', 0)*100:.1f}%")
-    _log(logs, f"[집계] 최종 품질 점수: {quality_report.total}/100 ({'PASS' if quality_report.passed else 'FAIL'}) "
-               f"- 총 {attempt}회 시도")
-
-    report_path = os.path.join(output_dir, f"{safe_name}_검수결과.txt")
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(final_validation.as_text())
-        f.write("\n\n")
-        f.write(qmod.report_text(quality_report))
-
     log_path = os.path.join(output_dir, f"{safe_name}_처리로그.txt")
-    with open(log_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(logs))
+    current_stage = "스토리 구성/PPT 생성"
 
-    _report(progress_cb, STAGES_V2[11])
+    def _write_log_now(final_line: str = None):
+        """예외가 나든 정상 완료되든, 지금까지의 로그를 즉시 파일로 남긴다.
+        이렇게 해야 실패 시에도 처리로그.txt가 항상 존재하고, 마지막 줄에
+        어느 단계에서 멈췄는지가 남는다."""
+        lines = list(logs)
+        if final_line:
+            lines.append(final_line)
+        try:
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+        except Exception:
+            pass
 
-    warnings = list(quality_report.fail_reasons)
-    if c_list:
-        warnings.append(f"민감정보/중복/저해상도로 제외된 사진 {len(c_list)}장 "
-                          f"(상세: {debug_dir}/unused_content.csv)")
+    try:
+        # ---------- 7. 스토리 구성 (품질 미달 시 조건을 바꿔 재구성, 최대 3회) ----------
+        _report(progress_cb, STAGES_V2[6])
+        attempt = 0
+        settings = {}
+        quality_report = None
+        pages = None
+        while attempt < 3:
+            attempt += 1
+            current_stage = f"스토리 구성/PPT 생성(시도 {attempt})"
+            for img in all_images:
+                img.selected = False
+                img.selected_slide = None
+                img.caption_is_original = False
+            for img in site_images:
+                img.selected = False
+                img.selected_slide = None
+            used_ids = set()
+            pages = build_pages(apartment_name, work_type, groups, content_library, ba_pairs,
+                                  cover_image, used_ids, images_by_id, settings=settings,
+                                  site_photos=site_images)
+            _log(logs, f"[시도 {attempt}] 스토리 구성 완료 - 총 {len(pages)}페이지 (설정: {settings or '기본값'})")
 
-    return {
-        "pptx": out_pptx,
-        "pdf": pdf_path,
-        "preview_png": contact_sheet_path,
-        "log": log_path,
-        "validation_report": report_path,
-        "quality_json": quality_json_path,
-        "debug_dir": debug_dir,
-        "inserted_image_count": inserted_count,
-        "total_usable_image_count": total_ab,
-        "a_grade_count": len(a_list),
-        "b_grade_count": len(b_list),
-        "c_grade_count": len(c_list),
-        "quality_score": quality_report.total,
-        "quality_passed": quality_report.passed,
-        "attempts": attempt,
-        "warnings": warnings,
-        "validation": final_validation,
-        "temp_dir": temp_root,
-        "page_count": len(pages) - 1,
-        "pipeline": PIPELINE_NAME,
-        "commit": commit,
-    }
+            generate_pptx_v2(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
+
+            current_stage = f"검수(시도 {attempt})"
+            report = validate_and_fix(out_pptx, blacklist, apartment_name)
+
+            current_stage = f"품질 평가(시도 {attempt})"
+            used_original_phrases = {b for p in pages for b in p.get("bullets", [])}
+            quality_report = qmod.compute_quality(all_images, pages, content_library,
+                                                    used_original_phrases, report)
+            _log(logs, f"[시도 {attempt}] 품질 점수: {quality_report.total}/100 "
+                       f"({'PASS' if quality_report.passed else 'FAIL'})")
+            # 품질 FAIL이어도 이미 생성된 PPTX는 그대로 저장해 둔다(재시도는 "새로
+            # 생성"이지 "저장을 막는 것"이 아니다) - 최종 저장 여부는 파일 존재로만 판단한다.
+            if quality_report.passed or attempt >= 3:
+                break
+            _log(logs, f"[시도 {attempt}] 기준 미달 사유: {', '.join(quality_report.fail_reasons)}")
+            settings = _adjust_settings_for_retry(settings, quality_report, content_library, logs)
+
+        _report(progress_cb, STAGES_V2[7])
+
+        # ---------- 8. 검수 (최종본 재검수) ----------
+        current_stage = "최종 검수"
+        _report(progress_cb, STAGES_V2[8])
+        final_validation = validate_and_fix(out_pptx, blacklist, apartment_name)
+
+        # ---------- 9. 품질 평가 결과 + 원본 인벤토리 저장 ----------
+        current_stage = "품질평가/인벤토리 저장"
+        _report(progress_cb, STAGES_V2[9])
+        debug_dir = os.path.join(output_dir, f"{safe_name}_중간산출물")
+        os.makedirs(debug_dir, exist_ok=True)
+        dd.dump_image_extraction_folder(all_images, debug_dir)
+        inv.dump_source_slides_csv(all_slides, os.path.join(debug_dir, "source_slides.csv"))
+        inv.dump_source_images_csv(all_images, os.path.join(debug_dir, "source_images.csv"))
+        inv.dump_source_texts_csv(text_candidates, relationships, os.path.join(debug_dir, "source_texts.csv"))
+        inv.dump_image_text_relationships_csv(relationships,
+                                                os.path.join(debug_dir, "image_text_relationships.csv"))
+        inv.dump_unused_content_csv(all_images, text_candidates, os.path.join(debug_dir, "unused_content.csv"))
+        inv.dump_content_groups_json(groups_to_json(groups), os.path.join(debug_dir, "content_groups.json"))
+        inv.dump_slide_content_mapping_csv(pages, os.path.join(debug_dir, "slide_content_mapping.csv"))
+        # 요청된 정확한 파일명(v1 호환) 별도 생성
+        dd.dump_image_classification_csv(all_images, os.path.join(debug_dir, "이미지분류.csv"))
+        dd.dump_extracted_text_csv(text_candidates, os.path.join(debug_dir, "extracted_text.csv"))
+
+        quality_json_path = os.path.join(output_dir, f"{safe_name}_품질평가.json")
+        with open(quality_json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "total": quality_report.total, "passed": quality_report.passed,
+                "scores": quality_report.scores, "metrics": quality_report.metrics,
+                "fail_reasons": quality_report.fail_reasons, "attempts": attempt,
+            }, f, ensure_ascii=False, indent=2)
+        with open(os.path.join(debug_dir, "품질점수.txt"), "w", encoding="utf-8") as f:
+            f.write(qmod.report_text(quality_report))
+
+        # ---------- 10. 시각 검증 ----------
+        current_stage = "PDF/시각 검증"
+        _report(progress_cb, STAGES_V2[10])
+        pdf_path = convert_to_pdf(out_pptx, output_dir)
+        contact_sheet_path, slide_png_paths = (None, [])
+        visual = None
+        if pdf_path:
+            wanted_pdf = os.path.join(output_dir, f"{safe_name}_{work_type}_입주민설명자료.pdf")
+            if pdf_path != wanted_pdf:
+                os.replace(pdf_path, wanted_pdf)
+                pdf_path = wanted_pdf
+            render_dir = os.path.join(debug_dir, "슬라이드렌더링")
+            os.makedirs(render_dir, exist_ok=True)
+            contact_sheet_path, slide_png_paths = rc.render_slides_and_contact_sheet(pdf_path, render_dir, safe_name)
+            visual = rc.visual_validation(out_pptx)
+            rc.dump_visual_validation_json(visual, os.path.join(debug_dir, "visual_validation.json"))
+            _log(logs, f"시각 검증 완료 - contact_sheet: {contact_sheet_path}")
+
+            wanted_contact_sheet = os.path.join(output_dir, f"{safe_name}_contact_sheet.png")
+            if contact_sheet_path and os.path.exists(contact_sheet_path):
+                import shutil
+                shutil.copy2(contact_sheet_path, wanted_contact_sheet)
+                contact_sheet_path = wanted_contact_sheet
+        else:
+            _log(logs, "LibreOffice를 찾을 수 없어 PDF/시각 검증을 건너뛰었습니다.")
+
+        current_stage = "결과 취합 및 로그 저장"
+        inserted_count = sum(s["picture_count"] for s in visual["slides"]) if visual else \
+            sum(1 for i in all_images if i.selected)
+        total_ab = len(a_list) + len(b_list)
+        _log(logs, f"[집계] 최종 페이지 수: {len(pages) - 1}")
+        _log(logs, f"[집계] 실제 PPT 삽입 이미지 수(재오픈 검증): {inserted_count}장")
+        _log(logs, f"[집계] 사진 활용률(A+B 대비): "
+                   f"{inserted_count/total_ab*100 if total_ab else 100:.1f}%")
+        a_selected = sum(1 for i in a_list if i.selected)
+        _log(logs, f"[집계] A등급 활용률: {a_selected}/{len(a_list)} "
+                   f"({a_selected/len(a_list)*100 if a_list else 100:.1f}%)")
+        _log(logs, f"[집계] 원본 문구 활용률: {quality_report.metrics.get('text_utilization', 0)*100:.1f}%")
+        _log(logs, f"[집계] 최종 품질 점수: {quality_report.total}/100 ({'PASS' if quality_report.passed else 'FAIL'}) "
+                   f"- 총 {attempt}회 시도")
+
+        report_path = os.path.join(output_dir, f"{safe_name}_검수결과.txt")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(final_validation.as_text())
+            f.write("\n\n")
+            f.write(qmod.report_text(quality_report))
+
+        # ---------- 최종 확인: "저장했다고 믿는" 대신 실제 파일 존재/크기를 확인한다.
+        # 여기서 실패하면 절대 "정상 완료"로 반환하지 않는다.
+        pptx_exists = os.path.exists(out_pptx)
+        pptx_size = os.path.getsize(out_pptx) if pptx_exists else 0
+        _log(logs, f"[최종 확인] 최종 PPT 존재 여부={pptx_exists}, 경로={out_pptx}, 크기={pptx_size:,} bytes")
+        if not pptx_exists or pptx_size == 0:
+            current_stage = "최종 PPT 존재 확인"
+            _write_log_now(f"[파이프라인] 종료 단계: {current_stage} 실패 - 최종 PPT 파일이 존재하지 않음")
+            raise PptGenerationFailedError(
+                f"파이프라인의 모든 단계는 완료됐지만 최종 PPT 파일이 존재하지 않습니다: {out_pptx}\n"
+                f"(다른 프로그램이 파일을 옮기거나 삭제했을 수 있습니다. 처리 로그: {log_path})"
+            )
+
+        _write_log_now("[파이프라인] 종료 단계: 완료(정상) - 최종 PPT 확인됨 "
+                        f"(경로={out_pptx}, 크기={pptx_size:,} bytes)")
+
+        _report(progress_cb, STAGES_V2[11])
+
+        warnings = list(quality_report.fail_reasons)
+        if c_list:
+            warnings.append(f"민감정보/중복/저해상도로 제외된 사진 {len(c_list)}장 "
+                              f"(상세: {debug_dir}/unused_content.csv)")
+
+        return {
+            "pptx": out_pptx,
+            "pdf": pdf_path,
+            "preview_png": contact_sheet_path,
+            "log": log_path,
+            "validation_report": report_path,
+            "quality_json": quality_json_path,
+            "debug_dir": debug_dir,
+            "inserted_image_count": inserted_count,
+            "total_usable_image_count": total_ab,
+            "a_grade_count": len(a_list),
+            "b_grade_count": len(b_list),
+            "c_grade_count": len(c_list),
+            "quality_score": quality_report.total,
+            "quality_passed": quality_report.passed,
+            "attempts": attempt,
+            "warnings": warnings,
+            "validation": final_validation,
+            "temp_dir": temp_root,
+            "page_count": len(pages) - 1,
+            "pipeline": PIPELINE_NAME,
+            "commit": commit,
+        }
+    except PptGenerationFailedError:
+        raise
+    except Exception as e:
+        _log(logs, f"[오류] 파이프라인이 '{current_stage}' 단계에서 예외로 종료되었습니다: "
+                   f"{type(e).__name__}: {e}")
+        _write_log_now(f"[파이프라인] 종료 단계: {current_stage} (예외 발생: {type(e).__name__})")
+        raise PptGenerationFailedError(
+            f"'{current_stage}' 단계에서 오류가 발생해 PPT 생성이 실패했습니다.\n"
+            f"  - 오류 내용: {type(e).__name__}: {e}\n"
+            f"  - 처리 로그: {log_path}"
+        ) from e
