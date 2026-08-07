@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from app.main import STAGES, run_pipeline
 from app.utils.config import WORK_TYPES
+from app.utils.input_validation import validate_input_paths
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -273,6 +274,17 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
             return
         if not (MIN_FILES <= len(self.selected_files) <= MAX_FILES):
             messagebox.showwarning("입력 확인", f"기존 PPT 파일을 {MIN_FILES}~{MAX_FILES}개 선택해주세요.")
+            return
+
+        # 파이프라인을 시작하기 전에 먼저 파일 존재/형식을 확인해서, 처리 도중
+        # 알아보기 어려운 오류로 죽는 대신 즉시 명확한 안내를 준다.
+        try:
+            validate_input_paths(self.selected_files)
+        except FileNotFoundError:
+            messagebox.showerror("파일 오류", "선택한 PPT 파일을 찾을 수 없습니다. 다시 선택해주세요.")
+            return
+        except ValueError as e:
+            messagebox.showerror("파일 오류", str(e))
             return
 
         self.run_btn.configure(state="disabled", text="처리 중...")

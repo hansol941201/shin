@@ -9,7 +9,6 @@ import datetime
 import json
 import os
 import subprocess
-import tempfile
 from typing import Callable, List, Optional
 
 from app.anonymizer.anonymizer import build_blacklist, evaluate_image
@@ -28,6 +27,8 @@ from app.image_classifier.classifier import classify_all, dedupe_images, detect_
 from app.image_extractor.extractor import extract_images
 from app.ppt_parser.parser import make_workcopy, parse_presentation
 from app.utils import debug_dump as dd
+from app.utils.input_validation import inspect_file, resolve_input_file, validate_input_paths
+from app.utils.paths import make_session_temp_dir
 from app.utils.pdf_tools import convert_to_pdf
 from app.validator.validator import validate_and_fix
 
@@ -110,12 +111,21 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
         raise ValueError("새 아파트명을 입력해야 합니다.")
     if len(input_paths) < 2 or len(input_paths) > 3:
         raise ValueError("기존 PPT 파일은 2개 또는 3개를 입력해야 합니다.")
+
+    # 파이프라인 시작 전에 각 입력 파일을 먼저 검사한다(존재/파일여부/크기/확장자).
+    # 여기서 걸러지지 않으면 python-pptx가 나중에 알아보기 어려운 형태로 실패한다
+    # (예: 구형 .ppt를 열려다 나는 "Package not found").
+    validate_input_paths(input_paths)
     for p in input_paths:
-        if not os.path.exists(p):
-            raise FileNotFoundError(f"파일을 찾을 수 없습니다: {p}")
+        info = inspect_file(p)
+        _log(logs, f"[집계] 입력 파일 확인 - {os.path.basename(p)}: "
+                   f"확장자={info['ext']}, 크기={info['size_bytes']:,} bytes, 경로={info['path']}")
 
     os.makedirs(output_dir, exist_ok=True)
-    temp_root = tempfile.mkdtemp(prefix="auto_material_")
+    # 시스템 전역 TEMP(사용자 PC 환경에 따라 예상 밖의 위치를 가리킬 수 있음, 예:
+    # ESTsoft\CreatorTemp)에 의존하지 않고 프로그램 자체 temp/ 폴더를 사용한다.
+    temp_root = make_session_temp_dir()
+    _log(logs, f"[집계] 작업 임시 폴더(프로그램 자체 temp/): {temp_root}")
     safe_name = "".join(c for c in apartment_name if c not in '\\/:*?"<>|').strip() or "새아파트"
 
     # ---------- 1. PPT 분석 ----------
@@ -124,13 +134,26 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
     for i, path in enumerate(input_paths):
         label = f"입력파일{i+1}"
         source_files.append(label)
-        work_copy = make_workcopy(path, temp_root)
-        slides, texts, prs = parse_presentation(work_copy, label)
+
+        # 원본 절대경로는 절대 수정하지 않는다. 구형 .ppt는 여기서 .pptx로 변환을
+        # 시도하고(LibreOffice 필요), 변환 결과물은 파이프라인 전용 임시 폴더에 둔다.
+        resolved_path, converted = resolve_input_file(path, temp_root, logs=logs)
+
+        try:
+            work_copy = make_workcopy(resolved_path, temp_root)
+            slides, texts, prs = parse_presentation(work_copy, label)
+        except Exception as e:
+            raise ValueError(
+                f"'{os.path.basename(path)}' 파일을 열 수 없습니다. PowerPoint(.pptx) 형식이 "
+                f"맞는지, 파일이 손상되지 않았는지 확인 후 다시 시도해주세요. "
+                f"(원본 오류: {type(e).__name__}: {e})"
+            ) from e
+
         all_slides.extend(slides)
         all_texts.extend(texts)
         prs_objects.append((label, prs))
         _log(logs, f"[집계] {label}({os.path.basename(path)}) 슬라이드 수: {len(slides)}장, "
-                   f"텍스트 조각: {len(texts)}건")
+                   f"텍스트 조각: {len(texts)}건{' (.ppt -> .pptx 자동 변환됨)' if converted else ''}")
 
     # ---------- 2. 이미지 추출 ----------
     _report(progress_cb, STAGES_V2[1])
