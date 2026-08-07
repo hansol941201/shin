@@ -4,13 +4,19 @@ Generator3: PowerPoint 템플릿 엔진 기반 렌더러(신규 아키텍처의 
 
 역할 분리 원칙: "디자인 = 사람이 제작(templates/*.pptx), 콘텐츠 배치 = AI".
 이 파일은 새로운 도형/색상/레이아웃을 코드로 그리지 않는다. story.py가 만든
-pages(콘텐츠)를 보고 페이지 목적에 맞는 카테고리의 실제 PowerPoint 템플릿
-파일을 template_engine에서 고른 뒤, placeholder_engine으로 {{PLACEHOLDER}}만
-채우고, pptx_clone으로 그 슬라이드를 최종 출력 Presentation에 그대로 복제한다.
+pages(콘텐츠)를 보고 페이지 목적 + 콘텐츠 개수(사진/카드/스텝 수)에 맞는 실제
+PowerPoint 템플릿 파일을 template_engine에서 고른 뒤, placeholder_engine으로
+{{PLACEHOLDER}}만 채우고, pptx_clone으로 그 슬라이드를 최종 출력 Presentation에
+그대로 복제한다.
 
-아직 해당 카테고리 템플릿이 없거나(예: 두 사례 비교) 페이지 콘텐츠 양이
-템플릿 슬롯 수를 넘는 경우에는 generator2.py의 기존 코드 렌더러로 안전하게
-대체(fallback)한다 - 이렇게 하면 templates/ 폴더에 새 템플릿 파일만 추가해도
+[2026-08 디자인 개편] 하나의 카테고리 폴더(예: templates/process/) 안에 콘텐츠
+개수별로 서로 다른 실제 구성(3/4/5/6 STEP, 대표사진형/2분할형/3카드형 등)의
+템플릿이 여러 개 들어있으므로, 파일명 접두어로 "이 페이지 콘텐츠 개수에 정확히
+맞는 템플릿"만 후보로 좁힌 뒤 고른다(무작위로아무 파일이나 고르지 않음).
+
+아직 해당 콘텐츠 개수에 맞는 템플릿이 없거나 콘텐츠 양이 가장 큰 템플릿의
+슬롯 수도 넘는 경우에는 generator2.py의 기존 코드 렌더러로 안전하게 대체
+(fallback)한다 - 이렇게 하면 templates/ 폴더에 새 템플릿 파일만 추가해도
 점진적으로 템플릿 기반 렌더링 비중이 늘어나고, 코드 수정이 필요 없다.
 """
 import os
@@ -20,9 +26,11 @@ from app.engine import generator2 as g2
 from app.engine.placeholder_engine import fill_template
 from app.engine.pptx_clone import clone_slide_into
 from app.engine.render_utils import new_presentation
-from app.engine.template_engine import has_templates, pick_template
+from app.engine.template_engine import list_templates
 
-STEP_TEMPLATE_BY_COUNT = {4: "process_4step", 5: "process_5step"}
+STEP_CATEGORY_BY_COUNT = {3: "process_3step", 4: "process_4step", 5: "process_5step", 6: "process_6step"}
+DEFECT_CATEGORY_BY_COUNT = {1: "defect_hero", 2: "defect_split", 3: "defect_3card"}
+REPAIR_CATEGORY_BY_COUNT = {2: "repair_2point", 3: "repair_3point", 4: "repair_4point"}
 
 
 def _path_or_none(im) -> Optional[str]:
@@ -37,15 +45,22 @@ def _build_cover(page) -> (Dict[str, str], Dict[str, str]):
 
 
 def _build_site_photos(page):
+    """사진 장수에 따라 1장/2장/3~5장 중 정확히 맞는 카테고리를 고른다(장수가
+    다른 템플릿에 억지로 끼워 맞추지 않음)."""
     images = page.get("images", [])
-    if len(images) > 3:
-        return None  # 템플릿 슬롯(3장)을 넘으면 generator2 폴백(사진을 억지로 자르지 않음)
+    n = len(images)
+    if n == 1:
+        category = "site_photo_1"
+    elif n == 2:
+        category = "site_photo_2"
+    elif 3 <= n <= 5:
+        category = "site_photo_multi"
+    else:
+        return None
     guidance = (page.get("bullets") or [""])[0]
     text_map = {"PAGE_TITLE": page.get("title", ""), "GUIDANCE": guidance}
-    photo_map = {}
-    for i, im in enumerate(images):
-        photo_map[f"PHOTO_{i+1}"] = im.path
-    return text_map, photo_map
+    photo_map = {f"PHOTO_{i+1}": im.path for i, im in enumerate(images)}
+    return category, text_map, photo_map
 
 
 def _build_need(page):
@@ -55,48 +70,67 @@ def _build_need(page):
     text_map = {"PAGE_TITLE": page.get("title", "")}
     for i, b in enumerate(bullets):
         text_map[f"DESC_{i+1}"] = b
-    photos = [lead] + support if lead else list(support)
-    photo_map = {}
-    for i, im in enumerate(photos[:3]):
-        photo_map[f"PHOTO_{i+1}"] = _path_or_none(im)
+    photo_map = {"PHOTO_1": _path_or_none(lead)}
     return text_map, photo_map
 
 
-def _build_card_grid(page, max_cards: int):
+def _build_defect(page):
     cards = page.get("cards", [])
-    if not cards or len(cards) > max_cards:
+    n = len(cards)
+    category = DEFECT_CATEGORY_BY_COUNT.get(n)
+    if not category:
         return None
     text_map = {"PAGE_TITLE": page.get("title", "")}
     photo_map = {}
     for i, c in enumerate(cards):
-        n = i + 1
-        text_map[f"TITLE_{n}"] = c.get("label", "")
-        text_map[f"DESC_{n}"] = c.get("caption", "")
-        img = c.get("image")
-        photo_map[f"PHOTO_{n}"] = _path_or_none(img)
-    return text_map, photo_map
+        k = i + 1
+        text_map[f"TITLE_{k}"] = c.get("label", "")
+        text_map[f"DESC_{k}"] = c.get("caption", "")
+        photo_map[f"PHOTO_{k}"] = _path_or_none(c.get("image"))
+    return category, text_map, photo_map
 
 
-def _build_method(page):
+def _build_card_grid(page, category_by_count: Dict[int, str], max_cards: int):
+    """공법 특징/사용 자재처럼 그리드형 카드 페이지. 실제 카드 수가 그리드
+    슬롯 수보다 적어도(예: 4칸 템플릿에 3장) 남는 칸은 그냥 여백으로 남는다
+    (플레이스홀더 그룹째 제거 - 프리미엄 브로슈어는 여백도 디자인 요소)."""
+    cards = page.get("cards", [])
+    n = len(cards)
+    if n == 0 or n > max_cards:
+        return None
+    category = next((c for count, c in sorted(category_by_count.items()) if n <= count), None)
+    if not category:
+        return None
+    text_map = {"PAGE_TITLE": page.get("title", "")}
+    photo_map = {}
+    for i, c in enumerate(cards):
+        k = i + 1
+        text_map[f"TITLE_{k}"] = c.get("label", "")
+        text_map[f"DESC_{k}"] = c.get("caption", "")
+        photo_map[f"PHOTO_{k}"] = _path_or_none(c.get("image"))
+    return category, text_map, photo_map
+
+
+def _build_repair(page):
     points = page.get("points") or []
-    if not points or len(points) > 3:
+    n = len(points)
+    category = REPAIR_CATEGORY_BY_COUNT.get(n)
+    if not category:
         return None
     lead = page.get("lead_image")
-    support = (page.get("support_images") or [])[:2]
     text_map = {"PAGE_TITLE": page.get("title", "")}
     for i, p in enumerate(points):
         text_map[f"TITLE_{i+1}"] = p.get("title", "")
         text_map[f"DESC_{i+1}"] = p.get("desc", "")
     photo_map = {"PHOTO_1": _path_or_none(lead)}
-    for i, im in enumerate(support):
-        photo_map[f"PHOTO_{i+2}"] = _path_or_none(im)
-    return text_map, photo_map
+    return category, text_map, photo_map
 
 
 def _build_process(page):
     steps = page.get("steps", [])
     n = len(steps)
-    if n not in STEP_TEMPLATE_BY_COUNT:
+    category = STEP_CATEGORY_BY_COUNT.get(n)
+    if not category:
         return None
     text_map = {"PAGE_TITLE": page.get("title", "")}
     photo_map = {}
@@ -105,10 +139,10 @@ def _build_process(page):
         text_map[f"STEP_{i}"] = st.get("label", "")
         text_map[f"STEP_DESC_{i}"] = st.get("desc", "")
         photo_map[f"PHOTO_{i}"] = _path_or_none(st.get("image"))
-    return STEP_TEMPLATE_BY_COUNT[n], text_map, photo_map
+    return category, text_map, photo_map
 
 
-def _build_before_after(page, images_by_id: Dict[str, object]):
+def _build_before_after_1case(page, images_by_id: Dict[str, object]):
     pair = page.get("pair")
     if not pair:
         return None
@@ -117,6 +151,23 @@ def _build_before_after(page, images_by_id: Dict[str, object]):
     bullets = page.get("bullets") or []
     text_map = {"PAGE_TITLE": page.get("title", ""), "DESC_1": bullets[0] if bullets else ""}
     photo_map = {"PHOTO_BEFORE": _path_or_none(before), "PHOTO_AFTER": _path_or_none(after)}
+    return text_map, photo_map
+
+
+def _build_before_after_2case(page, images_by_id: Dict[str, object]):
+    cases = (page.get("cases") or [])[:2]
+    if not cases:
+        return None
+    text_map = {"PAGE_TITLE": page.get("title", "")}
+    photo_map = {}
+    for i, c in enumerate(cases):
+        k = i + 1
+        pair = c["pair"]
+        before = images_by_id.get(pair.before_image_id)
+        after = images_by_id.get(pair.after_image_id)
+        text_map[f"DESC_{k}"] = c.get("note", "")
+        photo_map[f"PHOTO_BEFORE_{k}"] = _path_or_none(before)
+        photo_map[f"PHOTO_AFTER_{k}"] = _path_or_none(after)
     return text_map, photo_map
 
 
@@ -133,11 +184,12 @@ def _build_effects(page):
 def _build_closing(page):
     img = page["images"][0] if page.get("images") else None
     bullets = (page.get("bullets") or [])[:2]
+    category = "closing_with_photo" if img else "closing_no_photo"
     text_map = {"PAGE_TITLE": page.get("title", "")}
     for i, b in enumerate(bullets):
         text_map[f"DESC_{i+1}"] = b
     photo_map = {"PHOTO_1": _path_or_none(img)} if img else {}
-    return text_map, photo_map
+    return category, text_map, photo_map
 
 
 def _fallback_slide(page, page_no, images_by_id):
@@ -158,64 +210,75 @@ def _fallback_slide(page, page_no, images_by_id):
 
 
 def _template_fill_args(page, images_by_id):
-    """페이지 종류에 맞는 (카테고리, text_map, photo_map)을 만든다. 이 페이지
-    종류에 아직 템플릿이 없거나 콘텐츠가 템플릿 슬롯 수를 넘으면 None을 반환해
-    폴백을 유도한다."""
+    """페이지 종류/콘텐츠 개수에 정확히 맞는 (카테고리, text_map, photo_map)을
+    만든다. 맞는 템플릿이 없으면 None을 반환해 폴백을 유도한다."""
     t = page["type"]
     if t == "cover":
         text_map, photo_map = _build_cover(page)
         return "cover", text_map, photo_map
     if t == "site_photos":
-        built = _build_site_photos(page)
-        return ("site_photos",) + built if built else None
+        return _build_site_photos(page)
     if t == "reason":
-        return ("reason",) + _build_need(page)
+        return ("need",) + _build_need(page)
     if t == "defect":
-        built = _build_card_grid(page, max_cards=4)
-        return ("defect",) + built if built else None
+        return _build_defect(page)
     if t == "method_reason":
-        built = _build_method(page)
-        return ("method_reason",) + built if built else None
+        return _build_repair(page)
     if t == "features":
-        built = _build_card_grid(page, max_cards=3)
-        return ("features",) + built if built else None
+        built = _build_card_grid(page, {3: "feature_3card", 4: "feature_4card"}, max_cards=4)
+        return built
     if t == "material":
-        built = _build_card_grid(page, max_cards=3)
-        return ("material",) + built if built else None
+        built = _build_card_grid(page, {4: "material_4card"}, max_cards=4)
+        return built
     if t == "process":
-        built = _build_process(page)
-        if not built:
-            return None
-        step_cat, text_map, photo_map = built
-        return (step_cat, text_map, photo_map)
+        return _build_process(page)
     if t == "case" and page.get("semantic_type") == "before_after":
-        built = _build_before_after(page, images_by_id)
-        return ("case", *built) if built else None
+        built = _build_before_after_1case(page, images_by_id)
+        return ("before_after_1case", *built) if built else None
+    if t == "case" and page.get("semantic_type") == "two_case_compare":
+        built = _build_before_after_2case(page, images_by_id)
+        return ("before_after_2case", *built) if built else None
     if t == "effects":
-        return ("effects",) + _build_effects(page)
+        return ("effect",) + _build_effects(page)
     if t == "closing":
-        return ("closing",) + _build_closing(page)
+        return _build_closing(page)
     return None
 
 
-# template_engine의 CATEGORY_FOLDERS는 story.py의 semantic_type 기준이라 process를
-# 세부적으로 구분하지 못한다. generator3는 카테고리를 직접 폴더명으로 다룬다.
+# template_engine의 CATEGORY_FOLDERS는 story.py의 semantic_type 기준이라 콘텐츠
+# 개수별 세부 카테고리(예: process_4step)를 다루지 못한다. generator3는 세부
+# 카테고리 -> 실제 폴더명을 직접 매핑하고, 폴더 안에서는 파일명이 카테고리
+# 이름으로 시작하는 파일만 후보로 삼는다(같은 폴더에 여러 콘텐츠-개수용
+# 템플릿이 섞여 있어도 정확히 맞는 것만 고르기 위함).
 CATEGORY_FOLDER_OVERRIDE = {
-    "cover": "cover", "site_photos": "site_photo", "reason": "need", "defect": "defect",
-    "method_reason": "repair", "features": "feature", "material": "material",
-    "process_4step": "process", "process_5step": "process", "case": "before_after",
-    "effects": "effect", "closing": "closing",
+    "cover": "cover",
+    "site_photo_1": "site_photo", "site_photo_2": "site_photo", "site_photo_multi": "site_photo",
+    "need": "need",
+    "defect_hero": "defect", "defect_split": "defect", "defect_3card": "defect",
+    "repair_2point": "repair", "repair_3point": "repair", "repair_4point": "repair",
+    "feature_3card": "feature", "feature_4card": "feature",
+    "material_4card": "material",
+    "process_3step": "process", "process_4step": "process", "process_5step": "process",
+    "process_6step": "process",
+    "before_after_1case": "before_after", "before_after_2case": "before_after",
+    "effect": "effect",
+    "closing_with_photo": "closing", "closing_no_photo": "closing",
 }
 
 
-def _pick_template_for(category: str, prev_by_folder: Dict[str, str]):
+def _pick_template_for(category: str, prev_by_category: Dict[str, str]):
+    """category(콘텐츠 개수까지 반영된 세부 카테고리)와 파일명이 정확히 일치하는
+    접두어를 가진 템플릿만 후보로 삼는다. 후보가 여러 개면 직전에 쓴 것과 다른
+    파일을 우선 선택(연속 반복 방지)."""
     folder = CATEGORY_FOLDER_OVERRIDE.get(category, category)
-    if not has_templates(folder):
+    candidates = [c for c in list_templates(folder) if os.path.basename(c).startswith(category)]
+    if not candidates:
         return None
-    prev = prev_by_folder.get(folder)
-    path = pick_template(folder, prev_path=prev)
-    if path:
-        prev_by_folder[folder] = path
+    prev = prev_by_category.get(category)
+    if prev in candidates and len(candidates) > 1:
+        candidates = [c for c in candidates if c != prev]
+    path = candidates[0]
+    prev_by_category[category] = path
     return path
 
 
@@ -234,7 +297,7 @@ def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_pat
             print(msg, flush=True)
 
     out_prs = new_presentation()
-    prev_by_folder: Dict[str, str] = {}
+    prev_by_category: Dict[str, str] = {}
     page_no = 0
     render_log = []
     template_page_count = 0
@@ -249,7 +312,7 @@ def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_pat
         used_template = None
         if args:
             category, text_map, photo_map = args
-            template_path = _pick_template_for(category, prev_by_folder)
+            template_path = _pick_template_for(category, prev_by_category)
             if template_path:
                 try:
                     filled_prs = fill_template(template_path, text_map, photo_map)
