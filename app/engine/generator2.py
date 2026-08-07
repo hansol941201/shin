@@ -49,14 +49,14 @@ def _grid_geometry(n: int):
     return 3, (n + 2) // 3
 
 
-def _photo_grid(slide, images: List, top, area_h, cols=None, rows=None):
+def _photo_grid(slide, images: List, top, area_h, cols=None, rows=None, show_caption=True):
     n = len(images)
     if n == 0:
         return
     if cols is None or rows is None:
         cols, rows = _grid_geometry(n)
     gap = Mm(4)
-    cap_h = Mm(9)
+    cap_h = Mm(9) if show_caption else Mm(0)
     cell_w = (CONTENT_W - gap * (cols - 1)) / cols
     cell_h = (area_h - gap * (rows - 1)) / rows
     for idx, img in enumerate(images):
@@ -64,17 +64,43 @@ def _photo_grid(slide, images: List, top, area_h, cols=None, rows=None):
         x = MARGIN + Emu(int(cell_w + gap) * c)
         y = top + Emu(int(cell_h + gap) * r)
         add_picture_contain(slide, img.path, x, y, int(cell_w), int(cell_h) - cap_h)
-        cap = img.real_caption or "현장 시공 상태 참고사진"
-        add_text(slide, x, y + int(cell_h) - cap_h, int(cell_w), cap_h, cap,
-                  size=FONT_SIZE_CAPTION, color=COLOR_TEXT_SUB, align=PP_ALIGN.CENTER)
+        if show_caption:
+            cap = img.real_caption or "현장 시공 상태 참고사진"
+            add_text(slide, x, y + int(cell_h) - cap_h, int(cell_w), cap_h, cap,
+                      size=FONT_SIZE_CAPTION, color=COLOR_TEXT_SUB, align=PP_ALIGN.CENTER)
 
 
-def _photo_row(slide, images: List, top, height):
+def _photo_row(slide, images: List, top, height, show_caption=True):
     """가로 한 줄(썸네일 행). support_images 등 보조 사진에 사용."""
     n = len(images)
     if n == 0:
         return
-    _photo_grid(slide, images, top, height, cols=n, rows=1)
+    _photo_grid(slide, images, top, height, cols=n, rows=1, show_caption=show_caption)
+
+
+def _points_panel(slide, points: List[dict], left, top, width, height, heading="핵심 보수 방법"):
+    """"제목 1줄 + 설명 최대 2줄" 형태의 핵심 포인트 목록(최대 4개)을, 항목 수에
+    맞춰 세로 공간을 균등 분배해 그린다 - 텍스트가 겹치거나 잘리지 않도록 항상
+    포인트 개수 기준으로 행 높이를 계산한다(글자를 억지로 줄이지 않음)."""
+    if not points:
+        return
+    pad = Mm(6)
+    y = top + pad
+    if heading:
+        add_text(slide, left + pad, y, width - pad * 2, Mm(9), heading,
+                  size=FONT_SIZE_SECTION_HEAD, color=COLOR_NAVY, bold=True)
+        y += Mm(13)
+    n = len(points)
+    avail_h = height - (y - top) - pad
+    row_h = avail_h / n
+    for i, p in enumerate(points):
+        ry = y + Emu(int(row_h * i))
+        add_rect(slide, left + pad, ry + Mm(1.5), Mm(3), Mm(3), COLOR_GOLD)
+        add_text(slide, left + pad + Mm(7), ry, width - pad * 2 - Mm(7), Mm(8),
+                  f"{i+1}. {p.get('title','')}", size=FONT_SIZE_BODY, color=COLOR_NAVY, bold=True)
+        add_text(slide, left + pad + Mm(7), ry + Mm(9), width - pad * 2 - Mm(7),
+                  Emu(int(row_h - Mm(11))), p.get("desc", ""),
+                  size=FONT_SIZE_CAPTION, color=COLOR_TEXT_BODY)
 
 
 def _bullets_box(slide, bullets: List[str], left, top, width, height, bg=True):
@@ -191,22 +217,27 @@ def render_feature_cards(prs, page, page_no):
 
 
 def render_image_text_split(prs, page, page_no):
-    """보수 방법/공법 핵심: 좌측 대표 시공사진 + 우측 원본 기술 문구, 하단 보조 사진."""
+    """보수 방법/공법 핵심: 좌측 55% 대표 시공사진 크게 + 우측 45% 핵심 포인트
+    2~4개(제목 1줄+설명 최대 2줄) + 하단 보조사진 최대 2장(크게)."""
     slide = blank_slide(prs)
     header(slide, page["title"], page_no)
     top = Mm(27)
-    left_w = Mm(82)
+    left_w = Emu(int(CONTENT_W * 0.55))
     right_w = CONTENT_W - left_w - Mm(6)
     lead = page.get("lead_image")
-    support = page.get("support_images") or []
-    support_h = Mm(42) if support else Mm(0)
+    support = (page.get("support_images") or [])[:2]
+    support_h = Mm(55) if support else Mm(0)
     gap_before_support = Mm(6) if support else Mm(0)
     main_h = SLIDE_HEIGHT - top - Mm(12) - support_h - gap_before_support
     if lead:
         add_picture_contain(slide, lead.path, MARGIN, top, int(left_w), int(main_h))
     rx = MARGIN + left_w + Mm(6)
     add_rect(slide, rx, top, Emu(int(right_w)), int(main_h), COLOR_GRAY_LIGHT)
-    _bullets_box(slide, page.get("bullets", []), rx, top, int(right_w), int(main_h), bg=False)
+    points = page.get("points")
+    if points:
+        _points_panel(slide, points, rx, top, int(right_w), int(main_h))
+    else:
+        _bullets_box(slide, page.get("bullets", []), rx, top, int(right_w), int(main_h), bg=False)
     if support:
         _photo_row(slide, support, top + main_h + gap_before_support, support_h)
     return slide
@@ -348,13 +379,28 @@ def render_closing(prs, page, page_no):
     return slide
 
 
+def _guidance_box(slide, text, left, top, width, height):
+    """현장사진 페이지 하단의 공종별 공통 안내문구(문단형, 불릿 없음)."""
+    if not text:
+        return
+    add_rect(slide, left, top, width, height, COLOR_GRAY_LIGHT)
+    add_rect(slide, left, top, Mm(3), height, COLOR_GOLD)
+    add_text(slide, left + Mm(8), top, width - Mm(14), height, text,
+              size=FONT_SIZE_CAPTION, color=COLOR_TEXT_BODY, anchor=MSO_ANCHOR.MIDDLE)
+
+
 def render_site_photo_gallery(prs, page, page_no):
     """현장사진: 사용자가 추가한 이 아파트의 실제 현장사진. 장수에 따라 배치를
-    바꾸고, 억지로 작게 축소해 한 페이지에 전부 넣지 않는다(크게 보여주는 것이 원칙)."""
+    바꾸고, 억지로 작게 축소해 한 페이지에 전부 넣지 않는다(크게 보여주는 것이 원칙).
+    개별 사진에는 어떤 캡션도 붙이지 않고(AI가 임의로 하자를 판단하지 않음),
+    대신 공종 기준 공통 안내문구 하나를 하단에 표시한다."""
     slide = blank_slide(prs)
     header(slide, page["title"], page_no)
     top = Mm(27)
-    area_h = SLIDE_HEIGHT - top - Mm(12)
+    guidance_text = (page.get("bullets") or [None])[0]
+    guidance_h = Mm(24) if guidance_text else Mm(0)
+    gap_before_guidance = Mm(6) if guidance_text else Mm(0)
+    area_h = SLIDE_HEIGHT - top - Mm(12) - guidance_h - gap_before_guidance
     images = page.get("images", [])
     n = len(images)
     if n == 0:
@@ -369,9 +415,9 @@ def render_site_photo_gallery(prs, page, page_no):
         lead_h = area_h * 0.62
         add_picture_contain(slide, images[0].path, MARGIN, top, int(CONTENT_W), int(lead_h))
         sup_h = area_h - lead_h - Mm(4)
-        _photo_row(slide, images[1:3], top + lead_h + Mm(4), sup_h)
+        _photo_row(slide, images[1:3], top + lead_h + Mm(4), sup_h, show_caption=False)
     elif n == 4:
-        _photo_grid(slide, images, top, area_h, cols=2, rows=2)
+        _photo_grid(slide, images, top, area_h, cols=2, rows=2, show_caption=False)
     else:
         lead_h = area_h * 0.55
         add_picture_contain(slide, images[0].path, MARGIN, top, int(CONTENT_W), int(lead_h))
@@ -379,7 +425,11 @@ def render_site_photo_gallery(prs, page, page_no):
         sup_h = area_h - lead_h - Mm(4)
         cols = min(len(rest), 3) or 1
         rows = (len(rest) + cols - 1) // cols
-        _photo_grid(slide, rest, top + lead_h + Mm(4), sup_h, cols=cols, rows=rows)
+        _photo_grid(slide, rest, top + lead_h + Mm(4), sup_h, cols=cols, rows=rows, show_caption=False)
+
+    if guidance_text:
+        _guidance_box(slide, guidance_text, MARGIN, top + area_h + gap_before_guidance,
+                       CONTENT_W, guidance_h)
     return slide
 
 
@@ -511,19 +561,23 @@ def render_material_cards_minimal(prs, page, page_no):
 
 
 def render_split_right_image(prs, page, page_no):
-    """image_text_split의 좌우 반전판: 문구가 왼쪽, 대표 사진이 오른쪽."""
+    """image_text_split의 좌우 반전판: 핵심 포인트가 왼쪽 45%, 대표 사진이 오른쪽 55%."""
     slide = blank_slide(prs)
     header(slide, page["title"], page_no)
     top = Mm(27)
-    right_w = Mm(82)
+    right_w = Emu(int(CONTENT_W * 0.55))
     left_w = CONTENT_W - right_w - Mm(6)
     lead = page.get("lead_image")
-    support = page.get("support_images") or []
-    support_h = Mm(42) if support else Mm(0)
+    support = (page.get("support_images") or [])[:2]
+    support_h = Mm(55) if support else Mm(0)
     gap_before_support = Mm(6) if support else Mm(0)
     main_h = SLIDE_HEIGHT - top - Mm(12) - support_h - gap_before_support
     add_rect(slide, MARGIN, top, Emu(int(left_w)), int(main_h), COLOR_GRAY_LIGHT)
-    _bullets_box(slide, page.get("bullets", []), MARGIN, top, int(left_w), int(main_h), bg=False)
+    points = page.get("points")
+    if points:
+        _points_panel(slide, points, MARGIN, top, int(left_w), int(main_h))
+    else:
+        _bullets_box(slide, page.get("bullets", []), MARGIN, top, int(left_w), int(main_h), bg=False)
     rx = MARGIN + left_w + Mm(6)
     if lead:
         add_picture_contain(slide, lead.path, rx, top, int(right_w), int(main_h))
@@ -533,22 +587,27 @@ def render_split_right_image(prs, page, page_no):
 
 
 def render_split_diagonal(prs, page, page_no):
-    """대형 이미지 위에 텍스트 카드가 겹쳐 올라간 에디토리얼 스타일 레이아웃."""
+    """대형 이미지 위에 핵심 포인트 카드가 겹쳐 올라간 에디토리얼 스타일 레이아웃."""
     slide = blank_slide(prs)
     header(slide, page["title"], page_no)
     top = Mm(27)
     lead = page.get("lead_image")
-    support = page.get("support_images") or []
-    img_h = Mm(150)
+    support = (page.get("support_images") or [])[:2]
+    img_h = Mm(133)
     if lead:
         add_picture_contain(slide, lead.path, MARGIN, top, int(CONTENT_W), int(img_h))
-    card_top = top + img_h - Mm(20)
+    card_top = top + img_h - Mm(18)
     card_w = Emu(int(CONTENT_W * 0.62))
-    card_h = Mm(70)
+    card_h = Mm(85)
     add_rect(slide, MARGIN, card_top, card_w, card_h, COLOR_WHITE)
     add_rect(slide, MARGIN, card_top, Mm(3), card_h, COLOR_GOLD)
-    _bullets_box(slide, page.get("bullets", []), MARGIN + Mm(6), card_top + Mm(4),
-                  int(CONTENT_W * 0.62) - Mm(10), int(card_h) - Mm(8), bg=False)
+    points = page.get("points")
+    if points:
+        _points_panel(slide, points, MARGIN + Mm(3), card_top, int(CONTENT_W * 0.62) - Mm(3), int(card_h),
+                       heading=None)
+    else:
+        _bullets_box(slide, page.get("bullets", []), MARGIN + Mm(6), card_top + Mm(4),
+                      int(CONTENT_W * 0.62) - Mm(10), int(card_h) - Mm(8), bg=False)
     y = card_top + card_h + Mm(8)
     if support:
         sup_h = SLIDE_HEIGHT - y - Mm(12)

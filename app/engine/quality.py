@@ -120,10 +120,11 @@ def compute_quality(images: List, pages: List[dict], content_library: Dict[str, 
     leaked = any("민감" in m or "잔존" in m for m in getattr(validation_report, "manual_review", []))
     q.scores["sensitive_info"] = 0.0 if leaked else 5.0
 
-    # ---------- 10. 렌더링 품질(레이아웃/텍스트 겹침) (5점) ----------
+    # ---------- 10. 렌더링 품질(레이아웃/텍스트 겹침·잘림·과밀) (5점) ----------
+    overlap_flag = any("겹침" in m for m in getattr(validation_report, "manual_review", []))
     truncation_flag = any("잘림" in m or "확대" in m for m in
                             getattr(validation_report, "manual_review", []))
-    q.scores["render_quality"] = 2.5 if truncation_flag else 5.0
+    q.scores["render_quality"] = 0.0 if overlap_flag else (2.5 if truncation_flag else 5.0)
 
     q.total = round(sum(q.scores.values()), 2)
     q.passed = q.total >= 85.0
@@ -141,6 +142,8 @@ def compute_quality(images: List, pages: List[dict], content_library: Dict[str, 
         q.fail_reasons.append(f"시공 순서 페이지 {process_page_count}장으로 분산됨 (기준 {MAX_PROCESS_PAGES}장 이하)")
     if leaked:
         q.fail_reasons.append("민감정보 잔존 의심")
+    if overlap_flag:
+        q.fail_reasons.append("텍스트 겹침 발생 - 페이지 레이아웃을 확인해야 함")
     generic_hits_check = [b for p in pages for b in p.get("bullets", [])
                            if any(g in b for g in BANNED_GENERIC_PHRASES)]
     if generic_hits_check:

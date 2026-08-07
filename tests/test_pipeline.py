@@ -203,6 +203,14 @@ def test_site_photos_placed_right_after_cover_with_no_diagnosis():
 
     assert any(sh.shape_type == 13 for sh in _walk(slides[1].shapes)), "현장사진 페이지에 사진이 없음"
 
+    # 개별 사진에는 캡션(중립 번호조차)이 없어야 하고, 대신 공종 기준 공통
+    # 안내문구 하나만 표시돼야 한다("현장사진 01" 같은 개별 번호 캡션 금지).
+    all_text = "\n".join(sh.text_frame.text for sh in _walk(slides[1].shapes) if sh.has_text_frame)
+    assert "현장사진 01" not in all_text and "현장사진 02" not in all_text, \
+        "현장사진 페이지에 개별 사진 번호 캡션이 남아있음(제거 대상)"
+    assert "검토" in all_text and "재도장" in all_text, \
+        f"공종 기준 공통 안내문구가 현장사진 페이지에 없음: '{all_text}'"
+
 
 def test_no_site_photos_falls_back_to_original_flow():
     """현장사진을 넣지 않으면 기존 방식(사진1)이 표지 바로 뒤에 오지 않아야 한다."""

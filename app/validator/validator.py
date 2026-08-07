@@ -37,6 +37,42 @@ class ValidationReport:
         return "\n".join(lines)
 
 
+def _rect_overlap_ratio(a, b) -> float:
+    """두 사각형(left, top, width, height, EMU)이 겹치는 비율(작은 쪽 면적 대비)을 반환한다."""
+    ax0, ay0, ax1, ay1 = a[0], a[1], a[0] + a[2], a[1] + a[3]
+    bx0, by0, bx1, by1 = b[0], b[1], b[0] + b[2], b[1] + b[3]
+    iw = max(0, min(ax1, bx1) - max(ax0, bx0))
+    ih = max(0, min(ay1, by1) - max(ay0, by0))
+    inter = iw * ih
+    if inter <= 0:
+        return 0.0
+    area_a, area_b = a[2] * a[3], b[2] * b[3]
+    smaller = min(area_a, area_b)
+    return inter / smaller if smaller > 0 else 0.0
+
+
+def _check_text_overlaps(prs) -> int:
+    """슬라이드별로 텍스트가 있는 도형끼리 겹치는지 검사한다(레이아웃 계산
+    실수로 두 텍스트 상자가 서로 겹치는 실제 버그를 잡기 위함). 겹침 비율이
+    25%를 넘는 쌍을 카운트한다."""
+    overlap_count = 0
+    for slide in prs.slides:
+        boxes = []
+        for shape in _iter_all_shapes(slide.shapes):
+            try:
+                if shape.has_text_frame and shape.text_frame.text.strip():
+                    if shape.left is None or shape.top is None or shape.width is None or shape.height is None:
+                        continue
+                    boxes.append((shape.left, shape.top, shape.width, shape.height))
+            except Exception:
+                pass
+        for i in range(len(boxes)):
+            for j in range(i + 1, len(boxes)):
+                if _rect_overlap_ratio(boxes[i], boxes[j]) > 0.25:
+                    overlap_count += 1
+    return overlap_count
+
+
 def _iter_all_shapes(shapes):
     for shape in shapes:
         yield shape
@@ -159,6 +195,14 @@ def validate_and_fix(pptx_path: str, blacklist: Blacklist, new_apartment_name: s
             report.passed.append("마지막 페이지에 회사 정보가 포함되어 있지 않습니다.")
     except Exception:
         pass
+
+    # 텍스트 상자 겹침 검사(레이아웃 계산 버그로 두 텍스트가 서로 겹쳐 보이는지)
+    overlap_count = _check_text_overlaps(prs)
+    if overlap_count:
+        report.manual_review.append(
+            f"텍스트 겹침 의심 {overlap_count}건이 발견되었습니다 - 페이지 레이아웃을 확인해주세요.")
+    else:
+        report.passed.append("텍스트 상자 겹침이 발견되지 않았습니다.")
 
     if modified:
         prs.save(pptx_path)

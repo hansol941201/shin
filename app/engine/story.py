@@ -17,7 +17,9 @@ feature_cards/process_timeline/before_after/two_case_compare/effects_hero/closin
 from typing import Dict, List
 
 from app.engine.captions import apply_captions
-from app.utils.config import CATEGORY_FALLBACK_CAPTION, PROCESS_MASTER_SEQUENCE
+from app.utils.config import (
+    CATEGORY_FALLBACK_CAPTION, PROCESS_MASTER_SEQUENCE, SITE_PHOTO_GUIDANCE_BY_WORK_TYPE,
+)
 
 CATEGORY_TO_STEP = {
     "세척_작업": "고압 세척", "바탕_정리": "바탕 정리", "균열_보수": "균열 보수 및 퍼티 작업",
@@ -35,6 +37,12 @@ DEFECT_LABELS = {
 # 공법 핵심(4페이지: 균열보수/퍼티/바탕정리/세척 등 "보수 방법"에 해당하는 초기 공정)에
 # 우선 배정할 카테고리. 나머지 공정 카테고리는 뒤의 "시공 순서" 섹션에서 다룬다.
 METHOD_CORE_CATEGORIES = {"균열_보수", "퍼티_작업", "바탕_정리", "세척_작업"}
+# "주요 보수 방법" 페이지의 핵심 포인트 제목(카테고리별 짧은 명사형) + 표시 순서
+METHOD_POINT_LABELS = {
+    "세척_작업": "고압 세척", "바탕_정리": "바탕면 정리",
+    "균열_보수": "균열부 보수", "퍼티_작업": "표면 정리 및 퍼티 작업",
+}
+METHOD_POINT_ORDER = ["세척_작업", "바탕_정리", "균열_보수", "퍼티_작업"]
 
 DEFAULT_SETTINGS = {
     "max_total_pages": 14,
@@ -149,21 +157,23 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
         used_ids.add(cover_image.id)
 
     # ---------- 1-1. 현장사진 (site_photo_gallery: 사용자가 추가한 "이 아파트"의 실제
-    #            현장사진, 최대 3페이지. AI가 사진을 보고 하자/공법을 판단하지 않으며,
-    #            캡션은 중립적인 번호("현장사진 01")만 사용한다) ----------
+    #            현장사진, 최대 3페이지. 개별 사진을 AI가 분석해 균열/누수/박리 등
+    #            특정 하자를 단정하는 캡션은 절대 만들지 않는다. 대신 사용자가 이미
+    #            선택한 공종을 기준으로 한 공통 안내문구 하나만 페이지에 넣는다) ----------
     if site_photos:
         chunks = _site_photo_chunks(list(site_photos), s["max_site_photo_pages"])
         base_title = f"{apartment_name} 현장사진"
-        idx_no = 0
+        guidance_template = SITE_PHOTO_GUIDANCE_BY_WORK_TYPE.get(
+            work_type, SITE_PHOTO_GUIDANCE_BY_WORK_TYPE["기타"])
+        guidance_text = guidance_template.format(apt=apartment_name)
         for chunk_idx, chunk in enumerate(chunks):
             for im in chunk:
-                idx_no += 1
-                im.real_caption = f"현장사진 {idx_no:02d}"
+                im.real_caption = None  # 개별 사진에는 어떤 캡션도(중립 번호조차) 붙이지 않는다.
             title = base_title if len(chunks) == 1 else f"{base_title} {chunk_idx+1}"
             pages.append({
                 "type": "site_photos", "semantic_type": "site_photo_gallery",
                 "title": unique_title(title),
-                "images": chunk, "bullets": [],
+                "images": chunk, "bullets": [guidance_text],
             })
 
     defect_groups = [g for g in groups if g["family"] == "defect"]
@@ -223,18 +233,49 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
             "cards": defect_cards,
         })
 
-    # ---------- 4. 보수 방법 / 공법 핵심 (image_text_split: 대표 시공사진 + 원본 기술 문구) ----------
+    # ---------- 4. 보수 방법 / 공법 핵심 (image_text_split: 대표 시공사진 + 핵심
+    #            포인트 2~4개. 원본 문구를 그대로 길게 붙이지 않고, 공정 카테고리별로
+    #            "제목 1줄 + 설명 최대 2줄"로 축약한다 - 입주민이 한눈에 이해하도록) ----------
     method_groups = [g for g in process_groups if g["category"] in METHOD_CORE_CATEGORIES]
+    method_groups_by_cat: Dict[str, List[dict]] = {}
+    for g in method_groups:
+        method_groups_by_cat.setdefault(g["category"], []).append(g)
+
+    method_points = []
+    for cat in METHOD_POINT_ORDER:
+        glist = method_groups_by_cat.get(cat)
+        if not glist:
+            continue
+        texts = _group_text_bullets(glist, max_n=1)
+        if texts:
+            desc = _short(texts[0], limit=70)
+        else:
+            rep_img = next((im for g in glist for im in g["images"]), None)
+            desc = _caption_for(rep_img) if rep_img else ""
+        if not desc:
+            continue
+        method_points.append({"title": METHOD_POINT_LABELS.get(cat, cat.replace("_", " ")), "desc": desc})
+        if len(method_points) >= 4:
+            break
+
+    # 카테고리 기반 포인트가 너무 적으면(2개 미만) 일반 공법 설명 문구로 보강한다
+    # (여전히 원본 문구만 사용 - 새로운 사실을 만들지 않음).
+    if len(method_points) < 2:
+        need = 4 - len(method_points)
+        fallback_texts = _dedup_texts(
+            content_library.get("공법_설명", []) + content_library.get("필요성", []), need)
+        for i, t in enumerate(fallback_texts):
+            method_points.append({"title": f"공법 개요 {i+1}", "desc": _short(t, limit=70)})
+
     method_pool = take_unused(_sort_grade([im for g in method_groups for im in g["images"]]),
                                 limit=s["method_images_per_page"])
-    method_bullets = _group_text_bullets(method_groups, max_n=4) or \
-        _dedup_texts(content_library.get("공법_설명", []) + content_library.get("필요성", []), 4)
-    if method_pool and method_bullets:
+    if method_pool and method_points:
         pages.append({
             "type": "method_reason", "semantic_type": "image_text_split",
             "title": unique_title("주요 보수 방법"),
-            "images": method_pool, "bullets": method_bullets,
-            "lead_image": method_pool[0], "support_images": method_pool[1:],
+            "images": method_pool, "bullets": [p["desc"] for p in method_points],
+            "lead_image": method_pool[0], "support_images": method_pool[1:3],
+            "points": method_points,
         })
     else:
         release(method_pool)
@@ -418,6 +459,9 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
                     im.selected = True
                     all_selected.append(im)
 
-    apply_captions(all_selected)
+    # 현장사진(source_type=current_site)은 apply_captions 대상에서 제외한다 - 개별
+    # 사진에 대해 어떤 캡션도(중립적인 자동 생성 문구조차) 붙이지 않기 위함이다.
+    captionable = [im for im in all_selected if getattr(im, "source_type", "reference_ppt") != "current_site"]
+    apply_captions(captionable)
 
     return pages
