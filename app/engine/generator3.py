@@ -202,7 +202,7 @@ def _template_fill_args(page, images_by_id):
 # 세부적으로 구분하지 못한다. generator3는 카테고리를 직접 폴더명으로 다룬다.
 CATEGORY_FOLDER_OVERRIDE = {
     "cover": "cover", "site_photos": "site_photo", "reason": "need", "defect": "defect",
-    "method_reason": "method", "features": "feature", "material": "material",
+    "method_reason": "repair", "features": "feature", "material": "material",
     "process_4step": "process", "process_5step": "process", "case": "before_after",
     "effects": "effect", "closing": "closing",
 }
@@ -220,9 +220,13 @@ def _pick_template_for(category: str, prev_by_folder: Dict[str, str]):
 
 
 def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_path: str,
-                       log_fn=None) -> str:
+                       log_fn=None) -> dict:
     """템플릿 엔진(우선) + generator2 폴백을 함께 사용해 PPTX를 생성한다. 저장
-    직후 반드시 파일이 실제로 존재하고 크기가 0보다 큰지 확인한다."""
+    직후 반드시 파일이 실제로 존재하고 크기가 0보다 큰지 확인한다.
+
+    반환값은 GUI/보고용으로 "실제 몇 페이지가 디자이너 템플릿을 썼고 몇 페이지가
+    코드 폴백을 썼는지"까지 담은 dict다(단순 경로 문자열이 아님) - "템플릿 기반"이
+    실제로 얼마나 지켜졌는지 사용자가 확인할 수 있어야 한다는 원칙에 따른 것."""
     def _log(msg):
         if log_fn:
             log_fn(msg)
@@ -233,6 +237,9 @@ def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_pat
     prev_by_folder: Dict[str, str] = {}
     page_no = 0
     render_log = []
+    template_page_count = 0
+    fallback_page_count = 0
+    used_templates_by_category: Dict[str, str] = {}
 
     for page in pages:
         is_cover = page.get("type") == "cover"
@@ -253,7 +260,11 @@ def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_pat
                     _log(f"[generator3] 템플릿 채우기 실패({template_path}): {e} - generator2 폴백 사용")
                     used_template = None
 
-        if not used_template:
+        if used_template:
+            template_page_count += 1
+            used_templates_by_category[category] = used_template
+        else:
+            fallback_page_count += 1
             src_slide = _fallback_slide(page, page_no, images_by_id)
             clone_slide_into(out_prs, src_slide)
 
@@ -278,7 +289,11 @@ def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_pat
             f"{'template:' + used_template if used_template else 'generator2_fallback'}"
         )
 
+    total_content_pages = template_page_count + fallback_page_count
+    template_ratio = (template_page_count / total_content_pages) if total_content_pages else 0.0
     _log("[generator3] 페이지별 렌더링 방식 선택 결과 - " + " / ".join(render_log))
+    _log(f"[generator3] 템플릿 엔진 사용 현황 - 디자이너 템플릿 {template_page_count}페이지 / "
+         f"코드 폴백 {fallback_page_count}페이지 (템플릿 사용률 {template_ratio*100:.0f}%)")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     _log(f"[generator3] Presentation.save() 호출 직전 - 총 {len(out_prs.slides)}슬라이드, 저장 경로={out_path}")
     out_prs.save(out_path)
@@ -291,4 +306,12 @@ def generate_pptx_v3(pages: List[dict], images_by_id: Dict[str, object], out_pat
             f"PPTX 저장에 실패했습니다(파일이 생성되지 않았거나 비어 있음): {out_path}"
         )
     _log(f"[generator3] PPT 저장 완료 - 경로={out_path}, 파일크기={size:,} bytes")
-    return out_path
+    return {
+        "pptx": out_path,
+        "template_page_count": template_page_count,
+        "fallback_page_count": fallback_page_count,
+        "total_content_pages": total_content_pages,
+        "template_usage_ratio": round(template_ratio, 3),
+        "used_templates_by_category": used_templates_by_category,
+        "render_log": render_log,
+    }

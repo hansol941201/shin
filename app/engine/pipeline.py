@@ -296,8 +296,9 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
             # 사용한다. 아직 템플릿이 없는 카테고리의 페이지는 generate_pptx_v3 내부에서
             # generator2.py 코드 렌더러로 자동 대체되므로, 템플릿이 갖춰지는 대로
             # 점진적으로 템플릿 기반 렌더링 비중이 늘어난다(파이프라인 코드 수정 불필요).
+            template_stats = None
             try:
-                generate_pptx_v3(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
+                template_stats = generate_pptx_v3(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
             except Exception as e:
                 _log(logs, f"[파이프라인] 템플릿 엔진(generator3) 실패({type(e).__name__}: {e}) - "
                            "generator2(코드 렌더러)로 재시도합니다.")
@@ -446,6 +447,7 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
             "page_count": len(pages) - 1,
             "pipeline": PIPELINE_NAME,
             "commit": commit,
+            "template_engine_stats": template_stats,
         }
     except PptGenerationFailedError:
         raise

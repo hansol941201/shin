@@ -20,6 +20,15 @@ from app.engine.captions import apply_captions
 from app.utils.config import (
     CATEGORY_FALLBACK_CAPTION, PROCESS_MASTER_SEQUENCE, SITE_PHOTO_GUIDANCE_BY_WORK_TYPE,
 )
+from app.utils.design_rules import rule
+
+# design_rules.json에서 읽는 구조적 상한값들. 템플릿/코드를 바꾸지 않고 이 설정
+# 파일 값만 바꿔도 페이지 구성이 조정되도록, DEFAULT_SETTINGS의 기본값을 여기서
+# 만든다(개별 실행 시 settings로 재정의도 계속 가능).
+_MAX_TOTAL_PAGES = rule("page_count", "max_total_pages", default=14)
+_MAX_BULLETS_PER_PAGE = rule("content_per_page", "max_bullets_per_page", default=5)
+_MAX_PHOTOS_PER_PAGE = rule("content_per_page", "max_photos_per_page", default=5)
+_MAX_PROCESS_PAGES = rule("content_per_page", "max_process_pages", default=2)
 
 CATEGORY_TO_STEP = {
     "세척_작업": "고압 세척", "바탕_정리": "바탕 정리", "균열_보수": "균열 보수 및 퍼티 작업",
@@ -45,16 +54,18 @@ METHOD_POINT_LABELS = {
 METHOD_POINT_ORDER = ["세척_작업", "바탕_정리", "균열_보수", "퍼티_작업"]
 
 DEFAULT_SETTINGS = {
-    "max_total_pages": 14,
+    "max_total_pages": _MAX_TOTAL_PAGES,
     "max_site_photo_pages": 3,      # 현장사진 최대 페이지 수
-    "defect_images_per_page": 4,    # 하자 카드 최대 개수
-    "method_images_per_page": 3,    # 대표 1 + 보조 최대 2
-    "feature_images_cap": 4,        # 특징 카드 최대 개수
-    "material_images_cap": 4,       # 사용 재료 카드 최대 개수
-    "process_images_per_page": 4,   # 시공 순서 타임라인 한 페이지 최대 단계 수
-    "process_pages_cap": 2,
+    "defect_images_per_page": min(4, _MAX_PHOTOS_PER_PAGE),    # 하자 카드 최대 개수
+    "method_images_per_page": min(3, _MAX_PHOTOS_PER_PAGE),    # 대표 1 + 보조 최대 2
+    "feature_images_cap": min(4, _MAX_PHOTOS_PER_PAGE),        # 특징 카드 최대 개수
+    "material_images_cap": min(4, _MAX_PHOTOS_PER_PAGE),       # 사용 재료 카드 최대 개수
+    "process_images_per_page": min(4, _MAX_PHOTOS_PER_PAGE),   # 시공 순서 타임라인 한 페이지 최대 단계 수
+    "process_pages_cap": _MAX_PROCESS_PAGES,
     "case_pairs_cap": 2,            # 시공 전후 사례 최대 개수(첫 1개는 전체화면, 나머지는 압축 비교)
     "min_bullets_per_page": 1,      # 본문 페이지 최소 문구 수(없으면 페이지 자체를 생략)
+    "max_bullets_per_page": _MAX_BULLETS_PER_PAGE,  # design_rules.json 기준(한 페이지 최대 문구 수)
+    "max_photos_per_page": _MAX_PHOTOS_PER_PAGE,    # design_rules.json 기준(한 페이지 최대 사진 수)
 }
 
 
@@ -101,12 +112,12 @@ def _caption_for(im, fallback: str = "") -> str:
     return _short(fallback) if fallback else ""
 
 
-def _site_photo_chunks(photos: List, max_pages: int) -> List[List]:
-    """현장사진을 페이지 단위로 나눈다. 6장 이하면 한 페이지(레이아웃 함수가 장수에
-    따라 내부적으로 배치를 바꾼다), 7장 이상이면 페이지당 6장씩 최대 max_pages까지."""
-    if len(photos) <= 6:
+def _site_photo_chunks(photos: List, max_pages: int, per_page: int = _MAX_PHOTOS_PER_PAGE) -> List[List]:
+    """현장사진을 페이지 단위로 나눈다. design_rules.json의 페이지당 최대 사진
+    수(per_page)를 넘지 않도록 나누고, 페이지 수는 max_pages까지만 만든다."""
+    if len(photos) <= per_page:
         return [photos] if photos else []
-    chunks = [photos[i:i + 6] for i in range(0, len(photos), 6)]
+    chunks = [photos[i:i + per_page] for i in range(0, len(photos), per_page)]
     return chunks[:max_pages]
 
 
@@ -161,7 +172,7 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     #            특정 하자를 단정하는 캡션은 절대 만들지 않는다. 대신 사용자가 이미
     #            선택한 공종을 기준으로 한 공통 안내문구 하나만 페이지에 넣는다) ----------
     if site_photos:
-        chunks = _site_photo_chunks(list(site_photos), s["max_site_photo_pages"])
+        chunks = _site_photo_chunks(list(site_photos), s["max_site_photo_pages"], s["max_photos_per_page"])
         base_title = f"{apartment_name} 현장사진"
         guidance_template = SITE_PHOTO_GUIDANCE_BY_WORK_TYPE.get(
             work_type, SITE_PHOTO_GUIDANCE_BY_WORK_TYPE["기타"])

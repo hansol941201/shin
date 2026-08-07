@@ -537,6 +537,16 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self._log(f"PPTX: {result['pptx']}")
         if result.get("pdf"):
             self._log(f"PDF: {result['pdf']}")
+        # "디자인 = 사람이 만든 템플릿, 콘텐츠 배치 = AI" 원칙이 실제로 얼마나
+        # 지켜졌는지 사용자가 바로 확인할 수 있도록, 템플릿 엔진 사용 현황을 보여준다.
+        stats = result.get("template_engine_stats")
+        if stats:
+            self._log(f"\n템플릿 엔진 사용: 전체 {stats['total_content_pages']}페이지 중 "
+                       f"{stats['template_page_count']}페이지가 디자이너 제작 PowerPoint 템플릿을 사용했습니다 "
+                       f"(사용률 {stats['template_usage_ratio']*100:.0f}%).")
+            if stats.get("fallback_page_count"):
+                self._log(f"  - 아직 전용 템플릿이 없는 {stats['fallback_page_count']}페이지는 "
+                          "기존 자동 레이아웃으로 대체 생성되었습니다.")
         if result.get("warnings"):
             self._log("\n[확인이 필요한 항목]")
             for w in result["warnings"]:

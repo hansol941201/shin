@@ -187,7 +187,7 @@ def build_method_a():
     sup_w = Emu(int((CONTENT_W - Mm(4)) / 2))
     _photo_ph(slide, "PHOTO_2", MARGIN, sup_top, sup_w, support_h)
     _photo_ph(slide, "PHOTO_3", MARGIN + sup_w + Mm(4), sup_top, sup_w, support_h)
-    return _save(prs, "method", "method_3point_A.pptx")
+    return _save(prs, "repair", "repair_3point_A.pptx")
 
 
 # ------------------------------------------------------------------

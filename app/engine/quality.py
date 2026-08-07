@@ -11,9 +11,15 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 from app.utils.config import BANNED_GENERIC_PHRASES
+from app.utils.design_rules import rule
 
-MAX_TOTAL_PAGES = 14
-MAX_PROCESS_PAGES = 2
+# design_rules.json에서 읽는다(템플릿/코드를 바꾸지 않고 이 파일 값만 바꿔도
+# 전체 결과물 품질 기준을 조정할 수 있도록 하기 위함). 파일이 없거나 손상돼도
+# 내장 기본값으로 동작한다.
+MAX_TOTAL_PAGES = rule("page_count", "max_total_pages", default=14)
+MAX_PROCESS_PAGES = rule("content_per_page", "max_process_pages", default=2)
+MAX_BULLETS_PER_PAGE = rule("content_per_page", "max_bullets_per_page", default=5)
+MAX_PHOTOS_PER_PAGE = rule("content_per_page", "max_photos_per_page", default=5)
 
 
 @dataclass
@@ -148,6 +154,33 @@ def compute_quality(images: List, pages: List[dict], content_library: Dict[str, 
                            if any(g in b for g in BANNED_GENERIC_PHRASES)]
     if generic_hits_check:
         q.fail_reasons.append(f"일반 문구(의미 없는 상투어) {len(generic_hits_check)}건")
+
+    # ---------- 11. design_rules.json 구조 규칙(페이지당 문구/사진 상한, 동일 사진 중복 금지) ----------
+    def _photo_count(p) -> int:
+        if p.get("cases"):
+            return sum(2 + len(c["pair"].process_image_ids or []) for c in p["cases"])
+        if p.get("pair"):
+            return 2 + len(p["pair"].process_image_ids or [])
+        return len(p.get("images", []))
+
+    over_bullet_pages = [p for p in pages if len(p.get("bullets", [])) > MAX_BULLETS_PER_PAGE]
+    q.metrics["over_bullet_limit_page_count"] = len(over_bullet_pages)
+    if over_bullet_pages:
+        q.fail_reasons.append(
+            f"페이지당 문구 상한({MAX_BULLETS_PER_PAGE}개) 초과 페이지 {len(over_bullet_pages)}장: "
+            f"{', '.join(p['title'] for p in over_bullet_pages)}")
+
+    over_photo_pages = [p for p in pages if _photo_count(p) > MAX_PHOTOS_PER_PAGE]
+    q.metrics["over_photo_limit_page_count"] = len(over_photo_pages)
+    if over_photo_pages:
+        q.fail_reasons.append(
+            f"페이지당 사진 상한({MAX_PHOTOS_PER_PAGE}장) 초과 페이지 {len(over_photo_pages)}장: "
+            f"{', '.join(p['title'] for p in over_photo_pages)}")
+
+    duplicate_photo_flag = any("반복되는 사진" in m for m in getattr(validation_report, "manual_review", []))
+    if duplicate_photo_flag:
+        q.fail_reasons.append("동일하거나 매우 유사한 사진이 여러 페이지에 중복 사용됨(design_rules: "
+                                "no_duplicate_photo_in_deck 위반)")
 
     if q.fail_reasons:
         q.passed = False  # 명시적 실패 조건이 있으면 총점과 무관하게 실패 처리

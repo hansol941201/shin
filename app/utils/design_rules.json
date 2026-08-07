@@ -1,0 +1,36 @@
+{
+  "_설명": "템플릿 파일은 손대지 않고, 이 설정값만 바꿔도 전체 결과물 품질을 조절할 수 있도록 만든 디자인 규칙 파일. Story Engine(페이지 구성)과 Quality Engine(품질 평가/하드 FAIL 판정)이 공통으로 이 파일을 읽는다.",
+
+  "page_count": {
+    "min_total_pages": 8,
+    "recommended_max_pages": 12,
+    "max_total_pages": 14
+  },
+
+  "content_per_page": {
+    "max_bullets_per_page": 5,
+    "max_photos_per_page": 5,
+    "max_process_pages": 2
+  },
+
+  "photo_text_balance": {
+    "_설명": "한 페이지 안에서 사진이 차지해야 할 비중 목표(%). 실제 측정은 렌더링 후 사진 영역 비율로 계산한다.",
+    "photo_area_pct_min": 65,
+    "photo_area_pct_max": 75
+  },
+
+  "layout_rules": {
+    "no_consecutive_same_layout": true,
+    "no_duplicate_photo_in_deck": true,
+    "no_text_overflow": true,
+    "no_photo_distortion": true,
+    "shrink_font_to_fit_forbidden": true,
+    "min_margin_mm": 10
+  },
+
+  "reconstruction_rules": {
+    "_설명": "품질 재시도(retry) 시 story.py가 실제로 조정하는 조건들.",
+    "auto_reconstruct_if_text_exceeds_photo_capacity": true,
+    "trim_text_before_shrinking_font": true
+  }
+}

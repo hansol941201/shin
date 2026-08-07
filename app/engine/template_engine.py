@@ -32,7 +32,7 @@ CATEGORY_FOLDERS = {
     "site_photos": "site_photo",
     "reason": "need",
     "defect": "defect",
-    "method_reason": "method",
+    "method_reason": "repair",
     "features": "feature",
     "material": "material",
     "process": "process",
