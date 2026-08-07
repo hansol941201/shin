@@ -79,8 +79,9 @@ def logs_dir() -> str:
 def default_output_dir() -> str:
     """GUI 기본 출력 폴더. os.getcwd()는 EXE가 어디서 실행됐는지에 따라 예상 밖의
     위치(백신 샌드박스 등)일 수 있으므로 사용하지 않는다. 항상 사용자 문서 폴더
-    아래에 고정 폴더를 사용한다."""
+    아래 Documents\\자동화자료취합\\Output 에 고정한다(출력 폴더 입력란이 비어있을
+    때 자동으로 이 경로를 만들어 사용)."""
     docs = os.path.join(os.path.expanduser("~"), "Documents")
     base = docs if os.path.isdir(docs) else os.path.expanduser("~")
-    path = os.path.join(base, f"{APP_DIR_NAME}_결과")
+    path = os.path.join(base, "자동화자료취합", "Output")
     return path

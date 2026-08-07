@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 자동화 자료취합 - 데스크톱 GUI (CustomTkinter 기반)
-대기업 사내 업무도구 톤의 절제된 디자인: 흰 배경 + 짙은 남색 포인트, 작은 창, 얇은 테두리.
+
+[재설계 - 2026-08] "Windows 11 기본 프로그램"처럼 단순하고 깔끔하게 보이는 것이
+목표다. 개발툴처럼 보이면 안 된다: 회색 박스/불필요한 테두리를 걷어내고, 여백을
+넉넉히 주고, 파일 목록은 파일명만 짧게 보여주며, 하단의 "새 자료 만들기" 버튼은
+창 크기와 무관하게 항상 화면 안에 고정된다(중간 콘텐츠만 스크롤).
 Windows 10/11에서 Python 없이도 동작하도록 PyInstaller로 패키징하는 것을 전제로 한다.
 """
 import os
@@ -35,22 +39,22 @@ except Exception:
 ctk.set_appearance_mode("light")
 
 # ------------------------------------------------------------------
-# 절제된 디자인 토큰
+# Windows 11 느낌의 절제된 디자인 토큰: 흰 배경 + 남색 버튼, 회색 박스/불필요한 선 제거
 # ------------------------------------------------------------------
 FONT_FAMILY = "맑은 고딕"
 COLOR_NAVY = "#12233F"
 COLOR_NAVY_HOVER = "#1C355C"
-COLOR_BORDER = "#D9DCE1"
+COLOR_BORDER = "#E4E6EA"
 COLOR_TEXT = "#1F2430"
 COLOR_SUBTEXT = "#7A8090"
 COLOR_BG = "#FFFFFF"
-COLOR_FIELD_BG = "#FFFFFF"
-COLOR_TRACK = "#EEF0F3"
+COLOR_HOVER = "#F4F5F7"
 
 MAX_FILES = 3
 MIN_FILES = 2
+MAX_SITE_PHOTOS = 10
 
-WIN_W, WIN_H = 560, 650
+WIN_W, WIN_H = 520, 620
 
 
 def _f(size, weight="normal"):
@@ -66,7 +70,7 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         except Exception:
             self.configure(bg=COLOR_BG)
         self._center(WIN_W, WIN_H)
-        self.minsize(480, 560)
+        self.resizable(False, False)
 
         self.selected_files = []       # 화면 표시용: 사용자가 실제로 선택한 원본 경로
         self.selected_work_paths = []  # 실제 처리용: 선택 즉시 안전한 작업폴더로 복사한 경로
@@ -88,171 +92,203 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
     # ------------------------------------------------------------------
     def _section_label(self, parent, text):
-        return ctk.CTkLabel(parent, text=text, font=_f(12), text_color=COLOR_SUBTEXT, anchor="w")
+        return ctk.CTkLabel(parent, text=text, font=_f(12, "bold"), text_color=COLOR_TEXT, anchor="w")
+
+    def _hint_label(self, parent, text):
+        return ctk.CTkLabel(parent, text=text, font=_f(11), text_color=COLOR_SUBTEXT, anchor="w")
 
     def _entry(self, parent, placeholder="", height=36):
         return ctk.CTkEntry(
-            parent, placeholder_text=placeholder, height=height, corner_radius=4,
-            border_width=1, border_color=COLOR_BORDER, fg_color=COLOR_FIELD_BG,
+            parent, placeholder_text=placeholder, height=height, corner_radius=8,
+            border_width=1, border_color=COLOR_BORDER, fg_color=COLOR_BG,
             text_color=COLOR_TEXT, font=_f(13),
         )
 
-    def _secondary_button(self, parent, text, command, width=80, height=30):
+    def _secondary_button(self, parent, text, command, width=96, height=30):
         return ctk.CTkButton(
             parent, text=text, command=command, width=width, height=height,
-            corner_radius=4, fg_color="transparent", hover_color=COLOR_TRACK,
+            corner_radius=8, fg_color="transparent", hover_color=COLOR_HOVER,
             border_width=1, border_color=COLOR_BORDER, text_color=COLOR_NAVY,
             font=_f(12),
         )
 
     def _build_ui(self):
-        outer = ctk.CTkFrame(self, fg_color=COLOR_BG)
-        outer.pack(fill="both", expand=True, padx=20, pady=16)
+        # ---------- 하단 고정: 실행 버튼(창 크기와 무관하게 항상 화면 안에 고정) ----------
+        bottom = ctk.CTkFrame(self, fg_color=COLOR_BG)
+        bottom.pack(fill="x", side="bottom", padx=20, pady=16)
+        self.run_btn = ctk.CTkButton(
+            bottom, text="새 자료 만들기", height=44, corner_radius=10,
+            fg_color=COLOR_NAVY, hover_color=COLOR_NAVY_HOVER, text_color="white",
+            font=_f(14, "bold"), command=self._on_run,
+        )
+        self.run_btn.pack(fill="x")
 
-        # ---------- 상단: 제목 + 짧은 설명 + 빌드 버전 ----------
-        title_row = ctk.CTkFrame(outer, fg_color=COLOR_BG)
+        # ---------- 중간: 스크롤 가능한 본문(내용이 많아져도 하단 버튼을 밀어내지 않음) ----------
+        body = ctk.CTkScrollableFrame(self, fg_color=COLOR_BG, scrollbar_button_color=COLOR_BORDER,
+                                        scrollbar_button_hover_color=COLOR_SUBTEXT)
+        body.pack(fill="both", expand=True, padx=20, pady=(16, 0))
+
+        # ---------- 제목 + 부제 + 빌드 버전 ----------
+        title_row = ctk.CTkFrame(body, fg_color=COLOR_BG)
         title_row.pack(fill="x")
         ctk.CTkLabel(title_row, text="자동화 자료취합",
-                     font=_f(19, "bold"), text_color=COLOR_TEXT, anchor="w").pack(side="left")
-        ctk.CTkLabel(title_row, text=f"빌드 버전: {self.build_commit}", font=_f(10),
-                     text_color=COLOR_SUBTEXT, anchor="e").pack(side="right", pady=(6, 0))
-        ctk.CTkLabel(outer, text="기존 PPT 2~3개의 사진과 문구를 분석하여 새로운 자료로 재구성합니다.",
-                     font=_f(11), text_color=COLOR_SUBTEXT, anchor="w").pack(fill="x", pady=(2, 14))
+                     font=_f(20, "bold"), text_color=COLOR_TEXT, anchor="w").pack(side="left")
+        ctk.CTkLabel(title_row, text=f"v.{self.build_commit}", font=_f(10),
+                     text_color=COLOR_SUBTEXT, anchor="e").pack(side="right", pady=(8, 0))
+        self._hint_label(body, "기존 PPT 2~3개를 분석하여 새로운 입주민 설명자료를 자동 생성합니다.").pack(
+            fill="x", pady=(2, 20))
 
-        # ---------- 새 아파트명 / 공종 ----------
-        self._section_label(outer, "새 아파트명").pack(fill="x")
-        self.apt_entry = self._entry(outer, "예) 은하수아파트")
-        self.apt_entry.pack(fill="x", pady=(4, 10))
+        # ---------- 새 아파트명 ----------
+        self._section_label(body, "새 아파트명").pack(fill="x")
+        self.apt_entry = self._entry(body, "예) 은하수아파트")
+        self.apt_entry.pack(fill="x", pady=(6, 16))
 
-        self._section_label(outer, "공종").pack(fill="x")
+        # ---------- 공종 ----------
+        self._section_label(body, "공종").pack(fill="x")
         self.work_var = ctk.StringVar(value=WORK_TYPES[0])
         self.work_menu = ctk.CTkOptionMenu(
-            outer, values=WORK_TYPES, variable=self.work_var, height=36, corner_radius=4,
-            fg_color=COLOR_FIELD_BG, button_color=COLOR_FIELD_BG, button_hover_color=COLOR_TRACK,
+            body, values=WORK_TYPES, variable=self.work_var, height=36, corner_radius=8,
+            fg_color=COLOR_BG, button_color=COLOR_BG, button_hover_color=COLOR_HOVER,
             text_color=COLOR_TEXT, dropdown_fg_color=COLOR_BG, dropdown_text_color=COLOR_TEXT,
-            dropdown_hover_color=COLOR_TRACK, font=_f(13), dropdown_font=_f(12),
+            dropdown_hover_color=COLOR_HOVER, font=_f(13), dropdown_font=_f(12),
         )
-        self.work_menu.pack(fill="x", pady=(4, 14))
+        self.work_menu.pack(fill="x", pady=(6, 20))
 
-        # ---------- PPT 파일 영역 ----------
-        self._section_label(outer, f"기존 PPT 파일 ({MIN_FILES}~{MAX_FILES}개)").pack(fill="x")
+        self._divider(body)
 
-        self.drop_area = ctk.CTkFrame(
-            outer, height=64, corner_radius=6, fg_color=COLOR_BG,
-            border_width=1, border_color=COLOR_BORDER,
-        )
-        self.drop_area.pack(fill="x", pady=(4, 4))
-        self.drop_area.pack_propagate(False)
-        dnd_hint = "PPT 파일 2~3개를 끌어놓거나 파일을 선택하세요."
-        self.drop_hint = ctk.CTkLabel(self.drop_area, text=dnd_hint, font=_f(11),
-                                        text_color=COLOR_SUBTEXT)
-        self.drop_hint.place(relx=0.5, rely=0.38, anchor="center")
-        self._select_btn = self._secondary_button(self.drop_area, "파일 선택", self._add_files, width=84, height=26)
-        self._select_btn.place(relx=0.5, rely=0.75, anchor="center")
+        # ---------- ① 기존 PPT 추가 ----------
+        row = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        row.pack(fill="x", pady=(16, 2))
+        self._section_label(row, "① 기존 PPT 추가 (2~3개)").pack(side="left")
+        self.file_count_label = self._hint_label(row, "")
+        self.file_count_label.pack(side="right")
+        ppt_btn_row = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        ppt_btn_row.pack(fill="x", pady=(4, 4))
+        self._secondary_button(ppt_btn_row, "파일 선택", self._add_files, width=100, height=30).pack(side="left")
         if _DND_AVAILABLE:
-            self.drop_area.drop_target_register(DND_FILES)
-            self.drop_area.dnd_bind("<<Drop>>", self._on_drop)
+            self._hint_label(ppt_btn_row, "  또는 파일을 창에 끌어놓으세요").pack(side="left")
 
-        self.file_list_frame = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        self.file_list_frame.pack(fill="x", pady=(4, 14))
+        self.file_list_frame = ctk.CTkScrollableFrame(
+            body, fg_color=COLOR_BG, height=96, corner_radius=8,
+            scrollbar_button_color=COLOR_BORDER, scrollbar_button_hover_color=COLOR_SUBTEXT,
+        )
+        self.file_list_frame.pack(fill="x", pady=(4, 20))
+        if _DND_AVAILABLE:
+            self.drop_target_register(DND_FILES)
+            self.dnd_bind("<<Drop>>", self._on_drop)
 
-        # ---------- 현장사진 영역(선택사항) ----------
-        self._section_label(outer, "현장사진 추가 - 선택사항").pack(fill="x")
-        ctk.CTkLabel(outer, text="해당 아파트의 현재 현장사진이 있다면 추가해주세요. (JPG/JPEG/PNG/WEBP, 여러 장 가능)",
-                     font=_f(11), text_color=COLOR_SUBTEXT, anchor="w", wraplength=WIN_W - 60).pack(
-            fill="x", pady=(2, 4))
-        site_row = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        site_row.pack(fill="x")
-        self._secondary_button(site_row, "사진 선택", self._add_site_photos, width=84, height=28).pack(side="left")
-        self.site_photo_list_frame = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        self.site_photo_list_frame.pack(fill="x", pady=(4, 14))
+        self._divider(body)
 
-        # ---------- 출력 폴더 ----------
-        self._section_label(outer, "출력 폴더").pack(fill="x")
-        out_row = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        out_row.pack(fill="x", pady=(4, 16))
+        # ---------- ② 현장사진 추가(선택) ----------
+        row2 = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        row2.pack(fill="x", pady=(16, 2))
+        self._section_label(row2, "② 현장사진 추가 (선택)").pack(side="left")
+        self.site_photo_count_label = self._hint_label(row2, "")
+        self.site_photo_count_label.pack(side="right")
+        self._hint_label(body, "해당 아파트의 현재 현장사진 (JPG / PNG / WEBP, 최대 10장)").pack(fill="x", pady=(0, 4))
+        site_btn_row = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        site_btn_row.pack(fill="x", pady=(0, 4))
+        self._secondary_button(site_btn_row, "사진 선택", self._add_site_photos, width=100, height=30).pack(side="left")
+
+        self.site_photo_list_frame = ctk.CTkScrollableFrame(
+            body, fg_color=COLOR_BG, height=96, corner_radius=8,
+            scrollbar_button_color=COLOR_BORDER, scrollbar_button_hover_color=COLOR_SUBTEXT,
+        )
+        self.site_photo_list_frame.pack(fill="x", pady=(4, 20))
+
+        self._divider(body)
+
+        # ---------- ③ 출력 폴더 ----------
+        self._section_label(body, "③ 출력 폴더").pack(fill="x", pady=(16, 6))
+        out_row = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        out_row.pack(fill="x", pady=(0, 20))
         self.out_entry = self._entry(out_row, height=34)
         self.out_entry.insert(0, self.output_dir)
         self.out_entry.pack(side="left", fill="x", expand=True)
-        self._secondary_button(out_row, "찾아보기", self._choose_output, width=76, height=34).pack(
+        self._secondary_button(out_row, "찾아보기", self._choose_output, width=80, height=34).pack(
             side="left", padx=(6, 0))
 
+        self._divider(body)
+
         # ---------- 진행 상태 ----------
-        self.progress_bar = ctk.CTkProgressBar(outer, height=7, corner_radius=3,
-                                                 progress_color=COLOR_NAVY, fg_color=COLOR_TRACK)
+        progress_wrap = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        progress_wrap.pack(fill="x", pady=(16, 4))
+        self.progress_bar = ctk.CTkProgressBar(progress_wrap, height=6, corner_radius=3,
+                                                 progress_color=COLOR_NAVY, fg_color=COLOR_HOVER)
         self.progress_bar.set(0)
-        self.progress_bar.pack(fill="x", pady=(0, 4))
-        self.status_label = ctk.CTkLabel(outer, text="대기 중", font=_f(11), text_color=COLOR_SUBTEXT, anchor="w")
-        self.status_label.pack(fill="x")
+        self.progress_bar.pack(fill="x")
+        self.status_label = ctk.CTkLabel(progress_wrap, text="대기 중", font=_f(12),
+                                           text_color=COLOR_SUBTEXT, anchor="w")
+        self.status_label.pack(fill="x", pady=(6, 0))
 
         self.log_toggle_btn = ctk.CTkButton(
-            outer, text="상세 로그 보기 ▾", command=self._toggle_log, width=120, height=22,
-            corner_radius=4, fg_color="transparent", hover_color=COLOR_TRACK,
+            body, text="▼ 상세 로그 보기", command=self._toggle_log, height=22,
+            corner_radius=6, fg_color="transparent", hover_color=COLOR_HOVER,
             border_width=0, text_color=COLOR_SUBTEXT, font=_f(11), anchor="w",
         )
-        self.log_toggle_btn.pack(fill="x", pady=(2, 0))
+        self.log_toggle_btn.pack(fill="x", pady=(4, 0))
 
-        self.log_box = ctk.CTkTextbox(outer, height=140, corner_radius=4, border_width=1,
+        self.log_box = ctk.CTkTextbox(body, height=130, corner_radius=8, border_width=1,
                                         border_color=COLOR_BORDER, font=_f(11))
         self.log_box.configure(state="disabled")
         # 기본 숨김 상태 (pack 하지 않음)
 
         # ---------- 완료 후 버튼 ----------
-        self.post_frame = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        post_row1 = ctk.CTkFrame(self.post_frame, fg_color=COLOR_BG)
-        post_row1.pack(fill="x", pady=(0, 4))
-        post_row2 = ctk.CTkFrame(self.post_frame, fg_color=COLOR_BG)
-        post_row2.pack(fill="x")
-        self.open_result_btn = self._secondary_button(post_row1, "결과 PPT 열기", self._open_result, width=120, height=32)
-        self.open_preview_btn = self._secondary_button(post_row1, "전체 미리보기 열기", self._open_preview, width=140, height=32)
-        self.open_validation_btn = self._secondary_button(post_row2, "검수 결과 열기", self._open_validation, width=120, height=32)
-        self.open_folder_btn = self._secondary_button(post_row2, "저장 폴더 열기", self._open_folder, width=120, height=32)
-        self.retry_btn = self._secondary_button(post_row2, "다시 만들기", self._reset, width=100, height=32)
-        self.open_result_btn.pack(side="left", padx=(0, 6))
-        self.open_preview_btn.pack(side="left")
-        self.open_validation_btn.pack(side="left", padx=(0, 6))
-        self.open_folder_btn.pack(side="left", padx=(0, 6))
-        self.retry_btn.pack(side="left")
-
-        # ---------- 하단: 실행 버튼 ----------
-        bottom = ctk.CTkFrame(outer, fg_color=COLOR_BG)
-        bottom.pack(fill="x", side="bottom", pady=(12, 0))
-        self.run_btn = ctk.CTkButton(
-            bottom, text="새 자료 만들기", height=42, width=180, corner_radius=6,
-            fg_color=COLOR_NAVY, hover_color=COLOR_NAVY_HOVER, text_color="white",
-            font=_f(13, "bold"), command=self._on_run,
-        )
-        self.run_btn.pack(side="right")
+        self.post_frame = ctk.CTkFrame(body, fg_color=COLOR_BG)
+        self.open_result_btn = self._secondary_button(self.post_frame, "결과 PPT 열기", self._open_result,
+                                                          width=150, height=34)
+        self.open_folder_btn = self._secondary_button(self.post_frame, "저장폴더 열기", self._open_folder,
+                                                          width=150, height=34)
+        self.open_result_btn.grid(row=0, column=0, padx=(0, 6), sticky="ew")
+        self.open_folder_btn.grid(row=0, column=1, padx=(6, 0), sticky="ew")
+        self.post_frame.grid_columnconfigure(0, weight=1)
+        self.post_frame.grid_columnconfigure(1, weight=1)
 
         self._refresh_file_list()
+        self._refresh_site_photo_list()
+
+    def _divider(self, parent):
+        ctk.CTkFrame(parent, height=1, fg_color=COLOR_BORDER).pack(fill="x")
 
     # ------------------------------------------------------------------
     def _toggle_log(self):
         self._log_visible = not self._log_visible
         if self._log_visible:
-            self.log_box.pack(fill="both", expand=True, pady=(4, 0), before=self.post_frame if self.post_frame.winfo_ismapped() else None)
-            self.log_toggle_btn.configure(text="상세 로그 보기 ▴")
+            self.log_box.pack(fill="x", pady=(4, 0), after=self.log_toggle_btn)
+            self.log_toggle_btn.configure(text="▲ 상세 로그 보기")
         else:
             self.log_box.pack_forget()
-            self.log_toggle_btn.configure(text="상세 로그 보기 ▾")
+            self.log_toggle_btn.configure(text="▼ 상세 로그 보기")
+
+    def _file_row(self, parent, label, on_remove):
+        row = ctk.CTkFrame(parent, fg_color=COLOR_BG, height=28)
+        row.pack(fill="x", pady=1)
+        row.pack_propagate(False)
+        ctk.CTkLabel(row, text=label, font=_f(12), text_color=COLOR_TEXT,
+                      anchor="w").pack(side="left", fill="x", expand=True)
+        ctk.CTkButton(row, text="✕", width=22, height=22, corner_radius=6,
+                       fg_color="transparent", hover_color=COLOR_HOVER, text_color=COLOR_SUBTEXT,
+                       font=_f(11), command=on_remove).pack(side="right")
 
     def _refresh_file_list(self):
         for w in self.file_list_frame.winfo_children():
             w.destroy()
         for path in self.selected_files:
-            row = ctk.CTkFrame(self.file_list_frame, height=32, corner_radius=4,
-                                 fg_color=COLOR_BG, border_width=1, border_color=COLOR_BORDER)
-            row.pack(fill="x", pady=2)
-            row.pack_propagate(False)
-            label = os.path.basename(path)
+            label = os.path.basename(path)  # 긴 경로 대신 파일명만 표시
             if is_legacy_ppt(path):
-                label += "  (구형 .ppt - 실행 시 자동 변환 시도)"
-            ctk.CTkLabel(row, text=label, font=_f(12), text_color=COLOR_TEXT,
-                          anchor="w").pack(side="left", fill="x", expand=True, padx=(8, 0))
-            ctk.CTkButton(row, text="✕", width=24, height=22, corner_radius=3,
-                           fg_color="transparent", hover_color=COLOR_TRACK, text_color=COLOR_SUBTEXT,
-                           font=_f(11), command=lambda p=path: self._remove_file(p)).pack(side="right", padx=6)
-        # 파일 목록이 많아져도(최대 3개) 창 자체는 커지지 않도록 높이를 고정하지 않고 콘텐츠만큼만 사용
+                label += "  (.ppt - 자동 변환)"
+            self._file_row(self.file_list_frame, label, lambda p=path: self._remove_file(p))
+        n = len(self.selected_files)
+        self.file_count_label.configure(text=f"PPT {n}개 선택됨" if n else "")
+
+    def _refresh_site_photo_list(self):
+        for w in self.site_photo_list_frame.winfo_children():
+            w.destroy()
+        for path in self.site_photo_paths:
+            self._file_row(self.site_photo_list_frame, os.path.basename(path),
+                             lambda p=path: self._remove_site_photo(p))
+        n = len(self.site_photo_paths)
+        self.site_photo_count_label.configure(text=f"현장사진 {n}장 선택됨" if n else "")
 
     def _register_selected_file(self, original_path: str):
         """선택된 파일을 화면 표시용 목록에 더하고, 즉시 프로그램 전용 작업폴더로
@@ -308,25 +344,40 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self.selected_files.append(original_path)
         self.selected_work_paths.append(work_path)
 
-    def _refresh_site_photo_list(self):
-        for w in self.site_photo_list_frame.winfo_children():
-            w.destroy()
-        for path in self.site_photo_paths:
-            row = ctk.CTkFrame(self.site_photo_list_frame, height=30, corner_radius=4,
-                                 fg_color=COLOR_BG, border_width=1, border_color=COLOR_BORDER)
-            row.pack(fill="x", pady=2)
-            row.pack_propagate(False)
-            ctk.CTkLabel(row, text=os.path.basename(path), font=_f(12), text_color=COLOR_TEXT,
-                          anchor="w").pack(side="left", fill="x", expand=True, padx=(8, 0))
-            ctk.CTkButton(row, text="✕", width=24, height=22, corner_radius=3,
-                           fg_color="transparent", hover_color=COLOR_TRACK, text_color=COLOR_SUBTEXT,
-                           font=_f(11), command=lambda p=path: self._remove_site_photo(p)).pack(side="right", padx=6)
+    def _add_files(self):
+        paths = filedialog.askopenfilenames(title="기존 PPT 파일 선택",
+                                             filetypes=[("PowerPoint files", "*.pptx *.ppt")])
+        for p in paths:
+            self._register_selected_file(p)
+        self._refresh_file_list()
+
+    def _on_drop(self, event):
+        raw = self.tk.splitlist(event.data)
+        ppt_added = False
+        for p in raw:
+            low = p.lower()
+            if low.endswith((".pptx", ".ppt")):
+                self._register_selected_file(p)
+                ppt_added = True
+            elif os.path.splitext(low)[1] in SITE_PHOTO_EXTS:
+                self._register_site_photo(p)
+        if ppt_added:
+            self._refresh_file_list()
+        self._refresh_site_photo_list()
+
+    def _remove_file(self, path):
+        if path in self.selected_files:
+            idx = self.selected_files.index(path)
+            del self.selected_files[idx]
+            if idx < len(self.selected_work_paths):
+                del self.selected_work_paths[idx]
+        self._refresh_file_list()
 
     def _register_site_photo(self, original_path: str):
         """현장사진도 PPT 파일과 동일하게 선택 즉시 안전한 작업폴더로 복사한다.
         분류/OCR/익명화는 하지 않는다 - 사용자가 이미 아파트명/공종을 알고 고른
         "이 아파트"의 사진이므로 그대로 보여주기만 하면 된다."""
-        if original_path in self.site_photo_paths:
+        if original_path in self.site_photo_paths or len(self.site_photo_paths) >= MAX_SITE_PHOTOS:
             return
         ext = os.path.splitext(original_path)[1].lower()
         if ext not in SITE_PHOTO_EXTS:
@@ -370,28 +421,6 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
                 del self.site_photo_work_paths[idx]
         self._refresh_site_photo_list()
 
-    def _add_files(self):
-        paths = filedialog.askopenfilenames(title="기존 PPT 파일 선택",
-                                             filetypes=[("PowerPoint files", "*.pptx *.ppt")])
-        for p in paths:
-            self._register_selected_file(p)
-        self._refresh_file_list()
-
-    def _on_drop(self, event):
-        raw = self.tk.splitlist(event.data)
-        for p in raw:
-            if p.lower().endswith((".pptx", ".ppt")):
-                self._register_selected_file(p)
-        self._refresh_file_list()
-
-    def _remove_file(self, path):
-        if path in self.selected_files:
-            idx = self.selected_files.index(path)
-            del self.selected_files[idx]
-            if idx < len(self.selected_work_paths):
-                del self.selected_work_paths[idx]
-        self._refresh_file_list()
-
     def _choose_output(self):
         d = filedialog.askdirectory(title="결과물 저장 폴더 선택")
         if d:
@@ -416,6 +445,10 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         apt = self.apt_entry.get().strip()
         work = self.work_var.get()
         out_dir = self.out_entry.get().strip() or self.output_dir
+        if not out_dir:
+            out_dir = default_output_dir()
+            self.out_entry.delete(0, "end")
+            self.out_entry.insert(0, out_dir)
 
         if not apt:
             messagebox.showwarning("입력 확인", "새 아파트명을 입력해주세요.")
@@ -446,7 +479,7 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
                 messagebox.showerror("현장사진 오류", str(e))
                 return
 
-        self.run_btn.configure(state="disabled", text="처리 중...")
+        self.run_btn.configure(state="disabled", text="생성 중...")
         self.post_frame.pack_forget()
         self.log_box.configure(state="normal")
         self.log_box.delete("1.0", "end")
@@ -469,7 +502,7 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
     def _on_success(self, result):
         self.run_btn.configure(state="normal", text="새 자료 만들기")
-        self.post_frame.pack(fill="x", pady=(8, 0))
+        self.post_frame.pack(fill="x", pady=(12, 0))
         self._log("\n=== 생성 완료 ===")
         self._log(f"PPTX: {result['pptx']}")
         if result.get("pdf"):
@@ -489,19 +522,6 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         if self.result and self.result.get("pptx") and os.path.exists(self.result["pptx"]):
             self._open_path(self.result["pptx"])
 
-    def _open_preview(self):
-        path = self.result.get("preview_png") if self.result else None
-        if path and os.path.exists(path):
-            self._open_path(path)
-        else:
-            messagebox.showinfo("안내", "전체 미리보기 이미지가 생성되지 않았습니다"
-                                          "(LibreOffice 미설치 시 생략됩니다).")
-
-    def _open_validation(self):
-        path = self.result.get("validation_report") if self.result else None
-        if path and os.path.exists(path):
-            self._open_path(path)
-
     def _open_folder(self):
         if self.result and self.result.get("pptx"):
             self._open_path(os.path.dirname(self.result["pptx"]))
@@ -517,19 +537,6 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
                 subprocess.run(["xdg-open", path])
         except Exception as e:
             messagebox.showerror("오류", f"파일을 열 수 없습니다: {e}")
-
-    def _reset(self):
-        self.selected_files = []
-        self.selected_work_paths = []
-        self.selection_logs = []
-        self.site_photo_paths = []
-        self.site_photo_work_paths = []
-        self._refresh_file_list()
-        self._refresh_site_photo_list()
-        self.apt_entry.delete(0, "end")
-        self.progress_bar.set(0)
-        self.status_label.configure(text="대기 중")
-        self.post_frame.pack_forget()
 
 
 def main():
