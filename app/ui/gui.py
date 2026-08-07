@@ -5,10 +5,13 @@
 Windows 10/11에서 Python 없이도 동작하도록 PyInstaller로 패키징하는 것을 전제로 한다.
 """
 import os
+import shutil
 import subprocess
 import sys
 import threading
 import traceback
+import uuid
+import zipfile
 
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
@@ -17,7 +20,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from app.main import STAGES, run_pipeline
 from app.utils.config import WORK_TYPES
-from app.utils.input_validation import validate_input_paths
+from app.utils.input_validation import inspect_file, is_legacy_ppt, validate_input_paths
+from app.utils.paths import default_output_dir, work_root
+from app.utils.version import get_build_commit
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -61,10 +66,13 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self._center(WIN_W, WIN_H)
         self.minsize(480, 560)
 
-        self.selected_files = []
-        self.output_dir = os.path.join(os.getcwd(), "output")
+        self.selected_files = []       # 화면 표시용: 사용자가 실제로 선택한 원본 경로
+        self.selected_work_paths = []  # 실제 처리용: 선택 즉시 안전한 작업폴더로 복사한 경로
+        self.selection_logs = []       # 선택 시점 경로추적 로그(실행 시 처리로그에 포함됨)
+        self.output_dir = default_output_dir()
         self.result = None
         self._log_visible = False
+        self.build_commit = get_build_commit()
 
         self._build_ui()
 
@@ -97,9 +105,13 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         outer = ctk.CTkFrame(self, fg_color=COLOR_BG)
         outer.pack(fill="both", expand=True, padx=20, pady=16)
 
-        # ---------- 상단: 제목 + 짧은 설명 ----------
-        ctk.CTkLabel(outer, text="자동화 자료취합",
-                     font=_f(19, "bold"), text_color=COLOR_TEXT, anchor="w").pack(fill="x")
+        # ---------- 상단: 제목 + 짧은 설명 + 빌드 버전 ----------
+        title_row = ctk.CTkFrame(outer, fg_color=COLOR_BG)
+        title_row.pack(fill="x")
+        ctk.CTkLabel(title_row, text="자동화 자료취합",
+                     font=_f(19, "bold"), text_color=COLOR_TEXT, anchor="w").pack(side="left")
+        ctk.CTkLabel(title_row, text=f"빌드 버전: {self.build_commit}", font=_f(10),
+                     text_color=COLOR_SUBTEXT, anchor="e").pack(side="right", pady=(6, 0))
         ctk.CTkLabel(outer, text="기존 PPT 2~3개의 사진과 문구를 분석하여 새로운 자료로 재구성합니다.",
                      font=_f(11), text_color=COLOR_SUBTEXT, anchor="w").pack(fill="x", pady=(2, 14))
 
@@ -217,31 +229,90 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
                                  fg_color=COLOR_BG, border_width=1, border_color=COLOR_BORDER)
             row.pack(fill="x", pady=2)
             row.pack_propagate(False)
-            ctk.CTkLabel(row, text=os.path.basename(path), font=_f(12), text_color=COLOR_TEXT,
+            label = os.path.basename(path)
+            if is_legacy_ppt(path):
+                label += "  (구형 .ppt - 실행 시 자동 변환 시도)"
+            ctk.CTkLabel(row, text=label, font=_f(12), text_color=COLOR_TEXT,
                           anchor="w").pack(side="left", fill="x", expand=True, padx=(8, 0))
             ctk.CTkButton(row, text="✕", width=24, height=22, corner_radius=3,
                            fg_color="transparent", hover_color=COLOR_TRACK, text_color=COLOR_SUBTEXT,
                            font=_f(11), command=lambda p=path: self._remove_file(p)).pack(side="right", padx=6)
         # 파일 목록이 많아져도(최대 3개) 창 자체는 커지지 않도록 높이를 고정하지 않고 콘텐츠만큼만 사용
 
+    def _register_selected_file(self, original_path: str):
+        """선택된 파일을 화면 표시용 목록에 더하고, 즉시 프로그램 전용 작업폴더로
+        안전하게 복사한다(외부 프로그램이 원본 임시파일을 나중에 지워버리는 경우에도
+        안전하도록, "처리 버튼을 누른 뒤"가 아니라 "선택한 즉시" 복사한다)."""
+        if original_path in self.selected_files or len(self.selected_files) >= MAX_FILES:
+            return
+
+        info = inspect_file(original_path)
+        self.selection_logs.append(
+            f"[선택] 원본경로={info['path']}, 확장자={info['ext']}, "
+            f"exists={info['exists']}, size={info['size_bytes']:,} bytes"
+        )
+        if not info["exists"] or not info["is_file"]:
+            messagebox.showerror("파일 오류", "선택한 PPT 파일을 찾을 수 없습니다. 다시 선택해주세요.")
+            return
+        if info["size_bytes"] == 0:
+            messagebox.showerror("파일 오류", f"선택한 파일이 비어 있습니다: {os.path.basename(original_path)}")
+            return
+
+        # 선택 즉시 안전한 위치로 복사(처리 버튼을 누르기 전, 원본이 사라지기 전에)
+        try:
+            safe_dir = os.path.join(work_root(), "selected")
+            os.makedirs(safe_dir, exist_ok=True)
+            safe_name = f"{uuid.uuid4().hex[:8]}_{os.path.basename(original_path)}"
+            work_path = os.path.join(safe_dir, safe_name)
+            shutil.copy2(original_path, work_path)
+        except Exception as e:
+            messagebox.showerror("파일 오류", f"파일을 안전한 작업 폴더로 복사하지 못했습니다:\n{e}")
+            return
+
+        # 복사본 검증
+        copy_ok = os.path.exists(work_path) and os.path.getsize(work_path) > 0
+        zip_ok = True
+        if copy_ok and work_path.lower().endswith(".pptx"):
+            zip_ok = zipfile.is_zipfile(work_path)
+        self.selection_logs.append(
+            f"[선택] 작업 복사본={work_path}, 복사성공={copy_ok}, "
+            f"pptx유효성(zipfile)={'해당없음(.ppt)' if not work_path.lower().endswith('.pptx') else zip_ok}"
+        )
+        if not copy_ok:
+            messagebox.showerror("파일 오류", "파일 복사에 실패했습니다. 다시 선택해주세요.")
+            return
+
+        if is_legacy_ppt(original_path):
+            messagebox.showinfo(
+                "구형 PowerPoint(.ppt) 감지",
+                f"'{os.path.basename(original_path)}' 파일은 구형 PowerPoint(.ppt) 형식입니다.\n"
+                f"실행 시 LibreOffice로 자동 변환을 시도합니다. 변환이 불가능하면 오류로 안내됩니다.\n"
+                f"(권장: PowerPoint에서 '.pptx'로 저장한 파일을 사용하면 더 안정적입니다)",
+            )
+
+        self.selected_files.append(original_path)
+        self.selected_work_paths.append(work_path)
+
     def _add_files(self):
         paths = filedialog.askopenfilenames(title="기존 PPT 파일 선택",
                                              filetypes=[("PowerPoint files", "*.pptx *.ppt")])
         for p in paths:
-            if p not in self.selected_files and len(self.selected_files) < MAX_FILES:
-                self.selected_files.append(p)
+            self._register_selected_file(p)
         self._refresh_file_list()
 
     def _on_drop(self, event):
         raw = self.tk.splitlist(event.data)
         for p in raw:
-            if p.lower().endswith((".pptx", ".ppt")) and p not in self.selected_files:
-                if len(self.selected_files) < MAX_FILES:
-                    self.selected_files.append(p)
+            if p.lower().endswith((".pptx", ".ppt")):
+                self._register_selected_file(p)
         self._refresh_file_list()
 
     def _remove_file(self, path):
-        self.selected_files = [p for p in self.selected_files if p != path]
+        if path in self.selected_files:
+            idx = self.selected_files.index(path)
+            del self.selected_files[idx]
+            if idx < len(self.selected_work_paths):
+                del self.selected_work_paths[idx]
         self._refresh_file_list()
 
     def _choose_output(self):
@@ -279,9 +350,12 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         # 파이프라인을 시작하기 전에 먼저 파일 존재/형식을 확인해서, 처리 도중
         # 알아보기 어려운 오류로 죽는 대신 즉시 명확한 안내를 준다.
         try:
-            validate_input_paths(self.selected_files)
+            validate_input_paths(self.selected_work_paths)
         except FileNotFoundError:
-            messagebox.showerror("파일 오류", "선택한 PPT 파일을 찾을 수 없습니다. 다시 선택해주세요.")
+            messagebox.showerror(
+                "파일 오류",
+                "선택한 PPT 파일의 작업 복사본을 찾을 수 없습니다. 파일을 다시 선택해주세요.",
+            )
             return
         except ValueError as e:
             messagebox.showerror("파일 오류", str(e))
@@ -298,8 +372,9 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
     def _run_worker(self, apt, work, out_dir):
         try:
-            result = run_pipeline(apt, work, list(self.selected_files), out_dir,
-                                   progress_cb=lambda s: self.after(0, self._set_stage, s))
+            result = run_pipeline(apt, work, list(self.selected_work_paths), out_dir,
+                                   progress_cb=lambda s: self.after(0, self._set_stage, s),
+                                   extra_logs=list(self.selection_logs))
             self.result = result
             self.after(0, self._on_success, result)
         except Exception as e:
@@ -359,6 +434,8 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
     def _reset(self):
         self.selected_files = []
+        self.selected_work_paths = []
+        self.selection_logs = []
         self._refresh_file_list()
         self.apt_entry.delete(0, "end")
         self.progress_bar.set(0)

@@ -59,6 +59,16 @@ def parse_presentation(work_path: str, source_label: str) -> Tuple[List[SlideRec
     """PPT 파일을 열어 슬라이드 레코드/텍스트 런 목록을 반환한다.
     이미지 자체 추출은 image_extractor 모듈이 담당한다 (Picture shape만 이 단계에서 식별).
     """
+    # [경로 추적 체크포인트] 실제로 python-pptx가 여는 파일 경로를 직전에 확정 기록한다.
+    exists = os.path.exists(work_path)
+    size = os.path.getsize(work_path) if exists else 0
+    print(f"[경로추적] Presentation() 호출 직전 - source={source_label}, path={work_path}, "
+          f"exists={exists}, size={size}", flush=True)
+    if not exists:
+        raise FileNotFoundError(
+            f"작업 복사본을 찾을 수 없습니다: {work_path} (원본 파일이 처리 중 다른 프로그램에 "
+            f"의해 삭제/이동됐을 수 있습니다)"
+        )
     prs = Presentation(work_path)
     slide_w, slide_h = prs.slide_width, prs.slide_height
     is_portrait = slide_h >= slide_w

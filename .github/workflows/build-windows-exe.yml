@@ -33,6 +33,13 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      - name: 빌드 버전(커밋 해시) 정적 기록
+        run: |
+          $sha = "${{ github.sha }}".Substring(0, 7)
+          $content = "# -*- coding: utf-8 -*-`n# CI가 빌드 시점에 자동 생성함(저장소에는 커밋되지 않음). GUI의 `"빌드 버전`" 표시에 사용.`nCOMMIT = `"$sha`"`n"
+          Set-Content -Path "app/_build_version.py" -Value $content -Encoding UTF8
+          Get-Content "app/_build_version.py"
+
       - name: PyInstaller로 EXE 빌드
         run: |
           pyinstaller run_app.py `
@@ -42,6 +49,7 @@ jobs:
             --clean `
             --add-data "assets;assets" `
             --hidden-import "PIL._tkinter_finder" `
+            --hidden-import "app._build_version" `
             --collect-all "customtkinter"
 
       - name: 배포 폴더 구성

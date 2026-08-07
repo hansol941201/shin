@@ -8,7 +8,6 @@ v2 콘텐츠 중심 파이프라인 오케스트레이터.
 import datetime
 import json
 import os
-import subprocess
 from typing import Callable, List, Optional
 
 from app.anonymizer.anonymizer import build_blacklist, evaluate_image
@@ -51,15 +50,8 @@ def _report(cb, stage):
 
 
 def _current_commit() -> str:
-    try:
-        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                               cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                               capture_output=True, text=True, timeout=5)
-        if out.returncode == 0:
-            return out.stdout.strip()
-    except Exception:
-        pass
-    return "알수없음(EXE 패키지에는 git 정보 없음)"
+    from app.utils.version import get_build_commit
+    return get_build_commit()
 
 
 def _adjust_settings_for_retry(settings: dict, quality_report, content_library: dict,
@@ -99,8 +91,11 @@ def _adjust_settings_for_retry(settings: dict, quality_report, content_library: 
 
 
 def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str], output_dir: str,
-                     progress_cb: Optional[Callable[[str], None]] = None) -> dict:
+                     progress_cb: Optional[Callable[[str], None]] = None,
+                     extra_logs: Optional[List[str]] = None) -> dict:
     logs: List[str] = []
+    if extra_logs:
+        logs.extend(extra_logs)
     commit = _current_commit()
     _log(logs, f"[파이프라인] 사용 파이프라인: {PIPELINE_NAME}")
     _log(logs, f"[파이프라인] 최신 커밋 번호: {commit}")
@@ -141,12 +136,26 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
 
         try:
             work_copy = make_workcopy(resolved_path, temp_root)
+            work_info = inspect_file(work_copy)
+            _log(logs, f"[경로추적] {label} 작업 복사본 생성 -> {work_copy} "
+                       f"(exists={work_info['exists']}, size={work_info['size_bytes']:,} bytes)")
             slides, texts, prs = parse_presentation(work_copy, label)
         except Exception as e:
+            error_log_path = os.path.join(output_dir, f"{safe_name}_오류로그.txt")
+            _log(logs, f"[오류] {label} PPT 열기 실패: {type(e).__name__}: {e}")
+            try:
+                with open(error_log_path, "w", encoding="utf-8") as f:
+                    f.write("\n".join(logs))
+            except Exception:
+                pass
             raise ValueError(
                 f"'{os.path.basename(path)}' 파일을 열 수 없습니다. PowerPoint(.pptx) 형식이 "
-                f"맞는지, 파일이 손상되지 않았는지 확인 후 다시 시도해주세요. "
-                f"(원본 오류: {type(e).__name__}: {e})"
+                f"맞는지, 파일이 손상되지 않았는지 확인 후 다시 시도해주세요.\n"
+                f"  - 선택 원본 경로: {path}\n"
+                f"  - 내부 작업 복사본 경로: {resolved_path}\n"
+                f"  - 실패 단계: PPT 열기(Presentation)\n"
+                f"  - 원본 오류: {type(e).__name__}: {e}\n"
+                f"  - 처리 로그 파일: {error_log_path}"
             ) from e
 
         all_slides.extend(slides)

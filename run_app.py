@@ -18,15 +18,21 @@ def _base_dir() -> str:
 
 def _write_crash_log(exc: BaseException) -> str:
     base = _base_dir()
-    logs_dir = os.path.join(base, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
+    try:
+        # 백신 샌드박스 등으로 인해 EXE 실행 위치가 불안정할 수 있으므로, 가능하면
+        # 항상 동일한 표준 사용자 데이터 폴더에 로그를 남긴다.
+        from app.utils.paths import logs_dir as _stable_logs_dir
+        log_folder = _stable_logs_dir()
+    except Exception:
+        log_folder = os.path.join(base, "logs")
+        os.makedirs(log_folder, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ts_file = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_path = os.path.join(logs_dir, f"오류로그_{ts_file}.txt")
+    log_path = os.path.join(log_folder, f"오류로그_{ts_file}.txt")
     with open(log_path, "w", encoding="utf-8") as f:
         f.write(f"===== {ts} 오류 발생 =====\n")
         f.write(f"Python: {sys.version}\n")
-        f.write(f"실행 위치: {base}\n\n")
+        f.write(f"EXE 실행 위치(sys.executable 기준): {base}\n\n")
         f.write("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
     return log_path
 
