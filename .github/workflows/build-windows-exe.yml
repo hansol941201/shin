@@ -9,6 +9,7 @@ on:
       - "run_app.py"
       - "requirements.txt"
       - "assets/**"
+      - "templates/**"
       - ".github/workflows/build-windows-exe.yml"
   workflow_dispatch: {}
 
@@ -48,6 +49,7 @@ jobs:
             --onedir `
             --clean `
             --add-data "assets;assets" `
+            --add-data "templates;templates" `
             --hidden-import "PIL._tkinter_finder" `
             --hidden-import "app._build_version" `
             --collect-all "customtkinter"

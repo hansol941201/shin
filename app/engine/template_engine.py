@@ -8,10 +8,23 @@ Template Engine: 카테고리(표지/현장사진/공사필요성/주요하자/�
 추가하면 자동으로 후보에 포함된다(코드 수정 불필요) - 확장 가능한 구조.
 """
 import os
+import sys
 from typing import List, Optional
 
-TEMPLATES_ROOT = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "templates")
+
+def _resolve_templates_root() -> str:
+    """개발 환경(소스에서 실행)과 PyInstaller EXE(빌드 후 배포) 양쪽에서 모두
+    templates/ 폴더를 찾는다. PyInstaller로 빌드되면 이 파일의 실제 경로가
+    임시 추출 폴더(sys._MEIPASS) 아래로 바뀌므로, __file__ 기준 상대 경로만
+    쓰면 EXE에서 템플릿을 찾지 못한다(그러면 조용히 generator2 폴백만 계속
+    쓰게 되어버림 - 반드시 먼저 프로즌 여부를 확인한다)."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, "templates")
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "templates")
+
+
+TEMPLATES_ROOT = _resolve_templates_root()
 
 # Story Engine의 페이지 종류(semantic 카테고리) -> 템플릿 폴더 이름
 CATEGORY_FOLDERS = {
