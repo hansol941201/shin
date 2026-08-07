@@ -24,13 +24,16 @@ def main():
     parser.add_argument("--apt", required=True, help="새 아파트명")
     parser.add_argument("--work", default="재도장", choices=["재도장", "방수", "보수·보강", "아스콘", "기타"])
     parser.add_argument("--output", default="./output", help="결과물 저장 폴더")
+    parser.add_argument("--site-photos", nargs="*", default=None,
+                         help="(선택) 현재 이 아파트의 실제 현장사진(JPG/JPEG/PNG/WEBP), 여러 장 가능")
     args = parser.parse_args()
 
     def cb(stage):
         print(f"  >> {stage}")
 
     try:
-        result = run_pipeline(args.apt, args.work, args.files, args.output, progress_cb=cb)
+        result = run_pipeline(args.apt, args.work, args.files, args.output, progress_cb=cb,
+                               site_photo_paths=args.site_photos)
     except Exception as e:
         print(f"[오류] {e}")
         traceback.print_exc()

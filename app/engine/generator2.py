@@ -341,6 +341,53 @@ def render_closing(prs, page, page_no):
     return slide
 
 
+def render_site_photo_gallery(prs, page, page_no):
+    """현장사진: 사용자가 추가한 이 아파트의 실제 현장사진. 장수에 따라 배치를
+    바꾸고, 억지로 작게 축소해 한 페이지에 전부 넣지 않는다(크게 보여주는 것이 원칙)."""
+    slide = blank_slide(prs)
+    header(slide, page["title"], page_no)
+    top = Mm(27)
+    area_h = SLIDE_HEIGHT - top - Mm(12)
+    images = page.get("images", [])
+    n = len(images)
+    if n == 0:
+        return slide
+    if n == 1:
+        add_picture_contain(slide, images[0].path, MARGIN, top, int(CONTENT_W), int(area_h))
+    elif n == 2:
+        half_h = (area_h - Mm(4)) / 2
+        add_picture_contain(slide, images[0].path, MARGIN, top, int(CONTENT_W), int(half_h))
+        add_picture_contain(slide, images[1].path, MARGIN, top + half_h + Mm(4), int(CONTENT_W), int(half_h))
+    elif n == 3:
+        lead_h = area_h * 0.62
+        add_picture_contain(slide, images[0].path, MARGIN, top, int(CONTENT_W), int(lead_h))
+        sup_h = area_h - lead_h - Mm(4)
+        _photo_row(slide, images[1:3], top + lead_h + Mm(4), sup_h)
+    elif n == 4:
+        _photo_grid(slide, images, top, area_h, cols=2, rows=2)
+    else:
+        lead_h = area_h * 0.55
+        add_picture_contain(slide, images[0].path, MARGIN, top, int(CONTENT_W), int(lead_h))
+        rest = images[1:6]
+        sup_h = area_h - lead_h - Mm(4)
+        cols = min(len(rest), 3) or 1
+        rows = (len(rest) + cols - 1) // cols
+        _photo_grid(slide, rest, top + lead_h + Mm(4), sup_h, cols=cols, rows=rows)
+    return slide
+
+
+def render_material_cards(prs, page, page_no):
+    """사용 재료: 자재별 사진+명칭+원본 설명 카드."""
+    slide = blank_slide(prs)
+    header(slide, page["title"], page_no)
+    top = Mm(27)
+    area_h = SLIDE_HEIGHT - top - Mm(12)
+    cards = page.get("cards", [])
+    cols = 2 if len(cards) != 3 else 3
+    _card_grid(slide, cards, top, area_h, cols=cols, accent=COLOR_NAVY_LIGHT)
+    return slide
+
+
 def render_content_page(prs, page, page_no):
     """폴백 레이아웃(semantic_type이 없는 예외적인 경우에만 사용)."""
     slide = blank_slide(prs)
@@ -365,9 +412,11 @@ def render_content_page(prs, page, page_no):
 
 SEMANTIC_RENDERERS = {
     "hero": render_hero,
+    "site_photo_gallery": render_site_photo_gallery,
     "reason_hero": render_reason_hero,
     "four_cards": render_four_cards,
     "feature_cards": render_feature_cards,
+    "material_cards": render_material_cards,
     "image_text_split": render_image_text_split,
     "process_timeline": render_process_timeline,
     "before_after": render_before_after,

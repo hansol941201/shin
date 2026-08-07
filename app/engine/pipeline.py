@@ -22,6 +22,7 @@ from app.engine.generator2 import generate_pptx_v2
 from app.engine.grading import grade_all
 from app.engine.grouping import build_groups, family_of, groups_to_json
 from app.engine.story import build_pages
+from app.engine import site_photos as site_photos_module
 from app.image_classifier.classifier import classify_all, dedupe_images, detect_before_after_pairs
 from app.image_extractor.extractor import extract_images
 from app.ppt_parser.parser import make_workcopy, parse_presentation
@@ -101,7 +102,8 @@ def _adjust_settings_for_retry(settings: dict, quality_report, content_library: 
 
 def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str], output_dir: str,
                      progress_cb: Optional[Callable[[str], None]] = None,
-                     extra_logs: Optional[List[str]] = None) -> dict:
+                     extra_logs: Optional[List[str]] = None,
+                     site_photo_paths: Optional[List[str]] = None) -> dict:
     logs: List[str] = []
     if extra_logs:
         logs.extend(extra_logs)
@@ -109,7 +111,8 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
     _log(logs, f"[파이프라인] 사용 파이프라인: {PIPELINE_NAME}")
     _log(logs, f"[파이프라인] 최신 커밋 번호: {commit}")
     _log(logs, "[파이프라인] legacy 모듈(app.legacy.*, 고정 템플릿) 호출 여부: 없음")
-    _log(logs, f"[v2 엔진] 입력 검증 - 아파트명='{apartment_name}', 공종='{work_type}', 파일수={len(input_paths)}")
+    _log(logs, f"[v2 엔진] 입력 검증 - 아파트명='{apartment_name}', 공종='{work_type}', 파일수={len(input_paths)}, "
+               f"현장사진수={len(site_photo_paths or [])}")
 
     if not apartment_name or not apartment_name.strip():
         raise ValueError("새 아파트명을 입력해야 합니다.")
@@ -125,12 +128,27 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
         _log(logs, f"[집계] 입력 파일 확인 - {os.path.basename(p)}: "
                    f"확장자={info['ext']}, 크기={info['size_bytes']:,} bytes, 경로={info['path']}")
 
+    # 현장사진(사용자가 추가한 "이 아파트"의 실제 사진, 선택사항)은 기존 PPT 추출
+    # 사진과 완전히 분리해서 다룬다 - AI가 사진을 보고 하자/공법을 진단하지 않는다.
+    if site_photo_paths:
+        site_photos_module.validate_site_photo_paths(site_photo_paths)
+        for p in site_photo_paths:
+            info = inspect_file(p)
+            _log(logs, f"[집계] 현장사진 확인 - {os.path.basename(p)}: "
+                       f"확장자={info['ext']}, 크기={info['size_bytes']:,} bytes")
+
     os.makedirs(output_dir, exist_ok=True)
     # 시스템 전역 TEMP(사용자 PC 환경에 따라 예상 밖의 위치를 가리킬 수 있음, 예:
     # ESTsoft\CreatorTemp)에 의존하지 않고 프로그램 자체 temp/ 폴더를 사용한다.
     temp_root = make_session_temp_dir()
     _log(logs, f"[집계] 작업 임시 폴더(프로그램 자체 temp/): {temp_root}")
     safe_name = "".join(c for c in apartment_name if c not in '\\/:*?"<>|').strip() or "새아파트"
+
+    # 현장사진 로드: 분류/OCR/익명화 없이 그대로 복사만 한다(source_type=current_site).
+    site_images = []
+    if site_photo_paths:
+        site_dir = os.path.join(temp_root, "site_photos")
+        site_images = site_photos_module.load_site_photos(site_photo_paths, site_dir, logs=logs)
 
     # ---------- 1. PPT 분석 ----------
     _report(progress_cb, STAGES_V2[0])
@@ -238,9 +256,13 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
             img.selected = False
             img.selected_slide = None
             img.caption_is_original = False
+        for img in site_images:
+            img.selected = False
+            img.selected_slide = None
         used_ids = set()
         pages = build_pages(apartment_name, work_type, groups, content_library, ba_pairs,
-                              cover_image, used_ids, images_by_id, settings=settings)
+                              cover_image, used_ids, images_by_id, settings=settings,
+                              site_photos=site_images)
         _log(logs, f"[시도 {attempt}] 스토리 구성 완료 - 총 {len(pages)}페이지 (설정: {settings or '기본값'})")
 
         generate_pptx_v2(pages, images_by_id, out_pptx)

@@ -25,8 +25,14 @@ class QualityReport:
     metrics: Dict[str, float] = field(default_factory=dict)
 
 
+# case: 전후 비교는 사진이 곧 메시지라 문구가 없어도 괜찮다.
+# site_photos: 사용자가 추가한 현장사진은 AI가 임의 판단 문구를 붙이지 않는 것이
+# 원칙이므로(요청사항), 캡션 없이 사진만 있어도 "사진만 있는 페이지" 위반으로 보지 않는다.
+_PHOTO_ONLY_EXEMPT = ("case", "site_photos")
+
+
 def _is_photo_only(p) -> bool:
-    return bool(p.get("images")) and not p.get("bullets") and p["type"] != "case"
+    return bool(p.get("images")) and not p.get("bullets") and p["type"] not in _PHOTO_ONLY_EXEMPT
 
 
 def _is_text_only(p) -> bool:
@@ -34,7 +40,7 @@ def _is_text_only(p) -> bool:
 
 
 def _is_combined(p) -> bool:
-    if p["type"] == "case":
+    if p["type"] in _PHOTO_ONLY_EXEMPT:
         return True
     if p["type"] in ("cover", "closing"):
         return True

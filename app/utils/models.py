@@ -42,6 +42,7 @@ class ImageAsset:
     caption_is_original: bool = False  # v2 엔진: 캡션이 원본 문구 기반인지(품질 점수용)
     grade: str = "B"            # v2 엔진: A(핵심 필수) / B(선택적 활용) / C(제외 대상)
     grade_reason: str = ""      # v2 엔진: C등급 판정 사유(로그/CSV 기록용)
+    source_type: str = "reference_ppt"  # "reference_ppt"(기존 회사 PPT 추출) / "current_site"(사용자가 추가한 현재 아파트 현장사진)
 
 
 @dataclass

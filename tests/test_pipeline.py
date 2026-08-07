@@ -155,3 +155,66 @@ def test_empty_apartment_name_rejected():
     files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx")]
     with pytest.raises(ValueError):
         run_pipeline("  ", "재도장", files, OUT_DIR)
+
+
+def _make_site_photo_files(tmp_dir, n=4):
+    os.makedirs(tmp_dir, exist_ok=True)
+    paths = []
+    for i in range(n):
+        img = Image.new("RGB", (1200, 900), (180 + i * 5, 180, 180))
+        p = os.path.join(tmp_dir, f"site_{i+1}.jpg")
+        img.save(p, quality=85)
+        paths.append(p)
+    return paths
+
+
+def test_site_photos_placed_right_after_cover_with_no_diagnosis():
+    """사용자가 추가한 현장사진이 표지 바로 뒤에 배치되고, AI가 균열/박리/누수 등
+    기술적 판단 문구를 임의로 생성하지 않는지 검증한다."""
+    files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx")]
+    site_dir = os.path.join(os.path.dirname(__file__), "_site_photos_src")
+    site_photos = _make_site_photo_files(site_dir, n=4)
+
+    result = run_pipeline("현장사진테스트아파트", "재도장", files, OUT_DIR,
+                            site_photo_paths=site_photos)
+    assert os.path.exists(result["pptx"])
+    _assert_no_leak(result["pptx"])
+
+    prs = Presentation(result["pptx"])
+    slides = list(prs.slides)
+    assert len(slides) >= 2
+
+    def _slide_title(slide):
+        for sh in _walk(slide.shapes):
+            if sh.has_text_frame and sh.text_frame.text.strip():
+                return sh.text_frame.text.strip().split("\n")[0]
+        return ""
+
+    # 표지(0) 바로 다음 페이지가 현장사진 페이지여야 한다.
+    second_title = _slide_title(slides[1])
+    assert "현장사진" in second_title, f"현장사진 페이지가 표지 바로 뒤에 없음: '{second_title}'"
+
+    diagnostic_words = ["균열", "박리", "누수", "보수 필요", "시공 권장", "하자 의심"]
+    for sh in _walk(slides[1].shapes):
+        if sh.has_text_frame:
+            text = sh.text_frame.text
+            for w in diagnostic_words:
+                assert w not in text, f"현장사진 페이지에 AI 진단성 문구 발견: '{w}' in '{text}'"
+
+    assert any(sh.shape_type == 13 for sh in _walk(slides[1].shapes)), "현장사진 페이지에 사진이 없음"
+
+
+def test_no_site_photos_falls_back_to_original_flow():
+    """현장사진을 넣지 않으면 기존 방식(사진1)이 표지 바로 뒤에 오지 않아야 한다."""
+    files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx")]
+    result = run_pipeline("현장사진없음아파트", "재도장", files, OUT_DIR)
+    prs = Presentation(result["pptx"])
+    slides = list(prs.slides)
+
+    def _slide_title(slide):
+        for sh in _walk(slide.shapes):
+            if sh.has_text_frame and sh.text_frame.text.strip():
+                return sh.text_frame.text.strip().split("\n")[0]
+        return ""
+
+    assert "현장사진" not in _slide_title(slides[1])

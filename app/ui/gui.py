@@ -18,6 +18,8 @@ from tkinter import filedialog, messagebox
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from app.engine.site_photos import SUPPORTED_EXTS as SITE_PHOTO_EXTS
+from app.engine.site_photos import validate_site_photo_paths
 from app.main import STAGES, run_pipeline
 from app.utils.config import WORK_TYPES
 from app.utils.input_validation import inspect_file, is_legacy_ppt, validate_input_paths
@@ -69,6 +71,8 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self.selected_files = []       # 화면 표시용: 사용자가 실제로 선택한 원본 경로
         self.selected_work_paths = []  # 실제 처리용: 선택 즉시 안전한 작업폴더로 복사한 경로
         self.selection_logs = []       # 선택 시점 경로추적 로그(실행 시 처리로그에 포함됨)
+        self.site_photo_paths = []       # 화면 표시용: 현장사진 원본 경로(선택사항)
+        self.site_photo_work_paths = []  # 실제 처리용: 현장사진 안전 복사본 경로
         self.output_dir = default_output_dir()
         self.result = None
         self._log_visible = False
@@ -151,6 +155,17 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
 
         self.file_list_frame = ctk.CTkFrame(outer, fg_color=COLOR_BG)
         self.file_list_frame.pack(fill="x", pady=(4, 14))
+
+        # ---------- 현장사진 영역(선택사항) ----------
+        self._section_label(outer, "현장사진 추가 - 선택사항").pack(fill="x")
+        ctk.CTkLabel(outer, text="해당 아파트의 현재 현장사진이 있다면 추가해주세요. (JPG/JPEG/PNG/WEBP, 여러 장 가능)",
+                     font=_f(11), text_color=COLOR_SUBTEXT, anchor="w", wraplength=WIN_W - 60).pack(
+            fill="x", pady=(2, 4))
+        site_row = ctk.CTkFrame(outer, fg_color=COLOR_BG)
+        site_row.pack(fill="x")
+        self._secondary_button(site_row, "사진 선택", self._add_site_photos, width=84, height=28).pack(side="left")
+        self.site_photo_list_frame = ctk.CTkFrame(outer, fg_color=COLOR_BG)
+        self.site_photo_list_frame.pack(fill="x", pady=(4, 14))
 
         # ---------- 출력 폴더 ----------
         self._section_label(outer, "출력 폴더").pack(fill="x")
@@ -293,6 +308,68 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self.selected_files.append(original_path)
         self.selected_work_paths.append(work_path)
 
+    def _refresh_site_photo_list(self):
+        for w in self.site_photo_list_frame.winfo_children():
+            w.destroy()
+        for path in self.site_photo_paths:
+            row = ctk.CTkFrame(self.site_photo_list_frame, height=30, corner_radius=4,
+                                 fg_color=COLOR_BG, border_width=1, border_color=COLOR_BORDER)
+            row.pack(fill="x", pady=2)
+            row.pack_propagate(False)
+            ctk.CTkLabel(row, text=os.path.basename(path), font=_f(12), text_color=COLOR_TEXT,
+                          anchor="w").pack(side="left", fill="x", expand=True, padx=(8, 0))
+            ctk.CTkButton(row, text="✕", width=24, height=22, corner_radius=3,
+                           fg_color="transparent", hover_color=COLOR_TRACK, text_color=COLOR_SUBTEXT,
+                           font=_f(11), command=lambda p=path: self._remove_site_photo(p)).pack(side="right", padx=6)
+
+    def _register_site_photo(self, original_path: str):
+        """현장사진도 PPT 파일과 동일하게 선택 즉시 안전한 작업폴더로 복사한다.
+        분류/OCR/익명화는 하지 않는다 - 사용자가 이미 아파트명/공종을 알고 고른
+        "이 아파트"의 사진이므로 그대로 보여주기만 하면 된다."""
+        if original_path in self.site_photo_paths:
+            return
+        ext = os.path.splitext(original_path)[1].lower()
+        if ext not in SITE_PHOTO_EXTS:
+            messagebox.showerror("파일 오류", f"지원하지 않는 현장사진 형식입니다: {os.path.basename(original_path)}")
+            return
+        info = inspect_file(original_path)
+        if not info["exists"] or not info["is_file"] or info["size_bytes"] == 0:
+            messagebox.showerror("파일 오류", f"현장사진을 사용할 수 없습니다: {os.path.basename(original_path)}")
+            return
+        try:
+            safe_dir = os.path.join(work_root(), "selected_site_photos")
+            os.makedirs(safe_dir, exist_ok=True)
+            work_path = os.path.join(safe_dir, f"{uuid.uuid4().hex[:8]}_{os.path.basename(original_path)}")
+            shutil.copy2(original_path, work_path)
+        except Exception as e:
+            messagebox.showerror("파일 오류", f"현장사진을 안전한 작업 폴더로 복사하지 못했습니다:\n{e}")
+            return
+        if not (os.path.exists(work_path) and os.path.getsize(work_path) > 0):
+            messagebox.showerror("파일 오류", "현장사진 복사에 실패했습니다. 다시 선택해주세요.")
+            return
+        self.selection_logs.append(
+            f"[현장사진 선택] 원본={original_path}, 작업복사본={work_path}, size={info['size_bytes']:,} bytes"
+        )
+        self.site_photo_paths.append(original_path)
+        self.site_photo_work_paths.append(work_path)
+
+    def _add_site_photos(self):
+        paths = filedialog.askopenfilenames(
+            title="현장사진 선택",
+            filetypes=[("이미지 파일", "*.jpg *.jpeg *.png *.webp")],
+        )
+        for p in paths:
+            self._register_site_photo(p)
+        self._refresh_site_photo_list()
+
+    def _remove_site_photo(self, path):
+        if path in self.site_photo_paths:
+            idx = self.site_photo_paths.index(path)
+            del self.site_photo_paths[idx]
+            if idx < len(self.site_photo_work_paths):
+                del self.site_photo_work_paths[idx]
+        self._refresh_site_photo_list()
+
     def _add_files(self):
         paths = filedialog.askopenfilenames(title="기존 PPT 파일 선택",
                                              filetypes=[("PowerPoint files", "*.pptx *.ppt")])
@@ -361,6 +438,14 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
             messagebox.showerror("파일 오류", str(e))
             return
 
+        # 현장사진은 선택사항이지만, 선택된 경우 형식/존재 여부는 실행 전에 확인한다.
+        if self.site_photo_work_paths:
+            try:
+                validate_site_photo_paths(self.site_photo_work_paths)
+            except ValueError as e:
+                messagebox.showerror("현장사진 오류", str(e))
+                return
+
         self.run_btn.configure(state="disabled", text="처리 중...")
         self.post_frame.pack_forget()
         self.log_box.configure(state="normal")
@@ -374,7 +459,8 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         try:
             result = run_pipeline(apt, work, list(self.selected_work_paths), out_dir,
                                    progress_cb=lambda s: self.after(0, self._set_stage, s),
-                                   extra_logs=list(self.selection_logs))
+                                   extra_logs=list(self.selection_logs),
+                                   site_photo_paths=list(self.site_photo_work_paths) or None)
             self.result = result
             self.after(0, self._on_success, result)
         except Exception as e:
@@ -436,7 +522,10 @@ class AutoMaterialApp(ctk.CTk if not _DND_AVAILABLE else TkinterDnD.Tk):
         self.selected_files = []
         self.selected_work_paths = []
         self.selection_logs = []
+        self.site_photo_paths = []
+        self.site_photo_work_paths = []
         self._refresh_file_list()
+        self._refresh_site_photo_list()
         self.apt_entry.delete(0, "end")
         self.progress_bar.set(0)
         self.status_label.configure(text="대기 중")

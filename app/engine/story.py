@@ -38,9 +38,11 @@ METHOD_CORE_CATEGORIES = {"균열_보수", "퍼티_작업", "바탕_정리", "�
 
 DEFAULT_SETTINGS = {
     "max_total_pages": 14,
+    "max_site_photo_pages": 3,      # 현장사진 최대 페이지 수
     "defect_images_per_page": 4,    # 하자 카드 최대 개수
     "method_images_per_page": 3,    # 대표 1 + 보조 최대 2
     "feature_images_cap": 4,        # 특징 카드 최대 개수
+    "material_images_cap": 4,       # 사용 재료 카드 최대 개수
     "process_images_per_page": 4,   # 시공 순서 타임라인 한 페이지 최대 단계 수
     "process_pages_cap": 2,
     "case_pairs_cap": 2,            # 시공 전후 사례 최대 개수(첫 1개는 전체화면, 나머지는 압축 비교)
@@ -91,10 +93,20 @@ def _caption_for(im, fallback: str = "") -> str:
     return _short(fallback) if fallback else ""
 
 
+def _site_photo_chunks(photos: List, max_pages: int) -> List[List]:
+    """현장사진을 페이지 단위로 나눈다. 6장 이하면 한 페이지(레이아웃 함수가 장수에
+    따라 내부적으로 배치를 바꾼다), 7장 이상이면 페이지당 6장씩 최대 max_pages까지."""
+    if len(photos) <= 6:
+        return [photos] if photos else []
+    chunks = [photos[i:i + 6] for i in range(0, len(photos), 6)]
+    return chunks[:max_pages]
+
+
 def build_pages(apartment_name: str, work_type: str, groups: List[dict],
                  content_library: Dict[str, List[str]], ba_pairs: List, cover_image,
                  used_ids: set, images_by_id: Dict[str, object],
-                 settings: Dict = None, change_log: List[str] = None) -> List[dict]:
+                 settings: Dict = None, change_log: List[str] = None,
+                 site_photos: List = None) -> List[dict]:
     s = {**DEFAULT_SETTINGS, **(settings or {})}
     change_log = change_log if change_log is not None else []
 
@@ -135,6 +147,24 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     })
     if cover_image:
         used_ids.add(cover_image.id)
+
+    # ---------- 1-1. 현장사진 (site_photo_gallery: 사용자가 추가한 "이 아파트"의 실제
+    #            현장사진, 최대 3페이지. AI가 사진을 보고 하자/공법을 판단하지 않으며,
+    #            캡션은 중립적인 번호("현장사진 01")만 사용한다) ----------
+    if site_photos:
+        chunks = _site_photo_chunks(list(site_photos), s["max_site_photo_pages"])
+        base_title = f"{apartment_name} 현장사진"
+        idx_no = 0
+        for chunk_idx, chunk in enumerate(chunks):
+            for im in chunk:
+                idx_no += 1
+                im.real_caption = f"현장사진 {idx_no:02d}"
+            title = base_title if len(chunks) == 1 else f"{base_title} {chunk_idx+1}"
+            pages.append({
+                "type": "site_photos", "semantic_type": "site_photo_gallery",
+                "title": unique_title(title),
+                "images": chunk, "bullets": [],
+            })
 
     defect_groups = [g for g in groups if g["family"] == "defect"]
     process_groups = [g for g in groups if g["family"] == "process"]
@@ -211,9 +241,7 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
 
     # ---------- 5. 공법 특징 (feature_cards: 특징 문구 + 관련 사진 카드) ----------
     feature_bullets = _dedup_texts(content_library.get("공법_특징", []), s["feature_images_cap"])
-    feature_pool = [im for g in (process_groups + material_groups) for im in g["images"]
-                     if im.id not in used_ids]
-    feature_pool = _sort_grade(feature_pool)
+    feature_pool = _sort_grade([im for g in process_groups for im in g["images"] if im.id not in used_ids])
     if feature_bullets and feature_pool:
         n = min(len(feature_bullets), max(len(feature_pool), 1), s["feature_images_cap"])
         feature_imgs = []
@@ -231,6 +259,30 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
             "images": feature_imgs, "bullets": feature_bullets[:n],
             "cards": feature_cards,
         })
+
+    # ---------- 5-1. 사용 재료 (material_cards: 원본 자료에 자재 콘텐츠가 실제로 있을
+    #            때만 생성 - 고정 템플릿으로 억지로 만들지 않는다) ----------
+    material_pool = _sort_grade([im for g in material_groups for im in g["images"] if im.id not in used_ids])
+    material_bullets = _dedup_texts(content_library.get("자재_설명", []), s["material_images_cap"])
+    if material_pool:
+        n = min(max(len(material_bullets), 1), len(material_pool), s["material_images_cap"])
+        material_imgs = take_unused(material_pool, limit=n)
+        material_cards = [{
+            "image": material_imgs[i],
+            "label": material_bullets[i][:16] if i < len(material_bullets) else "사용 자재",
+            "caption": _short(material_bullets[i]) if i < len(material_bullets)
+                        else _caption_for(material_imgs[i], "시공 자재/장비 참고사진"),
+        } for i in range(len(material_imgs))]
+        page_bullets = [c["caption"] for c in material_cards]
+        if material_imgs and page_bullets:
+            pages.append({
+                "type": "material", "semantic_type": "material_cards",
+                "title": unique_title("사용 재료"),
+                "images": material_imgs, "bullets": page_bullets,
+                "cards": material_cards,
+            })
+        else:
+            release(material_imgs)
 
     # ---------- 6. 시공 순서 (process_timeline: 단계별 사진+단계명+설명) ----------
     order_index = {name: i for i, (name, _) in enumerate(PROCESS_MASTER_SEQUENCE)}
@@ -338,7 +390,7 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
             return out
         return p.get("images", [])
 
-    droppable_order = ("effects", "case", "process", "defect")
+    droppable_order = ("effects", "material", "case", "process", "defect")
     while len(pages) > s["max_total_pages"]:
         removed = False
         for t in droppable_order:
