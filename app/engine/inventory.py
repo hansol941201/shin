@@ -120,11 +120,14 @@ def dump_slide_content_mapping_csv(pages: List[dict], out_path: str) -> str:
             page_no += 1
             no = page_no + 1  # 표지가 1페이지이므로 본문은 2페이지부터
         imgs = list(page.get("images", []))
-        if page["type"] == "case" and page.get("pair"):
-            pair = page["pair"]
-            imgs_ids = [pair.before_image_id, pair.after_image_id] + list(pair.process_image_ids or [])
-        else:
-            imgs_ids = None
+        case_pairs = ([page["pair"]] if page.get("pair") else
+                      [c["pair"] for c in page.get("cases", [])]) if page["type"] == "case" else []
+        imgs_ids = None
+        if case_pairs:
+            imgs_ids = []
+            for pair in case_pairs:
+                imgs_ids.extend([pair.before_image_id, pair.after_image_id] +
+                                 list(pair.process_image_ids or []))
         text_used = " / ".join(page.get("bullets", []))
         if imgs:
             for im in imgs:
