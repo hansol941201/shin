@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-결과물 품질을 100점 만점으로 자동 평가한다(요청된 10개 항목 배점 그대로 적용).
+결과물 품질을 100점 만점으로 자동 평가한다.
+
+[재설계, 2026-08] "사진/문구를 최대한 많이 담았는가"가 아니라 "사진과 문구가 같은
+페이지 안에서 결합된 완성형 자료인가"를 최우선으로 평가한다. 페이지 수가 과도하거나,
+사진만/문구만 있는 페이지가 있거나, 제목이 불필요하게 중복되면 총점과 무관하게 FAIL 처리한다.
 총점 85점 미만이면 최종 저장하지 않고 재구성 신호를 반환한다.
 """
 from dataclasses import dataclass, field
 from typing import Dict, List
 
 from app.utils.config import BANNED_GENERIC_PHRASES
+
+MAX_TOTAL_PAGES = 14
+MAX_PROCESS_PAGES = 2
 
 
 @dataclass
@@ -18,99 +25,122 @@ class QualityReport:
     metrics: Dict[str, float] = field(default_factory=dict)
 
 
+def _is_photo_only(p) -> bool:
+    return bool(p.get("images")) and not p.get("bullets") and p["type"] != "case"
+
+
+def _is_text_only(p) -> bool:
+    return bool(p.get("bullets")) and not p.get("images") and p["type"] not in ("cover", "closing", "case")
+
+
+def _is_combined(p) -> bool:
+    if p["type"] == "case":
+        return True
+    if p["type"] in ("cover", "closing"):
+        return True
+    return bool(p.get("images")) and bool(p.get("bullets"))
+
+
 def compute_quality(images: List, pages: List[dict], content_library: Dict[str, List[str]],
                      used_original_phrases: set, validation_report) -> QualityReport:
     q = QualityReport()
 
+    total_pages = len(pages)
+    q.metrics["total_pages"] = total_pages
+    content_pages = [p for p in pages if p["type"] not in ("cover", "closing")]
+
+    # ---------- 1. 페이지 수 적정성 (15점) : 권장 8~12, 최대 14 ----------
+    if 8 <= total_pages <= 12:
+        page_score = 15.0
+    elif 7 <= total_pages <= 14:
+        page_score = 11.0
+    else:
+        page_score = 3.0
+    q.scores["page_count_adequacy"] = page_score
+
+    # ---------- 2. 사진+문구 결합 페이지 비율 (20점) ----------
+    combined_pages = [p for p in content_pages if _is_combined(p)]
+    combined_ratio = (len(combined_pages) / len(content_pages)) if content_pages else 1.0
+    q.metrics["combined_page_count"] = len(combined_pages)
+    q.metrics["photo_text_pages_ratio"] = round(combined_ratio, 3)
+    q.scores["photo_text_combination"] = round(combined_ratio * 20, 2)
+
+    # ---------- 3. 사진만 있는 페이지 없음 (10점, case 제외) ----------
+    photo_only_pages = [p for p in content_pages if _is_photo_only(p)]
+    q.metrics["photo_only_page_count"] = len(photo_only_pages)
+    q.scores["no_photo_only_pages"] = 10.0 if len(photo_only_pages) == 0 else \
+        (5.0 if len(photo_only_pages) == 1 else 0.0)
+
+    # ---------- 4. 문구만 있는 페이지 없음 (10점, 표지/마무리 제외) ----------
+    text_only_pages = [p for p in content_pages if _is_text_only(p)]
+    q.metrics["text_only_page_count"] = len(text_only_pages)
+    q.scores["no_text_only_pages"] = 10.0 if len(text_only_pages) == 0 else 0.0
+
+    # ---------- 5. 사진-문구 의미 연결성 (15점) ----------
     valid_images = [i for i in images if not i.banned and not i.is_duplicate_of]
     selected_images = [i for i in valid_images if i.selected]
-    photo_util = (len(selected_images) / len(valid_images)) if valid_images else 1.0
-    q.metrics["photo_utilization"] = round(photo_util, 3)
-    q.scores["photo_utilization"] = round(min(photo_util / 0.85, 1.0) * 20, 2)
-
-    important_phrases = set()
-    for phrases in content_library.values():
-        important_phrases.update(phrases)
-    text_util = (len(used_original_phrases & important_phrases) / len(important_phrases)) \
-        if important_phrases else 1.0
-    q.metrics["text_utilization"] = round(text_util, 3)
-    q.scores["text_utilization"] = round(min(text_util / 0.5, 1.0) * 15, 2)
-
     original_caption_count = sum(1 for i in selected_images if i.caption_is_original)
     relevance = (original_caption_count / len(selected_images)) if selected_images else 1.0
     q.metrics["caption_relevance"] = round(relevance, 3)
     q.scores["caption_relevance"] = round(relevance * 15, 2)
 
-    content_pages = [p for p in pages if p["type"] not in ("cover", "closing")]
+    # ---------- 6. 원본 문구 활용률 (10점, 참고 지표로 축소) ----------
+    important_phrases = set()
+    for key, phrases in content_library.items():
+        if key.startswith("_"):
+            continue
+        important_phrases.update(phrases)
+    text_util = (len(used_original_phrases & important_phrases) / len(important_phrases)) \
+        if important_phrases else 1.0
+    q.metrics["text_utilization"] = round(text_util, 3)
+    q.scores["text_utilization"] = round(min(text_util / 0.4, 1.0) * 10, 2)
 
-    def _is_dense(p):
-        n_img = len(p.get("images", []))
-        n_bul = len(p.get("bullets", []))
-        if p["type"] == "case":
-            return True
-        if n_img >= 2:
-            return True
-        if n_img == 1 and n_bul >= 2:
-            return True
-        return n_bul >= 3
+    # (참고용 지표: 더 이상 배점에 직접 반영하지 않음 - 사진 100% 활용은 목표가 아님)
+    photo_util = (len(selected_images) / len(valid_images)) if valid_images else 1.0
+    q.metrics["photo_utilization"] = round(photo_util, 3)
 
-    dense_pages = [p for p in content_pages if _is_dense(p)]
-    density = (len(dense_pages) / len(content_pages)) if content_pages else 1.0
-    q.metrics["page_density"] = round(density, 3)
-    q.scores["page_density"] = round(density * 10, 2)
+    # ---------- 7. 중복 제목 없음 (5점) ----------
+    titles = [p["title"] for p in pages]
+    dup_titles = len(titles) - len(set(titles))
+    q.metrics["duplicate_title_count"] = dup_titles
+    q.scores["no_duplicate_titles"] = 5.0 if dup_titles == 0 else 0.0
 
-    expected_sections = {"defect", "method_reason", "features", "process", "case", "effects"}
-    present_sections = {p["type"] for p in pages}
-    flow = len(expected_sections & present_sections) / len(expected_sections)
-    q.metrics["story_flow"] = round(flow, 3)
-    q.scores["persuasion_flow"] = round(flow * 10, 2)
+    # ---------- 8. 같은 공정 페이지 분산 방지 (5점) ----------
+    process_page_count = sum(1 for p in pages if p["type"] == "process")
+    q.metrics["process_page_count"] = process_page_count
+    q.scores["process_dispersion"] = 5.0 if process_page_count <= MAX_PROCESS_PAGES else 0.0
 
-    process_pages = [p for p in pages if p["type"] == "process"]
-    specific = sum(1 for p in process_pages if p.get("bullets"))
-    specificity = (specific / len(process_pages)) if process_pages else 1.0
-    q.metrics["process_specificity"] = round(specificity, 3)
-    q.scores["process_specificity"] = round(specificity * 10, 2)
-
-    all_bullets = [b for p in pages for b in p.get("bullets", [])]
-    generic_hits = sum(1 for b in all_bullets if any(g in b for g in BANNED_GENERIC_PHRASES))
-    generic_ratio = (generic_hits / len(all_bullets)) if all_bullets else 0.0
-    q.metrics["generic_phrase_ratio"] = round(generic_ratio, 3)
-    dup_img_ids = [i.id for i in selected_images]
-    dup_count = len(dup_img_ids) - len(set(dup_img_ids))
-    q.metrics["duplicate_count"] = dup_count
-    repeat_penalty = 5 if (dup_count > 0 or generic_ratio > 0.2) else 0
-    q.scores["duplication"] = max(0, 5 - repeat_penalty)
-
-    q.scores["layout_integrity"] = 5.0  # 원본 비율 유지 렌더링으로 구조적으로 보장
-
-    truncation_flag = any("잘림" in m or "확대" in m for m in
-                            getattr(validation_report, "manual_review", []))
-    q.scores["text_overlap"] = 3.0 if truncation_flag else 5.0
-
+    # ---------- 9. 민감정보 미검출 (5점) ----------
     leaked = any("민감" in m or "잔존" in m for m in getattr(validation_report, "manual_review", []))
     q.scores["sensitive_info"] = 0.0 if leaked else 5.0
+
+    # ---------- 10. 렌더링 품질(레이아웃/텍스트 겹침) (5점) ----------
+    truncation_flag = any("잘림" in m or "확대" in m for m in
+                            getattr(validation_report, "manual_review", []))
+    q.scores["render_quality"] = 2.5 if truncation_flag else 5.0
 
     q.total = round(sum(q.scores.values()), 2)
     q.passed = q.total >= 85.0
 
-    if photo_util < 0.60:
-        q.fail_reasons.append(f"사진 활용률 {photo_util*100:.1f}% (기준 60% 미만)")
-    if text_util < 0.50:
-        q.fail_reasons.append(f"원본 문구 활용률 {text_util*100:.1f}% (기준 50% 미만)")
-    weak_pages = len(content_pages) - len(dense_pages)
-    if weak_pages >= 2:
-        q.fail_reasons.append(f"빈약한 페이지 {weak_pages}장 (기준 2장 이상)")
-    if dup_count > 0:
-        q.fail_reasons.append(f"동일 사진 반복 {dup_count}건")
-    if generic_ratio > 0.2:
-        q.fail_reasons.append(f"일반 문구 비율 {generic_ratio*100:.1f}% (기준 20% 초과)")
-    no_photo_pages = sum(1 for p in content_pages if not p.get("images") and p["type"] != "case")
-    if content_pages and no_photo_pages / len(content_pages) > 0.4:
-        q.fail_reasons.append(f"사진 없는 페이지 비율 {no_photo_pages/len(content_pages)*100:.1f}% (기준 40% 초과)")
+    # ---------- 하드 FAIL 조건 (총점과 무관하게 실패 처리) ----------
+    if total_pages > MAX_TOTAL_PAGES:
+        q.fail_reasons.append(f"전체 페이지 {total_pages}장 (기준 {MAX_TOTAL_PAGES}장 초과)")
+    if len(photo_only_pages) >= 2:
+        q.fail_reasons.append(f"사진만 있는 페이지 {len(photo_only_pages)}장 (기준 2장 이상 금지)")
+    if len(text_only_pages) >= 1:
+        q.fail_reasons.append(f"문구만 있는 페이지 {len(text_only_pages)}장 존재 (표지/마무리 제외 금지)")
+    if dup_titles > 0:
+        q.fail_reasons.append(f"중복 제목 {dup_titles}건")
+    if process_page_count > MAX_PROCESS_PAGES:
+        q.fail_reasons.append(f"시공 순서 페이지 {process_page_count}장으로 분산됨 (기준 {MAX_PROCESS_PAGES}장 이하)")
     if leaked:
         q.fail_reasons.append("민감정보 잔존 의심")
+    generic_hits_check = [b for p in pages for b in p.get("bullets", [])
+                           if any(g in b for g in BANNED_GENERIC_PHRASES)]
+    if generic_hits_check:
+        q.fail_reasons.append(f"일반 문구(의미 없는 상투어) {len(generic_hits_check)}건")
 
-    if q.fail_reasons and q.total >= 85.0:
+    if q.fail_reasons:
         q.passed = False  # 명시적 실패 조건이 있으면 총점과 무관하게 실패 처리
 
     return q
@@ -119,11 +149,16 @@ def compute_quality(images: List, pages: List[dict], content_library: Dict[str, 
 def report_text(q: QualityReport) -> str:
     lines = ["=== 품질 점수 (100점 만점) ===", ""]
     labels = {
-        "photo_utilization": "사진 활용률(20점)", "text_utilization": "원본 문구 활용률(15점)",
-        "caption_relevance": "사진-문구 연관성(15점)", "page_density": "페이지별 콘텐츠 밀도(10점)",
-        "persuasion_flow": "입주민 설득 흐름(10점)", "process_specificity": "공정 설명 구체성(10점)",
-        "duplication": "중복 사진·문구 없음(5점)", "layout_integrity": "레이아웃 완성도(5점)",
-        "text_overlap": "텍스트 잘림·겹침 없음(5점)", "sensitive_info": "민감정보 검증(5점)",
+        "page_count_adequacy": "페이지 수 적정성(15점)",
+        "photo_text_combination": "사진-문구 결합 페이지 비율(20점)",
+        "no_photo_only_pages": "사진만 있는 페이지 없음(10점)",
+        "no_text_only_pages": "문구만 있는 페이지 없음(10점)",
+        "caption_relevance": "사진-문구 의미 연결성(15점)",
+        "text_utilization": "원본 문구 활용률(10점)",
+        "no_duplicate_titles": "중복 제목 없음(5점)",
+        "process_dispersion": "시공 순서 페이지 집중도(5점)",
+        "sensitive_info": "민감정보 검증(5점)",
+        "render_quality": "렌더링 품질(5점)",
     }
     for key, label in labels.items():
         lines.append(f"  {label}: {q.scores.get(key, 0):.1f}")

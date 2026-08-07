@@ -56,34 +56,43 @@ def _current_commit() -> str:
 
 def _adjust_settings_for_retry(settings: dict, quality_report, content_library: dict,
                                  logs: List[str]) -> dict:
-    """품질 실패 사유에 따라 실제로 조건을 바꾼다(단순 재실행 금지)."""
+    """품질 실패 사유에 따라 실제로 조건을 바꾼다(단순 재실행 금지).
+    새 story.py는 "사진 최대 활용"이 아니라 "8~12페이지 완성형 자료"가 목표이므로,
+    재시도 조정 방향도 페이지 수/사진-문구 결합도를 우선한다."""
     new_settings = dict(settings)
     changed = []
 
     metrics = quality_report.metrics
-    if metrics.get("photo_utilization", 1.0) < 0.75:
-        # 갤러리 최소 배치 기준을 낮춰 낙오되는 A/B등급 사진을 추가로 흡수한다.
-        new_settings["gallery_min_per"] = 1
-        changed.append("사진 활용률 부족 -> 갤러리 페이지 최소 사진 기준 2장->1장으로 완화하여 "
-                        "미사용 A/B등급 사진을 추가 배치")
-    if metrics.get("text_utilization", 1.0) < 0.5:
-        new_settings["min_text_bullets_for_text_page"] = 2
-        changed.append("원본 문구 활용률 부족 -> 문구 전용 페이지 최소 기준 3개->2개로 완화하여 "
-                        "더 많은 원본 문구를 본문에 반영")
-    if metrics.get("page_density", 1.0) < 0.7 or any("빈약" in r for r in quality_report.fail_reasons):
-        new_settings["max_images_per_page"] = 3
-        new_settings["min_text_bullets_for_text_page"] = min(
-            new_settings.get("min_text_bullets_for_text_page", 3), 2)
-        changed.append("빈약한 페이지 다수 -> 페이지당 최대 사진 수를 줄이고(더 조밀하게 재배치) "
-                        "1장짜리 사진 페이지도 문구 2개 이상이면 유지하도록 기준 통일")
-    if any("반복" in r for r in quality_report.fail_reasons):
-        changed.append("중복 사진 감지 -> 그룹 통합 로직은 이미 파일 간 동일 공정을 병합하므로 "
-                        "다음 시도에서 동일 이미지 재사용 여부를 다시 점검")
+    reasons = " ".join(quality_report.fail_reasons)
+
+    if metrics.get("total_pages", 0) > 14 or "페이지 수" in reasons:
+        new_settings["defect_pages_cap"] = 1
+        new_settings["process_pages_cap"] = 1
+        new_settings["case_pairs_cap"] = min(new_settings.get("case_pairs_cap", 2), 1)
+        changed.append("페이지 수 초과 -> 하자/시공순서 섹션을 각 1페이지로, 사례 페이지를 1개로 축소")
+
+    if metrics.get("photo_only_page_count", 0) >= 2 or metrics.get("text_only_page_count", 0) >= 1:
+        new_settings["min_bullets_per_page"] = 1
+        changed.append("사진전용/문구전용 페이지 발견 -> 문구 없는 페이지는 생성 자체를 생략하도록 "
+                        "최소 문구 기준을 재확인(사진/문구 결합 강제)")
+
+    if metrics.get("photo_text_pages_ratio", 1.0) < 0.7:
+        new_settings["defect_images_per_page"] = max(3, new_settings.get("defect_images_per_page", 5) - 1)
+        new_settings["process_images_per_page"] = max(4, new_settings.get("process_images_per_page", 6) - 1)
+        changed.append("사진-문구 결합 페이지 비율 부족 -> 페이지당 사진 수를 줄여 문구와 더 촘촘히 결합")
+
+    if metrics.get("total_pages", 0) < 7:
+        new_settings["defect_pages_cap"] = max(new_settings.get("defect_pages_cap", 2), 2)
+        new_settings["process_pages_cap"] = max(new_settings.get("process_pages_cap", 2), 2)
+        changed.append("페이지 수 과소 -> 하자/시공순서 섹션을 최대 2페이지까지 허용하여 콘텐츠 보강")
+
+    if any("중복" in r for r in quality_report.fail_reasons):
+        changed.append("중복 제목 감지 -> 그룹 통합 로직은 이미 파일 간 동일 공정을 병합하므로 "
+                        "다음 시도에서 제목 중복 방지 로직을 재확인")
 
     if not changed:
-        # 실패 사유가 있는데 위 규칙에 해당하지 않으면 최소한 갤러리 기준이라도 완화한다.
-        new_settings["gallery_min_per"] = 1
-        changed.append("기타 사유 -> 갤러리 최소 배치 기준을 완화하여 재시도")
+        new_settings["feature_images_cap"] = min(new_settings.get("feature_images_cap", 3) + 1, 4)
+        changed.append("기타 사유 -> 공법 특징 섹션 대표 사진 수를 소폭 확대하여 재시도")
 
     for c in changed:
         _log(logs, f"  · 재구성 조정: {c}")
