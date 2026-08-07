@@ -229,14 +229,18 @@ def test_no_site_photos_falls_back_to_original_flow():
 
 
 def test_generation_failure_raises_and_logs_stage(monkeypatch):
-    """generate_pptx_v2가 실패해도(혹은 저장 후 파일이 사라져도) 파이프라인이
-    "정상 완료"를 반환해서는 안 되며, 처리로그.txt 마지막 줄에 실패 단계가
-    남아야 한다(중간산출물만 만들고 조용히 끝나는 것을 금지)."""
+    """generate_pptx_v3(템플릿 엔진)와 generate_pptx_v2(코드 렌더러 폴백)가 모두
+    실패해도(혹은 저장 후 파일이 사라져도) 파이프라인이 "정상 완료"를 반환해서는
+    안 되며, 처리로그.txt 마지막 줄에 실패 단계가 남아야 한다(중간산출물만
+    만들고 조용히 끝나는 것을 금지)."""
     import app.engine.pipeline as pipeline_mod
 
     def _boom(*args, **kwargs):
         raise RuntimeError("강제 저장 실패(테스트)")
 
+    # generate_pptx_v3가 실패해도 pipeline.py는 generate_pptx_v2로 자동 재시도하므로,
+    # 두 경로 모두 막아야 이 테스트가 실제로 검증하려는 "완전 실패" 상황이 재현된다.
+    monkeypatch.setattr(pipeline_mod, "generate_pptx_v3", _boom)
     monkeypatch.setattr(pipeline_mod, "generate_pptx_v2", _boom)
 
     files = [os.path.join(FIXT_DIR, "sample1.pptx"), os.path.join(FIXT_DIR, "sample2.pptx")]

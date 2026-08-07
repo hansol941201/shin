@@ -310,7 +310,9 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
         material_imgs = take_unused(material_pool, limit=n)
         material_cards = [{
             "image": material_imgs[i],
-            "label": material_bullets[i][:16] if i < len(material_bullets) else "사용 자재",
+            # 카드 제목은 한 줄(카드 폭 기준 약 9~10자)에 들어가도록 문장 중간을 자르지
+            # 않고 짧게 축약한다 - 원본 문구 전체는 caption에 그대로 담는다.
+            "label": _short(material_bullets[i], limit=9) if i < len(material_bullets) else "사용 자재",
             "caption": _short(material_bullets[i]) if i < len(material_bullets)
                         else _caption_for(material_imgs[i], "시공 자재/장비 참고사진"),
         } for i in range(len(material_imgs))]

@@ -19,6 +19,7 @@ from app.engine import inventory as inv
 from app.engine import quality as qmod
 from app.engine import render_check as rc
 from app.engine.generator2 import generate_pptx_v2
+from app.engine.generator3 import generate_pptx_v3
 from app.engine.grading import grade_all
 from app.engine.grouping import build_groups, family_of, groups_to_json
 from app.engine.story import build_pages
@@ -291,7 +292,16 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
                                   site_photos=site_images)
             _log(logs, f"[시도 {attempt}] 스토리 구성 완료 - 총 {len(pages)}페이지 (설정: {settings or '기본값'})")
 
-            generate_pptx_v2(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
+            # 템플릿 엔진(디자이너가 만든 실제 .pptx 템플릿 + placeholder 치환)을 우선
+            # 사용한다. 아직 템플릿이 없는 카테고리의 페이지는 generate_pptx_v3 내부에서
+            # generator2.py 코드 렌더러로 자동 대체되므로, 템플릿이 갖춰지는 대로
+            # 점진적으로 템플릿 기반 렌더링 비중이 늘어난다(파이프라인 코드 수정 불필요).
+            try:
+                generate_pptx_v3(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
+            except Exception as e:
+                _log(logs, f"[파이프라인] 템플릿 엔진(generator3) 실패({type(e).__name__}: {e}) - "
+                           "generator2(코드 렌더러)로 재시도합니다.")
+                generate_pptx_v2(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
 
             current_stage = f"검수(시도 {attempt})"
             report = validate_and_fix(out_pptx, blacklist, apartment_name)
