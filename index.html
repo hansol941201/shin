@@ -32,6 +32,7 @@
     --sb-text:#1f2937;
     --sb-text-sub:#6b7280;
     --sb-text-faint:#9aa3af;
+    --topbar-h:150px; /* 4단 헤더(브랜드/검색/바로가기/오늘할일·알림·계정) 실측 높이 */
   }
   *{box-sizing:border-box;}
   body{
@@ -53,8 +54,8 @@
     display:flex;
     flex-direction:column;
     position:sticky;
-    top:75px;
-    height:calc(100vh - 75px);
+    top:var(--topbar-h,132px);
+    height:calc(100vh - var(--topbar-h,132px));
     overflow-y:auto;
   }
   .brand{display:flex;align-items:center;gap:12px;padding:0 2px 22px;position:relative;}
@@ -71,8 +72,22 @@
   .brand-edit-btn:hover{color:var(--sb-navy);}
   hr.sep{border:none;border-top:1px solid var(--sb-border);margin:0 0 22px;}
 
-  .nav-section{margin-bottom:26px;}
-  .nav-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .nav-section{margin-bottom:20px;}
+  .nav-section-head{
+    display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+    padding:2px;margin:0 2px 6px;user-select:none;
+  }
+  .nav-section-head .sidebar-group-label{margin:0;}
+  .nav-section-head:hover .sidebar-group-label{color:var(--sb-navy);}
+  .nav-section-head-actions{display:flex;align-items:center;gap:10px;flex:none;}
+  .nav-edit-toggle{
+    background:none;border:none;color:var(--sb-text-faint);font-size:11px;font-weight:700;
+    cursor:pointer;padding:2px 2px;
+  }
+  .nav-edit-toggle:hover, .nav-edit-toggle.active{color:var(--sb-navy);}
+  .nav-section-chevron{font-size:9px;color:var(--sb-text-faint);flex:none;}
+  .nav-section.collapsed .nav-list, .nav-section.collapsed .nav-add{display:none;}
+  .nav-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;}
   .nav-item{
     display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:4px;
     border:1px solid var(--sb-border);background:var(--sb-bg);
@@ -89,9 +104,24 @@
     border-radius:4px;padding:1px 7px;min-width:18px;text-align:center;
   }
   .nav-item.active .badge{background:#fff;color:var(--sb-navy);}
+  /* 업무 가이드 목록: 큰 버튼형이 아니라 작은 텍스트 메뉴로 표시 */
+  .nav-list .nav-item{
+    padding:6px 8px 6px 10px;border:none;border-radius:5px;background:none;
+    font-size:12.5px;font-weight:500;border-left:2px solid transparent;
+  }
+  .nav-list .nav-item:hover{background:var(--sb-hover);border-left-color:transparent;}
+  .nav-list .nav-item.active{
+    background:var(--sb-hover);border-left-color:var(--sb-navy);color:var(--sb-navy);font-weight:700;
+  }
+  .nav-list .nav-item.active .badge{background:var(--sb-navy);color:#fff;}
+  .nav-list.edit-mode .nav-item{cursor:grab;padding-left:22px;position:relative;}
+  .nav-list.edit-mode .nav-item::before{
+    content:"⋮⋮";position:absolute;left:6px;top:50%;transform:translateY(-50%);
+    font-size:10px;letter-spacing:-1px;color:var(--sb-text-faint);line-height:1;
+  }
   .nav-add{
-    width:100%;text-align:left;background:var(--sb-bg);border:1px dashed var(--sb-border);color:var(--sb-text-sub);
-    padding:11px 14px;border-radius:4px;cursor:pointer;font-size:13px;
+    width:100%;text-align:left;background:none;border:1px dashed var(--sb-border);color:var(--sb-text-sub);
+    padding:7px 10px;border-radius:5px;cursor:pointer;font-size:11.5px;margin-top:4px;
   }
   .nav-add:hover{color:var(--sb-navy);border-color:var(--sb-navy);background:var(--sb-hover);}
   .sidebar-footer{
@@ -134,8 +164,25 @@
   }
   @keyframes aiSpin{to{transform:rotate(360deg);}}
 
+  /* AI 문구수정 카드 (홈 화면 최상단, 가장 중요한 기능) — 사이드바용 색상 변수와 별개로 콘텐츠 카드 톤에 맞춘다 */
+  #aiComposerCard .ai-note-textarea{
+    width:100%;min-height:180px;resize:vertical;border-radius:8px;border:1px solid var(--card-border);
+    background:var(--bg);color:var(--text-dark);font-size:14px;font-family:inherit;padding:12px 14px;line-height:1.6;
+  }
+  #aiComposerCard .ai-note-textarea::placeholder{color:var(--text-light-gray);white-space:pre-line;}
+  #aiComposerCard .ai-note-textarea:focus{outline:none;border-color:var(--accent);}
+  #aiComposerCard .ai-note-status{font-size:12px;font-weight:600;color:var(--accent-dark);display:flex;align-items:center;gap:6px;margin-top:8px;}
+  #aiComposerCard .ai-note-status .spin{
+    width:10px;height:10px;border-radius:50%;border:2px solid var(--card-border);border-top-color:var(--accent-dark);
+    animation:aiSpin .7s linear infinite;
+  }
+  .ai-composer-mode-row{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .ai-composer-mode-row .copy-btn.active{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
+  .ai-composer-result{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .ai-composer-result-label{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:6px;}
+
   /* Content */
-  .content{flex:1;padding:36px 44px;min-width:0;}
+  .content{flex:1;padding:28px 36px;min-width:0;}
   .view-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .view-topbar .crumb{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-gray);}
   .crumb-group{display:inline-flex;align-items:center;gap:6px;}
@@ -203,16 +250,16 @@
   .phone-popover-hint{font-size:10.5px;color:var(--text-light-gray);margin-top:7px;}
 
   .card{
-    background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;
-    padding:22px 24px;margin-bottom:18px;
+    background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
+    padding:16px 18px;margin-bottom:14px;
   }
-  .card.highlight{border-top:4px solid var(--accent);}
+  .card.highlight{border:none;border-top:3px solid var(--accent);}
   .card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px;}
   .tag-pill{
     display:inline-block;background:var(--hover-blue-soft);color:var(--accent-dark);font-size:12px;font-weight:700;
     padding:4px 10px;border-radius:999px;margin-bottom:10px;
   }
-  .card-title{font-size:17px;font-weight:700;margin:0 0 12px;}
+  .card-title{font-size:16px;font-weight:700;margin:0 0 10px;}
   .card-body{white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--text-dark);}
   .card-actions{display:flex;gap:6px;flex-shrink:0;}
 
@@ -263,7 +310,7 @@
 
   .inline-form{display:flex;gap:8px;margin-top:12px;}
   .inline-form input{
-    flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);font-size:14px;font-family:inherit;
+    flex:1;min-width:0;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);font-size:14px;font-family:inherit;
   }
   .inline-form button{
     background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;
@@ -319,18 +366,49 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  /* Top bar: quicklinks(왼쪽) + 검색창(가운데) + note/lock(오른쪽) */
+  /* Top bar: 좌측 브랜드 + 우측 검색/오늘할일/알림/사용자 */
+  /* 상단 헤더: 브랜드 / 검색 / 바로가기 / 오늘할일·알림·계정 4단으로 나눠 각 단의 시각적 무게를 가볍게 유지한다 */
   .topbar{
     position:sticky;top:0;z-index:90;background:#fff;border-bottom:1px solid var(--card-border);
-    padding:16px 28px;
+    padding:12px 28px 10px;
   }
-  .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;}
-  .search-wrap{position:relative;flex:0 0 200px;width:200px;justify-self:center;}
+  .topbar-row{display:flex;align-items:center;}
+  .topbar-row + .topbar-row{margin-top:7px;}
+  .topbar-row-actions{justify-content:flex-end;gap:6px;}
+  .topbar-brand{
+    font-size:14px;font-weight:800;color:var(--navy);letter-spacing:.01em;flex:none;
+    background:none;border:none;padding:0;cursor:pointer;font-family:inherit;
+  }
+  .topbar-brand:hover{color:var(--accent-dark);}
+  .topbar-brand .sep{color:var(--text-light-gray);font-weight:400;margin:0 6px;}
+  .search-wrap{position:relative;flex:1 1 auto;max-width:420px;width:auto;}
   .search-box{
-    width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);
-    font-size:13.5px;font-family:inherit;background:var(--bg);color:var(--text-dark);
+    width:100%;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:13px;font-family:inherit;background:var(--bg);color:var(--text-dark);
   }
   .search-box:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--hover-blue-soft);}
+
+  /* 헤더 바로가기: 검색창 아래 별도 줄, 아이콘 없는 작은 텍스트 캡슐. 테두리는 거의 없이 배경/hover로만 구분 */
+  .topbar-quicklinks{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:22px;}
+  .qlink-chip{
+    display:inline-flex;align-items:center;background:none;border:none;
+    border-radius:999px;overflow:hidden;
+  }
+  .qlink-chip-link{
+    padding:3px 8px;font-size:11.5px;font-weight:600;color:var(--text-gray);text-decoration:none;white-space:nowrap;
+    border-radius:999px;
+  }
+  .qlink-chip:hover .qlink-chip-link{background:var(--sb-hover);color:var(--navy);}
+  .qlink-chip-del{
+    background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:10px;
+    padding:3px 6px 3px 0;line-height:1;
+  }
+  .qlink-chip-del:hover{color:var(--danger);}
+  .qlink-chip-add{
+    background:none;border:none;color:var(--text-light-gray);
+    cursor:pointer;font-size:11.5px;padding:3px 8px;white-space:nowrap;
+  }
+  .qlink-chip-add:hover{color:var(--navy);text-decoration:underline;}
   .search-results{
     position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:80vw;background:#fff;border:1px solid var(--card-border);
     border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.14);z-index:120;display:none;overflow:hidden;max-height:420px;
@@ -395,10 +473,16 @@
   }
   .qlink-slot.empty:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-soft);}
 
-  .top-actions{display:flex;align-items:center;gap:8px;flex:none;justify-self:end;}
+  .top-actions{display:flex;align-items:center;gap:6px;flex:none;}
+  .sidebar-primary-group .nav-item{
+    width:100%;text-align:left;font-family:inherit;
+    border:none;background:none;padding:9px 12px;border-radius:7px;font-size:14px;font-weight:700;
+  }
+  .sidebar-primary-group .nav-item:hover{background:var(--sb-hover);}
+  .sidebar-primary-group .nav-item.active{background:var(--sb-navy);color:#fff;}
   .top-icon-btn{
-    position:relative;width:42px;height:42px;flex:none;border-radius:10px;background:#fff;border:1px solid var(--card-border);
-    font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+    position:relative;width:32px;height:32px;flex:none;border-radius:8px;background:none;border:1px solid transparent;
+    font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
   }
   .top-icon-btn:hover{border-color:var(--accent);background:var(--hover-blue-soft);}
   .top-icon-btn .badge-dot{
@@ -459,15 +543,250 @@
   .note-panel-head h2{margin:0;font-size:17px;}
   .note-panel-body{flex:1;overflow-y:auto;padding:20px 22px;}
 
+  /* 전화 비서 (통화 중 실시간 업무비서) */
+  .pa-callbar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .pa-callbar-label{font-size:11px;font-weight:700;color:var(--text-gray);letter-spacing:.04em;margin-bottom:2px;}
+  .pa-callbar-who{font-size:17px;font-weight:700;color:var(--text-dark);}
+  .pa-callbar .inline-form input{font-size:16px;padding:12px 14px;}
+  .pa-callbar .inline-form button{font-size:14px;padding:12px 20px;}
+  .pa-notes-log{margin-top:14px;padding-top:12px;border-top:1px solid var(--card-border);max-height:200px;overflow-y:auto;}
+  .pa-notes-log-label{font-size:11px;font-weight:700;color:var(--text-light-gray);letter-spacing:.04em;margin-bottom:4px;}
+  .pa-note-line{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:13px;color:var(--text-gray);line-height:1.7;
+  }
+  .pa-note-del{
+    flex:none;background:none;border:none;color:var(--text-light-gray);cursor:pointer;
+    font-size:11px;padding:2px 5px;border-radius:5px;line-height:1;
+  }
+  .pa-note-del:hover{color:var(--danger);background:#fdeceb;}
+  .pa-missing{font-size:13.5px;font-weight:700;color:var(--danger);}
+  .pa-check-item{font-size:13.5px;color:var(--text-dark);line-height:1.9;}
+
+  /* 대화형 전화 대본: 세로로 흐르는 말할 문장 ↔ 확인 항목 */
+  .pa-script{display:flex;flex-direction:column;gap:14px;}
+  .pa-script-say{padding:12px 14px;background:var(--hover-blue-soft);border-radius:10px;}
+  .pa-script-say-label{font-size:11px;font-weight:700;color:var(--accent-dark);letter-spacing:.03em;margin-bottom:5px;}
+  .pa-script-say-text{font-size:16px;font-weight:700;line-height:1.6;color:var(--text-dark);margin-bottom:8px;}
+  .pa-script-check{padding-left:14px;border-left:2px solid var(--card-border);}
+  .pa-script-check-label{font-size:10.5px;font-weight:700;color:var(--text-light-gray);letter-spacing:.04em;margin-bottom:4px;}
+  .pa-script-check-items{display:flex;flex-wrap:wrap;gap:6px;}
+  .pa-script-check-items span{
+    font-size:12px;color:var(--text-gray);background:var(--bg);border:1px solid var(--card-border);
+    border-radius:999px;padding:3px 10px;
+  }
+  .pa-scenario-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .pa-scenario-extra{font-size:13.5px;color:var(--text-dark);}
+  .pa-scenario-followup-list{margin:0;padding-left:18px;font-size:13.5px;color:var(--text-dark);line-height:1.9;}
+
+  /* 업무 유형 질문(Question) + 답변(Answer) — 전체 진행순서(요약) + 현재 질문(대본, 크게 강조) */
+  .pa-qa-overview{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
+  .pa-qa-ov-row{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+    border-radius:8px;padding:7px 8px;cursor:pointer;font-family:inherit;
+  }
+  .pa-qa-ov-row:hover{background:var(--bg);}
+  .pa-qa-ov-row.current{background:var(--hover-blue-soft);}
+  .pa-qa-ov-mark{
+    flex:0 0 22px;font-size:11.5px;font-weight:800;color:var(--text-light-gray);text-align:center;
+  }
+  .pa-qa-ov-row.answered .pa-qa-ov-mark{color:#1b9e6a;}
+  .pa-qa-ov-row.current .pa-qa-ov-mark{color:var(--accent-dark);}
+  .pa-qa-ov-label{flex:1;min-width:0;font-size:13px;color:var(--text-gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pa-qa-ov-row.current .pa-qa-ov-label{color:var(--text-dark);font-weight:700;}
+  .pa-qa-ov-row.answered .pa-qa-ov-label{color:var(--text-dark);}
+  .pa-qa-ov-current-tag{
+    flex:none;font-size:10.5px;font-weight:800;color:var(--accent-dark);background:#fff;
+    border-radius:999px;padding:2px 8px;
+  }
+
+  .pa-qa-focus{
+    background:var(--hover-blue-soft);border-radius:12px;padding:18px;margin-bottom:12px;
+  }
+  .pa-qa-focus-head{font-size:11px;font-weight:700;color:var(--accent-dark);letter-spacing:.03em;margin-bottom:8px;}
+  .pa-qa-focus-hint{font-size:12px;color:var(--text-gray);margin-bottom:4px;}
+  .pa-qa-focus-question{font-size:20px;font-weight:800;line-height:1.5;color:var(--text-dark);margin-bottom:16px;}
+  .pa-qa-focus-answer-label{font-size:11px;font-weight:700;color:var(--text-gray);margin-bottom:6px;}
+  .pa-qa-focus-answer{font-size:16px;padding:12px 14px;}
+  .pa-qa-focus-actions{display:flex;align-items:center;gap:8px;margin-top:14px;}
+
+  .pa-qa-question-edit-row{display:flex;gap:6px;margin-bottom:16px;}
+  .pa-qa-question-input{
+    flex:1;min-width:0;font-size:16px;font-weight:700;padding:9px 11px;border-radius:8px;
+    border:1px solid var(--card-border);font-family:inherit;
+  }
+  .pa-qa-question-input:focus{outline:none;border-color:var(--accent);}
+  .pa-qa-del{flex:none;background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:13px;padding:0 6px;}
+  .pa-qa-del:hover{color:var(--danger);}
+  .pa-qa-answer{
+    width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:14px;font-family:inherit;color:var(--text-dark);background:#fff;
+  }
+  .pa-qa-answer:focus{outline:none;border-color:var(--accent);}
+  .pa-qa-answer::placeholder{color:var(--text-light-gray);}
+  .pa-qa-add{
+    width:100%;border:1px dashed var(--card-border);background:none;border-radius:8px;
+    padding:10px;color:var(--text-gray);cursor:pointer;font-size:13px;
+  }
+  .pa-qa-add:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .pa-followup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--card-border);font-size:13.5px;}
+  .pa-followup-item:last-child{border-bottom:none;}
+  .pa-followup-input{
+    flex:1;min-width:0;border:1px solid transparent;background:none;padding:5px 7px;border-radius:6px;
+    font-size:13.5px;font-family:inherit;color:var(--text-dark);
+  }
+  .pa-followup-input:hover{border-color:var(--card-border);}
+  .pa-followup-input:focus{outline:none;border-color:var(--accent);background:#fff;}
+  .pa-followup-actions{display:flex;gap:6px;flex-shrink:0;}
+  .pa-rawmemo{
+    width:100%;min-height:110px;padding:12px 14px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:14px;font-family:inherit;line-height:1.6;resize:vertical;color:var(--text-dark);
+  }
+  .pa-rawmemo:focus{outline:none;border-color:var(--accent);}
+  .pa-rawmemo::placeholder{color:var(--text-light-gray);}
+  .pa-endcall-row{display:flex;gap:8px;margin:4px 0 24px;}
+  .pa-qa-block{padding:14px 0;border-bottom:1px solid var(--card-border);}
+  .pa-qa-block:last-child{border-bottom:none;}
+  .pa-qa-block-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .pa-qa-block-num{font-size:11px;font-weight:700;color:var(--accent-dark);flex:none;}
+  .pa-qa-block-label{font-size:13.5px;font-weight:700;color:var(--text-dark);}
+  .pa-qa-block-hint{font-size:11.5px;color:var(--text-light-gray);margin:4px 0 2px;}
+  .pa-qa-block-question{font-size:15px;font-weight:600;color:var(--text-dark);margin-bottom:8px;}
+  .pa-qa-block-answer-label{font-size:11px;font-weight:700;color:var(--text-gray);margin-bottom:4px;}
+  .pa-proc-edit-row{display:flex;align-items:center;gap:6px;padding:6px 0;}
+  .pa-field-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--card-border);}
+  .pa-field-row:last-child{border-bottom:none;}
+  .pa-field-label{flex:0 0 130px;font-size:12.5px;font-weight:700;color:var(--text-gray);}
+  .pa-field-val{font-size:13.5px;font-weight:700;color:var(--text-dark);}
+  .pa-field-input{flex:1;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--card-border);font-size:13.5px;font-family:inherit;color:var(--text-dark);}
+  .pa-field-input:focus{outline:none;border-color:var(--accent);}
+  .pa-field-badge{display:inline-block;font-size:10px;font-weight:700;color:var(--danger);background:rgba(220,53,69,.08);border-radius:4px;padding:1px 5px;margin-left:4px;}
+  .pa-admin-group{margin-bottom:16px;}
+  .pa-admin-group:last-child{margin-bottom:0;}
+  .pa-admin-head{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
+  .pa-admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--card-border);font-size:13px;color:var(--text-dark);}
+  .pa-admin-row:last-child{border-bottom:none;}
+  .pa-admin-actions{display:flex;gap:4px;flex-shrink:0;}
+
+  /* 전화 비서 재설계: 검색 전 빠른 유형 선택 칩 */
+  .pa-quick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .pa-quick-chip{
+    font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px;
+    border:1px solid var(--card-border);background:var(--bg);color:var(--text-gray);
+    cursor:pointer;font-family:inherit;
+  }
+  .pa-quick-chip:hover{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
+
+  /* 전화 비서 재설계: 진행 표시 + 좌(본문)/우(통화 메모) 레이아웃 */
+  .pa-progress{font-size:11.5px;font-weight:700;color:var(--text-gray);margin-top:10px;letter-spacing:.02em;}
+  .pa-call-layout{display:flex;gap:16px;align-items:flex-start;}
+  .pa-call-main{flex:1;min-width:0;}
+  .pa-call-side{flex:0 0 260px;}
+  .pa-call-side .card{margin-bottom:0;}
+  @media (max-width:980px){
+    .pa-call-layout{flex-direction:column;}
+    .pa-call-side{flex:none;width:100%;}
+  }
+
+  /* 전화 비서 재설계: 질문 하나에 집중 — 안내 문구는 질문/답변과 한 덩어리로 묶어 보여준다 */
+  .pa-qa-focus-guide{margin-top:14px;padding-top:12px;border-top:1px dashed var(--card-border);}
+  .pa-qa-focus-guide-label{font-size:10.5px;font-weight:700;color:var(--text-light-gray);letter-spacing:.04em;margin-bottom:4px;}
+  .pa-qa-focus-guide-text{font-size:12.5px;color:var(--text-gray);line-height:1.6;}
+  .pa-qa-links{display:flex;gap:14px;margin:10px 0 4px;}
+
+  /* 전화 비서 재설계: 진행순서 / 담당자를 통화 중에는 접어서 최소한만 보여준다 */
+  .pa-collapse-toggle{
+    display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:none;border:none;
+    padding:8px 0;font-size:12.5px;font-weight:700;color:var(--text-gray);cursor:pointer;font-family:inherit;
+  }
+  .pa-collapse-toggle:hover{color:var(--accent-dark);}
+  .pa-contact-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text-dark);padding:8px 0;}
+  .pa-contact-line strong{font-weight:700;}
+  .pa-collapse{margin-bottom:6px;}
+  .pa-qa-overview-card{padding-top:10px;}
+
+  /* 처리할 업무 비서 (상태 요약 가로칸은 두지 않는다 — 각 업무 행 왼쪽 상태 태그로만 표시) */
+  /* 목록형 컴팩트 1줄 행: 각 행을 카드로 감싸지 않고 얇은 구분선만 사용해 밀도를 높인다 */
+  .today-list{display:flex;flex-direction:column;margin-bottom:16px;}
+  .today-card{
+    background:none;border:none;border-bottom:1px solid var(--card-border);border-radius:6px;
+    padding:8px 6px;cursor:pointer;
+  }
+  .today-list .today-card:last-child{border-bottom:none;}
+  .today-card:hover{background:var(--bg);}
+  .today-card.expanded{background:var(--hover-blue-soft);}
+  .today-card-top{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+  .today-card-del{
+    margin-left:auto;flex:none;background:none;border:none;color:var(--text-light-gray);
+    cursor:pointer;font-size:13px;padding:2px 6px;line-height:1;
+  }
+  .today-card-del:hover{color:var(--text-gray);}
+  .today-status-tag{
+    flex:none;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:5px;
+    background:var(--navy-soft);color:var(--navy);letter-spacing:.02em;
+  }
+  .today-status-tag.st-urgent{background:#fde8e8;color:#b91c1c;}       /* 긴급 = 연한 빨강 */
+  .today-status-tag.st-callback{background:#e3f7e8;color:#15803d;}    /* 콜백 = 연한 초록 */
+  .today-status-tag.st-material{background:#ffedd5;color:#9a3412;}    /* 자료발송 = 연한 주황 */
+  .today-status-tag.st-waiting{background:#ede9fe;color:#5b21b6;}     /* 대기 = 연한 보라 */
+  .today-card-title{
+    font-size:13.5px;font-weight:600;color:var(--text-dark);flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .today-card-sub{
+    font-size:12px;color:var(--text-gray);margin-top:2px;padding-left:1px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .today-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--card-border);}
+  .today-detail-row{margin-bottom:12px;}
+  .today-detail-row:last-child{margin-bottom:0;}
+  .today-detail-label{font-size:11px;font-weight:700;color:var(--text-gray);letter-spacing:.03em;margin-bottom:4px;}
+  .today-detail-val{font-size:14px;color:var(--text-dark);line-height:1.6;white-space:pre-wrap;}
+  .today-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .today-snooze-menu{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  /* 처리할 업무 상단 도구 버튼: 목록 제목보다 시각적으로 가벼운 보조/고스트 버튼 */
+  .today-toolbar-row{display:flex;gap:16px;margin-bottom:10px;}
+  .today-toolbar-btn{
+    background:none;border:none;padding:2px 0;font-size:12px;font-weight:600;color:var(--text-gray);cursor:pointer;
+  }
+  .today-toolbar-btn:hover{color:var(--accent-dark);text-decoration:underline;}
+  .today-empty{color:var(--text-gray);font-size:14px;padding:24px 0;text-align:center;}
+
+  /* 홈: 전화 비서 + 처리할 업무 + 업무도구를 한 화면에 요약 */
+  .home-more-link{text-align:right;margin:6px 0 26px;}
+  .link-btn{background:none;border:none;padding:0;font-size:12px;color:var(--text-gray);cursor:pointer;}
+  .link-btn:hover{color:var(--accent-dark);text-decoration:underline;}
+  .worktools-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .worktools-btn{
+    background:none;border:1px solid var(--card-border);border-radius:7px;
+    padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text-dark);cursor:pointer;
+  }
+  .worktools-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .worktools-btn.disabled, .worktools-btn:disabled{
+    color:var(--text-light-gray);cursor:not-allowed;background:var(--bg);
+  }
+  .worktools-btn.disabled:hover, .worktools-btn:disabled:hover{border-color:var(--card-border);color:var(--text-light-gray);}
+  .worktools-btn.active{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
+  .home-shortcuts-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+
+  /* 사이드바: 상단 우선순위 그룹(홈/전화 비서/처리할 업무) + 하단 업무도구 그룹 */
+  .sidebar-primary-group{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
+  .sidebar-group-label{font-size:11px;font-weight:700;color:var(--sb-text-faint);letter-spacing:.06em;margin:0 2px 8px;}
+  .sidebar-quicklinks{margin-top:16px;padding-top:16px;border-top:1px solid var(--sb-border);}
+  .sidebar-quicklinks .quicklinks-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .sidebar-quicklinks .qlink-slot{height:30px;font-size:11.5px;}
+  .sidebar-quicklinks .qlink-main{padding:0 9px;gap:6px;}
+
+  /* 상단 헤더: 미연결(알림/사용자) 버튼 표시 */
+  .top-icon-btn:disabled{color:var(--text-light-gray);cursor:not-allowed;background:var(--bg);}
+  .top-icon-btn:disabled:hover{border-color:var(--card-border);background:var(--bg);}
+
   @media (max-width:760px){
-    .sidebar{position:fixed;left:0;top:75px;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
+    .sidebar{position:fixed;left:0;top:var(--topbar-h,128px);bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
     .sidebar.open{transform:translateX(0);}
     .content{padding:20px;}
-    .topbar{padding:12px 16px;}
-    .topbar-inner{display:flex;flex-wrap:wrap;gap:10px;}
-    .quicklinks-panel{flex:1 1 auto;order:1;}
-    .top-actions{order:2;justify-self:auto;}
-    .search-wrap{flex:1 1 100%;width:auto;order:3;justify-self:auto;}
+    .topbar{padding:10px 16px 8px;}
+    .search-wrap{max-width:none;}
     .search-results{left:0;right:0;width:auto;max-width:none;}
     .note-panel{width:100%;max-width:100%;}
   }
@@ -475,17 +794,23 @@
 </head>
 <body>
 <div class="topbar">
-  <div class="topbar-inner">
-    <div class="quicklinks-panel">
-      <div class="quicklinks-grid" id="quickLinks"></div>
-    </div>
-    <div class="top-actions">
-      <button class="top-icon-btn" id="noteBtn" title="할 일 목록">📝<span class="badge-dot" id="todoBadge">0</span></button>
-      <button class="top-icon-btn" id="lockBtn" title="계정 정보">🔒</button>
-    </div>
+  <div class="topbar-row topbar-row-brand">
+    <button type="button" class="topbar-brand" id="homeBrandLink">SHIN<span class="sep">/</span>업무비서</button>
+  </div>
+  <div class="topbar-row topbar-row-search">
     <div class="search-wrap">
       <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
       <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+  <div class="topbar-row topbar-row-links">
+    <div class="topbar-quicklinks" id="quickLinks"></div>
+  </div>
+  <div class="topbar-row topbar-row-actions">
+    <div class="top-actions">
+      <button class="top-icon-btn" id="noteBtn" title="오늘 할 일">📝<span class="badge-dot" id="todoBadge">0</span></button>
+      <button class="top-icon-btn" id="notifBtn" title="알림 (미연결 — 연결된 기존 기능 없음)" disabled>🔔</button>
+      <button class="top-icon-btn" id="userBtn" title="사용자 (미연결 — 연결된 기존 기능 없음)" disabled>👤</button>
     </div>
   </div>
 </div>
@@ -510,26 +835,33 @@
     </div>
     <hr class="sep" />
 
-    <div class="nav-section">
+    <div class="sidebar-primary-group">
+      <button type="button" class="nav-item" id="homeNavLink">홈</button>
+      <button type="button" class="nav-item" id="todayFooterLink">처리할 업무</button>
+    </div>
+
+    <div class="nav-section collapsed" id="guideNavSection">
+      <div class="nav-section-head" id="guideNavToggle">
+        <span class="sidebar-group-label">업무 가이드</span>
+        <span class="nav-section-head-actions">
+          <button type="button" class="nav-edit-toggle" id="guideEditToggle" title="가이드 순서 편집">편집</button>
+          <span class="nav-section-chevron" id="guideNavChevron">˅</span>
+        </span>
+      </div>
       <ul class="nav-list" id="unifiedNavList"></ul>
       <button class="nav-add" id="addGuideBtn">+ 새 가이드 추가</button>
     </div>
 
     <div class="sidebar-footer">
-      <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체 관리</button>
+      <div class="sidebar-group-label">업무도구</div>
+      <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체관리</button>
+      <button type="button" class="sidebar-footer-link" id="perfSearchLink" disabled title="아직 연결된 기존 기능이 없습니다 (미연결)">실적검색</button>
+      <button type="button" class="sidebar-footer-link" id="materialsFooterLink">자료실</button>
+      <button type="button" class="sidebar-footer-link" id="manualFooterLink">업무매뉴얼</button>
+      <button type="button" class="sidebar-footer-link" id="vaultFooterLink">계정관리</button>
+      <button type="button" class="sidebar-footer-link" id="settingsFooterLink">설정</button>
     </div>
 
-    <div class="ai-note-composer">
-      <div class="ai-note-head">
-        <div class="ai-note-label">✨ AI 업무비서</div>
-        <button type="button" class="ai-note-settings-btn" id="aiSettingsBtn" title="API 키 설정">⚙️</button>
-      </div>
-      <div class="ai-note-input-wrap">
-        <textarea id="aiNoteInput" class="ai-note-textarea" rows="4"
-          placeholder="예: 메일 실적 보내요 / 카카오톡 협약 감사합니다 / 전화보고 동신도장 전화옴&#10;(Enter로 실행 · Shift+Enter로 줄바꿈)"></textarea>
-        <span class="ai-note-status" id="aiNoteStatus" style="display:none;">문구 수정 중...</span>
-      </div>
-    </div>
   </aside>
 
   <main class="content" id="content"></main>
@@ -576,7 +908,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -684,6 +1016,24 @@ const DEFAULT_STATE = {
   companies:[
     {id:uid(), name:'예시 업체', contactName:'', repName:'', phone:'', fax:'', email:'', bizRegNo:'', address:'', memo:''}
   ],
+  // 전화 비서가 참고하는 참고 데이터 (설정 화면에서 직접 추가/수정/삭제 가능. 아래는 예시 1건씩만 등록되어 있음)
+  jurisdictions:[
+    {id:uid(), region:'부산', branch:'예시 지사', manager:'예시 담당자', phone:'010-0000-0000'}
+  ],
+  materials:[
+    {id:uid(), name:'시방서', location:'홈페이지 → 자료실 → 시방서 (예시, 실제 경로로 수정해주세요)', url:''}
+  ],
+  sites:[
+    {id:uid(), name:'예시 아파트', region:'부산', memo:''}
+  ],
+  // 처리할 업무 비서가 관리하는 업무 카드. 전화 비서 통화 종료 시 후속업무를 저장하면 여기에 자동으로 쌓인다.
+  workItems:[],
+  // 전화 비서에서 [저장]으로 확정한 통화 기록 (원문/정리본/후속업무 분리 보관)
+  callLogs:[],
+  // 업무유형(tag)별 질문 세트 / 진행순서 세트 — 처음 그 업무유형을 만났을 때 1회만 자동 생성되고,
+  // 이후에는 사용자가 [질문 편집]/[편집]으로 직접 관리한다(자동 생성이 다시 덮어쓰지 않는다).
+  phoneQuestionSets:{},
+  phoneProcedureSets:{},
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
@@ -701,13 +1051,21 @@ function loadState(){
       if(!parsed.credentials) parsed.credentials = [];
       if(!parsed.companies) parsed.companies = [];
       if(!Array.isArray(parsed.navOrder)) parsed.navOrder = [];
+      // 전화 비서 / 처리할 업무 비서용 추가 데이터 (기존 사용자는 빈 배열로 채워짐 — 예시 데이터 주입 없음)
+      if(!Array.isArray(parsed.jurisdictions)) parsed.jurisdictions = [];
+      if(!Array.isArray(parsed.materials)) parsed.materials = [];
+      if(!Array.isArray(parsed.sites)) parsed.sites = [];
+      if(!Array.isArray(parsed.workItems)) parsed.workItems = [];
+      if(!Array.isArray(parsed.callLogs)) parsed.callLogs = [];
+      if(!parsed.phoneQuestionSets || typeof parsed.phoneQuestionSets !== 'object') parsed.phoneQuestionSets = {};
+      if(!parsed.phoneProcedureSets || typeof parsed.phoneProcedureSets !== 'object') parsed.phoneProcedureSets = {};
       return parsed;
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 /* 컬렉션 이름 ↔ state 필드 매핑 (Firestore 실시간 동기화용) */
-const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings'];
+const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
 function getCloudSlice(key){
   if(key === 'companies') return state.companies;
   if(key === 'workflow') return state.guides;
@@ -716,6 +1074,13 @@ function getCloudSlice(key){
   if(key === 'shortcuts') return state.links;
   if(key === 'phrases') return state.phrases;
   if(key === 'settings') return { brand: state.brand, navOrder: state.navOrder };
+  if(key === 'jurisdictions') return state.jurisdictions;
+  if(key === 'materials') return state.materials;
+  if(key === 'sites') return state.sites;
+  if(key === 'workItems') return state.workItems;
+  if(key === 'callLogs') return state.callLogs;
+  if(key === 'phoneQuestionSets') return state.phoneQuestionSets;
+  if(key === 'phoneProcedureSets') return state.phoneProcedureSets;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -730,6 +1095,13 @@ function applyCloudSlice(key, data){
     if(data.brand) state.brand = data.brand;
     if(Array.isArray(data.navOrder)) state.navOrder = data.navOrder;
   }
+  else if(key === 'jurisdictions') state.jurisdictions = data;
+  else if(key === 'materials') state.materials = data;
+  else if(key === 'sites') state.sites = data;
+  else if(key === 'workItems') state.workItems = data;
+  else if(key === 'callLogs') state.callLogs = data;
+  else if(key === 'phoneQuestionSets') state.phoneQuestionSets = data;
+  else if(key === 'phoneProcedureSets') state.phoneProcedureSets = data;
 }
 
 function saveState(){
@@ -742,6 +1114,9 @@ function saveState(){
 }
 
 let state = loadState();
+// 사이트를 열 때(새로고침 포함)는 항상 홈 화면부터 시작한다 — "이 화면 하나만 켜놓고 업무" 원칙.
+// 마지막으로 보던 화면 자체는 데이터가 아니라 탐색 위치일 뿐이며, 다른 메뉴 이동 시 다시 저장된다.
+state.currentView = {type:'home'};
 let companySearchQuery = ''; // 업체 검색어(임시 상태, localStorage에는 저장하지 않음)
 
 /* ---------- Firebase 실시간 동기화 연결 (연결 안 되면 조용히 무시되고 기존 localStorage 동작 그대로) ---------- */
@@ -1029,14 +1404,9 @@ function syncNavOrder(){
     }
   });
   state.navOrder = state.navOrder.filter(e => e.kind !== 'guide' || state.guides.some(g => g.id === e.guideId));
-  // '자주 쓰는 멘트'와 '업체 관리'는 목록에서 제외 (기능/데이터는 유지, 업체 관리는
-  // 사이드바 하단으로 이동, 멘트는 통합 검색으로 계속 찾을 수 있음)
-  state.navOrder = state.navOrder.filter(e => e.kind !== 'phrases' && e.kind !== 'companies');
-  ['manual'].forEach(kind => {
-    if(!state.navOrder.some(e => e.kind === kind)){
-      state.navOrder.push({id:`nav-${kind}`, kind});
-    }
-  });
+  // '자주 쓰는 멘트'/'업체 관리'/'업무매뉴얼'은 목록에서 제외 (기능/데이터는 유지, 업체 관리·업무매뉴얼은
+  // 사이드바 업무도구로 이동, 멘트는 통합 검색으로 계속 찾을 수 있음)
+  state.navOrder = state.navOrder.filter(e => e.kind !== 'phrases' && e.kind !== 'companies' && e.kind !== 'manual');
 }
 function getNavItems(){
   return state.navOrder.map(entry => {
@@ -1053,25 +1423,69 @@ function getNavItems(){
   }).filter(Boolean);
 }
 
+// 사이드바 "업무 가이드" 목록 펼침/접힘 상태(기본은 접힘 — 첫 화면이 단순해 보이도록)와
+// 순서/삭제 편집 모드는 새 기능이 아니라 기존 드래그 정렬·수정·삭제 기능을 그대로 두고
+// 노출 여부만 토글하는 것이므로 작은 localStorage 플래그 하나로 충분하다.
+let guideNavExpanded = localStorage.getItem('shin-guideNavExpanded') === '1';
+let guideNavEditMode = false;
+
 function renderSidebar(){
   document.getElementById('brandTitle').textContent = state.brand.title;
 
   syncNavOrder();
   const items = getNavItems();
   const unifiedNavList = document.getElementById('unifiedNavList');
+  unifiedNavList.classList.toggle('edit-mode', guideNavEditMode);
   unifiedNavList.innerHTML = items.map((item, i) => `
-    <li class="nav-item ${item.active ? 'active' : ''}" draggable="true"
+    <li class="nav-item ${item.active ? 'active' : ''}" draggable="${guideNavEditMode ? 'true' : 'false'}"
       data-nav-id="${item.navId}" data-nav-index="${i}" data-kind="${item.kind}"
       ${item.kind === 'guide' ? `data-guide-id="${item.guideId}"` : ''}>
       <span class="label">${escapeHtml(item.label)}</span>
     </li>
   `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">항목이 없습니다</li>';
 
+  document.getElementById('guideNavSection').classList.toggle('collapsed', !guideNavExpanded);
+  document.getElementById('guideNavChevron').textContent = guideNavExpanded ? '˄' : '˅';
+  document.getElementById('guideEditToggle').classList.toggle('active', guideNavEditMode);
+  document.getElementById('guideEditToggle').textContent = guideNavEditMode ? '완료' : '편집';
+
+  document.getElementById('homeNavLink').classList.toggle('active', state.currentView.type === 'home');
   document.getElementById('companiesFooterLink').classList.toggle('active', state.currentView.type === 'companies');
+  document.getElementById('todayFooterLink').classList.toggle('active', state.currentView.type === 'today');
+  document.getElementById('materialsFooterLink').classList.toggle('active', state.currentView.type === 'materials');
 }
+document.getElementById('guideNavToggle').addEventListener('click', ()=>{
+  guideNavExpanded = !guideNavExpanded;
+  localStorage.setItem('shin-guideNavExpanded', guideNavExpanded ? '1' : '0');
+  renderSidebar();
+});
+document.getElementById('guideEditToggle').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  guideNavEditMode = !guideNavEditMode;
+  renderSidebar();
+});
+function goHome(){ state.currentView = {type:'home'}; saveState(); render(); }
+document.getElementById('homeNavLink').addEventListener('click', goHome);
+document.getElementById('homeBrandLink').addEventListener('click', goHome);
 document.getElementById('companiesFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'companies'};
   saveState(); render();
+});
+document.getElementById('todayFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'today'};
+  saveState(); render();
+});
+document.getElementById('materialsFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'materials'};
+  saveState(); render();
+});
+document.getElementById('manualFooterLink').addEventListener('click', ()=>{
+  // 기존 '업무매뉴얼' 기능 재사용 (사이드바 가이드 목록의 manual 항목과 동일한 동작)
+  window.open('call-manual.html', '_blank', 'noopener');
+});
+document.getElementById('settingsFooterLink').addEventListener('click', ()=>{
+  // 별도의 통합 설정 화면은 기존에 없어 기존 AI 업무비서 설정(OpenAI 키) 모달을 재사용
+  openAiSettingsModal();
 });
 
 const unifiedNavListEl = document.getElementById('unifiedNavList');
@@ -1164,12 +1578,18 @@ function renderContent(){
     el.innerHTML = renderPhrasesView();
   } else if(state.currentView.type === 'companies'){
     el.innerHTML = renderCompaniesView();
+  } else if(state.currentView.type === 'today'){
+    el.innerHTML = renderTodayView();
+  } else if(state.currentView.type === 'materials'){
+    el.innerHTML = renderMaterialsToolView();
+  } else if(state.currentView.type === 'home'){
+    el.innerHTML = renderHomeView();
   } else {
-    // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 첫 가이드로 이동
+    // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 홈으로 이동
     // 할 일 목록은 상단 📝 노트 패널로 이동했습니다.
-    state.currentView = state.guides[0] ? {type:'guide', id:state.guides[0].id} : {type:'phrases'};
+    state.currentView = {type:'home'};
     saveState();
-    el.innerHTML = state.currentView.type==='guide' ? renderGuideView(state.guides[0]) : renderPhrasesView();
+    el.innerHTML = renderHomeView();
   }
 }
 
@@ -1488,10 +1908,28 @@ contentEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-action]');
   if(!btn) return;
   const action = btn.dataset.action;
-  const guideId = btn.dataset.guide;
+  const guideId = btn.dataset.guide || btn.dataset.id;
   const guide = guideId ? state.guides.find(g=>g.id===guideId) : null;
 
-  if(action === 'guide-edit'){
+  if(action === 'ai-mode'){
+    // 유형 버튼은 항상 하나가 선택되어 있어야 한다(기본값 업무보고) — 같은 버튼을 다시 눌러도 해제되지 않는다.
+    aiComposerState.mode = btn.dataset.mode;
+    const input = document.getElementById('aiNoteInput');
+    if(input) aiComposerState.draftText = input.value;
+    render();
+  }
+  else if(action === 'ai-rewrite'){ triggerAiRewrite(); }
+  else if(action === 'ai-settings'){ openAiSettingsModal(); }
+  else if(action === 'ai-result-copy'){ copyText(aiComposerState.result || ''); }
+  else if(action === 'ai-result-retry'){ aiComposerState.result = ''; render(); requestAnimationFrame(()=>{ const el=document.getElementById('aiNoteInput'); if(el) el.focus(); }); }
+  else if(action === 'ai-new'){
+    // "새 문구": 이 카드의 로컬 입력/결과만 초기화한다 — 가이드/멘트 등 저장된 데이터는 전혀 건드리지 않는다.
+    aiComposerState.draftText = '';
+    aiComposerState.result = '';
+    render();
+    requestAnimationFrame(()=>{ const el=document.getElementById('aiNoteInput'); if(el) el.focus(); });
+  }
+  else if(action === 'guide-edit'){
     openModal({
       title:'가이드 수정', submitLabel:'저장',
       fields:[
@@ -1542,8 +1980,10 @@ contentEl.addEventListener('click', (e)=>{
     });
   }
   else if(action === 'step-delete'){
-    guide.steps = guide.steps.filter(s=>s.id!==btn.dataset.step);
-    saveState(); render();
+    if(confirm('이 단계를 삭제하시겠습니까?')){
+      guide.steps = guide.steps.filter(s=>s.id!==btn.dataset.step);
+      saveState(); render();
+    }
   }
   else if(action === 'step-edit-toggle'){
     stepEditMode = !stepEditMode;
@@ -1580,8 +2020,10 @@ contentEl.addEventListener('click', (e)=>{
     });
   }
   else if(action === 'block-delete'){
-    guide.blocks = guide.blocks.filter(b=>b.id!==btn.dataset.block);
-    saveState(); render();
+    if(confirm('이 메모를 삭제하시겠습니까?')){
+      guide.blocks = guide.blocks.filter(b=>b.id!==btn.dataset.block);
+      saveState(); render();
+    }
   }
   else if(action === 'block-copy'){
     const block = guide.blocks.find(b=>b.id===btn.dataset.block);
@@ -1593,8 +2035,10 @@ contentEl.addEventListener('click', (e)=>{
     saveState(); render();
   }
   else if(action === 'todo-delete'){
-    state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
-    saveState(); render();
+    if(confirm('이 할 일을 삭제하시겠습니까?')){
+      state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
+      saveState(); render();
+    }
   }
   else if(action === 'phrase-add'){
     openModal({
@@ -1616,8 +2060,10 @@ contentEl.addEventListener('click', (e)=>{
     });
   }
   else if(action === 'phrase-delete'){
-    state.phrases = state.phrases.filter(p=>p.id!==btn.dataset.id);
-    saveState(); render();
+    if(confirm('이 멘트를 삭제하시겠습니까?')){
+      state.phrases = state.phrases.filter(p=>p.id!==btn.dataset.id);
+      saveState(); render();
+    }
   }
   else if(action === 'phrase-copy'){
     const p = state.phrases.find(p=>p.id===btn.dataset.id);
@@ -1637,7 +2083,13 @@ contentEl.addEventListener('click', (e)=>{
   }
   else if(action === 'company-delete'){
     const c = state.companies.find(c=>c.id===btn.dataset.id);
-    if(c && confirm(`"${c.name}" 업체를 삭제할까요?`)){
+    if(!c) return;
+    // 연결된 처리할 업무/통화 기록이 있으면 그 기록은 그대로 두고 업체 정보만 삭제한다는 것을 미리 알린다(연쇄 삭제 금지)
+    const hasLinked = state.workItems.some(w=>w.companyId===c.id) || state.callLogs.some(l=>l.companyId===c.id);
+    const msg = hasLinked
+      ? `"${c.name}" 업체를 삭제하시겠습니까?\n이 업체에 연결된 처리할 업무/통화 기록이 있습니다. 해당 기록은 삭제하지 않고 업체정보만 삭제합니다.`
+      : `"${c.name}" 업체를 삭제하시겠습니까?`;
+    if(confirm(msg)){
       state.companies = state.companies.filter(x=>x.id!==c.id);
       companySearchQuery = '';
       saveState(); render();
@@ -1646,6 +2098,32 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'company-add-open'){
     pendingOcrData = {}; // 수동 등록은 이전에 첨부해두고 취소했던 OCR 결과를 이어받지 않음
     openAddCompanyModal(companySearchQuery);
+  }
+  // 홈 화면: 처리할 업무 "전체 화면 열기" 링크 (기존 화면 전환 로직 재사용)
+  else if(action === 'home-open-today'){
+    state.currentView = {type:'today'};
+    saveState(); render();
+  }
+  // 업무도구: 기존 기능에 그대로 연결 (업체관리/자료실은 기존 화면 전환, 업무매뉴얼/계정관리/설정은 기존 함수 재사용)
+  else if(action === 'tool-companies'){
+    state.currentView = {type:'companies'};
+    saveState(); render();
+  }
+  else if(action === 'tool-materials'){
+    state.currentView = {type:'materials'};
+    saveState(); render();
+  }
+  else if(action === 'tool-manual'){
+    window.open('call-manual.html', '_blank', 'noopener');
+  }
+  else if(action === 'tool-vault'){
+    openVault();
+  }
+  else if(action === 'tool-settings'){
+    openAiSettingsModal();
+  }
+  else if(action === 'qlink-add-slot'){
+    openAddQuickLinkModal();
   }
 });
 
@@ -1687,6 +2165,13 @@ contentEl.addEventListener('drop', (e)=>{
 });
 
 contentEl.addEventListener('input', (e)=>{
+  if(e.target && e.target.id === 'aiNoteInput'){
+    aiComposerState.draftText = e.target.value;
+    // 입력창은 최소 6~8줄에서 시작해서 내용이 늘어나면 자동으로 커진다(별도 라이브러리 없이 높이만 갱신).
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.max(e.target.scrollHeight, e.target.offsetHeight) + 'px';
+    return;
+  }
   if(e.target && e.target.matches && e.target.matches('[data-action="company-memo-input"]')){
     const c = state.companies.find(c=>c.id===e.target.dataset.id);
     if(c){ c.memo = e.target.value; saveState(); }
@@ -1695,6 +2180,77 @@ contentEl.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'companySearchInput'){
     companySearchQuery = e.target.value;
     updateCompanySearchUI();
+    return;
+  }
+  // 전화 비서: 통화 메모(자유 입력)는 render()로 다시 그리지 않고 값만 세션에 반영 + 임시 저장 (입력 중 포커스 유지)
+  if(e.target && e.target.id === 'paRawMemo'){
+    if(!phoneSession) phoneSession = newPhoneSession();
+    phoneSession.rawMemo = e.target.value;
+    persistActiveCall();
+    return;
+  }
+  // 전화 비서: 통화 종료 후 정리본(요약)도 사용자가 직접 수정 가능 — rawMemo는 절대 덮어쓰지 않는다
+  if(e.target && e.target.id === 'paSummaryEdit'){
+    if(phoneSession){ phoneSession.report = e.target.value; persistActiveCall(); }
+    return;
+  }
+  // 전화 비서: 후속 업무 항목 텍스트 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-followup-input')){
+    const idx = Number(e.target.dataset.paFollowupIndex);
+    if(phoneSession && phoneSession.followups[idx]){
+      phoneSession.followups[idx].text = e.target.value;
+      persistActiveCall();
+    }
+    return;
+  }
+  // 전화 비서: 질문별 답변 입력 — render() 없이 값만 반영해 타이핑 중 포커스를 유지한다
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-answer')){
+    const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
+    if(item){ item.answer = e.target.value; persistActiveCall(); }
+    return;
+  }
+  // 전화 비서: 질문 편집 모드에서 질문 문장 수정 (지금 통화 + 다음 통화부터 쓸 질문 세트 모두에 반영)
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-question-input')){
+    const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
+    if(item){
+      item.question = e.target.value;
+      const setItem = phoneSession.scenarioTag && (state.phoneQuestionSets[phoneSession.scenarioTag]||[]).find(q=>q.id===item.id);
+      if(setItem) setItem.question = e.target.value;
+      persistActiveCall(); saveState();
+    }
+    return;
+  }
+  // 전화 비서: 질문 편집 모드에서 질문 라벨(진행순서 짧은 이름) 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-label-input')){
+    const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
+    if(item){
+      item.label = e.target.value;
+      const setItem = phoneSession.scenarioTag && (state.phoneQuestionSets[phoneSession.scenarioTag]||[]).find(q=>q.id===item.id);
+      if(setItem) setItem.label = e.target.value;
+      persistActiveCall(); saveState();
+    }
+    return;
+  }
+  // 전화 비서: 진행순서 항목 텍스트 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-proc-input')){
+    const tag = phoneSession && phoneSession.scenarioTag;
+    const item = tag && (state.phoneProcedureSets[tag]||[]).find(p => p.id === e.target.dataset.procId);
+    if(item){ item.text = e.target.value; saveState(); }
+    return;
+  }
+  // 전화 비서: 통화완료 후 구조화 필드 직접 수정 (사용자 최종 수정본만 바뀌고, AI가 추출한 원본은 보존됨)
+  if(e.target && e.target.matches && e.target.matches('.pa-field-input')){
+    if(phoneSession){
+      phoneSession.finalFields[e.target.dataset.fieldKey] = e.target.value;
+      phoneSession.relayText = buildRelayText(phoneSession.scenarioTag, phoneSession.finalFields);
+      persistActiveCall();
+    }
+    return;
+  }
+  // 전화 비서: 전달용 문구 직접 수정
+  if(e.target && e.target.id === 'paRelayText'){
+    if(phoneSession){ phoneSession.relayText = e.target.value; persistActiveCall(); }
+    return;
   }
 });
 
@@ -1887,7 +2443,8 @@ function renderVault(){
 }
 function openVault(){ renderVault(); vaultOverlay.classList.add('open'); }
 function closeVault(){ vaultOverlay.classList.remove('open'); }
-document.getElementById('lockBtn').addEventListener('click', openVault);
+// 계정 정보(볼트) 진입점은 헤더 🔒 아이콘 대신 사이드바 업무도구 "계정관리" 버튼으로 통합됨(아래 vaultFooterLink)
+document.getElementById('vaultFooterLink').addEventListener('click', openVault);
 document.getElementById('vaultClose').addEventListener('click', closeVault);
 vaultOverlay.addEventListener('click', (e)=>{ if(e.target === vaultOverlay) closeVault(); });
 document.getElementById('vaultAddForm').addEventListener('submit', (e)=>{
@@ -1960,27 +2517,34 @@ function getQuickLinkIcon(title){
   }
   return { cls:'', style:'', html: escapeHtml(t.charAt(0).toUpperCase() || '#') };
 }
-/* 상단 바로가기: 고정 업무 런처 형태 — 삭제(X) 없이 클릭 시 바로 이동만 수행 */
-function renderQuickLinks(){
-  let html = state.links.map(l => {
-    const icon = getQuickLinkIcon(l.title);
-    return `
-    <div class="qlink-slot filled" data-entry="link-${l.id}">
-      <a class="qlink-main" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
-        <span class="qlink-icon ${icon.cls}" style="${icon.style}">${icon.html}</span>
-        <span class="qlink-title">${escapeHtml(l.title)}</span>
-      </a>
-    </div>
-  `;
-  }).join('');
+/* 상단 헤더 바로가기: 검색창 옆에 작은 캡슐 버튼으로 표시. 클릭 시 새 탭으로 열리고(target=_blank),
+   각 캡슐에는 작은 삭제(✕) 버튼이 있다(평소엔 연하게, hover 시에만 진하게 — 큰 빨간 버튼 사용 안 함). */
+function quickLinksMarkup(){
+  let html = state.links.map(l => `
+    <span class="qlink-chip" data-entry="link-${l.id}">
+      <a class="qlink-chip-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.title)}</a>
+      <button type="button" class="qlink-chip-del" data-action="qlink-delete" data-id="${l.id}" title="바로가기 삭제">✕</button>
+    </span>
+  `).join('');
   if(state.links.length < MAX_QUICKLINKS){
-    html += `<button type="button" class="qlink-slot empty" data-action="qlink-add-slot">+ 바로가기</button>`;
+    html += `<button type="button" class="qlink-chip-add" data-action="qlink-add-slot">+ 바로가기</button>`;
   }
-  quickLinksEl.innerHTML = html;
+  return html;
+}
+function renderQuickLinks(){
+  quickLinksEl.innerHTML = quickLinksMarkup();
 }
 quickLinksEl.addEventListener('click', (e)=>{
   const addBtn = e.target.closest('[data-action="qlink-add-slot"]');
   if(addBtn){ openAddQuickLinkModal(); return; }
+  const delBtn = e.target.closest('[data-action="qlink-delete"]');
+  if(delBtn){
+    const link = state.links.find(l => l.id === delBtn.dataset.id);
+    if(link && confirm(`"${link.title}" 바로가기를 삭제하시겠습니까?`)){
+      state.links = state.links.filter(l => l.id !== link.id);
+      saveState(); renderQuickLinks();
+    }
+  }
 });
 
 /* ---------- Note Panel (할 일 목록, 상단 📝 아이콘 → 오른쪽 슬라이드 패널) ---------- */
@@ -2032,8 +2596,10 @@ notePanelBody.addEventListener('click', (e)=>{
     t.done = !t.done;
     saveState(); renderNotePanel();
   } else if(action === 'note-todo-delete'){
-    state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
-    saveState(); renderNotePanel();
+    if(confirm('이 할 일을 삭제하시겠습니까?')){
+      state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
+      saveState(); renderNotePanel();
+    }
   }
 });
 notePanelBody.addEventListener('submit', (e)=>{
@@ -2085,7 +2651,8 @@ function openAiSettingsModal(){
     }
   });
 }
-document.getElementById('aiSettingsBtn').addEventListener('click', openAiSettingsModal);
+/* AI 문구수정 카드는 홈 화면(전화비서 바로 아래)에 렌더링되므로, 다른 dynamic 영역과 마찬가지로
+   contentEl에 위임된 리스너로만 동작한다(직접 바인딩 금지 — render()마다 노드가 새로 만들어짐). */
 
 function detectNoteType(text){
   const t = text.trim();
@@ -2095,14 +2662,19 @@ function detectNoteType(text){
   return { type:'kakao', rest: t };
 }
 
+// 공통 규칙: 오타/맞춤법 교정, 순서 재배치, 중복 표현 제거, 단어/문장 조각을 자연스러운 문장으로 연결,
+// 유형에 맞는 어투로 변환하되 — 입력에 없는 사실을 새로 지어내거나(추측 금지), 입력에 있는 사실
+// (전화번호, 업체/건물/아파트명, 요청 사항, 중요 상황 정보 등)을 빠뜨리는 것은 절대 금지한다.
+const AI_FACT_RULE = `절대 규칙:\n- 입력에 없는 내용(사실, 숫자, 이름, 약속 등)을 새로 지어내지 마.\n- 입력에 있는 사실(전화번호, 업체명, 건물/아파트명, 요청 사항, 담당자, 위치, 상황 등)은 절대 빠뜨리지 말고 전부 반영해.\n- 맞춤법/띄어쓰기를 고치고, 순서를 자연스럽게 정리하고, 중복 표현은 줄이고, 짧은 단어/조각들을 자연스러운 문장으로 연결해줘.`;
+
 function buildAiPrompt(type, rest){
   if(type === 'mail'){
-    return `아래 메모를 바탕으로 업무용 이메일을 작성해줘. 반드시 다음 형식을 그대로 지켜서 출력해:\n\n제목\n[POUR공법] (내용에 맞는 제목)\n\n본문\n안녕하세요.\nPOUR공법입니다.\n\n(메모 내용을 정중하고 명확한 문장으로 풀어서 작성)\n\n감사합니다.\n\n메모: "${rest}"\n\n다른 설명 없이 위 형식의 결과만 출력해.`;
+    return `아래 메모를 바탕으로 업무용 이메일을 작성해줘. 반드시 다음 형식을 그대로 지켜서 출력해:\n\n제목\n[POUR공법] (내용에 맞는 제목)\n\n본문\n안녕하세요.\nPOUR공법입니다.\n\n(메모 내용을 정중하고 명확한 문장으로 풀어서 작성)\n\n감사합니다.\n\n${AI_FACT_RULE}\n\n메모: "${rest}"\n\n다른 설명 없이 위 형식의 결과만 출력해.`;
   }
   if(type === 'report'){
-    return `아래 메모를 바탕으로 팀장님께 드리는 전화 업무보고 문구를 작성해줘. 반드시 "팀장님,"으로 시작하고, 정중하고 간결한 보고체로 작성해.\n\n메모: "${rest}"\n\n다른 설명 없이 결과 문구만 출력해.`;
+    return `아래 메모를 바탕으로 팀장님께 드리는 업무보고 문구를 작성해줘. 반드시 "팀장님,"으로 시작하고, 정중하고 간결한 보고체로 작성해.\n\n${AI_FACT_RULE}\n\n메모: "${rest}"\n\n다른 설명 없이 결과 문구만 출력해.`;
   }
-  return `아래 메모를 바탕으로 카카오톡으로 보낼 업무 메시지를 작성해줘. 반드시 다음 형식을 지켜서 출력해:\n\n안녕하세요.\nPOUR공법입니다.\n\n(메모 내용을 정중하고 명확한 문장으로 풀어서 작성)\n\n감사합니다.\n\n메모: "${rest}"\n\n다른 설명 없이 위 형식의 결과만 출력해.`;
+  return `아래 메모를 바탕으로 카카오톡으로 보낼 업무 메시지를 작성해줘. 반드시 다음 형식을 지켜서 출력해:\n\n안녕하세요.\nPOUR공법입니다.\n\n(메모 내용을 정중하고 명확한 문장으로 풀어서 작성)\n\n감사합니다.\n\n${AI_FACT_RULE}\n\n메모: "${rest}"\n\n다른 설명 없이 위 형식의 결과만 출력해.`;
 }
 
 async function callOpenAI(apiKey, prompt){
@@ -2130,40 +2702,50 @@ async function callOpenAI(apiKey, prompt){
   return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
 }
 
-let aiRewriteInFlight = false;
+// AI 문구수정 카드(홈 화면, 전화비서 바로 아래)의 임시 UI 상태 — 원본 입력 textarea 내용은
+// 절대 AI 결과로 덮어쓰지 않고(§23), 결과는 별도로 보관해 입력 아래에 그대로 보여준다.
+let aiComposerState = { mode:'report', draftText:'', result:'', loading:false };
+const AI_MODE_LABEL = { mail:'메일', kakao:'카카오톡', report:'업무보고' };
 
-async function runAiRewrite(apiKey, text){
-  const input = document.getElementById('aiNoteInput');
-  const status = document.getElementById('aiNoteStatus');
-  const { type, rest } = detectNoteType(text);
-  const prompt = buildAiPrompt(type, rest || text);
-  aiRewriteInFlight = true;
-  input.disabled = true;
-  status.innerHTML = '<span class="spin"></span>문구 수정 중...';
-  status.style.display = 'flex';
-  try{
-    const result = await callOpenAI(apiKey, prompt);
-    if(result){
-      input.value = result;
-    } else {
-      showToast('AI 응답이 비어있습니다');
-    }
-  } catch(err){
-    console.error(err);
-    showToast('문구 수정에 실패했습니다.');
-  } finally {
-    aiRewriteInFlight = false;
-    input.disabled = false;
-    status.style.display = 'none';
-    input.focus();
-  }
+// AI 문구수정 카드 — 홈 화면의 첫 번째(가장 중요한) 블록으로 렌더링된다.
+const AI_COMPOSER_PLACEHOLDER = `통화내용이나 업무문구를 편하게 입력하세요. 짧은 단어·문장 조각·오타·받아쓰기 메모도 그대로 괜찮습니다.\n\n예시)\n마크원 지식산업센터 센터장 전화옴\n8층 주차장 에폭시 다 벗겨짐\n다른공법 가능한지 궁금\n1층도 주차선 포함해서 공사 원함\n담당자 콜백 원함`;
+function renderAiComposerCard(){
+  return `
+    <div class="card" id="aiComposerCard">
+      <div class="card-head">
+        <div class="card-title" style="margin:0;">✨ AI 문구수정</div>
+        <button type="button" class="icon-btn" data-action="ai-settings" title="API 키 설정">⚙</button>
+      </div>
+      <textarea id="aiNoteInput" class="ai-note-textarea" rows="7"
+        placeholder="${escapeHtml(AI_COMPOSER_PLACEHOLDER)}">${escapeHtml(aiComposerState.draftText)}</textarea>
+      <div class="ai-composer-mode-row">
+        <button type="button" class="copy-btn ${aiComposerState.mode==='report'?'active':''}" data-action="ai-mode" data-mode="report">업무보고</button>
+        <button type="button" class="copy-btn ${aiComposerState.mode==='kakao'?'active':''}" data-action="ai-mode" data-mode="kakao">카카오톡</button>
+        <button type="button" class="copy-btn ${aiComposerState.mode==='mail'?'active':''}" data-action="ai-mode" data-mode="mail">메일</button>
+        <button type="button" class="btn btn-ghost" style="margin-left:auto;" data-action="ai-new">새 문구</button>
+        <button type="button" class="btn btn-primary" data-action="ai-rewrite">AI 문구정리</button>
+      </div>
+      <span class="ai-note-status" id="aiNoteStatus" style="display:${aiComposerState.loading?'flex':'none'};"><span class="spin"></span>문구 수정 중...</span>
+      ${aiComposerState.result ? `
+        <div class="ai-composer-result">
+          <div class="ai-composer-result-label">수정 결과</div>
+          <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(aiComposerState.result)}</div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button type="button" class="copy-btn" data-action="ai-result-copy">복사</button>
+            <button type="button" class="copy-btn" data-action="ai-result-retry">다시 수정</button>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
 }
 
 function triggerAiRewrite(){
-  if(aiRewriteInFlight) return;
+  if(aiComposerState.loading) return;
   const input = document.getElementById('aiNoteInput');
-  const text = input.value.trim();
+  const text = (input ? input.value : aiComposerState.draftText).trim();
   if(!text) return;
+  aiComposerState.draftText = input ? input.value : aiComposerState.draftText;
   const apiKey = getOpenAIKey();
   if(!apiKey){
     promptForOpenAIKey((key)=> runAiRewrite(key, text));
@@ -2172,15 +2754,1746 @@ function triggerAiRewrite(){
   runAiRewrite(apiKey, text);
 }
 
-// ChatGPT처럼: Enter = 즉시 실행, Shift+Enter = 줄바꿈
-document.getElementById('aiNoteInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter' && !e.shiftKey){
+async function runAiRewrite(apiKey, text){
+  const detected = detectNoteType(text);
+  const type = aiComposerState.mode || detected.type;
+  const rest = aiComposerState.mode ? text : (detected.rest || text);
+  const prompt = buildAiPrompt(type, rest);
+  aiComposerState.loading = true;
+  render();
+  try{
+    const result = await callOpenAI(apiKey, prompt);
+    if(result) aiComposerState.result = result;
+    else showToast('AI 응답이 비어있습니다');
+  } catch(err){
+    console.error(err);
+    showToast('문구 수정에 실패했습니다.');
+  } finally {
+    aiComposerState.loading = false;
+    render();
+    requestAnimationFrame(()=>{ const el = document.getElementById('aiNoteInput'); if(el) el.focus(); });
+  }
+}
+
+/* ==========================================================================
+   전화 비서 (통화 중 실시간 업무비서)
+   - 통화 중에는 짧은 단어/문장만 입력한다. 정확한 키워드 일치가 아니라
+     동의어(PHONE_INTENT_GROUPS)를 기준으로 의도를 인식한다.
+   - 화면에 보여주는 정보(전화대사/업무순서/자료위치/관할담당자/업체정보)는
+     전부 state(guides/phrases/companies/materials/jurisdictions/sites)에서
+     찾아서 보여줄 뿐, AI가 지어내지 않는다. 등록된 정보가 없으면 그렇게 표시한다.
+   - 통화 세션 자체는 state에 저장하지 않는다(통화 중 임시 작업 메모이며,
+     기존 Firebase 컬렉션 구조에는 전혀 영향을 주지 않는다).
+   ========================================================================== */
+
+// 짧은 입력을 같은 업무 의도로 묶어주는 동의어 사전. 새 의도가 필요하면 이 배열에 항목만 추가하면 된다.
+const PHONE_INTENT_GROUPS = [
+  { tag:'체결',      keywords:['체결','협약','mou','MOU','제휴','업무협약','협약문의'] },
+  { tag:'시방서',    keywords:['시방서','시방','시방서 요청','시방서요청'] },
+  { tag:'공법설명회', keywords:['공법설명회','설명회','공법 설명','공법설명','공법문의','공법 문의','pt','PT','공법설명회 일정','pt 일정'] },
+  { tag:'자료요청',  keywords:['자료','자료달라','자료줘','자료요청','보내달라','발송해'] },
+  { tag:'담당자',    keywords:['담당자','담당','지사','연락처','전화번호','누가'] },
+  { tag:'견적',      keywords:['견적','견적문의','견적 요청','견적요청','공사 견적','공사견적','비용','가격'] },
+  { tag:'특허',      keywords:['특허','특허번호','인증'] },
+  { tag:'현장등록',  keywords:['현장등록','현장 등록'] },
+  { tag:'질문서',    keywords:['질문서','질의서'] },
+];
+// 관할 담당자 조회에 사용하는 광역 지역명
+const PHONE_REGION_LIST = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
+// 자료 요청으로 볼 수 있는 의도 — 이 태그가 인식됐는데 등록된 자료가 없으면 "확인 필요"로 명시한다
+const MATERIAL_REQUEST_TAGS = ['시방서','자료요청','질문서','특허'];
+// 검색 전 화면의 빠른 유형 선택 칩. 클릭하면 이 문구를 입력한 것과 똑같이 통화 시작(addPhoneNote) 흐름을 그대로 탄다 —
+// 새 인식 로직이 아니라 기존 PHONE_INTENT_GROUPS 키워드 인식에 그대로 올라타는 지름길일 뿐이다.
+const PHONE_QUICK_TYPES = ['견적문의','협약문의','자료요청','공법문의','PT요청','자재발주','공사진행','기타'];
+
+function textIncludesAny(text, keywords){
+  const t = String(text||'').toLowerCase().replace(/\s+/g,'');
+  return keywords.some(k => t.includes(String(k).toLowerCase().replace(/\s+/g,'')));
+}
+function detectIntents(line){
+  return PHONE_INTENT_GROUPS.filter(g => textIncludesAny(line, g.keywords)).map(g => g.tag);
+}
+function detectRegion(line){ return PHONE_REGION_LIST.find(r => line.includes(r)) || null; }
+function detectSite(line){
+  const norm = line.replace(/\s+/g,'');
+  return state.sites.find(s => s.name && norm.includes(s.name.replace(/\s+/g,''))) || null;
+}
+function detectCompany(line){
+  const norm = line.replace(/\s+/g,'').toLowerCase();
+  return state.companies.find(c => c.name && norm.includes(c.name.replace(/\s+/g,'').toLowerCase())) || null;
+}
+
+// 인식된 의도(tag) 목록으로 "지금 말할 내용"을 찾는다. 자주 쓰는 멘트 → 업무 가이드의 메모 순으로 우선 참고한다.
+// (처리할 업무 비서의 "전화할 때" 항목도 이 함수를 그대로 재사용한다.)
+function findScriptForTags(tags){
+  for(const tag of [...tags].reverse()){
+    const phraseHit = state.phrases.find(p => textIncludesAny(`${p.title} ${p.body}`, [tag]));
+    if(phraseHit) return { title: phraseHit.title, body: phraseHit.body };
+    for(const g of state.guides){
+      const blockHit = g.blocks.find(b => textIncludesAny(b.body, [tag]));
+      if(blockHit) return { title: g.title, body: blockHit.body };
+    }
+  }
+  return null;
+}
+
+// 통화 세션(임시, state에는 저장하지 않음). [저장]을 누르기 전까지는 새로고침해도 사라지지 않도록
+// localStorage에 임시 보관해둔 내용이 있으면 그대로 복구한다(아래 restoreActiveCall 정의부 참고).
+let phoneSession = null;
+function newPhoneSession(){
+  return {
+    active:true, notes:[], matchedIntents:[], region:null, site:null, company:null, firstLine:'',
+    rawMemo:'', // 통화 메모(자유 입력 textarea) 원문 — 업무 유형이 인식되지 않았을 때만 사용. 절대 덮어쓰지 않는다
+    scenarioTag:null, qa:[], currentQaIndex:0, // 업무 유형이 인식되면 질문(question)+답변(answer) 목록으로 통화를 진행한다
+    endedAt:null, report:null, followups:[],
+    extractedFields:{}, finalFields:{}, relayText:'', // 통화완료 시 채워지는 구조화 결과(원본 추출값/사용자 최종수정값 분리 보관)
+    qaEditMode:false, procEditMode:false,
+    qaOverviewOpen:false, procOpen:false, // 통화 중 화면: 전체 질문 목록/진행순서는 기본 접힘 (한 번에 하나씩 보여주기 위함)
+    lastScript:null, lastMaterial:null, lastJurisdiction:null, lastScriptBlocks:[]
+  };
+}
+function addPhoneNote(text){
+  if(!phoneSession) phoneSession = newPhoneSession();
+  const line = String(text||'').trim();
+  if(!line) return;
+  if(!phoneSession.notes.length) phoneSession.firstLine = line;
+  phoneSession.notes.push({ text: line, intents: detectIntents(line) });
+  const region = detectRegion(line); if(region) phoneSession.region = region;
+  const site = detectSite(line); if(site) phoneSession.site = site;
+  const company = detectCompany(line); if(company) phoneSession.company = company;
+  detectIntents(line).forEach(tag => {
+    if(!phoneSession.matchedIntents.includes(tag)) phoneSession.matchedIntents.push(tag);
+  });
+  // 업무 유형이 아직 확정되지 않았으면 다시 판별해본다(한 번 확정되면 답변을 잃지 않도록 다시 만들지 않는다)
+  if(!phoneSession.scenarioTag){
+    const tag = primaryBusinessTag(phoneSession.matchedIntents);
+    if(tag){
+      const questions = getPhoneQuestionSet(tag);
+      if(questions.length){
+        phoneSession.scenarioTag = tag;
+        phoneSession.qa = questions.map(q => ({ id: uid(), label: q.label, question: q.question, answer: '', source: 'auto' }));
+        phoneSession.currentQaIndex = 0;
+      }
+    }
+  }
+  persistActiveCall();
+}
+// 검색창 줄(notes) + 질문·답변(qa) + 자유 메모(rawMemo, 업무 유형 미인식 시)를 합친 전체 원문 — 요약/저장에 사용
+function combinedRawMemo(s){
+  const lines = s.notes.map(n => n.text);
+  const qaLines = (s.qa||[]).filter(q => (q.answer||'').trim())
+    .map(q => `${String(q.question||'').trim()} → ${q.answer.trim()}`);
+  const extra = (s.rawMemo || '').split('\n').map(l => l.trim()).filter(Boolean);
+  return [...lines, ...qaLines, ...extra].join('\n');
+}
+
+/* ---------- 통화 메모 임시 저장 (새로고침/실수 이동 대비, 저장 완료 전까지만 유지) ---------- */
+const ACTIVE_CALL_STORAGE_KEY = 'work-guide-active-call-v1';
+let activeCallSaveTimer = null;
+function persistActiveCall(){
+  if(!phoneSession) return;
+  clearTimeout(activeCallSaveTimer);
+  activeCallSaveTimer = setTimeout(() => {
+    try{ localStorage.setItem(ACTIVE_CALL_STORAGE_KEY, JSON.stringify(phoneSession)); }
+    catch(e){}
+  }, 300);
+}
+function clearActiveCallStorage(){
+  clearTimeout(activeCallSaveTimer);
+  try{ localStorage.removeItem(ACTIVE_CALL_STORAGE_KEY); }catch(e){}
+}
+function restoreActiveCall(){
+  try{
+    const raw = localStorage.getItem(ACTIVE_CALL_STORAGE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    const hasAnsweredQa = Array.isArray(parsed?.qa) && parsed.qa.some(q => (q.answer||'').trim());
+    if(parsed && (parsed.notes?.length || (parsed.rawMemo || '').trim() || parsed.endedAt || hasAnsweredQa)) return parsed;
+  }catch(e){}
+  return null;
+}
+phoneSession = restoreActiveCall(); // 페이지를 새로 열었을 때 저장 전 통화 메모가 있으면 그대로 복구
+
+function findPhoneProcedure(){
+  const tags = phoneSession.matchedIntents;
+  if(!tags.length) return null;
+  let best = null, bestScore = 0;
+  state.guides.forEach(g => {
+    const haystack = `${g.tag||''} ${g.title||''} ${g.steps.map(s=>s.label).join(' ')}`;
+    const score = tags.filter(tag => textIncludesAny(haystack, [tag])).length;
+    if(score > bestScore){ bestScore = score; best = g; }
+  });
+  return best;
+}
+function findPhoneMaterial(){
+  const tags = phoneSession.matchedIntents;
+  for(const tag of [...tags].reverse()){
+    const hit = state.materials.find(m => textIncludesAny(m.name, [tag]));
+    if(hit) return hit;
+  }
+  return null;
+}
+
+/* ---------- 업무 유형(시나리오) 판별 ----------
+   "견적문의" 같은 업무 유형이 인식되면, 여러 곳에 흩어져 있는 기존 데이터(가이드 단계/전화 메모/
+   가이드 메모/자주 쓰는 멘트)를 전부 모아 하나의 시나리오로 묶는다. 새 문장/새 절차는 절대 만들지 않고,
+   저장된 텍스트를 "말할 문장(문장부호·따옴표로 끝남)"과 "확인 항목(짧은 라벨)"으로만 재배치한다. */
+const BUSINESS_TYPE_TAGS = ['견적','체결','시방서','공법설명회','자료요청','특허','현장등록','질문서'];
+const BUSINESS_TYPE_LABEL = {
+  '견적':'견적문의', '체결':'체결문의', '시방서':'시방서', '공법설명회':'공법설명회',
+  '자료요청':'자료요청', '특허':'특허문의', '현장등록':'현장등록', '질문서':'질문서'
+};
+function primaryBusinessTag(matchedIntents){
+  for(let i = matchedIntents.length - 1; i >= 0; i--){
+    if(BUSINESS_TYPE_TAGS.includes(matchedIntents[i])) return matchedIntents[i];
+  }
+  return null;
+}
+
+/* ---------- 업무유형별 구조화 필드 스키마 (통화완료 결과 정리용) ----------
+   key는 의미별 공통 이름(전달용 문구 자동 생성에 사용), label은 화면/저장에 실제로 보여줄 한글 이름이다.
+   core:true 인 필드만 값이 비어 있을 때 [미확인] 배지를 보여준다. 그 외 빈 필드는 그냥 숨긴다. */
+const PHONE_FIELD_SCHEMA = {
+  '견적': [
+    {key:'subject',  label:'아파트명', core:true},
+    {key:'subject2', label:'업체명', core:false},
+    {key:'role',     label:'전화자', core:false},
+    {key:'position', label:'직책', core:false},
+    {key:'contact',  label:'전화번호', core:true},
+    {key:'location', label:'주소', core:false},
+    {key:'topic',    label:'공종', core:false},
+    {key:'scale',    label:'면적/규모', core:false},
+    {key:'status',   label:'현장상황', core:false},
+    {key:'request',  label:'견적요청', core:false},
+    {key:'material', label:'자료요청', core:false},
+    {key:'source',   label:'유입경로', core:false},
+  ],
+  '체결': [
+    {key:'subject',  label:'업체명', core:true},
+    {key:'role',     label:'대표자/담당자', core:false},
+    {key:'position', label:'직책', core:false},
+    {key:'contact',  label:'전화번호', core:true},
+    {key:'email',    label:'이메일', core:false},
+    {key:'request',  label:'협약문의 내용', core:false},
+    {key:'material', label:'질문서 발송 여부', core:false},
+    {key:'meeting',  label:'미팅 관련 요청', core:false},
+  ],
+  '공법설명회': [
+    {key:'subject',    label:'아파트명', core:true},
+    {key:'role',       label:'담당자', core:false},
+    {key:'contact',    label:'전화번호', core:true},
+    {key:'schedule',   label:'PT 일정', core:false},
+    {key:'equipment',  label:'빔프로젝터', core:false},
+    {key:'material',   label:'자료부수', core:false},
+    {key:'order',      label:'발표순서', core:false},
+    {key:'competitor', label:'경쟁사', core:false},
+    {key:'qna',        label:'질의응답시간', core:false},
+  ],
+};
+const PHONE_FIELD_SCHEMA_DEFAULT = [
+  {key:'subject', label:'업체명/아파트명', core:true},
+  {key:'role',    label:'담당자', core:false},
+  {key:'contact', label:'전화번호', core:true},
+  {key:'topic',   label:'문의내용', core:false},
+  {key:'request', label:'요청사항', core:false},
+];
+function phoneFieldSchemaFor(tag){ return PHONE_FIELD_SCHEMA[tag] || PHONE_FIELD_SCHEMA_DEFAULT; }
+
+/* ---------- 업무유형별 질문 세트 (state.phoneQuestionSets[tag]) ----------
+   최초 1회, 그 업무유형이 처음 인식됐을 때만 buildIntentQuestions() 결과로 시드하고
+   이후에는 절대 자동으로 덮어쓰지 않는다(사용자가 [질문 편집]으로 직접 관리). */
+// 업무 가이드/멘트에 아직 등록된 문장이 없는 업무유형(tag)을 위한 기본 질문 문구.
+// 필드 스키마(PHONE_FIELD_SCHEMA)의 각 항목을 실제로 전화로 여쭤볼 수 있는 자연스러운 문장으로 바꾼 것뿐이며,
+// 새 사실을 지어내지 않는다(그저 "무엇을 물어봐야 하는지" 안내 문구).
+const PHONE_QUESTION_TEXT_BY_KEY = {
+  subject:'어느 아파트/현장에서 전화주셨을까요?', subject2:'어느 업체에서 전화주셨을까요?',
+  role:'전화주신 분 성함이 어떻게 되실까요?', position:'직책이 어떻게 되실까요?',
+  contact:'연락 가능한 전화번호를 알려주시겠어요?', email:'이메일 주소를 알려주시겠어요?',
+  location:'현장 주소가 어떻게 되실까요?', topic:'어떤 공종 관련 문의이실까요?',
+  scale:'공사 면적/규모가 어느 정도 되실까요?', status:'현재 현장 상황이 어떻게 되시나요?',
+  request:'어떤 부분을 요청하시나요?', material:'필요하신 자료가 있으실까요?',
+  source:'저희를 어떻게 알고 연락주셨을까요?', schedule:'PT 일정이 어떻게 되실까요?',
+  equipment:'빔프로젝터는 준비되어 있을까요?', order:'발표 순서는 어떻게 진행될까요?',
+  competitor:'경쟁사도 참여하시나요?', qna:'질의응답 시간은 얼마나 필요하실까요?',
+  meeting:'미팅 관련 요청사항이 있으실까요?'
+};
+function defaultQuestionsForTag(tag){
+  return phoneFieldSchemaFor(tag).map(f => ({ label: f.label, question: PHONE_QUESTION_TEXT_BY_KEY[f.key] || `${f.label}을(를) 확인해주세요.` }));
+}
+function getPhoneQuestionSet(tag){
+  if(!state.phoneQuestionSets) state.phoneQuestionSets = {};
+  if(!state.phoneQuestionSets[tag]){
+    let questions = buildIntentQuestions(tag).map(q => ({ id: uid(), label:q.label, question:q.question }));
+    if(!questions.length) questions = defaultQuestionsForTag(tag).map(q => ({ id: uid(), label:q.label, question:q.question }));
+    state.phoneQuestionSets[tag] = questions;
+    saveState();
+  }
+  return state.phoneQuestionSets[tag];
+}
+
+/* ---------- 업무유형별 진행순서 세트 (state.phoneProcedureSets[tag]) ----------
+   각 태그는 독립된 배열로 보관되어 서로 영향을 주지 않는다. 최초 1회만 시드한다. */
+const PHONE_PROCEDURE_DEFAULTS = {
+  '견적':      ['시공사/아파트 파악', '문의내용 확인', '토픽방 등록', '담당자 전달'],
+  '체결':      ['업체/담당자 확인', '협약 내용 확인', '질문서 발송 여부 확인', '담당자 전달'],
+  '시방서':    ['요청 자료 확인', '자료 위치 확인', '자료 발송', '담당자 전달'],
+  '공법설명회': ['일정 확인', '참석 인원/장소 확인', '발표자료 준비', '담당자 전달'],
+};
+function getPhoneProcedureSet(tag){
+  if(!state.phoneProcedureSets) state.phoneProcedureSets = {};
+  if(!state.phoneProcedureSets[tag]){
+    const guide = findPhoneProcedure();
+    let steps = (guide && guide.steps && guide.steps.length) ? guide.steps.map(st=>st.label) : null;
+    if(!steps || !steps.length) steps = PHONE_PROCEDURE_DEFAULTS[tag] || ['문의내용 확인', '담당자 전달'];
+    state.phoneProcedureSets[tag] = steps.map(t => ({ id: uid(), text: t }));
+    saveState();
+  }
+  return state.phoneProcedureSets[tag];
+}
+
+/* ---------- 구조화 필드 추출 (1단계: 결정론적 라벨 매칭 / 텍스트 채굴, 2단계: 선택적 AI 보강) ----------
+   AI는 opt-in 강화일 뿐이며, 결정론적 결과가 항상 먼저(기본값으로) 만들어진다. */
+const PHONE_FIELD_KEYWORDS = {
+  subject:['아파트명','아파트','업체명','현장명'], subject2:['업체명'], role:['전화자','담당자','대표자'],
+  position:['직책'], contact:['전화번호','연락처','휴대폰'], email:['이메일','메일'],
+  location:['주소','현장 위치','현장위치'], topic:['공종','문의내용','문의 내용'], scale:['면적','규모','면적/규모'],
+  status:['현장상황','현장 상황','진행상황'], request:['요청사항','요청내용','견적요청','협약문의','협약문의 내용'],
+  material:['자료요청','필요자료','질문서','질문서 발송'], source:['유입경로','경로'],
+  schedule:['pt 일정','일정'], equipment:['빔프로젝터'], order:['발표순서'], competitor:['경쟁사'], qna:['질의응답'],
+  meeting:['미팅']
+};
+function extractFieldsDeterministic(s){
+  const tag = s.scenarioTag;
+  const schema = phoneFieldSchemaFor(tag);
+  const fields = {};
+  // 1) 질문 라벨/문장이 필드명과 직접 일치하는 답변을 최우선으로 사용한다(사용자가 직접 답한 값이므로 신뢰도가 가장 높음)
+  (s.qa||[]).forEach(q => {
+    const ans = (q.answer||'').trim();
+    if(!ans) return;
+    const hay = `${q.label||''} ${q.question||''}`;
+    const matched = schema.find(f => !fields[f.key] && textIncludesAny(hay, PHONE_FIELD_KEYWORDS[f.key] || [f.label]));
+    if(matched) fields[matched.key] = ans;
+  });
+  // 2) 한 답변에 여러 사실이 섞여 있어도(예: "관리소장이고 010-.... 재도장 예정") 텍스트 전체에서 추가로 채굴한다.
+  //    이미 채워진 필드는 덮어쓰지 않는다(1번 결과가 항상 우선).
+  const allText = [ ...(s.qa||[]).map(q=>q.answer), s.rawMemo||'', ...(s.notes||[]).map(n=>n.text) ].filter(Boolean).join(' \n ');
+  mineFieldsFromText(allText, schema, fields, s);
+  return fields;
+}
+function mineFieldsFromText(text, schema, fields, s){
+  const has = k => schema.some(f=>f.key===k);
+  if(has('contact') && !fields.contact){
+    const m = text.match(/01[016789]-?\d{3,4}-?\d{4}/);
+    if(m) fields.contact = m[0];
+  }
+  if(has('email') && !fields.email){
+    const m = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+    if(m) fields.email = m[0];
+  }
+  if(has('position') && !fields.position){
+    const POS = ['관리소장','소장','대표','팀장','과장','부장','이사','담당자','대리','차장','상무','전무'];
+    const found = POS.find(p => text.includes(p));
+    if(found) fields.position = found;
+  }
+  if(has('topic') && !fields.topic){
+    const WORK = ['재도장','도장','방수','석재','타일','미장','철근','콘크리트','조적','단열','누수보수','도색','옥상방수'];
+    const found = WORK.find(w => text.includes(w));
+    if(found) fields.topic = found;
+  }
+  if(has('subject') && !fields.subject){
+    if(s && s.site && s.site.name) fields.subject = s.site.name;
+    else { const m = text.match(/([가-힣0-9]{2,14}(?:아파트|APT|apt))/); if(m) fields.subject = m[1]; }
+  }
+  if(has('subject2') && !fields.subject2 && s && s.company && s.company.name) fields.subject2 = s.company.name;
+  if(has('scale') && !fields.scale){
+    const m = text.match(/약?\s?[\d,.]+\s?(?:㎡|평|m2|m²)/);
+    if(m) fields.scale = m[0].trim();
+  }
+  if(has('status') && !fields.status){
+    const m = text.match(/(내년|올해|내달|다음달|이번달|당장|조만간|이번 겨울|내년경)[^,.\n]{0,20}(예정|검토중|검토 중|계획)?/);
+    if(m) fields.status = m[0].trim();
+  }
+}
+async function extractFieldsAI(apiKey, s){
+  const tag = s.scenarioTag;
+  const schema = phoneFieldSchemaFor(tag);
+  try{
+    const qaText = (s.qa||[]).filter(q=>(q.answer||'').trim())
+      .map(q => `${q.question || q.label}: ${q.answer}`).join('\n');
+    if(!qaText.trim()) return {};
+    const keys = schema.map(f => `${f.key}(${f.label})`).join(', ');
+    const prompt = `다음은 전화 통화 질문과 답변이다. 아래 필드 중 통화 내용에 실제로 언급된 사실만 뽑아 JSON으로 만들어줘: ${keys}\n\n${qaText}\n\n규칙: 언급되지 않은 필드는 절대 넣지 마. 사실을 지어내지 마. JSON 객체만 출력해(다른 설명 금지).`;
+    const raw = await callOpenAI(apiKey, prompt);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if(!m) return {};
+    const parsed = JSON.parse(m[0]);
+    const out = {};
+    schema.forEach(f => { const v = parsed[f.key]; if(v && String(v).trim()) out[f.key] = String(v).trim(); });
+    return out;
+  }catch(err){ console.error('[AI 필드 추출 실패]', err); return {}; }
+}
+
+/* ---------- 전달용 문구(회사 메신저용) 자동 생성 — 구조화 필드에 실제로 채워진 값만 사용한다 ---------- */
+function buildRelayText(tag, fields){
+  const typeLabel = BUSINESS_TYPE_LABEL[tag] || '업무';
+  const subj = fields.subject || fields.subject2 || '';
+  const roleSuffix = fields.position ? ` ${fields.position}님께서` : (subj ? ' 측에서' : '');
+  const who = subj ? `${subj}${roleSuffix}` : (fields.role ? `${fields.role}님께서` : '문의주신 분께서');
+  const paras = [];
+  paras.push(`${who} ${fields.topic ? fields.topic + ' ' : ''}${typeLabel} 관련하여 문의주셨습니다.`);
+
+  const locScale = [];
+  if(fields.location) locScale.push(`현장은 ${fields.location}이며,`);
+  if(fields.scale) locScale.push(`${fields.location ? '' : '현장 규모는 '}${fields.location ? '공사 면적은 약 ' : '약 '}${fields.scale}입니다.`);
+  if(locScale.length) paras.push(locScale.join('\n'));
+
+  const statusReq = [];
+  if(fields.status) statusReq.push(`${fields.status}으로 공사를 검토 중이며,`);
+  if(fields.request) statusReq.push(`${fields.request}을(를) 요청하셨습니다.`);
+  if(statusReq.length) paras.push(statusReq.join('\n'));
+
+  if(fields.material) paras.push(`추가로 ${fields.material} 자료도 요청하셨습니다.`);
+  if(fields.source) paras.push(`유입경로는 ${fields.source}입니다.`);
+  if(fields.schedule) paras.push(`PT 일정은 ${fields.schedule}입니다.`);
+  if(fields.equipment) paras.push(`빔프로젝터: ${fields.equipment}`);
+  if(fields.order) paras.push(`발표순서: ${fields.order}`);
+  if(fields.competitor) paras.push(`경쟁사: ${fields.competitor}`);
+  if(fields.qna) paras.push(`질의응답시간: ${fields.qna}`);
+  if(fields.meeting) paras.push(`미팅 요청: ${fields.meeting}`);
+  if(fields.email) paras.push(`이메일: ${fields.email}`);
+  if(fields.contact) paras.push(`연락처는 ${fields.contact}입니다.`);
+  return paras.join('\n\n');
+}
+function buildStructuredText(tag, fields){
+  const schema = phoneFieldSchemaFor(tag);
+  const lines = ['통화 접수 정리', `문의유형 : ${BUSINESS_TYPE_LABEL[tag] || tag || '-'}`];
+  schema.forEach(f => {
+    const v = (fields[f.key]||'').trim();
+    if(v) lines.push(`${f.label} : ${v}`);
+    else if(f.core) lines.push(`${f.label} : [미확인]`);
+  });
+  return lines.join('\n');
+}
+// 말하는 문장처럼 보이는 줄(따옴표로 감싸져 있거나 문장부호로 끝남)만 골라낸다
+function splitSpokenLines(body){
+  return String(body||'').split('\n').map(l=>l.trim()).filter(Boolean)
+    .filter(l => /["“”]|[.?!]$/.test(l));
+}
+// 짧은 확인 항목/체크리스트처럼 보이는 줄(문장부호로 끝나지 않는 짧은 라벨)만 골라낸다
+function splitChecklistLines(body){
+  return String(body||'').split('\n').map(l=>l.trim()).filter(Boolean)
+    .filter(l => !/["“”]|[.?!]$/.test(l));
+}
+// 짧은 진행순서 라벨(전체 목록 미리보기용). 새 문구를 만들지 않고 실제 문장을 그대로 잘라서 쓴다.
+function shortLabel(text){
+  const t = String(text||'').replace(/^["“]+|["”]+$/g,'').trim();
+  return t.length > 16 ? t.slice(0,16) + '…' : t;
+}
+// 업무 유형(tag)에 해당하는 "질문" 목록을 만든다. 각 항목은 {label(진행순서용 짧은 라벨), question(그대로
+// 읽을 전화대본 문장)}이다. 하드코딩된 질문이 아니라 매번 현재 state에서 다시 계산하므로, 업무지식
+// (가이드 단계/전화 메모/가이드 메모/자주 쓰는 멘트)을 나중에 추가하면 다음 통화부터 자동으로 반영된다.
+// 문장 자체도 지어내지 않는다: 저장된 전화 메모(phoneNote)·말하는 문장을 우선 쓰고, 그런 문장이 없는
+// 항목은 저장된 단계 라벨/체크리스트 문구를 그대로 질문 자리에 사용한다.
+function buildIntentQuestions(tag){
+  const items = [];
+  const seen = new Set();
+  function addItem(label, question){
+    const q = String(question || label || '').trim();
+    const key = q.replace(/\s+/g,'');
+    if(q && !seen.has(key)){ seen.add(key); items.push({ label: String(label || q).trim(), question: q }); }
+  }
+  state.guides.forEach(g => {
+    const guideMatches = textIncludesAny(`${g.tag||''} ${g.title||''}`, [tag]);
+    g.steps.forEach(st => {
+      if(guideMatches || textIncludesAny(st.label, [tag])){
+        const q = st.hasPhone && (st.phoneNote||'').trim() ? st.phoneNote.trim() : st.label;
+        addItem(st.label, q);
+      }
+    });
+    g.blocks.forEach(b => {
+      if(textIncludesAny(b.body, [tag])){
+        splitSpokenLines(b.body).forEach(t => addItem(shortLabel(t), t));
+        splitChecklistLines(b.body).forEach(t => addItem(t, t));
+      }
+    });
+  });
+  state.phrases.forEach(p => {
+    if(!textIncludesAny(`${p.title} ${p.body}`, [tag])) return;
+    const says = splitSpokenLines(p.body);
+    const checks = splitChecklistLines(p.body);
+    says.forEach(t => addItem(shortLabel(t), t));
+    checks.forEach(t => addItem(t, t));
+    if(!says.length && !checks.length) addItem(shortLabel(p.body), p.body);
+  });
+  return items;
+}
+// 업무 유형별로 진행된 질문/답변을 자연스러운 업무 전달 문구로 정리한다(사실은 절대 바꾸지 않고,
+// 답변이 있는 항목만 사용한다 — 빈 답변에 "미확인"처럼 억지 문구를 채우지 않는다).
+function buildScenarioSummary(s){
+  const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '고객');
+  const typeLabel = BUSINESS_TYPE_LABEL[s.scenarioTag] || '';
+  const answered = (s.qa||[]).filter(q => (q.answer||'').trim());
+  const lines = [`${who}${/님$/.test(who) ? '' : ' 측'}에서${typeLabel ? ' ' + typeLabel + ' 관련하여' : ''} 전화 문의주셨습니다.`];
+  if(answered.length){
+    lines.push('');
+    answered.forEach(q => {
+      const qText = String(q.question||'').replace(/^["“]+|["”]+$/g,'').replace(/[.?!]+$/,'').trim();
+      lines.push(qText ? `${qText} → ${q.answer.trim()}` : q.answer.trim());
+    });
+  }
+  return lines.join('\n');
+}
+
+// "지금 말할 내용"을 대화형 대본(말할 문장 → 확인 항목 → 다음 말할 문장 …)으로 구성한다.
+// 새 문장을 지어내지 않고, 기존에 저장된 데이터만 순서대로 엮는다:
+//   - 여는 문장: 기존 자주 쓰는 멘트/가이드 메모 중 매칭되는 것(기존 findScriptForTags 그대로 재사용)
+//   - 확인 항목 + 그다음 말할 문장: 매칭된 업무 순서(가이드)의 각 단계 라벨 + 그 단계에 이미 저장돼 있는
+//     전화 메모(step.phoneNote, 기존 "전화 메모" 기능으로 사용자가 직접 적어둔 문장)
+// 저장된 phoneNote가 없는 단계는 확인 항목만 보여주고 문장을 지어내지 않는다.
+function buildPhoneScript(s, openingScript, procedure){
+  const blocks = [];
+  if(openingScript) blocks.push({ type:'say', text: openingScript.body });
+  if(procedure){
+    procedure.steps.forEach(st => {
+      blocks.push({ type:'check', items:[st.label] });
+      if(st.hasPhone && (st.phoneNote || '').trim()){
+        blocks.push({ type:'say', text: st.phoneNote.trim() });
+      }
+    });
+  }
+  return blocks;
+}
+
+function buildPhoneCallReport(s){
+  // 업무 유형(질문/답변) 흐름으로 진행된 통화는 답변 기반 요약을 우선 사용한다
+  if(s.scenarioTag && (s.qa||[]).length) return buildScenarioSummary(s);
+
+  const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '상대방');
+  const lines = [`${who}${/님|소장|담당자|과장|부장|팀장|대표$/.test(who) ? '' : ' 관계자'}께서 전화 문의주셨습니다.`, ''];
+  const seen = new Set();
+  const SUMMARY_TEXT = {
+    '체결':'협약(체결) 관련 문의를 주셨습니다.',
+    '시방서':'시방서 자료를 요청하셨습니다.',
+    '공법설명회':'공법설명회 관련 문의를 주셨습니다.',
+    '자료요청':'관련 자료를 요청하셨습니다.',
+    '담당자':'담당자 확인을 요청하셨습니다.',
+    '견적':'견적 문의를 주셨습니다.',
+    '특허':'특허 관련 문의를 주셨습니다.',
+    '현장등록':'현장등록 관련 문의를 주셨습니다.',
+    '질문서':'질문서 관련 문의를 주셨습니다.'
+  };
+  s.matchedIntents.forEach(tag => {
+    if(seen.has(tag) || !SUMMARY_TEXT[tag]) return;
+    seen.add(tag);
+    lines.push(SUMMARY_TEXT[tag]);
+  });
+  if(lines.length === 2) lines.push('세부 문의 내용은 아래 통화 메모를 참고해주세요.');
+  const memo = combinedRawMemo(s);
+  if(memo){
+    lines.push('', '[통화 메모]');
+    memo.split('\n').forEach(l => lines.push(`- ${l}`));
+  }
+  return lines.join('\n');
+}
+function buildPhoneFollowups(s){
+  const out = [];
+  const tags = s.matchedIntents;
+  if(tags.some(t => MATERIAL_REQUEST_TAGS.includes(t))){
+    const m = findPhoneMaterial();
+    out.push({ text: m ? `${m.name} 발송 필요` : '요청 자료 발송 필요 (자료 위치 확인 필요)', status:'material', materialId: m?m.id:null });
+  }
+  if(tags.includes('담당자') && !(s.region && state.jurisdictions.find(j=>j.region===s.region))){
+    out.push({ text:'담당자 확인 필요', status:'contactcheck' });
+  }
+  if(tags.includes('견적')) out.push({ text:'견적 확인 필요', status:'unhandled' });
+  if(tags.includes('체결')) out.push({ text:'체결 진행 상황 콜백 필요', status:'callback' });
+  return out;
+}
+
+async function polishPhoneReport(apiKey){
+  const s = phoneSession;
+  if(!s || !s.report) return;
+  try{
+    showToast('AI로 다듬는 중...');
+    const prompt = `아래는 전화 통화 내용을 정리한 업무 전달 문구 초안이야. 사실 내용을 절대 바꾸거나 추가하지 말고, 회사 메신저로 담당자에게 바로 전달할 수 있는 간단하고 자연스러운 문체로 다듬어줘. 지나치게 공식적인 보고서 문체로 만들지 마.\n\n${s.report}\n\n다듬은 문구만 출력해.`;
+    const result = await callOpenAI(apiKey, prompt);
+    if(result){ s.report = result; render(); }
+  }catch(err){ console.error(err); showToast('AI 다듬기에 실패했습니다'); }
+}
+
+// [저장] — 검토(수정)까지 끝난 통화 기록을 확정 저장한다. rawMemo(원문)/summary(정리본)/followUps(후속업무)를
+// 분리해서 그대로 기록하고, 업체/현장이 인식됐으면 기존 ID로 연결한다. 저장 전까지는 임시 데이터만 존재한다.
+function savePhoneCallLog(){
+  const s = phoneSession;
+  if(!s || !s.endedAt) return;
+  state.callLogs.push({
+    id: uid(),
+    at: Date.now(),
+    companyId: s.company ? s.company.id : null,
+    companyName: s.company ? s.company.name : '',
+    siteId: s.site ? s.site.id : null,
+    siteName: s.site ? s.site.name : '',
+    firstLine: s.firstLine || '',
+    scenarioTag: s.scenarioTag || null,
+    searchQuery: s.notes.length ? s.notes[0].text : (s.firstLine || ''), // 원래 검색어
+    qa: (s.qa||[]).map(q => ({ question: q.question, answer: q.answer })), // 질문 목록 + 각 질문별 원본 답변 (AI가 절대 덮어쓰지 않음)
+    rawMemo: combinedRawMemo(s),   // 사용자가 입력한 원문 그대로 (AI가 절대 덮어쓰지 않음)
+    summary: s.report || '',       // 정리본(사용자가 수정한 최종본, 업무유형 미인식 통화만 사용)
+    extractedFields: s.extractedFields || {}, // AI/결정론적 로직이 추출한 구조화 필드(원본)
+    finalFields: s.finalFields || {},         // 사용자가 수정한 최종 구조화 필드
+    relayText: s.relayText || '',             // 전달용 문구
+    followUps: s.followups.map(f => f.text).filter(Boolean)
+  });
+  saveState();
+  clearActiveCallStorage();
+  showToast('통화 내용이 저장되었습니다.');
+  phoneSession = newPhoneSession();
+  render();
+}
+
+// 전화 비서 "본체"(통화 입력창 + 결과 카드) — 홈 화면과 전화 비서 전체 화면이 동일하게 재사용한다.
+// 로직/데이터는 전혀 바뀌지 않고, 어디에 배치되느냐만 다르다.
+function renderPhoneAssistantCore(){
+  if(!phoneSession) phoneSession = newPhoneSession();
+  const s = phoneSession;
+  if(s.endedAt) return renderPhoneCallEndedCore(s);
+
+  // §1 검색 전: 전화가 오면 들은 내용을 짧게 입력하는 한 줄 입력창 + 빠른 유형 선택 칩만 보여준다
+  // (대본/질문/진행순서/담당자/자료/통화완료는 전부 숨김 — "통화 시작" 전까지는 최대한 미니멀하게)
+  const preSearch = !s.notes.length && !s.scenarioTag && !s.company && !s.site && !s.region;
+  if(preSearch){
+    return `
+      <div class="card pa-callbar">
+        <form class="inline-form" data-pa-form="add-note">
+          <input type="text" id="paInput" placeholder="전화가 오면 들은 내용을 짧게 입력하세요 (예: 견적 문의인데 ○○아파트 관리소장님)" autocomplete="off" />
+          <button type="submit">통화 시작 →</button>
+        </form>
+        <div class="pa-quick-chips">
+          ${PHONE_QUICK_TYPES.map(t => `<button type="button" class="pa-quick-chip" data-pa-action="quick-select" data-text="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  const counterpart = s.company ? `🏢 ${escapeHtml(s.company.name)}`
+    : s.site ? `🏠 ${escapeHtml(s.site.name)}`
+    : s.firstLine ? escapeHtml(s.firstLine)
+    : '통화 상대 미확인';
+
+  const script = findScriptForTags(s.matchedIntents);
+  const procedure = findPhoneProcedure();
+  const material = findPhoneMaterial();
+  const wantsMaterial = s.matchedIntents.some(t => MATERIAL_REQUEST_TAGS.includes(t));
+  const jurisdiction = s.region ? (state.jurisdictions.find(j=>j.region===s.region) || 'missing') : null;
+  // "견적문의"처럼 업무 유형이 뚜렷하게 인식되면 질문(question)+답변(answer) 목록으로 통화를 진행한다.
+  // 업무 유형이 뚜렷하지 않을 때만 기존 대화형 대본(buildPhoneScript)으로 대체 표시한다.
+  const hasQaScenario = !!(s.scenarioTag && s.qa.length);
+  const checkSteps = (procedure && !hasQaScenario) ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
+  const scriptBlocks = hasQaScenario ? [] : buildPhoneScript(s, script, procedure);
+  const procSteps = hasQaScenario ? getPhoneProcedureSet(s.scenarioTag) : [];
+  const typeLabel = hasQaScenario ? (BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag) : '';
+
+  s.lastScript = script;
+  s.lastMaterial = material;
+  s.lastJurisdiction = (jurisdiction && jurisdiction !== 'missing') ? jurisdiction : null;
+  s.lastScriptBlocks = scriptBlocks;
+
+  const nothingYet = !hasQaScenario && !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
+
+  // §11 우선순위: 지금 말할 질문(집중) > 답변 입력 > 다음 질문 > 통화 메모(측면, 항상 작게) > 담당자(작게) > 진행순서(접힘)
+  // 질문형 시나리오가 인식된 경우, 전체를 한 번에 나열하지 않고 "지금 이 질문 하나"만 크게 보여준다.
+  if(hasQaScenario){
+    const total = s.qa.length;
+    const idx = Math.min(Math.max(s.currentQaIndex||0, 0), total-1);
+    const q = s.qa[idx];
+    s.currentQaIndex = idx;
+    const answeredCount = s.qa.filter(item => (item.answer||'').trim()).length;
+
+    const focusHtml = `
+      <div class="card pa-qa-focus">
+        <div class="pa-qa-focus-head">${String(idx+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}</div>
+        ${s.qaEditMode ? `
+          <input type="text" class="pa-qa-question-input" data-qa-id="${q.id}" placeholder="질문 문장 (예: 어느 아파트에서 전화주셨을까요?)" value="${escapeHtml(q.question)}" style="width:100%;box-sizing:border-box;margin-bottom:10px;" />
+          <input type="text" class="pa-qa-label-input" data-qa-id="${q.id}" placeholder="라벨 (진행순서용 짧은 이름)" value="${escapeHtml(q.label)}" style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid var(--card-border);font-family:inherit;font-size:13px;margin-bottom:14px;" />
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="icon-btn" data-pa-action="qa-up" data-id="${q.id}" title="위로">↑</button>
+            <button type="button" class="icon-btn" data-pa-action="qa-down" data-id="${q.id}" title="아래로">↓</button>
+            <button type="button" class="icon-btn danger" data-pa-action="qa-delete" data-id="${q.id}" title="이 질문 삭제">✕</button>
+          </div>
+        ` : `
+          <div class="pa-qa-focus-question">"${escapeHtml(q.question)}"</div>
+          <div class="pa-qa-focus-answer-label">답변</div>
+          <input type="text" class="pa-qa-answer pa-qa-focus-answer" data-qa-id="${q.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(q.answer)}" autocomplete="off" />
+          ${script ? `
+            <div class="pa-qa-focus-guide">
+              <div class="pa-qa-focus-guide-label">안내</div>
+              <div class="pa-qa-focus-guide-text">"${escapeHtml(script.body)}"</div>
+            </div>
+          ` : ''}
+          <div class="pa-qa-focus-actions">
+            ${idx>0 ? `<button type="button" class="btn btn-ghost" data-pa-action="qa-prev">← 이전</button>` : ''}
+            <button type="button" class="btn btn-primary" data-pa-action="qa-next">${idx<total-1 ? '다음 질문 →' : '마지막 질문'}</button>
+          </div>
+        `}
+      </div>
+      <div class="pa-qa-links">
+        <button type="button" class="link-btn" data-pa-action="qa-overview-toggle">${s.qaOverviewOpen ? '전체 질문 접기' : '전체 질문 보기'}</button>
+        <button type="button" class="link-btn" data-pa-action="qa-edit-toggle">${s.qaEditMode ? '편집 완료' : '질문 편집'}</button>
+      </div>
+      ${(s.qaOverviewOpen || s.qaEditMode) ? `
+        <div class="card pa-qa-overview-card">
+          ${s.qaEditMode ? `
+            ${s.qa.map((item,i) => `
+              <div class="pa-qa-ov-row ${i===idx?'current':''}" style="cursor:default;">
+                <span class="pa-qa-ov-mark">${String(i+1).padStart(2,'0')}</span>
+                <span class="pa-qa-ov-label">${escapeHtml(item.label || item.question || '(빈 질문)')}</span>
+                <button type="button" class="link-btn" data-pa-action="qa-jump" data-index="${i}">이동</button>
+              </div>
+            `).join('')}
+            <button type="button" class="pa-qa-add" data-pa-action="qa-add">+ 질문 추가</button>
+          ` : `
+            <div class="pa-qa-overview" style="margin-bottom:0;">
+              ${s.qa.map((item,i) => {
+                const answered = (item.answer||'').trim();
+                const cls = answered ? 'answered' : (i===idx ? 'current' : '');
+                const mark = answered ? '✓' : (i===idx ? '●' : '○');
+                return `
+                  <button type="button" class="pa-qa-ov-row ${cls}" data-pa-action="qa-jump" data-index="${i}">
+                    <span class="pa-qa-ov-mark">${mark}</span>
+                    <span class="pa-qa-ov-label">${escapeHtml(item.label || item.question || '질문')}</span>
+                    ${answered ? `<span class="pa-qa-ov-current-tag">${escapeHtml(item.answer)}</span>` : (i===idx ? `<span class="pa-qa-ov-current-tag">입력 중</span>` : '')}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      ` : ''}
+    `;
+
+    const materialHtml = (material || wantsMaterial) ? `
+      <div class="pa-contact-line">
+        <span>📎</span>
+        ${material ? `<strong>${escapeHtml(material.name)}</strong><span>· ${escapeHtml(material.location)}</span><button type="button" class="link-btn" data-pa-action="copy-material">복사</button>`
+          : `<span class="pa-missing">등록된 자료 없음 — 확인 필요</span>`}
+      </div>
+    ` : '';
+
+    const jurisdictionHtml = s.region ? `
+      <div class="pa-contact-line">
+        <span>📍</span>
+        ${s.lastJurisdiction ? `
+          <strong>${escapeHtml(s.lastJurisdiction.manager||'담당자 미등록')}</strong>
+          <span>${s.lastJurisdiction.branch ? escapeHtml(s.lastJurisdiction.branch) + ' · ' : ''}${escapeHtml(s.lastJurisdiction.phone||'-')}</span>
+          ${s.lastJurisdiction.phone ? `<button type="button" class="link-btn" data-pa-action="copy-jurisdiction-phone">복사</button>` : ''}
+        ` : `<span class="pa-missing">등록된 담당자 정보 없음 (${escapeHtml(s.region)})</span>`}
+      </div>
+    ` : '';
+
+    const procHtml = `
+      <div class="pa-collapse">
+        <button type="button" class="pa-collapse-toggle" data-pa-action="proc-section-toggle">통화 후 처리 &nbsp;${s.procOpen ? '펼쳐보기 ▲' : '펼쳐보기 ▼'}</button>
+        ${s.procOpen ? `
+          <div class="card-head" style="margin-bottom:6px;">
+            <div></div>
+            <button type="button" class="copy-btn" data-pa-action="proc-edit-toggle">${s.procEditMode ? '편집 완료' : '진행순서 편집'}</button>
+          </div>
+          ${s.procEditMode ? `
+            ${procSteps.map((p,i) => `
+              <div class="pa-proc-edit-row">
+                <span class="pa-qa-block-num">${String(i+1).padStart(2,'0')}</span>
+                <input type="text" class="pa-proc-input" data-proc-id="${p.id}" value="${escapeHtml(p.text)}" style="flex:1;" />
+                <button type="button" class="icon-btn" data-pa-action="proc-up" data-id="${p.id}" title="위로">↑</button>
+                <button type="button" class="icon-btn" data-pa-action="proc-down" data-id="${p.id}" title="아래로">↓</button>
+                <button type="button" class="icon-btn danger" data-pa-action="proc-delete" data-id="${p.id}" title="삭제">✕</button>
+              </div>
+            `).join('') || '<div class="empty-state" style="padding:8px 0;">등록된 진행순서가 없습니다</div>'}
+            <button type="button" class="pa-qa-add" data-pa-action="proc-add">+ 항목 추가</button>
+          ` : `
+            <div class="steps-row" style="margin-bottom:0;">
+              ${procSteps.map((p,i) => `
+                ${i>0?'<span class="step-arrow">→</span>':''}
+                <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(p.text)}</span>
+              `).join('') || '<span class="empty-state" style="padding:0;">등록된 진행순서가 없습니다</span>'}
+            </div>
+          `}
+        ` : ''}
+      </div>
+    `;
+
+    const mainHtml = `
+      <div class="card pa-callbar">
+        <div class="pa-callbar-head">
+          <div>
+            <div class="pa-callbar-label">전화비서${typeLabel ? ' · ' + escapeHtml(typeLabel) : ''}</div>
+            <div class="pa-callbar-who">${counterpart}</div>
+          </div>
+        </div>
+        <div class="pa-progress">지금 확인할 내용 &nbsp;${answeredCount} / ${total}</div>
+        ${s.notes.length ? `
+          <div class="pa-notes-log">
+            <div class="pa-notes-log-label">검색 기록</div>
+            ${s.notes.map((n,i) => `
+              <div class="pa-note-line">
+                <span>· ${escapeHtml(n.text)}</span>
+                <button type="button" class="pa-note-del" data-pa-action="note-delete" data-index="${i}" title="이 기록 삭제">✕</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+      ${focusHtml}
+      ${materialHtml}
+      ${jurisdictionHtml}
+      ${procHtml}
+    `;
+
+    const sideHtml = `
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px;">📝 통화 메모</div>
+        <textarea id="paRawMemo" class="pa-rawmemo" placeholder="자유롭게 메모…">${escapeHtml(s.rawMemo)}</textarea>
+      </div>
+    `;
+
+    return `
+      <div class="pa-call-layout">
+        <div class="pa-call-main">${mainHtml}</div>
+        <div class="pa-call-side">${sideHtml}</div>
+      </div>
+      <div class="pa-endcall-row">
+        <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 완료 및 정리</button>
+      </div>
+    `;
+  }
+
+  // 업무 유형이 뚜렷하게 인식되지 않은 통화(질문 세트가 없는 경우) — 기존 대본/절차 정보를 그대로 보여주되
+  // 화면 비중은 최소화한다. 통화 메모는 마찬가지로 측면 패널로 보여준다.
+  const mainHtml = `
+    <div class="card pa-callbar">
+      <div class="pa-callbar-head">
+        <div>
+          <div class="pa-callbar-label">전화비서</div>
+          <div class="pa-callbar-who">${counterpart}</div>
+        </div>
+      </div>
+      <form class="inline-form" data-pa-form="add-note" style="margin-top:14px;">
+        <input type="text" id="paInput" placeholder="업체명 / 아파트명 / 문의내용을 입력하세요 (예: 부산 덕천주공1단지, 시방서, 체결 문의)" autocomplete="off" />
+        <button type="submit">검색 / 시작</button>
+      </form>
+      ${s.notes.length ? `
+        <div class="pa-notes-log">
+          <div class="pa-notes-log-label">과거 기록</div>
+          ${s.notes.map((n,i) => `
+            <div class="pa-note-line">
+              <span>· ${escapeHtml(n.text)}</span>
+              <button type="button" class="pa-note-del" data-pa-action="note-delete" data-index="${i}" title="이 기록 삭제">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+
+    ${scriptBlocks.length ? `
+      <div class="card highlight">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용</div>
+          <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 복사</button></div>
+        </div>
+        <div class="pa-script">
+          ${scriptBlocks.map((b,i) => b.type === 'say' ? `
+            <div class="pa-script-say">
+              <div class="pa-script-say-label">${i===0 ? '내가 먼저 말할 내용' : '다음에 말할 내용'}</div>
+              <div class="pa-script-say-text">${escapeHtml(b.text)}</div>
+              <button class="copy-btn" data-pa-action="copy-script-line" data-index="${i}">📋 이 문장 복사</button>
+            </div>
+          ` : `
+            <div class="pa-script-check">
+              <div class="pa-script-check-label">확인할 순서</div>
+              <div class="pa-script-check-items">${b.items.map(it => `<span>${escapeHtml(it)}</span>`).join('')}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    ${procedure ? `
+      <div class="pa-collapse">
+        <button type="button" class="pa-collapse-toggle" data-pa-action="proc-section-toggle">통화 후 처리 — ${escapeHtml(procedure.title)} &nbsp;${s.procOpen ? '▲' : '▼'}</button>
+        ${s.procOpen ? `
+          <div class="steps-row" style="margin-bottom:0;">
+            ${procedure.steps.map((st,i) => `
+              ${i>0?'<span class="step-arrow">→</span>':''}
+              <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(st.label)}</span>
+            `).join('') || '<span class="empty-state" style="padding:0;">등록된 단계가 없습니다</span>'}
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+
+    ${(material || wantsMaterial) ? `
+      <div class="pa-contact-line">
+        <span>📎</span>
+        ${material ? `<strong>${escapeHtml(material.name)}</strong><span>· ${escapeHtml(material.location)}</span><button type="button" class="link-btn" data-pa-action="copy-material">복사</button>`
+          : `<span class="pa-missing">등록된 자료 없음 — 확인 필요</span>`}
+      </div>
+    ` : ''}
+
+    ${s.region ? `
+      <div class="pa-contact-line">
+        <span>📍</span>
+        ${s.lastJurisdiction ? `
+          <strong>${escapeHtml(s.lastJurisdiction.manager||'담당자 미등록')}</strong>
+          <span>${s.lastJurisdiction.branch ? escapeHtml(s.lastJurisdiction.branch) + ' · ' : ''}${escapeHtml(s.lastJurisdiction.phone||'-')}</span>
+          ${s.lastJurisdiction.phone ? `<button type="button" class="link-btn" data-pa-action="copy-jurisdiction-phone">복사</button>` : ''}
+        ` : `<span class="pa-missing">등록된 담당자 정보 없음 (${escapeHtml(s.region)})</span>`}
+      </div>
+    ` : ''}
+
+    ${s.company ? `
+      <div class="card">
+        <div class="card-title">🏢 업체 정보 — ${escapeHtml(s.company.name)}</div>
+        <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
+          <div class="company-info-item"><span class="company-info-label">담당자</span><span class="company-info-val">${escapeHtml(s.company.contactName||'-')}</span></div>
+          <div class="company-info-item"><span class="company-info-label">전화번호</span><span class="company-info-val">${escapeHtml(s.company.phone||'-')}</span></div>
+          ${s.company.memo ? `<div class="company-info-item company-info-wide"><span class="company-info-label">기존 메모</span><span class="company-info-val">${escapeHtml(s.company.memo)}</span></div>` : ''}
+        </div>
+      </div>
+    ` : ''}
+    ${s.site ? `
+      <div class="card">
+        <div class="card-title">🏠 아파트/현장 정보 — ${escapeHtml(s.site.name)}</div>
+        <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
+          <div class="company-info-item"><span class="company-info-label">지역</span><span class="company-info-val">${escapeHtml(s.site.region||'-')}</span></div>
+          ${s.site.memo ? `<div class="company-info-item company-info-wide"><span class="company-info-label">메모</span><span class="company-info-val">${escapeHtml(s.site.memo)}</span></div>` : ''}
+        </div>
+      </div>
+    ` : ''}
+
+    ${checkSteps.length ? `
+      <div class="card">
+        <div class="card-title">✅ 통화 중 확인해야 할 추가 항목</div>
+        ${checkSteps.map(st => `<div class="pa-check-item">· ${escapeHtml(st.label)}</div>`).join('')}
+      </div>
+    ` : ''}
+
+    ${nothingYet ? `<div class="empty-state">입력한 내용과 일치하는 저장된 정보가 아직 없습니다. 단어를 더 입력해보세요.</div>` : ''}
+  `;
+
+  const sideHtml = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;">📝 통화 메모</div>
+      <textarea id="paRawMemo" class="pa-rawmemo" placeholder="전화하면서 메모를 계속 입력하세요…">${escapeHtml(s.rawMemo)}</textarea>
+    </div>
+  `;
+
+  return `
+    <div class="pa-call-layout">
+      <div class="pa-call-main">${mainHtml}</div>
+      <div class="pa-call-side">${sideHtml}</div>
+    </div>
+    <div class="pa-endcall-row">
+      <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 완료 및 정리</button>
+    </div>
+  `;
+}
+
+// 전화 비서 전체 화면(사이드바 "전화 비서") — 위 본체에 제목과 참고 데이터 관리 패널만 덧붙인다.
+function renderPhoneAssistantView(){
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>📞 전화 비서</h1>
+      <p>통화하면서 단어·짧은 문장만 입력해도 지금 필요한 정보를 바로 보여드립니다.</p>
+    </div>
+    ${renderPhoneAssistantCore()}
+    <div class="card" style="margin-top:24px;">
+      <div class="card-head"><div class="card-title" style="margin:0;">⚙️ 전화 비서 참고 데이터 관리</div></div>
+      ${renderPhoneAdminPanel()}
+    </div>
+  `;
+}
+
+/* ==========================================================================
+   홈 (사이트를 열면 가장 먼저 보이는 화면)
+   순서: ① AI 문구수정 ② 처리할 업무 ③ 업무도구
+   전부 기존 함수를 그대로 재사용해서 조합만 한다 — 새 로직/새 데이터 없음.
+   (구 전화 비서 UI는 제거되었다 — 관련 데이터/함수는 그대로 보존되어 있으며 화면에서만 빠졌다.)
+   ========================================================================== */
+function renderHomeView(){
+  const todayCount = activeWorkItems().length;
+  return `
+    <div class="view-topbar"><span class="crumb">HOME</span></div>
+
+    ${renderAiComposerCard()}
+
+    <div class="view-header" style="margin:8px 0 10px;">
+      <h1 style="font-size:20px;">처리할 업무 ${todayCount}건</h1>
+    </div>
+    ${renderTodayList()}
+    <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-today">처리할 업무 전체 보기 · 직접 추가 →</button></div>
+
+    <div class="view-header" style="margin:8px 0 10px;">
+      <h1 style="font-size:13px;color:var(--text-gray);letter-spacing:.05em;">업무도구</h1>
+    </div>
+    ${renderWorkToolsRow()}
+  `;
+}
+
+// 바로가기는 상단 헤더로 이동했으므로(검색창 옆) 업무도구에는 더 이상 중복 표시하지 않는다.
+function renderWorkToolsRow(){
+  return `
+    <div class="worktools-row">
+      <button type="button" class="worktools-btn" data-action="tool-companies">업체관리</button>
+      <button type="button" class="worktools-btn disabled" disabled title="아직 연결된 기존 기능이 없습니다 (미연결)">실적검색</button>
+      <button type="button" class="worktools-btn" data-action="tool-materials">자료실</button>
+      <button type="button" class="worktools-btn" data-action="tool-manual">업무매뉴얼</button>
+      <button type="button" class="worktools-btn" data-action="tool-vault">계정관리</button>
+      <button type="button" class="worktools-btn" data-action="tool-settings">설정</button>
+    </div>
+  `;
+}
+
+// 자료실(업무도구) — 전화 비서 참고 데이터 관리 패널의 "자료 위치" 목록과 동일한 state.materials를
+// 그대로 보여준다. 추가/수정/삭제 버튼도 기존 mat-add/mat-edit/mat-delete 로직을 그대로 재사용한다.
+function renderMaterialsToolView(){
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>📎 자료실</h1>
+      <p>업무에 필요한 자료 위치를 모아둔 목록입니다.</p>
+    </div>
+    <div class="card">
+      <div class="pa-admin-head"><span>자료 위치 (${state.materials.length})</span><button class="copy-btn" data-pa-action="mat-add">+ 추가</button></div>
+      ${state.materials.map(m => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(m.name)} · ${escapeHtml(m.location)}</span>
+          <span class="pa-admin-actions">
+            ${m.url ? `<a class="icon-btn" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" title="자료 열기">🔗</a>` : ''}
+            <button class="icon-btn" data-pa-action="mat-edit" data-id="${m.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="mat-delete" data-id="${m.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state">등록된 자료가 없습니다</div>'}
+    </div>
+  `;
+}
+
+// 통화 종료 → 저장 전 검토 화면. 요약/후속업무 모두 사용자가 직접 수정할 수 있고,
+// [저장]을 눌러야만 Firestore(state.callLogs)에 확정 저장된다 — 원문(rawMemo)은 별도로 그대로 보존된다.
+function renderPhoneCallEndedCore(s){
+  const hasFields = !!s.scenarioTag;
+  return `
+    ${hasFields ? `
+      <div class="card highlight">
+        <div class="card-title" style="margin-bottom:12px;">📝 통화 접수 정리 — ${escapeHtml(BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag)}</div>
+        ${phoneFieldSchemaFor(s.scenarioTag).map(f => {
+          const v = s.finalFields[f.key] || '';
+          if(!v && !f.core) return '';
+          return `
+          <div class="pa-field-row">
+            <span class="pa-field-label">${escapeHtml(f.label)}${(!v && f.core) ? ' <span class="pa-field-badge">미확인</span>' : ''}</span>
+            <input type="text" class="pa-field-input" data-field-key="${f.key}" value="${escapeHtml(v)}" />
+          </div>`;
+        }).join('')}
+      </div>
+      ${(s.rawMemo||'').trim() ? `
+        <div class="card">
+          <div class="card-title" style="margin-bottom:8px;">추가 메모</div>
+          <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(s.rawMemo)}</div>
+        </div>
+      ` : ''}
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">💬 전달용 문구</div>
+        <textarea id="paRelayText" class="pa-rawmemo" style="min-height:140px;">${escapeHtml(s.relayText || '')}</textarea>
+      </div>
+      <div class="pa-endcall-row" style="flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost" data-pa-action="relay-copy">문구 복사</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="call-edit-again">수정</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="add-work-item-from-call">처리할 업무에 추가</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="copy-all">전체 복사</button>
+        <button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>
+      </div>
+    ` : `
+      <div class="card highlight">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">📝 통화내용 정리 (수정 가능)</div>
+          <div class="card-actions">
+            <button class="copy-btn" data-pa-action="copy-report">📋 복사</button>
+            <button class="icon-btn" data-pa-action="ai-polish-report" title="AI로 다듬기">✨</button>
+          </div>
+        </div>
+        <textarea id="paSummaryEdit" class="pa-rawmemo" style="min-height:150px;">${escapeHtml(s.report)}</textarea>
+      </div>
+    `}
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" style="margin:0;">✅ 후속 업무 (수정 가능)</div>
+        <button type="button" class="copy-btn" data-pa-action="followup-add">+ 항목 추가</button>
+      </div>
+      ${s.followups.length ? s.followups.map((f,i) => `
+        <div class="pa-followup-item">
+          <input type="text" class="pa-followup-input" data-pa-followup-index="${i}" value="${escapeHtml(f.text)}" />
+          <span class="pa-followup-actions">
+            <button class="copy-btn" data-pa-action="add-todo" data-index="${i}">+ 처리할 업무에 추가</button>
+            <button class="icon-btn danger" data-pa-action="followup-delete" data-index="${i}" title="삭제">🗑</button>
+          </span>
+        </div>
+      `).join('') : '<div class="empty-state" style="padding:10px 0;">추출된 후속 업무가 없습니다</div>'}
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">통화 메모 원문 (보존됨)</div>
+      <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(combinedRawMemo(s)) || '(입력된 메모 없음)'}</div>
+    </div>
+    <div class="pa-endcall-row">
+      ${hasFields ? '' : '<button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>'}
+      <button type="button" class="btn btn-ghost" data-pa-action="new-call">저장 안 하고 새 통화 시작</button>
+    </div>
+  `;
+}
+
+/* 전화 비서 참고 데이터(관할담당자/자료위치/아파트·현장) 관리 — 나중에 언제든 추가/수정/삭제 가능 */
+function renderPhoneAdminPanel(){
+  return `
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>📍 관할 담당자 (${state.jurisdictions.length})</span><button class="copy-btn" data-pa-action="jur-add">+ 추가</button></div>
+      ${state.jurisdictions.map(j => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(j.region)} · ${escapeHtml(j.branch||'-')} · ${escapeHtml(j.manager||'-')} · ${escapeHtml(j.phone||'-')}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn" data-pa-action="jur-edit" data-id="${j.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="jur-delete" data-id="${j.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 관할 담당자가 없습니다</div>'}
+    </div>
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>📎 자료 위치 (${state.materials.length})</span><button class="copy-btn" data-pa-action="mat-add">+ 추가</button></div>
+      ${state.materials.map(m => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(m.name)} · ${escapeHtml(m.location)}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn" data-pa-action="mat-edit" data-id="${m.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="mat-delete" data-id="${m.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 자료가 없습니다</div>'}
+    </div>
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>🏠 아파트/현장 (${state.sites.length})</span><button class="copy-btn" data-pa-action="site-add">+ 추가</button></div>
+      ${state.sites.map(st => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(st.name)} · ${escapeHtml(st.region||'-')}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn" data-pa-action="site-edit" data-id="${st.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="site-delete" data-id="${st.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 아파트/현장이 없습니다</div>'}
+    </div>
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>📞 저장된 통화 기록 (${state.callLogs.length})</span></div>
+      ${state.callLogs.slice().reverse().map(log => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(new Date(log.at).toLocaleString('ko-KR'))} · ${escapeHtml(log.companyName || log.siteName || log.firstLine || '상대방 미확인')} — ${escapeHtml((log.summary||'').split('\n')[0].slice(0,30))}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn danger" data-pa-action="calllog-delete" data-id="${log.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">저장된 통화 기록이 없습니다</div>'}
+    </div>
+  `;
+}
+function openPhoneJurisdictionModal(id){
+  const existing = id ? state.jurisdictions.find(j=>j.id===id) : null;
+  openModal({
+    title: existing ? '관할 담당자 수정' : '관할 담당자 추가', submitLabel:'저장',
+    fields:[
+      {name:'region', label:'관할 지역 (예: 부산)', value: existing?existing.region:''},
+      {name:'branch', label:'지사', value: existing?existing.branch:''},
+      {name:'manager', label:'담당자', value: existing?existing.manager:''},
+      {name:'phone', label:'연락처', value: existing?existing.phone:''}
+    ],
+    onSubmit(data){
+      if(!data.region) return;
+      if(existing) Object.assign(existing, data);
+      else state.jurisdictions.push({id:uid(), ...data});
+      saveState(); render();
+    }
+  });
+}
+function openPhoneMaterialModal(id){
+  const existing = id ? state.materials.find(m=>m.id===id) : null;
+  openModal({
+    title: existing ? '자료 위치 수정' : '자료 위치 추가', submitLabel:'저장',
+    fields:[
+      {name:'name', label:'자료명 (예: 시방서)', value: existing?existing.name:''},
+      {name:'location', label:'자료 위치 (예: 홈페이지 → 자료실 → 시방서)', value: existing?existing.location:''},
+      {name:'url', label:'링크 (선택)', value: existing?existing.url:''}
+    ],
+    onSubmit(data){
+      if(!data.name) return;
+      if(existing) Object.assign(existing, data);
+      else state.materials.push({id:uid(), ...data});
+      saveState(); render();
+    }
+  });
+}
+function openPhoneSiteModal(id){
+  const existing = id ? state.sites.find(s=>s.id===id) : null;
+  openModal({
+    title: existing ? '아파트/현장 수정' : '아파트/현장 추가', submitLabel:'저장',
+    fields:[
+      {name:'name', label:'아파트/현장명', value: existing?existing.name:''},
+      {name:'region', label:'지역', value: existing?existing.region:''},
+      {name:'memo', label:'메모', type:'textarea', value: existing?existing.memo:''}
+    ],
+    onSubmit(data){
+      if(!data.name) return;
+      if(existing) Object.assign(existing, data);
+      else state.sites.push({id:uid(), ...data});
+      saveState(); render();
+    }
+  });
+}
+
+// §1 빠른 유형 선택 칩과 직접 입력 제출이 똑같은 흐름(addPhoneNote → 인식 → 렌더)을 타도록 공유한다
+function submitPhoneNoteText(text){
+  if(!String(text||'').trim()) return;
+  addPhoneNote(text);
+  render();
+  requestAnimationFrame(()=>{ const el = document.getElementById('paInput'); if(el) el.focus(); });
+}
+contentEl.addEventListener('submit', (e)=>{
+  const form = e.target.closest('[data-pa-form="add-note"]');
+  if(!form) return;
+  e.preventDefault();
+  const input = form.querySelector('#paInput');
+  const text = input.value;
+  input.value = '';
+  submitPhoneNoteText(text);
+});
+
+// 여러 줄 메모를 편하게 입력할 수 있도록 Enter는 항상 줄바꿈이고, Ctrl+Enter(또는 Cmd+Enter)로만 실행한다.
+contentEl.addEventListener('keydown', (e)=>{
+  if(e.target && e.target.id === 'aiNoteInput' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
     e.preventDefault();
     triggerAiRewrite();
   }
 });
+// 질문 답변 입력 중 Enter를 누르면 [다음]과 동일하게 다음 질문으로 넘어간다
+contentEl.addEventListener('keydown', (e)=>{
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-focus-answer') && e.key === 'Enter'){
+    e.preventDefault();
+    if(!phoneSession) return;
+    phoneSession.currentQaIndex = Math.min(phoneSession.currentQaIndex + 1, phoneSession.qa.length - 1);
+    persistActiveCall();
+    render();
+    requestAnimationFrame(()=>{
+      const el = document.querySelector('.pa-qa-focus-answer');
+      if(el) el.focus();
+    });
+  }
+});
+
+contentEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-pa-action]');
+  if(!btn) return;
+  const action = btn.dataset.paAction;
+  if(action === 'quick-select'){
+    // §1 빠른 유형 선택 칩: 그 문구를 직접 입력하고 제출한 것과 완전히 동일한 흐름(기존 통화 시작 로직)을 그대로 탄다
+    submitPhoneNoteText(btn.dataset.text || '');
+  } else if(action === 'qa-overview-toggle'){
+    phoneSession.qaOverviewOpen = !phoneSession.qaOverviewOpen;
+    render();
+  } else if(action === 'proc-section-toggle'){
+    phoneSession.procOpen = !phoneSession.procOpen;
+    render();
+  } else if(action === 'end-call'){
+    const hasQaAnswer = !!(phoneSession && (phoneSession.qa||[]).some(q => (q.answer||'').trim()));
+    if(!phoneSession || (!phoneSession.notes.length && !(phoneSession.rawMemo||'').trim() && !hasQaAnswer)){
+      showToast('입력된 내용이 없습니다'); return;
+    }
+    // 통화 메모(rawMemo)에 등장한 키워드도 업무정보/후속업무 판단에 반영한다
+    detectIntents(phoneSession.rawMemo || '').forEach(tag => {
+      if(!phoneSession.matchedIntents.includes(tag)) phoneSession.matchedIntents.push(tag);
+    });
+    phoneSession.endedAt = Date.now();
+    phoneSession.report = buildPhoneCallReport(phoneSession);
+    phoneSession.followups = buildPhoneFollowups(phoneSession);
+    if(phoneSession.scenarioTag){
+      const det = extractFieldsDeterministic(phoneSession);
+      phoneSession.extractedFields = det;
+      phoneSession.finalFields = { ...det };
+      phoneSession.relayText = buildRelayText(phoneSession.scenarioTag, phoneSession.finalFields);
+      const apiKey = getOpenAIKey();
+      if(apiKey){
+        const sessionRef = phoneSession;
+        extractFieldsAI(apiKey, sessionRef).then(aiFields => {
+          if(phoneSession !== sessionRef) return; // 그 사이 새 통화가 시작됐으면 반영하지 않는다
+          Object.keys(aiFields).forEach(k => { if(aiFields[k]) sessionRef.extractedFields[k] = aiFields[k]; });
+          // 사용자가 이미 직접 고친 값은 AI 결과로 덮어쓰지 않는다
+          Object.keys(aiFields).forEach(k => {
+            if(aiFields[k] && !(sessionRef.finalFields[k]||'').trim()) sessionRef.finalFields[k] = aiFields[k];
+          });
+          sessionRef.relayText = buildRelayText(sessionRef.scenarioTag, sessionRef.finalFields);
+          persistActiveCall();
+          render();
+        });
+      }
+    }
+    persistActiveCall(); // 저장 전 검토 단계도 새로고침에 대비해 계속 임시 보관한다
+    render();
+  } else if(action === 'new-call'){
+    phoneSession = newPhoneSession();
+    clearActiveCallStorage();
+    render();
+  } else if(action === 'field-edit-noop'){
+    // no-op (input change is handled by contentEl 'input' listener below)
+  } else if(action === 'relay-copy'){
+    copyText(phoneSession.relayText || '');
+  } else if(action === 'copy-all'){
+    const s = phoneSession;
+    copyText([buildStructuredText(s.scenarioTag, s.finalFields), '', '전달용 문구', s.relayText || ''].join('\n'));
+  } else if(action === 'call-edit-again'){
+    phoneSession.endedAt = null;
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-edit-toggle'){
+    phoneSession.qaEditMode = !phoneSession.qaEditMode;
+    render();
+  } else if(action === 'proc-edit-toggle'){
+    phoneSession.procEditMode = !phoneSession.procEditMode;
+    render();
+  } else if(action === 'proc-add'){
+    const tag = phoneSession.scenarioTag;
+    getPhoneProcedureSet(tag).push({ id: uid(), text:'' });
+    saveState(); render();
+    requestAnimationFrame(()=>{
+      const inputs = document.querySelectorAll('.pa-proc-input');
+      const last = inputs[inputs.length-1];
+      if(last) last.focus();
+    });
+  } else if(action === 'proc-delete'){
+    if(confirm('이 진행순서 항목을 삭제하시겠습니까?')){
+      const tag = phoneSession.scenarioTag;
+      state.phoneProcedureSets[tag] = (state.phoneProcedureSets[tag]||[]).filter(p=>p.id!==btn.dataset.id);
+      saveState(); render();
+    }
+  } else if(action === 'proc-up' || action === 'proc-down'){
+    const tag = phoneSession.scenarioTag;
+    const arr = state.phoneProcedureSets[tag] || [];
+    const idx = arr.findIndex(p=>p.id===btn.dataset.id);
+    const swapWith = action === 'proc-up' ? idx-1 : idx+1;
+    if(idx>=0 && swapWith>=0 && swapWith<arr.length){
+      [arr[idx], arr[swapWith]] = [arr[swapWith], arr[idx]];
+      saveState(); render();
+    }
+  } else if(action === 'qa-up' || action === 'qa-down'){
+    const arr = phoneSession.qa;
+    const idx = arr.findIndex(q=>q.id===btn.dataset.id);
+    const swapWith = action === 'qa-up' ? idx-1 : idx+1;
+    if(idx>=0 && swapWith>=0 && swapWith<arr.length){
+      [arr[idx], arr[swapWith]] = [arr[swapWith], arr[idx]];
+      const setArr = phoneSession.scenarioTag && state.phoneQuestionSets[phoneSession.scenarioTag];
+      if(setArr){
+        const sIdx = setArr.findIndex(q=>q.id===btn.dataset.id);
+        const sSwap = action === 'qa-up' ? sIdx-1 : sIdx+1;
+        if(sIdx>=0 && sSwap>=0 && sSwap<setArr.length){ [setArr[sIdx], setArr[sSwap]] = [setArr[sSwap], setArr[sIdx]]; saveState(); }
+      }
+      persistActiveCall(); render();
+    }
+  } else if(action === 'qa-add'){
+    const item = { id: uid(), label:'', question:'', answer:'', source:'custom' };
+    phoneSession.qa.push(item);
+    phoneSession.currentQaIndex = phoneSession.qa.length - 1; // 추가한 질문으로 바로 이동
+    if(phoneSession.scenarioTag){
+      getPhoneQuestionSet(phoneSession.scenarioTag).push({ id:item.id, label:item.label, question:item.question });
+      saveState();
+    }
+    persistActiveCall();
+    render();
+    requestAnimationFrame(()=>{
+      const inputs = document.querySelectorAll('.pa-qa-question-input');
+      const last = inputs[inputs.length-1];
+      if(last) last.focus();
+    });
+  } else if(action === 'qa-delete'){
+    if(confirm('이 질문을 삭제하시겠습니까?')){
+      const delIdx = phoneSession.qa.findIndex(q => q.id === btn.dataset.id);
+      phoneSession.qa = phoneSession.qa.filter(q => q.id !== btn.dataset.id);
+      if(phoneSession.scenarioTag && state.phoneQuestionSets[phoneSession.scenarioTag]){
+        state.phoneQuestionSets[phoneSession.scenarioTag] = state.phoneQuestionSets[phoneSession.scenarioTag].filter(q=>q.id!==btn.dataset.id);
+        saveState();
+      }
+      if(phoneSession.currentQaIndex >= delIdx) phoneSession.currentQaIndex = Math.max(0, phoneSession.currentQaIndex - 1);
+      persistActiveCall();
+      render();
+    }
+  } else if(action === 'qa-jump'){
+    phoneSession.currentQaIndex = Number(btn.dataset.index);
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-next' || action === 'qa-skip'){
+    phoneSession.currentQaIndex = Math.min(phoneSession.currentQaIndex + 1, phoneSession.qa.length - 1);
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-prev'){
+    phoneSession.currentQaIndex = Math.max(phoneSession.currentQaIndex - 1, 0);
+    persistActiveCall();
+    render();
+  } else if(action === 'followup-add'){
+    phoneSession.followups.push({ text:'', status:'unhandled' });
+    render();
+    requestAnimationFrame(()=>{
+      const inputs = document.querySelectorAll('.pa-followup-input');
+      const last = inputs[inputs.length-1];
+      if(last) last.focus();
+    });
+  } else if(action === 'followup-delete'){
+    if(confirm('이 후속 업무를 삭제하시겠습니까?')){
+      phoneSession.followups.splice(Number(btn.dataset.index), 1);
+      persistActiveCall();
+      render();
+    }
+  } else if(action === 'save-call'){
+    savePhoneCallLog();
+  } else if(action === 'copy-script'){
+    // 대본 전체가 아니라 내가 실제로 말할 문장들만 이어서 복사한다
+    const blocks = (phoneSession.lastScriptBlocks || []).filter(b => b.type === 'say');
+    if(blocks.length) copyText(blocks.map(b => b.text).join('\n\n'));
+  } else if(action === 'copy-script-line'){
+    const b = (phoneSession.lastScriptBlocks || [])[Number(btn.dataset.index)];
+    if(b && b.type === 'say') copyText(b.text);
+  } else if(action === 'note-delete'){
+    const idx = Number(btn.dataset.index);
+    if(phoneSession && phoneSession.notes[idx] && confirm('이 기록을 삭제하시겠습니까?')){
+      phoneSession.notes.splice(idx, 1);
+      persistActiveCall();
+      render();
+    }
+  } else if(action === 'copy-material'){
+    if(phoneSession.lastMaterial) copyText(phoneSession.lastMaterial.url || phoneSession.lastMaterial.location);
+  } else if(action === 'copy-jurisdiction-phone'){
+    if(phoneSession.lastJurisdiction) copyText(phoneSession.lastJurisdiction.phone || '');
+  } else if(action === 'copy-report'){
+    copyText(phoneSession.report || '');
+  } else if(action === 'ai-polish-report'){
+    const apiKey = getOpenAIKey();
+    if(!apiKey){ promptForOpenAIKey((key)=> polishPhoneReport(key)); return; }
+    polishPhoneReport(apiKey);
+  } else if(action === 'add-todo'){
+    const f = phoneSession.followups[Number(btn.dataset.index)];
+    if(!f) return;
+    const who = phoneSession.company ? phoneSession.company.name : phoneSession.site ? phoneSession.site.name : (phoneSession.firstLine || '');
+    state.todos.push({id:uid(), text: who ? `${who} — ${f.text}` : f.text, done:false});
+    // 처리할 업무 비서와 연결: 같은 업체/현장 ID를 참조하는 업무 카드로도 함께 등록한다 (요청에 따라 자동 등록, 삭제되지 않음)
+    state.workItems.push({
+      id:uid(),
+      companyId: phoneSession.company ? phoneSession.company.id : null,
+      siteId: phoneSession.site ? phoneSession.site.id : null,
+      who,
+      title: f.text,
+      status: f.status,
+      reason: `전화 메모 "${combinedRawMemo(phoneSession).split('\n').join(' / ')}" 에서 확인됨`,
+      nextAction: f.text,
+      materialId: f.materialId || null,
+      createdAt: Date.now(),
+      done:false,
+      snoozedUntil:null
+    });
+    saveState(); render();
+    showToast('오늘 할 일 · 처리할 업무에 추가되었습니다');
+  } else if(action === 'add-work-item-from-call'){
+    // §9 [처리할 업무에 추가]: 구조화 결과가 있는 통화(문의유형 인식됨)에서, 기존 add-todo와 같은 workItems 데이터
+    // 구조를 그대로 재사용해 업무 카드를 만든다. 새 데이터 형태를 발명하지 않는다.
+    const s = phoneSession;
+    if(!s) return;
+    const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '');
+    const typeLabel = BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag || '전화 문의';
+    const title = (s.relayText || '').split('\n').map(l=>l.trim()).find(Boolean) || `${who ? who + ' ' : ''}${typeLabel}`.trim();
+    state.workItems.push({
+      id: uid(),
+      companyId: s.company ? s.company.id : null,
+      siteId: s.site ? s.site.id : null,
+      who,
+      title,
+      status: 'unhandled',
+      reason: `전화 접수 "${typeLabel}" 에서 확인됨`,
+      nextAction: title,
+      materialId: null,
+      createdAt: Date.now(),
+      done:false,
+      snoozedUntil:null
+    });
+    saveState(); render();
+    showToast('처리할 업무에 추가되었습니다');
+  } else if(action === 'jur-add'){ openPhoneJurisdictionModal(); }
+  else if(action === 'jur-edit'){ openPhoneJurisdictionModal(btn.dataset.id); }
+  else if(action === 'jur-delete'){
+    if(confirm('삭제할까요?')){ state.jurisdictions = state.jurisdictions.filter(j=>j.id!==btn.dataset.id); saveState(); render(); }
+  }
+  else if(action === 'mat-add'){ openPhoneMaterialModal(); }
+  else if(action === 'mat-edit'){ openPhoneMaterialModal(btn.dataset.id); }
+  else if(action === 'mat-delete'){
+    if(confirm('삭제할까요?')){ state.materials = state.materials.filter(m=>m.id!==btn.dataset.id); saveState(); render(); }
+  }
+  else if(action === 'site-add'){ openPhoneSiteModal(); }
+  else if(action === 'site-edit'){ openPhoneSiteModal(btn.dataset.id); }
+  else if(action === 'site-delete'){
+    if(confirm('삭제할까요?')){ state.sites = state.sites.filter(s=>s.id!==btn.dataset.id); saveState(); render(); }
+  }
+  else if(action === 'calllog-delete'){
+    if(confirm('이 통화 기록을 삭제하시겠습니까?')){
+      state.callLogs = state.callLogs.filter(l=>l.id!==btn.dataset.id);
+      saveState(); render();
+    }
+  }
+});
+
+/* ==========================================================================
+   처리할 업무 비서
+   - "할 일"이 아니라 실제 기록(전화 비서 후속업무, 직접 등록)만 업무 카드로 만든다.
+   - 완료되지 않았고(snoozedUntil이 지났거나 없는) 카드만 오늘 목록에 뜬다.
+   - AI는 문장 정리에만 쓰고, 담당자/전화번호/자료위치/진행상태는 항상 state에서만 가져온다.
+   ========================================================================== */
+
+const TODAY_STATUS_META = {
+  urgent:       { label:'긴급',       tagClass:'st-urgent',   doneLabel:'완료',      weight:0 },
+  callback:     { label:'콜백',       tagClass:'st-callback', doneLabel:'전화 완료', weight:1 },
+  material:     { label:'자료발송',   tagClass:'st-material', doneLabel:'발송 완료', weight:2 },
+  replywait:    { label:'회신대기',   tagClass:'',            doneLabel:'회신 확인', weight:3 },
+  contactcheck: { label:'담당자확인', tagClass:'',            doneLabel:'확인 완료', weight:3 },
+  waiting:      { label:'대기',       tagClass:'st-waiting',  doneLabel:'자료 수령', weight:4 },
+  unhandled:    { label:'미처리',     tagClass:'',            doneLabel:'완료',      weight:5 },
+  meeting:      { label:'미팅',       tagClass:'',            doneLabel:'미팅 등록', weight:5 },
+};
+
+function activeWorkItems(){
+  const now = Date.now();
+  return state.workItems.filter(w => !w.done && (!w.snoozedUntil || w.snoozedUntil <= now));
+}
+function sortWorkItems(items){
+  return items.slice().sort((a,b) => {
+    const wa = (TODAY_STATUS_META[a.status]||{}).weight ?? 9;
+    const wb = (TODAY_STATUS_META[b.status]||{}).weight ?? 9;
+    if(wa !== wb) return wa - wb;
+    return (a.createdAt||0) - (b.createdAt||0);
+  });
+}
+function workItemCompany(w){ return w.companyId ? state.companies.find(c=>c.id===w.companyId) : null; }
+function workItemSite(w){ return w.siteId ? state.sites.find(s=>s.id===w.siteId) : null; }
+function workItemMaterial(w){ return w.materialId ? state.materials.find(m=>m.id===w.materialId) : null; }
+function workItemJurisdiction(w){
+  const site = workItemSite(w);
+  const region = site && site.region;
+  if(!region) return null;
+  return state.jurisdictions.find(j=>j.region===region) || undefined; // undefined = 지역은 있으나 담당자 미등록
+}
+
+let expandedWorkItemId = null;
+
+// 업무 목록 자체(한 줄 행 + 클릭 시 펼쳐지는 상세) — 홈 화면과 처리할 업무 전체 화면이 동일하게 재사용한다.
+// 상태 요약 가로칸(긴급1·자료발송2 …)은 두지 않는다 — 각 행 왼쪽 상태 태그로만 표시한다.
+function renderTodayList(){
+  const items = sortWorkItems(activeWorkItems());
+  return `
+    <div class="today-list">
+      ${items.map(w => renderTodayCard(w)).join('') || '<div class="today-empty">지금 처리할 업무가 없습니다.</div>'}
+    </div>
+  `;
+}
+
+// 처리할 업무 전체 화면(사이드바 "처리할 업무") — 목록 + 직접 추가/정리 보기 도구를 함께 보여준다.
+function renderTodayView(){
+  const items = activeWorkItems();
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>처리할 업무 ${items.length}건</h1>
+      <p>후속업무와 직접 등록한 업무를 모아 우선순위대로 보여드립니다.</p>
+    </div>
+    <div class="today-toolbar-row">
+      <button type="button" class="today-toolbar-btn" data-tw-action="add-open">+ 업무 직접 추가</button>
+      <button type="button" class="today-toolbar-btn" data-tw-action="show-summary">정리 보기</button>
+    </div>
+    <div id="todaySummaryArea"></div>
+    ${renderTodayList()}
+  `;
+}
+function renderTodayCard(w){
+  const meta = TODAY_STATUS_META[w.status] || {label:w.status, tagClass:'', doneLabel:'완료'};
+  const company = workItemCompany(w);
+  const site = workItemSite(w);
+  const who = company ? company.name : site ? site.name : (w.who || '');
+  const expanded = expandedWorkItemId === w.id;
+  return `
+    <div class="today-card ${expanded?'expanded':''}" data-tw-action="toggle" data-id="${w.id}">
+      <div class="today-card-top">
+        <span class="today-status-tag ${meta.tagClass}">${escapeHtml(meta.label)}</span>
+        <span class="today-card-title">${who ? escapeHtml(who) + ' · ' : ''}${escapeHtml(w.title)}</span>
+        <button type="button" class="today-card-del" data-tw-action="work-delete" data-id="${w.id}" title="이 업무 삭제">✕</button>
+      </div>
+      ${w.nextAction ? `<div class="today-card-sub">${escapeHtml(w.nextAction)}</div>` : ''}
+      ${expanded ? renderTodayDetail(w, meta, company, site) : ''}
+    </div>
+  `;
+}
+function renderTodayDetail(w, meta, company, site){
+  const material = workItemMaterial(w);
+  const jurisdiction = workItemJurisdiction(w);
+  const script = findScriptForTags(detectIntents(`${w.title} ${w.nextAction||''} ${w.reason||''}`));
+  const rows = [['현재 상태', meta.label]];
+  if(w.reason) rows.push(['왜 표시됐나요?', w.reason]);
+  if(w.nextAction) rows.push(['지금 해야 할 일', w.nextAction]);
+  return `
+    <div class="today-detail" onclick="event.stopPropagation()">
+      ${rows.map(([label,val]) => `
+        <div class="today-detail-row">
+          <div class="today-detail-label">${escapeHtml(label)}</div>
+          <div class="today-detail-val">${escapeHtml(val)}</div>
+        </div>
+      `).join('')}
+      ${script ? `<div class="today-detail-row"><div class="today-detail-label">전화할 때</div><div class="today-detail-val">${escapeHtml(script.body)}</div></div>` : ''}
+      ${material ? `
+        <div class="today-detail-row"><div class="today-detail-label">필요 자료 / 자료 위치</div><div class="today-detail-val">${escapeHtml(material.name)} — ${escapeHtml(material.location)}</div></div>
+      ` : (w.status==='material' ? `
+        <div class="today-detail-row"><div class="today-detail-label">필요 자료 / 자료 위치</div><div class="today-detail-val pa-missing">등록된 자료 없음 — 확인 필요</div></div>
+      ` : '')}
+      ${jurisdiction === undefined ? `
+        <div class="today-detail-row"><div class="today-detail-label">관할 담당자</div><div class="today-detail-val pa-missing">등록된 관할 담당자 정보 없음</div></div>
+      ` : jurisdiction ? `
+        <div class="today-detail-row">
+          <div class="today-detail-label">관할 담당자 / 전화번호</div>
+          <div class="today-detail-val">${escapeHtml(jurisdiction.branch||'-')} · ${escapeHtml(jurisdiction.manager||'-')} · ${escapeHtml(jurisdiction.phone||'-')}
+            ${jurisdiction.phone ? ` <button class="copy-btn" data-tw-action="copy-phone" data-phone="${escapeHtml(jurisdiction.phone)}">복사</button>` : ''}
+          </div>
+        </div>
+      ` : ''}
+      ${company && company.memo ? `<div class="today-detail-row"><div class="today-detail-label">관련 과거 기록 (업체 메모)</div><div class="today-detail-val">${escapeHtml(company.memo)}</div></div>` : ''}
+      <div class="today-actions">
+        <button class="copy-btn" data-tw-action="done" data-id="${w.id}">${escapeHtml(meta.doneLabel)}</button>
+        <button class="copy-btn" data-tw-action="snooze-menu" data-id="${w.id}">나중에</button>
+        <button class="copy-btn" data-tw-action="work-delete" data-id="${w.id}" title="이 업무 삭제">🗑 삭제</button>
+      </div>
+      <div class="today-snooze-menu" id="snoozeMenu-${w.id}" style="display:none;">
+        <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="30">30분 후</button>
+        <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="240">오후</button>
+        <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="1440">내일</button>
+        <input type="datetime-local" id="snoozeCustom-${w.id}" class="search-box" style="width:170px;height:34px;font-size:12px;padding:4px 8px;" />
+        <button class="copy-btn" data-tw-action="snooze-custom" data-id="${w.id}">적용</button>
+      </div>
+    </div>
+  `;
+}
+
+async function polishDailySummary(apiKey){
+  const el = document.getElementById('todaySummaryText');
+  if(!el) return;
+  const raw = el.textContent;
+  try{
+    showToast('보고용 문구 정리 중...');
+    const prompt = `아래는 오늘 처리한 업무 현황 메모야. 사실을 바꾸지 말고 "오늘 처리한 업무 / 진행 중 업무 / 확인 필요한 업무 / 내일 할 업무" 순서의 보고용 문장으로 정리해줘. 다른 설명 없이 정리된 문구만 출력해.\n\n${raw}`;
+    const result = await callOpenAI(apiKey, prompt);
+    if(result) el.textContent = result;
+  }catch(err){ console.error(err); showToast('정리에 실패했습니다'); }
+}
+
+contentEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-tw-action]');
+  if(!btn) return;
+  const action = btn.dataset.twAction;
+  if(action === 'toggle'){
+    expandedWorkItemId = expandedWorkItemId === btn.dataset.id ? null : btn.dataset.id;
+    render();
+  } else if(action === 'done'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!w) return;
+    w.done = true; w.doneAt = Date.now();
+    saveState(); render();
+    showToast('완료 처리되었습니다');
+  } else if(action === 'work-delete'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(w && confirm('이 업무를 삭제하시겠습니까?')){
+      state.workItems = state.workItems.filter(x=>x.id!==w.id);
+      saveState(); render();
+    }
+  } else if(action === 'snooze-menu'){
+    const el = document.getElementById('snoozeMenu-'+btn.dataset.id);
+    if(el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+  } else if(action === 'snooze'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!w) return;
+    w.snoozedUntil = Date.now() + Number(btn.dataset.minutes) * 60000;
+    saveState(); render();
+    showToast('나중에 다시 표시됩니다');
+  } else if(action === 'snooze-custom'){
+    const input = document.getElementById('snoozeCustom-'+btn.dataset.id);
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!input || !input.value || !w) return;
+    const ts = new Date(input.value).getTime();
+    if(isNaN(ts)) return;
+    w.snoozedUntil = ts;
+    saveState(); render();
+    showToast('나중에 다시 표시됩니다');
+  } else if(action === 'copy-phone'){
+    copyText(btn.dataset.phone || '');
+  } else if(action === 'add-open'){
+    openModal({
+      title:'업무 직접 추가', submitLabel:'추가',
+      fields:[
+        {name:'title', label:'업무 제목 (예: 사업자등록증 미수령)'},
+        {name:'companyName', label:'업체명 (등록된 업체명과 같으면 자동 연결)', placeholder:'선택 입력'},
+        {name:'status', label:'상태 (urgent/callback/material/waiting/replywait/contactcheck/unhandled/meeting)', value:'unhandled'},
+        {name:'reason', label:'왜 필요한가요?', type:'textarea'},
+        {name:'nextAction', label:'지금 해야 할 일', type:'textarea'}
+      ],
+      onSubmit(data){
+        if(!data.title) return;
+        const company = data.companyName ? state.companies.find(c=>c.name.toLowerCase()===data.companyName.toLowerCase()) : null;
+        const status = TODAY_STATUS_META[data.status] ? data.status : 'unhandled';
+        state.workItems.push({
+          id:uid(), companyId: company?company.id:null, siteId:null,
+          who: company ? company.name : (data.companyName || ''),
+          title:data.title, status, reason:data.reason||'', nextAction:data.nextAction||'',
+          materialId:null, createdAt:Date.now(), done:false, snoozedUntil:null
+        });
+        saveState(); render();
+      }
+    });
+  } else if(action === 'show-summary'){
+    const area = document.getElementById('todaySummaryArea');
+    if(!area) return;
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const doneToday = state.workItems.filter(w=>w.done && w.doneAt && w.doneAt >= startOfDay.getTime());
+    const pending = activeWorkItems();
+    const byStatusDone = {};
+    doneToday.forEach(w=>{ byStatusDone[w.status]=(byStatusDone[w.status]||0)+1; });
+    const lines = [`오늘 처리 ${doneToday.length}건`, `진행 중(대기) ${pending.length}건`];
+    Object.keys(byStatusDone).forEach(k=> lines.push(`${(TODAY_STATUS_META[k]||{label:k}).label} ${byStatusDone[k]}건 완료`));
+    area.innerHTML = `
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">처리할 업무 정리</div>
+          <div class="card-actions">
+            <button class="copy-btn" data-tw-action="copy-daily-summary">📋 복사</button>
+            <button class="icon-btn" data-tw-action="ai-daily-summary" title="보고용 문구 만들기">✨</button>
+          </div>
+        </div>
+        <div class="card-body" id="todaySummaryText">${escapeHtml(lines.join('\n'))}</div>
+      </div>
+    `;
+  } else if(action === 'copy-daily-summary'){
+    const el = document.getElementById('todaySummaryText');
+    if(el) copyText(el.textContent);
+  } else if(action === 'ai-daily-summary'){
+    const apiKey = getOpenAIKey();
+    if(!apiKey){ promptForOpenAIKey((key)=>polishDailySummary(key)); return; }
+    polishDailySummary(apiKey);
+  }
+});
 
 /* ---------- Init ---------- */
+// 인사말/브리핑 토스트는 두지 않는다 — 홈 화면 자체가 항상 "처리할 업무"를 곧바로 보여준다.
 function render(){ renderSidebar(); renderContent(); renderQuickLinks(); updateTodoBadge(); }
 render();
 </script>
