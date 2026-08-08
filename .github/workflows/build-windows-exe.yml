@@ -40,6 +40,7 @@ jobs:
           $content = "# -*- coding: utf-8 -*-`n# CI가 빌드 시점에 자동 생성함(저장소에는 커밋되지 않음). GUI의 `"빌드 버전`" 표시에 사용.`nCOMMIT = `"$sha`"`n"
           Set-Content -Path "app/_build_version.py" -Value $content -Encoding UTF8
           Get-Content "app/_build_version.py"
+          echo "SHA7=$sha" >> $env:GITHUB_ENV
 
       - name: PyInstaller로 EXE 빌드
         run: |
@@ -63,9 +64,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$dist/output" | Out-Null
           New-Item -ItemType Directory -Force -Path "$dist/logs" | Out-Null
 
-      - name: 배포용 ZIP 생성
+      - name: 배포용 ZIP 생성(파일명에 커밋 해시를 넣어 이전 릴리스와 구분)
         run: |
-          Compress-Archive -Path "dist/AutoMaterialCollector/*" -DestinationPath "AutoMaterialCollector_Windows.zip" -Force
+          $zipName = "AutoMaterialCollector_${{ env.SHA7 }}_Windows.zip"
+          Compress-Archive -Path "dist/AutoMaterialCollector/*" -DestinationPath $zipName -Force
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
       - name: PowerPoint 템플릿 ZIP 생성(디자인 검토용, 프로그램에는 이미 포함되어 있음)
         run: |
@@ -75,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AutoMaterialCollector-Windows
-          path: AutoMaterialCollector_Windows.zip
+          path: ${{ env.ZIP_NAME }}
           retention-days: 90
 
       - name: GitHub Release 게시(업데이트)
@@ -85,17 +88,17 @@ jobs:
           name: "자동화 자료취합 - Windows 실행 파일"
           body: |
             더블클릭만으로 실행되는 Windows용 프로그램입니다.
-            `AutoMaterialCollector_Windows.zip` 을 내려받아 압축 해제 후
+            `${{ env.ZIP_NAME }}` 을 내려받아 압축 해제 후
             `AutoMaterialCollector.exe` 를 실행하세요. (Python/Git 설치 불필요)
+            templates 폴더를 포함한 실행에 필요한 모든 파일이 ZIP 안에 이미
+            들어 있습니다 - 별도로 받을 파일이 없습니다.
 
             `PowerPoint_Templates.zip` 은 프로그램이 사용하는 재도장 공종
-            PowerPoint 템플릿 23개(디자인 검토용)를 그대로 담은 파일입니다.
-            프로그램 실행에는 필요 없습니다(이미 EXE 안에 포함되어 있음) -
-            템플릿 디자인을 PowerPoint에서 직접 열어 확인하고 싶을 때만
-            받으면 됩니다.
+            PowerPoint 템플릿 23개(디자인 검토/PowerPoint에서 직접 열람용)를
+            따로 담은 파일입니다. 프로그램 실행 자체에는 필요 없습니다.
 
             커밋: ${{ github.sha }}
-          artifacts: "AutoMaterialCollector_Windows.zip,PowerPoint_Templates.zip"
+          artifacts: "${{ env.ZIP_NAME }},PowerPoint_Templates.zip"
           allowUpdates: true
           replacesArtifacts: true
           makeLatest: true
