@@ -67,6 +67,10 @@ jobs:
         run: |
           Compress-Archive -Path "dist/AutoMaterialCollector/*" -DestinationPath "AutoMaterialCollector_Windows.zip" -Force
 
+      - name: PowerPoint 템플릿 ZIP 생성(디자인 검토용, 프로그램에는 이미 포함되어 있음)
+        run: |
+          Compress-Archive -Path "templates/*" -DestinationPath "PowerPoint_Templates.zip" -Force
+
       - name: 빌드 아티팩트 업로드
         uses: actions/upload-artifact@v4
         with:
@@ -84,8 +88,14 @@ jobs:
             `AutoMaterialCollector_Windows.zip` 을 내려받아 압축 해제 후
             `AutoMaterialCollector.exe` 를 실행하세요. (Python/Git 설치 불필요)
 
+            `PowerPoint_Templates.zip` 은 프로그램이 사용하는 재도장 공종
+            PowerPoint 템플릿 23개(디자인 검토용)를 그대로 담은 파일입니다.
+            프로그램 실행에는 필요 없습니다(이미 EXE 안에 포함되어 있음) -
+            템플릿 디자인을 PowerPoint에서 직접 열어 확인하고 싶을 때만
+            받으면 됩니다.
+
             커밋: ${{ github.sha }}
-          artifacts: "AutoMaterialCollector_Windows.zip"
+          artifacts: "AutoMaterialCollector_Windows.zip,PowerPoint_Templates.zip"
           allowUpdates: true
           replacesArtifacts: true
           makeLatest: true
