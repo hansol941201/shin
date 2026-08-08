@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 전략회의실</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-title">AI 전략회의실</span>
+      <span class="demo-badge" id="demoBadge" hidden>DEMO</span>
+    </div>
+    <button class="btn-ghost btn-sm" id="settingsBtn" title="AI 연결 설정">⚙ AI 연결 설정</button>
+  </div>
+</header>
+
+<main class="content">
+
+  <!-- ============ 1. 입력 화면 ============ -->
+  <section class="view" id="viewInput">
+    <div class="hero">
+      <h1>AI 전략회의실</h1>
+      <p>주제 하나를 입력하면 내부 전문가 회의 후 실행 가능한 보고서를 만듭니다.</p>
+    </div>
+
+    <div class="card">
+      <label class="field-label" for="topicInput">주제</label>
+      <textarea id="topicInput" class="topic-textarea" rows="6"
+        placeholder="예) 시공사들이 플랫폼보다 전화를 선호합니다.&#10;플랫폼 사용률을 실제로 높일 방법을 검토해주세요."></textarea>
+
+      <label class="field-label" style="margin-top:20px;">참고자료</label>
+      <div class="attach-row">
+        <label class="attach-btn" for="fileInput">파일 추가</label>
+        <input type="file" id="fileInput" multiple accept=".txt,.csv,.xlsx,.pdf,.docx" hidden />
+        <span class="attach-hint">선택사항 — 자료 없이도 회의가 가능합니다. (TXT·CSV는 실제 분석, XLSX·PDF·DOCX는 준비 중)</span>
+      </div>
+      <div class="attach-list" id="attachList"></div>
+
+      <div class="start-row">
+        <button class="btn-primary btn-lg" id="startBtn">전략회의 시작</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. 진행 화면 ============ -->
+  <section class="view" id="viewProgress" hidden>
+    <div class="progress-card">
+      <h2>전략회의 진행 중</h2>
+      <p class="progress-sub" id="progressModeLabel">전략회의 모드로 진행합니다.</p>
+      <ul class="step-list" id="stepList"></ul>
+    </div>
+  </section>
+
+  <!-- ============ 3. 결과 화면 ============ -->
+  <section class="view" id="viewResult" hidden>
+    <div class="result-toolbar">
+      <div class="result-toolbar-left">
+        <button class="btn-ghost btn-sm" id="copyBtn">복사</button>
+        <button class="btn-ghost btn-sm" id="saveTxtBtn">TXT 저장</button>
+        <button class="btn-ghost btn-sm" id="retryBtn">다시 회의</button>
+        <button class="btn-ghost btn-sm" id="newTopicBtn">새 주제</button>
+      </div>
+      <button class="btn-ghost btn-sm" id="logToggleBtn">내부 회의 보기</button>
+    </div>
+
+    <div class="warning-banner" id="warningBanner" hidden></div>
+
+    <div class="report-card" id="reportCard"></div>
+  </section>
+
+</main>
+
+<!-- 내부 회의 로그 모달 (기본적으로 숨김) -->
+<div class="modal-overlay" id="logModalOverlay">
+  <div class="modal log-modal">
+    <div class="modal-head">
+      <h2>내부 회의 로그</h2>
+      <button class="icon-btn" id="logModalClose">✕</button>
+    </div>
+    <p class="modal-desc">전문가들이 실제로 주고받은 반박·검증 과정입니다. 최종 보고서에는 이 중 살아남은 내용만 반영됩니다.</p>
+    <div class="log-body" id="logBody"></div>
+  </div>
+</div>
+
+<!-- AI 연결 설정 모달 -->
+<div class="modal-overlay" id="settingsModalOverlay">
+  <div class="modal settings-modal">
+    <div class="modal-head">
+      <h2>AI 연결 설정</h2>
+      <button class="icon-btn" id="settingsModalClose">✕</button>
+    </div>
+    <p class="modal-desc">API 키는 이 브라우저의 localStorage에만 저장되며, 소스 코드에는 포함되지 않습니다. 설정하지 않으면 데모 모드로 동작합니다.</p>
+    <form id="settingsForm">
+      <label class="field-label">AI 제공자</label>
+      <select id="providerSelect" class="select-input">
+        <option value="">사용 안 함 (데모 모드)</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+        <option value="openai">OpenAI</option>
+      </select>
+
+      <label class="field-label" style="margin-top:14px;">API 키</label>
+      <input type="text" id="apiKeyInput" class="text-input" placeholder="sk-... 또는 발급받은 키" />
+
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="settingsClearBtn">키 삭제</button>
+        <button type="submit" class="btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/file-parser.js"></script>
+<script src="js/data-analyzer.js"></script>
+<script src="js/experts.js"></script>
+<script src="js/ai-provider.js"></script>
+<script src="js/report-builder.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/meeting-engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
