@@ -121,6 +121,36 @@ def _site_photo_chunks(photos: List, max_pages: int, per_page: int = _MAX_PHOTOS
     return chunks[:max_pages]
 
 
+# [원인 추적 수정] 시공 순서 템플릿은 3~6 STEP 전용 파일로 세분화되어 있는데(process_3step
+# ~process_6step), 기존 코드는 이와 무관하게 무조건 4장씩 잘랐다. 그 결과 예를 들어 실제
+# 공정이 5단계면 [4단계, 1단계] 두 페이지로 쪼개져 "사진 1장짜리 페이지"가 생기는 문제가
+# 있었다. 아래는 총 개수를 (design_rules.json의 페이지당 최대 사진 수 이내에서) 최대한
+# 한 페이지에 담고, 넘칠 때만 정확히 process_pages_cap 페이지로 균등 분할해 각 페이지가
+# 항상 실제 STEP 템플릿 개수(3~6)에 최대한 가깝게 맞도록 한다. 페이지당 사진 상한은
+# design_rules.json(max_photos_per_page)을 그대로 따른다 - 템플릿에 6 STEP 변형이
+# 있다고 해서 design_rules의 상한을 넘기지 않는다.
+def _chunk_process_steps(pool: List, pages_cap: int, max_per_page: int) -> List[List]:
+    total = len(pool)
+    if total == 0 or pages_cap <= 0:
+        return []
+    if total <= max_per_page:
+        return [pool]
+    capacity = max_per_page * pages_cap
+    used_pool = pool[:capacity]
+    total = len(used_pool)
+    n_pages = min(pages_cap, -(-total // max_per_page))  # ceil
+    n_pages = max(n_pages, 1)
+    base, rem = divmod(total, n_pages)
+    chunks, idx = [], 0
+    for i in range(n_pages):
+        size = base + (1 if i < rem else 0)
+        if size <= 0:
+            continue
+        chunks.append(used_pool[idx:idx + size])
+        idx += size
+    return chunks
+
+
 def build_pages(apartment_name: str, work_type: str, groups: List[dict],
                  content_library: Dict[str, List[str]], ba_pairs: List, cover_image,
                  used_ids: set, images_by_id: Dict[str, object],
@@ -201,6 +231,15 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     lead = take_unused(defect_pool_all, limit=1)
     support = take_unused(defect_pool_all, limit=3) if lead else []
     reason_bullets = defect_bullet_pool[:3]
+    # [원인 추적 수정] 하자 사진은 있는데 "필요성/하자_현상/하자_원인" 용도로 분류된
+    # 문구가 하나도 없으면(실제 원본 문구가 TEXT_PURPOSE_KEYWORDS와 다른 표현을 쓴 경우)
+    # 예전에는 사진이 있어도 페이지 자체를 통째로 생략했다. 사진이 있으면 최후 수단으로
+    # 미분류("기타") 원본 문구 -> 카테고리 기본 캡션 순으로 채워 페이지를 살린다.
+    if lead and not reason_bullets:
+        reason_bullets = _dedup_texts(content_library.get("기타", []), 3)
+    if lead and not reason_bullets:
+        reason_bullets = [_caption_for(im, CATEGORY_FALLBACK_CAPTION.get(im.category, "보수가 필요한 부위입니다."))
+                           for im in (lead + support)][:3]
     if lead and reason_bullets:
         pages.append({
             "type": "reason", "semantic_type": "reason_hero",
@@ -274,7 +313,8 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     if len(method_points) < 2:
         need = 4 - len(method_points)
         fallback_texts = _dedup_texts(
-            content_library.get("공법_설명", []) + content_library.get("필요성", []), need)
+            content_library.get("공법_설명", []) + content_library.get("필요성", []) +
+            content_library.get("기타", []), need)
         for i, t in enumerate(fallback_texts):
             method_points.append({"title": f"공법 개요 {i+1}", "desc": _short(t, limit=70)})
 
@@ -294,6 +334,15 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     # ---------- 5. 공법 특징 (feature_cards: 특징 문구 + 관련 사진 카드) ----------
     feature_bullets = _dedup_texts(content_library.get("공법_특징", []), s["feature_images_cap"])
     feature_pool = _sort_grade([im for g in process_groups for im in g["images"] if im.id not in used_ids])
+    # [원인 추적 수정] "공법_특징"으로 분류된 문구가 없다는 이유만으로 공정 사진이
+    # 있는데도 페이지 자체를 생략하지 않는다 - 공법_설명/기타 문구, 그마저 없으면
+    # 사진별 기본 캡션으로 채운다.
+    if not feature_bullets and feature_pool:
+        feature_bullets = _dedup_texts(
+            content_library.get("공법_설명", []) + content_library.get("기타", []), s["feature_images_cap"])
+    if not feature_bullets and feature_pool:
+        feature_bullets = [_caption_for(im, CATEGORY_FALLBACK_CAPTION.get(im.category, "시공 공정 참고사진"))
+                            for im in feature_pool[:s["feature_images_cap"]]]
     if feature_bullets and feature_pool:
         n = min(len(feature_bullets), max(len(feature_pool), 1), s["feature_images_cap"])
         feature_imgs = []
@@ -346,9 +395,11 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     for g in remaining_process:
         process_pool.extend(_sort_grade(g["images"]))
     process_pool = [im for im in process_pool if im.id not in used_ids]
-    per_page = s["process_images_per_page"]
-    process_chunks = [process_pool[i:i + per_page] for i in range(0, len(process_pool), per_page)]
-    process_chunks = process_chunks[:s["process_pages_cap"]]
+    # [원인 추적 수정] 예전에는 무조건 4장씩 잘랐다(process_images_per_page 고정값).
+    # 그 결과 예를 들어 실제 공정이 5단계면 [4단계, 1단계]로 쪼개져 "사진 1장짜리
+    # 시공 순서 페이지"가 생겼다. 이제 process_3step~process_6step 템플릿 범위(3~6)에
+    # 맞춰, 가능하면 한 페이지에 모두 담고 넘칠 때만 균등 분할한다.
+    process_chunks = _chunk_process_steps(process_pool, s["process_pages_cap"], s["max_photos_per_page"])
     for idx, chunk in enumerate(process_chunks):
         chunk_used = take_unused(chunk)
         steps = [{
@@ -363,6 +414,40 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
             "images": chunk_used, "bullets": [st["desc"] for st in steps],
             "steps": steps,
         })
+
+    # ---------- 6-1. 미분류 참고 사진 (site_photo_gallery 재사용) ----------
+    # [원인 추적 수정] 위 defect/process/material/overview 섹션 어디에도 속하지 않는
+    # family(대부분 IMAGE_CATEGORIES 키워드가 실제 원본 표현과 달라 분류에 실패한
+    # "미확정_참고사진")는 지금까지 어떤 페이지에도 쓰이지 않고 완전히 버려졌다.
+    # 실제 원본에 있던 사진을 분류 실패를 이유로 통째로 없애지 않기 위해, 다른
+    # 섹션에서 쓰이지 않고 남은 사진을 별도의 참고 사진 페이지로 살린다(이미 검증된
+    # site_photo_gallery 템플릿/semantic_type을 그대로 재사용 - 새 템플릿 디자인 없음).
+    leftover_groups = [g for g in groups if g["family"] not in
+                        ("defect", "process", "material", "overview", "beforeafter", "exclude")]
+    # 전후 사진(ba_pairs)에 이미 배정된 이미지는 아직 used_ids에 표시되기 전이므로
+    # (전후 사례 섹션은 이 아래에서 처리됨) 별도로도 제외해 중복 사용을 막는다.
+    ba_reserved_ids = {iid for pair in ba_pairs
+                        for iid in [pair.before_image_id, pair.after_image_id] + list(pair.process_image_ids or [])}
+    leftover_pool = _sort_grade([im for g in leftover_groups for im in g["images"]
+                                   if im.id not in used_ids and im.id not in ba_reserved_ids])
+    if leftover_pool:
+        # 분류 실패 사진이 많을수록(=원본에 그만큼 콘텐츠가 있었다는 뜻) 상한을 2페이지로
+        # 고정해 다시 버리지 않도록, 남은 사진 수에 맞춰 최대 4페이지까지 늘린다.
+        leftover_max_pages = min(4, -(-len(leftover_pool) // s["max_photos_per_page"]))
+        leftover_chunks = _site_photo_chunks(leftover_pool, leftover_max_pages, s["max_photos_per_page"])
+        base_title = "추가 참고 사진"
+        leftover_guidance = (f"{apartment_name} {work_type} 검토를 위해 원본 자료에 포함되어 있던 "
+                              "추가 참고 사진입니다.")
+        for chunk_idx, chunk in enumerate(leftover_chunks):
+            chunk_used = take_unused(chunk)
+            if not chunk_used:
+                continue
+            title = base_title if len(leftover_chunks) == 1 else f"{base_title} {chunk_idx+1}"
+            pages.append({
+                "type": "site_photos", "semantic_type": "site_photo_gallery",
+                "title": unique_title(title),
+                "images": chunk_used, "bullets": [leftover_guidance],
+            })
 
     # ---------- 7~8. 시공 전후 사례 (첫 1건: before_after 전체화면 / 나머지: two_case_compare 압축) ----------
     case_note_pool = (content_library.get("사례_설명", []) + content_library.get("시공_후_효과", [])) or \
@@ -396,8 +481,12 @@ def build_pages(apartment_name: str, work_type: str, groups: List[dict],
     # ---------- 9. 기대 효과 (effects_hero: 완료사진 1장 + 짧은 효과 문구들) ----------
     effect_bullets = _dedup_texts(
         content_library.get("기대_효과", []) + content_library.get("시공_후_효과", []), 4)
+    if not effect_bullets:
+        effect_bullets = _dedup_texts(content_library.get("기타", []), 4)
     effect_pool = _sort_grade([im for g in overview_groups for im in g["images"] if im.id not in used_ids])
     effect_image = take_unused(effect_pool, limit=1)
+    if effect_image and not effect_bullets:
+        effect_bullets = ["체계적인 공정 관리로 시공 품질을 확보합니다.", "안전하고 쾌적한 주거환경 조성을 위해 시공합니다."]
     if effect_image and effect_bullets:
         pages.append({
             "type": "effects", "semantic_type": "effects_hero",

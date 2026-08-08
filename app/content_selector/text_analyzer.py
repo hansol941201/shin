@@ -113,10 +113,15 @@ def sensitive_leftover(cleaned_text: str) -> bool:
 
 def build_content_library(candidates: List[TextCandidate], max_per_purpose: int = 8) -> Dict[str, List[str]]:
     """용도별로 중복을 제거한 실제 원본 문구 라이브러리를 만든다."""
+    # [원인 추적 수정] 용도 키워드가 실제 원본 문구와 매칭되지 않으면(예: 사내 표현이
+    # TEXT_PURPOSE_KEYWORDS 목록과 다른 경우) purpose가 "기타"로 떨어지는데, 기존에는
+    # 이 문구를 라이브러리에서 완전히 버렸다(재사용 가능한 실제 문구인데도). 실제
+    # 원본에 문구가 있는데 분류 실패로 사라지는 것을 막기 위해 "기타"도 별도 키로
+    # 보관해 두고, story.py가 특정 용도 문구가 하나도 없을 때 최후 수단으로 사용한다.
     library: Dict[str, List[str]] = {}
     seen: Dict[str, set] = {}
     for c in candidates:
-        if not c.usable or c.purpose == "기타":
+        if not c.usable:
             continue
         key = _normalize(c.cleaned)
         seen.setdefault(c.purpose, set())
