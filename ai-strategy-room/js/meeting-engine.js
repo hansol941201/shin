@@ -17,30 +17,31 @@ const MeetingEngine = {
     };
 
     if (!AiProvider.isConfigured()) {
-      return this._runDemo({ emit });
+      return this._runDemo({ topic, emit });
     }
 
     try {
       return await this._runLive({ topic, attachedText, hasAttachment, emit });
     } catch (err) {
       console.error('[MeetingEngine] 실AI 회의 실패, 데모로 전환:', err);
-      const demoResult = await this._runDemo({ emit });
+      const demoResult = await this._runDemo({ topic, emit });
       demoResult.warning =
         (err && err.message) || 'AI 연결에 실패해 데모 모드 결과로 대신 안내드립니다.';
       return demoResult;
     }
   },
 
-  async _runDemo({ emit }) {
+  async _runDemo({ topic, emit }) {
     for (const round of MEETING_ROUNDS) {
       emit(round.id, 'active');
       await this._wait(450); // 실제 진행되는 느낌을 주기 위한 짧은 지연 (데모 전용)
       emit(round.id, 'done');
     }
+    const scenario = DemoData.pickScenario(topic);
     return {
       mode: 'demo',
-      report: DEMO_REPORT,
-      log: DEMO_MEETING_LOG,
+      report: scenario.report,
+      log: scenario.log,
       warning: null
     };
   },
@@ -68,20 +69,20 @@ const MeetingEngine = {
     record('ROUND 1 · 주제 분석', byId.innovation, framing);
     emit('analyze', 'done');
 
-    // ROUND 2 — 시공사 관점 검토 (공격)
-    emit('contractor-view', 'active');
-    const contractorView = await AiProvider.complete(
-      byId.contractor.system,
-      `${context}\n\n위 분석에 대해 실제 시공사 대표 입장에서 문제점을 지적하라. 형식적인 동의는 금지다.`
+    // ROUND 2 — 실제 이해관계자 관점 검토 (공격)
+    emit('stakeholder-view', 'active');
+    const stakeholderView = await AiProvider.complete(
+      byId.stakeholder.system,
+      `${context}\n\n위 분석에 대해 이 주제의 실제 이해관계자 입장에서 문제점을 지적하라. 먼저 이 주제에서 실제 이해관계자가 누구인지 스스로 판단해서 밝힌 뒤, 그 입장에서 말하라. 형식적인 동의는 금지다.`
     );
-    record('ROUND 2 · 시공사 관점 검토', byId.contractor, contractorView);
-    emit('contractor-view', 'done');
+    record('ROUND 2 · 이해관계자 관점 검토', byId.stakeholder, stakeholderView);
+    emit('stakeholder-view', 'done');
 
     // ROUND 3 — 대안 제시 및 상호 반박 (UX 기획 제안 → 내부운영 공격 → 전략혁신 재설계)
     emit('debate', 'active');
     const uxIdea = await AiProvider.complete(
       byId.ux.system,
-      `${context}\n\n위 논의를 바탕으로 시공사가 실제로 행동할 구체적인 UX 대안을 제시하라. 사용자가 어떤 순서로 행동하는지까지 설명하라.`
+      `${context}\n\n위 논의를 바탕으로 실제 이해관계자가 행동할 구체적인 대안을 제시하라. 그 대상이 어떤 순서로 행동하는지까지 설명하라.`
     );
     record('ROUND 3 · 대안 제시', byId.ux, uxIdea);
 
