@@ -26,6 +26,8 @@ PowerPoint 기본 개체이며, 이후 Placeholder Engine이 이 파일들을 �
 import os
 
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.oxml import parse_xml
+from pptx.oxml.ns import qn
 from pptx.util import Emu, Mm, Pt
 
 from app.engine.render_utils import (
@@ -43,6 +45,114 @@ from app.utils.config import (
 CONTENT_TOP = Mm(25)
 BOTTOM_MARGIN = Mm(12)
 GHOST_NUMBER_COLOR = (222, 226, 233)  # 큰 옅은 숫자 타이포(에디토리얼 느낌)의 배경색 계열
+
+
+# ------------------------------------------------------------------
+# 브랜드 배경 시스템 (2026-08 추가)
+# "흰 종이 위에 사진을 올려놓은 느낌"을 없애기 위해, 모든 페이지 맨 뒤(z-order
+# 최하단)에 아주 옅은 브랜드 배경 그래픽을 깐다. 원칙:
+#   - 콘텐츠보다 절대 먼저 보이면 안 된다 - 투명도를 매우 높게(불투명도 4~10%)
+#     유지한다(값은 실제 LibreOffice 렌더링으로 "보이긴 하지만 의식되지 않는
+#     수준"인지 확인 후 정함).
+#   - 장식은 페이지당 최대 1~2개 도형만 사용한다(원/반원/선 등 PowerPoint
+#     기본 도형만 - 이미지/그라데이션/패턴 채우기 없음. PowerPoint에서 그대로
+#     선택해 수정·삭제할 수 있다).
+#   - 모든 페이지에 같은 배경을 복붙하지 않는다 - 페이지 성격(사진 중심/텍스트
+#     중심)에 따라 4가지 패턴(BG_A~D)을 순환 배정한다.
+#   - 사진이 큰 페이지(표지/현장사진/전후사례/마무리)는 사실상 전체 화면이
+#     사진·남색 블록으로 덮이므로 배경 장식을 아예 넣지 않거나 최소화한다.
+# ------------------------------------------------------------------
+WARM_OFFWHITE = (250, 248, 244)   # BG_B 전용 오프화이트 바탕(흰색보다 아주 살짝 웜톤)
+BG_ACCENT = (196, 178, 140)        # 배경 장식 전용 색(골드 계열) - 항상 매우 낮은 투명도로만 사용
+BG_LINE = (210, 206, 198)          # 배경 그리드/라인 전용, 더 옅은 웜그레이
+
+
+def _set_alpha(shape, opacity_pct: float):
+    """도형 채우기의 불투명도를 설정한다(0~100, 100=완전 불투명). python-pptx는
+    투명도를 직접 지원하지 않아 도형 XML에 표준 DrawingML 요소(a:alpha)를 추가
+    하는 방식을 쓴다 - PowerPoint에서 그대로 다시 열어도 "도형 서식 > 투명도"로
+    정상적으로 보이고 수정 가능한 표준 속성이다."""
+    srgbClr = shape.fill.fore_color._xFill.find(qn('a:srgbClr'))
+    alpha = parse_xml(
+        f'<a:alpha xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+        f'val="{int(opacity_pct * 1000)}"/>'
+    )
+    srgbClr.append(alpha)
+
+
+def _bg_rect(slide, x, y, w, h, color, opacity_pct):
+    r = add_rect(slide, x, y, w, h, color)
+    _set_alpha(r, opacity_pct)
+    return r
+
+
+def _bg_oval(slide, x, y, d, color, opacity_pct):
+    o = slide.shapes.add_shape(9, x, y, d, d)  # 9 = MSO_SHAPE.OVAL
+    o.fill.solid()
+    o.fill.fore_color.rgb = _rgb(color)
+    o.line.fill.background()
+    o.shadow.inherit = False
+    _set_alpha(o, opacity_pct)
+    return o
+
+
+def _rgb(t):
+    from pptx.dml.color import RGBColor
+    return RGBColor(*t)
+
+
+def _bg_base(slide, color=COLOR_WHITE):
+    """전면 배경 판(흰색 또는 아주 옅은 웜오프화이트). 맨 처음에 그려 항상
+    z-order 최하단에 위치시킨다."""
+    r = add_rect(slide, 0, 0, SLIDE_WIDTH, SLIDE_HEIGHT, color)
+    return r
+
+
+def bg_a(slide):
+    """BG_A: 화이트 + 우측 상단 아주 옅은 곡선(원의 일부만 화면 안에 노출)."""
+    _bg_base(slide, COLOR_WHITE)
+    d = Mm(150)
+    _bg_oval(slide, SLIDE_WIDTH - Mm(70), -Mm(90), d, BG_ACCENT, 6)
+
+
+def bg_b(slide):
+    """BG_B: 오프화이트 + 좌측 하단에서 올라오는 대형 반투명 곡면."""
+    _bg_base(slide, WARM_OFFWHITE)
+    d = Mm(210)
+    _bg_oval(slide, -Mm(130), SLIDE_HEIGHT - Mm(70), d, BG_ACCENT, 5)
+
+
+def bg_c(slide):
+    """BG_C: 화이트 + 아주 옅은 건축 도면/Grid 느낌의 얇은 세로선 2개. 실제
+    콘텐츠(사진/카드/텍스트)는 항상 좌우 여백(MARGIN) 안쪽에만 배치되므로,
+    선은 그 바깥쪽 여백 띠 안에 두어 어떤 페이지에서도 사진·텍스트에 절대
+    가려지지 않고 항상 보이게 한다."""
+    _bg_base(slide, COLOR_WHITE)
+    for x in (Mm(4), Mm(8)):
+        _bg_rect(slide, x, 0, Pt(0.75), SLIDE_HEIGHT, BG_LINE, 9)
+
+
+def bg_d(slide):
+    """BG_D: 화이트 + 페이지 하단의 아주 얇은 브랜드 포인트 라인 + 우하단 짧은
+    사선 포인트 1개."""
+    _bg_base(slide, COLOR_WHITE)
+    _bg_rect(slide, 0, SLIDE_HEIGHT - Mm(3), SLIDE_WIDTH, Mm(3), BG_ACCENT, 8)
+    diag = _bg_rect(slide, SLIDE_WIDTH - Mm(64), SLIDE_HEIGHT - Mm(46), Mm(46), Pt(1.1), BG_ACCENT, 10)
+    diag.rotation = -35
+
+
+BG_PATTERNS = {"A": bg_a, "B": bg_b, "C": bg_c, "D": bg_d}
+
+
+def _apply_bg(slide, pattern: str = None):
+    """pattern이 None이면(사진이 페이지 대부분을 덮는 표지/현장사진/전후사례/
+    마무리 등) 장식 없이 흰 배경만 깐다 - 그런 페이지는 어차피 사진이 화면을
+    거의 다 덮어 배경 장식이 보일 자리가 없고, 억지로 넣으면 사진 프레임
+    가장자리에서 오히려 눈에 띄기 쉽다."""
+    if pattern is None:
+        _bg_base(slide, COLOR_WHITE)
+    else:
+        BG_PATTERNS[pattern](slide)
 
 
 # ------------------------------------------------------------------
@@ -107,6 +217,7 @@ def _thin_rule(slide, x, y, w, color=COLOR_GOLD, thickness=Pt(1.4)):
 def build_cover_a():
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, None)  # 사진(72%)+남색 하단이 화면을 거의 다 덮어 장식이 필요 없음
     photo_h = Mm(214)
     _photo_ph(slide, "PHOTO_1", 0, 0, SLIDE_WIDTH, photo_h)
     _thin_rule(slide, 0, photo_h, SLIDE_WIDTH, thickness=Mm(1.2))
@@ -124,6 +235,7 @@ def build_site_photo_1_a():
     """1장: 거의 전면 사진 + 하단 짧은 안내문구 한 줄(여백만으로 구분, 박스 없음)."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, None)  # 사진이 화면 대부분을 덮어 장식 없이 흰 배경만 유지
     _light_title(slide)
     top = CONTENT_TOP
     guide_h = Mm(14)
@@ -139,6 +251,7 @@ def build_site_photo_2_a():
     """2장: 좌우 절반씩 크게, 하단 안내문구 한 줄."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, None)  # 사진이 화면 대부분을 덮어 장식 없이 흰 배경만 유지
     _light_title(slide)
     top = CONTENT_TOP
     guide_h = Mm(14)
@@ -157,6 +270,7 @@ def build_site_photo_multi_a():
     PHOTO_4/5는 값이 없어 자동으로 사라지고 여백으로 남는다)."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, None)  # 사진이 화면 대부분을 덮어 장식 없이 흰 배경만 유지
     _light_title(slide)
     top = CONTENT_TOP
     guide_h = Mm(14)
@@ -182,6 +296,7 @@ def build_site_photo_multi_a():
 def build_need_a():
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "C")
     _light_title(slide)
     top = CONTENT_TOP
     photo_h = Mm(168)
@@ -210,6 +325,7 @@ def build_defect_hero_a():
     """대표사진형(하자 1건 강조): 큰 사진 1장 + 짧은 설명 1~2줄."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "A")
     _light_title(slide)
     top = CONTENT_TOP
     photo_h = Mm(200)
@@ -224,6 +340,7 @@ def build_defect_split_a():
     """2분할형(하자 2건 비교): 좌우로 큰 사진 2장, 각각 짧은 라벨."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "B")
     _light_title(slide)
     top = CONTENT_TOP
     photo_h = Mm(190)
@@ -242,6 +359,7 @@ def build_defect_3card_a():
     """3카드형(하자 2~3건): 가로 3분할, 얇은 금색 밑줄만으로 구분(회색 박스 없음)."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "D")
     _light_title(slide)
     top = CONTENT_TOP
     photo_h = Mm(120)
@@ -263,9 +381,10 @@ def build_defect_3card_a():
 # ==================================================================
 # 5. 주요 보수 방법(repair) - 좌우 분할형, 핵심 포인트 2~4개(개수별 정확한 배치)
 # ==================================================================
-def _build_repair_template(n_points, filename):
+def _build_repair_template(n_points, filename, bg_pattern):
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, bg_pattern)
     _light_title(slide)
     top = CONTENT_TOP
     left_w = Emu(int(CONTENT_W * 0.56))
@@ -292,15 +411,15 @@ def _build_repair_template(n_points, filename):
 
 
 def build_repair_2point_a():
-    return _build_repair_template(2, "repair_2point_A.pptx")
+    return _build_repair_template(2, "repair_2point_A.pptx", "C")
 
 
 def build_repair_3point_a():
-    return _build_repair_template(3, "repair_3point_A.pptx")
+    return _build_repair_template(3, "repair_3point_A.pptx", "B")
 
 
 def build_repair_4point_a():
-    return _build_repair_template(4, "repair_4point_A.pptx")
+    return _build_repair_template(4, "repair_4point_A.pptx", "D")
 
 
 # ==================================================================
@@ -309,6 +428,7 @@ def build_repair_4point_a():
 def build_feature_3card_a():
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "B")
     _light_title(slide)
     top = CONTENT_TOP
     photo_h = Mm(150)
@@ -330,6 +450,7 @@ def build_feature_3card_a():
 def build_feature_4card_a():
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "C")
     _light_title(slide)
     top = CONTENT_TOP
     area_h = Emu(int(SLIDE_HEIGHT - top - BOTTOM_MARGIN))
@@ -360,6 +481,7 @@ def build_feature_4card_a():
 def build_material_4card_a():
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "D")
     _light_title(slide)
     top = CONTENT_TOP
     area_h = Emu(int(SLIDE_HEIGHT - top - BOTTOM_MARGIN))
@@ -406,6 +528,7 @@ def build_process_3step_a():
     """3STEP: 가로 한 줄, 카드 사이에 금색 화살표로 흐름을 명확히 보여준다."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "A")
     _light_title(slide)
     top = CONTENT_TOP
     area_h = Emu(int(SLIDE_HEIGHT - top - BOTTOM_MARGIN))
@@ -424,11 +547,12 @@ def build_process_3step_a():
     return _save(prs, "process", "process_3step_A.pptx")
 
 
-def _vertical_steps(n_steps, filename):
+def _vertical_steps(n_steps, filename, bg_pattern):
     """4/5STEP: 세로 리스트. 옅은 큰 번호(에디토리얼 타이포) + 정사각 사진 +
     스텝명 1줄 + 설명 1줄, 스텝 사이는 얇은 금색 화살표(↓)로 흐름을 표시한다."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, bg_pattern)
     _light_title(slide)
     top = CONTENT_TOP
     area_h = Emu(int(SLIDE_HEIGHT - top - BOTTOM_MARGIN))
@@ -460,11 +584,11 @@ def _vertical_steps(n_steps, filename):
 
 
 def build_process_4step_a():
-    return _vertical_steps(4, "process_4step_A.pptx")
+    return _vertical_steps(4, "process_4step_A.pptx", "C")
 
 
 def build_process_5step_a():
-    return _vertical_steps(5, "process_5step_A.pptx")
+    return _vertical_steps(5, "process_5step_A.pptx", "B")
 
 
 def build_process_6step_a():
@@ -472,6 +596,7 @@ def build_process_6step_a():
     왼쪽 끝에 작은 ↓ 로 흐름을 이어준다(지그재그 진행 흐름이 한눈에 보이게)."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "D")
     _light_title(slide)
     top = CONTENT_TOP
     area_h = Emu(int(SLIDE_HEIGHT - top - BOTTOM_MARGIN))
@@ -504,6 +629,7 @@ def build_before_after_1case_a():
     가로 폭을 CONTENT_W 전체로 주면 가로형 사진이 훨씬 크게 채워진다."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, None)  # 사진이 화면 대부분을 덮어 장식 없이 흰 배경만 유지
     _light_title(slide)
     top = CONTENT_TOP
     label_h = Mm(7)
@@ -528,6 +654,7 @@ def build_before_after_2case_a():
     남지 않고 통째로 제거된다."""
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, None)  # 사진이 화면 대부분을 덮어 장식 없이 흰 배경만 유지
     _light_title(slide)
     top = CONTENT_TOP
     area_h = Emu(int(SLIDE_HEIGHT - top - BOTTOM_MARGIN))
@@ -556,6 +683,7 @@ def build_before_after_2case_a():
 def build_effect_a():
     prs = new_presentation()
     slide = blank_slide(prs)
+    _apply_bg(slide, "B")
     _light_title(slide)
     top = CONTENT_TOP
     photo_h = Mm(160)
