@@ -419,6 +419,118 @@
   .acct-form-field textarea{ min-height:60px; resize:vertical; }
   .acct-form-error{ font-size:11.5px; color:#B91C1C; margin-top:-8px; margin-bottom:12px; }
   .acct-form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+
+  /* ---------- 검색 결과 (홈 검색창) ---------- */
+  .kb-search-results{ margin-top:14px; }
+  .kb-hint-once{ font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+  .kb-result-group-label{ font-size:11px; font-weight:700; color:var(--text-muted); margin:14px 0 6px; }
+  .kb-result-group-label:first-child{ margin-top:0; }
+  .kb-result-card{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .kb-result-card.top{ padding-top:2px; }
+  .kb-result-cat{ font-size:11px; color:var(--text-muted); margin-bottom:2px; }
+  .kb-result-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px; }
+  .kb-result-card:not(.top) .kb-result-title{ font-size:13px; font-weight:600; }
+  .kb-script-line{ font-size:13.5px; line-height:1.9; color:var(--text); }
+  .kb-hl{ background:#FEF6B2; padding:0 1px; border-radius:2px; }
+  .kb-steps-label, .kb-contact-label, .kb-aftercall-label, .kb-extra-label{ font-size:11px; color:var(--text-muted); margin-top:12px; margin-bottom:3px; }
+  .kb-steps-text{ font-size:13px; color:var(--text); line-height:1.6; }
+  .kb-contact-line{ font-size:13px; color:var(--text); line-height:1.7; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .kb-contact-name{ color:var(--navy); font-weight:600; }
+  .kb-copy-btn{ border:none; background:transparent; cursor:pointer; font-size:11.5px; color:var(--text-muted); padding:1px 4px; }
+  .kb-copy-btn:hover{ color:var(--navy); }
+  .kb-copied-tag{ font-size:11px; color:var(--navy); }
+  .kb-aftercall-text, .kb-extra-text, .kb-plain-content{ font-size:13px; color:var(--text-muted); line-height:1.6; white-space:pre-wrap; }
+  .kb-contact-result-line{ font-size:13px; color:var(--text); }
+  .kb-no-result{ font-size:12.5px; color:var(--text-muted); padding:10px 0; }
+
+  /* ---------- 지식 페이지 ---------- */
+  .kb-view{ max-width:1160px; margin:0 auto; }
+  .kb-header{ display:flex; align-items:center; justify-content:space-between; }
+  .kb-title{ font-size:16px; font-weight:700; color:var(--text); }
+  .kb-add-btn{
+    height:26px; padding:0 10px; font-size:12px; font-family:inherit;
+    color:var(--text-muted); background:transparent; border:1px solid var(--line);
+    border-radius:6px; cursor:pointer;
+  }
+  .kb-add-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .kb-search-box{ max-width:none; height:36px; margin:14px 0 10px; }
+  .kb-tabs{ display:flex; gap:4px; margin-bottom:14px; }
+  .kb-tab{
+    height:28px; padding:0 12px; font-size:12.5px; font-family:inherit;
+    color:var(--text-muted); background:transparent; border:1px solid var(--line);
+    border-radius:6px; cursor:pointer;
+  }
+  .kb-tab:hover{ background:#F0F1F4; }
+  .kb-tab.active{ background:#EEF1F8; border-color:#EEF1F8; color:var(--navy); font-weight:600; }
+  .kb-list{ }
+  .kb-row{
+    display:flex; align-items:center; gap:10px; padding:9px 4px;
+    border-bottom:1px solid var(--line); cursor:pointer; border-radius:6px;
+  }
+  .kb-row:hover{ background:#F0F1F4; }
+  .kb-row-cat{ font-size:11px; color:var(--text-muted); flex:0 0 40px; }
+  .kb-row-title{ font-size:13.5px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kb-row-sub{ font-size:12px; color:var(--text-muted); flex:0 0 auto; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ---------- 지식 등록/수정 모달 ---------- */
+  .kb-modal-overlay{
+    position:fixed; inset:0; background:rgba(17,24,39,0.35);
+    display:flex; align-items:flex-start; justify-content:center;
+    z-index:100; overflow-y:auto; padding:40px 16px;
+  }
+  .kb-modal{
+    width:100%; max-width:520px; background:var(--surface);
+    border-radius:10px; border:1px solid var(--line); padding:20px;
+  }
+  .kb-modal-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:14px; }
+  .kb-form-field{ margin-bottom:14px; }
+  .kb-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .kb-form-field input, .kb-form-field textarea, .kb-form-field select{
+    width:100%; padding:8px 10px; font-size:13px; font-family:inherit;
+    color:var(--text); background:var(--surface); border:1px solid var(--line);
+    border-radius:6px; outline:none; box-sizing:border-box;
+  }
+  .kb-form-field input:focus, .kb-form-field textarea:focus, .kb-form-field select:focus{ border-color:#C7CEDB; }
+  .kb-form-field textarea{ min-height:56px; resize:vertical; }
+  .kb-form-hint{ font-size:11px; color:var(--text-muted); margin-top:3px; }
+  .kb-form-error{ font-size:11.5px; color:#B91C1C; margin-top:-8px; margin-bottom:12px; }
+  .kb-form-actions{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; }
+  .kb-form-actions-right{ display:flex; gap:8px; }
+  .kb-lines-wrap{ display:flex; flex-direction:column; gap:6px; }
+  .kb-line-row{ display:flex; gap:6px; align-items:center; }
+  .kb-line-row input{ flex:1; }
+  .kb-line-remove{ border:none; background:transparent; cursor:pointer; color:var(--text-muted); font-size:14px; padding:2px 6px; }
+  .kb-line-remove:hover{ color:#B91C1C; }
+  .kb-line-add{ align-self:flex-start; margin-top:2px; border:none; background:transparent; cursor:pointer; font-size:12px; color:var(--text-muted); padding:2px 0; }
+  .kb-line-add:hover{ color:var(--navy); }
+
+  .kb-contact-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .kb-chip{
+    display:flex; align-items:center; gap:5px; height:24px; padding:0 4px 0 9px;
+    background:#EEF1F8; color:var(--navy); border-radius:12px; font-size:12px;
+  }
+  .kb-chip-x{ border:none; background:transparent; cursor:pointer; color:var(--navy); font-size:13px; padding:2px 6px; line-height:1; }
+  .kb-chip-x:hover{ opacity:0.6; }
+  .kb-contact-picker{ position:relative; }
+  .kb-contact-picker-dropdown{
+    position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:5;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    max-height:180px; overflow-y:auto; box-shadow:0 4px 14px rgba(17,24,39,0.08);
+  }
+  .kb-contact-picker-item{ padding:8px 10px; font-size:12.5px; color:var(--text); cursor:pointer; }
+  .kb-contact-picker-item:hover{ background:#F0F1F4; }
+  .kb-contact-picker-empty{ padding:10px; font-size:12px; color:var(--text-muted); }
+  .kb-role-input{ margin-bottom:6px; }
+  .kb-add-link-btn{
+    border:none; background:transparent; cursor:pointer; font-size:12px; color:var(--text-muted); padding:2px 0;
+  }
+  .kb-add-link-btn:hover{ color:var(--navy); }
+
+  .kb-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
+  .kb-text-action{ border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-muted); padding:2px 0; }
+  .kb-text-action:hover{ color:var(--text); }
+  .kb-text-action.danger:hover{ color:#B91C1C; }
+  .kb-confirm-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-muted); }
 </style>
 </head>
 <body>
@@ -438,6 +550,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16.5 5.5l3 3M13.5 8.5l2.5 2.5"/></svg>
         <span>계정</span>
       </button>
+      <button type="button" class="nav-item" id="navKnowledge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V6a2 2 0 0 1 2-2h13v15.5"/><path d="M6 22a2 2 0 0 1 0-4h13"/><path d="M8 7h9M8 10.5h9"/></svg>
+        <span>지식</span>
+      </button>
     </nav>
   </aside>
 
@@ -447,10 +563,11 @@
         <div class="search-wrap">
           <div class="search-box">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input type="text" placeholder="업체, 업무, 자료 검색" />
+            <input type="text" id="mainSearchInput" placeholder="업체, 업무, 자료 검색" />
           </div>
         </div>
-        <div class="hint">SHIN — 필요한 내용을 검색해서 시작하세요.</div>
+        <div class="hint" id="mainSearchHint">SHIN — 필요한 내용을 검색해서 시작하세요.</div>
+        <div class="kb-search-results" id="mainSearchResults"></div>
 
         <div class="ai-section">
           <div class="ai-title">AI 문구정리</div>
@@ -497,6 +614,25 @@
             <div class="acct-detail-empty">목록에서 계정을 선택하세요.</div>
           </div>
         </div>
+      </div>
+
+      <div class="kb-view" id="knowledgeView" style="display:none;">
+        <div class="kb-header">
+          <div class="kb-title">업무 지식</div>
+          <button type="button" id="kbAddBtn" class="kb-add-btn">+ 추가</button>
+        </div>
+        <div class="search-box kb-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="text" id="kbSearchInput" placeholder="지식 검색" />
+        </div>
+        <div class="kb-tabs" id="kbTabs">
+          <button type="button" class="kb-tab active" data-filter="all">전체</button>
+          <button type="button" class="kb-tab" data-filter="response">응대</button>
+          <button type="button" class="kb-tab" data-filter="task">업무</button>
+          <button type="button" class="kb-tab" data-filter="method">공법</button>
+          <button type="button" class="kb-tab" data-filter="contact">연락처</button>
+        </div>
+        <div class="kb-list" id="kbList"></div>
       </div>
     </div>
   </main>
@@ -847,24 +983,25 @@ ${text}
   // ---------- 화면 전환 (홈 / 계정) ----------
   const navHome = document.getElementById('navHome');
   const navAccounts = document.getElementById('navAccounts');
+  const navKnowledge = document.getElementById('navKnowledge');
   const homeView = document.getElementById('homeView');
   const accountsView = document.getElementById('accountsView');
+  const knowledgeView = document.getElementById('knowledgeView');
 
   function showView(view){
-    if(view === 'accounts'){
-      homeView.style.display = 'none';
-      accountsView.style.display = 'block';
-      navHome.classList.remove('active');
-      navAccounts.classList.add('active');
-    } else {
-      homeView.style.display = 'block';
-      accountsView.style.display = 'none';
-      navAccounts.classList.remove('active');
-      navHome.classList.add('active');
-    }
+    homeView.style.display = view === 'home' ? 'block' : 'none';
+    accountsView.style.display = view === 'accounts' ? 'block' : 'none';
+    knowledgeView.style.display = view === 'knowledge' ? 'block' : 'none';
+    navHome.classList.toggle('active', view === 'home');
+    navAccounts.classList.toggle('active', view === 'accounts');
+    navKnowledge.classList.toggle('active', view === 'knowledge');
   }
   navHome.addEventListener('click', ()=> showView('home'));
   navAccounts.addEventListener('click', ()=> showView('accounts'));
+  navKnowledge.addEventListener('click', ()=>{
+    showView('knowledge');
+    if(window.SHIN2_KB) window.SHIN2_KB.renderKbList();
+  });
 
   // ---------- 계정(비밀번호) 보관함 ----------
   // 저장 위치: localStorage['shin2-accounts-vault'] = { salt, check:{cipher,iv}, records:[...] }
@@ -1323,6 +1460,607 @@ ${text}
       renderDetail();
     });
   }
+})();
+</script>
+
+<script>
+(function(){
+  // ---------- 업무 지식 (검색창 + 지식 관리 페이지) ----------
+  // 저장 위치: localStorage['shin2-knowledge-v1'] = { items:[...], contacts:[...] }
+  // 이 기능에는 AI 개입이 없다. 사용자가 직접 추가/수정/삭제하는 순수 입력 데이터다.
+  const KB_STORAGE_KEY = 'shin2-knowledge-v1';
+  const KB_HINT_SEEN_KEY = 'shin2-kb-hint-seen';
+  const CAT_LABEL = { response:'응대', task:'업무', method:'공법' };
+
+  const kbState = { items: [], contacts: [], filter: 'all', search: '' };
+
+  function kbNormalize(s){ return (s == null ? '' : String(s)).trim().toLowerCase(); }
+  function kbEscapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function kbEscapeAttr(str){ return kbEscapeHtml(str); }
+  function genKbId(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+
+  function loadKbRaw(){
+    try{
+      const raw = localStorage.getItem(KB_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveKb(){
+    localStorage.setItem(KB_STORAGE_KEY, JSON.stringify({ items: kbState.items, contacts: kbState.contacts }));
+  }
+
+  function seedIfEmpty(){
+    const existing = loadKbRaw();
+    if(existing){
+      kbState.items = Array.isArray(existing.items) ? existing.items : [];
+      kbState.contacts = Array.isArray(existing.contacts) ? existing.contacts : [];
+      return;
+    }
+    const c1 = { id:genKbId('ct'), name:'심혜진', role:'연구원', dept:'', phone:'010-9954-7653', area:'공법/자재 기술관련 · 시방서 기술문의', keywords:['기술문의','시방서','시방서 기술문의','공법기술','심혜진'], memo:'' };
+    const c2 = { id:genKbId('ct'), name:'한준엽', role:'과장', dept:'', phone:'010-3355-3458', area:'공사일정', keywords:['공사일정','일정','한준엽'], memo:'' };
+    const c3 = { id:genKbId('ct'), name:'정정훈', role:'과장', dept:'', phone:'010-8003-6900', area:'하자보수', keywords:['하자보수','하자','정정훈'], memo:'' };
+    const c4 = { id:genKbId('ct'), name:'이란', role:'매니저', dept:'', phone:'1800-8203', area:'스토어', keywords:['스토어','이란'], memo:'' };
+    const c5 = { id:genKbId('ct'), name:'', role:'', dept:'용인공장', phone:'010-2737-3394', area:'폐기물 처리과정/신청', keywords:['폐기물','폐기물 처리','용인공장'], memo:'' };
+    const c6 = { id:genKbId('ct'), name:'', role:'', dept:'', phone:'010-9291-3892', area:'미팅일정/시공사', keywords:['미팅일정','시공사'], memo:'' };
+    const c7 = { id:genKbId('ct'), name:'', role:'', dept:'', phone:'010-8678-9398', area:'아파트 문의', keywords:['아파트 문의','아파트'], memo:'' };
+    kbState.contacts = [c1,c2,c3,c4,c5,c6,c7];
+
+    const i1 = {
+      id: genKbId('kb'), category:'response', title:'견적문의',
+      keywords:['견적','견적문의','견적요청','견적궁금','공사견적','견적질문'],
+      scriptLines:['어느 아파트에서 전화주셨을까요?','정확한 현장 확인을 위해 도로명 주소도 부탁드립니다.','어떤 공종을 검토하고 계실까요?'],
+      steps:['아파트명','주소','공종','견적요청 내용','유입경로'],
+      afterCall:'POUR공법 문의 및 응대 토픽방 등록',
+      extraNote:'',
+      contactLinks:[{ contactId:c6.id, role:'시공사 문의' }]
+    };
+    const i2 = {
+      id: genKbId('kb'), category:'method', title:'특허번호 차이',
+      keywords:['특허','특허번호','공법특허'],
+      content:'특허번호마다 차이는 없습니다. 같은 공종이며 연구개발을 통해 갱신·등록하고 있습니다. 어떤 특허를 사용해도 동일합니다.'
+    };
+    const i3 = {
+      id: genKbId('kb'), category:'task', title:'자재발주',
+      keywords:['자재','자재발주'],
+      content:'필요 자재 소요량을 확인한 뒤 발주 요청서를 작성하여 담당 부서에 전달합니다. 발주 후 입고 예정일을 확인하고 현장과 공유합니다. (세부 절차는 필요에 따라 직접 수정해서 사용하세요.)'
+    };
+    kbState.items = [i1,i2,i3];
+    saveKb();
+  }
+  seedIfEmpty();
+
+  // ---------- 검색 우선순위: 1)제목 정확 2)keyword 정확 3)keyword 부분 4)본문 ----------
+  function kbScoreItem(item, q){
+    if(!q) return 0;
+    const title = kbNormalize(item.title);
+    if(title === q) return 100;
+    const kws = (item.keywords || []).map(kbNormalize).filter(Boolean);
+    if(kws.includes(q)) return 80;
+    if(kws.some(k => k.includes(q) || q.includes(k))) return 60;
+    const parts = [title];
+    if(item.category === 'response'){
+      parts.push(...(item.scriptLines||[]), ...(item.steps||[]), item.afterCall||'', item.extraNote||'');
+    } else {
+      parts.push(item.content||'');
+    }
+    const text = kbNormalize(parts.join(' '));
+    if(text.includes(q)) return 40;
+    return 0;
+  }
+  function kbScoreContact(c, q){
+    if(!q) return 0;
+    const name = kbNormalize(c.name);
+    if(name && name === q) return 100;
+    const kws = (c.keywords || []).map(kbNormalize).filter(Boolean);
+    if(kws.includes(q)) return 80;
+    if(kws.some(k => k.includes(q) || q.includes(k))) return 60;
+    const text = kbNormalize([c.name,c.dept,c.role,c.area,c.memo].join(' '));
+    if(text.includes(q)) return 40;
+    return 0;
+  }
+  function kbSearchAll(query){
+    const q = kbNormalize(query);
+    if(!q) return [];
+    const results = [];
+    kbState.items.forEach(item=>{
+      const s = kbScoreItem(item, q);
+      if(s > 0) results.push({ type:'item', record:item, score:s });
+    });
+    kbState.contacts.forEach(c=>{
+      const s = kbScoreContact(c, q);
+      if(s > 0) results.push({ type:'contact', record:c, score:s });
+    });
+    results.sort((a,b)=> b.score - a.score);
+    return results;
+  }
+
+  function kbContactDisplayName(c){
+    if(!c) return '(삭제된 연락처)';
+    if(c.name) return c.name + (c.role ? ' ' + c.role : '');
+    return c.dept || c.area || '담당자 미지정';
+  }
+
+  function kbCopy(text, btn){
+    if(!navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(()=>{
+      const old = btn.nextElementSibling && btn.nextElementSibling.classList.contains('kb-copied-tag') ? btn.nextElementSibling : null;
+      if(old) old.remove();
+      const span = document.createElement('span');
+      span.className = 'kb-copied-tag';
+      span.textContent = '복사됨';
+      btn.insertAdjacentElement('afterend', span);
+      setTimeout(()=>{ if(span.parentNode) span.remove(); }, 1500);
+    }).catch(()=>{});
+  }
+
+  // ---------- 홈 검색창: 라이브 검색 결과 ----------
+  const mainSearchInput = document.getElementById('mainSearchInput');
+  const mainSearchHint = document.getElementById('mainSearchHint');
+  const mainSearchResults = document.getElementById('mainSearchResults');
+
+  function kbRenderScriptLine(line){
+    return `<div class="kb-script-line"><mark class="kb-hl">"${kbEscapeHtml(line)}"</mark></div>`;
+  }
+  function kbRenderContactLink(link){
+    const c = kbState.contacts.find(x=> x.id === link.contactId);
+    const name = kbContactDisplayName(c);
+    const phone = c && c.phone ? c.phone : '';
+    const roleLabel = link.role ? kbEscapeHtml(link.role) + ' · ' : '';
+    return `<div class="kb-contact-line">
+      <span>${roleLabel}<span class="kb-contact-name">${kbEscapeHtml(name)}</span>${phone ? ' / ' + kbEscapeHtml(phone) : ''}</span>
+      ${phone ? `<button type="button" class="kb-copy-btn" data-copy-text="${kbEscapeAttr(phone)}">복사</button>` : ''}
+    </div>`;
+  }
+  function kbRenderItemCard(item, isTop){
+    const catLabel = CAT_LABEL[item.category] || item.category;
+    let body;
+    if(item.category === 'response'){
+      const scriptHtml = (item.scriptLines||[]).map(kbRenderScriptLine).join('');
+      const stepsHtml = (item.steps||[]).length ? `<div class="kb-steps-label">확인 순서</div><div class="kb-steps-text">${kbEscapeHtml((item.steps||[]).join(' → '))}</div>` : '';
+      const linksHtml = (item.contactLinks||[]).length ? `<div class="kb-contact-label">담당</div>${(item.contactLinks||[]).map(kbRenderContactLink).join('')}` : '';
+      const afterHtml = item.afterCall ? `<div class="kb-aftercall-label">통화 후</div><div class="kb-aftercall-text">${kbEscapeHtml(item.afterCall)}</div>` : '';
+      const extraHtml = item.extraNote ? `<div class="kb-extra-label">추가 참고</div><div class="kb-extra-text">${kbEscapeHtml(item.extraNote)}</div>` : '';
+      body = scriptHtml + stepsHtml + linksHtml + afterHtml + extraHtml;
+    } else {
+      body = `<div class="kb-plain-content">${kbEscapeHtml(item.content||'')}</div>`;
+    }
+    return `<div class="kb-result-card${isTop?' top':''}">
+      <div class="kb-result-cat">${catLabel}</div>
+      <div class="kb-result-title">${kbEscapeHtml(item.title)}</div>
+      ${body}
+    </div>`;
+  }
+  function kbRenderContactCard(c, isTop){
+    const name = kbContactDisplayName(c);
+    const areaLine = c.area ? `<div class="kb-contact-result-line">${kbEscapeHtml(c.area)}</div>` : '';
+    const phoneLine = c.phone
+      ? `<div class="kb-contact-line"><span class="kb-contact-name">${kbEscapeHtml(name)}</span> / ${kbEscapeHtml(c.phone)} <button type="button" class="kb-copy-btn" data-copy-text="${kbEscapeAttr(c.phone)}">복사</button></div>`
+      : '';
+    return `<div class="kb-result-card${isTop?' top':''}">
+      <div class="kb-result-cat">연락처</div>
+      <div class="kb-result-title">${kbEscapeHtml(name)}</div>
+      ${areaLine}
+      ${phoneLine}
+    </div>`;
+  }
+  function kbRenderResultEntry(entry, isTop){
+    return entry.type === 'item' ? kbRenderItemCard(entry.record, isTop) : kbRenderContactCard(entry.record, isTop);
+  }
+
+  function renderMainResults(query){
+    const q = (query || '').trim();
+    if(!q){
+      mainSearchResults.innerHTML = '';
+      mainSearchHint.style.display = 'block';
+      return;
+    }
+    mainSearchHint.style.display = 'none';
+    const results = kbSearchAll(q);
+    if(results.length === 0){
+      mainSearchResults.innerHTML = `<div class="kb-no-result">검색 결과가 없습니다.</div>`;
+      return;
+    }
+    let hintHtml = '';
+    if(!localStorage.getItem(KB_HINT_SEEN_KEY)){
+      hintHtml = `<div class="kb-hint-once">노란 표시 = 통화 중 읽을 문장</div>`;
+      localStorage.setItem(KB_HINT_SEEN_KEY, '1');
+    }
+    const top = results[0];
+    const rest = results.slice(1);
+    let html = hintHtml + `<div class="kb-result-group-label">가장 관련 있는 결과</div>` + kbRenderResultEntry(top, true);
+    if(rest.length){
+      html += `<div class="kb-result-group-label">관련 결과</div>` + rest.map(e=> kbRenderResultEntry(e, false)).join('');
+    }
+    mainSearchResults.innerHTML = html;
+  }
+
+  let kbSearchDebounce = null;
+  mainSearchInput.addEventListener('input', ()=>{
+    clearTimeout(kbSearchDebounce);
+    const val = mainSearchInput.value;
+    kbSearchDebounce = setTimeout(()=> renderMainResults(val), 150);
+  });
+  mainSearchResults.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-copy-text]');
+    if(!btn) return;
+    kbCopy(btn.getAttribute('data-copy-text'), btn);
+  });
+
+  // ---------- 지식 관리 페이지 ----------
+  const kbTabs = document.getElementById('kbTabs');
+  const kbSearchInput = document.getElementById('kbSearchInput');
+  const kbAddBtn = document.getElementById('kbAddBtn');
+  const kbListEl = document.getElementById('kbList');
+
+  function kbFilteredList(){
+    const q = kbNormalize(kbState.search);
+    let entries = [];
+    kbState.items.forEach(it=> entries.push({ type:'item', record:it }));
+    kbState.contacts.forEach(c=> entries.push({ type:'contact', record:c }));
+    if(kbState.filter !== 'all'){
+      entries = entries.filter(e=> (e.type === 'contact' ? 'contact' : e.record.category) === kbState.filter);
+    }
+    if(q){
+      entries = entries.filter(e=> e.type === 'item' ? kbScoreItem(e.record, q) > 0 : kbScoreContact(e.record, q) > 0);
+    }
+    return entries;
+  }
+
+  function renderKbList(){
+    const entries = kbFilteredList();
+    if(entries.length === 0){
+      kbListEl.innerHTML = `<div class="kb-no-result">등록된 지식이 없습니다. + 추가로 등록하세요.</div>`;
+      return;
+    }
+    kbListEl.innerHTML = entries.map(e=>{
+      if(e.type === 'item'){
+        const cat = CAT_LABEL[e.record.category] || e.record.category;
+        const sub = e.record.category === 'response' ? (e.record.steps||[]).join(' → ') : (e.record.content||'');
+        return `<div class="kb-row" data-type="item" data-id="${kbEscapeAttr(e.record.id)}">
+          <div class="kb-row-cat">${cat}</div>
+          <div class="kb-row-title">${kbEscapeHtml(e.record.title)}</div>
+          <div class="kb-row-sub">${kbEscapeHtml(sub)}</div>
+        </div>`;
+      }
+      const c = e.record;
+      const display = kbContactDisplayName(c);
+      return `<div class="kb-row" data-type="contact" data-id="${kbEscapeAttr(c.id)}">
+        <div class="kb-row-cat">연락처</div>
+        <div class="kb-row-title">${kbEscapeHtml(display)}</div>
+        <div class="kb-row-sub">${kbEscapeHtml(c.phone || '')}</div>
+      </div>`;
+    }).join('');
+    kbListEl.querySelectorAll('.kb-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        const id = row.getAttribute('data-id');
+        const type = row.getAttribute('data-type');
+        if(type === 'item') openItemForm(kbState.items.find(x=> x.id === id));
+        else openContactForm(kbState.contacts.find(x=> x.id === id));
+      });
+    });
+  }
+
+  kbTabs.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.kb-tab');
+    if(!btn) return;
+    kbState.filter = btn.getAttribute('data-filter');
+    kbTabs.querySelectorAll('.kb-tab').forEach(b=> b.classList.toggle('active', b === btn));
+    renderKbList();
+  });
+  kbSearchInput.addEventListener('input', ()=>{
+    kbState.search = kbSearchInput.value;
+    renderKbList();
+  });
+  kbAddBtn.addEventListener('click', ()=>{
+    if(kbState.filter === 'contact') openContactForm(null);
+    else openItemForm(null, kbState.filter);
+  });
+
+  // ---------- 지식(응대/업무/공법) 추가·수정 폼 ----------
+  function kbRenderLinesEditor(containerEl, values, placeholder){
+    containerEl.innerHTML = '';
+    const list = (values && values.length) ? values : [''];
+    list.forEach(v=> kbAddLineRow(containerEl, v, placeholder));
+  }
+  function kbAddLineRow(containerEl, value, placeholder){
+    const row = document.createElement('div');
+    row.className = 'kb-line-row';
+    row.innerHTML = `<input type="text" value="${kbEscapeAttr(value||'')}" placeholder="${kbEscapeAttr(placeholder||'')}" /><button type="button" class="kb-line-remove">&times;</button>`;
+    row.querySelector('.kb-line-remove').addEventListener('click', ()=> row.remove());
+    containerEl.appendChild(row);
+  }
+  function kbGetLinesValues(containerEl){
+    return Array.from(containerEl.querySelectorAll('input')).map(i=> i.value.trim()).filter(Boolean);
+  }
+
+  function openItemForm(record, defaultCategory){
+    const isNew = !record;
+    const category = record ? record.category : ((defaultCategory && defaultCategory !== 'contact' && defaultCategory !== 'all') ? defaultCategory : 'task');
+    let formLinks = record && record.contactLinks ? record.contactLinks.map(l=> Object.assign({}, l)) : [];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal">
+        <div class="kb-modal-title">${isNew ? '지식 추가' : '지식 수정'}</div>
+        <div class="kb-form-field">
+          <label>제목</label>
+          <input type="text" id="kbFTitle" value="${isNew ? '' : kbEscapeAttr(record.title)}" />
+        </div>
+        <div id="kbFTitleErr" class="kb-form-error" style="display:none;">제목을 입력하세요.</div>
+        <div class="kb-form-field">
+          <label>분류</label>
+          <select id="kbFCategory">
+            <option value="response">응대</option>
+            <option value="task">업무</option>
+            <option value="method">공법</option>
+          </select>
+        </div>
+        <div class="kb-form-field">
+          <label>검색 키워드 (쉼표로 구분)</label>
+          <input type="text" id="kbFKeywords" value="${isNew ? '' : kbEscapeAttr((record.keywords||[]).join(', '))}" placeholder="예: 견적, 견적문의, 견적요청" />
+        </div>
+
+        <div id="kbResponseFields">
+          <div class="kb-form-field">
+            <label>전화 멘트 (실제로 읽는 문장, 줄마다 하나)</label>
+            <div class="kb-lines-wrap" id="kbScriptLines"></div>
+            <button type="button" class="kb-line-add" id="kbScriptAdd">+ 문장 추가</button>
+          </div>
+          <div class="kb-form-field">
+            <label>확인 순서 (단계마다 하나)</label>
+            <div class="kb-lines-wrap" id="kbStepLines"></div>
+            <button type="button" class="kb-line-add" id="kbStepAdd">+ 단계 추가</button>
+          </div>
+          <div class="kb-form-field">
+            <label>통화 후 처리</label>
+            <textarea id="kbFAfterCall">${isNew ? '' : kbEscapeHtml(record.afterCall||'')}</textarea>
+          </div>
+          <div class="kb-form-field">
+            <label>추가 참고 (선택)</label>
+            <textarea id="kbFExtra">${isNew ? '' : kbEscapeHtml(record.extraNote||'')}</textarea>
+          </div>
+        </div>
+
+        <div id="kbContentField" class="kb-form-field">
+          <label>내용</label>
+          <textarea id="kbFContent">${isNew ? '' : kbEscapeHtml(record.content||'')}</textarea>
+        </div>
+
+        <div id="kbLinksSection" class="kb-form-field">
+          <label>관련 담당자</label>
+          <div class="kb-contact-chips" id="kbChips"></div>
+          <div class="kb-contact-picker" id="kbPickerWrap" style="display:none;">
+            <input type="text" class="kb-role-input" id="kbRoleInput" placeholder="역할/조건 라벨 (예: 시공사 문의)" />
+            <input type="text" id="kbContactSearch" placeholder="연락처 이름/부서/업무영역 검색 (기존 연락처만 선택 가능)" />
+            <div class="kb-contact-picker-dropdown" id="kbPickerDropdown" style="display:none;"></div>
+          </div>
+          <button type="button" class="kb-add-link-btn" id="kbAddLinkBtn">+ 담당자 연결</button>
+        </div>
+
+        <div class="kb-form-actions">
+          <div id="kbActionsLeft">${!isNew ? '<button type="button" class="kb-text-action danger" id="kbDeleteBtn">삭제</button>' : ''}</div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="kb-text-action" id="kbFormCancel">취소</button>
+            <button type="button" class="ai-run-btn" id="kbFormSave">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const catSelect = overlay.querySelector('#kbFCategory');
+    catSelect.value = category;
+    const responseFieldsEl = overlay.querySelector('#kbResponseFields');
+    const contentFieldEl = overlay.querySelector('#kbContentField');
+    const linksSectionEl = overlay.querySelector('#kbLinksSection');
+    function applyCategoryVisibility(){
+      const cat = catSelect.value;
+      responseFieldsEl.style.display = cat === 'response' ? 'block' : 'none';
+      contentFieldEl.style.display = cat === 'response' ? 'none' : 'block';
+      linksSectionEl.style.display = (cat === 'response' || cat === 'task') ? 'block' : 'none';
+    }
+    catSelect.addEventListener('change', applyCategoryVisibility);
+    applyCategoryVisibility();
+
+    const scriptWrap = overlay.querySelector('#kbScriptLines');
+    const stepWrap = overlay.querySelector('#kbStepLines');
+    kbRenderLinesEditor(scriptWrap, record ? record.scriptLines : [], '예: 어느 아파트에서 전화주셨을까요?');
+    kbRenderLinesEditor(stepWrap, record ? record.steps : [], '예: 아파트명');
+    overlay.querySelector('#kbScriptAdd').addEventListener('click', ()=> kbAddLineRow(scriptWrap, '', '예: 어느 아파트에서 전화주셨을까요?'));
+    overlay.querySelector('#kbStepAdd').addEventListener('click', ()=> kbAddLineRow(stepWrap, '', '예: 아파트명'));
+
+    const chipsEl = overlay.querySelector('#kbChips');
+    function renderChips(){
+      chipsEl.innerHTML = formLinks.map((l, idx)=>{
+        const c = kbState.contacts.find(x=> x.id === l.contactId);
+        const name = kbContactDisplayName(c);
+        const label = l.role ? l.role + ' · ' : '';
+        return `<span class="kb-chip">${kbEscapeHtml(label + name)} <button type="button" class="kb-chip-x" data-idx="${idx}">&times;</button></span>`;
+      }).join('');
+      chipsEl.querySelectorAll('.kb-chip-x').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          formLinks.splice(parseInt(btn.getAttribute('data-idx'), 10), 1);
+          renderChips();
+        });
+      });
+    }
+    renderChips();
+
+    const addLinkBtn = overlay.querySelector('#kbAddLinkBtn');
+    const pickerWrap = overlay.querySelector('#kbPickerWrap');
+    const roleInput = overlay.querySelector('#kbRoleInput');
+    const contactSearchInput = overlay.querySelector('#kbContactSearch');
+    const dropdown = overlay.querySelector('#kbPickerDropdown');
+    function renderDropdown(q){
+      const nq = kbNormalize(q);
+      const matches = kbState.contacts.filter(c=>{
+        if(formLinks.some(l=> l.contactId === c.id)) return false;
+        if(!nq) return true;
+        const hay = kbNormalize([c.name,c.dept,c.role,c.area,(c.keywords||[]).join(' ')].join(' '));
+        return hay.includes(nq);
+      });
+      if(matches.length === 0){
+        dropdown.innerHTML = `<div class="kb-contact-picker-empty">일치하는 연락처가 없습니다. (연락처 탭에서 먼저 등록하세요)</div>`;
+        dropdown.style.display = 'block';
+        return;
+      }
+      dropdown.innerHTML = matches.map(c=>{
+        const display = kbContactDisplayName(c);
+        return `<div class="kb-contact-picker-item" data-id="${kbEscapeAttr(c.id)}">${kbEscapeHtml(display)}${c.phone ? ' · ' + kbEscapeHtml(c.phone) : ''}</div>`;
+      }).join('');
+      dropdown.style.display = 'block';
+      dropdown.querySelectorAll('.kb-contact-picker-item').forEach(item=>{
+        item.addEventListener('click', ()=>{
+          formLinks.push({ contactId: item.getAttribute('data-id'), role: roleInput.value.trim() });
+          renderChips();
+          pickerWrap.style.display = 'none';
+        });
+      });
+    }
+    addLinkBtn.addEventListener('click', ()=>{
+      const show = pickerWrap.style.display === 'none';
+      pickerWrap.style.display = show ? 'block' : 'none';
+      if(show){
+        roleInput.value = '';
+        contactSearchInput.value = '';
+        renderDropdown('');
+        contactSearchInput.focus();
+      }
+    });
+    contactSearchInput.addEventListener('input', ()=> renderDropdown(contactSearchInput.value));
+    contactSearchInput.addEventListener('focus', ()=> renderDropdown(contactSearchInput.value));
+
+    function closeOverlay(){ overlay.remove(); }
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeOverlay(); });
+
+    function handleSave(){
+      const titleEl = overlay.querySelector('#kbFTitle');
+      const title = titleEl.value.trim();
+      const errEl = overlay.querySelector('#kbFTitleErr');
+      if(!title){ errEl.style.display = 'block'; titleEl.focus(); return; }
+      errEl.style.display = 'none';
+      const cat = catSelect.value;
+      const keywords = overlay.querySelector('#kbFKeywords').value.split(',').map(s=> s.trim()).filter(Boolean);
+      const payload = { title, category: cat, keywords };
+      if(cat === 'response'){
+        payload.scriptLines = kbGetLinesValues(scriptWrap);
+        payload.steps = kbGetLinesValues(stepWrap);
+        payload.afterCall = overlay.querySelector('#kbFAfterCall').value.trim();
+        payload.extraNote = overlay.querySelector('#kbFExtra').value.trim();
+        payload.contactLinks = formLinks.slice();
+      } else if(cat === 'task'){
+        payload.content = overlay.querySelector('#kbFContent').value.trim();
+        payload.contactLinks = formLinks.slice();
+      } else {
+        payload.content = overlay.querySelector('#kbFContent').value.trim();
+      }
+      if(isNew){
+        payload.id = genKbId('kb');
+        kbState.items.push(payload);
+      } else {
+        Object.keys(record).forEach(k=>{ if(!(k in payload) && k !== 'id') delete record[k]; });
+        Object.assign(record, payload);
+      }
+      saveKb();
+      closeOverlay();
+      renderKbList();
+    }
+
+    function bindMainActions(){
+      overlay.querySelector('#kbFormCancel').addEventListener('click', closeOverlay);
+      overlay.querySelector('#kbFormSave').addEventListener('click', handleSave);
+      const delBtn = overlay.querySelector('#kbDeleteBtn');
+      if(delBtn){
+        delBtn.addEventListener('click', ()=>{
+          const left = overlay.querySelector('#kbActionsLeft');
+          left.innerHTML = `<div class="kb-confirm-row"><span>정말 삭제하시겠습니까?</span><button type="button" class="kb-text-action" id="kbDelCancel">취소</button><button type="button" class="kb-text-action danger" id="kbDelConfirm">삭제</button></div>`;
+          left.querySelector('#kbDelCancel').addEventListener('click', ()=>{ closeOverlay(); openItemForm(record, category); });
+          left.querySelector('#kbDelConfirm').addEventListener('click', ()=>{
+            kbState.items = kbState.items.filter(x=> x.id !== record.id);
+            saveKb();
+            closeOverlay();
+            renderKbList();
+          });
+        });
+      }
+    }
+    bindMainActions();
+  }
+
+  // ---------- 연락처 추가·수정 폼 ----------
+  function openContactForm(record){
+    const isNew = !record;
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal">
+        <div class="kb-modal-title">${isNew ? '연락처 추가' : '연락처 수정'}</div>
+        <div class="kb-form-field"><label>이름</label><input type="text" id="ctFName" value="${isNew ? '' : kbEscapeAttr(record.name||'')}" /></div>
+        <div class="kb-form-field"><label>부서</label><input type="text" id="ctFDept" value="${isNew ? '' : kbEscapeAttr(record.dept||'')}" /></div>
+        <div class="kb-form-field"><label>직책</label><input type="text" id="ctFRole" value="${isNew ? '' : kbEscapeAttr(record.role||'')}" /></div>
+        <div class="kb-form-field"><label>전화번호</label><input type="text" id="ctFPhone" value="${isNew ? '' : kbEscapeAttr(record.phone||'')}" /></div>
+        <div class="kb-form-field"><label>업무영역</label><input type="text" id="ctFArea" value="${isNew ? '' : kbEscapeAttr(record.area||'')}" placeholder="예: 공사일정, 하자보수" /></div>
+        <div class="kb-form-field"><label>검색 키워드 (쉼표로 구분)</label><input type="text" id="ctFKeywords" value="${isNew ? '' : kbEscapeAttr((record.keywords||[]).join(', '))}" /></div>
+        <div class="kb-form-field"><label>메모</label><textarea id="ctFMemo">${isNew ? '' : kbEscapeHtml(record.memo||'')}</textarea></div>
+        <div id="ctFErr" class="kb-form-error" style="display:none;">이름, 부서, 업무영역 중 하나는 입력하세요.</div>
+        <div class="kb-form-actions">
+          <div id="ctActionsLeft">${!isNew ? '<button type="button" class="kb-text-action danger" id="ctDeleteBtn">삭제</button>' : ''}</div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="kb-text-action" id="ctFormCancel">취소</button>
+            <button type="button" class="ai-run-btn" id="ctFormSave">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    function closeOverlay(){ overlay.remove(); }
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeOverlay(); });
+    overlay.querySelector('#ctFormCancel').addEventListener('click', closeOverlay);
+    overlay.querySelector('#ctFormSave').addEventListener('click', ()=>{
+      const name = overlay.querySelector('#ctFName').value.trim();
+      const dept = overlay.querySelector('#ctFDept').value.trim();
+      const role = overlay.querySelector('#ctFRole').value.trim();
+      const phone = overlay.querySelector('#ctFPhone').value.trim();
+      const area = overlay.querySelector('#ctFArea').value.trim();
+      const keywords = overlay.querySelector('#ctFKeywords').value.split(',').map(s=> s.trim()).filter(Boolean);
+      const memo = overlay.querySelector('#ctFMemo').value.trim();
+      const errEl = overlay.querySelector('#ctFErr');
+      if(!name && !dept && !area){ errEl.style.display = 'block'; return; }
+      errEl.style.display = 'none';
+      if(isNew){
+        kbState.contacts.push({ id: genKbId('ct'), name, dept, role, phone, area, keywords, memo });
+      } else {
+        Object.assign(record, { name, dept, role, phone, area, keywords, memo });
+      }
+      saveKb();
+      closeOverlay();
+      renderKbList();
+    });
+    const delBtn = overlay.querySelector('#ctDeleteBtn');
+    if(delBtn){
+      delBtn.addEventListener('click', ()=>{
+        const left = overlay.querySelector('#ctActionsLeft');
+        left.innerHTML = `<div class="kb-confirm-row"><span>정말 삭제하시겠습니까?</span><button type="button" class="kb-text-action" id="ctDelCancel">취소</button><button type="button" class="kb-text-action danger" id="ctDelConfirm">삭제</button></div>`;
+        left.querySelector('#ctDelCancel').addEventListener('click', ()=>{ closeOverlay(); openContactForm(record); });
+        left.querySelector('#ctDelConfirm').addEventListener('click', ()=>{
+          kbState.contacts = kbState.contacts.filter(x=> x.id !== record.id);
+          kbState.items.forEach(it=>{
+            if(it.contactLinks) it.contactLinks = it.contactLinks.filter(l=> l.contactId !== record.id);
+          });
+          saveKb();
+          closeOverlay();
+          renderKbList();
+        });
+      });
+    }
+  }
+
+  window.SHIN2_KB = { renderKbList };
 })();
 </script>
 
