@@ -186,13 +186,14 @@ function Invoke-ClaudeComplete {
         $writer.Flush()
         $writer.Close()
 
-        $finished = $proc.WaitForExit(180000)  # 최대 180초
+        $timeoutMs = if ($AllowWebSearch) { 240000 } else { 180000 }  # 웹검색 라운드는 더 오래 걸릴 수 있어 여유를 둠
+        $finished = $proc.WaitForExit($timeoutMs)
         Unregister-Event -SourceIdentifier $outSub.Name -ErrorAction SilentlyContinue
         Unregister-Event -SourceIdentifier $errSub.Name -ErrorAction SilentlyContinue
 
         if (-not $finished) {
             try { $proc.Kill() } catch {}
-            return @{ ok = $false; message = 'Claude 응답이 3분 안에 오지 않아 중단했습니다. 잠시 후 다시 시도해주세요.' }
+            return @{ ok = $false; message = 'Claude 응답 시간이 너무 오래 걸려 중단했습니다. 잠시 후 다시 시도해주세요.' }
         }
 
         $stdout = $outSb.ToString()
