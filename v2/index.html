@@ -658,6 +658,45 @@
     background:var(--surface); border:1px solid var(--line); border-radius:5px; cursor:pointer;
   }
   .site-lock-btn:hover{ background:#F0F1F4; color:var(--text); }
+
+  /* 공통 메모(SHIN2_MEMO) — 화면 어디에 붙어도 동일하게 보이는 작은 시간순 기록 목록 */
+  .shin2-memo-block{ margin-top:22px; max-width:800px; padding-top:16px; border-top:1px solid var(--line); }
+  .acct-field .shin2-memo-block{ max-width:none; }
+  .shin2-memo-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .shin2-memo-title{ font-size:13px; font-weight:700; color:var(--text); }
+  .shin2-memo-add-btn{
+    height:26px; padding:0 10px; font-size:12px; font-weight:600; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-family:inherit;
+  }
+  .shin2-memo-add-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .shin2-memo-empty{ font-size:12.5px; color:var(--text-muted); padding:10px 2px; }
+  .shin2-memo-list{ display:flex; flex-direction:column; }
+  .shin2-memo-item{ padding:9px 2px; border-bottom:1px solid var(--line); }
+  .shin2-memo-item:last-child{ border-bottom:none; }
+  .shin2-memo-meta{ font-size:11px; color:var(--text-muted); margin-bottom:3px; }
+  .shin2-memo-text{ font-size:13px; color:var(--text); line-height:1.55; white-space:pre-wrap; }
+  .shin2-memo-item-actions{ display:flex; gap:10px; margin-top:5px; }
+  .shin2-memo-mini-btn{ background:none; border:none; padding:0; font-size:11.5px; color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .shin2-memo-mini-btn:hover{ color:var(--navy); text-decoration:underline; }
+  .shin2-memo-mini-btn.danger:hover{ color:#B91C1C; }
+  .shin2-memo-more-btn{
+    display:block; width:100%; margin-top:8px; padding:6px 0; background:none; border:none;
+    font-size:12px; color:var(--text-muted); cursor:pointer; font-family:inherit; text-align:center;
+  }
+  .shin2-memo-more-btn:hover{ color:var(--navy); }
+  .shin2-memo-form{ margin-bottom:8px; }
+  .shin2-memo-input{
+    width:100%; min-height:56px; resize:vertical; padding:8px 10px; font-size:13px; font-family:inherit;
+    color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  }
+  .shin2-memo-input:focus{ outline:none; border-color:#C7CEDB; }
+  .shin2-memo-form-actions{ display:flex; justify-content:flex-end; gap:6px; margin-top:6px; }
+  .shin2-memo-cancel-btn, .shin2-memo-save-btn{
+    height:26px; padding:0 12px; font-size:12px; font-weight:600; border-radius:6px; cursor:pointer; font-family:inherit;
+  }
+  .shin2-memo-cancel-btn{ background:var(--surface); border:1px solid var(--line); color:var(--text-muted); }
+  .shin2-memo-cancel-btn:hover{ background:#F0F1F4; }
+  .shin2-memo-save-btn{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
 </style>
 </head>
 <body>
@@ -750,6 +789,8 @@
           <div id="aiError" class="ai-error" style="display:none;"></div>
           <div id="aiResult"></div>
         </div>
+
+        <div id="homeMemoSlot"></div>
       </div>
 
       <div class="kb-view" id="knowledgeView" style="display:none;">
@@ -776,6 +817,166 @@
     </div>
   </main>
 </div>
+
+<script>
+/* ==========================================================================
+   SHIN2_MEMO — 공통 메모(시간순 기록) 컴포넌트
+   여러 화면(홈/계정 상세/업무 상세/업체 상세 등)에서 재사용하는 독립 모듈.
+   v2는 단일 state/render 구조가 아니라 화면별 IIFE로 구성되어 있으므로,
+   이 모듈도 동일한 방식으로 만들었다 — 주어진 컨테이너 엘리먼트 하나에
+   자기 자신을 그려 넣고, 자기 안의 이벤트만 스스로 처리한다.
+
+   저장 데이터: localStorage 'shin2-memos-v1' = [{id, targetType, targetId,
+   text, createdAt, updatedAt}]. 다른 화면의 메모와 절대 섞이지 않도록
+   targetType+targetId로만 필터링해서 보여준다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var STORAGE_KEY = 'shin2-memos-v1';
+
+  function loadAll(){
+    try{ var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+    catch(e){ return []; }
+  }
+  function saveAll(list){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function uid(){ return 'memo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function fmtFull(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function fmtTime(ts){
+    var d = new Date(ts);
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function getFor(targetType, targetId){
+    return loadAll()
+      .filter(function(m){ return m.targetType === targetType && String(m.targetId) === String(targetId); })
+      .sort(function(a,b){ return (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt); });
+  }
+  function countFor(targetType, targetId){ return getFor(targetType, targetId).length; }
+
+  /**
+   * container: 메모 섹션을 그려 넣을 빈 엘리먼트
+   * targetType/targetId: 이 메모가 연결된 대상
+   * opts.title: 섹션 제목 (기본 '메모 기록')
+   */
+  function mount(container, targetType, targetId, opts){
+    if(!container) return null;
+    opts = opts || {};
+    var title = opts.title || '메모 기록';
+    var mode = 'list'; // 'list' | 'add' | 'edit'
+    var editId = null;
+    var expanded = false;
+
+    function formHtml(text, id){
+      return '' +
+        '<form class="shin2-memo-form" data-m-form="save" data-id="' + (id||'') + '">' +
+          '<textarea class="shin2-memo-input" placeholder="메모를 입력하세요" rows="2" required>' + escapeHtml(text||'') + '</textarea>' +
+          '<div class="shin2-memo-form-actions">' +
+            '<button type="button" class="shin2-memo-cancel-btn" data-m-action="cancel">취소</button>' +
+            '<button type="submit" class="shin2-memo-save-btn">저장</button>' +
+          '</div>' +
+        '</form>';
+    }
+
+    function itemHtml(m){
+      if(mode === 'edit' && editId === m.id) return formHtml(m.text, m.id);
+      var wasEdited = m.updatedAt && m.updatedAt !== m.createdAt;
+      return '' +
+        '<div class="shin2-memo-item" data-id="' + m.id + '">' +
+          '<div class="shin2-memo-meta">' + fmtFull(m.createdAt) + (wasEdited ? ' · 수정됨 ' + fmtTime(m.updatedAt) : '') + '</div>' +
+          '<div class="shin2-memo-text">' + escapeHtml(m.text) + '</div>' +
+          '<div class="shin2-memo-item-actions">' +
+            '<button type="button" class="shin2-memo-mini-btn" data-m-action="edit" data-id="' + m.id + '">수정</button>' +
+            '<button type="button" class="shin2-memo-mini-btn danger" data-m-action="delete" data-id="' + m.id + '">삭제</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function render(){
+      var items = getFor(targetType, targetId);
+      var visible = expanded ? items : items.slice(0, 3);
+      var countLabel = items.length ? (' ' + items.length) : '';
+      var html = '<div class="shin2-memo-block">' +
+        '<div class="shin2-memo-head">' +
+          '<div class="shin2-memo-title">' + escapeHtml(title) + countLabel + '</div>' +
+          (mode === 'list' ? '<button type="button" class="shin2-memo-add-btn" data-m-action="add">+ 추가</button>' : '') +
+        '</div>';
+      if(mode === 'add') html += formHtml('');
+      if(!items.length && mode !== 'add'){
+        html += '<div class="shin2-memo-empty">등록된 메모가 없습니다</div>';
+      } else if(items.length){
+        html += '<div class="shin2-memo-list">' + visible.map(itemHtml).join('') + '</div>';
+      }
+      if(items.length > 3){
+        html += '<button type="button" class="shin2-memo-more-btn" data-m-action="toggle-expand">' + (expanded ? '접기' : ('전체보기 (' + items.length + ')')) + '</button>';
+      }
+      html += '</div>';
+      container.innerHTML = html;
+      wire();
+    }
+
+    function focusInput(){
+      var ta = container.querySelector('.shin2-memo-input');
+      if(ta){ ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; }
+    }
+
+    function wire(){
+      Array.prototype.forEach.call(container.querySelectorAll('[data-m-action]'), function(el){
+        el.addEventListener('click', function(){
+          var action = el.dataset.mAction;
+          if(action === 'add'){ mode = 'add'; editId = null; render(); focusInput(); }
+          else if(action === 'cancel'){ mode = 'list'; editId = null; render(); }
+          else if(action === 'edit'){ mode = 'edit'; editId = el.dataset.id; render(); focusInput(); }
+          else if(action === 'delete'){
+            if(confirm('이 메모를 삭제하시겠습니까?')){
+              saveAll(loadAll().filter(function(m){ return m.id !== el.dataset.id; }));
+              render();
+            }
+          } else if(action === 'toggle-expand'){ expanded = !expanded; render(); }
+        });
+      });
+      var form = container.querySelector('[data-m-form="save"]');
+      if(form){
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          var text = form.querySelector('.shin2-memo-input').value.trim();
+          if(!text) return;
+          var now = Date.now();
+          var all = loadAll();
+          if(form.dataset.id){
+            var rec = all.find(function(m){ return m.id === form.dataset.id; });
+            if(rec){ rec.text = text; rec.updatedAt = now; }
+          } else {
+            all.push({ id: uid(), targetType: targetType, targetId: String(targetId), text: text, createdAt: now, updatedAt: now });
+          }
+          saveAll(all);
+          mode = 'list'; editId = null;
+          render();
+        });
+      }
+    }
+
+    render();
+    return { refresh: render };
+  }
+
+  window.SHIN2_MEMO = { mount: mount, getFor: getFor, countFor: countFor, loadAll: loadAll };
+
+  // 홈 화면 메모(targetType 'home')는 화면이 하나뿐이라 정적 컨테이너에 바로 마운트한다.
+  var homeSlot = document.getElementById('homeMemoSlot');
+  if(homeSlot) mount(homeSlot, 'home', 'home');
+})();
+</script>
 
 <script>
 (function(){
@@ -1488,9 +1689,13 @@ ${text}
         <button type="button" class="acct-text-action" id="acctEditBtn">수정</button>
         <button type="button" class="acct-text-action danger" id="acctDeleteBtn">삭제</button>
       </div>
+      <div id="acctMemoSlot"></div>
     `;
 
     document.getElementById('acctCopyUser').addEventListener('click', (e)=> copyText(rec.username || '', e.currentTarget));
+    if(window.SHIN2_MEMO){
+      window.SHIN2_MEMO.mount(document.getElementById('acctMemoSlot'), 'account', rec.id);
+    }
     const copyPwBtn = document.getElementById('acctCopyPw');
     if(copyPwBtn){
       copyPwBtn.addEventListener('click', async (e)=>{
