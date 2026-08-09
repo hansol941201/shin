@@ -388,27 +388,56 @@
   }
   .search-box:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--hover-blue-soft);}
 
-  /* 헤더 바로가기: 검색창 아래 별도 줄, 아이콘 없는 작은 텍스트 캡슐. 테두리는 거의 없이 배경/hover로만 구분 */
-  .topbar-quicklinks{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:22px;}
-  .qlink-chip{
-    display:inline-flex;align-items:center;background:none;border:none;
-    border-radius:999px;overflow:hidden;
+  /* 즐겨찾기: 상단 보조 버튼 + 팝오버 (검색/AI 문구정리보다 시각적으로 강하지 않게, 작은 아웃라인 스타일) */
+  .fav-wrap{position:relative;flex:none;}
+  .fav-btn{
+    height:32px;padding:0 12px;border-radius:8px;background:var(--card-bg);border:1px solid var(--card-border);
+    font-size:12.5px;font-weight:600;color:var(--text-gray);cursor:pointer;white-space:nowrap;font-family:inherit;
   }
-  .qlink-chip-link{
-    padding:3px 8px;font-size:11.5px;font-weight:600;color:var(--text-gray);text-decoration:none;white-space:nowrap;
-    border-radius:999px;
+  .fav-btn:hover, .fav-btn.active{border-color:var(--accent);color:var(--navy);}
+  .fav-popover{
+    position:absolute;top:calc(100% + 6px);right:0;width:300px;background:#fff;border:1px solid var(--card-border);
+    border-radius:10px;box-shadow:0 14px 36px rgba(0,0,0,.14);z-index:130;padding:6px;
   }
-  .qlink-chip:hover .qlink-chip-link{background:var(--sb-hover);color:var(--navy);}
-  .qlink-chip-del{
-    background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:10px;
-    padding:3px 6px 3px 0;line-height:1;
+  .fav-list{max-height:360px;overflow-y:auto;}
+  .fav-empty{color:var(--text-gray);font-size:12.5px;padding:14px 8px;text-align:center;}
+  .fav-row{
+    display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;
   }
-  .qlink-chip-del:hover{color:var(--danger);}
-  .qlink-chip-add{
-    background:none;border:none;color:var(--text-light-gray);
-    cursor:pointer;font-size:11.5px;padding:3px 8px;white-space:nowrap;
+  .fav-row:hover{background:var(--sb-hover);}
+  .fav-row-link{
+    flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;
+    color:var(--text-dark);text-decoration:none;font-size:12.5px;font-weight:600;
   }
-  .qlink-chip-add:hover{color:var(--navy);text-decoration:underline;}
+  .fav-row-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fav-row-link .fav-arrow{flex:none;color:var(--text-light-gray);font-weight:400;}
+  .fav-row-manage{display:flex;align-items:center;gap:6px;}
+  .fav-row-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--text-dark);}
+  .fav-mini-btn{
+    background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:11px;padding:2px 4px;
+    font-family:inherit;white-space:nowrap;flex:none;
+  }
+  .fav-mini-btn:hover{color:var(--navy);}
+  .fav-mini-btn.danger:hover{color:var(--danger);}
+  .fav-divider{border-top:1px solid var(--card-border);margin:6px 2px;}
+  .fav-action-row{display:flex;flex-direction:column;gap:2px;padding:0 2px;}
+  .fav-action-btn{
+    background:none;border:none;text-align:left;color:var(--text-gray);font-size:12.5px;font-weight:600;
+    padding:7px 6px;border-radius:7px;cursor:pointer;font-family:inherit;
+  }
+  .fav-action-btn:hover{background:var(--sb-hover);color:var(--navy);}
+  .fav-form{padding:6px 2px 2px;display:flex;flex-direction:column;gap:6px;}
+  .fav-form input{
+    height:30px;padding:0 8px;border-radius:7px;border:1px solid var(--card-border);
+    font-size:12.5px;font-family:inherit;color:var(--text-dark);
+  }
+  .fav-form input:focus{outline:none;border-color:var(--accent);}
+  .fav-form-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:2px;}
+  .fav-form-actions button{
+    height:26px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  .fav-form-cancel{background:none;border:1px solid var(--card-border);color:var(--text-gray);}
+  .fav-form-save{background:var(--navy);border:1px solid var(--navy);color:#fff;}
   .search-results{
     position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:80vw;background:#fff;border:1px solid var(--card-border);
     border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.14);z-index:120;display:none;overflow:hidden;max-height:420px;
@@ -803,10 +832,11 @@
       <div class="search-results" id="searchResults"></div>
     </div>
   </div>
-  <div class="topbar-row topbar-row-links">
-    <div class="topbar-quicklinks" id="quickLinks"></div>
-  </div>
   <div class="topbar-row topbar-row-actions">
+    <div class="fav-wrap" id="favWrap">
+      <button type="button" class="fav-btn" id="favBtn" title="즐겨찾기">☆ 즐겨찾기</button>
+      <div class="fav-popover" id="favPopover" hidden></div>
+    </div>
     <div class="top-actions">
       <button class="top-icon-btn" id="noteBtn" title="오늘 할 일">📝<span class="badge-dot" id="todoBadge">0</span></button>
       <button class="top-icon-btn" id="notifBtn" title="알림 (미연결 — 연결된 기존 기능 없음)" disabled>🔔</button>
@@ -2123,7 +2153,7 @@ contentEl.addEventListener('click', (e)=>{
     openAiSettingsModal();
   }
   else if(action === 'qlink-add-slot'){
-    openAddQuickLinkModal();
+    openFavPopover(); favMode = 'add'; renderFavPopover();
   }
 });
 
@@ -2476,75 +2506,159 @@ vaultList.addEventListener('click', (e)=>{
   }
 });
 
-/* ---------- Quick Links (상단 바로가기, 최대 6개 고정 슬롯) ---------- */
-const MAX_QUICKLINKS = 6;
-const quickLinksEl = document.getElementById('quickLinks');
-function openAddQuickLinkModal(){
-  if(state.links.length >= MAX_QUICKLINKS){ showToast('바로가기는 최대 6개까지 등록할 수 있습니다'); return; }
-  openModal({
-    title:'사이트 바로가기 추가', submitLabel:'추가',
-    fields:[
-      {name:'title', label:'사이트 이름', placeholder:'예: 잔디 드라이브'},
-      {name:'url', label:'URL', placeholder:'https://...'}
-    ],
-    onSubmit(data){
-      if(!data.title || !data.url) return;
-      if(state.links.length >= MAX_QUICKLINKS) return;
-      let url = data.url;
-      if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
-      state.links.push({id:uid(), title:data.title, url});
-      saveState(); renderQuickLinks();
+/* ---------- 즐겨찾기 (상단 ☆ 버튼 → 팝오버, 기존 state.links(바로가기) 데이터를 그대로 재사용) ----------
+   기존에는 검색창 아래 줄에 항상 펼쳐진 캡슐 목록으로 보였지만, 상단이 복잡해 보이지 않도록
+   버튼 하나 + 팝오버 형태로 바꿨다. 데이터(state.links={id,title,url})와 클라우드 동기화(key 'shortcuts')는
+   그대로 재사용하고 새로 저장소를 만들지 않는다. */
+const favBtn = document.getElementById('favBtn');
+const favPopoverEl = document.getElementById('favPopover');
+const favWrapEl = document.getElementById('favWrap');
+let favOpen = false;
+let favMode = 'list'; // 'list' | 'manage' | 'add' | 'edit'
+let favEditId = null;
+
+function normalizeLinkUrl(raw){
+  let url = (raw || '').trim();
+  if(!url) return '';
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  return url;
+}
+function isPlausibleUrl(url){
+  try{ const u = new URL(url); return !!u.hostname && u.hostname.includes('.'); }
+  catch(e){ return false; }
+}
+
+function openFavPopover(){
+  favOpen = true; favMode = 'list'; favEditId = null;
+  favPopoverEl.hidden = false;
+  favBtn.classList.add('active');
+  renderFavPopover();
+}
+function closeFavPopover(){
+  favOpen = false;
+  favPopoverEl.hidden = true;
+  favBtn.classList.remove('active');
+}
+function toggleFavPopover(){ favOpen ? closeFavPopover() : openFavPopover(); }
+
+function favListMarkup(){
+  if(!state.links.length) return `<div class="fav-empty">등록된 바로가기가 없습니다</div>`;
+  return `<div class="fav-list">${state.links.map(l => `
+    <div class="fav-row" data-entry="link-${l.id}">
+      <a class="fav-row-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
+        <span>${escapeHtml(l.title)}</span><span class="fav-arrow">↗</span>
+      </a>
+    </div>
+  `).join('')}</div>`;
+}
+function favManageMarkup(){
+  const rows = state.links.length
+    ? state.links.map((l, i) => `
+      <div class="fav-row fav-row-manage" data-id="${l.id}">
+        <span class="fav-row-name">${escapeHtml(l.title)}</span>
+        <button type="button" class="fav-mini-btn" data-action="fav-up" data-id="${l.id}" ${i===0?'disabled style="visibility:hidden"':''}>↑</button>
+        <button type="button" class="fav-mini-btn" data-action="fav-down" data-id="${l.id}" ${i===state.links.length-1?'disabled style="visibility:hidden"':''}>↓</button>
+        <button type="button" class="fav-mini-btn" data-action="fav-edit" data-id="${l.id}">수정</button>
+        <button type="button" class="fav-mini-btn danger" data-action="fav-delete" data-id="${l.id}">삭제</button>
+      </div>
+    `).join('')
+    : `<div class="fav-empty">등록된 바로가기가 없습니다</div>`;
+  return `<div class="fav-list">${rows}</div>
+    <div class="fav-divider"></div>
+    <div class="fav-action-row"><button type="button" class="fav-action-btn" data-action="fav-show-list">← 목록으로</button></div>`;
+}
+function favFormMarkup(existing){
+  return `
+    <form class="fav-form" data-form="fav-save">
+      <input type="text" name="title" placeholder="이름" value="${existing?escapeHtml(existing.title):''}" required />
+      <input type="text" name="url" placeholder="https://..." value="${existing?escapeHtml(existing.url):''}" required />
+      <div class="fav-form-actions">
+        <button type="button" class="fav-form-cancel" data-action="fav-cancel">취소</button>
+        <button type="submit" class="fav-form-save">저장</button>
+      </div>
+    </form>`;
+}
+function renderFavPopover(){
+  if(!favOpen) return;
+  if(favMode === 'manage'){ favPopoverEl.innerHTML = favManageMarkup(); return; }
+  if(favMode === 'add'){ favPopoverEl.innerHTML = favFormMarkup(null); favPopoverEl.querySelector('input[name="title"]')?.focus(); return; }
+  if(favMode === 'edit'){
+    const existing = state.links.find(l => l.id === favEditId);
+    favPopoverEl.innerHTML = favFormMarkup(existing);
+    favPopoverEl.querySelector('input[name="title"]')?.focus();
+    return;
+  }
+  favPopoverEl.innerHTML = favListMarkup() + `
+    <div class="fav-divider"></div>
+    <div class="fav-action-row">
+      <button type="button" class="fav-action-btn" data-action="fav-show-add">+ 바로가기 추가</button>
+      <button type="button" class="fav-action-btn" data-action="fav-show-manage">즐겨찾기 관리</button>
+    </div>`;
+}
+/* 이전 이름(renderQuickLinks)을 참조하는 곳(render() 등)이 있어도 동작하도록 별칭 유지 */
+function renderQuickLinks(){ if(favOpen) renderFavPopover(); }
+
+favBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavPopover(); });
+document.addEventListener('click', (e) => {
+  if(!favOpen) return;
+  if(favWrapEl.contains(e.target)) return;
+  closeFavPopover();
+});
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && favOpen) closeFavPopover(); });
+
+favPopoverEl.addEventListener('click', (e) => {
+  e.stopPropagation(); // 팝오버 안 클릭이 document 바깥클릭 감지로 새는 것을 막는다(내부 리렌더 시 e.target이 DOM에서 제거되면 contains() 판정이 깨지는 문제 방지)
+  if(e.target.closest('[data-action="fav-show-add"]')){ favMode = 'add'; renderFavPopover(); return; }
+  if(e.target.closest('[data-action="fav-show-manage"]')){ favMode = 'manage'; renderFavPopover(); return; }
+  if(e.target.closest('[data-action="fav-show-list"]')){ favMode = 'list'; renderFavPopover(); return; }
+  if(e.target.closest('[data-action="fav-cancel"]')){ favMode = favEditId ? 'manage' : 'list'; favEditId = null; renderFavPopover(); return; }
+  const upBtn = e.target.closest('[data-action="fav-up"]');
+  if(upBtn){
+    const idx = state.links.findIndex(l => l.id === upBtn.dataset.id);
+    if(idx > 0){
+      [state.links[idx-1], state.links[idx]] = [state.links[idx], state.links[idx-1]];
+      saveState(); renderFavPopover();
     }
-  });
-}
-/* 바로가기 아이콘: 모든 아이콘은 남색 단색으로 통일(브랜드 컬러 사용 안 함), 알려진 사이트는 전용 기호를 사용 */
-function getQuickLinkIcon(title){
-  const t = (title || '').trim();
-  if(/기술지원/.test(t)){
-    return { cls:'', style:'', html:'A' };
+    return;
   }
-  if(/협약/.test(t)){
-    return { cls:'qicon-doc', style:'', html:'<i></i><i></i><i></i>' };
+  const downBtn = e.target.closest('[data-action="fav-down"]');
+  if(downBtn){
+    const idx = state.links.findIndex(l => l.id === downBtn.dataset.id);
+    if(idx >= 0 && idx < state.links.length - 1){
+      [state.links[idx+1], state.links[idx]] = [state.links[idx], state.links[idx+1]];
+      saveState(); renderFavPopover();
+    }
+    return;
   }
-  if(/partner\s*dashboard/i.test(t)){
-    return { cls:'qicon-grid', style:'', html:'<i></i><i></i><i></i><i></i>' };
-  }
-  if(/네이버/.test(t)){
-    return { cls:'', style:'', html:'N' };
-  }
-  if(/하이웍스|hiworks/i.test(t)){
-    return { cls:'', style:'', html:'H' };
-  }
-  return { cls:'', style:'', html: escapeHtml(t.charAt(0).toUpperCase() || '#') };
-}
-/* 상단 헤더 바로가기: 검색창 옆에 작은 캡슐 버튼으로 표시. 클릭 시 새 탭으로 열리고(target=_blank),
-   각 캡슐에는 작은 삭제(✕) 버튼이 있다(평소엔 연하게, hover 시에만 진하게 — 큰 빨간 버튼 사용 안 함). */
-function quickLinksMarkup(){
-  let html = state.links.map(l => `
-    <span class="qlink-chip" data-entry="link-${l.id}">
-      <a class="qlink-chip-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.title)}</a>
-      <button type="button" class="qlink-chip-del" data-action="qlink-delete" data-id="${l.id}" title="바로가기 삭제">✕</button>
-    </span>
-  `).join('');
-  if(state.links.length < MAX_QUICKLINKS){
-    html += `<button type="button" class="qlink-chip-add" data-action="qlink-add-slot">+ 바로가기</button>`;
-  }
-  return html;
-}
-function renderQuickLinks(){
-  quickLinksEl.innerHTML = quickLinksMarkup();
-}
-quickLinksEl.addEventListener('click', (e)=>{
-  const addBtn = e.target.closest('[data-action="qlink-add-slot"]');
-  if(addBtn){ openAddQuickLinkModal(); return; }
-  const delBtn = e.target.closest('[data-action="qlink-delete"]');
+  const editBtn = e.target.closest('[data-action="fav-edit"]');
+  if(editBtn){ favEditId = editBtn.dataset.id; favMode = 'edit'; renderFavPopover(); return; }
+  const delBtn = e.target.closest('[data-action="fav-delete"]');
   if(delBtn){
     const link = state.links.find(l => l.id === delBtn.dataset.id);
     if(link && confirm(`"${link.title}" 바로가기를 삭제하시겠습니까?`)){
       state.links = state.links.filter(l => l.id !== link.id);
-      saveState(); renderQuickLinks();
+      saveState(); renderFavPopover();
     }
+    return;
   }
+});
+favPopoverEl.addEventListener('submit', (e) => {
+  const form = e.target.closest('[data-form="fav-save"]');
+  if(!form) return;
+  e.preventDefault();
+  const title = form.title.value.trim();
+  const url = normalizeLinkUrl(form.url.value);
+  if(!title || !url) return;
+  if(!isPlausibleUrl(url) && !confirm(`"${url}" 주소가 올바른지 확인해주세요. 이대로 저장할까요?`)) return;
+  if(favMode === 'edit' && favEditId){
+    const existing = state.links.find(l => l.id === favEditId);
+    if(existing){ existing.title = title; existing.url = url; }
+    favMode = 'manage'; favEditId = null;
+  } else {
+    state.links.push({id:uid(), title, url});
+    favMode = 'list';
+  }
+  saveState(); renderFavPopover();
 });
 
 /* ---------- Note Panel (할 일 목록, 상단 📝 아이콘 → 오른쪽 슬라이드 패널) ---------- */
