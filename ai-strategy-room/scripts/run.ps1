@@ -102,24 +102,51 @@ try {
 }
 
 # 로그인 여부 확인 (claude auth status → JSON)
-$authRaw = & claude auth status 2>&1 | Out-String
-$authObj = $null
-try { $authObj = $authRaw | ConvertFrom-Json } catch { $authObj = $null }
-
-if (-not $authObj -or -not $authObj.loggedIn) {
-    Show-FatalAndExit @(
-        "[안내] Claude 로그인이 필요합니다.",
-        "",
-        "아래 순서로 진행해주세요:",
-        "  1) 이 창을 닫지 말고 새 명령 프롬프트(또는 PowerShell) 창을 엽니다.",
-        "  2) 다음 명령을 입력합니다:   claude auth login",
-        "  3) 브라우저가 열리면 Claude 계정으로 로그인합니다.",
-        "  4) 로그인이 끝나면 AI전략회의실.bat 을 다시 실행해주세요.",
-        "",
-        "* 참고: Claude 구독 계정으로 로그인하면 별도 API 과금 없이 사용됩니다."
-    )
+function Test-ClaudeLoggedIn {
+    $raw = & claude auth status 2>&1 | Out-String
+    try {
+        $obj = $raw | ConvertFrom-Json
+        return [bool]($obj -and $obj.loggedIn)
+    } catch { return $false }
 }
-Write-Ok "      OK (로그인 계정으로 연결됨)"
+
+if (-not (Test-ClaudeLoggedIn)) {
+    # 사용자가 직접 터미널에 명령을 입력할 필요가 없도록, 로그인 명령을 이 스크립트가
+    # 대신 실행한다 — 사용자는 잠시 후 뜨는 브라우저 창에서 "로그인/승인"만 누르면 된다.
+    Write-Info "[안내] Claude 로그인이 필요합니다. 잠시 후 브라우저 창이 자동으로 열립니다."
+    Write-Info "       브라우저에서 로그인/승인만 해주시면 자동으로 이어집니다. (이 창은 그대로 두세요)"
+    Write-Host ""
+
+    try {
+        & claude auth login --claudeai 2>&1 | ForEach-Object { Write-Host "       $_" }
+    } catch {
+        # 명령 실행 자체가 실패해도 아래에서 재확인 후 공통 오류 처리로 넘어간다
+    }
+
+    Write-Host ""
+    Write-Info "       로그인 완료 여부를 확인하는 중..."
+
+    # 브라우저 승인이 창을 닫자마자 반영되지 않는 경우를 대비해 몇 초 간격으로 재확인한다.
+    $loggedIn = $false
+    for ($i = 0; $i -lt 10; $i++) {
+        if (Test-ClaudeLoggedIn) { $loggedIn = $true; break }
+        Start-Sleep -Seconds 2
+    }
+
+    if (-not $loggedIn) {
+        Show-FatalAndExit @(
+            "[오류] 로그인을 확인하지 못했습니다.",
+            "",
+            "브라우저에서 로그인 승인을 완료하지 않았거나, 창을 닫으셨을 수 있습니다.",
+            "AI전략회의실.bat 을 다시 실행해 로그인을 다시 시도해주세요.",
+            "",
+            "* 참고: Claude 구독 계정으로 로그인하면 별도 API 과금 없이 사용됩니다."
+        )
+    }
+    Write-Ok "      OK (로그인 완료)"
+} else {
+    Write-Ok "      OK (로그인 계정으로 연결됨)"
+}
 
 # ---------------------------------------------------------------------
 # 3) 로컬 서버 시작
