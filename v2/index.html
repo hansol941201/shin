@@ -434,6 +434,7 @@
   .kb-result-card[data-co-id]:hover{ background:#F0F1F4; }
   .kb-result-card.top{ padding-top:2px; }
   .kb-result-cat{ font-size:11px; color:var(--text-muted); margin-bottom:2px; }
+  .kb-memo-result-date{ font-size:11px; color:var(--text-muted); margin-top:4px; }
   .kb-result-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px; }
   .kb-result-card:not(.top) .kb-result-title{ font-size:13px; font-weight:600; }
   .kb-script-line{ font-size:13.5px; line-height:1.9; color:var(--text); }
@@ -2662,7 +2663,17 @@ ${text}
       return acctState.records.map(r=> ({ id: r.id, site: r.site, username: r.username }));
     },
     migrateAdd: migrateAddAccounts,
-    isUnlocked: function(){ return !!vaultKey; }
+    isUnlocked: function(){ return !!vaultKey; },
+    // 계정 메모 검색결과 클릭용: 계정함 팝업을 해당 레코드 상세로 바로 연다.
+    // 계정함 자체가 잠겨있으면(로그아웃 상태) 목록 화면만 열어 사용자가 다시 잠금 해제하게 한다.
+    openDetail: function(id){
+      if(!vaultKey){ openAcctPopup(); return; }
+      acctState.selectedId = id;
+      acctState.mode = 'detail';
+      acctState.revealPassword = false;
+      acctPopupOverlay.classList.add('open');
+      renderAcctPopup();
+    }
   };
   window.dispatchEvent(new CustomEvent('shin2-accounts-api-ready'));
 })();
@@ -2805,8 +2816,22 @@ ${text}
       score: kbScoreAccount,
       render: kbRenderAccountCard
     },
-    // 업체 대기 저장소(shin2-companies-staging, §6) — 업체관리 화면은 아직 없지만 검색에는 연결한다.
-    { type:'company', getRecords: getCompanyStaging, score: kbScoreCompany, render: kbRenderCompanyCard }
+    // 업체관리(shin2-companies-staging) — 실제 업체관리 화면이 읽고 쓰는 저장소와 동일한 키.
+    { type:'company', getRecords: getCompanyStaging, score: kbScoreCompany, render: kbRenderCompanyCard },
+    // 처리할 업무(shin2-tasks-v1)
+    {
+      type:'task',
+      getRecords: ()=> (window.SHIN2_TASKS ? window.SHIN2_TASKS.getAll() : []),
+      score: kbScoreTask,
+      render: kbRenderTaskCard
+    },
+    // 공통 메모(shin2-memos-v1) — 어느 화면에 붙은 메모인지(§14)와 함께 보여준다.
+    {
+      type:'memo',
+      getRecords: ()=> (window.SHIN2_MEMO ? window.SHIN2_MEMO.loadAll() : []),
+      score: kbScoreMemo,
+      render: kbRenderMemoCard
+    }
   ];
 
   function kbSearchAll(query){
@@ -2984,6 +3009,62 @@ ${text}
     </div>`;
   }
 
+  const TASK_STATUS_LABEL = { urgent:'긴급', progress:'진행', confirm:'확인', material:'자료', reply:'회신', normal:'일반' };
+  function kbScoreTask(t, q){
+    if(!q || t.done) return 0; // 완료된 업무는 통합검색 대상에서 제외(전체보기의 완료 탭에서만 조회)
+    const title = kbNormalize(t.title);
+    if(title && title === q) return 100;
+    if(title && title.includes(q)) return 85;
+    const company = getCompanyStaging().find(c=> c.id === t.companyId);
+    if(company && kbNormalize(company.name).includes(q)) return 55;
+    const content = kbNormalize(t.content);
+    if(content.includes(q)) return 45;
+    return 0;
+  }
+  function kbRenderTaskCard(t, isTop, q){
+    const company = getCompanyStaging().find(c=> c.id === t.companyId);
+    return `<div class="kb-result-card${isTop?' top':''}" data-task-id="${kbEscapeAttr(t.id)}">
+      <div class="kb-result-cat">업무 ${TASK_STATUS_LABEL[t.status] || ''}</div>
+      <div class="kb-result-title">${kbHighlight(t.title, q)}${company ? ' · ' + kbEscapeHtml(company.name) : ''}</div>
+      ${t.content ? `<div class="kb-plain-content">${kbHighlight(t.content, q)}</div>` : ''}
+    </div>`;
+  }
+
+  // 메모가 어디에 붙어 있는지(대상) 표시용 라벨을 구한다 — "메모만 덩그러니" 보여주지 않기 위함(§14).
+  function kbMemoTargetLabel(m){
+    if(m.targetType === 'home') return '홈';
+    if(m.targetType === 'company'){
+      const c = getCompanyStaging().find(x=> x.id === m.targetId);
+      return '업체 · ' + (c ? c.name : '삭제된 업체');
+    }
+    if(m.targetType === 'task'){
+      const t = (window.SHIN2_TASKS ? window.SHIN2_TASKS.getAll() : []).find(x=> x.id === m.targetId);
+      return '업무 · ' + (t ? t.title : '삭제된 업무');
+    }
+    if(m.targetType === 'account'){
+      const acc = (window.SHIN2_ACCOUNTS && window.SHIN2_ACCOUNTS.getSearchable) ? window.SHIN2_ACCOUNTS.getSearchable().find(x=> x.id === m.targetId) : null;
+      return '계정 · ' + (acc ? acc.site : '삭제된 계정');
+    }
+    return m.targetType;
+  }
+  function kbScoreMemo(m, q){
+    if(!q) return 0;
+    const text = kbNormalize(m.text);
+    if(text.includes(q)) return 80;
+    return 0;
+  }
+  function kbRenderMemoCard(m, isTop, q){
+    const d = new Date(m.createdAt);
+    const dateLabel = (d.getMonth()+1).toString().padStart(2,'0') + '.' + d.getDate().toString().padStart(2,'0') + ' ' +
+      d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    return `<div class="kb-result-card${isTop?' top':''}" data-memo-target-type="${kbEscapeAttr(m.targetType)}" data-memo-target-id="${kbEscapeAttr(m.targetId)}">
+      <div class="kb-result-cat">${kbEscapeHtml(kbMemoTargetLabel(m))}</div>
+      <div class="kb-result-title">메모</div>
+      <div class="kb-plain-content">${kbHighlight(m.text, q)}</div>
+      <div class="kb-memo-result-date">${kbEscapeHtml(dateLabel)}</div>
+    </div>`;
+  }
+
   function kbRenderResultEntry(entry, isTop, q){
     const src = SHIN2_SEARCH_SOURCES.find(s=> s.type === entry.type);
     return src ? src.render(entry.record, isTop, q) : '';
@@ -3029,6 +3110,28 @@ ${text}
       const coId = coCard.getAttribute('data-co-id');
       if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
       if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(coId);
+      return;
+    }
+    // 업무 검색 결과 카드 클릭: 업무 상세 팝업을 바로 연다.
+    const taskCard = e.target.closest('[data-task-id]');
+    if(taskCard){
+      if(window.SHIN2_TASKS) window.SHIN2_TASKS.openPopup('detail', taskCard.getAttribute('data-task-id'));
+      return;
+    }
+    // 메모 검색 결과 카드 클릭: 대상(홈/업체/업무/계정) 화면을 열어 메모가 실제로 붙은 곳을 보여준다.
+    const memoCard = e.target.closest('[data-memo-target-type]');
+    if(memoCard){
+      const targetType = memoCard.getAttribute('data-memo-target-type');
+      const targetId = memoCard.getAttribute('data-memo-target-id');
+      if(targetType === 'company'){
+        if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
+        if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(targetId);
+      } else if(targetType === 'task'){
+        if(window.SHIN2_TASKS) window.SHIN2_TASKS.openPopup('detail', targetId);
+      } else if(targetType === 'account'){
+        if(window.SHIN2_ACCOUNTS && window.SHIN2_ACCOUNTS.openDetail) window.SHIN2_ACCOUNTS.openDetail(targetId);
+      }
+      // targetType === 'home'이면 이미 홈이므로 이동할 곳이 없다 — 검색결과만 닫히고 그대로 홈에 남는다.
       return;
     }
     const btn = e.target.closest('[data-copy-text]');
