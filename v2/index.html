@@ -554,6 +554,20 @@
   }
   .kb-add-link-btn:hover{ color:var(--navy); }
 
+  /* ---------- 빠른 지식 추가(AI 자동분류) ---------- */
+  .kb-modal.wide{ max-width:640px; }
+  .qa-summary{ font-size:12.5px; color:var(--text-muted); margin-bottom:12px; }
+  .qa-fail-banner{ font-size:12.5px; color:#B91C1C; margin-bottom:12px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  .qa-item-card{ border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; }
+  .qa-item-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .qa-item-head select{ width:auto; flex:0 0 auto; padding:8px 8px; font-size:13px; font-family:inherit; color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:6px; }
+  .qa-item-head input{ flex:1; padding:8px 10px; font-size:13px; font-family:inherit; color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:6px; box-sizing:border-box; }
+  .qa-item-body{ margin-top:4px; }
+  .qa-dup-note{ font-size:11.5px; color:#B91C1C; margin-top:8px; }
+  .qa-dup-actions{ display:flex; gap:12px; margin-top:2px; }
+  .qa-link-note{ font-size:11.5px; color:var(--text-muted); margin-top:8px; }
+  .qa-original-box{ margin-top:10px; }
+
   .kb-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
   .kb-text-action{ border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-muted); padding:2px 0; }
   .kb-text-action:hover{ color:var(--text); }
@@ -694,7 +708,10 @@
       <div class="kb-view" id="knowledgeView" style="display:none;">
         <div class="kb-header">
           <div class="kb-title">업무 지식</div>
-          <button type="button" id="kbAddBtn" class="kb-add-btn">+ 추가</button>
+          <div style="display:flex; gap:6px;">
+            <button type="button" id="kbQuickAddBtn" class="kb-add-btn">+ 빠른 지식 추가</button>
+            <button type="button" id="kbAddBtn" class="kb-add-btn">+ 추가</button>
+          </div>
         </div>
         <div class="search-box kb-search-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -1050,6 +1067,10 @@ ${text}
       runAi();
     }
   });
+
+  // 다른 스크립트 블록(예: 지식 페이지의 "빠른 지식 추가")이 동일한 AI 호출 방식을 그대로 재사용할 수
+  // 있도록 최소한의 함수만 노출한다. 새 fetch 로직을 만들지 않고 이 3개 함수만 공유한다.
+  window.SHIN2_AI = { getApiKey, promptForApiKey, callOpenAI };
 })();
 </script>
 
@@ -1659,9 +1680,11 @@ ${text}
   // 이 기능에는 AI 개입이 없다. 사용자가 직접 추가/수정/삭제하는 순수 입력 데이터다.
   const KB_STORAGE_KEY = 'shin2-knowledge-v1';
   const KB_HINT_SEEN_KEY = 'shin2-kb-hint-seen';
-  const CAT_LABEL = { response:'응대', task:'업무', method:'공법' };
+  const CAT_LABEL = { response:'응대', task:'업무', method:'공법', unclassified:'미분류' };
 
-  const kbState = { items: [], contacts: [], filter: 'all', search: '' };
+  // items/contacts는 기존 그대로. importBatches는 "빠른 지식 추가"가 쓰는 신규 배열로, 같은
+  // 저장소(KB_STORAGE_KEY)에 얹는다(§ 구현노트: 별도 localStorage 키를 새로 만들지 않는다).
+  const kbState = { items: [], contacts: [], importBatches: [], filter: 'all', search: '' };
 
   function kbNormalize(s){ return (s == null ? '' : String(s)).trim().toLowerCase(); }
   function kbEscapeHtml(str){
@@ -1679,7 +1702,7 @@ ${text}
     }catch(e){ return null; }
   }
   function saveKb(){
-    localStorage.setItem(KB_STORAGE_KEY, JSON.stringify({ items: kbState.items, contacts: kbState.contacts }));
+    localStorage.setItem(KB_STORAGE_KEY, JSON.stringify({ items: kbState.items, contacts: kbState.contacts, importBatches: kbState.importBatches }));
   }
 
   function seedIfEmpty(){
@@ -1687,6 +1710,7 @@ ${text}
     if(existing){
       kbState.items = Array.isArray(existing.items) ? existing.items : [];
       kbState.contacts = Array.isArray(existing.contacts) ? existing.contacts : [];
+      kbState.importBatches = Array.isArray(existing.importBatches) ? existing.importBatches : [];
       return;
     }
     const c1 = { id:genKbId('ct'), name:'심혜진', role:'연구원', dept:'', phone:'010-9954-7653', area:'공법/자재 기술관련 · 시방서 기술문의', keywords:['기술문의','시방서','시방서 기술문의','공법기술','심혜진'], memo:'' };
@@ -1754,7 +1778,7 @@ ${text}
     const kws = (c.keywords || []).map(kbNormalize).filter(Boolean);
     if(kws.includes(q)) return 80;
     if(kws.some(k => k.includes(q) || q.includes(k))) return 60;
-    const text = kbNormalize([c.dept,c.role,c.area,c.memo].join(' '));
+    const text = kbNormalize([c.dept,c.role,c.area,c.memo,c.originalText||''].join(' '));
     if(text.includes(q)) return 40;
     // 전화번호도 검색어로 매치는 가능하되(연관정보 수준의 낮은 우선순위), 결과 카드 표시는 기존 방식 그대로.
     if(c.phone && kbNormalize(c.phone).includes(q)) return 30;
@@ -2104,6 +2128,12 @@ ${text}
     overlay.innerHTML = `
       <div class="kb-modal">
         <div class="kb-modal-title">${isNew ? '지식 추가' : '지식 수정'}</div>
+        ${(!isNew && record && record.originalText) ? `
+        <button type="button" class="kb-text-action" id="kbViewOriginalBtn">원문 보기</button>
+        <div id="kbOriginalBox" class="kb-form-field" style="display:none;">
+          <div class="kb-extra-label">원문</div>
+          <div class="kb-plain-content">${kbEscapeHtml(record.originalText)}</div>
+        </div>` : ''}
         <div class="kb-form-field">
           <label>제목</label>
           <input type="text" id="kbFTitle" value="${isNew ? '' : kbEscapeAttr(record.title)}" />
@@ -2115,6 +2145,7 @@ ${text}
             <option value="response">응대</option>
             <option value="task">업무</option>
             <option value="method">공법</option>
+            <option value="unclassified">미분류</option>
           </select>
         </div>
         <div class="kb-form-field">
@@ -2169,6 +2200,14 @@ ${text}
       </div>
     `;
     document.body.appendChild(overlay);
+
+    const viewOrigBtn = overlay.querySelector('#kbViewOriginalBtn');
+    if(viewOrigBtn){
+      viewOrigBtn.addEventListener('click', ()=>{
+        const box = overlay.querySelector('#kbOriginalBox');
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+      });
+    }
 
     const catSelect = overlay.querySelector('#kbFCategory');
     catSelect.value = category;
@@ -2280,7 +2319,10 @@ ${text}
         payload.id = genKbId('kb');
         kbState.items.push(payload);
       } else {
-        Object.keys(record).forEach(k=>{ if(!(k in payload) && k !== 'id') delete record[k]; });
+        // originalText/sourceExcerpt/sourceSystem/sourceId/sourceBatchId(원문 출처 정보)는 사용자가
+        // 제목/분류 등을 수정해도 절대 지워지면 안 된다(원문 보존 절대 규칙) — 삭제 대상에서 제외한다.
+        const PRESERVE_KEYS = ['id','originalText','sourceExcerpt','sourceSystem','sourceId','sourceBatchId'];
+        Object.keys(record).forEach(k=>{ if(!(k in payload) && PRESERVE_KEYS.indexOf(k) === -1) delete record[k]; });
         Object.assign(record, payload);
       }
       saveKb();
@@ -2403,6 +2445,381 @@ ${text}
     if(added) saveKb();
     return { added, skipped };
   }
+  // ================================================================================================
+  // 빠른 지식 추가 (붙여넣기 → AI 자동분류 → 미리보기 → 저장)
+  // ------------------------------------------------------------------------------------------------
+  // 절대 규칙: 사용자가 붙여넣은 원문은 어떤 경우에도(AI 성공/실패 모두) 그대로 보존한다.
+  //  - importBatch.originalText = 붙여넣은 전체 원문 그대로(수정 없음).
+  //  - 분리된 각 항목의 originalText/sourceExcerpt = 그 항목이 유래한 원문 발췌(AI가 준 값을 그대로 저장,
+  //    이 파일이 문장을 다시 쓰거나 요약해서 대체하지 않는다).
+  //  - AI 분석이 실패(네트워크/HTTP/JSON 파싱 오류 전부 포함)해도 원문을 잃지 않도록 미분류 1건으로
+  //    즉시 폴백 저장 가능한 미리보기를 띄운다.
+  const QA_CAT_LABEL = { response:'응대', task:'업무', method:'공법', contact:'연락처', unclassified:'미분류' };
+
+  function qaBuildPrompt(text){
+    return `아래는 사용자가 업무 중 편하게 적어둔 메모/자료를 그대로 붙여넣은 원문입니다. 이 원문을 읽고
+검색하기 좋은 지식 항목들로 분류·구조화해줘.
+
+절대 규칙:
+1. 원문에 없는 사실(회사명, 사람 이름, 부서, 전화번호, 절차 등)을 절대 새로 지어내지 마.
+2. 분류가 애매하면 억지로 아래 5개 중 하나로 넣지 말고 category를 "unclassified"로 표시해.
+3. 한 번의 붙여넣기 안에 서로 다른 종류의 내용(예: 응대방법 + 자료위치 + 담당자 전화번호 + 진행절차)이
+   섞여 있으면 절대 하나로 억지로 합치지 말고 의미 단위로 나눠서 배열의 여러 항목으로 만들어.
+4. 각 항목에는 반드시 sourceExcerpt(그 항목이 원문의 어느 부분에서 왔는지 알 수 있도록, 원문에서 그대로
+   가져온 발췌 문자열, 새로 쓰지 말고 원문 그대로)를 포함해.
+5. keywords는 검색에 도움이 되는 동의어를 추가할 수 있지만 새로운 업무 사실을 만들어내지는 마.
+6. category가 "contact"인 항목은 원문에 있는 이름/전화번호/담당업무만 채우고, 원문에 없는 부서명 등은
+   절대 지어내지 말고 빈 문자열로 둬.
+
+카테고리 종류와 필드:
+- "response": 전화응대 스크립트 — scriptLines(통화 중 읽을 문장 배열), steps(확인할 항목 순서 배열),
+  afterCall(통화 후 처리, 줄바꿈으로 구분 가능), extraNote(참고사항)
+- "task": 업무 절차/안내 — content(구조화한 본문)
+- "method": 공법/기술 관련 내용 — content(구조화한 본문)
+- "contact": 담당자 연락처 — name, dept, role, phone, area
+- "unclassified": 위 4가지 중 확신이 없는 경우 — content(원문을 최대한 그대로 정리한 본문)
+
+반드시 아래 JSON 배열 형식으로만 응답해. 다른 설명이나 코드블록 표시(백틱) 없이 순수 JSON 배열만 출력해:
+[
+  {
+    "category": "response|task|method|contact|unclassified",
+    "title": "제목",
+    "keywords": ["키워드1","키워드2"],
+    "sourceExcerpt": "원문에서 그대로 가져온 발췌",
+    "scriptLines": [], "steps": [], "afterCall": "", "extraNote": "", "content": "",
+    "name": "", "dept": "", "role": "", "phone": "", "area": ""
+  }
+]
+(해당 카테고리에 필요 없는 필드는 비워두거나 생략해도 돼)
+
+원문:
+"""
+${text}
+"""`;
+  }
+
+  function qaParseResponse(raw){
+    let text = String(raw||'').trim();
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if(fence) text = fence[1].trim();
+    const parsed = JSON.parse(text);
+    if(!Array.isArray(parsed) || parsed.length === 0) throw new Error('AI 응답이 빈 배열이거나 배열이 아님');
+    const validCats = ['response','task','method','contact','unclassified'];
+    return parsed.map(p=>({
+      category: validCats.indexOf(p && p.category) !== -1 ? p.category : 'unclassified',
+      title: String((p && p.title) || '').trim() || '(제목 없음)',
+      keywords: Array.isArray(p && p.keywords) ? p.keywords.map(k=>String(k).trim()).filter(Boolean) : [],
+      sourceExcerpt: String((p && p.sourceExcerpt) || '').trim(),
+      scriptLines: Array.isArray(p && p.scriptLines) ? p.scriptLines.map(s=>String(s).trim()).filter(Boolean) : [],
+      steps: Array.isArray(p && p.steps) ? p.steps.map(s=>String(s).trim()).filter(Boolean) : [],
+      afterCall: String((p && p.afterCall) || '').trim(),
+      extraNote: String((p && p.extraNote) || '').trim(),
+      content: String((p && p.content) || '').trim(),
+      name: String((p && p.name) || '').trim(),
+      dept: String((p && p.dept) || '').trim(),
+      role: String((p && p.role) || '').trim(),
+      phone: String((p && p.phone) || '').trim(),
+      area: String((p && p.area) || '').trim()
+    }));
+  }
+
+  // 중복 지식 알림(§17): 정교한 유사도 알고리즘 없이 제목/키워드가 겹치면 "비슷한 내용" 취급.
+  function qaFindDuplicateItem(p){
+    const titleN = kbNormalize(p.title);
+    const kws = (p.keywords||[]).map(kbNormalize).filter(Boolean);
+    return kbState.items.find(it=>{
+      if(it.category !== p.category) return false;
+      const itTitleN = kbNormalize(it.title);
+      if(titleN && itTitleN && (itTitleN === titleN || itTitleN.includes(titleN) || titleN.includes(itTitleN))) return true;
+      const itKws = (it.keywords||[]).map(kbNormalize);
+      return kws.some(k=> k && itKws.indexOf(k) !== -1);
+    }) || null;
+  }
+  function qaFindMatchingContact(p){
+    const phone = (p.phone||'').replace(/[^0-9]/g,'');
+    if(phone){
+      const m = kbState.contacts.find(c=> c.phone && c.phone.replace(/[^0-9]/g,'') === phone);
+      if(m) return m;
+    }
+    const nameN = kbNormalize(p.name);
+    if(nameN){
+      const m = kbState.contacts.find(c=> c.name && kbNormalize(c.name) === nameN);
+      if(m) return m;
+    }
+    return null;
+  }
+  // 담당자 자동 연결(§16): 원문 발췌 안에 기존 연락처의 전화번호가 그대로 등장하면 연결한다.
+  // 기존 연락처 데이터 자체는 절대 수정하지 않는다(읽기만 한다).
+  function qaFindContactMentionedIn(text){
+    if(!text) return null;
+    return kbState.contacts.find(c=> c.phone && text.indexOf(c.phone) !== -1) || null;
+  }
+  function qaResolveDuplicatesAndLinks(proposals){
+    proposals.forEach(p=>{
+      if(p.category === 'contact'){
+        const match = qaFindMatchingContact(p);
+        if(match) p.duplicate = { type:'contact', existingId: match.id, existingLabel: kbContactDisplayName(match) };
+      } else {
+        const dupItem = qaFindDuplicateItem(p);
+        if(dupItem) p.duplicate = { type:'item', existingId: dupItem.id, existingLabel: dupItem.title };
+        const hay = [p.sourceExcerpt, p.content, (p.scriptLines||[]).join(' '), p.afterCall].filter(Boolean).join(' ');
+        const contactMatch = qaFindContactMentionedIn(hay);
+        if(contactMatch){
+          p.autoLinkedContactId = contactMatch.id;
+          p.autoLinkedContactLabel = kbContactDisplayName(contactMatch);
+        }
+      }
+    });
+  }
+
+  function qaRenderItemCard(p, idx){
+    const catOptions = ['response','task','method','contact','unclassified'].map(c=>
+      `<option value="${c}"${p.category===c?' selected':''}>${QA_CAT_LABEL[c]}</option>`
+    ).join('');
+    let bodyHtml;
+    if(p.category === 'contact'){
+      const parts = [];
+      if(p.name) parts.push(kbEscapeHtml(p.name));
+      if(p.role) parts.push(kbEscapeHtml(p.role));
+      if(p.area) parts.push(kbEscapeHtml(p.area));
+      if(p.phone) parts.push(kbEscapeHtml(p.phone));
+      bodyHtml = `<div class="kb-plain-content">${parts.join(' · ') || '(정보 없음)'}</div>`;
+    } else if(p.category === 'response'){
+      const scriptHtml = (p.scriptLines||[]).map(kbRenderScriptLine).join('');
+      const stepsHtml = (p.steps||[]).length ? `<div class="kb-steps-label">확인 순서</div><div class="kb-steps-text">${kbEscapeHtml((p.steps||[]).join(' → '))}</div>` : '';
+      const afterHtml = p.afterCall ? `<div class="kb-aftercall-label">통화 후</div><div class="kb-aftercall-text">${p.afterCall.split('\n').filter(l=>l.trim()).map(l=>`<div class="kb-aftercall-line"><span class="kb-aftercall-check">✓</span>${kbEscapeHtml(l.trim())}</div>`).join('')}</div>` : '';
+      const extraHtml = p.extraNote ? `<div class="kb-extra-label">추가 참고</div><div class="kb-extra-text">${kbEscapeHtml(p.extraNote)}</div>` : '';
+      bodyHtml = scriptHtml + stepsHtml + afterHtml + extraHtml;
+    } else {
+      bodyHtml = `<div class="kb-plain-content">${kbEscapeHtml(p.content||'')}</div>`;
+    }
+    const dupHtml = p.duplicate ? `
+      <div class="qa-dup-note">비슷한 내용이 있습니다: ${kbEscapeHtml(p.duplicate.existingLabel)}</div>
+      <div class="qa-dup-actions">
+        <button type="button" class="kb-text-action" data-qa-viewdup="${idx}">기존 내용 보기</button>
+        <button type="button" class="kb-text-action" data-qa-dismissdup="${idx}">새로 저장</button>
+      </div>` : '';
+    const linkHtml = p.autoLinkedContactId ? `<div class="qa-link-note">담당자 자동 연결: ${kbEscapeHtml(p.autoLinkedContactLabel)}</div>` : '';
+    return `<div class="qa-item-card" data-qa-idx="${idx}">
+      <div class="qa-item-head">
+        <select data-qa-field="category">${catOptions}</select>
+        <input type="text" data-qa-field="title" value="${kbEscapeAttr(p.title)}" />
+      </div>
+      <div class="kb-form-field">
+        <label>검색 키워드 (쉼표로 구분)</label>
+        <input type="text" data-qa-field="keywords" value="${kbEscapeAttr((p.keywords||[]).join(', '))}" />
+      </div>
+      <div class="qa-item-body">${bodyHtml}</div>
+      ${dupHtml}
+      ${linkHtml}
+      <div class="qa-original-box" style="display:none;">
+        <div class="kb-extra-label">원문 발췌</div>
+        <div class="kb-plain-content">${kbEscapeHtml(p.sourceExcerpt || '(발췌 없음)')}</div>
+      </div>
+      <button type="button" class="kb-text-action" data-qa-toggleorig="${idx}">원문 보기</button>
+    </div>`;
+  }
+
+  function qaSaveBatch(batchText, proposals){
+    const batchId = genKbId('batch');
+    const itemIds = [];
+    proposals.forEach((p, i)=>{
+      const sourceId = batchId + ':' + i;
+      if(p.category === 'contact'){
+        const rec = {
+          id: genKbId('ct'), name: p.name||'', dept: p.dept||'', role: p.role||'',
+          phone: p.phone||'', area: p.area||'', keywords: p.keywords||[], memo:'',
+          originalText: p.sourceExcerpt||'',
+          sourceSystem: 'quick-add', sourceId: sourceId, sourceBatchId: batchId
+        };
+        kbState.contacts.push(rec);
+        itemIds.push(rec.id);
+      } else {
+        const rec = {
+          id: genKbId('kb'), category: p.category, title: p.title, keywords: p.keywords||[],
+          originalText: p.sourceExcerpt||'', sourceExcerpt: p.sourceExcerpt||'',
+          sourceSystem: 'quick-add', sourceId: sourceId, sourceBatchId: batchId
+        };
+        if(p.category === 'response'){
+          rec.scriptLines = p.scriptLines||[];
+          rec.steps = p.steps||[];
+          rec.afterCall = p.afterCall||'';
+          rec.extraNote = p.extraNote||'';
+          rec.contactLinks = p.autoLinkedContactId ? [{ contactId: p.autoLinkedContactId, role:'' }] : [];
+        } else {
+          rec.content = p.content||'';
+          if(p.autoLinkedContactId) rec.contactLinks = [{ contactId: p.autoLinkedContactId, role:'' }];
+        }
+        kbState.items.push(rec);
+        itemIds.push(rec.id);
+      }
+    });
+    kbState.importBatches.push({ id: batchId, originalText: batchText, createdAt: Date.now(), itemIds: itemIds });
+    saveKb();
+    renderKbList();
+  }
+
+  function qaOpenPreview(batchText, proposals, aiFailed){
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    const qaState = { proposals: proposals.map(p=> Object.assign({}, p)) };
+
+    function render(){
+      const failBanner = aiFailed ? `<div class="qa-fail-banner">자동분류에 실패했습니다. 원문은 임시 저장되었습니다.</div>` : '';
+      overlay.innerHTML = `
+        <div class="kb-modal wide">
+          <div class="kb-modal-title">이렇게 정리할까요?</div>
+          ${failBanner}
+          <div class="qa-summary">${qaState.proposals.length}개의 지식으로 정리됩니다.</div>
+          <div id="qaList">${qaState.proposals.map((p,i)=> qaRenderItemCard(p,i)).join('')}</div>
+          <button type="button" class="kb-text-action" id="qaViewOriginalBtn">원문 보기</button>
+          <div id="qaOriginalFull" class="qa-original-box" style="display:none;">
+            <div class="kb-extra-label">붙여넣은 원문 전체</div>
+            <div class="kb-plain-content">${kbEscapeHtml(batchText)}</div>
+          </div>
+          <div class="kb-form-actions" style="margin-top:14px;">
+            <div></div>
+            <div class="kb-form-actions-right">
+              <button type="button" class="kb-text-action" id="qaCancelBtn">취소</button>
+              <button type="button" class="kb-text-action" id="qaReanalyzeBtn">다시 분석</button>
+              <button type="button" class="ai-run-btn" id="qaSaveBtn">저장</button>
+            </div>
+          </div>
+        </div>
+      `;
+      bind();
+    }
+
+    function bind(){
+      overlay.querySelector('#qaCancelBtn').addEventListener('click', ()=> overlay.remove());
+      overlay.querySelector('#qaViewOriginalBtn').addEventListener('click', ()=>{
+        const box = overlay.querySelector('#qaOriginalFull');
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+      });
+      overlay.querySelector('#qaReanalyzeBtn').addEventListener('click', ()=>{
+        overlay.remove();
+        qaRunAnalyze(batchText);
+      });
+      overlay.querySelector('#qaSaveBtn').addEventListener('click', ()=>{
+        overlay.querySelectorAll('.qa-item-card').forEach(card=>{
+          const idx = parseInt(card.getAttribute('data-qa-idx'), 10);
+          const p = qaState.proposals[idx];
+          const catSel = card.querySelector('[data-qa-field="category"]');
+          const titleInp = card.querySelector('[data-qa-field="title"]');
+          const kwInp = card.querySelector('[data-qa-field="keywords"]');
+          if(catSel) p.category = catSel.value;
+          if(titleInp) p.title = titleInp.value.trim() || '(제목 없음)';
+          if(kwInp) p.keywords = kwInp.value.split(',').map(s=>s.trim()).filter(Boolean);
+        });
+        qaSaveBatch(batchText, qaState.proposals);
+        overlay.remove();
+      });
+      overlay.querySelectorAll('[data-qa-toggleorig]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const idx = btn.getAttribute('data-qa-toggleorig');
+          const card = overlay.querySelector('.qa-item-card[data-qa-idx="'+idx+'"]');
+          const box = card.querySelector('.qa-original-box');
+          box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        });
+      });
+      overlay.querySelectorAll('[data-qa-field="category"]').forEach(sel=>{
+        sel.addEventListener('change', ()=>{
+          const card = sel.closest('.qa-item-card');
+          const idx = parseInt(card.getAttribute('data-qa-idx'),10);
+          const titleInp = card.querySelector('[data-qa-field="title"]');
+          const kwInp = card.querySelector('[data-qa-field="keywords"]');
+          qaState.proposals[idx].title = titleInp.value;
+          qaState.proposals[idx].keywords = kwInp.value.split(',').map(s=>s.trim()).filter(Boolean);
+          qaState.proposals[idx].category = sel.value;
+          render();
+        });
+      });
+      overlay.querySelectorAll('[data-qa-dismissdup]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const idx = parseInt(btn.getAttribute('data-qa-dismissdup'),10);
+          delete qaState.proposals[idx].duplicate;
+          render();
+        });
+      });
+      overlay.querySelectorAll('[data-qa-viewdup]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const idx = parseInt(btn.getAttribute('data-qa-viewdup'),10);
+          const dup = qaState.proposals[idx].duplicate;
+          if(!dup) return;
+          alert('기존 지식: ' + dup.existingLabel);
+        });
+      });
+    }
+
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    render();
+  }
+
+  async function qaDoAnalyze(apiKey, pastedText){
+    const prompt = qaBuildPrompt(pastedText);
+    try{
+      const raw = await window.SHIN2_AI.callOpenAI(apiKey, prompt);
+      const proposals = qaParseResponse(raw);
+      qaResolveDuplicatesAndLinks(proposals);
+      qaOpenPreview(pastedText, proposals, false);
+    }catch(err){
+      // AI 실패(네트워크/HTTP/빈 응답/JSON 파싱 실패 전부 포함) — 원문을 잃지 않도록 미분류 1건으로 폴백.
+      console.error('[SHIN2/QuickAdd] AI 분석 실패:', err);
+      const fallback = [{
+        category:'unclassified', title:'(자동분류 실패 — 원문 그대로 저장)', keywords:[],
+        content: pastedText, sourceExcerpt: pastedText,
+        scriptLines:[], steps:[], afterCall:'', extraNote:'', name:'', dept:'', role:'', phone:'', area:''
+      }];
+      qaOpenPreview(pastedText, fallback, true);
+    }
+  }
+  function qaRunAnalyze(pastedText){
+    if(!window.SHIN2_AI){ return; }
+    const apiKey = window.SHIN2_AI.getApiKey();
+    if(!apiKey){
+      window.SHIN2_AI.promptForApiKey((key)=> qaDoAnalyze(key, pastedText));
+      return;
+    }
+    qaDoAnalyze(apiKey, pastedText);
+  }
+
+  function qaOpenPasteModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal">
+        <div class="kb-modal-title">빠른 지식 추가</div>
+        <div class="kb-form-field">
+          <textarea id="qaPasteInput" class="ai-textarea" placeholder="여기에 내용을 그대로 붙여넣으세요" style="min-height:200px;"></textarea>
+        </div>
+        <div id="qaPasteErr" class="kb-form-error" style="display:none;">붙여넣을 내용을 입력하세요.</div>
+        <div class="kb-form-actions">
+          <div></div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="kb-text-action" id="qaPasteCancel">취소</button>
+            <button type="button" class="ai-run-btn" id="qaPasteRun">AI로 정리해서 저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#qaPasteCancel').addEventListener('click', ()=> overlay.remove());
+    overlay.querySelector('#qaPasteRun').addEventListener('click', ()=>{
+      const val = overlay.querySelector('#qaPasteInput').value;
+      if(!val.trim()){
+        overlay.querySelector('#qaPasteErr').style.display = 'block';
+        return;
+      }
+      overlay.remove();
+      qaRunAnalyze(val);
+    });
+  }
+
+  const kbQuickAddBtn = document.getElementById('kbQuickAddBtn');
+  if(kbQuickAddBtn) kbQuickAddBtn.addEventListener('click', qaOpenPasteModal);
+
   window.SHIN2_KB = { renderKbList, addItems: kbAddItems, addContacts: kbAddContacts };
 })();
 </script>
