@@ -448,28 +448,55 @@ ${text}
   }
 
   async function callOpenAI(apiKey, prompt){
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer ' + apiKey
-      },
-      body: JSON.stringify({
-        model:'gpt-4o-mini',
-        messages:[
-          {role:'system', content:'너는 건설/시공 업무를 돕는 한국어 비서야. 항상 정중한 존댓말로, 요청받은 형식만 정확히 출력해.'},
-          {role:'user', content: prompt}
-        ],
-        temperature:0.5
-      })
-    });
+    let res;
+    try{
+      res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model:'gpt-4o-mini',
+          messages:[
+            {role:'system', content:'너는 건설/시공 업무를 돕는 한국어 비서야. 항상 정중한 존댓말로, 요청받은 형식만 정확히 출력해.'},
+            {role:'user', content: prompt}
+          ],
+          temperature:0.5
+        })
+      });
+    } catch(networkErr){
+      // fetch() 자체가 reject된 경우: 네트워크 단절 또는 CORS 정책에 의해 브라우저가
+      // 요청/응답을 아예 막은 경우가 대부분이다(응답 status조차 받지 못함).
+      const e = new Error('AI request network/CORS failure: ' + (networkErr && networkErr.message));
+      e.kind = 'network';
+      e.original = networkErr;
+      throw e;
+    }
     if(!res.ok){
       let detail = '';
       try{ detail = (await res.json()).error?.message || ''; }catch(e){}
-      throw new Error(`OpenAI API 오류 (${res.status}) ${detail}`);
+      const e = new Error(`AI request failed: ${res.status} ${detail}`);
+      e.kind = 'http';
+      e.status = res.status;
+      e.detail = detail;
+      throw e;
     }
-    const data = await res.json();
-    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
+    let data;
+    try{
+      data = await res.json();
+    } catch(parseErr){
+      const e = new Error('AI request invalid JSON response: ' + (parseErr && parseErr.message));
+      e.kind = 'parse';
+      throw e;
+    }
+    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if(!content){
+      const e = new Error('AI request empty response content');
+      e.kind = 'empty';
+      throw e;
+    }
+    return content.trim();
   }
 
   // 메일용 결과 파싱: "제목: ...\n본문:\n..." 형식을 분리한다.
@@ -599,6 +626,12 @@ ${text}
     setLoading(true);
     const type = state.type;
     const prompt = buildPrompt(type, text);
+    if(!apiKey){
+      console.error('[SHIN2/AI] API key missing');
+      setError('API 키가 없습니다. 다시 시도하면 키 등록창이 뜹니다.');
+      setLoading(false);
+      return;
+    }
     try{
       const raw = await callOpenAI(apiKey, prompt);
       if(type === 'mail'){
@@ -609,7 +642,23 @@ ${text}
       }
       renderResult();
     } catch(err){
-      setError('문구 정리에 실패했습니다. 다시 시도해주세요.');
+      // 화면에는 간단한 한국어 메시지만, 콘솔에는 실제 원인을 그대로 남긴다(개발/진단용).
+      console.error('[SHIN2/AI] request failed:', err);
+      if(err && err.kind === 'http' && err.status === 401){
+        console.error('[SHIN2/AI] 401 Unauthorized — API 키가 잘못되었거나 만료됨');
+        setError('API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해주세요.');
+      } else if(err && err.kind === 'http' && err.status === 429){
+        console.error('[SHIN2/AI] 429 Too Many Requests — 요청 한도 초과 또는 결제/쿼터 문제');
+        setError('요청이 많거나 사용 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+      } else if(err && err.kind === 'http'){
+        console.error('[SHIN2/AI] HTTP', err.status, err.detail);
+        setError(`문구 정리에 실패했습니다. (오류 코드 ${err.status})`);
+      } else if(err && err.kind === 'network'){
+        console.error('[SHIN2/AI] 네트워크/CORS로 요청 자체가 차단됨 — 브라우저가 응답을 받지 못했습니다.', err.original);
+        setError('AI 서버에 연결할 수 없습니다. 네트워크 또는 브라우저 보안 정책(CORS) 문제일 수 있습니다.');
+      } else {
+        setError('문구 정리에 실패했습니다. 다시 시도해주세요.');
+      }
     } finally {
       setLoading(false);
     }
