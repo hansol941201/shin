@@ -827,6 +827,97 @@
   .task-company-link{ font-size:12.5px; color:var(--navy); background:none; border:none; cursor:pointer; padding:0; font-family:inherit; text-decoration:underline; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+
+<!-- 한솔(root) index.html이 쓰는 것과 동일한 Firebase 프로젝트 설정을 그대로 재사용한다.
+     (Firebase 웹 apiKey는 비밀키가 아니라 프로젝트 식별용 공개 값 — 실제 접근 제어는
+     Firestore 보안 규칙이 담당) 이 파일이 없으면 자동으로 localStorage 전용 모드로 동작한다. -->
+<script src="../firebaseConfig.js" onerror="console.warn('firebaseConfig.js 없음 — localStorage 전용 모드로 동작합니다')"></script>
+
+<!-- 한솔2 Firebase 동기화 브릿지 (§14 작업분). 로그인 UI 없이 익명 인증(signInAnonymously)으로
+     기기마다 자동으로 같은 Firebase 사용자와 연결한다 — "한 명이 쓰는 개인 업무 사이트"라는
+     전제에 맞춰 최대한 단순하게 구성. Firebase Console에서 Authentication → Sign-in method →
+     익명(Anonymous) 제공업체를 켜야 실제로 로그인이 성공한다(콘솔 설정, 코드로는 불가능).
+     연결에 실패해도 기존 localStorage 동작에는 전혀 영향이 없다(항상 로컬이 우선 진실).
+     계정함(비밀번호 저장소)은 이번에는 동기화하지 않는다 — 기기마다 다른 salt로 마스터
+     비밀번호를 유도하는 현재 구조상, 그대로 동기화하면 다른 기기에서 복호화가 실패해
+     계정함 자체를 열 수 없게 될 위험이 있어 안전을 위해 보류했다. -->
+<script type="module">
+  const SHIN2_SYNC_KEYS = {
+    companies: 'shin2-companies-staging',
+    tasks: 'shin2-tasks-v1',
+    memos: 'shin2-memos-v1',
+    todos: 'shin2-todos',
+    knowledge: 'shin2-knowledge-v1'
+  };
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
+    console.info('[한솔2/Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다.');
+  } else {
+    (async () => {
+      try{
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
+        const {
+          getAuth, signInAnonymously, onAuthStateChanged
+        } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+        const {
+          getFirestore, doc, setDoc, onSnapshot, getDoc,
+          enableIndexedDbPersistence, serverTimestamp
+        } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
+
+        const app = initializeApp(cfg, 'shin2');
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        try{ await enableIndexedDbPersistence(db); }catch(e){ /* 여러 탭이면 실패할 수 있음 — 무시해도 안전 */ }
+
+        onAuthStateChanged(auth, (user) => {
+          if(!user) return;
+          const uid = user.uid;
+
+          const pushTimers = {};
+          function pushToCloud(key, data){
+            if(!SHIN2_SYNC_KEYS[key]) return;
+            clearTimeout(pushTimers[key]);
+            pushTimers[key] = setTimeout(async () => {
+              try{ await setDoc(doc(db, 'users', uid, 'shin2', key), { value: data, updatedAt: serverTimestamp() }); }
+              catch(e){ console.error(`[한솔2/Firebase] ${key} 저장 실패`, e); }
+            }, 500);
+          }
+          window.__shin2CloudSync = { ready:true, push: pushToCloud };
+
+          Object.keys(SHIN2_SYNC_KEYS).forEach((key) => {
+            const storageKey = SHIN2_SYNC_KEYS[key];
+            const ref = doc(db, 'users', uid, 'shin2', key);
+            // 최초 연결 시: 클라우드에 아직 데이터가 없으면 지금 가진 localStorage 값으로 시드한다
+            // (기존 데이터를 지우지 않기 위함 — §10/§15).
+            getDoc(ref).then((snap) => {
+              if(!snap.exists()){
+                let local = null;
+                try{ const raw = localStorage.getItem(storageKey); local = raw ? JSON.parse(raw) : null; }catch(e){}
+                if(local != null) setDoc(ref, { value: local, updatedAt: serverTimestamp() }).catch(()=>{});
+              }
+            }).catch(()=>{});
+
+            onSnapshot(ref, (snap) => {
+              if(!snap.exists()) return;
+              const payload = snap.data();
+              try{ localStorage.setItem(storageKey, JSON.stringify(payload.value)); }catch(e){}
+              window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail: { key, data: payload.value } }));
+            }, (err) => console.error(`[한솔2/Firebase] ${key} 구독 실패`, err));
+          });
+
+          window.dispatchEvent(new CustomEvent('shin2-cloud-ready'));
+          console.info('[한솔2/Firebase] 실시간 동기화 연결됨 (uid: ' + uid.slice(0,6) + '…)');
+        });
+
+        signInAnonymously(auth).catch((err) => {
+          console.warn('[한솔2/Firebase] 익명 로그인 실패 — Firebase Console에서 Authentication의 "익명" 제공업체가 켜져 있는지 확인해주세요. localStorage 전용 모드로 계속 동작합니다.', err);
+        });
+      } catch(err){
+        console.error('[한솔2/Firebase] 초기화 실패 — localStorage 전용 모드로 동작합니다.', err);
+      }
+    })();
+  }
+</script>
 </head>
 <body>
 
@@ -1010,6 +1101,7 @@
   }
   function saveAll(list){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('memos', list);
   }
   function uid(){ return 'memo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
   function pad2(n){ return String(n).padStart(2,'0'); }
@@ -1191,7 +1283,10 @@
     try{ var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
     catch(e){ return []; }
   }
-  function saveAll(list){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){} }
+  function saveAll(list){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('tasks', list);
+  }
 
   function getCompanies(){
     try{ var raw = localStorage.getItem(COMPANY_STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
@@ -1508,6 +1603,12 @@
   }
 
   window.SHIN2_TASKS = { add:add, update:update, setDone:setDone, remove:remove, getAll:loadAll, openPopup:openPopup };
+
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e.detail.key !== 'tasks') return;
+    renderHomeSummary();
+    if(popupOverlay.classList.contains('open') && pState.mode !== 'add' && pState.mode !== 'edit') renderPopup();
+  });
 
   homeSlotEl = document.getElementById('homeTaskSlot');
   renderHomeSummary();
@@ -2596,7 +2697,9 @@ ${text}
     }catch(e){ return null; }
   }
   function saveKb(){
-    localStorage.setItem(KB_STORAGE_KEY, JSON.stringify({ items: kbState.items, contacts: kbState.contacts, importBatches: kbState.importBatches }));
+    const kbSnapshot = { items: kbState.items, contacts: kbState.contacts, importBatches: kbState.importBatches };
+    localStorage.setItem(KB_STORAGE_KEY, JSON.stringify(kbSnapshot));
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('knowledge', kbSnapshot);
   }
 
   function seedIfEmpty(){
@@ -3745,6 +3848,7 @@ ${text}
   }
   function saveTodos(){
     localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('todos', todos);
   }
   function genTodoId(){
     return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
@@ -4236,6 +4340,7 @@ ${text}
   }
   function coWriteAll(list){
     localStorage.setItem(CO_STORAGE_KEY, JSON.stringify(list));
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('companies', list);
   }
   function coGenId(){
     return 'co_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
@@ -4974,6 +5079,15 @@ ${text}
     coRender();
   }
   window.SHIN2_COMPANIES = { openDetail: coOpenDetailById, onEnter: coOnEnter };
+
+  // 다른 기기에서 업체 데이터가 바뀌면 반영한다 — 단, 지금 입력 중인 폼이 있으면
+  // 사용자의 작성 내용을 덮어쓰지 않도록 새로고침을 건너뛴다.
+  window.addEventListener('shin2-cloud-update', (e)=>{
+    if(e.detail.key !== 'companies') return;
+    if(coState.mode === 'add' || coState.mode === 'edit') return;
+    coRefresh();
+    coRender();
+  });
 
   coRefresh();
   coRender();
