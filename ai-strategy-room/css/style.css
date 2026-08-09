@@ -31,6 +31,7 @@ body{
   background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;
   padding:2px 7px;border-radius:4px;
 }
+.demo-badge.live-badge{background:var(--success);}
 
 /* ---------- Layout ---------- */
 .content{max-width:900px;margin:0 auto;padding:40px 24px 80px;}

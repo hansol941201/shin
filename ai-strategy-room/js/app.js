@@ -32,7 +32,16 @@ const els = {
   apiKeyInput: document.getElementById('apiKeyInput'),
   settingsClearBtn: document.getElementById('settingsClearBtn'),
   demoBadge: document.getElementById('demoBadge'),
+  liveBadge: document.getElementById('liveBadge'),
+  localServerStatus: document.getElementById('localServerStatus'),
   toast: document.getElementById('toast')
+};
+
+const TRANSPORT_LABEL = {
+  'claude-code': '이 PC의 Claude Code',
+  anthropic: 'Anthropic API 키',
+  openai: 'OpenAI API 키',
+  none: '연결 없음'
 };
 
 let attachedFiles = []; // File 객체 목록
@@ -63,9 +72,19 @@ function restoreFromStorage() {
   if (report) {
     currentReportText = report;
     currentLog = safeParseJson(Storage.loadMeetingLog()) || [];
-    renderReport(report, currentLog, null, AiProvider.isConfigured() ? 'live' : 'demo');
+    renderReport(report, currentLog, null, AiProvider.isConfigured() ? 'live' : 'demo', AiProvider.getActiveTransport());
     showView('result');
   }
+}
+
+/* ---------- 로컬 Claude Code 연결 상태 표시 ---------- */
+async function refreshLocalServerStatus() {
+  const ok = await AiProvider.detectLocalServer();
+  if (!els.localServerStatus) return ok;
+  els.localServerStatus.textContent = ok
+    ? '✅ 이 PC의 Claude Code에 연결되었습니다. 별도 API 키 없이 실제 회의가 진행됩니다.'
+    : '⚪ 로컬 Claude Code 연결이 감지되지 않았습니다. index.html을 직접 연 경우 AI전략회의실.bat으로 실행해주세요. (연결 전까지는 데모 모드 또는 아래 보조 API 키로 동작합니다)';
+  return ok;
 }
 function safeParseJson(str) {
   try { return JSON.parse(str); } catch (e) { return null; }
@@ -119,7 +138,7 @@ function updateStep(roundId, status) {
 }
 
 /* ---------- 결과 화면 렌더 ---------- */
-function renderReport(reportText, log, warning, mode) {
+function renderReport(reportText, log, warning, mode, transport) {
   els.reportCard.innerHTML = ReportBuilder.renderToHtml(reportText);
   currentLog = log || [];
   renderLog(currentLog);
@@ -133,6 +152,10 @@ function renderReport(reportText, log, warning, mode) {
   }
 
   els.demoBadge.hidden = mode !== 'demo';
+  if (els.liveBadge) {
+    const isLocalLive = mode === 'live' && transport === 'claude-code';
+    els.liveBadge.hidden = !isLocalLive;
+  }
 }
 
 function renderLog(log) {
@@ -215,7 +238,7 @@ els.startBtn.addEventListener('click', async () => {
   Storage.saveReport(result.report);
   Storage.saveMeetingLog(JSON.stringify(result.log || []));
 
-  renderReport(result.report, result.log, result.warning, result.mode);
+  renderReport(result.report, result.log, result.warning, result.mode, result.transport);
   showView('result');
   els.startBtn.disabled = false;
 });
@@ -270,6 +293,7 @@ function openSettingsModal() {
   els.providerSelect.value = provider || '';
   els.apiKeyInput.value = provider ? AiProvider.getKey(provider) : '';
   els.settingsModalOverlay.classList.add('open');
+  refreshLocalServerStatus();
 }
 els.settingsBtn.addEventListener('click', openSettingsModal);
 els.settingsModalClose.addEventListener('click', () => els.settingsModalOverlay.classList.remove('open'));
@@ -299,4 +323,7 @@ els.settingsClearBtn.addEventListener('click', () => {
 });
 
 /* ---------- 초기화 ---------- */
-restoreFromStorage();
+(async function initApp() {
+  await refreshLocalServerStatus(); // 로컬 Claude Code 서버 감지를 먼저 끝내야
+  restoreFromStorage();             // 배지(DEMO/LIVE)가 정확하게 표시된다
+})();

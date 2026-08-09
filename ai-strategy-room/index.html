@@ -14,6 +14,7 @@
     <div class="brand">
       <span class="brand-title">AI 전략회의실</span>
       <span class="demo-badge" id="demoBadge" hidden>DEMO</span>
+      <span class="demo-badge live-badge" id="liveBadge" hidden>LIVE · 이 PC의 Claude Code</span>
     </div>
     <button class="btn-ghost btn-sm" id="settingsBtn" title="AI 연결 설정">⚙ AI 연결 설정</button>
   </div>
@@ -31,7 +32,7 @@
     <div class="card">
       <label class="field-label" for="topicInput">주제</label>
       <textarea id="topicInput" class="topic-textarea" rows="6"
-        placeholder="예) 시공사들이 플랫폼보다 전화를 선호합니다.&#10;플랫폼 사용률을 실제로 높일 방법을 검토해주세요."></textarea>
+        placeholder="예) 신입사원 온라인 교육 완주율이 낮습니다.&#10;실제로 완주율을 높일 현실적인 방법을 검토해주세요.&#10;(업무 자동화, 영업/매출 개선, 고객사 관리, 홍보, 비용 절감 등 어떤 업무 주제든 가능합니다)"></textarea>
 
       <label class="field-label" style="margin-top:20px;">참고자료</label>
       <div class="attach-row">
@@ -94,17 +95,19 @@
       <h2>AI 연결 설정</h2>
       <button class="icon-btn" id="settingsModalClose">✕</button>
     </div>
-    <p class="modal-desc">API 키는 이 브라우저의 localStorage에만 저장되며, 소스 코드에는 포함되지 않습니다. 설정하지 않으면 데모 모드로 동작합니다.</p>
+    <p class="modal-desc" id="localServerStatus">로컬 Claude Code 연결 상태를 확인하는 중...</p>
+    <p class="modal-desc">기본적으로 <b>AI전략회의실.bat</b>으로 실행하면 이 PC에 로그인된 Claude Code를 그대로 사용합니다 (별도 API 키 필요 없음, 추가 과금 없음 — 단 Claude 구독 사용량 한도 안에서 사용됩니다). 아래 항목은 로컬 연결이 안 될 때만 쓰는 보조(고급) 옵션입니다.</p>
     <form id="settingsForm">
-      <label class="field-label">AI 제공자</label>
+      <label class="field-label">보조 AI 제공자 (선택, 별도 API 과금 발생)</label>
       <select id="providerSelect" class="select-input">
-        <option value="">사용 안 함 (데모 모드)</option>
-        <option value="anthropic">Anthropic (Claude)</option>
-        <option value="openai">OpenAI</option>
+        <option value="">사용 안 함</option>
+        <option value="anthropic">Anthropic (Claude) API 키</option>
+        <option value="openai">OpenAI API 키</option>
       </select>
 
       <label class="field-label" style="margin-top:14px;">API 키</label>
       <input type="text" id="apiKeyInput" class="text-input" placeholder="sk-... 또는 발급받은 키" />
+      <p class="modal-desc" style="margin:6px 0 0;">API 키는 이 브라우저의 localStorage에만 저장되며, 소스 코드나 서버로는 전송되지 않습니다.</p>
 
       <div class="modal-actions">
         <button type="button" class="btn-ghost" id="settingsClearBtn">키 삭제</button>

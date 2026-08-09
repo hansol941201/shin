@@ -99,11 +99,12 @@ const MeetingEngine = {
     record('ROUND 3 · 대안 수정', byId.innovation, revisedIdea);
     emit('debate', 'done');
 
-    // ROUND 4 — 외부 사례 검토
+    // ROUND 4 — 외부 사례 검토 (가능하면 실제 웹검색으로 근거를 확인한다)
     emit('benchmark', 'active');
     const benchmark = await AiProvider.complete(
       byId.benchmark.system,
-      `${context}\n\n지금까지의 수정안과 관련해 참고할 만한 외부 사례의 "원리"를 분석하라. 그대로 적용하면 왜 실패할 수 있는지도 반드시 포함하라.`
+      `${context}\n\n지금까지의 수정안과 관련해 참고할 만한 외부 사례의 "원리"를 분석하라. 웹검색이 가능하면 실제로 검색해서 확인 가능한 사례와 출처를 근거로 답하고, 검색이 불가능했거나 결과가 없으면 "확인 필요" 또는 "일반적으로 알려진 방식"이라고 명확히 구분해서 말하라. 확인 안 된 내용을 최신 사실처럼 단정하지 마라. 그대로 적용하면 왜 실패할 수 있는지도 반드시 포함하라.`,
+      { webSearch: true }
     );
     record('ROUND 4 · 외부 사례 검토', byId.benchmark, benchmark);
     emit('benchmark', 'done');
@@ -138,13 +139,22 @@ const MeetingEngine = {
       `너는 이 회의 내용을 바탕으로 팀장/경영진에게 바로 제출할 수 있는 보고서를 쓰는 전문 비즈니스 라이터다.
 "A의 의견", "토론결과", "AI 분석", "전문가별 의견" 같은 인위적인 섹션 제목은 절대 쓰지 마라.
 처음부터 한 명이 자연스럽게 작성한 보고서처럼, 마크다운 "## 소제목" 형식을 사용해 논리적으로 흐르게 써라.
+전체 흐름은 현황 → 문제 → 원인 → 실제 이해관계자 관점 → 검토했던 대안과 왜 기각했는지 → 최종 방향 → 구체적인 실행 방법 → 데이터 측정 방법 → 향후 확장 순서로 자연스럽게 이어지게 하되, 소제목 문구 자체는 매번 똑같이 쓰지 말고 이번 주제에 맞는 전문적인 표현으로 정하라.
+좋은 말만 나열하지 말고, 회의 중 반박되어 기각된 대안이 있었다면 왜 기각됐는지도 보고서 안에서 설명하라.
+실행방법과 효과 측정 방법이 구체적으로 없는 아이디어는 최종안에 넣지 마라.
 과장, 확인되지 않은 숫자, AI 특유의 뜬구름 잡는 표현을 금지한다. 실행 순서와 측정 방법을 구체적으로 포함하라.`,
       `${context}\n\n위 회의 전체 내용을 바탕으로 최종 보고서를 작성하라.`
     );
     record('ROUND 7 · 보고서 작성', { name: '보고서 통합' }, '최종 보고서를 생성했습니다.');
     emit('report', 'done');
 
-    return { mode: 'live', report: finalReport, log: transcript, warning: null };
+    return {
+      mode: 'live',
+      transport: AiProvider.getActiveTransport(),
+      report: finalReport,
+      log: transcript,
+      warning: null
+    };
   },
 
   _wait(ms) {
