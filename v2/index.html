@@ -285,6 +285,140 @@
   .ai-modal-actions{
     display:flex; justify-content:flex-end; gap:8px; margin-top:14px;
   }
+
+  /* ---------- 계정 (accounts) ---------- */
+  .accounts-view{ max-width:1160px; margin:0 auto; }
+
+  .acct-unlock-wrap{
+    display:flex;
+    justify-content:center;
+    padding-top:60px;
+  }
+  .acct-unlock-box{
+    width:100%;
+    max-width:320px;
+    text-align:center;
+  }
+  .acct-unlock-title{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .acct-unlock-desc{ font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:16px; }
+  .acct-unlock-input{
+    width:100%;
+    height:38px;
+    padding:0 12px;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--text);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:8px;
+    outline:none;
+    box-sizing:border-box;
+  }
+  .acct-unlock-input:focus{ border-color:#C7CEDB; }
+  .acct-unlock-error{ font-size:12px; color:#B91C1C; margin-top:8px; text-align:left; }
+  .acct-unlock-btn{ width:100%; margin-top:12px; }
+
+  .acct-main-wrap{ display:flex; gap:0; align-items:flex-start; }
+  .acct-list-col{ width:40%; flex:0 0 40%; min-width:0; padding-right:22px; }
+  .acct-detail-col{
+    width:60%; flex:0 0 60%; min-width:0;
+    padding-left:22px;
+    border-left:1px solid var(--line);
+  }
+
+  .acct-header{ display:flex; align-items:center; justify-content:space-between; }
+  .acct-title{ font-size:16px; font-weight:700; color:var(--text); }
+  .acct-add-btn{
+    height:26px;
+    padding:0 10px;
+    font-size:12px;
+    font-family:inherit;
+    color:var(--text-muted);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .acct-add-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .acct-subtitle{ font-size:12px; color:var(--text-muted); margin-top:4px; margin-bottom:14px; }
+
+  .acct-search-box{ max-width:none; height:36px; margin-bottom:10px; }
+
+  .acct-list{ }
+  .acct-empty{ font-size:12.5px; color:var(--text-muted); padding:14px 4px; }
+  .acct-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    height:46px;
+    padding:0 6px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    border-radius:6px;
+  }
+  .acct-row:hover{ background:#F0F1F4; }
+  .acct-row.active{ background:#EEF1F8; }
+  .acct-row-site{ font-size:13.5px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .acct-row-user{ font-size:12.5px; color:var(--text-muted); flex:0 0 auto; }
+  .acct-row-chevron{ flex:0 0 auto; color:var(--text-muted); font-size:13px; }
+
+  .acct-detail-empty{ font-size:12.5px; color:var(--text-muted); padding:8px 4px; }
+
+  .acct-detail-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .acct-detail-title{ font-size:15px; font-weight:700; color:var(--text); }
+  .acct-detail-close{
+    border:none; background:transparent; cursor:pointer;
+    font-size:16px; line-height:1; color:var(--text-muted); padding:2px 4px;
+  }
+  .acct-detail-close:hover{ color:var(--text); }
+
+  .acct-field{ margin-bottom:16px; }
+  .acct-field-label{ font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .acct-field-row{ display:flex; align-items:center; gap:10px; }
+  .acct-field-value{
+    font-size:13.5px; color:var(--text);
+    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .acct-field-memo{ font-size:13.5px; color:var(--text); line-height:1.5; white-space:pre-wrap; }
+  .acct-link-btn{
+    flex:0 0 auto;
+    border:none; background:transparent; cursor:pointer;
+    font-size:12px; color:var(--text-muted); padding:2px 2px;
+  }
+  .acct-link-btn:hover{ color:var(--navy); }
+  .acct-copied{ font-size:11px; color:var(--navy); }
+
+  .acct-detail-actions{
+    display:flex; gap:16px;
+    margin-top:6px; padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .acct-text-action{
+    border:none; background:transparent; cursor:pointer;
+    font-size:12.5px; color:var(--text-muted); padding:2px 0;
+  }
+  .acct-text-action:hover{ color:var(--text); }
+  .acct-text-action.danger:hover{ color:#B91C1C; }
+  .acct-confirm-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-muted); }
+
+  .acct-form-field{ margin-bottom:14px; }
+  .acct-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .acct-form-field input, .acct-form-field textarea{
+    width:100%;
+    padding:8px 10px;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--text);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:6px;
+    outline:none;
+    box-sizing:border-box;
+  }
+  .acct-form-field input:focus, .acct-form-field textarea:focus{ border-color:#C7CEDB; }
+  .acct-form-field textarea{ min-height:60px; resize:vertical; }
+  .acct-form-error{ font-size:11.5px; color:#B91C1C; margin-top:-8px; margin-bottom:12px; }
+  .acct-form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -296,16 +430,20 @@
       <div class="brand-sub">업무 비서</div>
     </div>
     <nav class="nav">
-      <button type="button" class="nav-item active">
+      <button type="button" class="nav-item active" id="navHome">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
         <span>홈</span>
+      </button>
+      <button type="button" class="nav-item" id="navAccounts">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16.5 5.5l3 3M13.5 8.5l2.5 2.5"/></svg>
+        <span>계정</span>
       </button>
     </nav>
   </aside>
 
   <main class="main">
     <div class="main-inner">
-      <div class="home-col">
+      <div class="home-col" id="homeView">
         <div class="search-wrap">
           <div class="search-box">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -328,6 +466,36 @@
           </div>
           <div id="aiError" class="ai-error" style="display:none;"></div>
           <div id="aiResult"></div>
+        </div>
+      </div>
+
+      <div class="accounts-view" id="accountsView" style="display:none;">
+        <div class="acct-unlock-wrap" id="acctUnlockWrap">
+          <div class="acct-unlock-box">
+            <div class="acct-unlock-title">계정 잠금 해제</div>
+            <div class="acct-unlock-desc" id="acctUnlockDesc">마스터 비밀번호를 입력하세요. 이 비밀번호는 어디에도 저장되지 않으며, 잊어버리면 저장된 비밀번호를 복구할 수 없습니다.</div>
+            <input type="password" id="acctMasterInput" class="acct-unlock-input" placeholder="마스터 비밀번호" autocomplete="off" />
+            <div class="acct-unlock-error" id="acctUnlockError" style="display:none;"></div>
+            <button type="button" id="acctUnlockBtn" class="ai-run-btn acct-unlock-btn">열기</button>
+          </div>
+        </div>
+
+        <div class="acct-main-wrap" id="acctMainWrap" style="display:none;">
+          <div class="acct-list-col">
+            <div class="acct-header">
+              <div class="acct-title">계정</div>
+              <button type="button" id="acctAddBtn" class="acct-add-btn">+ 추가</button>
+            </div>
+            <div class="acct-subtitle">자주 사용하는 사이트의 로그인 정보를 관리합니다.</div>
+            <div class="search-box acct-search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="text" id="acctSearchInput" placeholder="사이트 검색" />
+            </div>
+            <div id="acctList" class="acct-list"></div>
+          </div>
+          <div class="acct-detail-col" id="acctDetailCol">
+            <div class="acct-detail-empty">목록에서 계정을 선택하세요.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -671,6 +839,490 @@ ${text}
       runAi();
     }
   });
+})();
+</script>
+
+<script>
+(function(){
+  // ---------- 화면 전환 (홈 / 계정) ----------
+  const navHome = document.getElementById('navHome');
+  const navAccounts = document.getElementById('navAccounts');
+  const homeView = document.getElementById('homeView');
+  const accountsView = document.getElementById('accountsView');
+
+  function showView(view){
+    if(view === 'accounts'){
+      homeView.style.display = 'none';
+      accountsView.style.display = 'block';
+      navHome.classList.remove('active');
+      navAccounts.classList.add('active');
+    } else {
+      homeView.style.display = 'block';
+      accountsView.style.display = 'none';
+      navAccounts.classList.remove('active');
+      navHome.classList.add('active');
+    }
+  }
+  navHome.addEventListener('click', ()=> showView('home'));
+  navAccounts.addEventListener('click', ()=> showView('accounts'));
+
+  // ---------- 계정(비밀번호) 보관함 ----------
+  // 저장 위치: localStorage['shin2-accounts-vault'] = { salt, check:{cipher,iv}, records:[...] }
+  // - salt/check/cipher/iv 는 비밀이 아닌 값(암호문·솔트)이며 이 위치에 저장해도 안전하다.
+  // - 마스터 비밀번호 자체와 그로부터 유도된 CryptoKey는 이 IIFE의 변수(vaultKey)에만 존재하며,
+  //   localStorage/sessionStorage/IndexedDB/쿠키 등 어디에도 절대 쓰지 않는다. 새로고침하면 사라진다.
+  // - 사이트명/URL/아이디/메모는 평문 저장(사용자 스펙: 비밀번호만 암호화하면 된다).
+  // - 비밀번호만 AES-GCM으로 암호화한다. 키는 PBKDF2(SHA-256, 150000회, salt=vault 공용 salt)로
+  //   마스터 비밀번호에서 유도한다. 레코드마다 별도의 랜덤 IV를 사용한다(볼트 salt는 공용/1개).
+  const ACCT_STORAGE_KEY = 'shin2-accounts-vault';
+  const PBKDF2_ITERATIONS = 150000;
+  const CHECK_PLAINTEXT = 'shin2-vault-check-v1';
+
+  let vaultKey = null;      // CryptoKey, 메모리에만 존재 (세션 한정)
+  let vaultMeta = null;     // { salt, check } — localStorage에서 읽은 비밀 아닌 메타데이터
+  const acctState = {
+    records: [],
+    search: '',
+    selectedId: null,
+    mode: 'view',        // 'view' | 'edit' | 'add'
+    revealPassword: false,
+    deleteConfirm: false
+  };
+
+  function b64FromBuf(buf){
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    for(let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function bufFromB64(b64){
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    return arr.buffer;
+  }
+
+  async function deriveKey(password, saltBytes){
+    const enc = new TextEncoder();
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash:'SHA-256' },
+      baseKey,
+      { name:'AES-GCM', length:256 },
+      false,
+      ['encrypt','decrypt']
+    );
+  }
+
+  async function encryptStr(key, plaintext){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const cipherBuf = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(plaintext));
+    return { cipher: b64FromBuf(cipherBuf), iv: b64FromBuf(iv.buffer) };
+  }
+  async function decryptStr(key, cipherB64, ivB64){
+    const iv = new Uint8Array(bufFromB64(ivB64));
+    const cipherBuf = bufFromB64(cipherB64);
+    const plainBuf = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, cipherBuf);
+    return new TextDecoder().decode(plainBuf);
+  }
+
+  function loadVaultRaw(){
+    try{
+      const raw = localStorage.getItem(ACCT_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function persist(){
+    if(!vaultMeta) return;
+    const vault = { salt: vaultMeta.salt, check: vaultMeta.check, records: acctState.records };
+    localStorage.setItem(ACCT_STORAGE_KEY, JSON.stringify(vault));
+  }
+
+  function maskUsername(u){
+    if(!u) return '-';
+    const prefix = u.slice(0, Math.min(4, u.length));
+    return prefix + '****';
+  }
+  function genId(){
+    return 'acct_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+
+  // ---------- 잠금 해제 화면 ----------
+  const acctUnlockWrap = document.getElementById('acctUnlockWrap');
+  const acctMainWrap = document.getElementById('acctMainWrap');
+  const acctUnlockDesc = document.getElementById('acctUnlockDesc');
+  const acctMasterInput = document.getElementById('acctMasterInput');
+  const acctUnlockError = document.getElementById('acctUnlockError');
+  const acctUnlockBtn = document.getElementById('acctUnlockBtn');
+
+  function showUnlockError(msg){
+    acctUnlockError.textContent = msg;
+    acctUnlockError.style.display = msg ? 'block' : 'none';
+  }
+
+  function refreshUnlockDesc(){
+    const existing = loadVaultRaw();
+    if(existing){
+      acctUnlockDesc.textContent = '마스터 비밀번호를 입력하세요. 이 비밀번호는 어디에도 저장되지 않습니다.';
+    } else {
+      acctUnlockDesc.textContent = '처음 사용하시네요. 사용할 마스터 비밀번호를 정하세요. 이 비밀번호는 어디에도 저장되지 않으며, 잊어버리면 저장된 비밀번호를 복구할 수 없습니다.';
+    }
+  }
+
+  async function handleUnlock(){
+    const pw = acctMasterInput.value;
+    showUnlockError('');
+    if(!pw) return;
+    acctUnlockBtn.disabled = true;
+    try{
+      const existing = loadVaultRaw();
+      if(!existing){
+        // 최초 사용: 새 볼트 생성
+        const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+        const key = await deriveKey(pw, saltBytes);
+        const check = await encryptStr(key, CHECK_PLAINTEXT);
+        vaultMeta = { salt: b64FromBuf(saltBytes.buffer), check };
+        vaultKey = key;
+        acctState.records = [];
+        persist();
+        unlockSuccess();
+        return;
+      }
+      const saltBytes = new Uint8Array(bufFromB64(existing.salt));
+      const key = await deriveKey(pw, saltBytes);
+      let ok = false;
+      try{
+        const decoded = await decryptStr(key, existing.check.cipher, existing.check.iv);
+        ok = (decoded === CHECK_PLAINTEXT);
+      }catch(e){ ok = false; }
+      if(!ok){
+        showUnlockError('비밀번호가 올바르지 않습니다.');
+        return;
+      }
+      vaultMeta = { salt: existing.salt, check: existing.check };
+      vaultKey = key;
+      acctState.records = Array.isArray(existing.records) ? existing.records : [];
+      unlockSuccess();
+    } finally {
+      acctUnlockBtn.disabled = false;
+    }
+  }
+
+  function unlockSuccess(){
+    acctMasterInput.value = '';
+    acctUnlockWrap.style.display = 'none';
+    acctMainWrap.style.display = 'flex';
+    acctState.selectedId = null;
+    acctState.mode = 'view';
+    renderList();
+    renderDetail();
+  }
+
+  acctUnlockBtn.addEventListener('click', handleUnlock);
+  acctMasterInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') handleUnlock(); });
+
+  navAccounts.addEventListener('click', ()=>{
+    // 계정 화면에 처음 들어오거나, 아직 이번 세션에 잠금 해제하지 않았다면 항상 잠금 화면부터 보여준다.
+    if(!vaultKey){
+      acctUnlockWrap.style.display = 'flex';
+      acctMainWrap.style.display = 'none';
+      showUnlockError('');
+      refreshUnlockDesc();
+      acctMasterInput.focus();
+    }
+  });
+
+  // ---------- 목록 ----------
+  const acctList = document.getElementById('acctList');
+  const acctSearchInput = document.getElementById('acctSearchInput');
+  const acctAddBtn = document.getElementById('acctAddBtn');
+  const acctDetailCol = document.getElementById('acctDetailCol');
+
+  function filteredRecords(){
+    const q = acctState.search.trim().toLowerCase();
+    if(!q) return acctState.records;
+    return acctState.records.filter(r=>
+      (r.site||'').toLowerCase().includes(q) ||
+      (r.username||'').toLowerCase().includes(q)
+    );
+  }
+
+  function renderList(){
+    const items = filteredRecords();
+    if(items.length === 0){
+      acctList.innerHTML = `<div class="acct-empty">${acctState.records.length === 0 ? '저장된 계정이 없습니다. 오른쪽 위 + 추가로 등록하세요.' : '검색 결과가 없습니다.'}</div>`;
+      return;
+    }
+    acctList.innerHTML = items.map(r=>`
+      <div class="acct-row${r.id === acctState.selectedId ? ' active' : ''}" data-id="${escapeAttr(r.id)}">
+        <div class="acct-row-site">${escapeHtml2(r.site)}</div>
+        <div class="acct-row-user">${escapeHtml2(maskUsername(r.username))}</div>
+        <div class="acct-row-chevron">&#8250;</div>
+      </div>
+    `).join('');
+    acctList.querySelectorAll('.acct-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        acctState.selectedId = row.getAttribute('data-id');
+        acctState.mode = 'view';
+        acctState.revealPassword = false;
+        acctState.deleteConfirm = false;
+        renderList();
+        renderDetail();
+      });
+    });
+  }
+
+  acctSearchInput.addEventListener('input', ()=>{
+    acctState.search = acctSearchInput.value;
+    renderList();
+  });
+
+  acctAddBtn.addEventListener('click', ()=>{
+    acctState.selectedId = null;
+    acctState.mode = 'add';
+    renderList();
+    renderDetail();
+  });
+
+  function escapeHtml2(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function escapeAttr(str){ return escapeHtml2(str); }
+
+  // ---------- 상세 패널 ----------
+  function getSelectedRecord(){
+    return acctState.records.find(r=> r.id === acctState.selectedId) || null;
+  }
+
+  function showCopied(btn){
+    const old = btn.nextElementSibling && btn.nextElementSibling.classList.contains('acct-copied') ? btn.nextElementSibling : null;
+    if(old) old.remove();
+    const span = document.createElement('span');
+    span.className = 'acct-copied';
+    span.textContent = '복사됨';
+    btn.insertAdjacentElement('afterend', span);
+    setTimeout(()=>{ if(span.parentNode) span.remove(); }, 1500);
+  }
+
+  function copyText(text, btn){
+    if(!navigator.clipboard){ return; }
+    navigator.clipboard.writeText(text).then(()=> showCopied(btn)).catch(()=>{});
+  }
+
+  async function renderDetail(){
+    if(acctState.mode === 'add'){
+      renderFormMode(null);
+      return;
+    }
+    const rec = getSelectedRecord();
+    if(!rec){
+      acctDetailCol.innerHTML = `<div class="acct-detail-empty">목록에서 계정을 선택하세요.</div>`;
+      return;
+    }
+    if(acctState.mode === 'edit'){
+      renderFormMode(rec);
+      return;
+    }
+    // view mode
+    let pwDisplay = '••••••••••';
+    if(acctState.revealPassword && rec.cipher){
+      try{ pwDisplay = await decryptStr(vaultKey, rec.cipher, rec.iv); }
+      catch(e){ pwDisplay = '(복호화 실패)'; }
+    } else if(!rec.cipher){
+      pwDisplay = '-';
+    }
+
+    const urlRowHtml = rec.url ? `
+      <div class="acct-field">
+        <div class="acct-field-label">사이트</div>
+        <div class="acct-field-row">
+          <div class="acct-field-value">${escapeHtml2(rec.url)}</div>
+          <a class="acct-link-btn" href="${escapeAttr(rec.url)}" target="_blank" rel="noopener noreferrer">열기</a>
+        </div>
+      </div>` : '';
+    const memoRowHtml = rec.memoPlain ? `
+      <div class="acct-field">
+        <div class="acct-field-label">메모</div>
+        <div class="acct-field-memo">${escapeHtml2(rec.memoPlain)}</div>
+      </div>` : '';
+
+    acctDetailCol.innerHTML = `
+      <div class="acct-detail-head">
+        <div class="acct-detail-title">${escapeHtml2(rec.site)}</div>
+        <button type="button" class="acct-detail-close" id="acctCloseBtn">&times;</button>
+      </div>
+      <div class="acct-field">
+        <div class="acct-field-label">아이디</div>
+        <div class="acct-field-row">
+          <div class="acct-field-value">${escapeHtml2(rec.username || '-')}</div>
+          <button type="button" class="acct-link-btn" id="acctCopyUser">복사</button>
+        </div>
+      </div>
+      <div class="acct-field">
+        <div class="acct-field-label">비밀번호</div>
+        <div class="acct-field-row">
+          <div class="acct-field-value">${escapeHtml2(pwDisplay)}</div>
+          ${rec.cipher ? `<button type="button" class="acct-link-btn" id="acctCopyPw">복사</button><button type="button" class="acct-link-btn" id="acctTogglePw">${acctState.revealPassword ? '숨기기' : '보기'}</button>` : ''}
+        </div>
+      </div>
+      ${urlRowHtml}
+      ${memoRowHtml}
+      <div class="acct-detail-actions" id="acctActionsRow">
+        <button type="button" class="acct-text-action" id="acctEditBtn">수정</button>
+        <button type="button" class="acct-text-action danger" id="acctDeleteBtn">삭제</button>
+      </div>
+    `;
+
+    document.getElementById('acctCloseBtn').addEventListener('click', closeDetail);
+    document.getElementById('acctCopyUser').addEventListener('click', (e)=> copyText(rec.username || '', e.currentTarget));
+    const copyPwBtn = document.getElementById('acctCopyPw');
+    if(copyPwBtn){
+      copyPwBtn.addEventListener('click', async (e)=>{
+        try{
+          const pw = await decryptStr(vaultKey, rec.cipher, rec.iv);
+          copyText(pw, e.currentTarget);
+        }catch(err){}
+      });
+    }
+    const toggleBtn = document.getElementById('acctTogglePw');
+    if(toggleBtn){
+      toggleBtn.addEventListener('click', ()=>{
+        acctState.revealPassword = !acctState.revealPassword;
+        renderDetail();
+      });
+    }
+    document.getElementById('acctEditBtn').addEventListener('click', ()=>{
+      acctState.mode = 'edit';
+      renderDetail();
+    });
+    document.getElementById('acctDeleteBtn').addEventListener('click', ()=>{
+      renderDeleteConfirm(rec);
+    });
+  }
+
+  function renderDeleteConfirm(rec){
+    const actionsRow = document.getElementById('acctActionsRow');
+    if(!actionsRow) return;
+    actionsRow.innerHTML = `
+      <div class="acct-confirm-row">
+        <span>정말 삭제하시겠습니까?</span>
+        <button type="button" class="acct-text-action" id="acctDeleteCancel">취소</button>
+        <button type="button" class="acct-text-action danger" id="acctDeleteConfirm">삭제</button>
+      </div>
+    `;
+    document.getElementById('acctDeleteCancel').addEventListener('click', ()=> renderDetail());
+    document.getElementById('acctDeleteConfirm').addEventListener('click', ()=>{
+      acctState.records = acctState.records.filter(r=> r.id !== rec.id);
+      persist();
+      closeDetail();
+    });
+  }
+
+  function closeDetail(){
+    acctState.selectedId = null;
+    acctState.mode = 'view';
+    acctState.revealPassword = false;
+    renderList();
+    renderDetail();
+  }
+
+  // ---------- 폼 모드 (추가 / 수정) ----------
+  function renderFormMode(rec){
+    const isNew = !rec;
+    acctDetailCol.innerHTML = `
+      <div class="acct-detail-head">
+        <div class="acct-detail-title">${isNew ? '새 계정' : escapeHtml2(rec.site)}</div>
+      </div>
+      <div class="acct-form-field">
+        <label>사이트명</label>
+        <input type="text" id="acctFormSite" value="${isNew ? '' : escapeAttr(rec.site)}" />
+      </div>
+      <div id="acctFormSiteError" class="acct-form-error" style="display:none;">사이트명을 입력하세요.</div>
+      <div class="acct-form-field">
+        <label>사이트 주소</label>
+        <input type="text" id="acctFormUrl" value="${isNew ? '' : escapeAttr(rec.url || '')}" placeholder="https://" />
+      </div>
+      <div class="acct-form-field">
+        <label>아이디</label>
+        <input type="text" id="acctFormUser" value="${isNew ? '' : escapeAttr(rec.username || '')}" autocomplete="off" />
+      </div>
+      <div class="acct-form-field">
+        <label>비밀번호</label>
+        <input type="text" id="acctFormPw" value="" placeholder="${isNew ? '' : '변경하지 않으려면 비워두지 말고 그대로 다시 입력하세요'}" autocomplete="off" />
+      </div>
+      <div class="acct-form-field">
+        <label>메모</label>
+        <textarea id="acctFormMemo">${isNew ? '' : escapeHtml2(rec.memoPlain || '')}</textarea>
+      </div>
+      <div class="acct-form-actions">
+        <button type="button" class="acct-text-action" id="acctFormCancel">취소</button>
+        <button type="button" class="ai-run-btn" id="acctFormSave">저장</button>
+      </div>
+    `;
+
+    // 수정 모드에서는 기존 비밀번호를 미리 채워 보여준다(스펙: "현재 값이 채워진 채로").
+    if(!isNew && rec.cipher){
+      decryptStr(vaultKey, rec.cipher, rec.iv).then(pw=>{
+        const pwInput = document.getElementById('acctFormPw');
+        if(pwInput) pwInput.value = pw;
+      }).catch(()=>{});
+    }
+
+    document.getElementById('acctFormCancel').addEventListener('click', ()=>{
+      if(isNew){
+        acctState.mode = 'view';
+        acctState.selectedId = null;
+      } else {
+        acctState.mode = 'view';
+      }
+      renderList();
+      renderDetail();
+    });
+
+    document.getElementById('acctFormSave').addEventListener('click', async ()=>{
+      const siteEl = document.getElementById('acctFormSite');
+      const site = siteEl.value.trim();
+      const errEl = document.getElementById('acctFormSiteError');
+      if(!site){
+        errEl.style.display = 'block';
+        siteEl.focus();
+        return;
+      }
+      errEl.style.display = 'none';
+      const url = document.getElementById('acctFormUrl').value.trim();
+      const username = document.getElementById('acctFormUser').value.trim();
+      const pwVal = document.getElementById('acctFormPw').value;
+      const memo = document.getElementById('acctFormMemo').value.trim();
+
+      let cipher = null, iv = null;
+      if(pwVal){
+        const enc = await encryptStr(vaultKey, pwVal);
+        cipher = enc.cipher; iv = enc.iv;
+      }
+
+      if(isNew){
+        const newRec = { id: genId(), site, url, username, memoPlain: memo, cipher, iv };
+        acctState.records.push(newRec);
+        persist();
+        acctState.selectedId = newRec.id;
+      } else {
+        rec.site = site;
+        rec.url = url;
+        rec.username = username;
+        rec.memoPlain = memo;
+        rec.cipher = cipher;
+        rec.iv = iv;
+        persist();
+      }
+      acctState.mode = 'view';
+      acctState.revealPassword = false;
+      renderList();
+      renderDetail();
+    });
+  }
 })();
 </script>
 
