@@ -442,6 +442,32 @@
   .kb-contact-result-line{ font-size:13px; color:var(--text); }
   .kb-no-result{ font-size:12.5px; color:var(--text-muted); padding:10px 0; }
 
+  /* ---------- 내 할 일 ---------- */
+  .todo-section{ margin-top:28px; padding-top:18px; border-top:1px solid var(--line); max-width:800px; }
+  .todo-header{ display:flex; align-items:center; justify-content:space-between; }
+  .todo-title{ font-size:14px; font-weight:700; color:var(--text); }
+  .todo-add-row{ display:flex; gap:8px; margin-top:10px; }
+  .todo-add-row input{
+    flex:1; height:32px; padding:0 10px; font-size:13px; font-family:inherit;
+    color:var(--text); background:var(--surface); border:1px solid var(--line);
+    border-radius:6px; outline:none; box-sizing:border-box;
+  }
+  .todo-add-row input:focus{ border-color:#C7CEDB; }
+  .todo-list{ margin-top:10px; }
+  .todo-empty{ font-size:12.5px; color:var(--text-muted); padding:10px 4px; }
+  .todo-row{ display:flex; align-items:center; gap:8px; padding:7px 4px; border-bottom:1px solid var(--line); }
+  .todo-row:last-child{ border-bottom:none; }
+  .todo-checkbox{ flex:0 0 auto; width:15px; height:15px; accent-color:var(--navy); cursor:pointer; }
+  .todo-text{ flex:1; min-width:0; font-size:13.5px; color:var(--text); cursor:text; outline:none; padding:2px 2px; border-radius:3px; }
+  .todo-text:hover{ background:#F0F1F4; }
+  .todo-row.done .todo-text{ color:var(--text-muted); text-decoration:line-through; }
+  .todo-move-btns{ display:flex; gap:2px; flex:0 0 auto; }
+  .todo-move-btn{ border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); padding:2px 4px; }
+  .todo-move-btn:hover{ color:var(--navy); }
+  .todo-move-btn:disabled{ opacity:0.3; cursor:default; }
+  .todo-del-btn{ border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-muted); padding:2px 6px; flex:0 0 auto; }
+  .todo-del-btn:hover{ color:#B91C1C; }
+
   /* ---------- 지식 페이지 ---------- */
   .kb-view{ max-width:1160px; margin:0 auto; }
   .kb-header{ display:flex; align-items:center; justify-content:space-between; }
@@ -627,6 +653,18 @@
           </div>
           <div id="aiError" class="ai-error" style="display:none;"></div>
           <div id="aiResult"></div>
+        </div>
+
+        <div class="todo-section" id="todoSection">
+          <div class="todo-header">
+            <div class="todo-title">내 할 일</div>
+            <button type="button" id="todoAddToggleBtn" class="acct-add-btn">+ 추가</button>
+          </div>
+          <div class="todo-add-row" id="todoAddRow" style="display:none;">
+            <input type="text" id="todoAddInput" placeholder="할 일 입력" />
+            <button type="button" id="todoAddSaveBtn" class="ai-copy-btn">저장</button>
+          </div>
+          <div class="todo-list" id="todoList"></div>
         </div>
       </div>
 
@@ -1573,6 +1611,13 @@ ${text}
       showGate();
     }
   })();
+
+  // 통합검색용 확장 포인트: 계정함의 사이트명/아이디만 노출한다(비밀번호/URL/메모는 절대 포함하지 않음).
+  window.SHIN2_ACCOUNTS = {
+    getSearchable: function(){
+      return acctState.records.map(r=> ({ id: r.id, site: r.site, username: r.username }));
+    }
+  };
 })();
 </script>
 
@@ -1646,20 +1691,26 @@ ${text}
   }
   seedIfEmpty();
 
-  // ---------- 검색 우선순위: 1)제목 정확 2)keyword 정확 3)keyword 부분 4)본문 ----------
+  // ---------- 통합검색 우선순위: 1)제목/이름 정확 2)제목/이름 부분 3)keyword 정확 4)keyword 부분
+  // 5)본문/원문(originalText) 6)담당자/연락처 등 연관정보 ----------
+  // originalText는 향후 "한솔1 데이터 가져오기"/"AI 자동분류 빠른메모" 기능이 채우기 시작할 필드다.
+  // 이 인덱스는 원본 데이터를 읽기만 할 뿐 어떤 필드도 수정하지 않는다(파생 데이터, 캐시 아님).
   function kbScoreItem(item, q){
     if(!q) return 0;
     const title = kbNormalize(item.title);
     if(title === q) return 100;
+    if(title.includes(q)) return 90;
     const kws = (item.keywords || []).map(kbNormalize).filter(Boolean);
     if(kws.includes(q)) return 80;
     if(kws.some(k => k.includes(q) || q.includes(k))) return 60;
-    const parts = [title];
+    const parts = [];
     if(item.category === 'response'){
       parts.push(...(item.scriptLines||[]), ...(item.steps||[]), item.afterCall||'', item.extraNote||'');
     } else {
       parts.push(item.content||'');
     }
+    // originalText 필드가 존재하는 항목이 있다면(현재 시드 데이터에는 없을 수 있음) 방어적으로 포함한다.
+    if(item.originalText) parts.push(item.originalText);
     const text = kbNormalize(parts.join(' '));
     if(text.includes(q)) return 40;
     return 0;
@@ -1668,24 +1719,52 @@ ${text}
     if(!q) return 0;
     const name = kbNormalize(c.name);
     if(name && name === q) return 100;
+    if(name && name.includes(q)) return 90;
     const kws = (c.keywords || []).map(kbNormalize).filter(Boolean);
     if(kws.includes(q)) return 80;
     if(kws.some(k => k.includes(q) || q.includes(k))) return 60;
-    const text = kbNormalize([c.name,c.dept,c.role,c.area,c.memo].join(' '));
+    const text = kbNormalize([c.dept,c.role,c.area,c.memo].join(' '));
     if(text.includes(q)) return 40;
+    // 전화번호도 검색어로 매치는 가능하되(연관정보 수준의 낮은 우선순위), 결과 카드 표시는 기존 방식 그대로.
+    if(c.phone && kbNormalize(c.phone).includes(q)) return 30;
     return 0;
   }
+  // 계정함 항목: 사이트명/아이디까지만 검색 대상. 비밀번호/URL/메모는 절대 채점 대상에 포함하지 않는다
+  // (rec.cipher/rec.iv를 이 함수는 아예 참조하지 않으므로 복호화 자체가 일어나지 않는다).
+  function kbScoreAccount(acc, q){
+    if(!q) return 0;
+    const site = kbNormalize(acc.site);
+    if(site && site === q) return 100;
+    if(site && site.includes(q)) return 90;
+    const user = kbNormalize(acc.username);
+    if(user && (user === q || user.includes(q))) return 20;
+    return 0;
+  }
+
+  // ---------- 통합검색 인덱스 빌더 (확장 포인트) ----------
+  // 새 데이터 소스(예: 향후 업체관리)를 검색에 포함시키려면 이 배열에 { type, getRecords, score, render }
+  // 항목 하나만 추가하면 된다. 각 소스는 자신의 원본 데이터를 참조만 하며 복사/캐시하지 않는다.
+  const SHIN2_SEARCH_SOURCES = [
+    { type:'item', getRecords: ()=> kbState.items, score: kbScoreItem, render: kbRenderItemCard },
+    { type:'contact', getRecords: ()=> kbState.contacts, score: kbScoreContact, render: kbRenderContactCard },
+    {
+      type:'account',
+      getRecords: ()=> (window.SHIN2_ACCOUNTS && window.SHIN2_ACCOUNTS.getSearchable) ? window.SHIN2_ACCOUNTS.getSearchable() : [],
+      score: kbScoreAccount,
+      render: kbRenderAccountCard
+    }
+    // 업체 데이터는 아직 한솔2에 없으므로 소스가 없다 — 추가되면 여기에 한 항목만 등록.
+  ];
+
   function kbSearchAll(query){
     const q = kbNormalize(query);
     if(!q) return [];
     const results = [];
-    kbState.items.forEach(item=>{
-      const s = kbScoreItem(item, q);
-      if(s > 0) results.push({ type:'item', record:item, score:s });
-    });
-    kbState.contacts.forEach(c=>{
-      const s = kbScoreContact(c, q);
-      if(s > 0) results.push({ type:'contact', record:c, score:s });
+    SHIN2_SEARCH_SOURCES.forEach(src=>{
+      src.getRecords().forEach(record=>{
+        const s = src.score(record, q);
+        if(s > 0) results.push({ type: src.type, record, score: s });
+      });
     });
     results.sort((a,b)=> b.score - a.score);
     return results;
@@ -1715,6 +1794,44 @@ ${text}
   const mainSearchHint = document.getElementById('mainSearchHint');
   const mainSearchResults = document.getElementById('mainSearchResults');
 
+  // 검색어와 일치하는 부분을 기존 .kb-hl 스타일로 감싼다(새 스타일을 만들지 않고 그대로 재사용).
+  function kbHighlight(text, q){
+    const raw = String(text == null ? '' : text);
+    const nq = kbNormalize(q);
+    if(!nq) return kbEscapeHtml(raw);
+    const lower = raw.toLowerCase();
+    let idx = lower.indexOf(nq);
+    if(idx === -1) return kbEscapeHtml(raw);
+    let out = '';
+    let cursor = 0;
+    while(idx !== -1){
+      out += kbEscapeHtml(raw.slice(cursor, idx));
+      out += '<mark class="kb-hl">' + kbEscapeHtml(raw.slice(idx, idx + nq.length)) + '</mark>';
+      cursor = idx + nq.length;
+      idx = lower.indexOf(nq, cursor);
+    }
+    out += kbEscapeHtml(raw.slice(cursor));
+    return out;
+  }
+  // 원문/본문에서 검색어 근처를 발췌한다(있는 경우). 일치 지점이 없으면 앞부분만 잘라 보여준다.
+  function kbSnippet(text, q, radius){
+    const raw = String(text == null ? '' : text);
+    if(!raw) return '';
+    radius = radius || 50;
+    const nq = kbNormalize(q);
+    const lower = raw.toLowerCase();
+    const idx = nq ? lower.indexOf(nq) : -1;
+    if(idx === -1){
+      return raw.length > radius * 2 ? raw.slice(0, radius * 2) + '…' : raw;
+    }
+    const start = Math.max(0, idx - radius);
+    const end = Math.min(raw.length, idx + nq.length + radius);
+    let snippet = raw.slice(start, end);
+    if(start > 0) snippet = '…' + snippet;
+    if(end < raw.length) snippet = snippet + '…';
+    return snippet;
+  }
+
   function kbRenderScriptLine(line){
     return `<div class="kb-script-line"><mark class="kb-hl">"${kbEscapeHtml(line)}"</mark></div>`;
   }
@@ -1728,7 +1845,7 @@ ${text}
       ${phone ? `<button type="button" class="kb-copy-btn" data-copy-text="${kbEscapeAttr(phone)}">복사</button>` : ''}
     </div>`;
   }
-  function kbRenderItemCard(item, isTop){
+  function kbRenderItemCard(item, isTop, q){
     const catLabel = CAT_LABEL[item.category] || item.category;
     let body;
     if(item.category === 'response'){
@@ -1739,29 +1856,45 @@ ${text}
       const extraHtml = item.extraNote ? `<div class="kb-extra-label">추가 참고</div><div class="kb-extra-text">${kbEscapeHtml(item.extraNote)}</div>` : '';
       body = scriptHtml + stepsHtml + linksHtml + afterHtml + extraHtml;
     } else {
-      body = `<div class="kb-plain-content">${kbEscapeHtml(item.content||'')}</div>`;
+      body = `<div class="kb-plain-content">${kbHighlight(item.content||'', q)}</div>`;
     }
+    // originalText 필드는 있을 때만 발췌+강조해서 보여준다(향후 데이터 이전/빠른메모 기능 대비).
+    const originalHtml = item.originalText
+      ? `<div class="kb-extra-label">원문</div><div class="kb-plain-content">${kbHighlight(kbSnippet(item.originalText, q), q)}</div>`
+      : '';
     return `<div class="kb-result-card${isTop?' top':''}">
       <div class="kb-result-cat">${catLabel}</div>
-      <div class="kb-result-title">${kbEscapeHtml(item.title)}</div>
+      <div class="kb-result-title">${kbHighlight(item.title, q)}</div>
       ${body}
+      ${originalHtml}
     </div>`;
   }
-  function kbRenderContactCard(c, isTop){
+  function kbRenderContactCard(c, isTop, q){
     const name = kbContactDisplayName(c);
-    const areaLine = c.area ? `<div class="kb-contact-result-line">${kbEscapeHtml(c.area)}</div>` : '';
+    const areaLine = c.area ? `<div class="kb-contact-result-line">${kbHighlight(c.area, q)}</div>` : '';
     const phoneLine = c.phone
       ? `<div class="kb-contact-line"><span class="kb-contact-name">${kbEscapeHtml(name)}</span> / ${kbEscapeHtml(c.phone)} <button type="button" class="kb-copy-btn" data-copy-text="${kbEscapeAttr(c.phone)}">복사</button></div>`
       : '';
     return `<div class="kb-result-card${isTop?' top':''}">
       <div class="kb-result-cat">연락처</div>
-      <div class="kb-result-title">${kbEscapeHtml(name)}</div>
+      <div class="kb-result-title">${kbHighlight(name, q)}</div>
       ${areaLine}
       ${phoneLine}
     </div>`;
   }
-  function kbRenderResultEntry(entry, isTop){
-    return entry.type === 'item' ? kbRenderItemCard(entry.record, isTop) : kbRenderContactCard(entry.record, isTop);
+  // 계정함 결과: 사이트명/아이디까지만 표시한다. rec.cipher/rec.iv(비밀번호)는 이 함수에 애초에
+  // 전달되지 않으므로(window.SHIN2_ACCOUNTS.getSearchable가 site/username만 노출) 비밀번호 텍스트가
+  // 결과 DOM 어디에도 나타날 수 없다.
+  function kbRenderAccountCard(acc, isTop, q){
+    return `<div class="kb-result-card${isTop?' top':''}">
+      <div class="kb-result-cat">계정</div>
+      <div class="kb-result-title">${kbHighlight(acc.site, q)}</div>
+      <div class="kb-plain-content">아이디: ${acc.username ? kbHighlight(acc.username, q) : '-'}</div>
+    </div>`;
+  }
+  function kbRenderResultEntry(entry, isTop, q){
+    const src = SHIN2_SEARCH_SOURCES.find(s=> s.type === entry.type);
+    return src ? src.render(entry.record, isTop, q) : '';
   }
 
   function renderMainResults(query){
@@ -1784,9 +1917,9 @@ ${text}
     }
     const top = results[0];
     const rest = results.slice(1);
-    let html = hintHtml + `<div class="kb-result-group-label">가장 관련 있는 결과</div>` + kbRenderResultEntry(top, true);
+    let html = hintHtml + `<div class="kb-result-group-label">가장 관련 있는 결과</div>` + kbRenderResultEntry(top, true, q);
     if(rest.length){
-      html += `<div class="kb-result-group-label">관련 결과</div>` + rest.map(e=> kbRenderResultEntry(e, false)).join('');
+      html += `<div class="kb-result-group-label">관련 결과</div>` + rest.map(e=> kbRenderResultEntry(e, false, q)).join('');
     }
     mainSearchResults.innerHTML = html;
   }
@@ -2174,6 +2307,145 @@ ${text}
   }
 
   window.SHIN2_KB = { renderKbList };
+})();
+</script>
+
+<script>
+(function(){
+  // ---------- 내 할 일 (한솔2 전용 신규 기능 — 한솔1 "오늘 할 일"과는 별개) ----------
+  // 저장 위치: localStorage['shin2-todos']. 민감정보가 아니므로 평문 저장으로 충분하다
+  // (사이트 잠금 게이트 뒤에서만 화면 자체가 보이므로 별도 암호화는 하지 않는다).
+  const TODO_KEY = 'shin2-todos';
+  let todos = [];
+
+  function loadTodos(){
+    try{
+      const raw = localStorage.getItem(TODO_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveTodos(){
+    localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+  }
+  function genTodoId(){
+    return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+  function escapeHtmlT(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  todos = loadTodos();
+
+  const listEl = document.getElementById('todoList');
+  const addToggleBtn = document.getElementById('todoAddToggleBtn');
+  const addRow = document.getElementById('todoAddRow');
+  const addInput = document.getElementById('todoAddInput');
+  const addSaveBtn = document.getElementById('todoAddSaveBtn');
+
+  function renderTodos(){
+    if(todos.length === 0){
+      listEl.innerHTML = `<div class="todo-empty">등록된 할 일이 없습니다.</div>`;
+      return;
+    }
+    listEl.innerHTML = todos.map((t, idx)=> `
+      <div class="todo-row${t.done ? ' done' : ''}" data-id="${escapeHtmlT(t.id)}">
+        <input type="checkbox" class="todo-checkbox" ${t.done ? 'checked' : ''} />
+        <span class="todo-text" contenteditable="false" spellcheck="false">${escapeHtmlT(t.text)}</span>
+        <div class="todo-move-btns">
+          <button type="button" class="todo-move-btn" data-move="up" ${idx === 0 ? 'disabled' : ''}>&uarr;</button>
+          <button type="button" class="todo-move-btn" data-move="down" ${idx === todos.length - 1 ? 'disabled' : ''}>&darr;</button>
+        </div>
+        <button type="button" class="todo-del-btn" data-del="1">&times;</button>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.todo-row').forEach(row=>{
+      const id = row.getAttribute('data-id');
+      const t = todos.find(x=> x.id === id);
+      if(!t) return;
+
+      row.querySelector('.todo-checkbox').addEventListener('change', (e)=>{
+        t.done = e.currentTarget.checked;
+        saveTodos();
+        renderTodos();
+      });
+
+      const textEl = row.querySelector('.todo-text');
+      textEl.addEventListener('click', ()=>{
+        if(textEl.getAttribute('contenteditable') === 'true') return;
+        textEl.setAttribute('contenteditable', 'true');
+        textEl.focus();
+        try{
+          const range = document.createRange();
+          range.selectNodeContents(textEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }catch(e){}
+      });
+      function commitEdit(){
+        textEl.setAttribute('contenteditable', 'false');
+        const val = textEl.textContent.trim();
+        if(val){ t.text = val; }
+        saveTodos();
+        renderTodos();
+      }
+      textEl.addEventListener('blur', commitEdit);
+      textEl.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter'){ e.preventDefault(); textEl.blur(); }
+      });
+
+      row.querySelectorAll('[data-move]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const dir = btn.getAttribute('data-move');
+          const i = todos.findIndex(x=> x.id === id);
+          if(dir === 'up' && i > 0){
+            const tmp = todos[i-1]; todos[i-1] = todos[i]; todos[i] = tmp;
+          } else if(dir === 'down' && i < todos.length - 1){
+            const tmp = todos[i+1]; todos[i+1] = todos[i]; todos[i] = tmp;
+          }
+          saveTodos();
+          renderTodos();
+        });
+      });
+
+      row.querySelector('[data-del]').addEventListener('click', ()=>{
+        todos = todos.filter(x=> x.id !== id);
+        saveTodos();
+        renderTodos();
+      });
+    });
+  }
+
+  function openAddRow(){
+    addRow.style.display = 'flex';
+    addInput.value = '';
+    addInput.focus();
+  }
+  function closeAddRow(){
+    addRow.style.display = 'none';
+  }
+  addToggleBtn.addEventListener('click', ()=>{
+    if(addRow.style.display === 'flex'){ closeAddRow(); } else { openAddRow(); }
+  });
+  function commitAdd(){
+    const val = addInput.value.trim();
+    if(!val) return;
+    todos.push({ id: genTodoId(), text: val, done: false });
+    saveTodos();
+    addInput.value = '';
+    renderTodos();
+    addInput.focus();
+  }
+  addSaveBtn.addEventListener('click', commitAdd);
+  addInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); commitAdd(); }
+  });
+
+  renderTodos();
 })();
 </script>
 
