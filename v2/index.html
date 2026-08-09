@@ -430,6 +430,8 @@
   .kb-result-group-label{ font-size:11px; font-weight:700; color:var(--text-muted); margin:14px 0 6px; }
   .kb-result-group-label:first-child{ margin-top:0; }
   .kb-result-card{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .kb-result-card[data-co-id]{ cursor:pointer; border-radius:6px; padding-left:4px; padding-right:4px; }
+  .kb-result-card[data-co-id]:hover{ background:#F0F1F4; }
   .kb-result-card.top{ padding-top:2px; }
   .kb-result-cat{ font-size:11px; color:var(--text-muted); margin-bottom:2px; }
   .kb-result-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px; }
@@ -548,6 +550,55 @@
   .kb-row-title{ font-size:13.5px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .kb-row-sub{ font-size:12px; color:var(--text-muted); flex:0 0 auto; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+  /* ---------- 업체 관리 페이지 ---------- */
+  .co-layout{ display:flex; gap:24px; align-items:flex-start; margin-top:6px; }
+  .co-list-col{ flex:0 0 40%; max-width:440px; min-width:280px; }
+  .co-detail-col{ flex:1 1 60%; min-width:340px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:20px 22px; }
+  .co-table-head{ display:flex; gap:10px; padding:0 4px 8px; border-bottom:1px solid var(--line); font-size:11px; color:var(--text-muted); }
+  .co-row{ display:flex; gap:10px; align-items:center; padding:9px 4px; border-bottom:1px solid var(--line); cursor:pointer; border-radius:6px; }
+  .co-row:hover{ background:#F0F1F4; }
+  .co-row.active{ background:#EEF1F8; }
+  .co-col-name{ flex:1.3; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .co-col-contact{ flex:1; font-size:12.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .co-col-phone{ flex:1; font-size:12.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .co-detail-empty{ font-size:12.5px; color:var(--text-muted); padding:8px 4px; }
+  .co-detail-title{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:16px; }
+  .co-field{ margin-bottom:16px; }
+  .co-field-label{ font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .co-field-value{ font-size:13.5px; color:var(--text); line-height:1.5; word-break:break-word; }
+  .co-memo{ white-space:pre-wrap; }
+  .co-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
+  .co-text-action{ border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-muted); padding:2px 0; font-family:inherit; }
+  .co-text-action:hover{ color:var(--text); }
+  .co-text-action.danger:hover{ color:#B91C1C; }
+  .co-confirm-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-muted); }
+
+  .co-form-field{ margin-bottom:14px; }
+  .co-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .co-form-field input, .co-form-field textarea{
+    width:100%; padding:8px 10px; font-size:13px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; outline:none; box-sizing:border-box;
+  }
+  .co-form-field input:focus, .co-form-field textarea:focus{ border-color:#C7CEDB; }
+  .co-form-field textarea{ min-height:56px; resize:vertical; }
+  .co-form-error{ font-size:11.5px; color:#B91C1C; margin-top:-8px; margin-bottom:12px; }
+  .co-form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+
+  .co-badge{ display:inline-block; font-size:10.5px; color:var(--text); background:#FEF6B2; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; }
+  .co-attach-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .co-ocr-status{ font-size:11.5px; color:var(--text-muted); }
+  .co-thumbs{ display:flex; gap:10px; margin-bottom:10px; }
+  .co-thumb-wrap{ text-align:center; }
+  .co-thumb{ width:64px; height:64px; object-fit:cover; border:1px solid var(--line); border-radius:6px; display:block; }
+  .co-thumb-label{ font-size:10.5px; color:var(--text-muted); margin-top:3px; }
+  .co-ocr-note{ font-size:12px; color:var(--text-muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:12px; }
+  .co-conflict{ background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:-6px 0 12px; }
+  .co-conflict-label{ font-size:11.5px; color:var(--text-muted); margin-bottom:6px; }
+  .co-conflict-opt{ display:block; font-size:12.5px; color:var(--text); margin-bottom:4px; cursor:pointer; }
+  .co-dup-box{ background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:12.5px; color:var(--text); }
+  .co-dup-actions{ display:flex; gap:14px; margin-top:8px; }
+
   /* ---------- 지식 등록/수정 모달 ---------- */
   .kb-modal-overlay{
     position:fixed; inset:0; background:rgba(17,24,39,0.35);
@@ -659,6 +710,7 @@
   }
   .site-lock-btn:hover{ background:#F0F1F4; color:var(--text); }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 </head>
 <body>
 
@@ -684,6 +736,10 @@
       <button type="button" class="nav-item active" id="navHome">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
         <span>홈</span>
+      </button>
+      <button type="button" class="nav-item" id="navCompanies">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-4h6v4M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg>
+        <span>업체</span>
       </button>
       <button type="button" class="nav-item" id="navAccounts">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16.5 5.5l3 3M13.5 8.5l2.5 2.5"/></svg>
@@ -772,6 +828,30 @@
           <button type="button" class="kb-tab" data-filter="contact">연락처</button>
         </div>
         <div class="kb-list" id="kbList"></div>
+      </div>
+
+      <div class="kb-view" id="companiesView" style="display:none;">
+        <div class="kb-header">
+          <div class="kb-title">업체</div>
+          <button type="button" id="coAddBtn" class="kb-add-btn">+ 업체 추가</button>
+        </div>
+        <div class="search-box kb-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="text" id="coSearchInput" placeholder="업체명 / 담당자 / 전화번호 검색" />
+        </div>
+        <div class="co-layout">
+          <div class="co-list-col">
+            <div class="co-table-head">
+              <div class="co-col-name">업체명</div>
+              <div class="co-col-contact">담당자</div>
+              <div class="co-col-phone">연락처</div>
+            </div>
+            <div class="co-list" id="coList"></div>
+          </div>
+          <div class="co-detail-col" id="coDetailCol">
+            <div class="co-detail-empty">업체를 선택하세요.</div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -1136,23 +1216,34 @@ ${text}
   // ---------- 화면 전환 (홈 / 지식) ----------
   // 계정은 더 이상 별도 페이지가 아니라 중앙 팝업이므로 여기서 관리하지 않는다(아래 "계정 팝업" 섹션).
   const navHome = document.getElementById('navHome');
+  const navCompanies = document.getElementById('navCompanies');
   const navAccounts = document.getElementById('navAccounts');
   const navKnowledge = document.getElementById('navKnowledge');
   const homeView = document.getElementById('homeView');
+  const companiesView = document.getElementById('companiesView');
   const knowledgeView = document.getElementById('knowledgeView');
 
   function showView(view){
     homeView.style.display = view === 'home' ? 'block' : 'none';
+    companiesView.style.display = view === 'companies' ? 'block' : 'none';
     knowledgeView.style.display = view === 'knowledge' ? 'block' : 'none';
     navHome.classList.toggle('active', view === 'home');
+    navCompanies.classList.toggle('active', view === 'companies');
     navKnowledge.classList.toggle('active', view === 'knowledge');
   }
   navHome.addEventListener('click', ()=> showView('home'));
+  navCompanies.addEventListener('click', ()=>{
+    showView('companies');
+    if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.onEnter();
+  });
   navAccounts.addEventListener('click', ()=> openAcctPopup());
   navKnowledge.addEventListener('click', ()=>{
     showView('knowledge');
     if(window.SHIN2_KB) window.SHIN2_KB.renderKbList();
   });
+
+  // 업체 검색 결과 클릭(§14) 등 다른 스크립트 블록에서 화면 전환이 필요할 때 쓰는 최소 확장 포인트.
+  window.SHIN2_NAV = { showView };
 
   // ---------- 사이트 잠금 + 계정(비밀번호) 보관함 (통합 인증) ----------
   // 저장 위치: localStorage['shin2-accounts-vault'] = { salt, check:{cipher,iv}, records:[...] }
@@ -2122,7 +2213,7 @@ ${text}
     if(co.phone) lines.push(`전화: ${kbEscapeHtml(co.phone)}`);
     if(co.address) lines.push(`주소: ${kbEscapeHtml(co.address)}`);
     if(co.memo) lines.push(`메모: ${kbHighlight(co.memo, q)}`);
-    return `<div class="kb-result-card${isTop?' top':''}">
+    return `<div class="kb-result-card${isTop?' top':''}" data-co-id="${kbEscapeAttr(co.id)}">
       <div class="kb-result-cat">업체</div>
       <div class="kb-result-title">${kbHighlight(co.name, q)}</div>
       <div class="kb-plain-content">${lines.join('<br>')}</div>
@@ -2168,6 +2259,14 @@ ${text}
     kbSearchDebounce = setTimeout(()=> renderMainResults(val), 150);
   });
   mainSearchResults.addEventListener('click', (e)=>{
+    // 업체 검색 결과 카드 클릭(§14): 업체 화면으로 전환 후 해당 업체를 선택 상태로 연다.
+    const coCard = e.target.closest('[data-co-id]');
+    if(coCard){
+      const coId = coCard.getAttribute('data-co-id');
+      if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
+      if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(coId);
+      return;
+    }
     const btn = e.target.closest('[data-copy-text]');
     if(!btn) return;
     kbCopy(btn.getAttribute('data-copy-text'), btn);
@@ -3448,6 +3547,703 @@ ${text}
   }
 
   window.SHIN2_MIGRATION = { runPhase1Once, runPhase2Once, STATUS_KEY };
+})();
+</script>
+
+<script>
+(function(){
+  // ---------- 업체 관리 (§업체) ----------
+  // 저장 위치 결정(§DATA STORAGE DECISION): 기존 한솔1 이전(migration) 전용 대기소였던
+  // localStorage['shin2-companies-staging'] 키를 그대로 "진짜 업체 저장소"로 승격해서 쓴다.
+  //   - 마이그레이션된 레코드: sourceSystem:'hansol1', sourceId:'company:<한솔1 id>' 를 그대로 유지한다
+  //     (이 화면은 그 필드를 절대 지우거나 덮어쓰지 않는다).
+  //   - 이 화면에서 새로 등록하는 "네이티브" 업체는 sourceSystem/sourceId 필드를 아예 부여하지 않는다.
+  //   - migration.js의 stageArray()는 sourceSystem+':'+sourceId 조합으로만 중복을 검사하므로(네이티브
+  //     레코드는 그 필드가 없어 'undefined:undefined'가 되고, 이는 실제 한솔1 sourceId와 절대 겹치지
+  //     않는다) 마이그레이션이 재실행되어도 네이티브 데이터가 지워지거나 중복되지 않는다.
+  //   - 기존 검색 인덱스(getCompanyStaging, 지식 스크립트 블록)는 이미 이 키를 매 검색마다 새로 읽으므로
+  //     이 화면에서 추가/수정/삭제한 내용이 별도 배선 없이 즉시 검색에 반영된다.
+  // 이 파일이 이 키를 다루는 "화면"을 갖는 최초의 코드다. 다른 localStorage 키는 만들지 않는다.
+  const CO_STORAGE_KEY = 'shin2-companies-staging';
+
+  function coReadAll(){
+    try{
+      const raw = localStorage.getItem(CO_STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function coWriteAll(list){
+    localStorage.setItem(CO_STORAGE_KEY, JSON.stringify(list));
+  }
+  function coGenId(){
+    return 'co_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+  function coEscapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function coEscapeAttr(str){ return coEscapeHtml(str); }
+
+  const CO_EMPTY_FORM = { name:'', repName:'', contactName:'', phone:'', fax:'', email:'', bizRegNo:'', address:'', memo:'' };
+
+  const coState = {
+    records: [],
+    search: '',
+    selectedId: null,
+    mode: 'list',       // 'list' | 'detail' | 'edit' | 'add'
+    formValues: null,
+    formDirty: false,
+    ocr: null,           // { card, bizreg, cardThumb, bizregThumb, ambiguous, conflicts } — 저장 전까지만 메모리에 존재
+    dupConfirmed: false
+  };
+
+  function coRefresh(){ coState.records = coReadAll(); }
+
+  // ============================================================================
+  // §8 OCR 원시 텍스트 → 필드 후보 추출 (휴리스틱, 순수 함수 — DOM/네트워크 접근 없음)
+  // 핵심 원칙: 애매하면 값을 채우지 않고 ambiguous:true 를 반환한다. 절대 자신 있게 틀린 값을
+  // 채우지 않는다("빈칸 + 확인 필요" > "그럴듯하지만 틀릴 수 있는 값").
+  // ============================================================================
+  const DECOR_RE = /^[□�│●■※\s]+|[□�│●■※\s]+$/g;
+  function coStripDecor(line){ return String(line || '').replace(DECOR_RE, ''); }
+
+  const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  const MOBILE_RE = /01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}/;
+  const LANDLINE_RE = /0(2|3[1-3]|4[1-4]|5[1-5]|6[1-4])[-.\s]?\d{3,4}[-.\s]?\d{4}/;
+  const BIZNO_RE = /\d{3}[-.\s]?\d{2}[-.\s]?\d{5}/;
+  const DATE_RE = /\d{4}[.\-\/]\s?\d{1,2}[.\-\/]\s?\d{1,2}|\d{4}\s?년\s?\d{1,2}\s?월\s?\d{1,2}\s?일/;
+  const LABEL_RE = /(대표자|사업자등록번호|법인등록번호|TEL|Tel|전화|FAX|Fax|팩스|주소|사업자등록증|성명)\s*[:：]?/;
+  const NAME_POS_RE = /(주식회사|㈜|\(주\)|유한회사|건설|도장|산업|엔지니어링|이엔지|ENG|E&C)/i;
+  const TITLE_RE = /(대표이사|대표|사장|부장|차장|과장|대리|팀장|매니저|이사|본부장|실장|소장|주임)/;
+
+  function coIsAddressLine(line){
+    const s = String(line || '').trim();
+    if(!s) return false;
+    // 사업자등록번호(000-00-00000)는 뒤 5자리가 우편번호처럼 보여 아래 규칙과 혼동될 수 있으므로 먼저 제외한다.
+    if(BIZNO_RE.test(s)) return false;
+    if(/(사업자등록번호|법인등록번호|등록번호)/.test(s)) return false;
+    if(/(특별시|광역시|자치도|자치시)/.test(s)) return true;
+    if(/[가-힣]{1,4}(시|도|군|구|읍|면|동|로|길|번길)\s?\d/.test(s)) return true;
+    if(/\d{5}\)?\s*$/.test(s) && /[가-힣]/.test(s) && s.length >= 6) return true;
+    return false;
+  }
+
+  // 업체명 후보 스코어링: 회사명 패턴 가점, 주소/전화/이메일/라벨/날짜 패턴 감점, 상단부 짧은 줄 가점.
+  function coScoreNameLine(line, idx){
+    const s = String(line || '').trim();
+    if(!s) return -999;
+    let score = 0;
+    if(BIZNO_RE.test(s)) score -= 6;
+    if(EMAIL_RE.test(s)) score -= 6;
+    if(MOBILE_RE.test(s) || LANDLINE_RE.test(s)) score -= 5;
+    if(LABEL_RE.test(s)) score -= 4;
+    if(DATE_RE.test(s)) score -= 5;
+    if(coIsAddressLine(s)) score -= 7;
+    if(NAME_POS_RE.test(s)) score += 5;
+    if(idx <= 2) score += 2;
+    if(s.length <= 20) score += 1;
+    if(s.length > 30) score -= 2;
+    return score;
+  }
+
+  function coExtractNameCandidate(lines){
+    const scored = lines.map((l, i)=> ({ line: l, score: coScoreNameLine(l, i) })).filter(x=> x.line.trim());
+    if(!scored.length) return { value:'', ambiguous:false };
+    scored.sort((a,b)=> b.score - a.score);
+    const top = scored[0];
+    const second = scored[1];
+    // 확신이 없으면(점수가 낮거나, 1등과 2등 점수차가 근소하면) 비워두고 확인 필요로 남긴다.
+    if(top.score <= 0) return { value:'', ambiguous:true };
+    if(second && second.score > 0 && (top.score - second.score) < 2) return { value:'', ambiguous:true };
+    return { value: top.line.trim().replace(/\s{2,}/g,' '), ambiguous:false };
+  }
+
+  function coExtractEmail(lines){
+    for(const line of lines){
+      const spaced = line.replace(/\s*@\s*/g, '@');
+      const m = spaced.match(EMAIL_RE);
+      if(m) return { value: m[0], ambiguous:false };
+      if(/@/.test(line)) return { value:'', ambiguous:true }; // @가 있으나 형식이 깨진 경우 — 임의로 만들어내지 않는다
+    }
+    return { value:'', ambiguous:false };
+  }
+
+  function coNormalizePhone(num){
+    return String(num || '').replace(/[.\s]/g,'-').replace(/-{2,}/g,'-');
+  }
+
+  // 전화/팩스 구분: FAX/팩스 인접 숫자는 팩스 우선, TEL/전화 인접 숫자는 전화 우선, 나머지는 휴대폰 패턴 우선.
+  function coExtractPhoneFax(lines){
+    const candidates = [];
+    lines.forEach(line=>{
+      const isFaxLabel = /fax|팩스/i.test(line);
+      const isTelLabel = !isFaxLabel && /(tel|전화)/i.test(line);
+      const m = line.match(MOBILE_RE) || line.match(LANDLINE_RE);
+      if(m) candidates.push({ num: coNormalizePhone(m[0]), isFaxLabel, isTelLabel, mobile: MOBILE_RE.test(m[0]) });
+    });
+    let phone = '', fax = '', phoneAmbiguous = false, faxAmbiguous = false;
+    const faxLabeled = candidates.find(c=> c.isFaxLabel);
+    if(faxLabeled) fax = faxLabeled.num;
+    const telLabeled = candidates.find(c=> c.isTelLabel && c !== faxLabeled);
+    if(telLabeled) phone = telLabeled.num;
+    if(!phone){
+      const mobile = candidates.find(c=> c.mobile && c !== faxLabeled);
+      if(mobile) phone = mobile.num;
+    }
+    const remaining = candidates.filter(c=> c.num !== phone && c.num !== fax);
+    if(!fax){
+      if(remaining.length === 1) fax = remaining[0].num;
+      else if(remaining.length > 1) faxAmbiguous = true;
+    }
+    if(!phone && !fax && candidates.length > 1) phoneAmbiguous = true;
+    return { phone, fax, phoneAmbiguous, faxAmbiguous };
+  }
+
+  // 사업자등록번호: 000-00-00000 형식 우선(공백/구두점 정규화), 형식이 안 맞으면 확정하지 않는다.
+  function coExtractBizRegNo(text){
+    const collapsed = String(text || '').replace(/(\d)[ \t]+(?=\d)/g,'$1').replace(/[ \t]*-[ \t]*/g,'-');
+    const m = collapsed.match(/\b\d{3}-\d{2}-\d{5}\b/);
+    if(m) return { value: m[0], ambiguous:false };
+    const loose = String(text || '').match(/(사업자등록번호|등록번호)[^\d]{0,6}([\d\s-]{10,16})/);
+    if(loose){
+      const digits = loose[2].replace(/\D/g,'');
+      if(digits.length === 10) return { value: digits.slice(0,3) + '-' + digits.slice(3,5) + '-' + digits.slice(5), ambiguous:false };
+      return { value:'', ambiguous:true };
+    }
+    return { value:'', ambiguous:false };
+  }
+
+  function coExtractAddress(lines){
+    const found = lines.find(l=> coIsAddressLine(l));
+    if(!found) return { value:'', ambiguous:false };
+    const cleaned = found.replace(/.*(사업장\s*소재지|소재지|주소)\s*[:：]?\s*/, '').trim();
+    return { value: cleaned, ambiguous:false };
+  }
+
+  // 대표자(사업자등록증 문맥): "대표자"/"성명" 라벨 인접 문자열만 신뢰한다. 사업자등록증의 "성명"
+  // 필드는 순수 인명이므로(직책이 붙지 않음) 카드용 직책 접미사 제거는 여기서는 하지 않는다 —
+  // 임의로 문자열 일부를 잘라내면 오히려 실제 이름을 훼손할 수 있다.
+  function coExtractRepName(lines){
+    for(const line of lines){
+      if(/(대표자|성명)\s*[:：]/.test(line) || /^(대표자|성명)\b/.test(line)){
+        const v = line.replace(/.*(대표자|성명)\s*[:：]?\s*/, '').trim();
+        if(!v) return { value:'', ambiguous:true };
+        if(BIZNO_RE.test(v) || v.length > 8) return { value:'', ambiguous:true };
+        return { value: v, ambiguous:false };
+      }
+    }
+    return { value:'', ambiguous:false };
+  }
+
+  // 담당자(명함 문맥): 직책 근처 이름만 신뢰한다. 대표자와 한 필드로 합치지 않는다(다른 사람일 수 있음).
+  // 명함에서는 "홍길동 과장"(이름 뒤 직책)과 "과장 홍길동"(직책 뒤 이름) 두 배치 모두 흔하므로 둘 다 확인한다.
+  function coExtractContactName(lines){
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      const m = line.match(TITLE_RE);
+      if(m){
+        const before = line.slice(0, m.index).trim();
+        if(/^[가-힣]{2,4}$/.test(before)) return { value: before, ambiguous:false };
+        const after = line.slice(m.index + m[0].length).trim();
+        if(/^[가-힣]{2,4}$/.test(after)) return { value: after, ambiguous:false };
+        const prev = (lines[i-1] || '').trim();
+        if(/^[가-힣]{2,4}$/.test(prev) && !TITLE_RE.test(prev)) return { value: prev, ambiguous:false };
+        return { value:'', ambiguous:true }; // 직책은 찾았지만 이름이 명확하지 않음
+      }
+    }
+    return { value:'', ambiguous:false };
+  }
+
+  // 상호(사업자등록증 문맥): "상호" 라벨이 있으면 그 값을 우선 신뢰하고, 없으면 일반 업체명 스코어링으로 대체한다.
+  function coExtractBizRegName(lines){
+    for(const line of lines){
+      if(/상호\s*[:：]/.test(line) || /^상호\b/.test(line)){
+        const v = line.replace(/.*상호\s*[:：]?\s*/, '').trim();
+        if(!v) return { value:'', ambiguous:true };
+        if(coIsAddressLine(v)) return { value:'', ambiguous:true };
+        return { value: v, ambiguous:false };
+      }
+    }
+    return coExtractNameCandidate(lines);
+  }
+
+  function coPrepLines(rawText){
+    return String(rawText || '').split('\n').map(l=> coStripDecor(l.trim())).filter(Boolean);
+  }
+
+  // 명함 원문 → 후보 필드
+  function extractFromCardText(rawText){
+    const lines = coPrepLines(rawText);
+    const pf = coExtractPhoneFax(lines);
+    return {
+      name: coExtractNameCandidate(lines),
+      repName: { value:'', ambiguous:false },
+      contactName: coExtractContactName(lines),
+      phone: { value: pf.phone, ambiguous: pf.phoneAmbiguous },
+      fax: { value: pf.fax, ambiguous: pf.faxAmbiguous },
+      email: coExtractEmail(lines),
+      bizRegNo: { value:'', ambiguous:false },
+      address: coExtractAddress(lines)
+    };
+  }
+
+  // 사업자등록증 원문 → 후보 필드
+  function extractFromBizRegText(rawText){
+    const lines = coPrepLines(rawText);
+    const full = lines.join('\n');
+    return {
+      name: coExtractBizRegName(lines),
+      repName: coExtractRepName(lines),
+      contactName: { value:'', ambiguous:false },
+      phone: { value:'', ambiguous:false },
+      fax: { value:'', ambiguous:false },
+      email: { value:'', ambiguous:false },
+      bizRegNo: coExtractBizRegNo(full),
+      address: coExtractAddress(lines)
+    };
+  }
+
+  // 명함 + 사업자등록증 병합(§8 마지막 규칙): 사업자등록증 우선 필드 vs 명함 우선 필드.
+  // 두 문서가 서로 다른 값을 확실하게 준 필드는 임의로 하나를 버리지 않고 conflicts로 보고한다
+  // (UI에서 라디오로 사용자가 직접 선택하게 한다). 둘 다 비었고 어느 한쪽이 애매했던 필드는 ambiguous로 표시.
+  const CO_PRIORITY_DOC = { name:'bizreg', repName:'bizreg', bizRegNo:'bizreg', address:'bizreg',
+                             contactName:'card', phone:'card', fax:'card', email:'card' };
+  function mergeExtractions(card, bizreg){
+    const merged = {}, ambiguous = {}, conflicts = {};
+    Object.keys(CO_PRIORITY_DOC).forEach(f=>{
+      const c = card ? card[f] : null;
+      const b = bizreg ? bizreg[f] : null;
+      const cVal = (c && c.value) ? c.value : '';
+      const bVal = (b && b.value) ? b.value : '';
+      if(cVal && bVal && cVal !== bVal){
+        conflicts[f] = { card: cVal, bizreg: bVal };
+        merged[f] = CO_PRIORITY_DOC[f] === 'bizreg' ? bVal : cVal;
+      } else if(cVal || bVal){
+        merged[f] = cVal || bVal;
+      } else {
+        merged[f] = '';
+        if((c && c.ambiguous) || (b && b.ambiguous)) ambiguous[f] = true;
+      }
+    });
+    return { merged, ambiguous, conflicts };
+  }
+
+  const FIELD_INPUT_ID = { name:'coFName', repName:'coFRep', contactName:'coFContact', phone:'coFPhone',
+                            fax:'coFFax', email:'coFEmail', bizRegNo:'coFBiz', address:'coFAddr' };
+  const FIELD_LABEL = { name:'업체명', repName:'대표자', contactName:'담당자', phone:'전화번호',
+                         fax:'팩스', email:'이메일', bizRegNo:'사업자등록번호', address:'주소' };
+
+  // 테스트/디버깅 및 실제 OCR 파이프라인이 공유하는 순수 함수 API — 이미지 인식 자체(Tesseract)와
+  // 분리되어 있어, "OCR이 이런 텍스트를 뽑아줬을 때 파싱 로직이 올바른가"를 이미지 없이 검증할 수 있다.
+  window.SHIN2_COMPANY_OCR = {
+    extractFromCardText, extractFromBizRegText, mergeExtractions,
+    coIsAddressLine, coExtractBizRegNo, coStripDecor
+  };
+
+  // ---------- 중복 업체 감지(§11) ----------
+  function coNormalizeForCompare(s){ return String(s || '').replace(/[\s\-]/g,'').toLowerCase(); }
+  function findSimilarCompany(candidate, excludeId){
+    const nameN = coNormalizeForCompare(candidate.name);
+    const phoneN = coNormalizeForCompare(candidate.phone);
+    const bizN = coNormalizeForCompare(candidate.bizRegNo);
+    return coState.records.find(r=>{
+      if(excludeId && r.id === excludeId) return false;
+      if(bizN && coNormalizeForCompare(r.bizRegNo) === bizN) return true;
+      if(phoneN && coNormalizeForCompare(r.phone) === phoneN) return true;
+      if(nameN && coNormalizeForCompare(r.name) === nameN) return true;
+      return false;
+    });
+  }
+
+  // ---------- 실제 이미지 OCR 실행(Tesseract.js, 전부 클라이언트 사이드) ----------
+  // 이미지는 로컬 objectURL로만 참조되고 어디에도 업로드되지 않는다. 인식이 끝나면 objectURL을 즉시
+  // 폐기한다. 원본 파일/바이트 자체를 localStorage에 저장하지 않는다(썸네일은 폼이 열려 있는 동안만
+  // 메모리(state)에 보관되고, 저장/취소 시 즉시 버려진다).
+  async function coRunOcr(file, kind, statusEl){
+    if(typeof Tesseract === 'undefined'){
+      return { error: 'OCR 엔진을 불러오지 못했습니다 (인터넷 연결을 확인해주세요). 직접 입력해주세요.' };
+    }
+    const label = kind === 'card' ? '명함' : '사업자등록증';
+    const objectUrl = URL.createObjectURL(file);
+    try{
+      if(statusEl) statusEl.textContent = label + ' 인식 중...';
+      const { data } = await Tesseract.recognize(objectUrl, 'kor+eng', {
+        logger(m){
+          if(m.status === 'recognizing text' && typeof m.progress === 'number' && statusEl){
+            statusEl.textContent = label + ' 인식 중... ' + Math.round(m.progress * 100) + '%';
+          }
+        }
+      });
+      return { text: data.text || '' };
+    } catch(err){
+      return { error: label + ' 인식에 실패했습니다. 직접 입력해주세요.' };
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  // ---------- DOM ----------
+  const coSearchInput = document.getElementById('coSearchInput');
+  const coAddBtn = document.getElementById('coAddBtn');
+  const coListEl = document.getElementById('coList');
+  const coDetailCol = document.getElementById('coDetailCol');
+
+  function coFilteredRecords(){
+    const q = coState.search.trim().toLowerCase();
+    if(!q) return coState.records;
+    return coState.records.filter(r=>
+      (r.name||'').toLowerCase().includes(q) ||
+      (r.repName||'').toLowerCase().includes(q) ||
+      (r.contactName||'').toLowerCase().includes(q) ||
+      (r.phone||'').toLowerCase().includes(q) ||
+      (r.fax||'').toLowerCase().includes(q) ||
+      (r.email||'').toLowerCase().includes(q) ||
+      (r.bizRegNo||'').toLowerCase().includes(q) ||
+      (r.address||'').toLowerCase().includes(q) ||
+      (r.memo||'').toLowerCase().includes(q)
+    );
+  }
+
+  function coRenderList(){
+    const items = coFilteredRecords();
+    if(items.length === 0){
+      coListEl.innerHTML = `<div class="kb-no-result">${coState.records.length===0 ? '등록된 업체가 없습니다. + 업체 추가로 등록하세요.' : '검색 결과가 없습니다.'}</div>`;
+      return;
+    }
+    coListEl.innerHTML = items.map(r=> `
+      <div class="co-row${r.id===coState.selectedId ? ' active' : ''}" data-id="${coEscapeAttr(r.id)}">
+        <div class="co-col-name">${coEscapeHtml(r.name)}</div>
+        <div class="co-col-contact">${coEscapeHtml(r.contactName || r.repName || '-')}</div>
+        <div class="co-col-phone">${coEscapeHtml(r.phone || '-')}</div>
+      </div>
+    `).join('');
+    coListEl.querySelectorAll('.co-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        coState.selectedId = row.getAttribute('data-id');
+        coState.mode = 'detail';
+        coState.ocr = null;
+        coRender();
+      });
+    });
+  }
+
+  function coRenderDetail(rec){
+    if(!rec){
+      coDetailCol.innerHTML = `<div class="co-detail-empty">업체를 선택하세요.</div>`;
+      return;
+    }
+    const row = (label, value)=> value ? `<div class="co-field"><div class="co-field-label">${label}</div><div class="co-field-value">${coEscapeHtml(value)}</div></div>` : '';
+    coDetailCol.innerHTML = `
+      <div class="co-detail-title">${coEscapeHtml(rec.name)}</div>
+      ${row('대표자', rec.repName)}
+      ${row('담당자', rec.contactName)}
+      ${row('전화번호', rec.phone)}
+      ${row('팩스', rec.fax)}
+      ${row('이메일', rec.email)}
+      ${row('사업자등록번호', rec.bizRegNo)}
+      ${row('주소', rec.address)}
+      ${rec.memo ? `<div class="co-field"><div class="co-field-label">메모</div><div class="co-field-value co-memo">${coEscapeHtml(rec.memo)}</div></div>` : ''}
+      <div class="co-detail-actions" id="coActionsRow">
+        <button type="button" class="co-text-action" id="coEditBtn">수정</button>
+        <button type="button" class="co-text-action danger" id="coDeleteBtn">삭제</button>
+      </div>
+    `;
+    document.getElementById('coEditBtn').addEventListener('click', ()=> coOpenEditForm(rec));
+    document.getElementById('coDeleteBtn').addEventListener('click', ()=> coRenderDeleteConfirm(rec));
+  }
+
+  function coRenderDeleteConfirm(rec){
+    const actionsRow = document.getElementById('coActionsRow');
+    if(!actionsRow) return;
+    actionsRow.innerHTML = `
+      <div class="co-confirm-row">
+        <span>이 업체 정보를 삭제하시겠습니까?</span>
+        <button type="button" class="co-text-action" id="coDeleteCancel">취소</button>
+        <button type="button" class="co-text-action danger" id="coDeleteConfirm">삭제</button>
+      </div>
+    `;
+    document.getElementById('coDeleteCancel').addEventListener('click', ()=> coRenderDetail(rec));
+    document.getElementById('coDeleteConfirm').addEventListener('click', ()=>{
+      // 이 업체 레코드 하나만 배열에서 제거한다. 다른 업체/다른 저장소는 절대 건드리지 않는다.
+      coState.records = coState.records.filter(r=> r.id !== rec.id);
+      coWriteAll(coState.records);
+      coState.selectedId = null;
+      coState.mode = 'list';
+      coRender();
+    });
+  }
+
+  function coOpenAddForm(){
+    coState.mode = 'add';
+    coState.selectedId = null;
+    coState.formValues = Object.assign({}, CO_EMPTY_FORM);
+    coState.ocr = { card:null, bizreg:null, cardThumb:'', bizregThumb:'', ambiguous:{}, conflicts:{} };
+    coState.dupConfirmed = false;
+    coRender();
+  }
+  function coOpenEditForm(rec){
+    coState.mode = 'edit';
+    coState.selectedId = rec.id;
+    coState.formValues = Object.assign({}, CO_EMPTY_FORM, rec);
+    coState.ocr = { card:null, bizreg:null, cardThumb:'', bizregThumb:'', ambiguous:{}, conflicts:{} };
+    coState.dupConfirmed = false;
+    coRender();
+  }
+
+  // OCR로 추출된 값은 "현재 폼에 비어있는 필드"에만 채운다 — 사용자가 이미 입력/수정한 값은
+  // 절대 덮어쓰지 않는다(§10: 사용자 수정값이 항상 OCR 원본보다 우선).
+  function coApplyMergedToForm(merged){
+    Object.keys(merged).forEach(k=>{
+      if(!coState.formValues[k] && merged[k]) coState.formValues[k] = merged[k];
+    });
+  }
+
+  async function coHandleAttach(file, kind){
+    if(!file || !file.type || !file.type.startsWith('image/')){
+      const statusEl = document.getElementById('coOcrStatus');
+      if(statusEl) statusEl.textContent = '이미지 파일만 첨부할 수 있습니다.';
+      return;
+    }
+    const statusEl = document.getElementById('coOcrStatus');
+    // 미리보기 썸네일은 화면 표시용으로만 메모리(state)에 잠깐 담아두고, 저장되는 업체 레코드에는
+    // 절대 포함하지 않는다(§핵심 규칙: 이미지는 어디에도 저장/전송하지 않는다).
+    const dataUrl = await new Promise(res=>{
+      const reader = new FileReader();
+      reader.onload = ()=> res(reader.result);
+      reader.onerror = ()=> res('');
+      reader.readAsDataURL(file);
+    });
+    if(kind === 'card') coState.ocr.cardThumb = dataUrl; else coState.ocr.bizregThumb = dataUrl;
+
+    const result = await coRunOcr(file, kind, statusEl);
+    if(result.error){
+      if(statusEl) statusEl.textContent = result.error;
+      coRender();
+      return;
+    }
+    const extracted = kind === 'card' ? extractFromCardText(result.text) : extractFromBizRegText(result.text);
+    if(kind === 'card') coState.ocr.card = extracted; else coState.ocr.bizreg = extracted;
+    const { merged, ambiguous, conflicts } = mergeExtractions(coState.ocr.card, coState.ocr.bizreg);
+    coState.ocr.ambiguous = ambiguous;
+    coState.ocr.conflicts = conflicts;
+    coApplyMergedToForm(merged);
+    if(statusEl) statusEl.textContent = '인식 완료 — 인식 결과를 확인해주세요.';
+    coRender();
+  }
+
+  function coRenderForm(){
+    const isNew = coState.mode === 'add';
+    const vals = coState.formValues;
+    const o = coState.ocr || { ambiguous:{}, conflicts:{} };
+
+    const fieldBadge = (key)=> (o.ambiguous && o.ambiguous[key] && !vals[key]) ? '<span class="co-badge">확인 필요</span>' : '';
+    const conflictHtml = (key)=>{
+      if(!o.conflicts || !o.conflicts[key]) return '';
+      const c = o.conflicts[key];
+      return `<div class="co-conflict" data-conflict-field="${key}">
+        <div class="co-conflict-label">${FIELD_LABEL[key]} 정보가 명함과 사업자등록증에서 서로 다릅니다. 하나를 선택하세요.</div>
+        <label class="co-conflict-opt"><input type="radio" name="coConflict_${key}" value="card" ${vals[key]===c.card?'checked':''}/> 명함: ${coEscapeHtml(c.card)}</label>
+        <label class="co-conflict-opt"><input type="radio" name="coConflict_${key}" value="bizreg" ${vals[key]===c.bizreg?'checked':''}/> 사업자등록증: ${coEscapeHtml(c.bizreg)}</label>
+      </div>`;
+    };
+    const hasOcrResult = !!(o.card || o.bizreg);
+
+    coDetailCol.innerHTML = `
+      <div class="co-detail-title">${isNew ? '업체 추가' : '업체 수정'}</div>
+      <div class="co-attach-row">
+        <button type="button" class="ai-copy-btn" id="coAttachCardBtn">명함 첨부</button>
+        <input type="file" id="coAttachCardInput" accept="image/*" style="display:none;" />
+        <button type="button" class="ai-copy-btn" id="coAttachBizBtn">사업자등록증 첨부</button>
+        <input type="file" id="coAttachBizInput" accept="image/*" style="display:none;" />
+        <span class="co-ocr-status" id="coOcrStatus"></span>
+      </div>
+      ${(o.cardThumb || o.bizregThumb) ? `<div class="co-thumbs" id="coThumbs">
+        ${o.cardThumb ? `<div class="co-thumb-wrap"><img class="co-thumb" src="${o.cardThumb}" alt="명함 미리보기" /><div class="co-thumb-label">명함</div></div>` : ''}
+        ${o.bizregThumb ? `<div class="co-thumb-wrap"><img class="co-thumb" src="${o.bizregThumb}" alt="사업자등록증 미리보기" /><div class="co-thumb-label">사업자등록증</div></div>` : ''}
+      </div>` : ''}
+      ${hasOcrResult ? '<div class="co-ocr-note">인식 결과를 확인해주세요. 비어있거나 "확인 필요" 표시가 있는 항목은 직접 입력/수정해주세요.</div>' : ''}
+      <div class="co-form-field">
+        <label>업체명</label>
+        <input type="text" id="coFName" value="${coEscapeAttr(vals.name)}" />${fieldBadge('name')}
+      </div>
+      <div id="coFNameErr" class="co-form-error" style="display:none;">업체명을 입력하세요.</div>
+      ${conflictHtml('name')}
+      <div class="co-form-field"><label>대표자</label><input type="text" id="coFRep" value="${coEscapeAttr(vals.repName)}" />${fieldBadge('repName')}</div>
+      ${conflictHtml('repName')}
+      <div class="co-form-field"><label>담당자</label><input type="text" id="coFContact" value="${coEscapeAttr(vals.contactName)}" />${fieldBadge('contactName')}</div>
+      ${conflictHtml('contactName')}
+      <div class="co-form-field"><label>전화번호</label><input type="text" id="coFPhone" value="${coEscapeAttr(vals.phone)}" />${fieldBadge('phone')}</div>
+      ${conflictHtml('phone')}
+      <div class="co-form-field"><label>팩스</label><input type="text" id="coFFax" value="${coEscapeAttr(vals.fax)}" />${fieldBadge('fax')}</div>
+      ${conflictHtml('fax')}
+      <div class="co-form-field"><label>이메일</label><input type="text" id="coFEmail" value="${coEscapeAttr(vals.email)}" />${fieldBadge('email')}</div>
+      ${conflictHtml('email')}
+      <div class="co-form-field"><label>사업자등록번호</label><input type="text" id="coFBiz" value="${coEscapeAttr(vals.bizRegNo)}" />${fieldBadge('bizRegNo')}</div>
+      ${conflictHtml('bizRegNo')}
+      <div class="co-form-field"><label>주소</label><input type="text" id="coFAddr" value="${coEscapeAttr(vals.address)}" />${fieldBadge('address')}</div>
+      ${conflictHtml('address')}
+      <div class="co-form-field"><label>메모</label><textarea id="coFMemo">${coEscapeHtml(vals.memo)}</textarea></div>
+      <div id="coDupWarning"></div>
+      <div class="co-form-actions">
+        <button type="button" class="co-text-action" id="coFormCancel">취소</button>
+        <button type="button" class="ai-run-btn" id="coFormSave">저장</button>
+      </div>
+    `;
+
+    Object.keys(FIELD_INPUT_ID).forEach(field=>{
+      const el = document.getElementById(FIELD_INPUT_ID[field]);
+      if(el) el.addEventListener('input', ()=>{ coState.formValues[field] = el.value; coState.formDirty = true; });
+    });
+    const memoEl = document.getElementById('coFMemo');
+    if(memoEl) memoEl.addEventListener('input', ()=>{ coState.formValues.memo = memoEl.value; coState.formDirty = true; });
+
+    coDetailCol.querySelectorAll('[data-conflict-field]').forEach(box=>{
+      const field = box.getAttribute('data-conflict-field');
+      box.querySelectorAll('input[type=radio]').forEach(radio=>{
+        radio.addEventListener('change', ()=>{
+          const c = o.conflicts[field];
+          coState.formValues[field] = radio.value === 'card' ? c.card : c.bizreg;
+          const input = document.getElementById(FIELD_INPUT_ID[field]);
+          if(input) input.value = coState.formValues[field];
+        });
+      });
+    });
+
+    document.getElementById('coAttachCardBtn').addEventListener('click', ()=> document.getElementById('coAttachCardInput').click());
+    document.getElementById('coAttachBizBtn').addEventListener('click', ()=> document.getElementById('coAttachBizInput').click());
+    document.getElementById('coAttachCardInput').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      e.target.value = '';
+      if(file) await coHandleAttach(file, 'card');
+    });
+    document.getElementById('coAttachBizInput').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      e.target.value = '';
+      if(file) await coHandleAttach(file, 'bizreg');
+    });
+
+    document.getElementById('coFormCancel').addEventListener('click', ()=>{
+      coState.ocr = null;
+      coState.formDirty = false;
+      if(isNew){ coState.mode = 'list'; coState.selectedId = null; }
+      else { coState.mode = 'detail'; }
+      coRender();
+    });
+
+    document.getElementById('coFormSave').addEventListener('click', ()=> coAttemptSave());
+  }
+
+  function coAttemptSave(){
+    const nameEl = document.getElementById('coFName');
+    const name = nameEl.value.trim();
+    const errEl = document.getElementById('coFNameErr');
+    if(!name){
+      errEl.style.display = 'block';
+      nameEl.focus();
+      return;
+    }
+    errEl.style.display = 'none';
+    const candidate = {
+      name,
+      repName: document.getElementById('coFRep').value.trim(),
+      contactName: document.getElementById('coFContact').value.trim(),
+      phone: document.getElementById('coFPhone').value.trim(),
+      fax: document.getElementById('coFFax').value.trim(),
+      email: document.getElementById('coFEmail').value.trim(),
+      bizRegNo: document.getElementById('coFBiz').value.trim(),
+      address: document.getElementById('coFAddr').value.trim(),
+      memo: document.getElementById('coFMemo').value.trim()
+    };
+
+    if(!coState.dupConfirmed){
+      const dup = findSimilarCompany(candidate, coState.selectedId);
+      if(dup){
+        coShowDupWarning(dup);
+        return;
+      }
+    }
+    coState.dupConfirmed = false;
+    coState.formDirty = false;
+    coState.ocr = null;
+
+    if(coState.mode === 'add'){
+      // 저장 버튼을 누르기 전까지는 실제 업체 목록/저장소에 절대 반영되지 않는다(§7/§10).
+      // 저장 시에는 OCR 원본값이 아니라 사용자가 최종 확인/수정한 candidate 값을 사용한다.
+      const newRec = Object.assign({ id: coGenId() }, candidate);
+      coState.records.push(newRec);
+      coWriteAll(coState.records);
+      coState.selectedId = newRec.id;
+    } else {
+      const rec = coState.records.find(r=> r.id === coState.selectedId);
+      if(rec){
+        Object.assign(rec, candidate);
+        coWriteAll(coState.records);
+      }
+    }
+    coState.mode = 'detail';
+    coRender();
+  }
+
+  function coShowDupWarning(dup){
+    const box = document.getElementById('coDupWarning');
+    if(!box) return;
+    box.innerHTML = `
+      <div class="co-dup-box">
+        <div>비슷한 업체가 있습니다: <strong>${coEscapeHtml(dup.name)}</strong></div>
+        <div class="co-dup-actions">
+          <button type="button" class="co-text-action" id="coDupView">기존 업체 보기</button>
+          <button type="button" class="co-text-action" id="coDupProceed">그래도 새로 등록</button>
+        </div>
+      </div>`;
+    document.getElementById('coDupView').addEventListener('click', ()=>{
+      coState.mode = 'detail';
+      coState.selectedId = dup.id;
+      coState.ocr = null;
+      coRender();
+    });
+    document.getElementById('coDupProceed').addEventListener('click', ()=>{
+      coState.dupConfirmed = true;
+      coAttemptSave();
+    });
+  }
+
+  function coRender(){
+    coRenderList();
+    if(coState.mode === 'add' || coState.mode === 'edit'){ coRenderForm(); return; }
+    if(coState.mode === 'detail'){
+      const rec = coState.records.find(r=> r.id === coState.selectedId);
+      if(!rec){ coState.mode = 'list'; coState.selectedId = null; coRenderDetail(null); return; }
+      coRenderDetail(rec);
+      return;
+    }
+    coRenderDetail(null);
+  }
+
+  coSearchInput.addEventListener('input', ()=>{
+    coState.search = coSearchInput.value;
+    coRenderList();
+  });
+  coAddBtn.addEventListener('click', ()=> coOpenAddForm());
+
+  // ---------- 외부(nav/전체검색) 연동 API ----------
+  function coOpenDetailById(id){
+    coRefresh();
+    coState.selectedId = id;
+    coState.mode = 'detail';
+    coState.ocr = null;
+    coRender();
+  }
+  function coOnEnter(){
+    coRefresh();
+    if(coState.mode !== 'add' && coState.mode !== 'edit') coState.mode = coState.mode === 'detail' ? 'detail' : 'list';
+    coRender();
+  }
+  window.SHIN2_COMPANIES = { openDetail: coOpenDetailById, onEnter: coOnEnter };
+
+  coRefresh();
+  coRender();
 })();
 </script>
 
