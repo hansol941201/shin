@@ -34,7 +34,6 @@
     padding:24px 14px;
     border-right:1px solid var(--line);
   }
-  .brand{ padding:4px 10px 22px; }
   .brand-main{ font-size:19px; font-weight:600; color:var(--navy); letter-spacing:0.2px; }
 
   .nav{ display:flex; flex-direction:column; gap:2px; }
@@ -445,31 +444,74 @@
   .kb-contact-result-line{ font-size:13px; color:var(--text); }
   .kb-no-result{ font-size:12.5px; color:var(--text-muted); padding:10px 0; }
 
-  /* ---------- 내 할 일 ---------- */
-  .todo-section{ margin-top:28px; padding-top:18px; border-top:1px solid var(--line); max-width:800px; }
+  /* ---------- 내 할 일 (사이드바 아이콘 + 우측 슬라이드 패널) ---------- */
+  .brand{ padding:4px 10px 22px; display:flex; align-items:center; justify-content:space-between; }
+  .todo-icon-btn{
+    position:relative; z-index:62; flex:0 0 auto;
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; padding:0;
+    border:none; background:transparent; border-radius:6px; cursor:pointer;
+    color:var(--text-muted);
+  }
+  .todo-icon-btn:hover{ background:#F0F1F4; color:var(--navy); }
+  .todo-icon-btn.active{ background:#EEF1F8; color:var(--navy); }
+  .todo-icon-badge{
+    position:absolute; top:-3px; right:-4px;
+    min-width:13px; height:13px; padding:0 3px;
+    font-size:9px; font-weight:700; line-height:13px; text-align:center;
+    color:var(--navy); background:#E7EAF3; border-radius:7px;
+  }
+
+  .todo-panel-overlay{
+    position:fixed; inset:0; background:rgba(17,24,39,0.12); z-index:60; display:none;
+  }
+  .todo-panel-overlay.open{ display:block; }
+  .todo-panel{
+    position:fixed; top:0; right:0; height:100vh; width:320px; max-width:88vw;
+    background:var(--surface); border-left:1px solid var(--line);
+    box-shadow:-6px 0 18px rgba(17,24,39,0.07);
+    z-index:61; padding:20px 18px; box-sizing:border-box; overflow-y:auto;
+    transform:translateX(100%); transition:transform .16s ease;
+  }
+  .todo-panel.open{ transform:translateX(0); }
   .todo-header{ display:flex; align-items:center; justify-content:space-between; }
   .todo-title{ font-size:14px; font-weight:700; color:var(--text); }
-  .todo-add-row{ display:flex; gap:8px; margin-top:10px; }
+  .todo-panel-close{ border:none; background:transparent; cursor:pointer; font-size:17px; line-height:1; color:var(--text-muted); padding:2px 4px; }
+  .todo-panel-close:hover{ color:var(--text); }
+  .todo-add-toggle-row{ margin-top:14px; }
+  .todo-add-row{ display:flex; gap:8px; margin-top:14px; }
   .todo-add-row input{
     flex:1; height:32px; padding:0 10px; font-size:13px; font-family:inherit;
     color:var(--text); background:var(--surface); border:1px solid var(--line);
     border-radius:6px; outline:none; box-sizing:border-box;
   }
   .todo-add-row input:focus{ border-color:#C7CEDB; }
-  .todo-list{ margin-top:10px; }
+  .todo-list{ margin-top:12px; }
   .todo-empty{ font-size:12.5px; color:var(--text-muted); padding:10px 4px; }
-  .todo-row{ display:flex; align-items:center; gap:8px; padding:7px 4px; border-bottom:1px solid var(--line); }
+  .todo-row{ display:flex; align-items:center; gap:6px; padding:7px 2px; border-bottom:1px solid var(--line); }
   .todo-row:last-child{ border-bottom:none; }
   .todo-checkbox{ flex:0 0 auto; width:15px; height:15px; accent-color:var(--navy); cursor:pointer; }
-  .todo-text{ flex:1; min-width:0; font-size:13.5px; color:var(--text); cursor:text; outline:none; padding:2px 2px; border-radius:3px; }
+  .todo-text{ flex:1; min-width:0; font-size:13px; color:var(--text); cursor:text; outline:none; padding:2px 2px; border-radius:3px; overflow-wrap:anywhere; }
   .todo-text:hover{ background:#F0F1F4; }
-  .todo-row.done .todo-text{ color:var(--text-muted); text-decoration:line-through; }
   .todo-move-btns{ display:flex; gap:2px; flex:0 0 auto; }
-  .todo-move-btn{ border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); padding:2px 4px; }
+  .todo-move-btn{ border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); padding:2px 3px; }
   .todo-move-btn:hover{ color:var(--navy); }
   .todo-move-btn:disabled{ opacity:0.3; cursor:default; }
-  .todo-del-btn{ border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-muted); padding:2px 6px; flex:0 0 auto; }
+  .todo-del-btn{
+    border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-muted);
+    padding:2px 4px; flex:0 0 auto; opacity:0; transition:opacity .1s ease;
+  }
+  .todo-row:hover .todo-del-btn{ opacity:1; }
   .todo-del-btn:hover{ color:#B91C1C; }
+
+  .todo-toast{
+    position:absolute; left:18px; right:18px; bottom:16px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-size:12px; color:var(--text); background:#F0F1F4; border:1px solid var(--line);
+    border-radius:6px; padding:8px 10px;
+  }
+  .todo-toast-undo{ border:none; background:transparent; color:var(--navy); font-weight:700; font-size:12px; cursor:pointer; flex:0 0 auto; }
+  .todo-toast-undo:hover{ text-decoration:underline; }
 
   /* ---------- 지식 페이지 ---------- */
   .kb-view{ max-width:1160px; margin:0 auto; }
@@ -627,6 +669,10 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-main">한솔</div>
+      <button type="button" class="todo-icon-btn" id="todoIconBtn" title="내 할 일" aria-label="내 할 일">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12.5 2.3 2.3L16 9.5"/></svg>
+        <span class="todo-icon-badge" id="todoIconBadge" style="display:none;"></span>
+      </button>
     </div>
     <nav class="nav">
       <button type="button" class="nav-item active" id="navHome">
@@ -643,6 +689,22 @@
       </button>
     </nav>
   </aside>
+
+  <div class="todo-panel-overlay" id="todoPanelOverlay"></div>
+  <div class="todo-panel" id="todoPanel">
+    <div class="todo-header">
+      <div class="todo-title">내 할 일</div>
+      <button type="button" id="todoPanelCloseBtn" class="todo-panel-close">&times;</button>
+    </div>
+    <div class="todo-add-toggle-row">
+      <button type="button" id="todoAddToggleBtn" class="acct-add-btn">+ 할 일 추가</button>
+    </div>
+    <div class="todo-add-row" id="todoAddRow" style="display:none;">
+      <input type="text" id="todoAddInput" placeholder="할 일을 입력하세요" />
+      <button type="button" id="todoAddSaveBtn" class="ai-copy-btn">저장</button>
+    </div>
+    <div class="todo-list" id="todoList"></div>
+  </div>
 
   <main class="main">
     <div class="main-inner">
@@ -670,18 +732,6 @@
           </div>
           <div id="aiError" class="ai-error" style="display:none;"></div>
           <div id="aiResult"></div>
-        </div>
-
-        <div class="todo-section" id="todoSection">
-          <div class="todo-header">
-            <div class="todo-title">내 할 일</div>
-            <button type="button" id="todoAddToggleBtn" class="acct-add-btn">+ 추가</button>
-          </div>
-          <div class="todo-add-row" id="todoAddRow" style="display:none;">
-            <input type="text" id="todoAddInput" placeholder="할 일 입력" />
-            <button type="button" id="todoAddSaveBtn" class="ai-copy-btn">저장</button>
-          </div>
-          <div class="todo-list" id="todoList"></div>
         </div>
       </div>
 
@@ -2829,6 +2879,8 @@ ${text}
   // ---------- 내 할 일 (한솔2 전용 신규 기능 — 한솔1 "오늘 할 일"과는 별개) ----------
   // 저장 위치: localStorage['shin2-todos']. 민감정보가 아니므로 평문 저장으로 충분하다
   // (사이트 잠금 게이트 뒤에서만 화면 자체가 보이므로 별도 암호화는 하지 않는다).
+  // UI는 사이드바 상단 아이콘 → 우측 슬라이드 패널로 노출한다(홈 화면 큰 블록은 제거됨).
+  // 인터랙션: 체크 = 완료 = 목록에서 즉시 제거(완료 탭/휴지통 없음). 되돌리기 토스트만 제공.
   const TODO_KEY = 'shin2-todos';
   let todos = [];
 
@@ -2852,21 +2904,64 @@ ${text}
   }
 
   todos = loadTodos();
+  // 예전 UI("체크 시 취소선만 남기고 목록 유지")로 이미 완료 처리된 항목이 남아있다면,
+  // 새 모델("완료 = 제거")에 맞춰 정리한다. 완료되지 않은 데이터는 그대로 보존한다.
+  if(todos.some(t=> t.done)){
+    todos = todos.filter(t=> !t.done);
+    saveTodos();
+  }
 
   const listEl = document.getElementById('todoList');
   const addToggleBtn = document.getElementById('todoAddToggleBtn');
   const addRow = document.getElementById('todoAddRow');
   const addInput = document.getElementById('todoAddInput');
   const addSaveBtn = document.getElementById('todoAddSaveBtn');
+  const iconBtn = document.getElementById('todoIconBtn');
+  const iconBadge = document.getElementById('todoIconBadge');
+  const panelEl = document.getElementById('todoPanel');
+  const overlayEl = document.getElementById('todoPanelOverlay');
+  const panelCloseBtn = document.getElementById('todoPanelCloseBtn');
+
+  let toastEl = null, toastTimer = null;
+  function dismissToast(){
+    if(toastTimer){ clearTimeout(toastTimer); toastTimer = null; }
+    if(toastEl){ toastEl.remove(); toastEl = null; }
+  }
+  function showUndoToast(removedItem, atIndex){
+    dismissToast();
+    toastEl = document.createElement('div');
+    toastEl.className = 'todo-toast';
+    toastEl.innerHTML = `<span>완료했습니다.</span><button type="button" class="todo-toast-undo">되돌리기</button>`;
+    panelEl.appendChild(toastEl);
+    toastEl.querySelector('.todo-toast-undo').addEventListener('click', ()=>{
+      const insertAt = Math.min(atIndex, todos.length);
+      todos.splice(insertAt, 0, removedItem);
+      saveTodos();
+      dismissToast();
+      renderTodos();
+    });
+    toastTimer = setTimeout(()=>{ dismissToast(); }, 4000);
+  }
+
+  function updateBadge(){
+    if(todos.length > 0){
+      iconBadge.textContent = todos.length > 99 ? '99+' : String(todos.length);
+      iconBadge.style.display = 'inline-block';
+    } else {
+      iconBadge.style.display = 'none';
+    }
+  }
 
   function renderTodos(){
+    dismissToast();
+    updateBadge();
     if(todos.length === 0){
       listEl.innerHTML = `<div class="todo-empty">등록된 할 일이 없습니다.</div>`;
       return;
     }
     listEl.innerHTML = todos.map((t, idx)=> `
-      <div class="todo-row${t.done ? ' done' : ''}" data-id="${escapeHtmlT(t.id)}">
-        <input type="checkbox" class="todo-checkbox" ${t.done ? 'checked' : ''} />
+      <div class="todo-row" data-id="${escapeHtmlT(t.id)}">
+        <input type="checkbox" class="todo-checkbox" />
         <span class="todo-text" contenteditable="false" spellcheck="false">${escapeHtmlT(t.text)}</span>
         <div class="todo-move-btns">
           <button type="button" class="todo-move-btn" data-move="up" ${idx === 0 ? 'disabled' : ''}>&uarr;</button>
@@ -2882,9 +2977,14 @@ ${text}
       if(!t) return;
 
       row.querySelector('.todo-checkbox').addEventListener('change', (e)=>{
-        t.done = e.currentTarget.checked;
+        if(!e.currentTarget.checked) return;
+        const i = todos.findIndex(x=> x.id === id);
+        if(i < 0) return;
+        const removed = todos[i];
+        todos.splice(i, 1);
         saveTodos();
         renderTodos();
+        showUndoToast(removed, i);
       });
 
       const textEl = row.querySelector('.todo-text');
@@ -2948,7 +3048,7 @@ ${text}
   function commitAdd(){
     const val = addInput.value.trim();
     if(!val) return;
-    todos.push({ id: genTodoId(), text: val, done: false });
+    todos.push({ id: genTodoId(), text: val });
     saveTodos();
     addInput.value = '';
     renderTodos();
@@ -2959,13 +3059,32 @@ ${text}
     if(e.key === 'Enter'){ e.preventDefault(); commitAdd(); }
   });
 
+  function openPanel(){
+    panelEl.classList.add('open');
+    overlayEl.classList.add('open');
+    iconBtn.classList.add('active');
+  }
+  function closePanel(){
+    panelEl.classList.remove('open');
+    overlayEl.classList.remove('open');
+    iconBtn.classList.remove('active');
+    closeAddRow();
+    dismissToast();
+  }
+  iconBtn.addEventListener('click', ()=>{
+    if(panelEl.classList.contains('open')){ closePanel(); } else { openPanel(); }
+  });
+  panelCloseBtn.addEventListener('click', closePanel);
+  overlayEl.addEventListener('click', closePanel);
+
   // 한솔1 이전(migration) 전용 API: sourceSystem/sourceId 기준으로 중복을 건너뛴다.
   window.SHIN2_TODOS = {
     addFromHansol1: function(records){
       let added = 0, skipped = 0;
       (records||[]).forEach(r=>{
         if(todos.some(t=> t.sourceSystem === 'hansol1' && t.sourceId === r.sourceId)){ skipped++; return; }
-        todos.push({ id: genTodoId(), text: r.text, done: !!r.done, sourceSystem: 'hansol1', sourceId: r.sourceId });
+        if(r.done) { skipped++; return; } // 완료=제거 모델이므로 이미 완료된 항목은 이전하지 않는다
+        todos.push({ id: genTodoId(), text: r.text, sourceSystem: 'hansol1', sourceId: r.sourceId });
         added++;
       });
       if(added){ saveTodos(); renderTodos(); }
