@@ -1567,6 +1567,7 @@ ${text}
         saveSessionKeyBytes(rawBytes);
         showApp();
         refreshAccountsAfterUnlock();
+        window.dispatchEvent(new CustomEvent('shin2-app-unlocked'));
         return;
       }
       const saltBytes = new Uint8Array(bufFromB64(existing.salt));
@@ -1587,6 +1588,7 @@ ${text}
       saveSessionKeyBytes(rawBytes);
       showApp();
       refreshAccountsAfterUnlock();
+      window.dispatchEvent(new CustomEvent('shin2-app-unlocked'));
     } finally {
       gateEnterBtn.disabled = false;
     }
@@ -1610,17 +1612,43 @@ ${text}
     if(restored){
       showApp();
       refreshAccountsAfterUnlock();
+      window.dispatchEvent(new CustomEvent('shin2-app-unlocked'));
     } else {
       showGate();
     }
   })();
 
   // 통합검색용 확장 포인트: 계정함의 사이트명/아이디만 노출한다(비밀번호/URL/메모는 절대 포함하지 않음).
+  // 한솔1 이전(migration) 전용 API: sourceSystem/sourceId 기준으로 중복을 건너뛰고, 비밀번호는 항상
+  // 이 계정함과 동일한 AES-GCM 키로 암호화해서만 저장한다(평문 저장 금지). 잠금 상태(vaultKey 없음)면
+  // 아무 것도 하지 않고 blocked 사유를 반환한다 — 잠금 해제 이벤트에서 다시 호출하면 된다.
+  async function migrateAddAccounts(records){
+    if(!vaultKey) return { added:0, skipped:0, blocked:(records||[]).length, reason:'locked' };
+    let added = 0, skipped = 0;
+    for(const r of (records||[])){
+      if(acctState.records.some(x=> x.sourceSystem === 'hansol1' && x.sourceId === r.sourceId)){ skipped++; continue; }
+      let cipher = null, iv = null;
+      if(r.password){
+        const enc = await encryptStr(vaultKey, r.password);
+        cipher = enc.cipher; iv = enc.iv;
+      }
+      acctState.records.push({
+        id: genId(), site: r.site || '', url: r.url || '', username: r.username || '',
+        memoPlain: r.memo || '', cipher, iv, sourceSystem: 'hansol1', sourceId: r.sourceId
+      });
+      added++;
+    }
+    if(added) persist();
+    return { added, skipped };
+  }
   window.SHIN2_ACCOUNTS = {
     getSearchable: function(){
       return acctState.records.map(r=> ({ id: r.id, site: r.site, username: r.username }));
-    }
+    },
+    migrateAdd: migrateAddAccounts,
+    isUnlocked: function(){ return !!vaultKey; }
   };
+  window.dispatchEvent(new CustomEvent('shin2-accounts-api-ready'));
 })();
 </script>
 
@@ -1755,8 +1783,9 @@ ${text}
       getRecords: ()=> (window.SHIN2_ACCOUNTS && window.SHIN2_ACCOUNTS.getSearchable) ? window.SHIN2_ACCOUNTS.getSearchable() : [],
       score: kbScoreAccount,
       render: kbRenderAccountCard
-    }
-    // 업체 데이터는 아직 한솔2에 없으므로 소스가 없다 — 추가되면 여기에 한 항목만 등록.
+    },
+    // 업체 대기 저장소(shin2-companies-staging, §6) — 업체관리 화면은 아직 없지만 검색에는 연결한다.
+    { type:'company', getRecords: getCompanyStaging, score: kbScoreCompany, render: kbRenderCompanyCard }
   ];
 
   function kbSearchAll(query){
@@ -1895,6 +1924,45 @@ ${text}
       <div class="kb-plain-content">아이디: ${acc.username ? kbHighlight(acc.username, q) : '-'}</div>
     </div>`;
   }
+  // ---------- 업체 대기 저장소(shin2-companies-staging) 검색 연동 ----------
+  // 한솔2에는 아직 업체관리 화면이 없으므로 이 저장소는 화면을 만들지 않고 검색에만 연결한다(§6/§24).
+  // 원본 데이터를 읽기만 하고 이 파일은 절대 그 값을 고치지 않는다.
+  const COMPANIES_STAGING_KEY = 'shin2-companies-staging';
+  function getCompanyStaging(){
+    try{
+      const raw = localStorage.getItem(COMPANIES_STAGING_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function kbScoreCompany(co, q){
+    if(!q) return 0;
+    const name = kbNormalize(co.name);
+    if(name && name === q) return 100;
+    if(name && name.includes(q)) return 90;
+    const rep = kbNormalize(co.repName);
+    if(rep && rep.includes(q)) return 70;
+    const contact = kbNormalize(co.contactName);
+    if(contact && contact.includes(q)) return 65;
+    if(co.phone && kbNormalize(co.phone).includes(q)) return 60;
+    const text = kbNormalize([co.address, co.memo, co.bizRegNo, co.email].filter(Boolean).join(' '));
+    if(text.includes(q)) return 40;
+    return 0;
+  }
+  function kbRenderCompanyCard(co, isTop, q){
+    const lines = [];
+    if(co.repName) lines.push(`대표: ${kbEscapeHtml(co.repName)}`);
+    if(co.contactName) lines.push(`담당: ${kbEscapeHtml(co.contactName)}`);
+    if(co.phone) lines.push(`전화: ${kbEscapeHtml(co.phone)}`);
+    if(co.address) lines.push(`주소: ${kbEscapeHtml(co.address)}`);
+    if(co.memo) lines.push(`메모: ${kbHighlight(co.memo, q)}`);
+    return `<div class="kb-result-card${isTop?' top':''}">
+      <div class="kb-result-cat">업체</div>
+      <div class="kb-result-title">${kbHighlight(co.name, q)}</div>
+      <div class="kb-plain-content">${lines.join('<br>')}</div>
+    </div>`;
+  }
+
   function kbRenderResultEntry(entry, isTop, q){
     const src = SHIN2_SEARCH_SOURCES.find(s=> s.type === entry.type);
     return src ? src.render(entry.record, isTop, q) : '';
@@ -2309,7 +2377,33 @@ ${text}
     }
   }
 
-  window.SHIN2_KB = { renderKbList };
+  // 한솔1 이전(migration) 전용 API: sourceSystem/sourceId 기준으로 이미 있는 항목은 건너뛴다(중복 생성 금지).
+  // originalText 등 넘어온 원문 필드는 그대로 저장할 뿐 이 함수가 가공/수정하지 않는다.
+  function kbHasSource(list, sourceSystem, sourceId){
+    // sourceSystem이 없는(네이티브) 항목끼리는 절대 "같은 출처"로 취급하지 않는다 — 둘 다 undefined이면
+    // 서로 다른 네이티브 레코드인데도 중복으로 오판해 건너뛰는 버그를 막기 위한 가드.
+    if(!sourceSystem) return false;
+    return list.some(x => x.sourceSystem === sourceSystem && x.sourceId === sourceId);
+  }
+  function kbAddItems(newItems){
+    let added = 0, skipped = 0;
+    (newItems||[]).forEach(it=>{
+      if(kbHasSource(kbState.items, it.sourceSystem, it.sourceId)){ skipped++; return; }
+      kbState.items.push(it); added++;
+    });
+    if(added) saveKb();
+    return { added, skipped };
+  }
+  function kbAddContacts(newContacts){
+    let added = 0, skipped = 0;
+    (newContacts||[]).forEach(c=>{
+      if(kbHasSource(kbState.contacts, c.sourceSystem, c.sourceId)){ skipped++; return; }
+      kbState.contacts.push(c); added++;
+    });
+    if(added) saveKb();
+    return { added, skipped };
+  }
+  window.SHIN2_KB = { renderKbList, addItems: kbAddItems, addContacts: kbAddContacts };
 })();
 </script>
 
@@ -2448,7 +2542,284 @@ ${text}
     if(e.key === 'Enter'){ e.preventDefault(); commitAdd(); }
   });
 
+  // 한솔1 이전(migration) 전용 API: sourceSystem/sourceId 기준으로 중복을 건너뛴다.
+  window.SHIN2_TODOS = {
+    addFromHansol1: function(records){
+      let added = 0, skipped = 0;
+      (records||[]).forEach(r=>{
+        if(todos.some(t=> t.sourceSystem === 'hansol1' && t.sourceId === r.sourceId)){ skipped++; return; }
+        todos.push({ id: genTodoId(), text: r.text, done: !!r.done, sourceSystem: 'hansol1', sourceId: r.sourceId });
+        added++;
+      });
+      if(added){ saveTodos(); renderTodos(); }
+      return { added, skipped };
+    }
+  };
+
   renderTodos();
+})();
+</script>
+
+<script>
+(function(){
+  // ================================================================================================
+  // 한솔1 → 한솔2 안전 재이전(migration) 모듈
+  // ------------------------------------------------------------------------------------------------
+  // 목적: 한솔1(work-guide-state-v1, /index.html)에 실제로 쌓여 있는 사용자 데이터를 한솔2로 "복사"한다
+  // (MOVE 아님 — 한솔1 원본은 이 파일에서 절대 읽기 전용 외의 방식으로 건드리지 않는다. write/removeItem을
+  // work-guide-state-v1 키에 대해 단 한 번도 호출하지 않는다).
+  //
+  // 원칙:
+  //  - 원문 불변: guide.blocks[].body / phrases[].body / step.label / step.phoneNote / material.location 등
+  //    사용자가 작성한 문자열은 그대로 originalText/content 필드에 복사한다. 맞춤법 교정, 요약, 순서 변경 없음.
+  //  - 병합 identity: 모든 이전 레코드는 sourceSystem:'hansol1' + sourceId:<한솔1 원본 id 기반 문자열>을 갖는다.
+  //    이미 같은 sourceSystem/sourceId 레코드가 있으면 다시 만들지 않는다(재실행해도 중복 없음 = idempotent).
+  //  - 한솔2 네이티브 데이터(사용자가 한솔2에서 직접 만든 지식/할일/연락처/계정)는 절대 건드리지 않는다 —
+  //    이 모듈은 항상 "추가"만 하고 기존 배열을 덮어쓰지 않는다(state 전체 overwrite 금지).
+  //  - 계정 비밀번호는 절대 평문으로 어디에도 남기지 않는다 — 반드시 기존 AES-GCM 계정함(SHIN2_ACCOUNTS.migrateAdd)을
+  //    통해서만 저장하고, 콘솔에 로그하지 않는다.
+  const H1_STORAGE_KEY = 'work-guide-state-v1';
+  const STATUS_KEY = 'shin2-migration-hansol1-status';
+  const GUIDES_STAGING_KEY = 'shin2-hansol1-guides-staging';
+  const SITES_STAGING_KEY = 'shin2-hansol1-sites-staging';
+  const LINKS_STAGING_KEY = 'shin2-hansol1-links-staging';
+  const MISC_STAGING_KEY = 'shin2-hansol1-misc-staging';
+  const COMPANIES_STAGING_KEY = 'shin2-companies-staging';
+
+  function readJson(key, fallback){
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch(e){ return fallback; }
+  }
+  function writeJson(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+  function deepCopy(v){ return JSON.parse(JSON.stringify(v)); }
+
+  // 결정론적(비-AI) 최소 키워드 분류. 확신 없으면 반드시 unclassified.
+  function classifyText(text){
+    const t = String(text || '');
+    if(/공법|특허|시방서|자재|PT|MOU/.test(t)) return 'method';
+    if(/전화|문의|안내|응대|통화|연락/.test(t)) return 'response';
+    if(/업무|처리|점검|절차|순서|송부|등록|발주/.test(t)) return 'task';
+    return 'unclassified';
+  }
+
+  // 배열 형태 대기 저장소에 원본을 그대로(딥카피) 추가한다. sourceId 기준 중복은 건너뛴다.
+  function stageArray(storageKey, sourceSystem, rawRecords, idFn){
+    const existing = readJson(storageKey, []);
+    const arr = Array.isArray(existing) ? existing : [];
+    const have = new Set(arr.map(x => x.sourceSystem + ':' + x.sourceId));
+    let added = 0, skipped = 0;
+    (rawRecords || []).forEach(rec=>{
+      const sourceId = idFn(rec);
+      const key = sourceSystem + ':' + sourceId;
+      if(have.has(key)){ skipped++; return; }
+      const copy = deepCopy(rec);
+      copy.sourceSystem = sourceSystem;
+      copy.sourceId = sourceId;
+      arr.push(copy);
+      have.add(key);
+      added++;
+    });
+    writeJson(storageKey, arr);
+    return { added, skipped };
+  }
+
+  function loadHansol1State(){
+    const raw = readJson(H1_STORAGE_KEY, null);
+    return raw && typeof raw === 'object' ? raw : null;
+  }
+
+  // Phase 1: 계정(비밀번호)이 필요 없는 모든 항목 — 페이지 로드 즉시(게이트 잠금 여부와 무관) 실행 가능.
+  function runPhase1(h1){
+    const counts = { guidesStaged:0, phraseItems:0, materialItems:0, guideBlockItems:0, guideStepItems:0,
+      linksStaged:0, sitesStaged:0, jurisdictionContacts:0, companiesStaged:0, todosAdded:0, miscStaged:0 };
+
+    // --- 업무가이드(guides): 구조 보존(steps/blocks 순서 그대로) + 블록/단계별 원문 지식 항목 생성 ---
+    if(Array.isArray(h1.guides) && h1.guides.length){
+      const rawGuides = h1.guides.map(g=>{
+        const copy = deepCopy(g);
+        // §5: 원본 순서를 sourceSteps에 그대로 보존. derivedSteps는 한솔2용 파생 구조(현재는 원본과 동일 —
+        // 새 UI가 생기기 전까지는 파생할 내용이 없으므로 항등 복사) — 원본(steps)은 그대로 둔다.
+        copy.sourceSteps = deepCopy(g.steps || []);
+        copy.derivedSteps = deepCopy(g.steps || []);
+        return copy;
+      });
+      const r = stageArray(GUIDES_STAGING_KEY, 'hansol1', rawGuides, g => 'guide:' + g.id);
+      counts.guidesStaged = r.added;
+
+      const kbItems = [];
+      h1.guides.forEach(g=>{
+        (g.blocks || []).forEach(b=>{
+          if(!b || !b.body) return;
+          kbItems.push({
+            id: 'kbh1_' + g.id + '_' + b.id, category: classifyText(b.body),
+            title: g.title, content: b.body, originalText: b.body,
+            sourceSystem: 'hansol1', sourceId: 'guide:' + g.id + ':block:' + b.id
+          });
+        });
+        (g.steps || []).forEach(s=>{
+          if(!s || !s.label) return;
+          kbItems.push({
+            id: 'kbh1_' + g.id + '_step_' + s.id, category: 'task',
+            title: g.title + ' — ' + s.label, content: s.label, originalText: s.label,
+            sourceSystem: 'hansol1', sourceId: 'guide:' + g.id + ':step:' + s.id
+          });
+          if(s.hasPhone && s.phoneNote){
+            kbItems.push({
+              id: 'kbh1_' + g.id + '_step_' + s.id + '_phone', category: 'response',
+              title: g.title + ' — ' + s.label + ' (전화 메모)', content: s.phoneNote, originalText: s.phoneNote,
+              sourceSystem: 'hansol1', sourceId: 'guide:' + g.id + ':step:' + s.id + ':phoneNote'
+            });
+          }
+        });
+      });
+      const added = window.SHIN2_KB.addItems(kbItems);
+      counts.guideBlockItems = kbItems.filter(i=>i.sourceId.includes(':block:')).length;
+      counts.guideStepItems = kbItems.filter(i=>i.sourceId.includes(':step:')).length;
+    }
+
+    // --- 사용자 문구(phrases): 원문 그대로 지식 항목으로 ---
+    if(Array.isArray(h1.phrases) && h1.phrases.length){
+      const items = h1.phrases.filter(p=>p && p.body).map(p=> ({
+        id: 'kbh1_phrase_' + p.id, category: classifyText(p.body),
+        title: p.title || '(제목 없음)', content: p.body, originalText: p.body,
+        sourceSystem: 'hansol1', sourceId: 'phrase:' + p.id
+      }));
+      const r = window.SHIN2_KB.addItems(items);
+      counts.phraseItems = r.added;
+    }
+
+    // --- 자료위치/자료발송 문구(materials): 원문 location 그대로 ---
+    if(Array.isArray(h1.materials) && h1.materials.length){
+      const items = h1.materials.filter(m=>m && m.location).map(m=> ({
+        id: 'kbh1_material_' + m.id, category: 'task',
+        title: m.name || '(이름 없음)', content: m.location, originalText: m.location, url: m.url || '',
+        sourceSystem: 'hansol1', sourceId: 'material:' + m.id
+      }));
+      const r = window.SHIN2_KB.addItems(items);
+      counts.materialItems = r.added;
+    }
+
+    // --- 바로가기(links): 원본 그대로 대기 저장(기타) ---
+    if(Array.isArray(h1.links) && h1.links.length){
+      const r = stageArray(LINKS_STAGING_KEY, 'hansol1', h1.links, l => 'link:' + l.id);
+      counts.linksStaged = r.added;
+    }
+
+    // --- 현장(sites): 원본 그대로 대기 저장(기타) ---
+    if(Array.isArray(h1.sites) && h1.sites.length){
+      const r = stageArray(SITES_STAGING_KEY, 'hansol1', h1.sites, s => 'site:' + s.id);
+      counts.sitesStaged = r.added;
+    }
+
+    // --- 담당자/연락처(jurisdictions) → 지식 연락처. 원본 필드는 sourceFields에 그대로 보존 ---
+    if(Array.isArray(h1.jurisdictions) && h1.jurisdictions.length){
+      const contacts = h1.jurisdictions.map(j=> ({
+        id: 'ct_h1_' + j.id, name: j.manager || '', dept: j.branch || '', role: '',
+        phone: j.phone || '', area: j.region || '',
+        keywords: [j.region, j.branch].filter(Boolean),
+        memo: '', sourceFields: deepCopy(j),
+        sourceSystem: 'hansol1', sourceId: 'jurisdiction:' + j.id
+      }));
+      const r = window.SHIN2_KB.addContacts(contacts);
+      counts.jurisdictionContacts = r.added;
+    }
+
+    // --- 시공사/업체정보(companies) → 대기 저장소(§6). 업체관리 UI는 이번 범위에서 만들지 않는다 ---
+    if(Array.isArray(h1.companies) && h1.companies.length){
+      const r = stageArray(COMPANIES_STAGING_KEY, 'hansol1', h1.companies, c => 'company:' + c.id);
+      counts.companiesStaged = r.added;
+    }
+
+    // --- TODO(todos) → 한솔2 "내 할 일" ---
+    if(Array.isArray(h1.todos) && h1.todos.length && window.SHIN2_TODOS){
+      const records = h1.todos.filter(t=>t && t.text).map(t=> ({ text: t.text, done: !!t.done, sourceId: 'todo:' + t.id }));
+      const r = window.SHIN2_TODOS.addFromHansol1(records);
+      counts.todosAdded = r.added;
+    }
+
+    // --- 기타(workItems/callLogs/phoneQuestionSets/phoneProcedureSets): 원본 구조 그대로 대기 저장 ---
+    const misc = readJson(MISC_STAGING_KEY, { workItems: [], callLogs: [], phoneQuestionSets: {}, phoneProcedureSets: {} });
+    let miscAdded = 0;
+    if(Array.isArray(h1.workItems) && h1.workItems.length){
+      const r = stageArray(MISC_STAGING_KEY + ':workItems', 'hansol1', h1.workItems, w => 'workItem:' + w.id);
+      miscAdded += r.added;
+    }
+    if(Array.isArray(h1.callLogs) && h1.callLogs.length){
+      const r = stageArray(MISC_STAGING_KEY + ':callLogs', 'hansol1', h1.callLogs, c => 'callLog:' + c.id);
+      miscAdded += r.added;
+    }
+    if(h1.phoneQuestionSets && typeof h1.phoneQuestionSets === 'object' && Object.keys(h1.phoneQuestionSets).length){
+      const flat = [];
+      Object.keys(h1.phoneQuestionSets).forEach(tag=>{
+        (h1.phoneQuestionSets[tag] || []).forEach(q=> flat.push(Object.assign({}, q, { __tag: tag })));
+      });
+      const r = stageArray(MISC_STAGING_KEY + ':phoneQuestionSets', 'hansol1', flat, q => 'phoneQ:' + q.__tag + ':' + q.id);
+      miscAdded += r.added;
+    }
+    if(h1.phoneProcedureSets && typeof h1.phoneProcedureSets === 'object' && Object.keys(h1.phoneProcedureSets).length){
+      const flat = [];
+      Object.keys(h1.phoneProcedureSets).forEach(tag=>{
+        (h1.phoneProcedureSets[tag] || []).forEach(p=> flat.push(Object.assign({}, p, { __tag: tag })));
+      });
+      const r = stageArray(MISC_STAGING_KEY + ':phoneProcedureSets', 'hansol1', flat, p => 'phoneP:' + p.__tag + ':' + p.id);
+      miscAdded += r.added;
+    }
+    counts.miscStaged = miscAdded;
+
+    return counts;
+  }
+
+  // Phase 2: 계정정보(credentials) — 계정함이 잠금 해제되어 vaultKey가 있을 때만 실행 가능.
+  async function runPhase2Accounts(h1){
+    if(!Array.isArray(h1.credentials) || !h1.credentials.length) return { added:0, skipped:0, blocked:0 };
+    if(!window.SHIN2_ACCOUNTS || !window.SHIN2_ACCOUNTS.isUnlocked || !window.SHIN2_ACCOUNTS.isUnlocked()){
+      return { added:0, skipped:0, blocked: h1.credentials.length, reason:'locked' };
+    }
+    const records = h1.credentials.filter(c=>c && c.site).map(c=> ({
+      site: c.site, username: c.username || '', password: c.password || '', url: '', memo: '',
+      sourceId: 'credential:' + c.id
+    }));
+    // 비밀번호 원문은 이 함수 호출 인자로만 전달되고, migrateAdd 내부에서 즉시 암호화되어 저장된다.
+    // 이 모듈은 콘솔에 records를 로그하지 않는다(비밀번호 평문 노출 금지).
+    return await window.SHIN2_ACCOUNTS.migrateAdd(records);
+  }
+
+  function saveStatus(patch){
+    const cur = readJson(STATUS_KEY, {});
+    writeJson(STATUS_KEY, Object.assign(cur, patch, { updatedAt: Date.now() }));
+  }
+
+  let phase1Done = false;
+  function runPhase1Once(){
+    if(phase1Done) return;
+    const h1 = loadHansol1State();
+    if(!h1){
+      saveStatus({ found: false, phase1: null });
+      phase1Done = true;
+      return;
+    }
+    const counts = runPhase1(h1);
+    saveStatus({ found: true, phase1: counts });
+    phase1Done = true;
+  }
+
+  async function runPhase2Once(){
+    const h1 = loadHansol1State();
+    if(!h1) return;
+    const r = await runPhase2Accounts(h1);
+    saveStatus({ found: true, phase2Accounts: { added: r.added, skipped: r.skipped, blocked: r.blocked || 0 } });
+  }
+
+  // 지식/할일 API가 이미 등록된 뒤에 실행되도록 스크립트 순서상 마지막(body 끝)에 둔다.
+  runPhase1Once();
+  window.addEventListener('shin2-app-unlocked', ()=>{ runPhase2Once(); });
+  // 계정 API가 이 스크립트보다 먼저 로드되므로 보통 필요 없지만, 혹시 이미 잠금 해제된 채 로드된 경우(자동
+  // 잠금해제 복원) 대비로 한 번 더 시도한다 — runPhase2Accounts 내부의 sourceId 중복검사로 안전하다.
+  if(window.SHIN2_ACCOUNTS && window.SHIN2_ACCOUNTS.isUnlocked && window.SHIN2_ACCOUNTS.isUnlocked()){
+    runPhase2Once();
+  }
+
+  window.SHIN2_MIGRATION = { runPhase1Once, runPhase2Once, STATUS_KEY };
 })();
 </script>
 
