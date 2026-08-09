@@ -106,6 +106,185 @@
     color:var(--text-muted);
     margin-top:10px;
   }
+
+  /* ---------- Home content column (search + AI 문구정리 share the same left edge) ---------- */
+  .home-col{
+    max-width:800px;
+    margin:0 auto;
+  }
+  .search-wrap{ justify-content:flex-start; }
+  .search-box{ max-width:680px; }
+  .hint{ text-align:left; }
+
+  /* ---------- AI 문구정리 ---------- */
+  .ai-section{
+    margin-top:22px;
+    max-width:800px;
+  }
+  .ai-title{
+    font-size:14px;
+    font-weight:700;
+    color:var(--text);
+  }
+  .ai-subtitle{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:3px;
+    margin-bottom:12px;
+  }
+  .ai-textarea{
+    width:100%;
+    min-height:160px;
+    resize:vertical;
+    padding:12px 14px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--text);
+    line-height:1.5;
+    outline:none;
+  }
+  .ai-textarea:focus{ border-color:#C7CEDB; }
+  .ai-textarea::placeholder{ color:#9CA3AF; }
+
+  .ai-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:10px;
+  }
+  .ai-types{ display:flex; gap:6px; }
+  .ai-type-btn{
+    height:30px;
+    padding:0 12px;
+    font-size:12.5px;
+    font-family:inherit;
+    color:var(--text-muted);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .ai-type-btn:hover{ background:#F0F1F4; }
+  .ai-type-btn.active{
+    background:#EEF1F8;
+    border-color:#EEF1F8;
+    color:var(--navy);
+    font-weight:600;
+  }
+  .ai-run-btn{
+    height:32px;
+    padding:0 16px;
+    font-size:13px;
+    font-family:inherit;
+    font-weight:600;
+    color:#fff;
+    background:var(--navy);
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .ai-run-btn:hover{ opacity:0.92; }
+  .ai-run-btn:disabled{ opacity:0.6; cursor:default; }
+
+  .ai-error{
+    margin-top:10px;
+    font-size:12.5px;
+    color:#B91C1C;
+  }
+
+  .ai-result{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .ai-result-label{
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .ai-result-block + .ai-result-block{ margin-top:14px; }
+  .ai-result-heading{
+    font-size:11.5px;
+    color:var(--text-muted);
+    margin-bottom:4px;
+  }
+  .ai-result-text{
+    white-space:pre-wrap;
+    font-size:13.5px;
+    line-height:1.6;
+    color:var(--text);
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+  }
+  .ai-result-actions{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+  }
+  .ai-copy-btn{
+    height:28px;
+    padding:0 10px;
+    font-size:12px;
+    font-family:inherit;
+    color:var(--text);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .ai-copy-btn:hover{ background:#F0F1F4; }
+  .ai-new-btn{
+    margin-top:14px;
+    height:28px;
+    padding:0 10px;
+    font-size:12px;
+    font-family:inherit;
+    color:var(--text-muted);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .ai-new-btn:hover{ background:#F0F1F4; }
+
+  /* ---------- API key modal ---------- */
+  .ai-modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(17,24,39,0.35);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100;
+  }
+  .ai-modal{
+    width:340px;
+    background:var(--surface);
+    border-radius:10px;
+    border:1px solid var(--line);
+    padding:20px;
+  }
+  .ai-modal-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:4px; }
+  .ai-modal-desc{ font-size:12px; color:var(--text-muted); margin-bottom:12px; }
+  .ai-modal input{
+    width:100%;
+    height:36px;
+    padding:0 10px;
+    font-size:13px;
+    font-family:inherit;
+    border:1px solid var(--line);
+    border-radius:6px;
+    outline:none;
+    box-sizing:border-box;
+  }
+  .ai-modal input:focus{ border-color:#C7CEDB; }
+  .ai-modal-actions{
+    display:flex; justify-content:flex-end; gap:8px; margin-top:14px;
+  }
 </style>
 </head>
 <body>
@@ -126,16 +305,325 @@
 
   <main class="main">
     <div class="main-inner">
-      <div class="search-wrap">
-        <div class="search-box">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input type="text" placeholder="업체, 업무, 자료 검색" />
+      <div class="home-col">
+        <div class="search-wrap">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="text" placeholder="업체, 업무, 자료 검색" />
+          </div>
+        </div>
+        <div class="hint">SHIN — 필요한 내용을 검색해서 시작하세요.</div>
+
+        <div class="ai-section">
+          <div class="ai-title">AI 문구정리</div>
+          <div class="ai-subtitle">업무 중 메모한 내용을 그대로 입력하세요.</div>
+          <textarea id="aiInput" class="ai-textarea" placeholder="전화내용, 메모, 단어를 편하게 입력하세요.&#10;예) 신광건설 / 질문서 회신 / 1차미팅 빨리 원함"></textarea>
+          <div class="ai-toolbar">
+            <div class="ai-types" id="aiTypes">
+              <button type="button" class="ai-type-btn active" data-type="report">보고용</button>
+              <button type="button" class="ai-type-btn" data-type="kakao">카톡용</button>
+              <button type="button" class="ai-type-btn" data-type="mail">메일용</button>
+            </div>
+            <button type="button" id="aiRunBtn" class="ai-run-btn">AI로 정리</button>
+          </div>
+          <div id="aiError" class="ai-error" style="display:none;"></div>
+          <div id="aiResult"></div>
         </div>
       </div>
-      <div class="hint">SHIN — 필요한 내용을 검색해서 시작하세요.</div>
     </div>
   </main>
 </div>
+
+<script>
+(function(){
+  // SHIN(기존)과 동일한 localStorage 키를 그대로 재사용한다(같은 origin이므로 이미 공유됨).
+  // 이 키 외에는 SHIN 2 코드가 어떤 기존 localStorage 키도 읽거나 쓰지 않는다.
+  const OPENAI_KEY_STORAGE = 'work-guide-openai-key';
+  const POUR_PREFIX = '[POUR공법]';
+
+  function getApiKey(){
+    return localStorage.getItem(OPENAI_KEY_STORAGE) || '';
+  }
+  function saveApiKey(key){
+    localStorage.setItem(OPENAI_KEY_STORAGE, key);
+  }
+
+  function promptForApiKey(onSaved){
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-modal-overlay';
+    overlay.innerHTML = `
+      <div class="ai-modal">
+        <div class="ai-modal-title">OpenAI API 키 등록</div>
+        <div class="ai-modal-desc">AI 문구정리를 사용하려면 최초 1회 API 키가 필요합니다.</div>
+        <input type="text" id="aiKeyInput" placeholder="sk-..." />
+        <div class="ai-modal-actions">
+          <button type="button" class="ai-copy-btn" id="aiKeyCancel">취소</button>
+          <button type="button" class="ai-run-btn" id="aiKeySave">저장</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#aiKeyInput');
+    input.focus();
+    function close(){ overlay.remove(); }
+    overlay.querySelector('#aiKeyCancel').addEventListener('click', close);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+    overlay.querySelector('#aiKeySave').addEventListener('click', ()=>{
+      const key = input.value.trim();
+      if(!key) return;
+      saveApiKey(key);
+      close();
+      onSaved(key);
+    });
+    input.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ overlay.querySelector('#aiKeySave').click(); }
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  const PROTECTED_FIELDS = '업체명, 아파트명, 전화번호, 담당자 이름, 직급, 날짜, 시간, 금액, 공종, 공법명, 특허번호, 주소, 면적, 요청사항, 회신 여부, 일정';
+
+  const AI_RULES = `절대 규칙:
+1. 입력에 있는 사실은 절대 삭제하지 마.
+2. 입력에 없는 사실을 새로 지어내지 마.
+3. 숫자, 날짜, 전화번호, 회사명, 아파트/건물명, 사람 이름은 절대 바꾸지 마.
+4. 모르는 정보를 추측해서 채우지 마.
+5. 뒤섞인 입력은 읽기 좋은 순서로 재배열해.
+6. 진짜 중복된 표현만 자연스럽게 정리해.
+7. 오타, 띄어쓰기, 맞춤법을 고쳐.
+8. 아래 항목처럼 보이는 값이 입력에 있으면 절대 빠뜨리지 말고 그대로 반영해: ${PROTECTED_FIELDS}.
+문체(어투)만 요청된 용도에 맞게 바꾸고, 내용(사실)은 사용자가 적은 그대로 유지해.`;
+
+  function buildPrompt(type, text){
+    if(type === 'kakao'){
+      return `아래는 업무 중 편하게 적은 메모입니다. 이 메모를 카카오톡으로 보낼 업무 메시지로 정리해줘.
+- 캐주얼하지만 예의 바른 톤으로, 짧고 자연스럽게, 모바일에서 읽기 편하도록 필요하면 줄바꿈해줘.
+- 메모 내용상 고객/거래처에게 보내는 건지 내부 동료에게 보내는 건지 유추할 수 있으면 그에 맞게, 애매하면 무난하고 정중한 비즈니스 톤으로 작성해.
+- 입력에 없는 직함/호칭을 새로 만들어내지 마.
+
+${AI_RULES}
+
+메모:
+"""
+${text}
+"""
+
+다른 설명 없이 정리된 메시지 문구만 출력해.`;
+    }
+    if(type === 'mail'){
+      return `아래는 업무 중 편하게 적은 메모입니다. 이 메모를 바탕으로 업무 이메일의 제목과 본문을 작성해줘.
+- 제목은 핵심 업무 내용을 간결하게 요약해.
+- 본문은 "안녕하세요."로 시작하고, 메모 내용을 자연스러운 이메일 문장으로 풀어 쓰고, "확인 부탁드립니다." "감사합니다." 등으로 자연스럽게 마무리해도 좋아(형식은 유연하게).
+- 반드시 아래 형식 그대로 출력해(다른 설명 금지):
+제목: (제목 내용)
+본문:
+(본문 내용)
+
+${AI_RULES}
+
+메모:
+"""
+${text}
+"""`;
+    }
+    // report (보고용, 기본값)
+    return `아래는 업무 중 편하게 적은 메모입니다. 이 메모를 사내 업무보고용 문구로 정리해줘.
+- 모든 사실을 보존하면서 읽기 좋은 순서로 재배열해.
+- 중복 표현은 제거하고, 오타/맞춤법을 고치고, 불필요한 군더더기는 빼줘.
+- 사내 메신저에 바로 붙여넣을 수 있는 정중하고 간결한 보고체 문장으로 작성해.
+
+${AI_RULES}
+
+메모:
+"""
+${text}
+"""
+
+다른 설명 없이 정리된 보고 문구만 출력해.`;
+  }
+
+  async function callOpenAI(apiKey, prompt){
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model:'gpt-4o-mini',
+        messages:[
+          {role:'system', content:'너는 건설/시공 업무를 돕는 한국어 비서야. 항상 정중한 존댓말로, 요청받은 형식만 정확히 출력해.'},
+          {role:'user', content: prompt}
+        ],
+        temperature:0.5
+      })
+    });
+    if(!res.ok){
+      let detail = '';
+      try{ detail = (await res.json()).error?.message || ''; }catch(e){}
+      throw new Error(`OpenAI API 오류 (${res.status}) ${detail}`);
+    }
+    const data = await res.json();
+    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
+  }
+
+  // 메일용 결과 파싱: "제목: ...\n본문:\n..." 형식을 분리한다.
+  function parseMailResult(raw){
+    const m = raw.match(/제목\s*[:：]\s*([^\n]*)\n+본문\s*[:：]\s*([\s\S]*)/);
+    let subject, body;
+    if(m){
+      subject = m[1].trim();
+      body = m[2].trim();
+    } else {
+      const lines = raw.split('\n');
+      subject = (lines[0] || '').trim();
+      body = lines.slice(1).join('\n').trim();
+    }
+    return { subject, body };
+  }
+
+  // [POUR공법] 접두사를 정확히 1회만 붙인다(이미 붙어있으면 중복 방지).
+  function applyPourPrefix(subject){
+    const s = (subject || '').trim();
+    if(s.indexOf(POUR_PREFIX) === 0) return s;
+    return POUR_PREFIX + ' ' + s;
+  }
+
+  const state = { type:'report', loading:false, error:'', result:null };
+
+  const inputEl = document.getElementById('aiInput');
+  const runBtn = document.getElementById('aiRunBtn');
+  const errorEl = document.getElementById('aiError');
+  const resultEl = document.getElementById('aiResult');
+  const typesWrap = document.getElementById('aiTypes');
+
+  typesWrap.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.ai-type-btn');
+    if(!btn) return;
+    state.type = btn.getAttribute('data-type');
+    typesWrap.querySelectorAll('.ai-type-btn').forEach(b=>b.classList.toggle('active', b === btn));
+  });
+
+  function setError(msg){
+    state.error = msg || '';
+    errorEl.style.display = state.error ? 'block' : 'none';
+    errorEl.textContent = state.error;
+  }
+
+  function setLoading(loading){
+    state.loading = loading;
+    runBtn.disabled = loading;
+    runBtn.textContent = loading ? '정리 중...' : 'AI로 정리';
+  }
+
+  function renderResult(){
+    if(!state.result){ resultEl.innerHTML = ''; return; }
+    if(state.result.type === 'mail'){
+      const { subject, body } = state.result;
+      resultEl.innerHTML = `
+        <div class="ai-result">
+          <div class="ai-result-label">수정 결과</div>
+          <div class="ai-result-block">
+            <div class="ai-result-heading">제목</div>
+            <div class="ai-result-text" id="aiSubjectText">${escapeHtml(subject)}</div>
+            <div class="ai-result-actions">
+              <button type="button" class="ai-copy-btn" data-copy="subject">제목 복사</button>
+            </div>
+          </div>
+          <div class="ai-result-block">
+            <div class="ai-result-heading">본문</div>
+            <div class="ai-result-text" id="aiBodyText">${escapeHtml(body)}</div>
+            <div class="ai-result-actions">
+              <button type="button" class="ai-copy-btn" data-copy="body">본문 복사</button>
+              <button type="button" class="ai-copy-btn" data-copy="all">전체 복사</button>
+            </div>
+          </div>
+          <button type="button" class="ai-new-btn" id="aiNewBtn">새 문구</button>
+        </div>
+      `;
+    } else {
+      resultEl.innerHTML = `
+        <div class="ai-result">
+          <div class="ai-result-label">수정 결과</div>
+          <div class="ai-result-block">
+            <div class="ai-result-text" id="aiPlainText">${escapeHtml(state.result.text)}</div>
+            <div class="ai-result-actions">
+              <button type="button" class="ai-copy-btn" data-copy="plain">복사</button>
+            </div>
+          </div>
+          <button type="button" class="ai-new-btn" id="aiNewBtn">새 문구</button>
+        </div>
+      `;
+    }
+    resultEl.querySelectorAll('[data-copy]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const kind = btn.getAttribute('data-copy');
+        let text = '';
+        if(kind === 'subject') text = state.result.subject;
+        else if(kind === 'body') text = state.result.body;
+        else if(kind === 'all') text = `제목: ${state.result.subject}\n\n본문:\n${state.result.body}`;
+        else text = state.result.text;
+        navigator.clipboard && navigator.clipboard.writeText(text).catch(()=>{});
+      });
+    });
+    const newBtn = document.getElementById('aiNewBtn');
+    if(newBtn){
+      newBtn.addEventListener('click', ()=>{
+        inputEl.value = '';
+        state.result = null;
+        setError('');
+        renderResult();
+      });
+    }
+  }
+
+  async function runAi(){
+    if(state.loading) return;
+    const text = inputEl.value.trim();
+    if(!text) return;
+    const apiKey = getApiKey();
+    if(!apiKey){
+      promptForApiKey((key)=> doRun(key, text));
+      return;
+    }
+    doRun(apiKey, text);
+  }
+
+  async function doRun(apiKey, text){
+    setError('');
+    setLoading(true);
+    const type = state.type;
+    const prompt = buildPrompt(type, text);
+    try{
+      const raw = await callOpenAI(apiKey, prompt);
+      if(type === 'mail'){
+        const { subject, body } = parseMailResult(raw);
+        state.result = { type:'mail', subject: applyPourPrefix(subject), body };
+      } else {
+        state.result = { type, text: raw };
+      }
+      renderResult();
+    } catch(err){
+      setError('문구 정리에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  runBtn.addEventListener('click', runAi);
+  inputEl.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+      e.preventDefault();
+      runAi();
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
