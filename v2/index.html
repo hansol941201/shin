@@ -826,6 +826,109 @@
   .task-detail-title{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; }
   .task-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
   .task-company-link{ font-size:12.5px; color:var(--navy); background:none; border:none; cursor:pointer; padding:0; font-family:inherit; text-decoration:underline; }
+
+  /* ---------- 상단 바로가기 (quick links) ---------- */
+  .qlinks-bar{
+    max-width:800px;
+    display:flex; align-items:center; gap:6px;
+    margin-bottom:14px;
+  }
+  .qlinks-scroll{
+    flex:1 1 auto; min-width:0;
+    display:flex; align-items:center; gap:3px;
+    overflow-x:auto; white-space:nowrap;
+    scrollbar-width:thin;
+  }
+  .qlinks-scroll::-webkit-scrollbar{ height:4px; }
+  .qlinks-scroll::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+  .qlink-btn{
+    flex:0 0 auto;
+    display:inline-flex; align-items:center; gap:4px;
+    height:28px; padding:0 10px;
+    font-size:12.5px; font-family:inherit;
+    color:var(--text-muted);
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:6px;
+    cursor:pointer;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .qlink-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .qlink-btn svg{ flex:0 0 auto; opacity:0.6; }
+  .qlinks-empty-hint{ font-size:11.5px; color:var(--text-muted); flex:0 0 auto; }
+  .qlinks-controls{ flex:0 0 auto; display:flex; align-items:center; gap:2px; }
+  .qlinks-edit-toggle{
+    height:26px; padding:0 8px;
+    font-size:11.5px; font-family:inherit;
+    color:var(--text-muted);
+    background:transparent; border:1px solid var(--line); border-radius:6px;
+    cursor:pointer;
+  }
+  .qlinks-edit-toggle:hover{ background:#F0F1F4; color:var(--text); }
+  .qlinks-edit-toggle.active{ background:#EEF1F8; border-color:#EEF1F8; color:var(--navy); font-weight:600; }
+  .qlinks-add-btn{
+    width:26px; height:26px;
+    font-size:15px; line-height:1; font-family:inherit;
+    color:var(--text-muted);
+    background:transparent; border:1px solid var(--line); border-radius:6px;
+    cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .qlinks-add-btn:hover{ background:#F0F1F4; color:var(--text); }
+
+  .qlink-edit-item{
+    flex:0 0 auto;
+    display:inline-flex; align-items:center; gap:4px;
+    height:28px; padding:0 8px 0 10px;
+    font-size:12px; color:var(--text);
+    background:var(--bg); border:1px solid var(--line); border-radius:6px;
+    white-space:nowrap;
+  }
+  .qlink-edit-name{ max-width:120px; overflow:hidden; text-overflow:ellipsis; }
+  .qlink-mini-btn{
+    border:none; background:transparent; cursor:pointer;
+    font-size:11px; color:var(--text-muted); padding:2px 3px; font-family:inherit;
+  }
+  .qlink-mini-btn:hover{ color:var(--navy); }
+  .qlink-mini-btn.danger:hover{ color:#B91C1C; }
+  .qlink-mini-btn:disabled{ opacity:0.3; cursor:default; }
+  .qlink-mini-btn:disabled:hover{ color:var(--text-muted); }
+
+  .qlink-modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(17,24,39,0.35);
+    display:flex; align-items:center; justify-content:center;
+    z-index:110;
+  }
+  .qlink-modal{
+    width:340px; max-width:calc(100vw - 24px);
+    background:var(--surface);
+    border-radius:10px;
+    border:1px solid var(--line);
+    padding:20px;
+  }
+  .qlink-modal-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:14px; }
+  .qlink-form-field{ margin-bottom:14px; }
+  .qlink-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .qlink-form-field input{
+    width:100%; height:36px; padding:0 10px;
+    font-size:13px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px;
+    outline:none; box-sizing:border-box;
+  }
+  .qlink-form-field input:focus{ border-color:#C7CEDB; }
+  .qlink-form-error{ font-size:11.5px; color:#B91C1C; margin-top:-8px; margin-bottom:12px; }
+  .qlink-modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+  .qlink-modal-btn{
+    height:32px; padding:0 14px;
+    font-size:12.5px; font-family:inherit; font-weight:600;
+    border-radius:6px; cursor:pointer;
+  }
+  .qlink-modal-btn.cancel{ background:var(--surface); border:1px solid var(--line); color:var(--text-muted); }
+  .qlink-modal-btn.cancel:hover{ background:#F0F1F4; }
+  .qlink-modal-btn.save{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
+  .qlink-modal-btn.save:hover{ opacity:0.92; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 
@@ -1046,8 +1149,35 @@
     </div>
   </div>
 
+  <div class="qlink-modal-overlay" id="qlinkModalOverlay" style="display:none;">
+    <div class="qlink-modal" id="qlinkModal">
+      <div class="qlink-modal-title" id="qlinkModalTitle">바로가기 추가</div>
+      <div class="qlink-form-field">
+        <label for="qlinkNameInput">이름</label>
+        <input type="text" id="qlinkNameInput" placeholder="예) 기술지원" maxlength="20" />
+      </div>
+      <div class="qlink-form-field">
+        <label for="qlinkUrlInput">주소(URL)</label>
+        <input type="text" id="qlinkUrlInput" placeholder="예) naver.com 또는 https://example.com" />
+      </div>
+      <div class="qlink-form-error" id="qlinkFormError" style="display:none;"></div>
+      <div class="qlink-modal-actions">
+        <button type="button" class="qlink-modal-btn cancel" id="qlinkCancelBtn">취소</button>
+        <button type="button" class="qlink-modal-btn save" id="qlinkSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+
   <main class="main">
     <div class="main-inner">
+      <div class="qlinks-bar" id="qlinksBar">
+        <div class="qlinks-scroll" id="qlinksScroll"></div>
+        <div class="qlinks-controls">
+          <button type="button" class="qlinks-edit-toggle" id="qlinksEditToggle">편집</button>
+          <button type="button" class="qlinks-add-btn" id="qlinksAddBtn" title="바로가기 추가" aria-label="바로가기 추가">＋</button>
+        </div>
+      </div>
+
       <div class="home-col" id="homeView">
         <div class="search-wrap">
           <div class="search-box">
@@ -5244,6 +5374,197 @@ ${text}
 
   coRefresh();
   coRender();
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   SHIN2_QUICKLINKS — 상단 바로가기
+   자주 접속하는 업무 사이트를 한 번에 열기 위한 보조 기능. 전체 검색/AI
+   문구정리보다 눈에 띄면 안 되므로 작은 텍스트형 버튼으로만 구성한다.
+   완전히 사용자 데이터 기반이며(하드코딩 없음), 통합검색과는 분리된 별도
+   저장소를 쓴다 — 바로가기 이름이 검색 결과에 섞이지 않는다.
+   저장: localStorage 'shin2-quicklinks-v1' = [{id, name, url, order}]
+   ========================================================================== */
+(function(){
+  'use strict';
+  var STORAGE_KEY = 'shin2-quicklinks-v1';
+
+  var bar = document.getElementById('qlinksBar');
+  var scrollEl = document.getElementById('qlinksScroll');
+  var editToggleBtn = document.getElementById('qlinksEditToggle');
+  var addBtn = document.getElementById('qlinksAddBtn');
+  var modalOverlay = document.getElementById('qlinkModalOverlay');
+  var modalTitle = document.getElementById('qlinkModalTitle');
+  var nameInput = document.getElementById('qlinkNameInput');
+  var urlInput = document.getElementById('qlinkUrlInput');
+  var formError = document.getElementById('qlinkFormError');
+  var cancelBtn = document.getElementById('qlinkCancelBtn');
+  var saveBtn = document.getElementById('qlinkSaveBtn');
+  if(!bar || !scrollEl) return;
+
+  var editMode = false;
+  var editingId = null; // null = 새로 추가, 값이 있으면 해당 id 수정
+
+  function uid(){ return 'qlink_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function loadAll(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      if(!Array.isArray(list)) return [];
+      return list.slice().sort(function(a,b){ return (a.order||0) - (b.order||0); });
+    }catch(e){ return []; }
+  }
+  function saveAll(list){
+    // order를 배열 순서대로 다시 매겨서 저장한다.
+    list.forEach(function(item, i){ item.order = i; });
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+
+  // URL 정규화: http(s):// 없으면 https:// 를 자동 보완.
+  function normalizeUrl(raw){
+    var v = (raw || '').trim();
+    if(!v) return '';
+    if(!/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v;
+  }
+  // 완전히 URL 형태가 아닌 임의 텍스트만 걸러내면 충분한 느슨한 검증.
+  function looksLikeUrl(normalized){
+    var u;
+    try{ u = new URL(normalized); }catch(e){ return false; }
+    if(u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+    var host = u.hostname;
+    if(!host) return false;
+    if(host === 'localhost') return true;
+    // 최소한 "무언가.무언가" 형태(도메인 점 + 2자 이상 TLD, 또는 IPv4)는 되어야 한다.
+    return /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/.test(host) || /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+  }
+
+  function svgIcon(){
+    return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>';
+  }
+
+  function render(){
+    var items = loadAll();
+    editToggleBtn.classList.toggle('active', editMode);
+
+    if(!editMode){
+      if(!items.length){
+        scrollEl.innerHTML = '<span class="qlinks-empty-hint">자주 쓰는 사이트를 ＋로 추가해보세요</span>';
+        return;
+      }
+      scrollEl.innerHTML = items.map(function(it){
+        return '<a class="qlink-btn" href="' + escapeHtml(it.url) + '" target="_blank" rel="noopener noreferrer" data-id="' + it.id + '">' +
+          svgIcon() + '<span>' + escapeHtml(it.name) + '</span></a>';
+      }).join('');
+      return;
+    }
+
+    if(!items.length){
+      scrollEl.innerHTML = '<span class="qlinks-empty-hint">등록된 바로가기가 없습니다</span>';
+      return;
+    }
+    scrollEl.innerHTML = items.map(function(it, i){
+      return '' +
+        '<span class="qlink-edit-item" data-id="' + it.id + '">' +
+          '<span class="qlink-edit-name">' + escapeHtml(it.name) + '</span>' +
+          '<button type="button" class="qlink-mini-btn" data-act="up" data-id="' + it.id + '"' + (i === 0 ? ' disabled' : '') + '>&uarr;</button>' +
+          '<button type="button" class="qlink-mini-btn" data-act="down" data-id="' + it.id + '"' + (i === items.length - 1 ? ' disabled' : '') + '>&darr;</button>' +
+          '<button type="button" class="qlink-mini-btn" data-act="edit" data-id="' + it.id + '">수정</button>' +
+          '<button type="button" class="qlink-mini-btn danger" data-act="del" data-id="' + it.id + '">삭제</button>' +
+        '</span>';
+    }).join('');
+  }
+
+  function openModal(mode, item){
+    editingId = mode === 'edit' ? item.id : null;
+    modalTitle.textContent = mode === 'edit' ? '바로가기 수정' : '바로가기 추가';
+    nameInput.value = mode === 'edit' ? item.name : '';
+    urlInput.value = mode === 'edit' ? item.url : '';
+    formError.style.display = 'none';
+    formError.textContent = '';
+    modalOverlay.style.display = 'flex';
+    setTimeout(function(){ nameInput.focus(); }, 0);
+  }
+  function closeModal(){
+    modalOverlay.style.display = 'none';
+    editingId = null;
+  }
+
+  function handleSave(){
+    var name = nameInput.value.trim();
+    var rawUrl = urlInput.value.trim();
+    if(!name){
+      formError.textContent = '이름을 입력해주세요.';
+      formError.style.display = 'block';
+      return;
+    }
+    if(!rawUrl){
+      formError.textContent = '주소(URL)를 입력해주세요.';
+      formError.style.display = 'block';
+      return;
+    }
+    var normalized = normalizeUrl(rawUrl);
+    if(!looksLikeUrl(normalized)){
+      var proceed = confirm('입력하신 주소가 올바른 URL 형식이 아닌 것 같습니다.\n"' + rawUrl + '"\n\n그래도 저장하시겠습니까?');
+      if(!proceed) return;
+    }
+    formError.style.display = 'none';
+
+    var all = loadAll();
+    if(editingId){
+      var rec = all.find(function(x){ return x.id === editingId; });
+      if(rec){ rec.name = name; rec.url = normalized; }
+    } else {
+      all.push({ id: uid(), name: name, url: normalized, order: all.length });
+    }
+    saveAll(all);
+    closeModal();
+    render();
+  }
+
+  addBtn.addEventListener('click', function(){ openModal('add'); });
+  editToggleBtn.addEventListener('click', function(){ editMode = !editMode; render(); });
+  cancelBtn.addEventListener('click', closeModal);
+  saveBtn.addEventListener('click', handleSave);
+  modalOverlay.addEventListener('click', function(e){ if(e.target === modalOverlay) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && modalOverlay.style.display === 'flex') closeModal();
+  });
+
+  scrollEl.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-act]');
+    if(!btn) return;
+    e.preventDefault();
+    var id = btn.dataset.id;
+    var act = btn.dataset.act;
+    var all = loadAll();
+    var idx = all.findIndex(function(x){ return x.id === id; });
+    if(idx === -1) return;
+
+    if(act === 'del'){
+      all.splice(idx, 1);
+      saveAll(all);
+      render();
+    } else if(act === 'edit'){
+      openModal('edit', all[idx]);
+    } else if(act === 'up' && idx > 0){
+      var tmp = all[idx - 1]; all[idx - 1] = all[idx]; all[idx] = tmp;
+      saveAll(all);
+      render();
+    } else if(act === 'down' && idx < all.length - 1){
+      var tmp2 = all[idx + 1]; all[idx + 1] = all[idx]; all[idx] = tmp2;
+      saveAll(all);
+      render();
+    }
+  });
+
+  render();
 })();
 </script>
 
