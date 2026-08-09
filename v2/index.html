@@ -439,6 +439,9 @@
   .kb-copy-btn:hover{ color:var(--navy); }
   .kb-copied-tag{ font-size:11px; color:var(--navy); }
   .kb-aftercall-text, .kb-extra-text, .kb-plain-content{ font-size:13px; color:var(--text-muted); line-height:1.6; white-space:pre-wrap; }
+  .kb-aftercall-line{ display:flex; align-items:baseline; gap:7px; }
+  .kb-aftercall-line + .kb-aftercall-line{ margin-top:2px; }
+  .kb-aftercall-check{ color:#DC2626; font-size:12px; flex:0 0 auto; }
   .kb-contact-result-line{ font-size:13px; color:var(--text); }
   .kb-no-result{ font-size:12.5px; color:var(--text-muted); padding:10px 0; }
 
@@ -1852,7 +1855,7 @@ ${text}
       const scriptHtml = (item.scriptLines||[]).map(kbRenderScriptLine).join('');
       const stepsHtml = (item.steps||[]).length ? `<div class="kb-steps-label">확인 순서</div><div class="kb-steps-text">${kbEscapeHtml((item.steps||[]).join(' → '))}</div>` : '';
       const linksHtml = (item.contactLinks||[]).length ? `<div class="kb-contact-label">담당</div>${(item.contactLinks||[]).map(kbRenderContactLink).join('')}` : '';
-      const afterHtml = item.afterCall ? `<div class="kb-aftercall-label">통화 후</div><div class="kb-aftercall-text">${kbEscapeHtml(item.afterCall)}</div>` : '';
+      const afterHtml = item.afterCall ? `<div class="kb-aftercall-label">통화 후</div><div class="kb-aftercall-text">${item.afterCall.split('\n').filter(line=>line.trim()).map(line=>`<div class="kb-aftercall-line"><span class="kb-aftercall-check">✓</span>${kbEscapeHtml(line.trim())}</div>`).join('')}</div>` : '';
       const extraHtml = item.extraNote ? `<div class="kb-extra-label">추가 참고</div><div class="kb-extra-text">${kbEscapeHtml(item.extraNote)}</div>` : '';
       body = scriptHtml + stepsHtml + linksHtml + afterHtml + extraHtml;
     } else {
