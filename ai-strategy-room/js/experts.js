@@ -110,13 +110,19 @@ const EXPERTS = [
   }
 ];
 
-/** 라운드 구조 정의 — meeting-engine.js와 진행 화면(app.js)이 공용으로 사용한다 */
+/**
+ * 라운드(진행 화면 단계) 구조 정의 — meeting-engine.js와 진행 화면(app.js)이 공용으로 사용한다.
+ *
+ * 2024년 개편: Claude 호출 횟수를 10회 → 4~5회로 줄이기 위해, 7명의 전문가를
+ * "누가 몇 번 호출되는가"가 아니라 "한 번의 호출 안에서 몇 명이 실제로 충돌하는가"로
+ * 재구성했다. 화면에 보이는 진행 단계는 이전과 동일하게 5단계를 유지해서(마지막
+ * "최종 보고서 작성" 단계는 심사가 바로 통과되면 실제 호출 없이 즉시 완료 처리된다)
+ * 사용자 체감 흐름은 바뀌지 않는다 — 아래 meeting-engine.js 참고.
+ */
 const MEETING_ROUNDS = [
-  { id: 'analyze', label: '주제 분석', stepLabel: '주제 분석' },
-  { id: 'stakeholder-view', label: '실제 이해관계자 관점 검토', stepLabel: '이해관계자 관점 검토' },
-  { id: 'debate', label: '대안 제시 및 상호 반박', stepLabel: '대안 토론 중' },
-  { id: 'benchmark', label: '외부 사례 검토', stepLabel: '외부 사례 검토' },
-  { id: 'verify', label: '운영 현실성·데이터 검증', stepLabel: '데이터 검증' },
-  { id: 'judge', label: '최종 심사', stepLabel: '최종 심사' },
-  { id: 'report', label: '보고서 작성', stepLabel: '보고서 작성' }
+  { id: 'analyze', label: '문제 분석 · 대상 판단 · 7인 1차 의견', stepLabel: '문제 분석 · 1차 의견' },
+  { id: 'debate', label: '상호 반박 및 대안 정리', stepLabel: '상호 반박 중' },
+  { id: 'redesign', label: '전략·데이터 재설계', stepLabel: '실행안 재설계' },
+  { id: 'judge', label: '최종 심사', stepLabel: '최종 심사 중' },
+  { id: 'report', label: '최종 보고서 작성', stepLabel: '보고서 작성' }
 ];
