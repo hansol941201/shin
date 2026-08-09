@@ -563,10 +563,25 @@
   .co-col-phone{ flex:1; font-size:12.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   .co-detail-empty{ font-size:12.5px; color:var(--text-muted); padding:8px 4px; }
-  .co-detail-title{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:16px; }
+  .co-detail-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
+  .co-detail-title{ font-size:15px; font-weight:700; color:var(--text); margin:0; }
+  .co-copy-all-btn{
+    height:26px; padding:0 10px; font-size:12px; font-weight:600; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-family:inherit; flex:none;
+  }
+  .co-copy-all-btn:hover{ background:#F0F1F4; color:var(--text); }
   .co-field{ margin-bottom:16px; }
   .co-field-label{ font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .co-field-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .co-field-value{ font-size:13.5px; color:var(--text); line-height:1.5; word-break:break-word; }
+  .co-field-copy-btn{
+    flex:none; border:none; background:transparent; cursor:pointer; font-size:11.5px; color:var(--text-muted);
+    padding:2px 0 2px 8px; font-family:inherit; white-space:nowrap;
+  }
+  .co-field-copy-btn:hover{ color:var(--navy); text-decoration:underline; }
+  .co-field-open-btn{ color:var(--text-muted); font-size:11.5px; text-decoration:none; padding:2px 0 2px 8px; white-space:nowrap; }
+  .co-field-open-btn:hover{ color:var(--navy); text-decoration:underline; }
+  .co-copied{ font-size:11px; color:var(--navy); padding-left:8px; white-space:nowrap; }
   .co-memo{ white-space:pre-wrap; }
   .co-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
   .co-text-action{ border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-muted); padding:2px 0; font-family:inherit; }
@@ -3791,7 +3806,7 @@ ${text}
   }
   function coEscapeAttr(str){ return coEscapeHtml(str); }
 
-  const CO_EMPTY_FORM = { name:'', repName:'', contactName:'', phone:'', fax:'', email:'', bizRegNo:'', address:'', memo:'' };
+  const CO_EMPTY_FORM = { name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'' };
 
   const coState = {
     records: [],
@@ -4035,8 +4050,9 @@ ${text}
     return { merged, ambiguous, conflicts };
   }
 
-  const FIELD_INPUT_ID = { name:'coFName', repName:'coFRep', contactName:'coFContact', phone:'coFPhone',
-                            fax:'coFFax', email:'coFEmail', bizRegNo:'coFBiz', address:'coFAddr' };
+  const FIELD_INPUT_ID = { name:'coFName', repName:'coFRep', contactName:'coFContact', position:'coFPosition',
+                            phone:'coFPhone', mobile:'coFMobile', fax:'coFFax', email:'coFEmail', bizRegNo:'coFBiz',
+                            address:'coFAddr', website:'coFWebsite' };
   const FIELD_LABEL = { name:'업체명', repName:'대표자', contactName:'담당자', phone:'전화번호',
                          fax:'팩스', email:'이메일', bizRegNo:'사업자등록번호', address:'주소' };
 
@@ -4134,29 +4150,94 @@ ${text}
     });
   }
 
+  // 화면에 보이는 값 그대로 복사한다 — 전화번호/주소를 임의로 정제·재포맷하지 않는다(§8,§9).
+  function coShowCopied(btn){
+    const old = btn.nextElementSibling && btn.nextElementSibling.classList.contains('co-copied') ? btn.nextElementSibling : null;
+    if(old) old.remove();
+    const span = document.createElement('span');
+    span.className = 'co-copied';
+    span.textContent = '복사됨';
+    btn.insertAdjacentElement('afterend', span);
+    setTimeout(()=>{ if(span.parentNode) span.remove(); }, 1200);
+  }
+  function coCopyText(text, btn){
+    if(!navigator.clipboard){ return; }
+    navigator.clipboard.writeText(text).then(()=> coShowCopied(btn)).catch(()=>{});
+  }
+  // 사용자가 example.com처럼 스킴 없이 입력한 홈페이지 주소도 새 탭에서 열 수 있게 보정한다.
+  function coNormalizeOpenUrl(url){
+    const u = String(url || '').trim();
+    if(!u) return '';
+    if(/^https?:\/\//i.test(u)) return u;
+    return 'https://' + u;
+  }
+
+  const CO_FIELD_LABELS = [
+    ['name','업체명'], ['repName','대표자'], ['contactName','담당자'], ['position','직책'],
+    ['phone','전화번호'], ['mobile','휴대전화'], ['fax','팩스'], ['email','이메일'],
+    ['bizRegNo','사업자번호'], ['address','주소'], ['website','홈페이지']
+  ];
+
+  function coBuildFullInfoText(rec){
+    return CO_FIELD_LABELS
+      .filter(([key])=> rec[key])
+      .map(([key,label])=> `${label} : ${rec[key]}`)
+      .join('\n');
+  }
+
   function coRenderDetail(rec){
     if(!rec){
       coDetailCol.innerHTML = `<div class="co-detail-empty">업체를 선택하세요.</div>`;
       return;
     }
-    const row = (label, value)=> value ? `<div class="co-field"><div class="co-field-label">${label}</div><div class="co-field-value">${coEscapeHtml(value)}</div></div>` : '';
+    const row = (key, label, opts)=>{
+      const value = rec[key];
+      if(!value) return '';
+      opts = opts || {};
+      const openBtn = opts.link ? `<a class="co-field-open-btn" href="${coEscapeAttr(coNormalizeOpenUrl(value))}" target="_blank" rel="noopener noreferrer">열기</a>` : '';
+      return `<div class="co-field">
+        <div class="co-field-label">${label}</div>
+        <div class="co-field-row">
+          <div class="co-field-value">${coEscapeHtml(value)}</div>
+          <div style="display:flex;align-items:center;flex:none;">
+            <button type="button" class="co-field-copy-btn" data-copy-field="${key}">복사</button>
+            ${openBtn}
+          </div>
+        </div>
+      </div>`;
+    };
     coDetailCol.innerHTML = `
-      <div class="co-detail-title">${coEscapeHtml(rec.name)}</div>
-      ${row('대표자', rec.repName)}
-      ${row('담당자', rec.contactName)}
-      ${row('전화번호', rec.phone)}
-      ${row('팩스', rec.fax)}
-      ${row('이메일', rec.email)}
-      ${row('사업자등록번호', rec.bizRegNo)}
-      ${row('주소', rec.address)}
-      ${rec.memo ? `<div class="co-field"><div class="co-field-label">메모</div><div class="co-field-value co-memo">${coEscapeHtml(rec.memo)}</div></div>` : ''}
+      <div class="co-detail-head">
+        <div class="co-detail-title">${coEscapeHtml(rec.name)}</div>
+        <button type="button" class="co-copy-all-btn" id="coCopyAllBtn">전체정보 복사</button>
+      </div>
+      ${row('name','업체명')}
+      ${row('repName','대표자')}
+      ${row('contactName','담당자')}
+      ${row('position','직책')}
+      ${row('phone','전화번호')}
+      ${row('mobile','휴대전화')}
+      ${row('fax','팩스')}
+      ${row('email','이메일')}
+      ${row('bizRegNo','사업자번호')}
+      ${row('address','주소')}
+      ${row('website','홈페이지', {link:true})}
+      ${rec.memo ? `<div class="co-field"><div class="co-field-label">기본메모</div><div class="co-field-value co-memo">${coEscapeHtml(rec.memo)}</div></div>` : ''}
       <div class="co-detail-actions" id="coActionsRow">
         <button type="button" class="co-text-action" id="coEditBtn">수정</button>
         <button type="button" class="co-text-action danger" id="coDeleteBtn">삭제</button>
       </div>
+      <div id="coMemoSlot"></div>
     `;
     document.getElementById('coEditBtn').addEventListener('click', ()=> coOpenEditForm(rec));
     document.getElementById('coDeleteBtn').addEventListener('click', ()=> coRenderDeleteConfirm(rec));
+    document.getElementById('coCopyAllBtn').addEventListener('click', (e)=> coCopyText(coBuildFullInfoText(rec), e.currentTarget));
+    coDetailCol.querySelectorAll('[data-copy-field]').forEach(btn=>{
+      btn.addEventListener('click', (e)=> coCopyText(rec[btn.dataset.copyField] || '', e.currentTarget));
+    });
+    if(window.SHIN2_MEMO){
+      window.SHIN2_MEMO.mount(document.getElementById('coMemoSlot'), 'company', rec.id, { title:'메모 기록' });
+    }
   }
 
   function coRenderDeleteConfirm(rec){
@@ -4279,8 +4360,10 @@ ${text}
       ${conflictHtml('repName')}
       <div class="co-form-field"><label>담당자</label><input type="text" id="coFContact" value="${coEscapeAttr(vals.contactName)}" />${fieldBadge('contactName')}</div>
       ${conflictHtml('contactName')}
+      <div class="co-form-field"><label>직책</label><input type="text" id="coFPosition" value="${coEscapeAttr(vals.position)}" /></div>
       <div class="co-form-field"><label>전화번호</label><input type="text" id="coFPhone" value="${coEscapeAttr(vals.phone)}" />${fieldBadge('phone')}</div>
       ${conflictHtml('phone')}
+      <div class="co-form-field"><label>휴대전화</label><input type="text" id="coFMobile" value="${coEscapeAttr(vals.mobile)}" /></div>
       <div class="co-form-field"><label>팩스</label><input type="text" id="coFFax" value="${coEscapeAttr(vals.fax)}" />${fieldBadge('fax')}</div>
       ${conflictHtml('fax')}
       <div class="co-form-field"><label>이메일</label><input type="text" id="coFEmail" value="${coEscapeAttr(vals.email)}" />${fieldBadge('email')}</div>
@@ -4289,7 +4372,8 @@ ${text}
       ${conflictHtml('bizRegNo')}
       <div class="co-form-field"><label>주소</label><input type="text" id="coFAddr" value="${coEscapeAttr(vals.address)}" />${fieldBadge('address')}</div>
       ${conflictHtml('address')}
-      <div class="co-form-field"><label>메모</label><textarea id="coFMemo">${coEscapeHtml(vals.memo)}</textarea></div>
+      <div class="co-form-field"><label>홈페이지</label><input type="text" id="coFWebsite" value="${coEscapeAttr(vals.website)}" placeholder="https://" /></div>
+      <div class="co-form-field"><label>기본메모</label><textarea id="coFMemo">${coEscapeHtml(vals.memo)}</textarea></div>
       <div id="coDupWarning"></div>
       <div class="co-form-actions">
         <button type="button" class="co-text-action" id="coFormCancel">취소</button>
@@ -4354,11 +4438,14 @@ ${text}
       name,
       repName: document.getElementById('coFRep').value.trim(),
       contactName: document.getElementById('coFContact').value.trim(),
+      position: document.getElementById('coFPosition').value.trim(),
       phone: document.getElementById('coFPhone').value.trim(),
+      mobile: document.getElementById('coFMobile').value.trim(),
       fax: document.getElementById('coFFax').value.trim(),
       email: document.getElementById('coFEmail').value.trim(),
       bizRegNo: document.getElementById('coFBiz').value.trim(),
       address: document.getElementById('coFAddr').value.trim(),
+      website: document.getElementById('coFWebsite').value.trim(),
       memo: document.getElementById('coFMemo').value.trim()
     };
 
