@@ -920,12 +920,19 @@ ${text}
       throw e;
     }
     if(!res.ok){
-      let detail = '';
-      try{ detail = (await res.json()).error?.message || ''; }catch(e){}
+      let detail = '', errType = '', errCode = '';
+      try{
+        const body = await res.json();
+        detail = body.error?.message || '';
+        errType = body.error?.type || '';
+        errCode = body.error?.code || '';
+      }catch(e){}
       const e = new Error(`AI request failed: ${res.status} ${detail}`);
       e.kind = 'http';
       e.status = res.status;
       e.detail = detail;
+      e.errType = errType;
+      e.errCode = errCode;
       throw e;
     }
     let data;
@@ -1093,9 +1100,12 @@ ${text}
       if(err && err.kind === 'http' && err.status === 401){
         console.error('[SHIN2/AI] 401 Unauthorized — API 키가 잘못되었거나 만료됨');
         setError('API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해주세요.');
+      } else if(err && err.kind === 'http' && err.status === 429 && (err.errCode === 'insufficient_quota' || err.errType === 'insufficient_quota')){
+        console.error('[SHIN2/AI] 429 insufficient_quota — 결제/쿼터 소진', err.detail);
+        setError('AI 사용 한도가 소진되었습니다. API 설정을 확인해주세요.');
       } else if(err && err.kind === 'http' && err.status === 429){
-        console.error('[SHIN2/AI] 429 Too Many Requests — 요청 한도 초과 또는 결제/쿼터 문제');
-        setError('요청이 많거나 사용 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+        console.error('[SHIN2/AI] 429', err.errType || err.errCode || '(type 미상)', '— 일시적 요청 과다', err.detail);
+        setError('AI 요청이 일시적으로 많습니다. 잠시 후 다시 시도해주세요.');
       } else if(err && err.kind === 'http'){
         console.error('[SHIN2/AI] HTTP', err.status, err.detail);
         setError(`문구 정리에 실패했습니다. (오류 코드 ${err.status})`);
