@@ -763,6 +763,68 @@
   .shin2-memo-cancel-btn{ background:var(--surface); border:1px solid var(--line); color:var(--text-muted); }
   .shin2-memo-cancel-btn:hover{ background:#F0F1F4; }
   .shin2-memo-save-btn{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
+
+  /* 홈 "오늘 확인할 업무" 요약 — 컴팩트한 행 목록, 상태는 작은 텍스트 배지로만 구분 */
+  .home-task-block{ margin-top:22px; max-width:800px; }
+  .home-task-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .home-task-title{ font-size:14px; font-weight:700; color:var(--text); }
+  .home-task-more{ font-size:12px; color:var(--text-muted); text-decoration:none; background:none; border:none; cursor:pointer; font-family:inherit; }
+  .home-task-more:hover{ color:var(--navy); }
+  .home-task-empty{ font-size:12.5px; color:var(--text-muted); padding:10px 2px; border-top:1px solid var(--line); }
+  .home-task-list{ border-top:1px solid var(--line); }
+  .home-task-row{
+    display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .home-task-row:hover{ background:#F8F9FB; }
+  .home-task-row-main{ flex:1 1 auto; min-width:0; }
+  .home-task-row-top{ display:flex; align-items:center; gap:7px; }
+  .home-task-time{ font-size:11.5px; color:var(--text-muted); flex:none; }
+  .home-task-row-title{ font-size:13.5px; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .home-task-row-sub{ font-size:12px; color:var(--text-muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .home-task-chevron{ flex:none; color:var(--text-muted); font-size:13px; }
+
+  .task-badge{
+    flex:none; display:inline-block; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px;
+    background:#EEF1F8; color:var(--navy);
+  }
+  .task-badge-urgent{ background:#FBEAEA; color:#B91C1C; }
+  .task-badge-progress{ background:#EEF1F8; color:var(--navy); }
+  .task-badge-confirm{ background:#EEF1F8; color:var(--navy); }
+  .task-badge-material{ background:#F0F1F4; color:var(--text-muted); }
+  .task-badge-reply{ background:#F0F1F4; color:var(--text-muted); }
+  .task-badge-normal{ background:#F0F1F4; color:var(--text-muted); }
+
+  /* 처리할 업무 팝업(전체보기/상세/폼) — 계정 팝업과 동일한 톤 재사용 */
+  .task-popup{ width:640px; }
+  .task-tabs{ display:flex; gap:4px; margin-bottom:10px; }
+  .task-tab{
+    height:28px; padding:0 12px; font-size:12.5px; font-weight:600; color:var(--text-muted);
+    background:transparent; border:1px solid var(--line); border-radius:6px; cursor:pointer; font-family:inherit;
+  }
+  .task-tab.active{ background:#EEF1F8; color:var(--navy); border-color:#EEF1F8; }
+  .task-tab:hover:not(.active){ background:#F0F1F4; }
+  .task-pop-row{
+    display:flex; align-items:center; gap:10px; padding:10px 6px; border-bottom:1px solid var(--line);
+    cursor:pointer; border-radius:6px;
+  }
+  .task-pop-row:hover{ background:#F0F1F4; }
+  .task-pop-row.done .task-pop-row-title{ color:var(--text-muted); text-decoration:line-through; }
+  .task-pop-row-title{ flex:1 1 auto; min-width:0; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .task-pop-row-meta{ flex:none; font-size:11.5px; color:var(--text-muted); }
+  .task-form-field{ margin-bottom:14px; }
+  .task-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .task-form-field input, .task-form-field select, .task-form-field textarea{
+    width:100%; padding:8px 10px; font-size:13.5px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  }
+  .task-form-field textarea{ min-height:64px; resize:vertical; }
+  .task-form-field input:focus, .task-form-field select:focus, .task-form-field textarea:focus{ outline:none; border-color:#C7CEDB; }
+  .task-form-row{ display:flex; gap:10px; }
+  .task-form-row .task-form-field{ flex:1 1 0; }
+  .task-detail-title{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; }
+  .task-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
+  .task-company-link{ font-size:12.5px; color:var(--navy); background:none; border:none; cursor:pointer; padding:0; font-family:inherit; text-decoration:underline; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 </head>
@@ -833,6 +895,17 @@
     </div>
   </div>
 
+  <div class="acct-popup-overlay" id="taskPopupOverlay">
+    <div class="acct-popup task-popup" id="taskPopup" role="dialog" aria-modal="true" aria-label="처리할 업무">
+      <div class="acct-popup-head">
+        <button type="button" class="acct-popup-back" id="taskPopupBackBtn" style="display:none;">&larr; 목록</button>
+        <div class="acct-popup-title" id="taskPopupTitle">처리할 업무</div>
+        <button type="button" class="acct-popup-close" id="taskPopupCloseBtn">&times;</button>
+      </div>
+      <div class="acct-popup-body" id="taskPopupBody"></div>
+    </div>
+  </div>
+
   <main class="main">
     <div class="main-inner">
       <div class="home-col" id="homeView">
@@ -860,6 +933,8 @@
           <div id="aiError" class="ai-error" style="display:none;"></div>
           <div id="aiResult"></div>
         </div>
+
+        <div id="homeTaskSlot"></div>
 
         <div id="homeMemoSlot"></div>
       </div>
@@ -1070,6 +1145,372 @@
   // 홈 화면 메모(targetType 'home')는 화면이 하나뿐이라 정적 컨테이너에 바로 마운트한다.
   var homeSlot = document.getElementById('homeMemoSlot');
   if(homeSlot) mount(homeSlot, 'home', 'home');
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   SHIN2_TASKS — 홈 "오늘 확인할 업무" + 전체보기 팝업
+   기존 v2의 "내 할 일"(shin2-todos, 단순 체크리스트)과는 다른 별도 데이터다 —
+   그쪽은 개인 체크리스트, 이쪽은 상태/업체/일정이 붙는 "처리할 업무"다.
+   두 시스템을 하나로 합치라는 요청은 없었고 데이터 모양도 근본적으로 달라
+   (todos: {id,text}, tasks: {id,title,status,companyId,date,time,...})
+   섞으면 오히려 기존 "내 할 일" 기능을 깨뜨리게 되어 분리된 새 저장소로 만들었다.
+   저장: localStorage 'shin2-tasks-v1'.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var STORAGE_KEY = 'shin2-tasks-v1';
+  var COMPANY_STORAGE_KEY = 'shin2-companies-staging';
+
+  var STATUS_META = {
+    urgent:   { label:'긴급', cls:'task-badge-urgent' },
+    progress: { label:'진행', cls:'task-badge-progress' },
+    confirm:  { label:'확인', cls:'task-badge-confirm' },
+    material: { label:'자료', cls:'task-badge-material' },
+    reply:    { label:'회신', cls:'task-badge-reply' },
+    normal:   { label:'일반', cls:'task-badge-normal' }
+  };
+  var STATUS_ORDER = ['urgent','progress','confirm','material','reply','normal'];
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function uid(){ return 'task_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+  function fmtDateTime(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function loadAll(){
+    try{ var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+    catch(e){ return []; }
+  }
+  function saveAll(list){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){} }
+
+  function getCompanies(){
+    try{ var raw = localStorage.getItem(COMPANY_STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+    catch(e){ return []; }
+  }
+  function findCompany(id){ return id ? getCompanies().find(function(c){ return c.id === id; }) : null; }
+
+  function add(fields){
+    var now = Date.now();
+    var rec = {
+      id: uid(),
+      title: (fields.title || '').trim(),
+      status: STATUS_META[fields.status] ? fields.status : 'normal',
+      companyId: fields.companyId || '',
+      content: (fields.content || '').trim(),
+      date: fields.date || '',
+      time: fields.time || '',
+      done: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    var all = loadAll();
+    all.push(rec);
+    saveAll(all);
+    return rec;
+  }
+  function update(id, fields){
+    var all = loadAll();
+    var rec = all.find(function(t){ return t.id === id; });
+    if(!rec) return null;
+    if(fields.title !== undefined) rec.title = fields.title.trim();
+    if(fields.status !== undefined) rec.status = STATUS_META[fields.status] ? fields.status : 'normal';
+    if(fields.companyId !== undefined) rec.companyId = fields.companyId;
+    if(fields.content !== undefined) rec.content = fields.content.trim();
+    if(fields.date !== undefined) rec.date = fields.date;
+    if(fields.time !== undefined) rec.time = fields.time;
+    rec.updatedAt = Date.now();
+    saveAll(all);
+    return rec;
+  }
+  function setDone(id, done){
+    var all = loadAll();
+    var rec = all.find(function(t){ return t.id === id; });
+    if(!rec) return null;
+    rec.done = !!done;
+    rec.updatedAt = Date.now();
+    saveAll(all);
+    return rec;
+  }
+  function remove(id){ saveAll(loadAll().filter(function(t){ return t.id !== id; })); }
+
+  // 정렬 기준(요청 명세 §9 그대로): 1) 사용자 지정 순서가 있으면 최우선
+  // 2) 긴급 상태 3) 오늘 마감(date===오늘) 4) 시간이 지정된 업무 5) 최근 등록 순
+  function sortForHome(items){
+    var today = todayStr();
+    return items.slice().sort(function(a,b){
+      if(typeof a.order === 'number' && typeof b.order === 'number' && a.order !== b.order) return a.order - b.order;
+      var aUrgent = a.status === 'urgent', bUrgent = b.status === 'urgent';
+      if(aUrgent !== bUrgent) return aUrgent ? -1 : 1;
+      var aToday = a.date === today, bToday = b.date === today;
+      if(aToday !== bToday) return aToday ? -1 : 1;
+      var aTime = !!a.time, bTime = !!b.time;
+      if(aTime !== bTime) return aTime ? -1 : 1;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+  }
+
+  /* ---------- 홈 요약 (최대 5건, 상세관리 버튼 없음) ---------- */
+  var homeSlotEl = null;
+  function renderHomeSummary(){
+    if(!homeSlotEl) return;
+    var items = sortForHome(loadAll().filter(function(t){ return !t.done; })).slice(0, 5);
+    var html = '<div class="home-task-block">' +
+      '<div class="home-task-head">' +
+        '<div class="home-task-title">오늘 확인할 업무</div>' +
+        '<button type="button" class="home-task-more" data-t-action="view-all">전체 보기 &gt;</button>' +
+      '</div>';
+    if(!items.length){
+      html += '<div class="home-task-empty">확인할 업무가 없습니다 · <button type="button" class="home-task-more" data-t-action="add" style="display:inline;padding:0;">+ 업무 추가</button></div>';
+    } else {
+      html += '<div class="home-task-list">' + items.map(function(t){
+        var meta = STATUS_META[t.status] || STATUS_META.normal;
+        return '<div class="home-task-row" data-t-action="open" data-id="' + t.id + '">' +
+          '<div class="home-task-row-main">' +
+            '<div class="home-task-row-top">' +
+              (t.time ? '<span class="home-task-time">' + escapeHtml(t.time) + '</span>' : '') +
+              '<span class="task-badge ' + meta.cls + '">' + meta.label + '</span>' +
+              '<span class="home-task-row-title">' + escapeHtml(t.title) + '</span>' +
+            '</div>' +
+            (t.content ? '<div class="home-task-row-sub">' + escapeHtml(t.content) + '</div>' : '') +
+          '</div>' +
+          '<div class="home-task-chevron">&gt;</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+    homeSlotEl.innerHTML = html;
+    homeSlotEl.querySelectorAll('[data-t-action]').forEach(function(el){
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
+        var action = el.dataset.tAction;
+        if(action === 'view-all') openPopup('browse');
+        else if(action === 'add') openPopup('add');
+        else if(action === 'open') openPopup('detail', el.dataset.id);
+      });
+    });
+  }
+
+  /* ---------- 전체보기 / 상세 / 폼 팝업 ---------- */
+  var popupOverlay = document.getElementById('taskPopupOverlay');
+  var popupBody = document.getElementById('taskPopupBody');
+  var popupTitle = document.getElementById('taskPopupTitle');
+  var popupBackBtn = document.getElementById('taskPopupBackBtn');
+  var popupCloseBtn = document.getElementById('taskPopupCloseBtn');
+
+  var pState = { mode:'browse', tab:'all', search:'', selectedId:null, formValues:null };
+
+  function openPopup(mode, id){
+    pState.mode = mode || 'browse';
+    pState.selectedId = id || null;
+    if(pState.mode === 'add') pState.formValues = { title:'', status:'normal', companyId:'', content:'', date:'', time:'' };
+    if(pState.mode === 'edit'){
+      var rec = loadAll().find(function(t){ return t.id === pState.selectedId; });
+      pState.formValues = rec ? Object.assign({}, rec) : { title:'', status:'normal', companyId:'', content:'', date:'', time:'' };
+    }
+    popupOverlay.classList.add('open');
+    renderPopup();
+  }
+  function closePopup(){ popupOverlay.classList.remove('open'); renderHomeSummary(); }
+
+  popupCloseBtn.addEventListener('click', closePopup);
+  popupOverlay.addEventListener('click', function(e){ if(e.target === popupOverlay) closePopup(); });
+  popupBackBtn.addEventListener('click', function(){
+    if(pState.mode === 'detail' || pState.mode === 'add'){ pState.mode = 'browse'; renderPopup(); }
+    else if(pState.mode === 'edit'){ pState.mode = 'detail'; renderPopup(); }
+  });
+
+  function renderPopup(){
+    popupBackBtn.style.display = pState.mode === 'browse' ? 'none' : '';
+    if(pState.mode === 'browse'){ popupTitle.textContent = '처리할 업무'; renderBrowse(); return; }
+    if(pState.mode === 'detail'){ popupTitle.textContent = '업무 상세'; renderDetail(); return; }
+    if(pState.mode === 'add'){ popupTitle.textContent = '업무 추가'; renderForm(true); return; }
+    if(pState.mode === 'edit'){ popupTitle.textContent = '업무 수정'; renderForm(false); return; }
+  }
+
+  function filteredForBrowse(){
+    var today = todayStr();
+    var all = loadAll();
+    var byTab = all.filter(function(t){
+      if(pState.tab === 'today') return !t.done && t.date === today;
+      if(pState.tab === 'upcoming') return !t.done && t.date && t.date > today;
+      if(pState.tab === 'done') return !!t.done;
+      return !t.done; // 'all' 탭은 미완료 전체(완료는 완료 탭에서만)
+    });
+    var q = pState.search.trim().toLowerCase();
+    if(!q) return sortForHome(byTab);
+    return sortForHome(byTab.filter(function(t){
+      var company = findCompany(t.companyId);
+      var hay = [t.title, t.content, company ? company.name : '']
+        .concat((window.SHIN2_MEMO ? window.SHIN2_MEMO.getFor('task', t.id) : []).map(function(m){ return m.text; }))
+        .join(' ').toLowerCase();
+      return hay.includes(q);
+    }));
+  }
+
+  function renderBrowse(){
+    var items = filteredForBrowse();
+    var tabs = [['all','전체'],['today','오늘'],['upcoming','예정'],['done','완료']];
+    var html = '' +
+      '<div class="task-tabs">' + tabs.map(function(t){
+        return '<button type="button" class="task-tab' + (pState.tab===t[0]?' active':'') + '" data-tab="' + t[0] + '">' + t[1] + '</button>';
+      }).join('') + '</div>' +
+      '<div class="search-box acct-search-box"><input type="text" id="taskSearchInput" placeholder="업체명 / 업무 제목 / 내용 / 메모 검색" value="' + escapeAttr(pState.search) + '" /></div>';
+    if(!items.length){
+      html += '<div class="acct-empty">해당하는 업무가 없습니다.</div>';
+    } else {
+      html += items.map(function(t){
+        var meta = STATUS_META[t.status] || STATUS_META.normal;
+        var company = findCompany(t.companyId);
+        var metaBits = [];
+        if(t.date) metaBits.push(t.date.slice(5).replace('-','.'));
+        if(t.time) metaBits.push(t.time);
+        return '<div class="task-pop-row' + (t.done?' done':'') + '" data-id="' + t.id + '">' +
+          '<span class="task-badge ' + meta.cls + '">' + meta.label + '</span>' +
+          '<span class="task-pop-row-title">' + escapeHtml(t.title) + (company ? ' · ' + escapeHtml(company.name) : '') + '</span>' +
+          (metaBits.length ? '<span class="task-pop-row-meta">' + escapeHtml(metaBits.join(' ')) + '</span>' : '') +
+        '</div>';
+      }).join('');
+    }
+    html += '<div class="acct-pop-add-row"><button type="button" class="acct-add-btn" id="taskAddBtn">+ 업무 추가</button></div>';
+    popupBody.innerHTML = html;
+
+    popupBody.querySelectorAll('.task-tab').forEach(function(btn){
+      btn.addEventListener('click', function(){ pState.tab = btn.dataset.tab; renderBrowse(); });
+    });
+    var searchInput = document.getElementById('taskSearchInput');
+    searchInput.addEventListener('input', function(){ pState.search = searchInput.value; renderBrowse(); });
+    popupBody.querySelectorAll('.task-pop-row').forEach(function(row){
+      row.addEventListener('click', function(){ openPopup('detail', row.dataset.id); });
+    });
+    document.getElementById('taskAddBtn').addEventListener('click', function(){ openPopup('add'); });
+  }
+
+  function renderDetail(){
+    var rec = loadAll().find(function(t){ return t.id === pState.selectedId; });
+    if(!rec){ pState.mode = 'browse'; renderPopup(); return; }
+    var meta = STATUS_META[rec.status] || STATUS_META.normal;
+    var company = findCompany(rec.companyId);
+    var row = function(label, valueHtml){ return valueHtml ? '<div class="task-form-field"><label>' + label + '</label><div style="font-size:13.5px;color:var(--text);">' + valueHtml + '</div></div>' : ''; };
+    popupBody.innerHTML = '' +
+      '<div class="task-detail-title">' + escapeHtml(rec.title) + '</div>' +
+      row('상태', '<span class="task-badge ' + meta.cls + '">' + meta.label + '</span>') +
+      row('업체', company ? escapeHtml(company.name) + ' <button type="button" class="task-company-link" id="taskOpenCompanyBtn">업체 보기</button>' : '') +
+      row('내용', rec.content ? escapeHtml(rec.content) : '') +
+      row('등록시간', escapeHtml(fmtDateTime(rec.createdAt)) + (rec.updatedAt !== rec.createdAt ? ' · 수정됨 ' + escapeHtml(fmtDateTime(rec.updatedAt)) : '')) +
+      row('마감일/시간', (rec.date || rec.time) ? escapeHtml([rec.date, rec.time].filter(Boolean).join(' ')) : '') +
+      '<div class="task-detail-actions" id="taskDetailActions">' +
+        '<button type="button" class="acct-text-action" id="taskEditBtn">수정</button>' +
+        (rec.done
+          ? '<button type="button" class="acct-text-action" id="taskUndoBtn">완료 취소</button>'
+          : '<button type="button" class="acct-text-action" id="taskCompleteBtn">완료</button>') +
+        '<button type="button" class="acct-text-action danger" id="taskDeleteBtn">삭제</button>' +
+      '</div>' +
+      '<div id="taskMemoSlot"></div>';
+
+    var openCompanyBtn = document.getElementById('taskOpenCompanyBtn');
+    if(openCompanyBtn){
+      openCompanyBtn.addEventListener('click', function(){
+        closePopup();
+        if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
+        if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(rec.companyId);
+      });
+    }
+    document.getElementById('taskEditBtn').addEventListener('click', function(){ openPopup('edit', rec.id); });
+    document.getElementById('taskDeleteBtn').addEventListener('click', function(){
+      var actionsRow = document.getElementById('taskDetailActions');
+      actionsRow.innerHTML = '<div class="co-confirm-row"><span>이 업무를 삭제하시겠습니까?</span>' +
+        '<button type="button" class="acct-text-action" id="taskDeleteCancel">취소</button>' +
+        '<button type="button" class="acct-text-action danger" id="taskDeleteConfirm">삭제</button></div>';
+      document.getElementById('taskDeleteCancel').addEventListener('click', renderDetail);
+      document.getElementById('taskDeleteConfirm').addEventListener('click', function(){
+        remove(rec.id);
+        pState.mode = 'browse';
+        renderPopup();
+      });
+    });
+    var completeBtn = document.getElementById('taskCompleteBtn');
+    if(completeBtn) completeBtn.addEventListener('click', function(){ setDone(rec.id, true); renderHomeSummary(); renderDetail(); });
+    var undoBtn = document.getElementById('taskUndoBtn');
+    if(undoBtn) undoBtn.addEventListener('click', function(){ setDone(rec.id, false); renderHomeSummary(); renderDetail(); });
+
+    if(window.SHIN2_MEMO){
+      window.SHIN2_MEMO.mount(document.getElementById('taskMemoSlot'), 'task', rec.id, { title:'메모' });
+    }
+  }
+
+  function renderForm(isNew){
+    var vals = pState.formValues;
+    var companies = getCompanies();
+    var statusOptionsHtml = STATUS_ORDER.map(function(key){
+      return '<option value="' + key + '"' + (vals.status===key?' selected':'') + '>' + STATUS_META[key].label + '</option>';
+    }).join('');
+    var companyOptionsHtml = '<option value="">(선택 안 함)</option>' + companies.map(function(c){
+      return '<option value="' + escapeAttr(c.id) + '"' + (vals.companyId===c.id?' selected':'') + '>' + escapeHtml(c.name) + '</option>';
+    }).join('');
+    popupBody.innerHTML = '' +
+      '<div class="task-detail-title">' + (isNew ? '업무 추가' : '업무 수정') + '</div>' +
+      '<div class="task-form-field"><label>업무 제목 (필수)</label><input type="text" id="taskFTitle" value="' + escapeAttr(vals.title) + '" placeholder="예: 신광건설 견적 문의" /></div>' +
+      '<div id="taskFTitleErr" class="acct-form-error" style="display:none;">업무 제목을 입력하세요.</div>' +
+      '<div class="task-form-row">' +
+        '<div class="task-form-field"><label>상태</label><select id="taskFStatus">' + statusOptionsHtml + '</select></div>' +
+        '<div class="task-form-field"><label>업체</label><select id="taskFCompany">' + companyOptionsHtml + '</select></div>' +
+      '</div>' +
+      '<div class="task-form-field"><label>내용</label><textarea id="taskFContent">' + escapeHtml(vals.content) + '</textarea></div>' +
+      '<div class="task-form-row">' +
+        '<div class="task-form-field"><label>날짜</label><input type="date" id="taskFDate" value="' + escapeAttr(vals.date) + '" /></div>' +
+        '<div class="task-form-field"><label>시간</label><input type="time" id="taskFTime" value="' + escapeAttr(vals.time) + '" /></div>' +
+      '</div>' +
+      '<div class="acct-form-actions">' +
+        '<button type="button" class="acct-text-action" id="taskFormCancel">취소</button>' +
+        '<button type="button" class="ai-run-btn" id="taskFormSave">저장</button>' +
+      '</div>';
+
+    document.getElementById('taskFormCancel').addEventListener('click', function(){
+      pState.mode = isNew ? 'browse' : 'detail';
+      renderPopup();
+    });
+    document.getElementById('taskFormSave').addEventListener('click', function(){
+      var titleEl = document.getElementById('taskFTitle');
+      var title = titleEl.value.trim();
+      if(!title){
+        document.getElementById('taskFTitleErr').style.display = 'block';
+        titleEl.focus();
+        return;
+      }
+      var fields = {
+        title: title,
+        status: document.getElementById('taskFStatus').value,
+        companyId: document.getElementById('taskFCompany').value,
+        content: document.getElementById('taskFContent').value,
+        date: document.getElementById('taskFDate').value,
+        time: document.getElementById('taskFTime').value
+      };
+      if(isNew){
+        var rec = add(fields);
+        pState.mode = 'detail'; pState.selectedId = rec.id;
+      } else {
+        update(pState.selectedId, fields);
+        pState.mode = 'detail';
+      }
+      renderHomeSummary();
+      renderPopup();
+    });
+  }
+
+  window.SHIN2_TASKS = { add:add, update:update, setDone:setDone, remove:remove, getAll:loadAll, openPopup:openPopup };
+
+  homeSlotEl = document.getElementById('homeTaskSlot');
+  renderHomeSummary();
 })();
 </script>
 
