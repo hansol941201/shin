@@ -1,19 +1,34 @@
 @echo off
+setlocal EnableExtensions
 chcp 65001 >nul
-title AI 전략회의실
+
 cd /d "%~dp0"
+set "PS1=%~dp0scripts\run.ps1"
+
+if not exist "%PS1%" (
+    echo [ERROR] Cannot find scripts\run.ps1
+    echo Expected path: "%PS1%"
+    echo Please make sure the whole ai-strategy-room folder was copied together,
+    echo not just this .bat file.
+    echo.
+    pause
+    exit /b 1
+)
 
 echo ============================================================
-echo   AI 전략회의실을 준비하는 중입니다...
-echo   (이 창은 프로그램이 실행되는 동안 열어두세요)
+echo   AI Strategy Room - Starting...
+echo   (Keep this window open while the program is running)
 echo ============================================================
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
+set "EXITCODE=%ERRORLEVEL%"
 
 echo.
 echo ============================================================
-echo   프로그램이 종료되었습니다.
-echo   아무 키나 누르면 이 창이 닫힙니다.
+echo   Program stopped. (exit code: %EXITCODE%)
+echo   Press any key to close this window.
 echo ============================================================
 pause >nul
+endlocal
+exit /b %EXITCODE%
