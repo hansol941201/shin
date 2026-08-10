@@ -21,9 +21,11 @@
  *              보완이 필요하면 "REVISE"와 구체적 지시만 돌려준다.
  *   5차 호출 — (심사에서 REVISE가 나왔을 때만) 지시를 반영해 최종 보고서를 작성.
  *
- * - AI가 연결되어 있지 않으면 자동으로 데모 모드로 진행한다.
- * - AI 연결이 되어 있지만 호출이 실패하면(CORS, 로컬 서버 미실행 등) 데모 모드로
- *   안전하게 전환하고, 실패 사유를 사용자에게 보여줄 수 있도록 warning에 담는다.
+ * - Claude Code(로컬 서버)가 연결되어 있지 않으면 회의를 시작하지 않고
+ *   명확한 오류를 던진다. 호출 도중 실패해도 마찬가지다 — 실패를 데모
+ *   결과로 조용히 감추지 않는다("Claude 실패 시 데모로 속이면 안 된다").
+ * - 데모(예시) 결과는 사용자가 [예시 보기] 버튼을 직접 눌렀을 때만
+ *   runExample()을 통해 별도로 보여준다.
  * - 자료(TXT/CSV 등)가 있으면 "근거분석 모드", 없으면 "전략회의 모드"로 자동
  *   판단한다 — 사용자가 모드를 직접 고르지 않는다.
  */
@@ -35,18 +37,18 @@ const MeetingEngine = {
     };
 
     if (!AiProvider.isConfigured()) {
-      return this._runDemo({ topic, emit });
+      throw new Error('Claude Code가 연결되어 있지 않습니다. AI전략회의실.bat으로 실행했는지 확인해주세요.');
     }
 
-    try {
-      return await this._runLive({ topic, attachedText, hasAttachment, emit });
-    } catch (err) {
-      console.error('[MeetingEngine] 실AI 회의 실패, 데모로 전환:', err);
-      const demoResult = await this._runDemo({ topic, emit });
-      demoResult.warning =
-        (err && err.message) || 'AI 연결에 실패해 데모 모드 결과로 대신 안내드립니다.';
-      return demoResult;
-    }
+    return await this._runLive({ topic, attachedText, hasAttachment, emit });
+  },
+
+  /** 사용자가 [예시 보기]를 직접 눌렀을 때만 호출되는 데모 실행 경로 */
+  async runExample({ topic, onProgress }) {
+    const emit = (roundId, status) => {
+      if (typeof onProgress === 'function') onProgress(roundId, status);
+    };
+    return this._runDemo({ topic, emit });
   },
 
   async _runDemo({ topic, emit }) {

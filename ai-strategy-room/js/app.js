@@ -12,6 +12,8 @@ const els = {
   fileInput: document.getElementById('fileInput'),
   attachList: document.getElementById('attachList'),
   startBtn: document.getElementById('startBtn'),
+  exampleBtn: document.getElementById('exampleBtn'),
+  connHint: document.getElementById('connHint'),
   stepList: document.getElementById('stepList'),
   progressModeLabel: document.getElementById('progressModeLabel'),
   reportCard: document.getElementById('reportCard'),
@@ -24,27 +26,15 @@ const els = {
   logModalOverlay: document.getElementById('logModalOverlay'),
   logModalClose: document.getElementById('logModalClose'),
   logBody: document.getElementById('logBody'),
-  settingsBtn: document.getElementById('settingsBtn'),
-  settingsModalOverlay: document.getElementById('settingsModalOverlay'),
-  settingsModalClose: document.getElementById('settingsModalClose'),
-  settingsForm: document.getElementById('settingsForm'),
-  providerSelect: document.getElementById('providerSelect'),
-  apiKeyInput: document.getElementById('apiKeyInput'),
-  settingsClearBtn: document.getElementById('settingsClearBtn'),
   demoBadge: document.getElementById('demoBadge'),
-  liveBadge: document.getElementById('liveBadge'),
-  localServerStatus: document.getElementById('localServerStatus'),
+  connStatus: document.getElementById('connStatus'),
+  connDot: document.getElementById('connDot'),
+  connText: document.getElementById('connText'),
   toast: document.getElementById('toast')
 };
 
-const TRANSPORT_LABEL = {
-  'claude-code': '이 PC의 Claude Code',
-  anthropic: 'Anthropic API 키',
-  openai: 'OpenAI API 키',
-  none: '연결 없음'
-};
-
 let attachedFiles = []; // File 객체 목록
+let lastRunWasExample = false; // 마지막으로 화면에 보여준 결과가 [예시 보기]로 나온 것인지
 let currentReportText = '';
 let currentLog = [];
 
@@ -72,18 +62,29 @@ function restoreFromStorage() {
   if (report) {
     currentReportText = report;
     currentLog = safeParseJson(Storage.loadMeetingLog()) || [];
-    renderReport(report, currentLog, null, AiProvider.isConfigured() ? 'live' : 'demo', AiProvider.getActiveTransport());
+    lastRunWasExample = Storage.loadWasExample && Storage.loadWasExample() === '1';
+    renderReport(report, currentLog, null, lastRunWasExample ? 'demo' : 'live', AiProvider.getActiveTransport());
     showView('result');
   }
 }
 
-/* ---------- 로컬 Claude Code 연결 상태 표시 ---------- */
-async function refreshLocalServerStatus() {
+/* ---------- 상단 연결 상태 표시 (● Claude 연결됨 / ● Claude 연결 안 됨) ---------- */
+async function refreshConnStatus() {
   const ok = await AiProvider.detectLocalServer();
-  if (!els.localServerStatus) return ok;
-  els.localServerStatus.textContent = ok
-    ? '✅ 이 PC의 Claude Code에 연결되었습니다. 별도 API 키 없이 실제 회의가 진행됩니다.'
-    : '⚪ 로컬 Claude Code 연결이 감지되지 않았습니다. index.html을 직접 연 경우 AI전략회의실.bat으로 실행해주세요. (연결 전까지는 데모 모드 또는 아래 보조 API 키로 동작합니다)';
+  els.connStatus.classList.toggle('connected', ok);
+  els.connStatus.classList.toggle('disconnected', !ok);
+  els.connText.textContent = ok ? 'Claude 연결됨' : 'Claude 연결 안 됨';
+
+  if (els.connHint) {
+    if (ok) {
+      els.connHint.hidden = true;
+      els.connHint.textContent = '';
+    } else {
+      els.connHint.hidden = false;
+      els.connHint.textContent =
+        'Claude Code에 연결되어 있지 않습니다. "AI전략회의실.bat"을 더블클릭해서 실행했는지 확인해주세요. (설치가 안 되어 있거나 로그인이 필요한 경우, 실행 창이 자동으로 안내합니다)';
+    }
+  }
   return ok;
 }
 function safeParseJson(str) {
@@ -152,10 +153,6 @@ function renderReport(reportText, log, warning, mode, transport) {
   }
 
   els.demoBadge.hidden = mode !== 'demo';
-  if (els.liveBadge) {
-    const isLocalLive = mode === 'live' && transport === 'claude-code';
-    els.liveBadge.hidden = !isLocalLive;
-  }
 }
 
 function renderLog(log) {
@@ -188,6 +185,14 @@ els.startBtn.addEventListener('click', async () => {
   if (!topic) {
     showToast('주제를 입력해주세요');
     els.topicInput.focus();
+    return;
+  }
+
+  // Claude 연결이 안 되어 있으면 회의를 시작하지 않고 명확히 안내한다.
+  // (연결 실패를 예시 결과로 조용히 대체하지 않는다)
+  const connected = await refreshConnStatus();
+  if (!connected) {
+    showToast('Claude가 연결되어 있지 않습니다. AI전략회의실.bat으로 실행해주세요.');
     return;
   }
 
@@ -227,7 +232,8 @@ els.startBtn.addEventListener('click', async () => {
     });
   } catch (err) {
     console.error(err);
-    showToast('회의 진행 중 오류가 발생했습니다.');
+    // 실패를 예시 결과로 감추지 않고, 실패 사유를 그대로 보여준다.
+    showToast((err && err.message) || '회의 진행 중 오류가 발생했습니다.');
     showView('input');
     els.startBtn.disabled = false;
     return;
@@ -235,12 +241,37 @@ els.startBtn.addEventListener('click', async () => {
 
   currentReportText = result.report;
   currentLog = result.log;
+  lastRunWasExample = false;
   Storage.saveReport(result.report);
   Storage.saveMeetingLog(JSON.stringify(result.log || []));
+  Storage.saveWasExample(false);
 
-  renderReport(result.report, result.log, result.warning, result.mode, result.transport);
+  renderReport(result.report, result.log, result.warning, 'live', result.transport);
   showView('result');
   els.startBtn.disabled = false;
+});
+
+/* ---------- 예시 보기 (사용자가 직접 선택했을 때만 데모 표시) ---------- */
+els.exampleBtn.addEventListener('click', async () => {
+  const topic = els.topicInput.value.trim();
+
+  els.exampleBtn.disabled = true;
+  showView('progress');
+  renderSteps();
+  els.progressModeLabel.textContent = '예시 보기 — 실제 회의가 아닌 예시 결과를 보여줍니다.';
+
+  const result = await MeetingEngine.runExample({ topic, onProgress: updateStep });
+
+  currentReportText = result.report;
+  currentLog = result.log;
+  lastRunWasExample = true;
+  Storage.saveReport(result.report);
+  Storage.saveMeetingLog(JSON.stringify(result.log || []));
+  Storage.saveWasExample(true);
+
+  renderReport(result.report, result.log, null, 'demo', 'none');
+  showView('result');
+  els.exampleBtn.disabled = false;
 });
 
 /* ---------- 결과 화면 버튼 ---------- */
@@ -267,7 +298,12 @@ els.saveTxtBtn.addEventListener('click', () => {
 });
 
 els.retryBtn.addEventListener('click', () => {
-  els.startBtn.click();
+  // 마지막으로 본 결과가 예시였다면 예시를 다시, 실제 회의였다면 실제 회의를 다시 시작한다.
+  if (lastRunWasExample) {
+    els.exampleBtn.click();
+  } else {
+    els.startBtn.click();
+  }
 });
 
 els.newTopicBtn.addEventListener('click', () => {
@@ -276,6 +312,7 @@ els.newTopicBtn.addEventListener('click', () => {
   renderAttachList();
   currentReportText = '';
   currentLog = [];
+  lastRunWasExample = false;
   els.demoBadge.hidden = true;
   Storage.clearAll();
   showView('input');
@@ -287,43 +324,10 @@ els.logToggleBtn.addEventListener('click', () => els.logModalOverlay.classList.a
 els.logModalClose.addEventListener('click', () => els.logModalOverlay.classList.remove('open'));
 els.logModalOverlay.addEventListener('click', (e) => { if (e.target === els.logModalOverlay) els.logModalOverlay.classList.remove('open'); });
 
-/* ---------- AI 연결 설정 모달 ---------- */
-function openSettingsModal() {
-  const provider = AiProvider.getProvider();
-  els.providerSelect.value = provider || '';
-  els.apiKeyInput.value = provider ? AiProvider.getKey(provider) : '';
-  els.settingsModalOverlay.classList.add('open');
-  refreshLocalServerStatus();
-}
-els.settingsBtn.addEventListener('click', openSettingsModal);
-els.settingsModalClose.addEventListener('click', () => els.settingsModalOverlay.classList.remove('open'));
-els.settingsModalOverlay.addEventListener('click', (e) => { if (e.target === els.settingsModalOverlay) els.settingsModalOverlay.classList.remove('open'); });
-
-els.settingsForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const provider = els.providerSelect.value;
-  const key = els.apiKeyInput.value.trim();
-  if (!provider || !key) {
-    AiProvider.setProvider('');
-    showToast('AI 연결을 사용하지 않습니다 (데모 모드)');
-  } else {
-    AiProvider.setProvider(provider);
-    AiProvider.setKey(provider, key);
-    showToast('AI 연결 정보가 저장되었습니다');
-  }
-  els.settingsModalOverlay.classList.remove('open');
-});
-els.settingsClearBtn.addEventListener('click', () => {
-  const provider = els.providerSelect.value || AiProvider.getProvider();
-  if (provider) AiProvider.clearKey(provider);
-  AiProvider.setProvider('');
-  els.apiKeyInput.value = '';
-  els.providerSelect.value = '';
-  showToast('AI 연결 정보가 삭제되었습니다');
-});
-
 /* ---------- 초기화 ---------- */
 (async function initApp() {
-  await refreshLocalServerStatus(); // 로컬 Claude Code 서버 감지를 먼저 끝내야
-  restoreFromStorage();             // 배지(DEMO/LIVE)가 정확하게 표시된다
+  await refreshConnStatus(); // 연결 상태 표시를 먼저 끝내야 배지가 정확하게 표시된다
+  restoreFromStorage();
+  // .bat으로 실행한 경우에도 창을 오래 켜두면 연결 상태가 바뀔 수 있으니 주기적으로 재확인한다.
+  setInterval(refreshConnStatus, 15000);
 })();

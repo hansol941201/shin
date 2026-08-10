@@ -1,12 +1,13 @@
 /**
  * storage.js
  * 브라우저 localStorage에 "최근 입력 주제"와 "최근 결과 보고서"만 저장한다.
- * API 키 등 민감한 값은 이 파일에서 다루지 않는다 (ai-provider.js에서 별도 관리).
+ * API 키 등 민감한 값은 이 프로그램 어디에도 존재하지 않는다(Claude Code CLI 연결만 사용).
  */
 const STORAGE_KEYS = {
   TOPIC: 'strategy-room-last-topic',
   REPORT: 'strategy-room-last-report',
-  MEETING_LOG: 'strategy-room-last-log'
+  MEETING_LOG: 'strategy-room-last-log',
+  WAS_EXAMPLE: 'strategy-room-last-was-example'
 };
 
 const Storage = {
@@ -28,11 +29,18 @@ const Storage = {
   loadMeetingLog() {
     try { return localStorage.getItem(STORAGE_KEYS.MEETING_LOG) || ''; } catch (e) { return ''; }
   },
+  saveWasExample(flag) {
+    try { localStorage.setItem(STORAGE_KEYS.WAS_EXAMPLE, flag ? '1' : '0'); } catch (e) { /* 무시 */ }
+  },
+  loadWasExample() {
+    try { return localStorage.getItem(STORAGE_KEYS.WAS_EXAMPLE) || '0'; } catch (e) { return '0'; }
+  },
   clearAll() {
     try {
       localStorage.removeItem(STORAGE_KEYS.TOPIC);
       localStorage.removeItem(STORAGE_KEYS.REPORT);
       localStorage.removeItem(STORAGE_KEYS.MEETING_LOG);
+      localStorage.removeItem(STORAGE_KEYS.WAS_EXAMPLE);
     } catch (e) { /* 무시 */ }
   }
 };

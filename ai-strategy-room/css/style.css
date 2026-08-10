@@ -28,10 +28,23 @@ body{
 .brand{display:flex;align-items:center;gap:8px;}
 .brand-title{font-weight:700;font-size:16px;color:var(--navy);}
 .demo-badge{
-  background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;
+  background:var(--text-faint);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;
   padding:2px 7px;border-radius:4px;
 }
-.demo-badge.live-badge{background:var(--success);}
+
+/* ---------- 연결 상태 표시 ---------- */
+.conn-status{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-gray);}
+.conn-dot{
+  width:9px;height:9px;border-radius:50%;background:var(--text-faint);flex:0 0 auto;
+}
+.conn-status.connected .conn-dot{background:var(--success);}
+.conn-status.connected .conn-text{color:var(--success);font-weight:700;}
+.conn-status.disconnected .conn-dot{background:var(--danger);}
+.conn-status.disconnected .conn-text{color:var(--danger);font-weight:700;}
+.conn-hint{
+  margin:14px 0 0;text-align:center;font-size:12.5px;color:var(--text-gray);
+  background:var(--bg);border:1px solid var(--card-border);border-radius:8px;padding:10px 14px;
+}
 
 /* ---------- Layout ---------- */
 .content{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
@@ -73,7 +86,7 @@ body{
 .attach-item button{background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:12px;}
 .attach-item button:hover{color:var(--danger);}
 
-.start-row{margin-top:24px;display:flex;justify-content:center;}
+.start-row{margin-top:24px;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;}
 .btn-primary{
   background:var(--navy);color:#fff;border:none;border-radius:8px;padding:12px 28px;
   font-weight:700;font-size:14.5px;cursor:pointer;
