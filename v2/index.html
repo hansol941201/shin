@@ -1053,6 +1053,62 @@
   .qlink-modal-btn.cancel:hover{ background:#F0F1F4; }
   .qlink-modal-btn.save{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
   .qlink-modal-btn.save:hover{ opacity:0.92; }
+
+  /* ---------- 일정관리(캘린더) — 화면 우하단 고정 아이콘 + 위로 열리는 팝오버 ----------
+     기존 디자인 시스템만 재사용한다: 아이콘은 sidebar의 기존 홈/할일 아이콘과 동일한
+     선형(stroke-only) 스타일, 배지는 .todo-icon-badge와 동일한 색(navy on #E7EAF3),
+     중요 표시는 .kb-hl(연노랑 하이라이트)을 텍스트에만 그대로 재사용한다. 새 색상/그림자/
+     큰 카드 없음. */
+  .cal-fab{
+    position:fixed; right:18px; bottom:18px; z-index:65;
+    width:38px; height:38px; padding:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:50%;
+    background:var(--surface); color:var(--text-muted); cursor:pointer;
+  }
+  .cal-fab:hover{ background:#F0F1F4; color:var(--navy); }
+  .cal-fab.active{ background:#EEF1F8; color:var(--navy); }
+  .cal-fab-badge{
+    position:absolute; top:-3px; right:-3px;
+    min-width:14px; height:14px; padding:0 3px;
+    font-size:9px; font-weight:700; line-height:14px; text-align:center;
+    color:var(--navy); background:#E7EAF3; border-radius:7px;
+  }
+  .cal-popover{
+    position:fixed; right:18px; bottom:64px; z-index:66;
+    width:340px; max-width:calc(100vw - 24px);
+    max-height:min(560px, calc(100vh - 90px));
+    display:flex; flex-direction:column;
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 4px 16px rgba(17,24,39,0.10);
+    overflow:hidden;
+  }
+  .cal-pop-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; border-bottom:1px solid var(--line); flex:0 0 auto;
+  }
+  .cal-pop-title{ font-size:13.5px; font-weight:700; color:var(--text); }
+  .cal-pop-close{ border:none; background:transparent; cursor:pointer; font-size:16px; line-height:1; color:var(--text-muted); padding:2px 4px; }
+  .cal-pop-close:hover{ color:var(--text); }
+  .cal-pop-body{ padding:12px 14px; overflow-y:auto; flex:1 1 auto; }
+  .cal-tabs-row{ display:flex; gap:6px; margin-bottom:8px; }
+  .cal-tab-btn{
+    flex:1 1 0; height:26px; font-size:11.5px; font-family:inherit; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer;
+  }
+  .cal-tab-btn:hover{ background:#F0F1F4; }
+  .cal-tab-btn.active{ background:#EEF1F8; border-color:#EEF1F8; color:var(--navy); font-weight:600; }
+  .cal-add-toggle-row{ margin-bottom:10px; }
+  .cal-list{ display:flex; flex-direction:column; }
+  .cal-event-row{ padding:9px 0; border-bottom:1px solid var(--line); }
+  .cal-event-row:last-child{ border-bottom:none; }
+  .cal-event-top{ display:flex; align-items:baseline; gap:6px; }
+  .cal-event-date{ font-size:11px; color:var(--text-muted); flex:0 0 auto; }
+  .cal-event-title{ font-size:12.5px; color:var(--text); }
+  .cal-event-title.done{ color:var(--text-muted); text-decoration:line-through; }
+  .cal-event-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .cal-event-actions{ display:flex; gap:12px; margin-top:4px; }
+  .cal-empty-hint{ font-size:12px; color:var(--text-muted); padding:14px 0; text-align:center; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 
@@ -1088,7 +1144,12 @@
     // (여전히 [클라우드 동기화 시작] 버튼 클릭에서만 최초 동기화 실행), 동기화 대상 배열이
     // 두 개 늘었을 뿐이다.
     customerActivities: 'shin2-customer-activities-v1',
-    customerDocuments: 'shin2-customer-documents-v1'
+    customerDocuments: 'shin2-customer-documents-v1',
+    // 일정관리(캘린더, 신규) — 위와 완전히 동일한 안전 패턴(§2~4 CASE A/B/C, §15 빈 값
+    // 가드)만 그대로 따른다. [클라우드 동기화 시작] 버튼을 눌렀을 때만 최초 동기화되고,
+    // 그 외에는 기존 실시간 push 경로(각 모듈의 saveAll → window.__shin2CloudSync.push)만
+    // 탄다 — 새 동기화 메커니즘을 만들지 않았다.
+    calendar: 'shin2-calendar-events-v1'
   };
   // crm/index.html은 별도 페이지지만 같은 origin이라 localStorage를 직접 공유한다(§4/§37) —
   // 다만 그쪽 탭에서 쓴 값은 이 탭의 인메모리 push 경로를 거치지 않으므로, 이 탭이 이미
@@ -1513,6 +1574,21 @@
       </div>
       <div class="acct-popup-body" id="memoPopupBody"></div>
     </div>
+  </div>
+
+  <!-- 일정관리(캘린더) — 화면 어디서나 보이도록 다른 뷰(homeView/companiesView/knowledgeView)와
+       같은 레벨의 형제 요소로 둔다(§1: 뷰 전환은 display:none/block 토글일 뿐이라, 이 블록은
+       그 토글 대상이 아니므로 라우트가 바뀌어도 사라지거나 다시 마운트되지 않는다). -->
+  <button type="button" class="cal-fab" id="calFabBtn" title="일정관리" aria-label="일정관리">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    <span class="cal-fab-badge" id="calFabBadge" style="display:none;"></span>
+  </button>
+  <div class="cal-popover" id="calPopover" style="display:none;">
+    <div class="cal-pop-head">
+      <div class="cal-pop-title">일정관리</div>
+      <button type="button" class="cal-pop-close" id="calPopCloseBtn">&times;</button>
+    </div>
+    <div class="cal-pop-body" id="calPopBody"></div>
   </div>
 
   <div class="qlink-modal-overlay" id="qlinkModalOverlay" style="display:none;">
@@ -8126,6 +8202,344 @@ ${text}
   input.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); handleEnter(); }
   });
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   SHIN2_CALENDAR — 일정관리 (신규 기능)
+   화면 우하단 고정 아이콘 → 클릭 시 아이콘 위로 열리는 팝오버(전체화면 모달 아님).
+   저장: localStorage 'shin2-calendar-events-v1' =
+     [{id, title, date, time, companyId, memo, isImportant, status, createdAt, updatedAt}]
+   기존 SHIN2_TASKS(shin2-tasks-v1)와 완전히 분리된 새 저장소 — 기존 키를 절대
+   건드리지 않는다(grep으로 사전 확인: 신규 키, 충돌 없음).
+
+   isImportant는 오직 사용자가 폼의 "중요 일정" 체크박스를 직접 체크했을 때만 true가
+   된다(아래 handleSave의 calFImportant.checked 한 줄이 유일한 대입 경로). 키워드 매칭이나
+   AI 기반의 자동 중요도 판정은 이 파일 어디에도 없다.
+
+   status는 'active'/'completed' 두 값만 쓰며, 완료는 레코드를 지우지 않고 status만
+   바꾼다(§ SHIN2_TASKS의 done 필드, 전화 온 내용의 status 필드와 동일한 "상태 vs 존재
+   분리" 원칙). 삭제는 별도의 명시적 삭제 액션에서만 일어난다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var STORAGE_KEY = 'shin2-calendar-events-v1';
+  var COMPANY_STORAGE_KEY = 'shin2-companies-staging';
+
+  var fabBtn = document.getElementById('calFabBtn');
+  var fabBadge = document.getElementById('calFabBadge');
+  var popover = document.getElementById('calPopover');
+  var popBody = document.getElementById('calPopBody');
+  var popCloseBtn = document.getElementById('calPopCloseBtn');
+  if(!fabBtn || !popover || !popBody) return;
+
+  var state = { viewMode:'today', filter:'all', mode:'list', editingId:null, formDeleteConfirmId:null };
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function uid(){ return 'cal_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  function loadAll(){
+    try{ var raw = localStorage.getItem(STORAGE_KEY); var list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list : []; }
+    catch(e){ return []; }
+  }
+  function saveAll(list){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('calendar', list);
+    renderBadge();
+  }
+  function getCompanies(){
+    try{ var raw = localStorage.getItem(COMPANY_STORAGE_KEY); var list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list : []; }
+    catch(e){ return []; }
+  }
+  function findCompany(id){ return id ? getCompanies().find(function(c){ return c.id === id; }) : null; }
+
+  function add(fields){
+    var now = Date.now();
+    var rec = {
+      id: uid(),
+      title: (fields.title || '').trim(),
+      date: fields.date || '',
+      time: fields.time || '',
+      companyId: fields.companyId || '',
+      memo: (fields.memo || '').trim(),
+      isImportant: !!fields.isImportant,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now
+    };
+    var all = loadAll();
+    all.push(rec);
+    saveAll(all);
+    return rec;
+  }
+  function update(id, fields){
+    var all = loadAll();
+    var rec = all.find(function(x){ return x.id === id; });
+    if(!rec) return null;
+    if(fields.title !== undefined) rec.title = fields.title.trim();
+    if(fields.date !== undefined) rec.date = fields.date;
+    if(fields.time !== undefined) rec.time = fields.time;
+    if(fields.companyId !== undefined) rec.companyId = fields.companyId;
+    if(fields.memo !== undefined) rec.memo = fields.memo.trim();
+    if(fields.isImportant !== undefined) rec.isImportant = !!fields.isImportant;
+    rec.updatedAt = Date.now();
+    saveAll(all);
+    return rec;
+  }
+  function setStatus(id, status){
+    var all = loadAll();
+    var rec = all.find(function(x){ return x.id === id; });
+    if(!rec) return null;
+    rec.status = status === 'completed' ? 'completed' : 'active';
+    rec.updatedAt = Date.now();
+    saveAll(all);
+    return rec;
+  }
+  function remove(id){ saveAll(loadAll().filter(function(x){ return x.id !== id; })); }
+
+  // ---------- 날짜 범위 계산 ----------
+  function parseYmd(s){
+    if(!s) return null;
+    var p = s.split('-');
+    if(p.length !== 3) return null;
+    var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function inWeek(dateStr, ref){
+    var d = parseYmd(dateStr);
+    if(!d) return false;
+    var day = ref.getDay(); // 0=일
+    var start = new Date(ref); start.setDate(ref.getDate() - day);
+    var end = new Date(start); end.setDate(start.getDate() + 6);
+    start.setHours(0,0,0,0); end.setHours(23,59,59,999);
+    return d >= start && d <= end;
+  }
+  function inMonth(dateStr, ref){
+    var d = parseYmd(dateStr);
+    if(!d) return false;
+    return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+  }
+
+  function filteredList(){
+    var all = loadAll();
+    var ref = new Date();
+    var t = todayStr();
+    all = all.filter(function(ev){
+      if(state.viewMode === 'today') return ev.date === t;
+      if(state.viewMode === 'week') return inWeek(ev.date, ref);
+      if(state.viewMode === 'month') return inMonth(ev.date, ref);
+      return true;
+    });
+    if(state.filter === 'important') all = all.filter(function(ev){ return ev.isImportant; });
+    all.sort(function(a,b){
+      if(a.date !== b.date) return (a.date||'').localeCompare(b.date||'');
+      return (a.time||'').localeCompare(b.time||'');
+    });
+    return all;
+  }
+
+  function todayImportantCount(){
+    var t = todayStr();
+    return loadAll().filter(function(ev){ return ev.date === t && ev.isImportant; }).length;
+  }
+
+  function renderBadge(){
+    var n = todayImportantCount();
+    if(n > 0){
+      fabBadge.textContent = n > 99 ? '99+' : String(n);
+      fabBadge.style.display = '';
+    } else {
+      fabBadge.style.display = 'none';
+    }
+  }
+
+  // ---------- 팝오버 열기/닫기 ----------
+  function openPopover(){
+    popover.style.display = 'flex';
+    fabBtn.classList.add('active');
+    state.mode = 'list';
+    render();
+  }
+  function closePopover(){
+    popover.style.display = 'none';
+    fabBtn.classList.remove('active');
+  }
+  function isOpen(){ return popover.style.display !== 'none'; }
+
+  fabBtn.addEventListener('click', function(){ isOpen() ? closePopover() : openPopover(); });
+  popCloseBtn.addEventListener('click', closePopover);
+  document.addEventListener('click', function(e){
+    if(!isOpen()) return;
+    // 내부 버튼 클릭이 popBody.innerHTML을 즉시 다시 그리는 경우(예: [일정 추가]),
+    // 이벤트가 document까지 버블링될 때는 e.target이 이미 DOM에서 제거된 옛 노드라
+    // popover.contains(e.target)이 false가 되어 "바깥 클릭"으로 오판할 수 있다.
+    // composedPath()는 dispatch 시점의 실제 조상 체인을 그대로 담고 있어 이 문제가 없다.
+    var path = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
+    if(path.indexOf(popover) !== -1 || path.indexOf(fabBtn) !== -1) return;
+    closePopover();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && isOpen()) closePopover();
+  });
+
+  // ---------- 렌더링 ----------
+  function render(){
+    if(state.mode === 'form') return renderForm();
+    renderList();
+  }
+
+  function renderList(){
+    var items = filteredList();
+    var viewLabel = { today:'오늘', week:'주간', month:'월간' };
+    var listHtml = !items.length
+      ? '<div class="cal-empty-hint">' + viewLabel[state.viewMode] + ' 일정이 없습니다</div>'
+      : '<div class="cal-list">' + items.map(function(ev){
+          var company = findCompany(ev.companyId);
+          var titleHtml = ev.isImportant
+            ? '<mark class="kb-hl cal-event-title' + (ev.status==='completed'?' done':'') + '">' + escapeHtml(ev.title) + '</mark>'
+            : '<span class="cal-event-title' + (ev.status==='completed'?' done':'') + '">' + escapeHtml(ev.title) + '</span>';
+          var metaParts = [];
+          if(company) metaParts.push(escapeHtml(company.name));
+          if(ev.memo) metaParts.push(escapeHtml(ev.memo));
+          return '' +
+            '<div class="cal-event-row" data-id="' + ev.id + '">' +
+              '<div class="cal-event-top"><span class="cal-event-date">' + escapeHtml([ev.date, ev.time].filter(Boolean).join(' ')) + '</span>' + titleHtml + '</div>' +
+              (metaParts.length ? '<div class="cal-event-meta">' + metaParts.join(' · ') + '</div>' : '') +
+              '<div class="cal-event-actions" id="calActions_' + ev.id + '">' +
+                '<button type="button" class="acct-text-action" data-act="edit" data-id="' + ev.id + '">수정</button>' +
+                (ev.status === 'completed'
+                  ? '<button type="button" class="acct-text-action" data-act="undo" data-id="' + ev.id + '">완료 취소</button>'
+                  : '<button type="button" class="acct-text-action" data-act="complete" data-id="' + ev.id + '">완료</button>') +
+                '<button type="button" class="acct-text-action danger" data-act="del" data-id="' + ev.id + '">삭제</button>' +
+              '</div>' +
+            '</div>';
+        }).join('') + '</div>';
+
+    popBody.innerHTML = '' +
+      '<div class="cal-tabs-row">' +
+        ['today','week','month'].map(function(v){
+          return '<button type="button" class="cal-tab-btn' + (state.viewMode===v?' active':'') + '" data-view="' + v + '">' + viewLabel[v] + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="cal-tabs-row">' +
+        ['all','important'].map(function(f){
+          return '<button type="button" class="cal-tab-btn' + (state.filter===f?' active':'') + '" data-filter="' + f + '">' + (f==='all'?'전체':'중요') + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="cal-add-toggle-row"><button type="button" class="acct-add-btn" id="calAddBtn">+ 일정 추가</button></div>' +
+      listHtml;
+
+    popBody.querySelectorAll('[data-view]').forEach(function(btn){
+      btn.addEventListener('click', function(){ state.viewMode = btn.dataset.view; render(); });
+    });
+    popBody.querySelectorAll('[data-filter]').forEach(function(btn){
+      btn.addEventListener('click', function(){ state.filter = btn.dataset.filter; render(); });
+    });
+    var addBtn = document.getElementById('calAddBtn');
+    if(addBtn) addBtn.addEventListener('click', function(){ openForm(null); });
+
+    popBody.querySelectorAll('[data-act]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.dataset.id;
+        var act = btn.dataset.act;
+        if(act === 'edit') openForm(id);
+        else if(act === 'complete'){ setStatus(id, 'completed'); render(); }
+        else if(act === 'undo'){ setStatus(id, 'active'); render(); }
+        else if(act === 'del'){
+          var row = document.getElementById('calActions_' + id);
+          if(!row) return;
+          row.innerHTML = '<div class="co-confirm-row"><span>이 일정을 삭제하시겠습니까?</span>' +
+            '<button type="button" class="acct-text-action" data-act="del-cancel" data-id="' + id + '">취소</button>' +
+            '<button type="button" class="acct-text-action danger" data-act="del-confirm" data-id="' + id + '">삭제</button></div>';
+          row.querySelector('[data-act="del-cancel"]').addEventListener('click', function(){ render(); });
+          row.querySelector('[data-act="del-confirm"]').addEventListener('click', function(){ remove(id); render(); });
+        }
+      });
+    });
+  }
+
+  function openForm(id){
+    state.mode = 'form';
+    state.editingId = id;
+    if(id){
+      var rec = loadAll().find(function(x){ return x.id === id; });
+      state.formValues = rec ? Object.assign({}, rec) : { title:'', date:todayStr(), time:'', companyId:'', memo:'', isImportant:false };
+    } else {
+      state.formValues = { title:'', date:todayStr(), time:'', companyId:'', memo:'', isImportant:false };
+    }
+    render();
+  }
+
+  function renderForm(){
+    var vals = state.formValues;
+    var isNew = !state.editingId;
+    var companies = getCompanies().slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+    var companyOptionsHtml = '<option value="">(선택 안 함)</option>' + companies.map(function(c){
+      return '<option value="' + escapeAttr(c.id) + '"' + (vals.companyId===c.id?' selected':'') + '>' + escapeHtml(c.name) + '</option>';
+    }).join('');
+
+    popBody.innerHTML = '' +
+      '<div class="cal-pop-title" style="margin-bottom:10px;">' + (isNew ? '일정 추가' : '일정 수정') + '</div>' +
+      '<div class="task-form-field"><label>제목 (필수)</label><input type="text" id="calFTitle" value="' + escapeAttr(vals.title) + '" placeholder="예: 신광건설 견적 회신" /></div>' +
+      '<div id="calFTitleErr" class="acct-form-error" style="display:none;">제목을 입력하세요.</div>' +
+      '<div class="task-form-row">' +
+        '<div class="task-form-field"><label>날짜 (필수)</label><input type="date" id="calFDate" value="' + escapeAttr(vals.date) + '" /></div>' +
+        '<div class="task-form-field"><label>시간</label><input type="time" id="calFTime" value="' + escapeAttr(vals.time) + '" /></div>' +
+      '</div>' +
+      '<div id="calFDateErr" class="acct-form-error" style="display:none;">날짜를 입력하세요.</div>' +
+      '<div class="task-form-field"><label>관련업체</label><select id="calFCompany">' + companyOptionsHtml + '</select></div>' +
+      '<div class="task-form-field"><label>메모</label><textarea id="calFMemo">' + escapeHtml(vals.memo) + '</textarea></div>' +
+      '<div class="task-form-field"><label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text);">' +
+        '<input type="checkbox" id="calFImportant"' + (vals.isImportant ? ' checked' : '') + ' /> 중요 일정' +
+      '</label></div>' +
+      '<div class="acct-form-actions">' +
+        '<button type="button" class="acct-text-action" id="calFormCancel">취소</button>' +
+        '<button type="button" class="ai-run-btn" id="calFormSave">저장</button>' +
+      '</div>';
+
+    document.getElementById('calFormCancel').addEventListener('click', function(){ state.mode = 'list'; render(); });
+    document.getElementById('calFormSave').addEventListener('click', function(){
+      var titleEl = document.getElementById('calFTitle');
+      var dateEl = document.getElementById('calFDate');
+      var title = titleEl.value.trim();
+      var date = dateEl.value;
+      var ok = true;
+      if(!title){ document.getElementById('calFTitleErr').style.display = 'block'; ok = false; } else { document.getElementById('calFTitleErr').style.display = 'none'; }
+      if(!date){ document.getElementById('calFDateErr').style.display = 'block'; ok = false; } else { document.getElementById('calFDateErr').style.display = 'none'; }
+      if(!ok) return;
+      // isImportant는 오직 이 체크박스 값에서만 온다 — 다른 어떤 자동 판정도 거치지 않는다.
+      var fields = {
+        title: title,
+        date: date,
+        time: document.getElementById('calFTime').value,
+        companyId: document.getElementById('calFCompany').value,
+        memo: document.getElementById('calFMemo').value,
+        isImportant: document.getElementById('calFImportant').checked
+      };
+      if(isNew) add(fields);
+      else update(state.editingId, fields);
+      state.mode = 'list';
+      render();
+    });
+  }
+
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e.detail.key !== 'calendar') return;
+    renderBadge();
+    if(isOpen() && state.mode === 'list') render();
+  });
+
+  window.SHIN2_CALENDAR = { getAll: loadAll, add: add, update: update, setStatus: setStatus, remove: remove };
+
+  renderBadge();
 })();
 </script>
 
