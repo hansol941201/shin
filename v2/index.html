@@ -884,7 +884,7 @@
   }
   /* 좌/우 열의 제목 줄 높이를 맞춘다 — 우측은 분류버튼+"전체 보기 >"까지 같은 줄에
      들어가므로, 좌측 제목줄도 같은 min-height/정렬로 맞춰 Y좌표를 일치시킨다. */
-  .home-call-grid .qr-head{ min-height:26px; display:flex; align-items:center; margin-bottom:8px; }
+  .home-call-grid .qr-head{ min-height:26px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
   .home-call-grid .home-task-head{ min-height:26px; }
   /* 입력창 아래 영역이 남는 세로공간을 채워, 하단 줄(저장 버튼/안내)이 항상 같은
      baseline에 오도록 한다. */
@@ -898,6 +898,8 @@
      데스크톱 폭(2열 그리드가 실제로 나란히 배치되는 720px 초과)에서만 적용한다 —
      좁은 화면(1열로 쌓일 때)은 기존처럼 자유롭게 줄바꿈되도록 그대로 둔다. */
   @media (min-width: 721px){
+    .home-call-grid .qr-head{ flex-wrap:nowrap; }
+    .home-call-grid .qr-title{ white-space:nowrap; flex:none; }
     .home-call-grid .home-task-head{ flex-wrap:nowrap; }
     .home-call-grid .home-task-head-left{ flex-wrap:nowrap; min-width:0; gap:10px; }
     .home-call-grid .home-task-head-left .home-task-title{ white-space:nowrap; flex:none; }
@@ -909,7 +911,8 @@
     .home-call-grid{ grid-template-columns:1fr; gap:22px 0; align-items:start; }
     .home-call-grid .qr-block, .home-call-grid .home-task-block{ display:block; }
     .home-call-grid .qr-body, .home-call-grid .call-input-block{ display:block; }
-    .home-call-grid .qr-bottom-row, .home-call-grid .call-memo-actions{ margin-top:8px; }
+    .home-call-grid .qr-bottom-row, .home-call-grid .call-memo-actions{ margin-top:8px; flex-wrap:wrap; height:auto; }
+    .home-call-grid .qr-hint{ white-space:normal; }
   }
 
   /* 빠른 고객기록(표시명: "시공사 전화기록", §5~10) — 업체명을 포함해 여러 줄로 적고
@@ -1666,6 +1669,16 @@
     </div>
   </div>
 
+  <div class="acct-popup-overlay" id="actPopupOverlay">
+    <div class="acct-popup task-popup" id="actPopup" role="dialog" aria-modal="true" aria-label="시공사 전화기록 전체 보기">
+      <div class="acct-popup-head">
+        <div class="acct-popup-title">시공사 전화기록 전체 보기</div>
+        <button type="button" class="acct-popup-close" id="actPopupCloseBtn">&times;</button>
+      </div>
+      <div class="acct-popup-body" id="actPopupBody"></div>
+    </div>
+  </div>
+
   <div class="acct-popup-overlay" id="memoPopupOverlay">
     <div class="acct-popup task-popup" id="memoPopup" role="dialog" aria-modal="true" aria-label="메모 전체 보기">
       <div class="acct-popup-head">
@@ -1739,11 +1752,14 @@
                한 줄 입력→Enter만으로 기록완료. 자동으로 업체를 찾지 못하면 절대 새 업체를
                만들지 않는다(§ "자동 생성 금지"). 로직/데이터는 그대로, 라벨만 바꿨다. -->
           <div class="qr-block" id="qrBlock">
-            <div class="qr-head"><div class="qr-title">시공사 전화기록</div></div>
+            <div class="qr-head">
+              <div class="qr-title">시공사 전화기록</div>
+              <button type="button" class="home-task-more" id="qrViewAllBtn">전체 보기 &gt;</button>
+            </div>
             <div class="qr-body">
               <textarea id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (Enter로 저장, Shift+Enter는 줄바꿈)"></textarea>
               <div id="qrResult"></div>
-              <div class="qr-bottom-row"><span class="qr-hint">Enter로 저장 · Shift+Enter로 줄바꿈</span></div>
+              <div class="qr-bottom-row"><span class="qr-hint">Enter로 저장 · Shift+Enter로 줄바꿈</span><button type="button" id="qrSaveBtn" class="ai-run-btn">저장</button></div>
             </div>
           </div>
 
@@ -8338,6 +8354,112 @@ ${text}
     // 순수 Enter만 저장을 트리거한다(기존 동작과 동일).
     if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleEnter(); }
   });
+
+  // [저장] 버튼(§신규) — Enter와 완전히 동일한 저장 경로(handleEnter)를 그대로
+  // 호출한다. 별도의 저장 로직을 새로 만들지 않는다(중복 기록 방지).
+  var saveBtn = document.getElementById('qrSaveBtn');
+  if(saveBtn) saveBtn.addEventListener('click', function(){ handleEnter(); });
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   시공사 전화기록 전체보기 팝업(§신규) — 우측 "아파트 문의·전화기록"의 전체보기
+   팝업(callPopupOverlay)과 같은 구조(acct-popup-overlay/acct-popup/task-pop-row 등)를
+   그대로 재사용한다. 데이터는 새 저장소를 만들지 않고 SHIN2_ACTIVITIES(=
+   shin2-customer-activities-v1)와 shin2-companies-staging을 그대로 읽기만 한다 —
+   여기서는 어떤 localStorage.setItem/getItem도 새로 호출하지 않는다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var overlay = document.getElementById('actPopupOverlay');
+  var body = document.getElementById('actPopupBody');
+  var closeBtn = document.getElementById('actPopupCloseBtn');
+  var viewAllBtn = document.getElementById('qrViewAllBtn');
+  if(!overlay || !body || !viewAllBtn) return;
+
+  var aState = { search:'' };
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+  function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function localDateStr(ts){ var d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function fmtShort(ts){
+    var d = new Date(ts);
+    return pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function openActPopup(){
+    aState.search = '';
+    overlay.classList.add('open');
+    renderActBrowse();
+  }
+  function closeActPopup(){ overlay.classList.remove('open'); }
+  closeBtn.addEventListener('click', closeActPopup);
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) closeActPopup(); });
+  viewAllBtn.addEventListener('click', openActPopup);
+
+  function renderActBrowse(){
+    if(!window.SHIN2_ACTIVITIES) return;
+    // 업체명은 절대 별도로 저장하지 않고 매번 companyId → shin2-companies-staging에서
+    // 실시간으로 조회한다(§ 라이브 조회, 중복저장 금지).
+    var companies = window.SHIN2_ACTIVITIES.loadCompanies();
+    function findCo(id){ return companies.find(function(c){ return c && c.id === id; }); }
+
+    var all = window.SHIN2_ACTIVITIES.loadAll().slice().sort(function(a,b){
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    var ql = (aState.search||'').trim().toLowerCase();
+    var items = all.filter(function(r){
+      if(!ql) return true;
+      var co = findCo(r.companyId);
+      var hay = [co ? co.name : '', co ? co.contactName : '', r.originalText, r.activityText, r.category].join(' ').toLowerCase();
+      return hay.indexOf(ql) !== -1;
+    });
+
+    var html = '<div class="search-box acct-search-box"><input type="text" id="actSearchInput" placeholder="업체명 / 담당자 / 전화내용 검색" value="' + escapeAttr(aState.search) + '" /></div>';
+    if(!items.length){
+      html += '<div class="acct-empty">해당하는 전화 기록이 없습니다.</div>';
+    } else {
+      var lastDateKey = null;
+      html += items.map(function(r){
+        var co = findCo(r.companyId);
+        var name = co ? co.name : (r.companyId ? '(삭제된 업체)' : '(업체 미연결)');
+        var content = r.originalText || r.activityText || '';
+        var dateKey = localDateStr(r.createdAt);
+        var groupHeaderHtml = '';
+        if(dateKey !== lastDateKey){
+          lastDateKey = dateKey;
+          groupHeaderHtml = '<div class="task-pop-date-head">' + escapeHtml(dateKey === todayStr() ? '오늘' : dateKey) + '</div>';
+        }
+        return groupHeaderHtml + '<div class="task-pop-row" data-id="' + escapeAttr(r.id) + '">' +
+          '<span class="task-pop-row-title">' + escapeHtml(name) + (content ? ' · ' + escapeHtml(content) : '') + '</span>' +
+          '<span class="task-pop-row-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    body.innerHTML = html;
+
+    var searchInput = document.getElementById('actSearchInput');
+    searchInput.addEventListener('input', function(){ aState.search = searchInput.value; renderActBrowse(); });
+    body.querySelectorAll('.task-pop-row').forEach(function(rowEl){
+      rowEl.addEventListener('click', function(){
+        var rec = all.find(function(r){ return r.id === rowEl.getAttribute('data-id'); });
+        if(!rec || !rec.companyId) return;
+        // 업체 상세(CRM 카드) 오픈은 기존 "전화 온 내용" 상세의 업체 보기 버튼과 동일한
+        // 방식(SHIN2_NAV.showView + SHIN2_COMPANIES.openDetail)을 그대로 재사용한다 —
+        // 새 업체 ID를 만들지 않는다.
+        closeActPopup();
+        if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
+        if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(rec.companyId);
+      });
+    });
+  }
 })();
 </script>
 
