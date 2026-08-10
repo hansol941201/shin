@@ -44,7 +44,8 @@ const MeetingProgress = {
   /** 라운드 하나가 성공(또는 실패로 일시중단)할 때마다 호출하는 체크포인트 저장 */
   saveCheckpoint({ topic, attachedText, hasAttachment, context, transcript, roundTexts, status, pausedAtRound, pausedReason, pausedMessage }) {
     const existing = this.load();
-    const reportHistory = existing && existing.topic === topic && Array.isArray(existing.reportHistory) ? existing.reportHistory : [];
+    const carry = existing && existing.topic === topic ? existing : {};
+    const reportHistory = Array.isArray(carry.reportHistory) ? carry.reportHistory : [];
     this.save({
       topic,
       attachedText: attachedText || '',
@@ -53,6 +54,7 @@ const MeetingProgress = {
       transcript,
       roundTexts,
       reportHistory,
+      memoryId: carry.memoryId || null, // 이 회의가 저장한 "과거 회의 기억" 레코드 id
       status, // 'in-progress' | 'paused'
       pausedAtRound: pausedAtRound || null,
       pausedReason: pausedReason || null, // 'network' | 'quality'
@@ -63,7 +65,8 @@ const MeetingProgress = {
   /** 최종 보고서까지 완성됐을 때만 완료 상태로 바꾼다 */
   markDone({ topic, attachedText, hasAttachment, report, transcript }) {
     const existing = this.load();
-    const reportHistory = existing && existing.topic === topic && Array.isArray(existing.reportHistory) ? existing.reportHistory : [];
+    const carry = existing && existing.topic === topic ? existing : {};
+    const reportHistory = Array.isArray(carry.reportHistory) ? carry.reportHistory : [];
     this.save({
       topic,
       attachedText: attachedText || '',
@@ -71,11 +74,19 @@ const MeetingProgress = {
       report,
       transcript,
       reportHistory,
+      memoryId: carry.memoryId || null,
       status: 'done',
       pausedAtRound: null,
       pausedReason: null,
       pausedMessage: null
     });
+  },
+
+  /** 이 회의가 "과거 회의 기억"에 저장된 레코드 id를 연결해둔다(보완 시 같은 레코드를 갱신하기 위함) */
+  setMemoryId(topic, memoryId) {
+    const p = this.load();
+    if (!p || p.topic !== topic) return;
+    this.save({ ...p, memoryId });
   },
 
   /** 지금 입력된 주제와 정확히 일치하는, 아직 안 끝난(이어서 진행 가능한) 진행상태가 있는지 */

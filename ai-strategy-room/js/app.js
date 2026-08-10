@@ -38,6 +38,14 @@ const els = {
   versionsModalClose: document.getElementById('versionsModalClose'),
   versionsBody: document.getElementById('versionsBody'),
   demoBadge: document.getElementById('demoBadge'),
+  memoryHint: document.getElementById('memoryHint'),
+  memoryManageBtn: document.getElementById('memoryManageBtn'),
+  memoryModalOverlay: document.getElementById('memoryModalOverlay'),
+  memoryModalClose: document.getElementById('memoryModalClose'),
+  memoryModalTitle: document.getElementById('memoryModalTitle'),
+  memoryModalDesc: document.getElementById('memoryModalDesc'),
+  memoryModalActions: document.getElementById('memoryModalActions'),
+  memoryModalBody: document.getElementById('memoryModalBody'),
   connStatus: document.getElementById('connStatus'),
   connDot: document.getElementById('connDot'),
   connText: document.getElementById('connText'),
@@ -50,6 +58,7 @@ let currentReportText = '';
 let currentLog = [];
 let isMeetingRunning = false; // 버튼 연타·중복 호출 방지 (요구사항 10)
 let isRefining = false; // 보고서 보완 버튼 연타 방지
+let referencedMemoryIds = []; // 사용자가 [이번 회의에 참고]로 직접 선택한 과거 회의 id 목록
 
 /** 라운드 id를 "N단계" 표시용 숫자로 바꾼다 (예: 'redesign' → 3) */
 function roundStepNumber(roundId) {
@@ -129,6 +138,159 @@ els.resumeBtn.addEventListener('click', () => {
     return;
   }
   startMeeting({ resumeState: p });
+});
+
+/* ---------- 과거 회의 기억 (CrewAI Memory 개념을 가볍게 이식) ---------- */
+// 절대 자동으로 강제 주입하지 않는다 — 사용자가 [이번 회의에 참고]를 직접
+// 눌렀을 때만 새 회의 컨텍스트에 배경 정보로 포함된다.
+const MEMORY_STORED_FIELDS_NOTICE =
+  '저장되는 정보: 회의 날짜, 안건 제목/주제, 결론 요약, 핵심 실행안, 주요 리스크, 최종 보고서. ' +
+  '첨부파일 원문은 저장되지 않습니다.';
+
+/** 지금 입력된 주제가 이미 완료/진행된 그 회의 자신이면(같은 주제) 자기 자신은 "비슷한 과거 회의"에서 제외한다 */
+function _currentMemoryExcludeId(topic) {
+  const p = MeetingProgress.load();
+  return p && p.topic === topic ? p.memoryId || null : null;
+}
+
+function renderMemoryHint() {
+  if (!els.memoryHint) return;
+  const topic = els.topicInput.value.trim();
+  if (!topic) {
+    els.memoryHint.hidden = true;
+    return;
+  }
+  const similar = MeetingMemory.findSimilar(topic, _currentMemoryExcludeId(topic), 5);
+  if (!similar.length) {
+    els.memoryHint.hidden = true;
+    return;
+  }
+  const refCount = referencedMemoryIds.length;
+  els.memoryHint.hidden = false;
+  els.memoryHint.innerHTML =
+    `🕓 비슷한 과거 회의 ${similar.length}건이 있습니다 <button type="button" class="memory-hint-link" id="memoryHintViewBtn">보기</button>` +
+    (refCount ? ` <span class="memory-ref-note">(${refCount}건 이번 회의에 참고 예정)</span>` : '');
+  const viewBtn = document.getElementById('memoryHintViewBtn');
+  if (viewBtn) viewBtn.addEventListener('click', () => openMemoryModal('similar'));
+}
+
+function openMemoryModal(mode) {
+  const topic = els.topicInput.value.trim();
+  const records = mode === 'similar'
+    ? MeetingMemory.findSimilar(topic, _currentMemoryExcludeId(topic), 10)
+    : MeetingMemory.list().slice().reverse();
+
+  els.memoryModalTitle.textContent = mode === 'similar' ? '비슷한 과거 회의' : '지난 회의 기록 관리';
+  els.memoryModalDesc.textContent = mode === 'similar'
+    ? '과거 회의 내용은 자동으로 반영되지 않습니다. [이번 회의에 참고]를 누른 항목만 새 회의에 배경 정보로 전달됩니다.'
+    : MEMORY_STORED_FIELDS_NOTICE;
+
+  els.memoryModalActions.innerHTML = mode === 'all'
+    ? '<button class="btn-ghost btn-sm" id="memoryClearAllBtn">전체 기록 삭제</button>'
+    : '';
+  const clearAllBtn = document.getElementById('memoryClearAllBtn');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', () => {
+      armDoubleConfirm(clearAllBtn, '전체 기록 삭제', '정말 삭제? 다시 클릭', () => {
+        MeetingMemory.clearAll();
+        showToast('과거 회의 기록을 모두 삭제했습니다.');
+        openMemoryModal(mode);
+        renderMemoryHint();
+        refreshMemoryManageBtn();
+      });
+    });
+  }
+
+  if (!records.length) {
+    els.memoryModalBody.innerHTML = `<p class="modal-desc">${mode === 'similar' ? '비슷한 과거 회의가 없습니다.' : '저장된 과거 회의 기록이 없습니다.'}</p>`;
+  } else {
+    els.memoryModalBody.innerHTML = records
+      .map((r) => {
+        const when = new Date(r.createdAt).toLocaleString('ko-KR');
+        const isRef = referencedMemoryIds.includes(r.id);
+        return `
+        <div class="log-entry memory-entry" data-memory-id="${r.id}">
+          <div class="log-entry-expert">${escapeHtml(r.title)} · ${when}${r.wasRefinedByUser ? ' · 사용자 보완됨' : ''}</div>
+          <div class="log-entry-text"><b>주제</b> ${escapeHtml(r.topic)}</div>
+          ${r.conclusionSummary ? `<div class="log-entry-text"><b>결론 요약</b> ${escapeHtml(r.conclusionSummary)}</div>` : ''}
+          ${r.keyActions ? `<div class="log-entry-text"><b>핵심 실행안</b> ${escapeHtml(r.keyActions)}</div>` : ''}
+          ${r.keyRisks ? `<div class="log-entry-text"><b>주요 리스크</b> ${escapeHtml(r.keyRisks)}</div>` : ''}
+          <div class="memory-entry-actions">
+            <button class="btn-ghost btn-sm memory-ref-btn" data-ref-id="${r.id}">${isRef ? '참고 해제' : '이번 회의에 참고'}</button>
+            <button class="btn-ghost btn-sm memory-delete-btn" data-delete-id="${r.id}">삭제</button>
+          </div>
+        </div>`;
+      })
+      .join('');
+  }
+
+  els.memoryModalOverlay.classList.add('open');
+}
+
+function armDoubleConfirm(btn, label, confirmLabel, onConfirm) {
+  if (btn.dataset.armed === '1') {
+    btn.dataset.armed = '0';
+    btn.textContent = label;
+    onConfirm();
+    return;
+  }
+  btn.dataset.armed = '1';
+  btn.textContent = confirmLabel;
+  setTimeout(() => {
+    if (btn.dataset.armed === '1') {
+      btn.dataset.armed = '0';
+      btn.textContent = label;
+    }
+  }, 3000);
+}
+
+function refreshMemoryManageBtn() {
+  if (!els.memoryManageBtn) return;
+  const count = MeetingMemory.list().length;
+  els.memoryManageBtn.textContent = count ? `지난 회의 기록 관리 (${count})` : '지난 회의 기록 관리';
+}
+
+/** 완료된 회의 하나를 "과거 회의 기억"에 저장(또는 이미 있으면 건너뜀)한다 */
+function saveMeetingToMemory(topic, report, hasAttachment) {
+  const progress = MeetingProgress.load();
+  if (progress && progress.topic === topic && progress.memoryId) return; // 이미 저장됨
+  const id = MeetingMemory.create({ topic, report, hasAttachment });
+  MeetingProgress.setMemoryId(topic, id);
+  refreshMemoryManageBtn();
+}
+
+els.topicInput.addEventListener('input', renderMemoryHint);
+els.memoryManageBtn.addEventListener('click', () => openMemoryModal('all'));
+els.memoryModalClose.addEventListener('click', () => els.memoryModalOverlay.classList.remove('open'));
+els.memoryModalOverlay.addEventListener('click', (e) => { if (e.target === els.memoryModalOverlay) els.memoryModalOverlay.classList.remove('open'); });
+els.memoryModalBody.addEventListener('click', (e) => {
+  const refBtn = e.target.closest('[data-ref-id]');
+  if (refBtn) {
+    const id = refBtn.dataset.refId;
+    const idx = referencedMemoryIds.indexOf(id);
+    if (idx === -1) {
+      referencedMemoryIds.push(id);
+      refBtn.textContent = '참고 해제';
+    } else {
+      referencedMemoryIds.splice(idx, 1);
+      refBtn.textContent = '이번 회의에 참고';
+    }
+    renderMemoryHint();
+    return;
+  }
+  const delBtn = e.target.closest('[data-delete-id]');
+  if (delBtn) {
+    const id = delBtn.dataset.deleteId;
+    armDoubleConfirm(delBtn, '삭제', '정말 삭제?', () => {
+      MeetingMemory.remove(id);
+      referencedMemoryIds = referencedMemoryIds.filter((x) => x !== id);
+      const entry = delBtn.closest('[data-memory-id]');
+      if (entry) entry.remove();
+      showToast('삭제했습니다.');
+      renderMemoryHint();
+      refreshMemoryManageBtn();
+    });
+  }
 });
 
 /* ---------- 상단 연결 상태 표시 ---------- */
@@ -291,8 +453,10 @@ function renderRetryLog() {
       .slice()
       .reverse()
       .map((entry) => {
-        const tag = entry.type === 'network' ? '네트워크 재시도' : '품질 재시도';
-        const cls = entry.type === 'network' ? 'retry-tag-network' : 'retry-tag-quality';
+        const tagMap = { network: '네트워크 재시도', quality: '품질 재시도', 'llm-quality': 'LLM 품질판정' };
+        const clsMap = { network: 'retry-tag-network', quality: 'retry-tag-quality', 'llm-quality': 'retry-tag-llm' };
+        const tag = tagMap[entry.type] || entry.type;
+        const cls = clsMap[entry.type] || 'retry-tag-network';
         return `
         <div class="log-entry retry-entry">
           <div class="log-entry-expert"><span class="retry-tag ${cls}">${tag}</span> ${escapeHtml(entry.roundId)} · 시도 #${entry.attempt}</div>
@@ -368,17 +532,24 @@ async function startMeeting({ resumeState } = {}) {
     return;
   }
 
+  // 이 시점 이후 첫 await(refreshConnStatus) 전에 곧바로 잠가야 한다 — 아래처럼
+  // await 뒤에서 플래그를 세우면 그 사이(연결 확인 중)에 들어온 다른 클릭이
+  // 똑같이 isMeetingRunning===false를 보고 통과해버려 중복 실행될 수 있다.
+  isMeetingRunning = true;
+  els.startBtn.disabled = true;
+  els.resumeBtn.disabled = true;
+
   // Claude 연결이 안 되어 있으면 회의를 시작하지 않고 명확히 안내한다.
   // (연결 실패를 예시 결과로 조용히 대체하지 않는다)
   const connected = await refreshConnStatus();
   if (!connected) {
+    isMeetingRunning = false;
+    els.startBtn.disabled = false;
+    els.resumeBtn.disabled = false;
     showToast('Claude가 연결되어 있지 않습니다. AI전략회의실.bat으로 실행해주세요.');
     return;
   }
 
-  isMeetingRunning = true;
-  els.startBtn.disabled = true;
-  els.resumeBtn.disabled = true;
   els.pausedBanner.hidden = true;
   Storage.saveTopic(topic);
 
@@ -415,6 +586,21 @@ async function startMeeting({ resumeState } = {}) {
       ? '첨부자료를 반영한 근거분석 모드로 진행합니다.'
       : '전략회의 모드로 진행합니다.';
 
+  // 사용자가 [이번 회의에 참고]로 직접 선택한 과거 회의만 배경 정보로 전달한다.
+  // (재개일 때는 이미 체크포인트의 context에 포함돼 있으므로 다시 넣지 않는다)
+  let referenceContext = '';
+  if (!resumeState && referencedMemoryIds.length) {
+    const refRecords = referencedMemoryIds.map((id) => MeetingMemory.get(id)).filter(Boolean);
+    if (refRecords.length) {
+      const blocks = refRecords
+        .map((r, i) => `(${i + 1}) 과거 주제: ${r.topic}\n당시 결론 요약: ${r.conclusionSummary || '(기록 없음)'}\n당시 핵심 실행안: ${r.keyActions || '(기록 없음)'}\n당시 주요 리스크: ${r.keyRisks || '(기록 없음)'}`)
+        .join('\n\n');
+      referenceContext = `[참고: 사용자가 직접 선택한 과거 유사 회의 — 배경 참고용일 뿐 정답이 아니다. 지금 주제를 처음부터 독립적으로 검토하되, 실제로 관련 있는 내용만 참고하고 과거 결론을 그대로 베끼지 마라]\n${blocks}`;
+    }
+  }
+  referencedMemoryIds = []; // 이번 요청에 반영했으니 선택 상태를 초기화한다
+  renderMemoryHint();
+
   let result;
   try {
     result = await MeetingEngine.run({
@@ -422,7 +608,8 @@ async function startMeeting({ resumeState } = {}) {
       attachedText,
       hasAttachment: hasUsableAttachment,
       onProgress: updateStep,
-      resumeState
+      resumeState,
+      referenceContext
     });
   } catch (err) {
     console.error(err);
@@ -448,6 +635,7 @@ async function startMeeting({ resumeState } = {}) {
   Storage.saveReport(result.report);
   Storage.saveMeetingLog(JSON.stringify(result.log || []));
   Storage.saveWasExample(false);
+  saveMeetingToMemory(topic, result.report, hasUsableAttachment); // 회의가 정상 완료된 경우에만 저장
 
   renderReport(result.report, result.log, result.warning, 'live', result.transport);
   showView('result');
@@ -525,11 +713,13 @@ els.newTopicBtn.addEventListener('click', () => {
   currentReportText = '';
   currentLog = [];
   lastRunWasExample = false;
+  referencedMemoryIds = [];
   els.demoBadge.hidden = true;
   els.refineCommentInput.value = '';
   els.versionsBtn.hidden = true;
   Storage.clearAll();
   renderPausedBanner(); // 주제가 비었으니 배너도 함께 정리
+  renderMemoryHint();
   showView('input');
   els.topicInput.focus();
 });
@@ -570,6 +760,16 @@ els.refineBtn.addEventListener('click', async () => {
     MeetingProgress.replaceReportWithHistory(topic, refined, comment);
     currentReportText = refined;
     Storage.saveReport(refined);
+
+    // 과거 회의 기억도 같은 레코드를 갱신한다(새 레코드를 만들지 않는다).
+    const progress = MeetingProgress.load();
+    const memoryId = progress && progress.topic === topic ? progress.memoryId : null;
+    if (memoryId) {
+      MeetingMemory.updateAfterRefine(memoryId, { report: refined });
+    } else {
+      saveMeetingToMemory(topic, refined, !!(progress && progress.hasAttachment));
+    }
+
     renderReport(refined, currentLog, null, 'live', AiProvider.getActiveTransport());
     els.refineCommentInput.value = '';
     showToast('보고서를 보완했습니다.');
@@ -600,6 +800,8 @@ els.versionsBody.addEventListener('click', (e) => {
 (async function initApp() {
   restoreFromStorage();       // 화면부터 먼저 그려서 사용자가 기다리지 않게 한다
   renderPausedBanner();       // 진행 중인/일시중단된 회의가 있으면 즉시 안내 (요구사항 7)
+  renderMemoryHint();         // 비슷한 과거 회의가 있으면 안내
+  refreshMemoryManageBtn();
   await warmupConnStatus();   // 콜드 스타트 지연을 감안해 초반에는 여러 번 재확인
   // .bat으로 실행한 경우에도 창을 오래 켜두면 연결 상태가 바뀔 수 있으니 주기적으로 재확인한다.
   setInterval(refreshConnStatus, 15000);

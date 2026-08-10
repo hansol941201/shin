@@ -21,17 +21,22 @@
  *              보완이 필요하면 구조화된 판정 블록(REQUIRED_FIXES)만 돌려준다.
  *   5차 호출 — (심사에서 REVISE가 나왔을 때만) 지시를 반영해 최종 보고서를 작성.
  *
- * 재시도 2단계 구조 (중요):
+ * 재시도 3단계 구조 (중요):
  *   1) 네트워크 재시도 — claude 호출 자체가 실패(타임아웃/연결 끊김 등)하면
  *      같은 프롬프트로 최대 MEETING_RETRY_MAX회 재시도한다.
- *   2) 품질 가드레일 재시도 — 호출은 성공했지만 그 라운드가 실제로 해야 할 일을
- *      못했다고 판단되면(quality-guardrails.js), "여기가 부족했다"는 구체적인
- *      피드백을 프롬프트에 덧붙여 최대 MEETING_QUALITY_RETRY_MAX회 재시도한다.
- *      (이 검사 자체는 Claude를 호출하지 않으므로 정상적인 경우 호출 횟수에는
- *      영향이 없다 — 실패했을 때만 추가 호출이 발생한다.)
- *   두 재시도 모두 소진되면 전체 회의를 처음부터 다시 하지 않고 "N단계에서
- *   일시 중단됨" 상태로 체크포인트를 저장한 뒤 멈춘다. 사용자가 [이어서 진행]을
- *   누르면 이미 성공한 라운드는 절대 다시 호출하지 않는다.
+ *   2) 품질 가드레일(규칙 기반) — 응답이 성공했지만 quality-guardrails.js의
+ *      규칙 검사에서 "필수 요소 자체가 없음"으로 확실히 실패하면, 곧바로
+ *      "여기가 부족했다"는 피드백과 함께 재작성을 요청한다(추가 호출 없음).
+ *   3) 품질 가드레일(선택적 LLM 판정) — 규칙 검사로는 "필수 요소는 있지만
+ *      실제로 의미 있는 내용인지 애매함"으로만 판단되는 경우에만, Claude를
+ *      1회 더 호출해 구조화된 PASS/FAIL 판정을 받는다(라운드당 최대 1회).
+ *      FAIL이면 그 사유를 2)와 동일한 재시도-with-피드백 루프에 그대로 넘긴다.
+ *      규칙 검사가 이미 확실한 통과/실패로 판정한 경우는 이 LLM 호출을 하지
+ *      않는다 — 모든 응답을 LLM으로 다시 검사하지 않는다.
+ *   위 재시도가 모두 소진되면(품질 재시도 최대 MEETING_QUALITY_RETRY_MAX회)
+ *   전체 회의를 처음부터 다시 하지 않고 "N단계에서 일시 중단됨" 상태로
+ *   체크포인트를 저장한 뒤 멈춘다. 사용자가 [이어서 진행]을 누르면 이미
+ *   성공한 라운드는 절대 다시 호출하지 않는다.
  *
  * - Claude Code(로컬 서버)가 연결되어 있지 않으면 회의를 시작하지 않고
  *   명확한 오류를 던진다. 실패를 데모 결과로 조용히 감추지 않는다.
@@ -51,8 +56,13 @@ const MeetingEngine = {
   /**
    * resumeState를 넘기면(같은 주제의 저장된 체크포인트) 이미 성공한 라운드는
    * 다시 호출하지 않고 실패했던 라운드부터 이어서 진행한다.
+   *
+   * referenceContext를 넘기면(사용자가 [이번 회의에 참고]로 직접 선택한 과거
+   * 회의 요약) 1차 프롬프트의 배경 정보로만 포함한다 — 절대 자동으로 주입되지
+   * 않으며, 재개(resumeState)일 때는 이미 체크포인트의 context에 포함되어
+   * 있으므로 여기서 다시 붙이지 않는다(중복 방지).
    */
-  async run({ topic, attachedText, hasAttachment, onProgress, resumeState }) {
+  async run({ topic, attachedText, hasAttachment, onProgress, resumeState, referenceContext }) {
     const emit = (roundId, status) => {
       if (typeof onProgress === 'function') onProgress(roundId, status);
     };
@@ -61,7 +71,7 @@ const MeetingEngine = {
       throw new Error('Claude Code가 연결되어 있지 않습니다. AI전략회의실.bat으로 실행했는지 확인해주세요.');
     }
 
-    return await this._runLive({ topic, attachedText, hasAttachment, emit, resumeState });
+    return await this._runLive({ topic, attachedText, hasAttachment, emit, resumeState, referenceContext });
   },
 
   /** 사용자가 [예시 보기]를 직접 눌렀을 때만 호출되는 데모 실행 경로 */
@@ -169,9 +179,14 @@ const MeetingEngine = {
     return idx >= 0 ? idx + 1 : '?';
   },
 
-  /** 네트워크 재시도와 품질 재시도를 구분해서 콘솔 + 내부 로그에 남긴다 */
+  /** 네트워크 재시도 / 규칙 기반 품질 재시도 / LLM 품질 판정을 구분해서 콘솔 + 내부 로그에 남긴다 */
   _logRetry(type, roundId, attempt, detail) {
-    const tag = type === 'network' ? '[네트워크 재시도]' : '[품질 재시도]';
+    const tagMap = {
+      network: '[네트워크 재시도]',
+      quality: '[품질 재시도]',
+      'llm-quality': '[LLM 품질판정]'
+    };
+    const tag = tagMap[type] || '[재시도]';
     try {
       console.log(`${tag} ${roundId} 시도 #${attempt}: ${detail}`);
     } catch (e) {
@@ -183,7 +198,77 @@ const MeetingEngine = {
   },
 
   /**
-   * claude 호출 하나를 "네트워크 재시도 → 품질 가드레일 재시도" 2단계로 감싼다.
+   * 규칙 기반 가드레일이 "애매함"으로 판단했을 때만 호출되는 선택적 LLM 품질
+   * 판정. 라운드당 최대 1회만 호출된다(_completeWithGuardrail의 llmCheckUsed
+   * 플래그로 강제). 실패하거나 응답을 해석하지 못하면 안전하게 "그냥 통과"
+   * 처리한다(fail-open) — 이 보조 판정 자체의 오류가 정상 진행을 막아서는
+   * 안 된다.
+   */
+  async _runLlmQualityCheck(roundId, text, concerns) {
+    const systemPrompt = `너는 이 프로그램의 내부 품질 검수 담당자다. 형식적으로는 필요한 요소를 갖췄지만 실질적인 품질이 애매하다고 자동 검사가 표시한 부분만 냉정하게 판정한다. 애매하지 않다고 표시되지 않은 부분은 다시 언급하지 마라.`;
+    const userPrompt = `[검토 대상 라운드] ${roundId}
+
+[자동 검사에서 애매하다고 표시된 항목]
+${concerns.map((c) => `- ${c}`).join('\n')}
+
+[검토할 응답 전체]
+${text}
+
+위에서 애매하다고 표시된 항목을 중심으로, 실제로 기준을 충족했는지 엄격하게 판정하라. 반드시 아래 형식으로만 답하라. 다른 텍스트를 앞뒤에 붙이지 마라.
+
+---QUALITY_RESULT---
+STATUS: PASS 또는 FAIL 중 하나만 적는다
+REASON: 판정 근거를 한두 문장으로
+MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하고, PASS면 "없음"이라고 적는다
+---END_QUALITY_RESULT---`;
+
+    let responseText;
+    try {
+      responseText = await AiProvider.complete(systemPrompt, userPrompt, {});
+    } catch (err) {
+      this._logRetry('llm-quality', roundId, 1, `호출 실패로 기존 판정을 그대로 사용합니다: ${(err && err.message) || '알 수 없는 오류'}`);
+      return null;
+    }
+    const parsed = this._parseQualityBlock(responseText);
+    if (!parsed) {
+      this._logRetry('llm-quality', roundId, 1, '응답 해석 실패로 기존 판정을 그대로 사용합니다.');
+      return null;
+    }
+    this._logRetry('llm-quality', roundId, 1, `판정 ${parsed.status} — ${parsed.reason}`);
+    return parsed;
+  },
+
+  /**
+   * LLM 품질 판정 응답에서 구조화된 블록을 파싱한다.
+   *   ---QUALITY_RESULT---
+   *   STATUS: PASS | FAIL
+   *   REASON: ...
+   *   MISSING: ...
+   *   ---END_QUALITY_RESULT---
+   */
+  _parseQualityBlock(text) {
+    const t = String(text || '');
+    const m = t.match(/---QUALITY_RESULT---\s*\n?([\s\S]*?)\n?---END_QUALITY_RESULT---/);
+    if (!m) return null;
+    const block = m[1];
+    const statusM = block.match(/STATUS:\s*(PASS|FAIL)/i);
+    if (!statusM) return null;
+    const reasonM = block.match(/REASON:\s*(.+)/i);
+    const missingM = block.match(/MISSING:\s*([\s\S]*)/i);
+    const missingRaw = missingM ? missingM[1].trim() : '';
+    let missing = [];
+    if (missingRaw && !/^없음\W*$/.test(missingRaw)) {
+      missing = missingRaw
+        .split('\n')
+        .map((l) => l.replace(/^\s*[-*]\s*/, '').trim())
+        .filter(Boolean);
+    }
+    return { status: statusM[1].toUpperCase(), reason: reasonM ? reasonM[1].trim() : '', missing };
+  },
+
+  /**
+   * claude 호출 하나를 "네트워크 재시도 → 규칙 기반 품질 가드레일 → (애매할 때만)
+   * LLM 품질 판정 → 재시도-with-피드백" 순서로 감싼다.
    * 성공하면 { ok:true, text }를, 품질 가드레일을 끝내 통과하지 못하면
    * { ok:false, failures, text(마지막 시도 결과) }를 반환한다.
    * 네트워크 자체가 끝내 실패하면 예외를 던진다(호출부가 pausedReason='network'로 처리).
@@ -191,6 +276,7 @@ const MeetingEngine = {
   async _completeWithGuardrail({ roundId, systemPrompt, userPrompt, opts, validate }) {
     let currentUserPrompt = userPrompt;
     let qualityAttempt = 0;
+    let llmCheckUsed = false; // 라운드당 최대 1회 — 이 함수 호출(=라운드) 안에서만 유효
 
     while (true) {
       let text = null;
@@ -217,7 +303,21 @@ const MeetingEngine = {
 
       if (!validate) return { ok: true, text };
 
-      const result = validate(text);
+      let result = validate(text);
+
+      // 규칙 기반 검사가 "통과"했지만 "애매함" 신호가 있는 경우에만, 라운드당
+      // 딱 1회 Claude에게 추가로 판정을 맡긴다. 확실한 통과/실패는 이 호출을
+      // 하지 않는다.
+      if (result.ok && result.ambiguous && !llmCheckUsed) {
+        llmCheckUsed = true;
+        const verdict = await this._runLlmQualityCheck(roundId, text, result.ambiguousConcerns || []);
+        if (verdict && verdict.status === 'FAIL') {
+          result = { ok: false, failures: verdict.missing.length ? verdict.missing : [verdict.reason || 'LLM 품질 판정에서 부족하다고 판단했습니다.'] };
+        }
+        // verdict가 PASS이거나(그대로 통과) null(호출 실패 — fail-open)이면
+        // result는 이미 ok:true이므로 별도 처리 없이 그대로 진행한다.
+      }
+
       if (result.ok) return { ok: true, text };
 
       this._logRetry('quality', roundId, qualityAttempt + 1, result.failures.join(' / '));
@@ -336,7 +436,7 @@ const MeetingEngine = {
     };
   },
 
-  async _runLive({ topic, attachedText, hasAttachment, emit, resumeState }) {
+  async _runLive({ topic, attachedText, hasAttachment, emit, resumeState, referenceContext }) {
     const mode = hasAttachment ? '근거분석 모드' : '전략회의 모드';
     const byId = Object.fromEntries(EXPERTS.map((e) => [e.id, e]));
     const meta = { topic, attachedText, hasAttachment };
@@ -358,6 +458,10 @@ const MeetingEngine = {
       }
     } else {
       context = `[회의 모드] ${mode}\n[사용자가 입력한 주제]\n${topic}`;
+      if (referenceContext) {
+        // 사용자가 [이번 회의에 참고]로 직접 선택한 경우에만 여기 들어온다.
+        context += `\n\n${referenceContext}`;
+      }
       if (hasAttachment && attachedText) {
         context += `\n\n[첨부 자료에서 추출한 내용]\n${attachedText.slice(0, 6000)}`;
       }
@@ -495,7 +599,7 @@ REQUIRED_FIXES: REVISE인 경우 보완해야 할 항목을 "- " bullet로 구�
       validate: (text) => {
         const parsed = this._parseJudgeBlock(text);
         if (!parsed) {
-          return { ok: false, failures: ['---JUDGE_RESULT--- 판정 블록을 찾을 수 없습니다. 반드시 지정된 형식으로 STATUS/REASON/REQUIRED_FIXES를 포함해 응답하세요.'] };
+          return { ok: false, failures: ['---JUDGE_RESULT--- 판정 블록을 찾을 수 없습니다. 반드시 지정된 형식으로 STATUS/REASON/REQUIRED_FIXES를 포함해 응답하세요.'], ambiguous: false, ambiguousConcerns: [] };
         }
         const reportBody = text.slice(0, parsed.blockStart).trim();
         const blockCheck = QualityGuardrails.judgeBlock(parsed, reportBody);
@@ -503,8 +607,11 @@ REQUIRED_FIXES: REVISE인 경우 보완해야 할 항목을 "- " bullet로 구�
         if (parsed.status === 'APPROVED') {
           const reportCheck = QualityGuardrails.report(reportBody, hasAttachment);
           if (!reportCheck.ok) return reportCheck;
+          if (reportCheck.ambiguous) {
+            return { ok: true, failures: [], ambiguous: true, ambiguousConcerns: reportCheck.ambiguousConcerns };
+          }
         }
-        return { ok: true, failures: [] };
+        return { ok: true, failures: [], ambiguous: false, ambiguousConcerns: [] };
       }
     });
     const round4 = roundTexts.judge;

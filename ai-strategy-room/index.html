@@ -43,6 +43,7 @@
       <label class="field-label" for="topicInput">주제</label>
       <textarea id="topicInput" class="topic-textarea" rows="6"
         placeholder="예) 신입사원 온라인 교육 완주율이 낮습니다.&#10;실제로 완주율을 높일 현실적인 방법을 검토해주세요.&#10;(업무 자동화, 영업/매출 개선, 고객사 관리, 홍보, 비용 절감 등 어떤 업무 주제든 가능합니다)"></textarea>
+      <p class="memory-hint" id="memoryHint" hidden></p>
 
       <label class="field-label" style="margin-top:20px;">참고자료</label>
       <div class="attach-row">
@@ -57,6 +58,9 @@
         <button class="btn-ghost" id="exampleBtn" type="button">예시 보기</button>
       </div>
       <p class="conn-hint" id="connHint" hidden></p>
+      <div class="memory-manage-row">
+        <button class="btn-ghost btn-sm" id="memoryManageBtn" type="button">지난 회의 기록 관리</button>
+      </div>
     </div>
   </section>
 
@@ -123,10 +127,24 @@
   </div>
 </div>
 
+<!-- 과거 회의 기억 모달 (비슷한 과거 회의 보기 / 전체 기록 관리 공용, 기본적으로 숨김) -->
+<div class="modal-overlay" id="memoryModalOverlay">
+  <div class="modal log-modal">
+    <div class="modal-head">
+      <h2 id="memoryModalTitle">지난 회의 기록</h2>
+      <button class="icon-btn" id="memoryModalClose">✕</button>
+    </div>
+    <p class="modal-desc" id="memoryModalDesc"></p>
+    <div class="memory-modal-actions" id="memoryModalActions"></div>
+    <div class="log-body" id="memoryModalBody"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="js/storage.js"></script>
 <script src="js/meeting-progress.js"></script>
+<script src="js/meeting-memory.js"></script>
 <script src="js/quality-guardrails.js"></script>
 <script src="js/file-parser.js"></script>
 <script src="js/data-analyzer.js"></script>

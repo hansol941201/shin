@@ -1,0 +1,123 @@
+====================================================================
+오픈소스 출처 안내 (Open Source Notices)
+====================================================================
+
+이 프로그램(AI 전략회의실)의 일부 기능은 아래 오픈소스 프로젝트의
+"소스 코드"가 아니라 "설계 아이디어/구조"를 참고해서, JavaScript로
+완전히 새로 작성한 것입니다. 이 문서는 그 출처와 참고 범위를
+명확히 기록해두기 위한 것입니다.
+
+
+--------------------------------------------------------------------
+참고한 프로젝트
+--------------------------------------------------------------------
+
+이름:      CrewAI
+저장소:    https://github.com/crewAIInc/crewAI
+라이선스:  MIT License
+저작권:    Copyright (c) 2025 crewAI, Inc.
+라이선스 전문: https://github.com/crewAIInc/crewAI/blob/main/LICENSE
+
+MIT 라이선스는 매우 관대한 라이선스로, 코드를 자유롭게 사용·복사·
+수정·배포할 수 있게 허용합니다. 유일한 의무는 "원문 코드를 그대로
+포함해서 배포할 경우" 저작권 고지와 라이선스 전문을 함께 남기는
+것입니다.
+
+
+--------------------------------------------------------------------
+CrewAI의 실제 Python 코드를 그대로 포함했는가?
+--------------------------------------------------------------------
+
+아니오. 이 프로그램의 어떤 파일에도 CrewAI의 Python 소스 코드를
+그대로 복사해서 넣지 않았습니다.
+
+- 이 프로그램은 API 키 없이 Claude Code CLI만 사용하는 JavaScript
+  + PowerShell 구조이며, Python 실행 환경 자체를 요구하지 않습니다.
+- CrewAI GitHub 저장소는 원본 소스코드 조사를 위해 별도의 임시
+  작업 위치에 clone해서 "읽기 전용"으로 분석만 했습니다. 그 결과물
+  (Python 코드)은 이 프로젝트(ai-strategy-room) 폴더 안에 전혀
+  포함되어 있지 않습니다.
+- 아래에 나열한 항목들은 CrewAI 원본 코드의 "동작 방식과 설계
+  개념"만 이해한 뒤, 이 프로그램의 JavaScript 구조(호출 횟수 제한,
+  체크포인트, API 키 없음 등)에 맞게 처음부터 다시 설계·구현한
+  것입니다. 변수명, 함수 구조, 실제 코드 로직은 CrewAI와 다릅니다.
+
+
+--------------------------------------------------------------------
+참고한 설계 아이디어와 이 프로그램에서의 실제 구현 위치
+--------------------------------------------------------------------
+
+1) 라운드(Task) 결과를 다음 라운드에 텍스트로 이어붙여 전달하는 방식
+   CrewAI 원본: lib/crewai/src/crewai/crew.py의 _get_context 메서드,
+                lib/crewai/src/crewai/utilities/formatter.py의
+                aggregate_raw_outputs_from_task_outputs 함수
+   이 프로그램: js/meeting-engine.js의 _runStep 안에서
+                context += "\n\n[라운드명]\n" + text 로 누적하는 부분
+
+2) 결과를 검증하고, 실패 사유를 피드백으로 넣어 같은 단계를
+   재작성시키는 가드레일-재시도 패턴
+   CrewAI 원본: lib/crewai/src/crewai/task.py의
+                _invoke_guardrail_function 메서드,
+                lib/crewai/src/crewai/tasks/llm_guardrail.py의
+                LLMGuardrail 클래스
+   이 프로그램: js/quality-guardrails.js(규칙 기반 1차 검사) +
+                js/meeting-engine.js의 _completeWithGuardrail(재시도
+                루프), _runLlmQualityCheck(애매한 경우에만 쓰는
+                선택적 LLM 판정)
+
+3) 크루(Crew) 실행 중간에 멈춰도 이미 끝난 단계는 다시 실행하지
+   않고 첫 미완료 단계부터 재개하는 체크포인트 방식
+   CrewAI 원본: lib/crewai/src/crewai/crew.py의
+                _get_execution_start_index 메서드
+   이 프로그램: js/meeting-progress.js(체크포인트 저장/복원) +
+                js/app.js의 이어서 진행 로직
+
+4) 사람이 결과를 보고 코멘트를 주면 그 코멘트를 반영해 결과를
+   다시 다듬는 human-in-the-loop 개념(단, 이 프로그램은 CrewAI의
+   자동 미리보기 판정 로직 없이, 사용자가 직접 코멘트를 입력하는
+   훨씬 단순한 형태로만 참고했습니다)
+   CrewAI 원본: lib/crewai/src/crewai/flow/human_feedback.py의
+                human_feedback 데코레이터, HumanFeedbackResult 클래스
+   이 프로그램: js/meeting-engine.js의 refineReport 함수 + 결과
+                화면의 "보고서 보완 요청" 입력창/버튼
+
+5) 과거 결과를 저장해두고, 새 작업을 시작할 때 관련 있는 과거
+   기록을 참고할 수 있게 하는 Memory(기억) 개념
+   CrewAI 원본: lib/crewai/src/crewai/memory/unified_memory.py의
+                Memory 클래스, memory/recall_flow.py의 RecallFlow
+                (CrewAI는 벡터DB(LanceDB/Qdrant)와 LLM 분석으로
+                정교하게 회상합니다 — Python/외부 DB가 필요합니다)
+   이 프로그램: js/meeting-memory.js — Python/DB/외부 서버 없이
+                브라우저 localStorage와 순수 JS 키워드 겹침
+                비교만으로 훨씬 단순하게 재구현했습니다. 또한
+                CrewAI에는 없는 안전장치로, 과거 기록을 절대
+                자동으로 새 회의에 주입하지 않고 사용자가
+                [이번 회의에 참고]를 직접 눌렀을 때만 포함합니다.
+
+
+--------------------------------------------------------------------
+참고하지 않은 부분 (의도적으로 가져오지 않음)
+--------------------------------------------------------------------
+
+- CrewAI의 Agent 실행 엔진(ReAct 루프, 도구 호출, 에이전트 간 위임) —
+  전문가 1명당 여러 번 Claude를 호출하는 구조라 이 프로그램의
+  "호출 횟수를 4~5회로 유지" 원칙과 맞지 않아 가져오지 않았습니다.
+- CrewAI의 Flow 이벤트 그래프 엔진(@start/@listen/@router) — 이
+  프로그램은 고정된 4~5단계 선형 흐름이라 별도의 그래프 엔진이
+  필요하지 않습니다.
+- CrewAI의 벡터DB 기반 임베딩/유사도 검색 — Python 의존성이 크므로
+  순수 JS 키워드 겹침 비교로 대체했습니다.
+- CrewAI의 HallucinationGuardrail — 오픈소스 버전은 실질적으로
+  아무 동작도 하지 않는 자리표시자(placeholder)이므로 참고할
+  실제 로직이 없었습니다.
+
+
+--------------------------------------------------------------------
+문의
+--------------------------------------------------------------------
+
+이 문서는 프로젝트 유지 목적의 출처 기록이며, CrewAI 프로젝트와
+공식적인 제휴 관계가 있음을 의미하지 않습니다. CrewAI 자체에 대한
+문의는 원본 저장소(https://github.com/crewAIInc/crewAI)를
+참고해주세요.
+====================================================================

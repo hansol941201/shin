@@ -46,6 +46,19 @@ body{
   background:var(--bg);border:1px solid var(--card-border);border-radius:8px;padding:10px 14px;
 }
 
+/* ---------- 과거 회의 기억 ---------- */
+.memory-hint{
+  margin:8px 0 0;font-size:12.5px;color:var(--text-gray);
+}
+.memory-hint-link{
+  background:none;border:none;color:var(--navy);font-weight:700;font-size:inherit;
+  cursor:pointer;text-decoration:underline;padding:0;
+}
+.memory-ref-note{color:var(--success);}
+.memory-manage-row{margin-top:14px;text-align:center;}
+.memory-modal-actions{margin-bottom:14px;}
+.memory-entry-actions{display:flex;gap:8px;margin-top:8px;}
+
 /* ---------- 이어서 진행 배너 ---------- */
 .paused-banner{
   display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
@@ -193,10 +206,13 @@ body{
 }
 .retry-tag-network{background:var(--text-faint);}
 .retry-tag-quality{background:#e08e2a;}
+.retry-tag-llm{background:#7c3aed;}
 
 .version-entry{border-left-color:var(--navy);}
 .version-preview{font-style:italic;}
 .version-entry .btn-ghost{margin-top:8px;}
+
+.memory-entry{border-left-color:#0ea5a5;}
 
 .select-input, .text-input{
   width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);

@@ -73,7 +73,7 @@ function Show-FatalAndExit($lines) {
 Write-Info "[1/4] 프로그램 파일 확인 중..."
 $requiredFiles = @(
     'index.html', 'css\style.css',
-    'js\storage.js', 'js\meeting-progress.js', 'js\quality-guardrails.js', 'js\file-parser.js', 'js\data-analyzer.js', 'js\experts.js',
+    'js\storage.js', 'js\meeting-progress.js', 'js\meeting-memory.js', 'js\quality-guardrails.js', 'js\file-parser.js', 'js\data-analyzer.js', 'js\experts.js',
     'js\ai-provider.js', 'js\report-builder.js', 'js\demo-data.js',
     'js\meeting-engine.js', 'js\app.js'
 )
