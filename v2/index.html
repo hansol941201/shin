@@ -2038,11 +2038,50 @@
     return loadAll().filter(function(r){ return r.companyId === companyId; })
       .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
   }
+  // 아파트 그룹핑 정규화(§10, 신규): 공백 차이만 있으면 같은 아파트로 묶는다(공백 제거 후
+  // 완전 일치만 그룹핑 — 부분 포함 매칭은 절대 쓰지 않는다). "덕천주공1단지"와
+  // "덕천주공2단지"처럼 숫자/단지 구분자가 다르면 정규화해도 문자열이 달라 자동으로 분리된다.
+  function normalizeApartmentName(s){
+    return String(s||'').trim().replace(/\s+/g,'').toLowerCase();
+  }
   function getForApartment(name){
-    var n = String(name||'').trim().toLowerCase();
-    if(!n) return [];
-    return loadAll().filter(function(r){ return r.callerType === '아파트' && String(r.apartmentName||'').trim().toLowerCase() === n; })
+    var key = normalizeApartmentName(name);
+    if(!key) return [];
+    return loadAll().filter(function(r){ return r.callerType === '아파트' && normalizeApartmentName(r.apartmentName) === key; })
       .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+  }
+  // 아파트 전용 조회/집계 인덱스(§2 신규) — 저장 구조는 그대로 두고 조회 레이어에서만
+  // 정규화 키로 묶는다(기존 레코드를 변형하지 않으므로 §14 호환성이 자동으로 보장된다).
+  // 아파트 기본정보(§9)는 별도 저장소를 새로 만들지 않고, 매 조회마다 기존 전화기록에서
+  // "가장 최근에 값이 확인된 것"을 그대로 표시값으로 계산한다 — 자동으로 기존 값 위에
+  // 덮어써서 저장하지 않으므로(계산만 하고 쓰지 않음), 이후 통화에서 다른 전화번호가
+  // 나와도 이전 통화 기록 자체는 그대로 남고 "표시"만 최신 통화 기준으로 바뀐다.
+  function getApartmentGroups(){
+    var byKey = {};
+    loadAll().forEach(function(r){
+      if(r.callerType !== '아파트') return;
+      var key = normalizeApartmentName(r.apartmentName);
+      if(!key) return;
+      (byKey[key] = byKey[key] || []).push(r);
+    });
+    return Object.keys(byKey).map(function(key){
+      var records = byKey[key].slice().sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+      var latest = records[0];
+      var phoneRec = records.find(function(r){ return r.phone; });
+      var addrRec = records.find(function(r){ return r.address; });
+      return {
+        key: key,
+        name: latest.apartmentName,
+        records: records,
+        latestAt: latest.createdAt,
+        phone: phoneRec ? phoneRec.phone : '',
+        address: addrRec ? addrRec.address : '',
+        recentContact: latest.contactName ? (latest.contactName + (latest.position ? ' ' + latest.position : '')) : ''
+      };
+    }).sort(function(a,b){ return (b.latestAt||0) - (a.latestAt||0); });
+  }
+  function getApartmentGroupByKey(key){
+    return getApartmentGroups().find(function(g){ return g.key === key; }) || null;
   }
 
   /* ---------- 업체 자동 연결 매칭 (§13/§14, callerType==='시공사'일 때만 호출) ----------
@@ -2225,7 +2264,12 @@
      빈 칸 또는 "확인 필요"로 남겨 사용자가 직접 채우게 한다. */
 
   var POSITION_KEYWORDS = ['관리소장','대표','사장','과장','부장','차장','팀장','소장','회장','이사','전무','상무'];
-  var APT_KEYWORDS = ['아파트','APT','주공','푸르지오','자이','힐스테이트','래미안','더샵','아이파크','롯데캐슬','센트럴','빌라','오피스텔','지식산업센터'];
+  // [키워드 보강] 스펙 §3이 명시한 키워드 집합("아파트/APT/주공/푸르지오/자이/래미안/
+  // 힐스테이트/아이파크/더샵/롯데캐슬/현대/센트럴/오피스텔/지식산업센터")에서 '현대'가 누락돼
+  // 있던 것을 채워 넣는다(스펙 예시 "황성현대2차"가 실제로는 전혀 인식되지 않는 문제였음).
+  // 추출 알고리즘(정규식 구조/매칭 방식) 자체는 그대로이고, 이미 선언된 키워드 목록만 스펙에
+  // 맞춰 완성한 것이다.
+  var APT_KEYWORDS = ['아파트','APT','주공','푸르지오','자이','힐스테이트','래미안','더샵','아이파크','롯데캐슬','현대','센트럴','빌라','오피스텔','지식산업센터'];
   var COMPANY_SUFFIXES = ['건설','산업','개발','기업','상사','이엔지','E&C','EnC','주식회사'];
   var INQUIRY_RULES = [
     [['견적','단가'], '견적문의'],
@@ -2276,12 +2320,18 @@
 
   // 아파트/현장명 키워드 근처 후보(§5). 접두어(회사명/단지 앞부분)가 붙어 있으면 함께 묶는다 —
   // "한솔아파트"/"한솔APT"/"한솔 아파트" 표기 변형을 전부 하나의 후보로 흡수.
+  // [버그 수정 — 아파트 엔티티 분리 하드룰 준수] 키워드 뒤에 곧바로 "1단지"/"2단지"/"3차"
+  // 같은 단지 구분 접미어가 붙어 있으면 반드시 함께 캡처한다. 이 접미어를 캡처하지 않으면
+  // "덕천주공1단지"와 "덕천주공2단지"가 둘 다 "덕천주공"으로 잘려 같은 아파트로 오인 병합되는데,
+  // 이는 스펙의 최상위 하드룰("단지 구분이 다르면 절대 같은 아파트로 병합하지 않는다")을
+  // 직접 위반한다 — callerType 분류/업체연결 판단 로직은 전혀 건드리지 않고, 아파트명
+  // 캡처 범위만 넓혀 잘못된 절단을 막는다.
   function extractSiteCandidate(text){
     var aptAlt = APT_KEYWORDS.map(function(k){ return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
-    var re = new RegExp('([가-힣A-Za-z0-9]{1,10})?\\s?(' + aptAlt + ')', 'i');
+    var re = new RegExp('([가-힣A-Za-z0-9]{1,10})?\\s?(' + aptAlt + ')(\\s?\\d{1,3}\\s?(?:단지|차|동|블록))?', 'i');
     var m = text.match(re);
     if(!m) return '';
-    return String((m[1]||'') + m[2]).trim();
+    return String((m[1]||'') + m[2] + (m[3]||'')).trim();
   }
 
   // 기존 업체명 부분일치(§2) — 업체관리 DB를 최우선 대조. 가장 긴 업체명이 매칭되면 그것을 채택.
@@ -2454,11 +2504,24 @@
   var popupBackBtn = document.getElementById('callPopupBackBtn');
   var popupCloseBtn = document.getElementById('callPopupCloseBtn');
 
-  var pState = { mode:'browse', tab:'all', search:'', selectedId:null };
+  var pState = { mode:'browse', tab:'all', search:'', selectedId:null, selectedApartmentKey:null, detailBack:null };
 
   function openPopup(mode, id){
     pState.mode = mode || 'browse';
     pState.selectedId = id || null;
+    pState.detailBack = null; // 기본 진입은 항상 목록으로 돌아간다 — 아파트뷰에서 들어온 경우만 예외적으로 세팅됨.
+    popupOverlay.classList.add('open');
+    renderPopup();
+  }
+  // 검색결과의 아파트 카드/"전체 전화기록 보기"에서 진입(§5/§6) — 완전히 새로운 "아파트
+  // 관리 페이지"를 만들지 않고, 기존 팝업 컴포넌트(overlay/title/back/close) 안에 새 모드만
+  // 하나 추가하는 방식으로 재사용한다.
+  function openApartmentPopupByKey(key){
+    var group = getApartmentGroupByKey(key);
+    if(!group) return;
+    pState.mode = 'apartment';
+    pState.selectedApartmentKey = group.key;
+    pState.detailBack = null;
     popupOverlay.classList.add('open');
     renderPopup();
   }
@@ -2466,8 +2529,18 @@
   popupCloseBtn.addEventListener('click', closePopup);
   popupOverlay.addEventListener('click', function(e){ if(e.target === popupOverlay) closePopup(); });
   popupBackBtn.addEventListener('click', function(){
-    if(pState.mode === 'detail'){ pState.mode = 'browse'; renderPopup(); }
+    if(pState.mode === 'detail'){
+      if(pState.detailBack && pState.detailBack.mode === 'apartment'){
+        pState.mode = 'apartment';
+        pState.selectedApartmentKey = pState.detailBack.key;
+        pState.detailBack = null;
+      } else {
+        pState.mode = 'browse';
+      }
+      renderPopup();
+    }
     else if(pState.mode === 'edit'){ pState.mode = 'detail'; renderPopup(); }
+    else if(pState.mode === 'apartment'){ pState.mode = 'browse'; pState.selectedApartmentKey = null; renderPopup(); }
   });
 
   function renderPopup(){
@@ -2475,6 +2548,43 @@
     if(pState.mode === 'browse'){ popupTitle.textContent = '전체 전화기록'; renderBrowse(); return; }
     if(pState.mode === 'detail'){ popupTitle.textContent = '전화 상세'; renderDetail(); return; }
     if(pState.mode === 'edit'){ popupTitle.textContent = '전화 내용 수정'; renderEdit(); return; }
+    if(pState.mode === 'apartment'){ popupTitle.textContent = '아파트'; renderApartmentView(); return; }
+  }
+
+  /* ---------- 아파트 히스토리 뷰 (§5/§8/§9, 신규) ----------
+     시공사 검색 카드와 동일한 컴포넌트 구조(shin2-memo-block/shin2-memo-title/
+     shin2-memo-list/shin2-memo-item)를 그대로 재사용해 "업체" vs "아파트" 라벨/필드만
+     다르게 렌더링한다(§8). 최신순 히스토리 전체를 여기서 보여준다 — 검색 카드에는 최근
+     3건 요약만 노출하고 [전체 전화기록 보기]를 누르면 이 뷰로 이어진다. */
+  function renderApartmentView(){
+    var group = pState.selectedApartmentKey ? getApartmentGroupByKey(pState.selectedApartmentKey) : null;
+    if(!group){ pState.mode = 'browse'; renderPopup(); return; }
+    var row = function(label, valueHtml){ return valueHtml ? '<div class="task-form-field"><label>' + label + '</label><div style="font-size:13.5px;color:var(--text);">' + valueHtml + '</div></div>' : ''; };
+    var listHtml = group.records.map(function(r){
+      var who = r.contactName ? (r.contactName + (r.position ? ' ' + r.position : '')) : '';
+      var summary = r.requestText || (r.originalText || '').slice(0, 60);
+      return '<div class="shin2-memo-item" data-call-id="' + escapeAttr(r.id) + '" style="cursor:pointer;">' +
+        '<div class="shin2-memo-meta">' + escapeHtml(fmtFull(r.createdAt)) + '</div>' +
+        '<div class="shin2-memo-text">' + escapeHtml((who ? who + ' · ' : '') + summary) + '</div>' +
+      '</div>';
+    }).join('');
+    popupBody.innerHTML =
+      '<div class="task-detail-title">' + escapeHtml('[아파트] ' + group.name) + '</div>' +
+      row('주소', group.address ? escapeHtml(group.address) : '') +
+      row('대표 연락처', group.phone ? escapeHtml(group.phone) : '') +
+      row('최근 전화자', group.recentContact ? escapeHtml(group.recentContact) : '') +
+      '<div class="shin2-memo-block">' +
+        '<div class="shin2-memo-head"><div class="shin2-memo-title">전화기록' + (group.records.length ? ' ' + group.records.length : '') + '</div></div>' +
+        (group.records.length ? '<div class="shin2-memo-list">' + listHtml + '</div>' : '<div class="shin2-memo-empty">등록된 전화 기록이 없습니다</div>') +
+      '</div>';
+    popupBody.querySelectorAll('[data-call-id]').forEach(function(el){
+      el.addEventListener('click', function(){
+        pState.mode = 'detail';
+        pState.selectedId = el.getAttribute('data-call-id');
+        pState.detailBack = { mode:'apartment', key: group.key };
+        renderPopup();
+      });
+    });
   }
 
   // §9: 필터는 딱 3개(전체/시공사/아파트)만 둔다 — 과하게 복잡한 필터 금지.
@@ -2839,7 +2949,9 @@
   window.SHIN2_CALLS = {
     add: add, getAll: getAll, getById: getById, getRecentForHome: getRecentForHome,
     getForCompany: getForCompany, getForApartment: getForApartment,
-    openPopup: openPopup, mountCompanySection: mountCompanySection,
+    getApartmentGroups: getApartmentGroups, getApartmentGroupByKey: getApartmentGroupByKey,
+    normalizeApartmentName: normalizeApartmentName,
+    openPopup: openPopup, openApartmentPopupByKey: openApartmentPopupByKey, mountCompanySection: mountCompanySection,
     updateFields: updateFields, setCallerType: setCallerType, remove: remove
   };
 
@@ -4051,6 +4163,15 @@ ${text}
     },
     // 업체관리(shin2-companies-staging) — 실제 업체관리 화면이 읽고 쓰는 저장소와 동일한 키.
     { type:'company', getRecords: getCompanyStaging, score: kbScoreCompany, render: kbRenderCompanyCard },
+    // 아파트(§1/§16, 신규) — shin2-companies-staging과 완전히 분리된 별도 엔티티. 저장소는
+    // shin2-call-entries-v1 그대로이며, window.SHIN2_CALLS.getApartmentGroups()가 정규화 키
+    // 기준으로 그룹핑한 결과만 조회한다(업체 목록에는 절대 등록되지 않는다).
+    {
+      type:'apartment',
+      getRecords: ()=> (window.SHIN2_CALLS && window.SHIN2_CALLS.getApartmentGroups) ? window.SHIN2_CALLS.getApartmentGroups() : [],
+      score: kbScoreApartment,
+      render: kbRenderApartmentCard
+    },
     // 처리할 업무(shin2-tasks-v1)
     {
       type:'task',
@@ -4292,15 +4413,61 @@ ${text}
     </div>`;
   }
 
+  // 아파트 검색(§6/§7/§8/§10/§11, 신규) — window.SHIN2_CALLS.getApartmentGroups()가 이미
+  // normalizeApartmentName() 기준으로 그룹핑해둔 결과를 그대로 조회만 한다(§14: 여기서는
+  // 데이터를 복사 저장하지 않는다). 검색 카드 구조는 kbRenderCompanyCard와 동일한 클래스
+  // (kb-result-card/shin2-memo-block/shin2-memo-list/shin2-memo-item)를 그대로 재사용해
+  // "업체" vs "아파트"는 라벨/필드만 다르게 렌더링한다(§8 구조 통일).
+  function kbScoreApartment(group, q){
+    if(!q) return 0;
+    var nameN = kbNormalize(group.name);
+    if(nameN && nameN === q) return 95;
+    if(nameN && nameN.includes(q)) return 90; // §7: "덕천" → "덕천주공1단지" 부분검색
+    // 공백 차이만 있는 검색어도 매칭되도록 정규화 키(공백 제거) 기준으로도 한번 더 대조한다.
+    var qKey = q.replace(/\s+/g,'');
+    if(group.key && qKey && group.key.indexOf(qKey) !== -1) return 88;
+    if(group.address && kbNormalize(group.address).includes(q)) return 50;
+    return 0;
+  }
+  function kbRenderApartmentCard(group, isTop, q){
+    var lines = [];
+    if(group.recentContact) lines.push(`최근 전화자: ${kbEscapeHtml(group.recentContact)}`);
+    if(group.phone) lines.push(`대표 연락처: ${kbEscapeHtml(group.phone)}`);
+    if(group.address) lines.push(`주소: ${kbEscapeHtml(group.address)}`);
+    const recent = group.records.slice(0, 3).map(r=>{
+      const d = new Date(r.createdAt);
+      const dateLabel = `${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`;
+      const who = r.contactName ? (r.contactName + (r.position ? ' ' + r.position : '')) : '';
+      const summary = r.requestText || (r.originalText||'').slice(0, 40);
+      return `<div class="shin2-memo-item" data-call-id="${kbEscapeAttr(r.id)}" style="cursor:pointer;">
+        <div class="shin2-memo-meta">${kbEscapeHtml(dateLabel)}</div>
+        <div class="shin2-memo-text">${kbHighlight((who ? who + ' — ' : '') + summary, q)}</div>
+      </div>`;
+    }).join('');
+    const callsHtml = `<div class="shin2-memo-block" style="margin-top:10px;padding-top:10px;">
+      <div class="shin2-memo-title" style="margin-bottom:4px;">최근 전화기록 (총 ${group.records.length}건)</div>
+      <div class="shin2-memo-list">${recent}</div>
+      <button type="button" class="task-company-link" data-apt-calls-key="${kbEscapeAttr(group.key)}" style="margin-top:6px;">전체 전화기록 보기</button>
+    </div>`;
+    return `<div class="kb-result-card${isTop?' top':''}" data-apt-key="${kbEscapeAttr(group.key)}">
+      <div class="kb-result-cat">아파트</div>
+      <div class="kb-result-title">${kbHighlight(group.name, q)}</div>
+      <div class="kb-plain-content">${lines.join('<br>')}</div>
+      ${callsHtml}
+    </div>`;
+  }
+
   // "전화 온 내용"(shin2-call-entries-v1) 검색(§17) — 시공사명/아파트명/전화자 이름/직책/
   // 전화번호/현장명/문의유형/공종/요청내용/원문까지 전부 검색 대상에 포함한다. "완료" 개념이
   // 없으므로(§23) 모든 기록이 항상 통합검색 대상이다.
   function kbScoreCall(call, q){
     if(!q) return 0;
     // 시공사와 이미 연결된 전화기록은 업체 카드 안에 "최근 전화기록"으로 이미 함께 나오므로
-    // (§11) 통합검색 결과에 중복으로 따로 뜨지 않게 한다. 미연결/아파트/기타/확인 필요는
-    // 업체 카드가 없으므로 그대로 자기 카드로 노출된다.
+    // (§11) 통합검색 결과에 중복으로 따로 뜨지 않게 한다. 아파트는 kbScoreApartment가 그룹
+    // 카드로 대신 노출하므로(§6) 여기서 개별 카드로 중복 노출하지 않는다. 미연결/기타/확인
+    // 필요는 업체·아파트 카드가 없으므로 그대로 자기 카드로 노출된다.
     if(call.companyId) return 0;
+    if(call.callerType === '아파트') return 0;
     const company = getCompanyStaging().find(c=> c.id === call.companyId);
     const nameN = kbNormalize(call.callerType === '아파트' ? call.apartmentName : (company ? company.name : call.companyCandidateName));
     if(nameN && nameN === q) return 95;
@@ -4419,6 +4586,21 @@ ${text}
       const coId = coCallsBtn.getAttribute('data-co-calls-id');
       if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
       if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(coId);
+      return;
+    }
+    // 아파트 카드의 "전체 전화기록 보기" 버튼(§6/§8, 신규) — 업체와 동일한 UX: 팝업 안에서
+    // 아파트 히스토리 뷰로 이어진다(업체처럼 별도 화면으로 이동하지 않음 — §5: 완전히 새로운
+    // "아파트 관리 페이지"까지는 만들지 않는다).
+    const aptCallsBtn = e.target.closest('[data-apt-calls-key]');
+    if(aptCallsBtn){
+      if(window.SHIN2_CALLS) window.SHIN2_CALLS.openApartmentPopupByKey(aptCallsBtn.getAttribute('data-apt-calls-key'));
+      return;
+    }
+    // 아파트 검색 결과 카드 클릭(§8): 업체 카드 클릭과 동일한 위치/역할 — 아파트 히스토리
+    // 뷰를 바로 연다.
+    const aptCard = e.target.closest('[data-apt-key]');
+    if(aptCard){
+      if(window.SHIN2_CALLS) window.SHIN2_CALLS.openApartmentPopupByKey(aptCard.getAttribute('data-apt-key'));
       return;
     }
     // 업체 검색 결과 카드 클릭(§13): 업체 화면으로 전환 후 해당 업체를 선택 상태로 연다.
