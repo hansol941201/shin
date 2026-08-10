@@ -583,6 +583,7 @@
   .co-field-open-btn{ color:var(--text-muted); font-size:11.5px; text-decoration:none; padding:2px 0 2px 8px; white-space:nowrap; }
   .co-field-open-btn:hover{ color:var(--navy); text-decoration:underline; }
   .co-copied{ font-size:11px; color:var(--navy); padding-left:8px; white-space:nowrap; }
+  .co-saved-toast{ font-size:11.5px; color:var(--navy); font-weight:600; }
   .co-memo{ white-space:pre-wrap; }
   .co-detail-actions{ display:flex; gap:16px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
   .co-text-action{ border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-muted); padding:2px 0; font-family:inherit; }
@@ -5965,7 +5966,8 @@ ${text}
     formDirty: false,
     ocr: null,           // { files:[{id,kind,thumb,extracted,error}], ambiguous, conflicts } — 저장 전까지만 메모리에 존재
     dupConfirmed: false,
-    onSaved: null        // 외부(§18 전화메모 신규업체 등록 등)에서 이 폼을 열며 넘긴 "저장 완료" 콜백
+    onSaved: null,        // 외부(§18 전화메모 신규업체 등록 등)에서 이 폼을 열며 넘긴 "저장 완료" 콜백
+    showSavedToast: false // 수정 저장 직후 상세화면 상단에 "저장됨"을 잠깐 표시(alert 대신, §8)
   };
 
   function coRefresh(){ coState.records = coReadAll(); }
@@ -6380,7 +6382,10 @@ ${text}
     coDetailCol.innerHTML = `
       <div class="co-detail-head">
         <div class="co-detail-title">${coEscapeHtml(rec.name)}</div>
-        <button type="button" class="co-copy-all-btn" id="coCopyAllBtn">전체정보 복사</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${coState.showSavedToast ? '<span class="co-saved-toast" id="coSavedToast">저장됨</span>' : ''}
+          <button type="button" class="co-copy-all-btn" id="coCopyAllBtn">전체정보 복사</button>
+        </div>
       </div>
       ${row('name','업체명')}
       ${row('repName','대표자')}
@@ -6413,6 +6418,14 @@ ${text}
     // 전화/업무 기록(§11/§20) — companyId로 조회만 할 뿐 업체 데이터 안에 동일 문구를 복사 저장하지 않는다(§13).
     if(window.SHIN2_CALLS){
       window.SHIN2_CALLS.mountCompanySection(document.getElementById('coCallsSlot'), rec.id);
+    }
+    // "저장됨" 표시는 한 번 그려진 뒤 잠깐 있다가 스스로 사라진다(alert 없이 조용히 — §8).
+    if(coState.showSavedToast){
+      coState.showSavedToast = false;
+      setTimeout(()=>{
+        const toastEl = document.getElementById('coSavedToast');
+        if(toastEl) toastEl.remove();
+      }, 1400);
     }
   }
 
@@ -6733,6 +6746,7 @@ ${text}
       if(rec){
         Object.assign(rec, candidate);
         coWriteAll(coState.records);
+        coState.showSavedToast = true;
       }
     }
     coState.mode = 'detail';
