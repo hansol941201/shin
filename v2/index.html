@@ -785,6 +785,11 @@
   .home-task-row-sub{ font-size:12px; color:var(--text-muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .home-task-chevron{ flex:none; color:var(--text-muted); font-size:13px; }
 
+  /* 전화메모 입력창(§전화메모 스펙) — "오늘 확인할 업무" 섹션 안에 얹히는 자유 입력창.
+     기존 ai-textarea/ai-run-btn 스타일을 그대로 재사용하고, 배치용 여백만 추가한다. */
+  .call-input-block{ margin-bottom:10px; }
+  .call-memo-actions{ display:flex; justify-content:flex-end; margin-top:8px; }
+
   .task-badge{
     flex:none; display:inline-block; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px;
     background:#EEF1F8; color:var(--navy);
@@ -967,7 +972,10 @@
     memos: 'shin2-memos-v1',
     todos: 'shin2-todos',
     knowledge: 'shin2-knowledge-v1',
-    favorites: 'shin2-quicklinks-v1'
+    favorites: 'shin2-quicklinks-v1',
+    // 전화메모 접수함(§전화메모 스펙 §22) — 원본 레코드(callEntries)만 동기화한다.
+    // 업체 연결관계/후속메모/완료상태는 모두 이 레코드 안의 필드이므로 별도 키가 필요 없다.
+    calls: 'shin2-call-entries-v1'
   };
   // 실제 사람 메일함이 아니어도 된다(Firebase Email/Password는 존재 확인을 안 함) — 이
   // 프로젝트·앱 전용으로 고정된 하나의 이메일을 "한 명이 쓰는 개인 사이트"의 계정 식별자로
@@ -1176,6 +1184,17 @@
         <button type="button" class="acct-popup-close" id="taskPopupCloseBtn">&times;</button>
       </div>
       <div class="acct-popup-body" id="taskPopupBody"></div>
+    </div>
+  </div>
+
+  <div class="acct-popup-overlay" id="callPopupOverlay">
+    <div class="acct-popup task-popup" id="callPopup" role="dialog" aria-modal="true" aria-label="전화 접수">
+      <div class="acct-popup-head">
+        <button type="button" class="acct-popup-back" id="callPopupBackBtn" style="display:none;">&larr; 목록</button>
+        <div class="acct-popup-title" id="callPopupTitle">전화 접수</div>
+        <button type="button" class="acct-popup-close" id="callPopupCloseBtn">&times;</button>
+      </div>
+      <div class="acct-popup-body" id="callPopupBody"></div>
     </div>
   </div>
 
@@ -1821,6 +1840,721 @@
 
   homeSlotEl = document.getElementById('homeTaskSlot');
   renderHomeSummary();
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   SHIN2_CALLS — 전화메모 접수함 (전화받으면서 자유메모 → 저장 → AI 구조화 → 업체 자동연결)
+   ------------------------------------------------------------------------
+   기존 SHIN2_TASKS(shin2-tasks-v1, 사용자가 직접 상태/일정을 입력하는 "처리할 업무")와는
+   완전히 다른 별도 데이터다. 이쪽은 형식 강제 없이 자유롭게 적은 원문을 그대로 저장한 뒤
+   AI가 구조화하고, 업체관리 데이터와 자동으로 "연결을 제안"할 뿐 업체 데이터를 절대 몰래
+   덮어쓰지 않는다(§8/§9/§14/§21). 두 데이터를 하나로 합치면 저장 스키마가 근본적으로
+   달라 오히려 기존 "처리할 업무" 기능을 깨뜨리게 되므로, SHIN2_TASKS 코드는 전혀 건드리지
+   않고 홈 화면의 같은 "오늘 확인할 업무" 섹션 DOM에 이 모듈이 자신의 입력창/카드 목록만
+   추가로 얹는(patch) 방식으로 붙인다 — SHIN2_TASKS가 다시 그릴 때마다(업무 추가/완료 등)
+   #homeTaskSlot의 자식이 통째로 교체되므로, MutationObserver로 그 순간을 감지해 다시 얹는다.
+
+   저장: localStorage 'shin2-call-entries-v1' (callEntries, §13: 원본 레코드 하나만 저장 —
+   업체 데이터 안에는 동일 문구를 복사 저장하지 않고, 업체 상세는 companyId로 이 레코드를
+   조회해서 보여줄 뿐이다).
+   원문(originalText)은 add()에서 저장된 뒤 그 어떤 함수로도 변경되지 않는다(절대 규칙 —
+   updateFields()는 originalText 키를 명시적으로 무시한다).
+   ========================================================================== */
+(function(){
+  'use strict';
+  var STORAGE_KEY = 'shin2-call-entries-v1';
+  var COMPANY_STORAGE_KEY = 'shin2-companies-staging';
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function uid(){ return 'call_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+  function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function localDateStr(ts){ var d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function fmtHomeTime(ts){
+    var d = new Date(ts);
+    if(localDateStr(ts) === todayStr()) return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    return d.getFullYear() + '.' + pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function fmtFull(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function fmtShort(ts){
+    var d = new Date(ts);
+    return pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function loadAll(){
+    try{ var raw = localStorage.getItem(STORAGE_KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch(e){ return []; }
+  }
+  function saveAll(list){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('calls', list);
+  }
+  function getCompanies(){
+    try{ var raw = localStorage.getItem(COMPANY_STORAGE_KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch(e){ return []; }
+  }
+  function writeCompanies(list){
+    try{ localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('companies', list);
+  }
+  function findCompanyById(id){ return id ? getCompanies().find(function(c){ return c.id === id; }) : null; }
+
+  var INQUIRY_BADGE = {
+    '견적문의':'task-badge-confirm', '자료요청':'task-badge-material', '하자보수':'task-badge-urgent',
+    '일정문의':'task-badge-progress', '회신요청':'task-badge-reply'
+  };
+  function inquiryBadgeClass(t){ return INQUIRY_BADGE[t] || 'task-badge-normal'; }
+
+  /* ---------- 저장/조회 ---------- */
+  function add(originalText){
+    var now = Date.now();
+    var rec = {
+      id: uid(), originalText: originalText,
+      companyId: '', companyLinkStatus: 'pending', companyCandidateIds: [], companyCandidateName: '',
+      contactName:'', position:'', phone:'', siteName:'', address:'',
+      inquiryType:'', workType:'', requestText:'', followUp:'', repName:'', extraMemo:'',
+      fieldSuggestions: [],
+      status:'open', createdAt: now, updatedAt: now, aiFailed:false
+    };
+    var all = loadAll();
+    all.push(rec);
+    saveAll(all);
+    return rec;
+  }
+  function getById(id){ return loadAll().find(function(r){ return r.id === id; }); }
+  function updateRecord(id, mutator){
+    var all = loadAll();
+    var rec = all.find(function(r){ return r.id === id; });
+    if(!rec) return null;
+    mutator(rec);
+    rec.updatedAt = Date.now();
+    saveAll(all);
+    return rec;
+  }
+  // 구조화 필드는 직접 수정 가능하지만(§17) originalText/id/createdAt은 이 함수로 절대 바꿀 수 없다.
+  function updateFields(id, fields){
+    return updateRecord(id, function(rec){
+      Object.keys(fields).forEach(function(k){
+        if(k === 'originalText' || k === 'id' || k === 'createdAt') return;
+        rec[k] = fields[k];
+      });
+    });
+  }
+  function setStatus(id, status){ return updateRecord(id, function(rec){ rec.status = status; }); }
+  function getAll(){ return loadAll(); }
+  function getOpenForHome(){
+    return loadAll().filter(function(r){ return r.status !== 'done'; })
+      .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+  }
+  function getForCompany(companyId){
+    return loadAll().filter(function(r){ return r.companyId === companyId; })
+      .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+  }
+
+  /* ---------- 업체 자동 연결 매칭 (§6/§14) ----------
+     명확히 일치(전화번호 정확 일치 1건, 또는 업체명 정확/부분일치 1건)하는 경우에만 자동 연결한다.
+     후보가 2건 이상이면 절대 자동 연결하지 않고 ambiguous로 남겨 사용자 선택을 받는다(§14). */
+  function normName(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,''); }
+  function normPhone(s){ return String(s||'').replace(/[^0-9]/g,''); }
+  function findCompanyMatches(name, phone){
+    var companies = getCompanies();
+    var np = normPhone(phone);
+    if(np){
+      var byPhone = companies.filter(function(c){ return c.phone && normPhone(c.phone) === np; });
+      if(byPhone.length === 1) return { status:'linked', companies: byPhone };
+      if(byPhone.length > 1) return { status:'ambiguous', companies: byPhone };
+    }
+    var n = normName(name);
+    if(!n) return { status:'none', companies:[] };
+    var exact = companies.filter(function(c){ return c.name && normName(c.name) === n; });
+    if(exact.length === 1) return { status:'linked', companies: exact };
+    if(exact.length > 1) return { status:'ambiguous', companies: exact };
+    var partial = companies.filter(function(c){
+      var cn = normName(c.name);
+      return cn && (cn.indexOf(n) !== -1 || n.indexOf(cn) !== -1);
+    });
+    if(partial.length === 1) return { status:'linked', companies: partial };
+    if(partial.length > 1) return { status:'ambiguous', companies: partial };
+    return { status:'new_candidate', companies:[] };
+  }
+
+  // 업체 기본정보 자동 덮어쓰기 절대 금지(§8/§21) — 여기서는 "제안 목록"만 만들 뿐, 이 함수는
+  // 업체 데이터를 절대 쓰지 않는다(읽기만). 실제 반영은 사용자가 [반영]을 눌러야만 일어난다.
+  function buildFieldSuggestions(company, extracted){
+    var suggestions = [];
+    var map = [['phone','전화번호'], ['repName','대표자'], ['contactName','담당자'], ['address','주소']];
+    map.forEach(function(pair){
+      var field = pair[0], label = pair[1];
+      var newVal = String(extracted[field]||'').trim();
+      if(!newVal) return;
+      var curVal = String(company[field]||'').trim();
+      if(!curVal){
+        suggestions.push({ field: field, label: label, value: newVal, kind:'fill', status:'pending' });
+      } else if(curVal !== newVal){
+        suggestions.push({ field: field, label: label, oldValue: curVal, value: newVal, kind:'conflict', status:'pending' });
+      }
+    });
+    return suggestions;
+  }
+
+  // AI 응답을 받은 뒤 이 레코드에 매칭 상태를 확정한다. 업체 데이터는 이 함수가 절대 쓰지 않는다(읽기만).
+  function applyMatchAfterAi(id, extracted){
+    updateRecord(id, function(rec){
+      rec.contactName = extracted.contactName || '';
+      rec.position = extracted.position || '';
+      rec.phone = extracted.phone || '';
+      rec.siteName = extracted.siteName || '';
+      rec.address = extracted.address || '';
+      rec.inquiryType = extracted.inquiryType || '';
+      rec.workType = extracted.workType || '';
+      rec.requestText = extracted.requestText || '';
+      rec.followUp = extracted.followUp || '';
+      rec.repName = extracted.repName || '';
+      rec.extraMemo = extracted.memo || '';
+      rec.companyCandidateName = extracted.companyName || '';
+      rec.aiFailed = false;
+      if(!extracted.companyName){
+        rec.companyLinkStatus = 'none';
+        rec.companyId = ''; rec.companyCandidateIds = [];
+        return;
+      }
+      var match = findCompanyMatches(extracted.companyName, extracted.phone);
+      if(match.status === 'linked'){
+        var company = match.companies[0];
+        rec.companyId = company.id;
+        rec.companyLinkStatus = 'linked';
+        rec.companyCandidateIds = [];
+        rec.fieldSuggestions = buildFieldSuggestions(company, rec);
+      } else if(match.status === 'ambiguous'){
+        rec.companyId = '';
+        rec.companyLinkStatus = 'ambiguous';
+        rec.companyCandidateIds = match.companies.map(function(c){ return c.id; });
+      } else {
+        rec.companyId = '';
+        rec.companyLinkStatus = 'new_candidate';
+        rec.companyCandidateIds = [];
+      }
+    });
+  }
+
+  function resolveAmbiguous(id, companyIdOrNone){
+    updateRecord(id, function(rec){
+      if(companyIdOrNone === '__none__'){
+        rec.companyLinkStatus = 'none';
+        rec.companyId = ''; rec.companyCandidateIds = [];
+        return;
+      }
+      var company = findCompanyById(companyIdOrNone);
+      rec.companyId = companyIdOrNone;
+      rec.companyLinkStatus = company ? 'linked' : 'none';
+      rec.companyCandidateIds = [];
+      if(company) rec.fieldSuggestions = buildFieldSuggestions(company, rec);
+    });
+  }
+
+  // [업체로 등록] 눌러야만 실제 업체 데이터가 생성된다(§9) — AI가 후보를 뽑아냈다고 자동 생성하지 않는다.
+  function registerNewCompany(id){
+    var rec = getById(id);
+    if(!rec) return null;
+    var companies = getCompanies();
+    var newCo = {
+      id: 'co_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8),
+      name: rec.companyCandidateName || '', repName: rec.repName || '', contactName: rec.contactName || '',
+      position: rec.position || '', phone: rec.phone || '', mobile:'', fax:'', email:'',
+      bizRegNo:'', address: rec.address || '', website:'', memo:''
+    };
+    companies.push(newCo);
+    writeCompanies(companies);
+    updateRecord(id, function(r){
+      r.companyId = newCo.id; r.companyLinkStatus = 'linked'; r.companyCandidateIds = [];
+    });
+    return newCo;
+  }
+  function dismissNewCompany(id){
+    updateRecord(id, function(r){ r.companyLinkStatus = 'none'; });
+  }
+
+  function applySuggestion(id, field){
+    var rec = getById(id);
+    if(!rec || !rec.companyId) return;
+    var s = (rec.fieldSuggestions||[]).find(function(x){ return x.field === field && x.status === 'pending'; });
+    if(!s) return;
+    var companies = getCompanies();
+    var company = companies.find(function(c){ return c.id === rec.companyId; });
+    if(company){
+      company[field] = s.value;
+      writeCompanies(companies);
+    }
+    updateRecord(id, function(r){
+      var sug = (r.fieldSuggestions||[]).find(function(x){ return x.field === field; });
+      if(sug) sug.status = 'applied';
+    });
+  }
+  function dismissSuggestion(id, field){
+    updateRecord(id, function(r){
+      var sug = (r.fieldSuggestions||[]).find(function(x){ return x.field === field; });
+      if(sug) sug.status = 'dismissed';
+    });
+  }
+
+  /* ---------- AI 구조화 (§3) — 지식 페이지 "빠른 지식 추가"와 동일한 window.SHIN2_AI 재사용,
+     동일한 실패-폴백 철학: AI가 실패해도 이미 저장된 originalText는 절대 유실되지 않는다. ---------- */
+  function buildCallPrompt(text){
+    return `아래는 전화를 받으면서 정리 없이 자유롭게 적은 메모 원문입니다. 이 원문을 읽고 확실히
+확인되는 정보만 구조화해줘.
+
+절대 규칙:
+1. 원문에 없는 사실을 새로 지어내지 마.
+2. 확신이 없으면 빈 문자열("")로 둬 — 애매하게 추측해서 채우지 마.
+3. 업체명(companyName)에는 실제 회사/거래처 이름만 넣어. 전화 건 사람의 이름, 아파트/건물명, 주소를
+   업체명으로 착각해서 넣지 마 — 그런 값은 각각 contactName / siteName / address에 넣어.
+4. 전화 건 사람이 "본인이 그 업체의 대표"라고 명확히 밝힌 경우에만 repName에도 그 이름을 넣어. 그냥
+   담당자/직원이면 repName은 비워두고 contactName만 채워.
+5. 전화번호는 원문에 있는 형식 그대로 옮겨 적어.
+
+반드시 아래 JSON 객체 형식으로만 응답해. 다른 설명이나 코드블록 표시(백틱) 없이 순수 JSON 객체만 출력해:
+{
+  "companyName": "", "contactName": "", "position": "", "repName": "", "phone": "",
+  "siteName": "", "address": "", "inquiryType": "", "workType": "", "requestText": "",
+  "followUp": "", "memo": ""
+}
+
+원문:
+"""
+${text}
+"""`;
+  }
+  function parseCallResponse(raw){
+    var text = String(raw||'').trim();
+    var fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if(fence) text = fence[1].trim();
+    var parsed = JSON.parse(text);
+    if(!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('AI 응답이 JSON 객체가 아님');
+    var fields = ['companyName','contactName','position','repName','phone','siteName','address','inquiryType','workType','requestText','followUp','memo'];
+    var out = {};
+    fields.forEach(function(f){ out[f] = String(parsed[f] || '').trim(); });
+    return out;
+  }
+
+  function runAiStructuring(id, text){
+    if(!window.SHIN2_AI) return;
+    function doRun(key){
+      var prompt = buildCallPrompt(text);
+      window.SHIN2_AI.callOpenAI(key, prompt).then(function(raw){
+        var extracted = parseCallResponse(raw);
+        applyMatchAfterAi(id, extracted);
+        refreshUiAfterAi();
+      }).catch(function(err){
+        // AI 실패(네트워크/HTTP/빈 응답/JSON 파싱 실패 전부 포함) — 원문은 이미 저장되어 있으므로
+        // 데이터 유실이 없다(빠른 지식 추가와 동일한 폴백 철학).
+        console.error('[SHIN2/전화메모] AI 구조화 실패:', err);
+        updateRecord(id, function(rec){ rec.aiFailed = true; rec.companyLinkStatus = 'none'; });
+        refreshUiAfterAi();
+      });
+    }
+    var apiKey = window.SHIN2_AI.getApiKey();
+    if(!apiKey){ window.SHIN2_AI.promptForApiKey(function(key){ doRun(key); }); return; }
+    doRun(apiKey);
+  }
+  function refreshUiAfterAi(){
+    patchHomeBlock();
+    if(popupOverlay.classList.contains('open') && pState.mode !== 'edit') renderPopup();
+  }
+
+  /* ---------- 홈 "오늘 확인할 업무" 섹션에 입력창 + 카드 목록 얹기 ----------
+     SHIN2_TASKS 코드는 건드리지 않는다. #homeTaskSlot의 자식이 교체될 때마다(업무 추가/완료 등)
+     MutationObserver가 감지해 이 모듈의 UI를 다시 얹는다. */
+  function renderInputBlockHtml(){
+    return '<div class="call-input-block">' +
+      '<textarea id="callMemoInput" class="ai-textarea" placeholder="전화 온 내용을 그냥 적어주세요." style="min-height:110px;"></textarea>' +
+      '<div class="call-memo-actions"><button type="button" id="callMemoSaveBtn" class="ai-run-btn">전화메모 저장</button></div>' +
+    '</div>';
+  }
+  function wireInputBlock(block){
+    var btn = block.querySelector('#callMemoSaveBtn');
+    var ta = block.querySelector('#callMemoInput');
+    if(!btn || !ta) return;
+    btn.addEventListener('click', function(){
+      var text = ta.value.trim();
+      if(!text) return;
+      var rec = add(text); // 원문은 여기서 즉시 저장된다 — AI 결과를 기다리지 않는다(§2/폴백 철학).
+      ta.value = '';
+      patchHomeBlock();
+      runAiStructuring(rec.id, text);
+    });
+  }
+
+  function renderHomeRowHtml(rec){
+    var badgeCls = inquiryBadgeClass(rec.inquiryType);
+    var badgeLabel = rec.inquiryType || (rec.aiFailed ? '분석실패' : '분석중');
+    var company = findCompanyById(rec.companyId);
+    var titleParts = [];
+    if(company) titleParts.push(company.name);
+    else if(rec.companyCandidateName) titleParts.push(rec.companyCandidateName);
+    if(rec.contactName) titleParts.push(rec.contactName + (rec.position ? ' ' + rec.position : ''));
+    var title = titleParts.length ? titleParts.join(' · ') : (rec.originalText || '').slice(0, 30);
+    var subParts = [];
+    if(rec.siteName) subParts.push(rec.siteName);
+    if(rec.requestText) subParts.push(rec.requestText);
+    if(rec.followUp) subParts.push('후속: ' + rec.followUp);
+    var sub = subParts.join(' · ');
+    return '<div class="home-task-row" data-call-action="open" data-id="' + rec.id + '">' +
+      '<div class="home-task-row-main">' +
+        '<div class="home-task-row-top">' +
+          '<span class="home-task-time">' + escapeHtml(fmtHomeTime(rec.createdAt)) + '</span>' +
+          '<span class="task-badge ' + badgeCls + '">' + escapeHtml(badgeLabel) + '</span>' +
+          '<span class="home-task-row-title">' + escapeHtml(title) + '</span>' +
+        '</div>' +
+        (sub ? '<div class="home-task-row-sub">' + escapeHtml(sub) + '</div>' : '') +
+      '</div>' +
+      '<div class="home-task-chevron">&gt;</div>' +
+    '</div>';
+  }
+
+  function patchHomeBlock(){
+    var slot = document.getElementById('homeTaskSlot');
+    if(!slot) return;
+    var block = slot.querySelector('.home-task-block');
+    if(!block) return;
+    var head = block.querySelector('.home-task-head');
+    if(!head) return;
+    if(!block.querySelector('.call-input-block')){
+      head.insertAdjacentHTML('afterend', renderInputBlockHtml());
+      wireInputBlock(block);
+    }
+    var existingWrap = block.querySelector('.call-home-list-wrap');
+    if(existingWrap) existingWrap.remove();
+    var items = getOpenForHome().slice(0, 5);
+    var wrap = document.createElement('div');
+    wrap.className = 'call-home-list-wrap';
+    if(items.length){
+      wrap.innerHTML = '<div class="home-task-list">' + items.map(renderHomeRowHtml).join('') + '</div>' +
+        '<div style="text-align:right;margin-top:6px;"><button type="button" class="home-task-more" data-call-action="view-all">전체 보기 &gt;</button></div>';
+    }
+    block.appendChild(wrap);
+    wrap.querySelectorAll('[data-call-action="open"]').forEach(function(el){
+      el.addEventListener('click', function(e){ e.stopPropagation(); openPopup('detail', el.dataset.id); });
+    });
+    wrap.querySelectorAll('[data-call-action="view-all"]').forEach(function(el){
+      el.addEventListener('click', function(e){ e.stopPropagation(); openPopup('browse'); });
+    });
+  }
+
+  /* ---------- 전체보기 / 상세 / 수정 팝업 ---------- */
+  var popupOverlay = document.getElementById('callPopupOverlay');
+  var popupBody = document.getElementById('callPopupBody');
+  var popupTitle = document.getElementById('callPopupTitle');
+  var popupBackBtn = document.getElementById('callPopupBackBtn');
+  var popupCloseBtn = document.getElementById('callPopupCloseBtn');
+
+  var pState = { mode:'browse', tab:'all', search:'', selectedId:null };
+
+  function openPopup(mode, id){
+    pState.mode = mode || 'browse';
+    pState.selectedId = id || null;
+    popupOverlay.classList.add('open');
+    renderPopup();
+  }
+  function closePopup(){ popupOverlay.classList.remove('open'); patchHomeBlock(); }
+  popupCloseBtn.addEventListener('click', closePopup);
+  popupOverlay.addEventListener('click', function(e){ if(e.target === popupOverlay) closePopup(); });
+  popupBackBtn.addEventListener('click', function(){
+    if(pState.mode === 'detail'){ pState.mode = 'browse'; renderPopup(); }
+    else if(pState.mode === 'edit'){ pState.mode = 'detail'; renderPopup(); }
+  });
+
+  function renderPopup(){
+    popupBackBtn.style.display = pState.mode === 'browse' ? 'none' : '';
+    if(pState.mode === 'browse'){ popupTitle.textContent = '전화 접수'; renderBrowse(); return; }
+    if(pState.mode === 'detail'){ popupTitle.textContent = '전화 접수 상세'; renderDetail(); return; }
+    if(pState.mode === 'edit'){ popupTitle.textContent = '전화 접수 수정'; renderEdit(); return; }
+  }
+
+  function renderBrowse(){
+    var tabs = [['all','전체'],['today','오늘'],['done','완료']];
+    var all = loadAll();
+    var byTab = all.filter(function(r){
+      if(pState.tab === 'today') return r.status !== 'done' && localDateStr(r.createdAt) === todayStr();
+      if(pState.tab === 'done') return r.status === 'done';
+      return r.status !== 'done';
+    });
+    var ql = (pState.search||'').trim().toLowerCase();
+    var items = byTab.filter(function(r){
+      if(!ql) return true;
+      var hay = [r.originalText, r.companyCandidateName, r.contactName, r.siteName, r.inquiryType, r.workType, r.requestText, r.followUp].join(' ').toLowerCase();
+      return hay.indexOf(ql) !== -1;
+    }).sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+
+    var html = '<div class="task-tabs">' + tabs.map(function(t){
+      return '<button type="button" class="task-tab' + (pState.tab===t[0]?' active':'') + '" data-tab="' + t[0] + '">' + t[1] + '</button>';
+    }).join('') + '</div>' +
+    '<div class="search-box acct-search-box"><input type="text" id="callSearchInput" placeholder="업체명 / 전화자 / 현장명 / 문의유형 검색" value="' + escapeAttr(pState.search) + '" /></div>';
+    if(!items.length){
+      html += '<div class="acct-empty">해당하는 전화 접수가 없습니다.</div>';
+    } else {
+      html += items.map(function(r){
+        var company = findCompanyById(r.companyId);
+        var titleBits = [];
+        if(company) titleBits.push(company.name); else if(r.companyCandidateName) titleBits.push(r.companyCandidateName);
+        if(r.siteName) titleBits.push(r.siteName);
+        var title = titleBits.length ? titleBits.join(' · ') : (r.originalText||'').slice(0, 30);
+        return '<div class="task-pop-row' + (r.status==='done'?' done':'') + '" data-id="' + r.id + '">' +
+          (r.inquiryType ? '<span class="task-badge ' + inquiryBadgeClass(r.inquiryType) + '">' + escapeHtml(r.inquiryType) + '</span>' : '') +
+          '<span class="task-pop-row-title">' + escapeHtml(title) + '</span>' +
+          '<span class="task-pop-row-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    popupBody.innerHTML = html;
+    popupBody.querySelectorAll('.task-tab').forEach(function(btn){
+      btn.addEventListener('click', function(){ pState.tab = btn.dataset.tab; renderBrowse(); });
+    });
+    var searchInput = document.getElementById('callSearchInput');
+    searchInput.addEventListener('input', function(){ pState.search = searchInput.value; renderBrowse(); });
+    popupBody.querySelectorAll('.task-pop-row').forEach(function(row){
+      row.addEventListener('click', function(){ openPopup('detail', row.dataset.id); });
+    });
+  }
+
+  function renderDetail(){
+    var rec = getById(pState.selectedId);
+    if(!rec){ pState.mode = 'browse'; renderPopup(); return; }
+    var company = findCompanyById(rec.companyId);
+    var row = function(label, valueHtml){ return valueHtml ? '<div class="task-form-field"><label>' + label + '</label><div style="font-size:13.5px;color:var(--text);">' + valueHtml + '</div></div>' : ''; };
+
+    var companyRowHtml = '';
+    if(company){
+      companyRowHtml = row('업체', escapeHtml(company.name) + ' <button type="button" class="task-company-link" id="callOpenCompanyBtn">업체 보기</button>');
+    } else if(rec.companyCandidateName){
+      companyRowHtml = row('업체(미확정)', escapeHtml(rec.companyCandidateName));
+    }
+    var phoneRowHtml = rec.phone ? row('전화번호', escapeHtml(rec.phone) + ' <button type="button" class="task-company-link" id="callCopyPhoneBtn">복사</button>') : '';
+
+    var linkSectionHtml = '';
+    if(rec.companyLinkStatus === 'ambiguous'){
+      var opts = (rec.companyCandidateIds||[]).map(function(cid){
+        var c = findCompanyById(cid);
+        return c ? '<label class="co-conflict-opt"><input type="radio" name="callCoChoice" value="' + escapeAttr(cid) + '"/> ' + escapeHtml(c.name) + '</label>' : '';
+      }).join('');
+      linkSectionHtml = '<div class="co-conflict">' +
+        '<div class="co-conflict-label">업체 연결 필요</div>' + opts +
+        '<label class="co-conflict-opt"><input type="radio" name="callCoChoice" value="__none__"/> 연결하지 않음</label>' +
+        '<div style="margin-top:6px;"><button type="button" class="co-text-action" id="callCoChoiceConfirm">선택 확인</button></div>' +
+      '</div>';
+    } else if(rec.companyLinkStatus === 'new_candidate'){
+      linkSectionHtml = '<div class="co-dup-box">' +
+        '<div><strong>신규 업체 후보</strong></div>' +
+        '<div>' + escapeHtml(rec.companyCandidateName) + '</div>' +
+        (rec.contactName ? '<div>전화자: ' + escapeHtml(rec.contactName) + '</div>' : '') +
+        (rec.phone ? '<div>전화번호: ' + escapeHtml(rec.phone) + '</div>' : '') +
+        '<div class="co-dup-actions">' +
+          '<button type="button" class="co-text-action" id="callRegisterCoBtn">업체로 등록</button>' +
+          '<button type="button" class="co-text-action" id="callDismissCoBtn">연결 안 함</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    var suggestionsHtml = (rec.fieldSuggestions||[]).filter(function(s){ return s.status === 'pending'; }).map(function(s){
+      var body = s.kind === 'conflict'
+        ? ('기존정보: ' + escapeHtml(s.oldValue) + ' / 새 정보 후보: ' + escapeHtml(s.value))
+        : (s.label + ': ' + escapeHtml(s.value));
+      return '<div class="co-dup-box">' +
+        '<div>새 정보가 확인되었습니다</div>' +
+        '<div>' + body + '</div>' +
+        '<div class="co-dup-actions">' +
+          '<button type="button" class="co-text-action" data-suggest-apply="' + s.field + '">반영</button>' +
+          '<button type="button" class="co-text-action" data-suggest-dismiss="' + s.field + '">무시</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    popupBody.innerHTML =
+      '<div class="task-detail-title">' + (rec.inquiryType ? '[' + escapeHtml(rec.inquiryType) + '] ' : '') + escapeHtml(rec.siteName || rec.companyCandidateName || (company?company.name:'') || '전화 접수') + '</div>' +
+      companyRowHtml +
+      row('전화자', rec.contactName ? escapeHtml(rec.contactName) + (rec.position ? ' ' + escapeHtml(rec.position) : '') : '') +
+      phoneRowHtml +
+      row('현장', rec.siteName ? escapeHtml(rec.siteName) : '') +
+      row('주소', rec.address ? escapeHtml(rec.address) : '') +
+      row('문의유형', rec.inquiryType ? escapeHtml(rec.inquiryType) : '') +
+      row('공종', rec.workType ? escapeHtml(rec.workType) : '') +
+      row('요청내용', rec.requestText ? escapeHtml(rec.requestText) : '') +
+      row('후속업무', rec.followUp ? escapeHtml(rec.followUp) : '') +
+      row('접수시각', escapeHtml(fmtFull(rec.createdAt))) +
+      (rec.aiFailed ? '<div class="ai-error" style="margin-bottom:10px;">AI 자동분석에 실패했습니다. 원문은 저장되어 있습니다 — 필요하면 수정에서 직접 입력해주세요.</div>' : '') +
+      linkSectionHtml + suggestionsHtml +
+      '<div class="task-detail-actions" id="callDetailActions">' +
+        '<button type="button" class="acct-text-action" id="callEditBtn">수정</button>' +
+        (rec.status === 'done'
+          ? '<button type="button" class="acct-text-action" id="callUndoBtn">완료 취소</button>'
+          : '<button type="button" class="acct-text-action" id="callCompleteBtn">완료</button>') +
+      '</div>' +
+      '<div class="shin2-memo-block" style="border-top:none;padding-top:0;">' +
+        '<div class="shin2-memo-title" style="margin-bottom:6px;">원문 메모</div>' +
+        '<div class="kb-plain-content" style="white-space:pre-wrap;">' + escapeHtml(rec.originalText) + '</div>' +
+      '</div>' +
+      '<div id="callMemoFollowupSlot"></div>';
+
+    var openCoBtn = document.getElementById('callOpenCompanyBtn');
+    if(openCoBtn){
+      openCoBtn.addEventListener('click', function(){
+        closePopup();
+        if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
+        if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(rec.companyId);
+      });
+    }
+    var copyBtn = document.getElementById('callCopyPhoneBtn');
+    if(copyBtn){
+      copyBtn.addEventListener('click', function(){
+        if(navigator.clipboard) navigator.clipboard.writeText(rec.phone).catch(function(){});
+      });
+    }
+    document.getElementById('callEditBtn').addEventListener('click', function(){ pState.mode = 'edit'; renderPopup(); });
+    var completeBtn = document.getElementById('callCompleteBtn');
+    if(completeBtn) completeBtn.addEventListener('click', function(){ setStatus(rec.id, 'done'); patchHomeBlock(); renderDetail(); });
+    var undoBtn = document.getElementById('callUndoBtn');
+    if(undoBtn) undoBtn.addEventListener('click', function(){ setStatus(rec.id, 'open'); patchHomeBlock(); renderDetail(); });
+
+    var choiceConfirmBtn = document.getElementById('callCoChoiceConfirm');
+    if(choiceConfirmBtn){
+      choiceConfirmBtn.addEventListener('click', function(){
+        var checked = popupBody.querySelector('input[name="callCoChoice"]:checked');
+        if(!checked) return;
+        resolveAmbiguous(rec.id, checked.value);
+        patchHomeBlock();
+        renderDetail();
+      });
+    }
+    var registerBtn = document.getElementById('callRegisterCoBtn');
+    if(registerBtn) registerBtn.addEventListener('click', function(){ registerNewCompany(rec.id); patchHomeBlock(); renderDetail(); });
+    var dismissCoBtn = document.getElementById('callDismissCoBtn');
+    if(dismissCoBtn) dismissCoBtn.addEventListener('click', function(){ dismissNewCompany(rec.id); patchHomeBlock(); renderDetail(); });
+
+    popupBody.querySelectorAll('[data-suggest-apply]').forEach(function(btn){
+      btn.addEventListener('click', function(){ applySuggestion(rec.id, btn.getAttribute('data-suggest-apply')); renderDetail(); });
+    });
+    popupBody.querySelectorAll('[data-suggest-dismiss]').forEach(function(btn){
+      btn.addEventListener('click', function(){ dismissSuggestion(rec.id, btn.getAttribute('data-suggest-dismiss')); renderDetail(); });
+    });
+
+    if(window.SHIN2_MEMO){
+      // "전화접수 원문"(불변)과 "메모 기록"(후속 자유메모 누적, §18)을 개념적으로 분리해서 보여준다 —
+      // 원문은 위 kb-plain-content 읽기전용 블록, 메모 기록은 기존 공통 메모 컴포넌트를 그대로 재사용.
+      window.SHIN2_MEMO.mount(document.getElementById('callMemoFollowupSlot'), 'call', rec.id, { title:'메모 기록' });
+    }
+  }
+
+  function renderEdit(){
+    var rec = getById(pState.selectedId);
+    if(!rec){ pState.mode = 'browse'; renderPopup(); return; }
+    var companies = getCompanies();
+    var companyOptionsHtml = '<option value="">(연결 안 함)</option>' + companies.map(function(c){
+      return '<option value="' + escapeAttr(c.id) + '"' + (rec.companyId===c.id?' selected':'') + '>' + escapeHtml(c.name) + '</option>';
+    }).join('');
+    popupBody.innerHTML =
+      '<div class="task-detail-title">전화 접수 수정</div>' +
+      '<div class="task-form-field"><label>업체 연결</label><select id="callFCompany">' + companyOptionsHtml + '</select></div>' +
+      '<div class="task-form-row">' +
+        '<div class="task-form-field"><label>전화자</label><input type="text" id="callFContact" value="' + escapeAttr(rec.contactName) + '"/></div>' +
+        '<div class="task-form-field"><label>직책</label><input type="text" id="callFPosition" value="' + escapeAttr(rec.position) + '"/></div>' +
+      '</div>' +
+      '<div class="task-form-row">' +
+        '<div class="task-form-field"><label>전화번호</label><input type="text" id="callFPhone" value="' + escapeAttr(rec.phone) + '"/></div>' +
+        '<div class="task-form-field"><label>현장명</label><input type="text" id="callFSite" value="' + escapeAttr(rec.siteName) + '"/></div>' +
+      '</div>' +
+      '<div class="task-form-field"><label>주소</label><input type="text" id="callFAddr" value="' + escapeAttr(rec.address) + '"/></div>' +
+      '<div class="task-form-row">' +
+        '<div class="task-form-field"><label>문의유형</label><input type="text" id="callFInquiry" value="' + escapeAttr(rec.inquiryType) + '"/></div>' +
+        '<div class="task-form-field"><label>공종</label><input type="text" id="callFWork" value="' + escapeAttr(rec.workType) + '"/></div>' +
+      '</div>' +
+      '<div class="task-form-field"><label>요청내용</label><textarea id="callFRequest">' + escapeHtml(rec.requestText) + '</textarea></div>' +
+      '<div class="task-form-field"><label>후속업무</label><textarea id="callFFollow">' + escapeHtml(rec.followUp) + '</textarea></div>' +
+      '<div class="acct-form-actions">' +
+        '<button type="button" class="acct-text-action" id="callFormCancel">취소</button>' +
+        '<button type="button" class="ai-run-btn" id="callFormSave">저장</button>' +
+      '</div>';
+    document.getElementById('callFormCancel').addEventListener('click', function(){ pState.mode = 'detail'; renderPopup(); });
+    document.getElementById('callFormSave').addEventListener('click', function(){
+      var companySel = document.getElementById('callFCompany').value;
+      updateFields(rec.id, {
+        companyId: companySel,
+        companyLinkStatus: companySel ? 'linked' : 'none',
+        companyCandidateIds: [],
+        contactName: document.getElementById('callFContact').value.trim(),
+        position: document.getElementById('callFPosition').value.trim(),
+        phone: document.getElementById('callFPhone').value.trim(),
+        siteName: document.getElementById('callFSite').value.trim(),
+        address: document.getElementById('callFAddr').value.trim(),
+        inquiryType: document.getElementById('callFInquiry').value.trim(),
+        workType: document.getElementById('callFWork').value.trim(),
+        requestText: document.getElementById('callFRequest').value.trim(),
+        followUp: document.getElementById('callFFollow').value.trim()
+      });
+      pState.mode = 'detail';
+      renderPopup();
+      patchHomeBlock();
+    });
+  }
+
+  /* ---------- 업체 상세 "전화/업무 기록" 섹션 (§11/§20) ----------
+     최신순으로 요약만 보여주고, 클릭하면 같은 페이지 흐름(팝업) 안에서 상세로 전환한다.
+     업체 데이터 안에 원문/구조화 필드를 복사 저장하지 않고 companyId로 조회만 한다(§13). */
+  function mountCompanySection(container, companyId){
+    if(!container) return;
+    var items = getForCompany(companyId);
+    var html = '<div class="shin2-memo-block">' +
+      '<div class="shin2-memo-head"><div class="shin2-memo-title">전화/업무 기록' + (items.length ? ' ' + items.length : '') + '</div></div>';
+    if(!items.length){
+      html += '<div class="shin2-memo-empty">등록된 전화/업무 기록이 없습니다</div>';
+    } else {
+      html += '<div class="shin2-memo-list">' + items.map(function(r){
+        var summary = r.requestText || (r.originalText||'').slice(0, 40);
+        return '<div class="shin2-memo-item" data-call-id="' + escapeAttr(r.id) + '" style="cursor:pointer;">' +
+          '<div class="shin2-memo-meta">' + escapeHtml(fmtShort(r.createdAt)) +
+            (r.inquiryType ? ' <span class="task-badge ' + inquiryBadgeClass(r.inquiryType) + '">' + escapeHtml(r.inquiryType) + '</span>' : '') +
+            (r.status==='done' ? ' · 완료' : '') +
+          '</div>' +
+          '<div class="shin2-memo-text">' + escapeHtml((r.siteName ? r.siteName + ' — ' : '') + summary) + '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    container.querySelectorAll('[data-call-id]').forEach(function(el){
+      el.addEventListener('click', function(){ openPopup('detail', el.getAttribute('data-call-id')); });
+    });
+  }
+
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e.detail.key !== 'calls' && e.detail.key !== 'companies') return;
+    patchHomeBlock();
+    if(popupOverlay.classList.contains('open') && pState.mode !== 'edit') renderPopup();
+  });
+
+  window.SHIN2_CALLS = {
+    add: add, getAll: getAll, getById: getById, getOpenForHome: getOpenForHome,
+    getForCompany: getForCompany, openPopup: openPopup, mountCompanySection: mountCompanySection,
+    updateFields: updateFields, setStatus: setStatus
+  };
+
+  // #homeTaskSlot의 자식이 통째로 교체될 때마다(SHIN2_TASKS가 업무 추가/완료/삭제 후 다시 그릴 때)
+  // 이 모듈의 입력창/카드 목록이 함께 사라지므로 다시 얹는다. patchHomeBlock()은 slot의 "직계 자식"을
+  // 바꾸지 않고 그 안쪽(.home-task-block의 자손)만 바꾸므로 이 감시 루프가 자기 자신을 다시 트리거하지 않는다.
+  var homeTaskSlotEl = document.getElementById('homeTaskSlot');
+  if(homeTaskSlotEl && window.MutationObserver){
+    var mo = new MutationObserver(function(){ patchHomeBlock(); });
+    mo.observe(homeTaskSlotEl, { childList: true });
+  }
+  patchHomeBlock();
 })();
 </script>
 
@@ -3035,6 +3769,13 @@ ${text}
       score: kbScoreTask,
       render: kbRenderTaskCard
     },
+    // 전화메모 접수(shin2-call-entries-v1)
+    {
+      type:'call',
+      getRecords: ()=> (window.SHIN2_CALLS ? window.SHIN2_CALLS.getAll() : []),
+      score: kbScoreCall,
+      render: kbRenderCallCard
+    },
     // 공통 메모(shin2-memos-v1) — 어느 화면에 붙은 메모인지(§14)와 함께 보여준다.
     {
       type:'memo',
@@ -3240,6 +3981,37 @@ ${text}
     </div>`;
   }
 
+  // 전화메모 접수(shin2-call-entries-v1) 검색(§19) — 업체명/전화자/전화번호/현장명/문의유형/
+  // 공종/요청내용/원문/후속메모까지 전부 검색 대상에 포함한다. 완료된 접수는 업무 검색과 동일한
+  // 컨벤션으로 통합검색에서는 제외한다(전화 접수 팝업의 "완료" 탭에서만 조회).
+  function kbScoreCall(call, q){
+    if(!q || call.status === 'done') return 0;
+    const company = getCompanyStaging().find(c=> c.id === call.companyId);
+    const nameN = kbNormalize(company ? company.name : call.companyCandidateName);
+    if(nameN && nameN === q) return 95;
+    if(nameN && nameN.includes(q)) return 85;
+    if(call.contactName && kbNormalize(call.contactName).includes(q)) return 70;
+    if(call.phone && kbNormalize(call.phone).includes(q)) return 65;
+    if(call.siteName && kbNormalize(call.siteName).includes(q)) return 60;
+    if(call.inquiryType && kbNormalize(call.inquiryType).includes(q)) return 55;
+    const hay = kbNormalize([call.workType, call.requestText, call.followUp, call.originalText].filter(Boolean).join(' '));
+    if(hay.includes(q)) return 40;
+    return 0;
+  }
+  function kbRenderCallCard(call, isTop, q){
+    const company = getCompanyStaging().find(c=> c.id === call.companyId);
+    const title = (call.inquiryType ? `[${call.inquiryType}] ` : '') + (company ? company.name : (call.companyCandidateName || '전화 접수'));
+    const lines = [];
+    if(call.contactName) lines.push(`전화자: ${kbEscapeHtml(call.contactName)}${call.position ? ' ' + kbEscapeHtml(call.position) : ''}`);
+    if(call.siteName) lines.push(`현장: ${kbHighlight(call.siteName, q)}`);
+    if(call.requestText) lines.push(`요청: ${kbHighlight(call.requestText, q)}`);
+    return `<div class="kb-result-card${isTop?' top':''}" data-call-id="${kbEscapeAttr(call.id)}">
+      <div class="kb-result-cat">전화 접수</div>
+      <div class="kb-result-title">${kbHighlight(title, q)}</div>
+      <div class="kb-plain-content">${lines.join('<br>')}</div>
+    </div>`;
+  }
+
   // 메모가 어디에 붙어 있는지(대상) 표시용 라벨을 구한다 — "메모만 덩그러니" 보여주지 않기 위함(§14).
   function kbMemoTargetLabel(m){
     if(m.targetType === 'home') return '홈';
@@ -3326,6 +4098,12 @@ ${text}
     const taskCard = e.target.closest('[data-task-id]');
     if(taskCard){
       if(window.SHIN2_TASKS) window.SHIN2_TASKS.openPopup('detail', taskCard.getAttribute('data-task-id'));
+      return;
+    }
+    // 전화 접수 검색 결과 카드 클릭(§19): 전화 접수 상세 팝업을 바로 연다.
+    const callCard = e.target.closest('[data-call-id]');
+    if(callCard){
+      if(window.SHIN2_CALLS) window.SHIN2_CALLS.openPopup('detail', callCard.getAttribute('data-call-id'));
       return;
     }
     // 메모 검색 결과 카드 클릭: 대상(홈/업체/업무/계정) 화면을 열어 메모가 실제로 붙은 곳을 보여준다.
@@ -5087,6 +5865,7 @@ ${text}
         <button type="button" class="co-text-action danger" id="coDeleteBtn">삭제</button>
       </div>
       <div id="coMemoSlot"></div>
+      <div id="coCallsSlot"></div>
     `;
     document.getElementById('coEditBtn').addEventListener('click', ()=> coOpenEditForm(rec));
     document.getElementById('coDeleteBtn').addEventListener('click', ()=> coRenderDeleteConfirm(rec));
@@ -5096,6 +5875,10 @@ ${text}
     });
     if(window.SHIN2_MEMO){
       window.SHIN2_MEMO.mount(document.getElementById('coMemoSlot'), 'company', rec.id, { title:'메모 기록' });
+    }
+    // 전화/업무 기록(§11/§20) — companyId로 조회만 할 뿐 업체 데이터 안에 동일 문구를 복사 저장하지 않는다(§13).
+    if(window.SHIN2_CALLS){
+      window.SHIN2_CALLS.mountCompanySection(document.getElementById('coCallsSlot'), rec.id);
     }
   }
 
