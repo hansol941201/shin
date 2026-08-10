@@ -1966,12 +1966,38 @@
      - apartmentName이 없으면 빈 문자열로 채운다.
    레코드를 삭제하거나 originalText를 포함한 기존 필드를 덮어쓰지 않는다 — 오직 "없는 필드를
    채우는" 것만 하고, 채운 결과는 다음 로드부터 재추정하지 않도록 그대로 저장해둔다.
+
+   [이번 라운드 — 분류 버튼 고정 + status/존재 분리]
+   - 입력창 위 [아파트]/[시공사]/[기타] 버튼(CALL_TYPE_CHOICES)을 새로 추가했다. 이 버튼
+     선택값이 callerType으로 그대로 저장되며, parseCallMemoLocally()가 텍스트에서 추측한
+     callerType은 무시된다(그 외 필드 추출 로직은 그대로 사용). 저장 전 반드시 하나를
+     선택해야 하고, 선택 전에는 저장 버튼이 비활성 상태 + 인라인 안내 문구가 보인다.
+     "확인 필요"는 사용자가 직접 고르는 값 목록(CALL_TYPE_CHOICES)에는 없다 — 애매하면
+     사용자가 직접 [기타]를 고른다. 다만 레거시 데이터의 callerType==='확인 필요' 값은
+     CALLER_TYPES/뱃지/필터 어디서도 계속 정상 동작하도록 호환을 유지한다.
+   - status 필드('new'/'confirmed'/'handled')를 새로 도입했다. 이 값은 레코드의 "존재
+     여부"와 완전히 무관하다 — 홈 "최근" 목록에 뜨는지만 결정한다(status==='new'인 것만
+     홈에 최신 5건). 상세화면의 [확인]/[처리완료] 버튼은 오직 status만 바꾸고, remove()를
+     절대 호출하지 않는다. 레코드를 실제로 배열에서 제거하는 경로는 [삭제] 버튼 → 인라인
+     확인(co-confirm-row 패턴, native confirm 아님) → remove() 하나뿐이다. 전체보기/검색/
+     업체·아파트 히스토리는 status와 무관하게 항상 전체 레코드를 보여준다(필터 탭만 추가됨).
+   - status가 없는 기존 레코드는 마이그레이션에서 'new'로 채운다(§18/§19: "기존 미확인
+     상태로 보존"이 가장 안전한 기본값 — 기록이 사라지지도, 이미 처리된 것으로 잘못
+     간주되지도 않는다).
    ========================================================================== */
 (function(){
   'use strict';
   var STORAGE_KEY = 'shin2-call-entries-v1';
   var COMPANY_STORAGE_KEY = 'shin2-companies-staging';
   var CALLER_TYPES = ['시공사', '아파트', '기타', '확인 필요'];
+  // 홈 입력창 위 분류 버튼에서 사용자가 직접 고를 수 있는 값(§1) — "확인 필요"는 자동추측
+  // 전용 레거시 값이라 사용자 선택 목록에는 넣지 않는다(애매하면 사용자가 직접 [기타] 선택).
+  var CALL_TYPE_CHOICES = ['아파트', '시공사', '기타'];
+  var STATUS_VALUES = ['new', 'confirmed', 'handled'];
+  var STATUS_LABEL = { new: '미확인', confirmed: '확인완료', handled: '처리완료' };
+  var STATUS_BADGE = { new: 'task-badge-urgent', confirmed: 'task-badge-progress', handled: 'task-badge-normal' };
+  function statusLabel(s){ return STATUS_LABEL[s] || STATUS_LABEL.new; }
+  function statusBadgeClass(s){ return STATUS_BADGE[s] || STATUS_BADGE.new; }
 
   function pad2(n){ return String(n).padStart(2,'0'); }
   function uid(){ return 'call_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
@@ -2008,6 +2034,9 @@
     if(typeof rec.apartmentName !== 'string'){ rec.apartmentName = ''; changed = true; }
     if(typeof rec.address !== 'string'){ rec.address = ''; changed = true; }
     if(!Array.isArray(rec.fieldSuggestions)){ rec.fieldSuggestions = []; changed = true; }
+    // status가 없는 기존 레코드는 'new'(미확인)로 채운다 — 기록 존재/원문 등 다른 필드는
+    // 절대 건드리지 않고, 홈 노출 여부에만 쓰이는 이 필드만 안전한 기본값으로 채운다.
+    if(STATUS_VALUES.indexOf(rec.status) === -1){ rec.status = 'new'; changed = true; }
     return changed;
   }
   function loadAll(){
@@ -2048,11 +2077,15 @@
   function callerBadgeClass(t){ return CALLER_BADGE[t] || 'task-badge-normal'; }
 
   /* ---------- 저장/조회 ---------- */
-  function add(originalText){
+  // callerType: 홈 분류 버튼([아파트]/[시공사]/[기타])에서 사용자가 직접 고른 값(§1/§3).
+  // 유효하지 않은 값이 들어오면 레거시 기본값('확인 필요')로 안전하게 남긴다 — 이 경로는
+  // 정상적으로는 항상 CALL_TYPE_CHOICES 중 하나가 들어온다(저장 버튼이 그 전에는 막혀있음).
+  function add(originalText, callerType){
     var now = Date.now();
     var rec = {
       id: uid(), originalText: originalText,
-      callerType: '확인 필요',
+      callerType: CALL_TYPE_CHOICES.indexOf(callerType) !== -1 ? callerType : '확인 필요',
+      status: 'new',
       companyId: '', companyLinkStatus: 'pending', companyCandidateIds: [], companyCandidateName: '',
       apartmentName: '', contactName:'', position:'', phone:'', siteName:'', address:'',
       inquiryType:'', workType:'', requestText:'', followUp:'', repName:'', extraMemo:'',
@@ -2060,7 +2093,7 @@
       createdAt: now, updatedAt: now, aiFailed:false
     };
     var all = loadAll();
-    all.push(rec);
+    all.push(rec); // 매 저장은 새 id의 새 레코드를 push — 기존 레코드를 절대 덮어쓰지 않는다(§7/§8/§16).
     saveAll(all);
     return rec;
   }
@@ -2084,6 +2117,8 @@
       });
     });
   }
+  // 레코드를 실제로 배열에서 제거하는 유일한 경로(하드룰) — 상세화면 [삭제] 버튼의 인라인
+  // 확인을 거친 뒤에만 호출된다. [확인]/[처리완료](setStatus)는 이 함수를 절대 호출하지 않는다.
   function remove(id){
     var all = loadAll().filter(function(r){ return r.id !== id; });
     saveAll(all);
@@ -2091,9 +2126,12 @@
     // shin2-companies-staging을 읽지도 쓰지도 않는다.
   }
   function getAll(){ return loadAll(); }
-  // §23: "완료" 개념 제거 — 모든 기록이 항상 존재한다. 홈에는 최신순 최대 5건만 보인다.
+  // 홈 "최근" 목록(§11) — status가 'new'(미확인/미처리)인 것 중 최신 5건만. [확인]/
+  // [처리완료]로 status가 바뀌면 홈에서는 빠지지만 배열에서 제거되는 것은 절대 아니다 —
+  // getAll()/전체보기/검색/업체·아파트 히스토리에는 status와 무관하게 계속 나온다.
   function getRecentForHome(){
-    return loadAll().sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); }).slice(0, 5);
+    return loadAll().filter(function(r){ return (r.status||'new') === 'new'; })
+      .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); }).slice(0, 5);
   }
   function getForCompany(companyId){
     return loadAll().filter(function(r){ return r.companyId === companyId; })
@@ -2315,6 +2353,13 @@
     });
   }
 
+  // 상태 전환 전용 — [확인]/[처리완료] 버튼이 호출한다. status만 바꾸고 절대 레코드를
+  // 지우거나 다른 필드를 건드리지 않는다(하드룰: 이 두 버튼은 삭제 기능이 아니다).
+  function setStatus(id, status){
+    if(STATUS_VALUES.indexOf(status) === -1) return null;
+    return updateRecord(id, function(rec){ rec.status = status; });
+  }
+
   /* ---------- 로컬 규칙 기반 파서 (외부 AI API 완전 미사용) ----------
      이 모듈은 어떤 네트워크 호출도 하지 않는다(완전 동기 함수). window.SHIN2_AI/callOpenAI는
      이 파일 아래쪽에 여전히 정의되어 있지만(§ "AI 문구정리"/"빠른 지식 추가"가 계속 사용),
@@ -2491,6 +2536,10 @@
      이제 SHIN2_TASKS("처리할 업무")의 DOM을 patch하지 않고 완전히 독립된 #homeCallSlot에
      직접 그린다 — SHIN2_TASKS 코드/데이터는 이 작업에서 전혀 건드리지 않았다. */
   var homeCallSlotEl = document.getElementById('homeCallSlot');
+  // 홈 입력창의 분류 선택 상태(§2/§3) — 재분류/저장 후에는 다시 미선택으로 초기화한다.
+  // 버튼 클릭 시에는 renderHomeBlock() 전체를 다시 그리지 않고 DOM만 직접 갱신해서(아래
+  // wireHomeCallForm 내부) 입력 중이던 textarea 내용이 지워지지 않게 한다.
+  var homeSelectedType = null;
 
   function renderHomeRowHtml(rec){
     var badgeCls = callerBadgeClass(rec.callerType);
@@ -2527,27 +2576,62 @@
         '<button type="button" class="home-task-more" data-call-action="view-all">전체 보기 &gt;</button>' +
       '</div>' +
       '<div class="call-input-block">' +
+        '<div class="shin2-memo-title" style="margin-bottom:6px;">구분</div>' +
+        '<div class="call-type-btns" style="display:flex;gap:6px;margin-bottom:8px;">' +
+          CALL_TYPE_CHOICES.map(function(t){
+            return '<button type="button" class="co-filter-btn call-type-btn" data-call-type="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
+          }).join('') +
+        '</div>' +
         '<textarea id="callMemoInput" class="ai-textarea" placeholder="전화 온 내용을 편하게 적어주세요." style="min-height:110px;"></textarea>' +
-        '<div class="call-memo-actions"><button type="button" id="callMemoSaveBtn" class="ai-run-btn">저장</button></div>' +
+        '<div class="call-memo-actions">' +
+          '<span class="home-task-row-sub" id="callTypeHint" style="margin:0 8px 0 0;white-space:nowrap;">구분을 선택해주세요</span>' +
+          '<button type="button" id="callMemoSaveBtn" class="ai-run-btn" disabled>저장</button>' +
+        '</div>' +
       '</div>';
     if(items.length){
       html += '<div class="home-task-list">' + items.map(renderHomeRowHtml).join('') + '</div>';
     } else {
       html += '<div class="home-task-empty">아직 전화 온 내용이 없습니다.</div>';
     }
+    html += '<div class="home-task-row-sub" style="padding:6px 2px 0;">확인·처리완료된 기록은 삭제되지 않습니다 — "전체 보기"에서 언제든 다시 볼 수 있어요.</div>';
     html += '</div>';
     homeCallSlotEl.innerHTML = html;
 
     var ta = homeCallSlotEl.querySelector('#callMemoInput');
     var btn = homeCallSlotEl.querySelector('#callMemoSaveBtn');
+    var hintEl = homeCallSlotEl.querySelector('#callTypeHint');
+    var typeBtns = homeCallSlotEl.querySelectorAll('.call-type-btn');
+
+    // 선택 상태를 버튼 강조/저장버튼 활성화/안내문구에 반영한다(§2/§저장전 필수선택).
+    // 전체 재렌더 없이 DOM만 갱신하므로 textarea에 입력 중인 내용은 그대로 유지된다.
+    function syncTypeUi(){
+      typeBtns.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-call-type') === homeSelectedType); });
+      btn.disabled = !homeSelectedType;
+      hintEl.style.display = homeSelectedType ? 'none' : '';
+    }
+    typeBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        homeSelectedType = b.getAttribute('data-call-type');
+        syncTypeUi();
+      });
+    });
+    syncTypeUi();
+
     btn.addEventListener('click', function(){
+      // 구분 미선택이면 저장 자체가 불가능하다(버튼이 disabled라 여기 도달하지 않지만,
+      // 이중 방어로 한 번 더 확인한다). alert/confirm은 쓰지 않는다.
+      if(!homeSelectedType){ hintEl.style.display = ''; return; }
       var text = ta.value.trim();
       if(!text) return;
-      var rec = add(text); // 원문은 여기서 즉시 저장된다.
+      var rec = add(text, homeSelectedType); // 원문은 여기서 즉시 저장된다. callerType은 사용자 선택값 고정.
       // 로컬 규칙 기반 파서(§1~§15) — 네트워크 호출/외부 API 없이 동기적으로 즉시 구조화한다.
       var extracted = parseCallMemoLocally(text, getCompanies());
+      // 사용자의 명시적 분류 선택이 파서의 자동추측보다 항상 우선한다(§3) — 다른 추출 필드
+      // (전화번호/이름/직책/문의유형 등)는 그대로 파서 결과를 사용한다.
+      extracted.callerType = homeSelectedType;
       applyMatchAfterAi(rec.id, extracted);
       ta.value = '';
+      homeSelectedType = null;
       renderHomeBlock();
     });
     homeCallSlotEl.querySelectorAll('[data-call-action="open"]').forEach(function(el){
@@ -2565,7 +2649,7 @@
   var popupBackBtn = document.getElementById('callPopupBackBtn');
   var popupCloseBtn = document.getElementById('callPopupCloseBtn');
 
-  var pState = { mode:'browse', tab:'all', search:'', selectedId:null, selectedApartmentKey:null, detailBack:null };
+  var pState = { mode:'browse', tab:'all', statusTab:'all', search:'', selectedId:null, selectedApartmentKey:null, detailBack:null };
 
   function openPopup(mode, id){
     pState.mode = mode || 'browse';
@@ -2648,7 +2732,11 @@
     });
   }
 
-  // §9: 필터는 딱 3개(전체/시공사/아파트)만 둔다 — 과하게 복잡한 필터 금지.
+  // §9: 구분 필터는 전체/시공사/아파트 그대로 두고(과하게 복잡한 필터 금지), status 필터
+  // (전체/미확인/확인완료/처리완료, §12)를 별도 탭 줄로 추가한다 — 둘 다 status와 무관하게
+  // 전체 레코드를 대상으로 하며(§9/§10), status 필터는 순수 조회 레이어 필터일 뿐 어떤
+  // 레코드도 숨기거나 지우지 않는다(전체 탭을 고르면 항상 모든 기록이 다시 보인다).
+  var STATUS_TABS = [['all','전체'],['new','미확인'],['confirmed','확인완료'],['handled','처리완료']];
   function renderBrowse(){
     var tabs = [['all','전체'],['시공사','시공사'],['아파트','아파트']];
     var all = loadAll();
@@ -2656,8 +2744,12 @@
       if(pState.tab === 'all') return true;
       return r.callerType === pState.tab;
     });
+    var byStatus = byTab.filter(function(r){
+      if(pState.statusTab === 'all') return true;
+      return (r.status||'new') === pState.statusTab;
+    });
     var ql = (pState.search||'').trim().toLowerCase();
-    var items = byTab.filter(function(r){
+    var items = byStatus.filter(function(r){
       if(!ql) return true;
       var hay = [r.originalText, r.companyCandidateName, r.apartmentName, r.contactName, r.siteName, r.inquiryType, r.workType, r.requestText, r.followUp, r.phone].join(' ').toLowerCase();
       return hay.indexOf(ql) !== -1;
@@ -2665,6 +2757,9 @@
 
     var html = '<div class="task-tabs">' + tabs.map(function(t){
       return '<button type="button" class="task-tab' + (pState.tab===t[0]?' active':'') + '" data-tab="' + t[0] + '">' + t[1] + '</button>';
+    }).join('') + '</div>' +
+    '<div class="task-tabs" style="margin-top:-4px;">' + STATUS_TABS.map(function(t){
+      return '<button type="button" class="task-tab' + (pState.statusTab===t[0]?' active':'') + '" data-status-tab="' + t[0] + '">' + t[1] + '</button>';
     }).join('') + '</div>' +
     '<div class="search-box acct-search-box"><input type="text" id="callSearchInput" placeholder="업체명 / 아파트명 / 전화자 / 전화내용 검색" value="' + escapeAttr(pState.search) + '" /></div>';
     if(!items.length){
@@ -2679,14 +2774,18 @@
         var title = titleBits.length ? titleBits.join(' · ') : (r.originalText||'').slice(0, 30);
         return '<div class="task-pop-row" data-id="' + r.id + '">' +
           '<span class="task-badge ' + callerBadgeClass(r.callerType) + '">' + escapeHtml('[' + r.callerType + ']') + '</span>' +
+          '<span class="task-badge ' + statusBadgeClass(r.status||'new') + '" style="margin-left:4px;">' + escapeHtml(statusLabel(r.status||'new')) + '</span>' +
           '<span class="task-pop-row-title">' + escapeHtml(title) + '</span>' +
           '<span class="task-pop-row-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
         '</div>';
       }).join('');
     }
     popupBody.innerHTML = html;
-    popupBody.querySelectorAll('.task-tab').forEach(function(btn){
+    popupBody.querySelectorAll('[data-tab]').forEach(function(btn){
       btn.addEventListener('click', function(){ pState.tab = btn.dataset.tab; renderBrowse(); });
+    });
+    popupBody.querySelectorAll('[data-status-tab]').forEach(function(btn){
+      btn.addEventListener('click', function(){ pState.statusTab = btn.dataset.statusTab; renderBrowse(); });
     });
     var searchInput = document.getElementById('callSearchInput');
     searchInput.addEventListener('input', function(){ pState.search = searchInput.value; renderBrowse(); });
@@ -2704,6 +2803,7 @@
     var row = function(label, valueHtml){ return valueHtml ? '<div class="task-form-field"><label>' + label + '</label><div style="font-size:13.5px;color:var(--text);">' + valueHtml + '</div></div>' : ''; };
     var isApt = rec.callerType === '아파트';
     var isCo = rec.callerType === '시공사';
+    var statusVal = rec.status || 'new';
 
     var nameRowHtml = '';
     if(isApt){
@@ -2769,6 +2869,7 @@
     popupBody.innerHTML =
       '<div class="task-detail-title">' + escapeHtml('[' + rec.callerType + '] ') + escapeHtml(isApt ? (rec.apartmentName || '전화 온 내용') : (rec.siteName || rec.companyCandidateName || (company?company.name:'') || '전화 온 내용')) + '</div>' +
       row('구분', '<span class="task-badge ' + callerBadgeClass(rec.callerType) + '">' + escapeHtml(rec.callerType) + '</span>') +
+      row('상태', '<span class="task-badge ' + statusBadgeClass(statusVal) + '">' + escapeHtml(statusLabel(statusVal)) + '</span>') +
       nameRowHtml +
       row('전화자', rec.contactName ? escapeHtml(rec.contactName) + (rec.position ? ' ' + escapeHtml(rec.position) : '') : '') +
       phoneRowHtml +
@@ -2780,6 +2881,10 @@
       linkSectionHtml + suggestionsHtml +
       '<div class="task-detail-actions" id="callDetailActions">' +
         '<button type="button" class="acct-text-action" id="callEditBtn">수정</button>' +
+        // §6/§15 하드룰: 아래 두 버튼은 오직 status만 바꾼다 — remove()를 절대 호출하지
+        // 않으므로 클릭해도 레코드는 검색/전체보기/히스토리에 계속 남는다.
+        (statusVal === 'new' ? '<button type="button" class="acct-text-action" id="callConfirmBtn">확인</button>' : '') +
+        (statusVal !== 'handled' ? '<button type="button" class="acct-text-action" id="callHandledBtn">처리완료</button>' : '') +
         '<button type="button" class="acct-text-action danger" id="callDeleteBtn">삭제</button>' +
       '</div>' +
       '<div class="shin2-memo-block" style="border-top:none;padding-top:0;">' +
@@ -2803,6 +2908,21 @@
       });
     }
     document.getElementById('callEditBtn').addEventListener('click', function(){ pState.mode = 'edit'; renderPopup(); });
+
+    // §6/§15: 상태만 바꾼다 — 레코드를 지우거나 목록에서 완전히 숨기지 않는다(홈 "최근"
+    // 노출에만 영향). renderHomeBlock()도 함께 갱신해 홈 목록 반영을 즉시 확인할 수 있게 한다.
+    var confirmBtn = document.getElementById('callConfirmBtn');
+    if(confirmBtn) confirmBtn.addEventListener('click', function(){
+      setStatus(rec.id, 'confirmed');
+      renderHomeBlock();
+      renderDetail();
+    });
+    var handledBtn = document.getElementById('callHandledBtn');
+    if(handledBtn) handledBtn.addEventListener('click', function(){
+      setStatus(rec.id, 'handled');
+      renderHomeBlock();
+      renderDetail();
+    });
 
     // §20: 삭제 전 인라인 확인(alert/confirm 금지) — 기존 업무/업체 삭제와 동일한 패턴 재사용.
     document.getElementById('callDeleteBtn').addEventListener('click', function(){
@@ -3013,7 +3133,7 @@
     getApartmentGroups: getApartmentGroups, getApartmentGroupByKey: getApartmentGroupByKey,
     normalizeApartmentName: normalizeApartmentName,
     openPopup: openPopup, openApartmentPopupByKey: openApartmentPopupByKey, mountCompanySection: mountCompanySection,
-    updateFields: updateFields, setCallerType: setCallerType, remove: remove
+    updateFields: updateFields, setCallerType: setCallerType, setStatus: setStatus, remove: remove
   };
 
   renderHomeBlock();
