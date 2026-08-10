@@ -781,6 +781,21 @@
   }
   .site-lock-btn:hover{ background:#F0F1F4; color:var(--text); }
 
+  /* 클라우드 동기화/백업/복원 — 새 디자인 시스템을 만들지 않고 기존 site-lock-btn과
+     동일한 작은 텍스트형 버튼 스타일을 그대로 재사용한다(잠금 버튼 왼쪽에 나란히 배치). */
+  .shin2-sync-bar{
+    position:fixed; top:10px; right:70px; z-index:50;
+    display:flex; align-items:center; gap:6px;
+  }
+  .shin2-sync-btn{
+    height:22px; padding:0 8px; white-space:nowrap;
+    font-size:11px; font-family:inherit; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:5px; cursor:pointer;
+  }
+  .shin2-sync-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .shin2-sync-btn:disabled{ opacity:0.5; cursor:default; }
+  .shin2-sync-status{ font-size:11px; color:var(--text-muted); max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
   /* 공통 메모(SHIN2_MEMO) — 화면 어디에 붙어도 동일하게 보이는 작은 시간순 기록 목록 */
   .shin2-memo-block{ margin-top:22px; max-width:800px; padding-top:16px; border-top:1px solid var(--line); }
   .acct-field .shin2-memo-block{ max-width:none; }
@@ -1002,6 +1017,80 @@
      Firestore 보안 규칙이 담당) 이 파일이 없으면 자동으로 localStorage 전용 모드로 동작한다. -->
 <script src="../firebaseConfig.js" onerror="console.warn('firebaseConfig.js 없음 — localStorage 전용 모드로 동작합니다')"></script>
 
+<!-- ─────────────────────────────────────────────────────────────────────
+     동기화 대상 키 + "안전 병합" 헬퍼 (Firebase 유무와 무관하게 항상 존재해야 함).
+     [데이터 백업]/[백업 복원]은 Firebase 설정이 없어도(로컬 전용 모드) 동작해야 하므로,
+     아래 firebaseConfig 유무를 확인하는 module script보다 먼저, 그리고 그 분기 바깥에
+     정의한다. classic script는 파서가 만나는 즉시 동기적으로 실행되므로, 뒤에 나오는
+     module script(비동기 로딩되는 firebase 모듈들)보다 먼저 window에 값이 채워진다.
+
+     안전 규칙(감사 결과 반영, §2~4): 두 값(local/cloud 또는 백업파일/local)을 합칠 때
+     - 한쪽이 비어있고 한쪽에 데이터가 있으면 데이터 있는 쪽을 그대로 채택(빈 값이 있는
+       데이터를 절대 덮어쓰지 않음)
+     - 둘 다 데이터가 있으면 id 기준으로 합집합을 만들고, 같은 id가 양쪽에 있을 때만
+       updatedAt/createdAt이 더 최신인 쪽을 채택(그 항목 자체를 잃지는 않음).
+       id가 다르면(=별개 데이터로 판단) 무조건 둘 다 보존한다 — 삭제보다 중복 우선(§4). -->
+<script>
+  window.SHIN2_SYNC_KEYS = {
+    companies: 'shin2-companies-staging',
+    tasks: 'shin2-tasks-v1',
+    memos: 'shin2-memos-v1',
+    todos: 'shin2-todos',
+    knowledge: 'shin2-knowledge-v1',
+    favorites: 'shin2-quicklinks-v1',
+    calls: 'shin2-call-entries-v1'
+  };
+  window.SHIN2_SYNC_MERGE = (function(){
+    function tsOf(item){
+      var t = item && (item.updatedAt || item.createdAt);
+      if(!t) return 0;
+      var n = Date.parse(t);
+      return isNaN(n) ? 0 : n;
+    }
+    function mergeArrays(localArr, cloudArr){
+      localArr = Array.isArray(localArr) ? localArr : [];
+      cloudArr = Array.isArray(cloudArr) ? cloudArr : [];
+      var map = {}, order = [];
+      function addItem(item){
+        if(item == null) return;
+        if(item.id == null){
+          // id가 없는 항목도 절대 버리지 않는다 — 합성 키로 그대로 보존.
+          var syn = '__noid_' + order.length + '_' + Math.random().toString(36).slice(2,8);
+          map[syn] = item; order.push(syn);
+          return;
+        }
+        var key = String(item.id);
+        if(!(key in map)){ map[key] = item; order.push(key); }
+        else if(tsOf(item) > tsOf(map[key])){ map[key] = item; } // 같은 id면 최신 것만 채택(삭제 아님, 같은 항목의 더 새 버전)
+      }
+      localArr.forEach(addItem);
+      cloudArr.forEach(addItem);
+      return order.map(function(k){ return map[k]; });
+    }
+    function isEmptyVal(key, v){
+      if(key === 'knowledge'){
+        if(!v || typeof v !== 'object') return true;
+        var items = Array.isArray(v.items) ? v.items : [];
+        var contacts = Array.isArray(v.contacts) ? v.contacts : [];
+        return items.length === 0 && contacts.length === 0;
+      }
+      return !Array.isArray(v) || v.length === 0;
+    }
+    function mergeValues(key, localV, cloudV){
+      if(key === 'knowledge'){
+        var lo = (localV && typeof localV === 'object') ? localV : {};
+        var cl = (cloudV && typeof cloudV === 'object') ? cloudV : {};
+        return {
+          items: mergeArrays(lo.items, cl.items),
+          contacts: mergeArrays(lo.contacts, cl.contacts)
+        };
+      }
+      return mergeArrays(localV, cloudV);
+    }
+    return { isEmptyVal: isEmptyVal, mergeValues: mergeValues, mergeArrays: mergeArrays };
+  })();
+</script>
+
 <!-- 한솔2 Firebase 동기화 브릿지 (§14 작업분, 이후 재검토로 인증 방식 변경).
      ─────────────────────────────────────────────────────────────────────
      [재검토 이력] 처음에는 signInAnonymously를 썼는데, 익명 인증은 정의상 기기/브라우저마다
@@ -1026,17 +1115,9 @@
      비밀번호를 유도하는 현재 구조상, 그대로 동기화하면 다른 기기에서 복호화가 실패해
      계정함 자체를 열 수 없게 될 위험이 있어 안전을 위해 보류했다. -->
 <script type="module">
-  const SHIN2_SYNC_KEYS = {
-    companies: 'shin2-companies-staging',
-    tasks: 'shin2-tasks-v1',
-    memos: 'shin2-memos-v1',
-    todos: 'shin2-todos',
-    knowledge: 'shin2-knowledge-v1',
-    favorites: 'shin2-quicklinks-v1',
-    // 전화메모 접수함(§전화메모 스펙 §22) — 원본 레코드(callEntries)만 동기화한다.
-    // 업체 연결관계/후속메모/완료상태는 모두 이 레코드 안의 필드이므로 별도 키가 필요 없다.
-    calls: 'shin2-call-entries-v1'
-  };
+  // 위쪽 classic script에서 이미 정의한 것을 그대로 재사용한다(단일 소스 — 값이 두 곳에서
+  // 따로 정의되면 나중에 하나만 고쳐서 어긋날 위험이 있어 하나로 합쳤다).
+  const SHIN2_SYNC_KEYS = window.SHIN2_SYNC_KEYS;
   // 실제 사람 메일함이 아니어도 된다(Firebase Email/Password는 존재 확인을 안 함) — 이
   // 프로젝트·앱 전용으로 고정된 하나의 이메일을 "한 명이 쓰는 개인 사이트"의 계정 식별자로
   // 쓴다. 집/회사 모두 같은 사이트 잠금 비밀번호를 입력하면 같은 계정으로 로그인된다.
@@ -1081,54 +1162,141 @@
         const db = getFirestore(app);
         try{ await enableIndexedDbPersistence(db); }catch(e){ /* 여러 탭이면 실패할 수 있음 — 무시해도 안전 */ }
 
-        onAuthStateChanged(auth, (user) => {
-          if(!user) return;
-          const uid = user.uid;
+        // ─────────────────────────────────────────────────────────────────
+        // [감사 결과 반영 — 가장 중요한 변경] 이전 라운드 코드는 로그인(onAuthStateChanged)
+        // 이벤트가 오는 즉시 getDoc으로 클라우드를 확인하고 필요하면 setDoc(업로드)까지
+        // "자동으로" 실행했다. 이는 스펙 §12("페이지 로드/로그인 성공 시점에 자동으로
+        // migration/sync 실행 금지, 반드시 명시적 버튼 클릭")를 위반하는 경로였다 — 그래서
+        // 이번 라운드에서 최초 동기화(§2~3 CASE A/B/C 판단)는 아래 startInitialSync()
+        // 함수 하나로만 실행되도록 완전히 분리했고, 이 함수는 오직 사용자가 화면의
+        // [클라우드 동기화 시작] 버튼을 눌렀을 때(맨 아래 UI 배선 스크립트)만 호출된다.
+        // onAuthStateChanged는 이제 "로그인됐다"는 사실만 기록할 뿐, 그 자체로는 어떤
+        // Firestore 읽기/쓰기도 수행하지 않는다.
+        const { isEmptyVal, mergeValues } = window.SHIN2_SYNC_MERGE;
+        let liveSyncStarted = false;
+        let currentUid = null;
 
+        function noopPush(){ /* 아직 사용자가 동기화를 시작하지 않음 — 빈 값이든 아니든 아무것도 클라우드에 쓰지 않는다 */ }
+
+        // 최초 동기화가 끝난 뒤(=사용자가 버튼을 눌러 이미 CASE A/B/C 판단을 명시적으로
+        // 완료한 뒤)에만 호출되는, 평상시 실시간 동기화. 이 시점부터는 "이미 안전하게
+        // 병합된 상태"이므로 이후 추가/수정 내용을 실시간으로 주고받는 것은 migration이
+        // 아니라 정상적인 지속 동기화 동작이다(§16: 삭제 동기화만 새로 강화하지 않음).
+        function enableLiveSync(){
+          if(liveSyncStarted) return;
+          liveSyncStarted = true;
+          const uid = currentUid;
           const pushTimers = {};
           function pushToCloud(key, data){
             if(!SHIN2_SYNC_KEYS[key]) return;
+            // §15 가드: 빈 배열/빈 객체는 애초에 클라우드에 쓰지 않는다(집 PC의 빈 상태가
+            // 회사 데이터를 덮어쓰는 경쟁 상태 방지).
+            if(isEmptyVal(key, data)) return;
             clearTimeout(pushTimers[key]);
             pushTimers[key] = setTimeout(async () => {
               try{ await setDoc(doc(db, 'users', uid, 'shin2', key), { value: data, updatedAt: serverTimestamp() }); }
               catch(e){ console.error(`[한솔2/Firebase] ${key} 저장 실패`, e); }
             }, 500);
           }
-          window.__shin2CloudSync = { ready:true, push: pushToCloud };
+          window.__shin2CloudSync.push = pushToCloud;
+          window.__shin2CloudSync.ready = true;
 
           Object.keys(SHIN2_SYNC_KEYS).forEach((key) => {
             const storageKey = SHIN2_SYNC_KEYS[key];
             const ref = doc(db, 'users', uid, 'shin2', key);
-            // 최초 연결 시: 클라우드에 아직 데이터가 없으면 지금 가진 localStorage 값으로 시드한다
-            // (기존 데이터를 지우지 않기 위함 — §10/§15). 클라우드가 비어있다고 로컬을 지우는
-            // 방향으로는 절대 동작하지 않는다 — 항상 "로컬 → 클라우드"로만 시드한다.
-            getDoc(ref).then((snap) => {
-              if(!snap.exists()){
-                let local = null;
-                try{ const raw = localStorage.getItem(storageKey); local = raw ? JSON.parse(raw) : null; }catch(e){}
-                if(local != null){
-                  // 최초 업로드: 쓰기 후 다시 읽어서 실제로 반영됐는지 확인한다(§4 업로드 검증).
-                  setDoc(ref, { value: local, updatedAt: serverTimestamp() })
-                    .then(() => getDoc(ref))
-                    .then((verifySnap) => {
-                      if(!verifySnap.exists()) console.error(`[한솔2/Firebase] ${key} 최초 업로드 검증 실패 — 문서가 생성되지 않았습니다.`);
-                    })
-                    .catch((e) => console.error(`[한솔2/Firebase] ${key} 최초 업로드 실패`, e));
-                }
-              }
-            }).catch(()=>{});
-
             onSnapshot(ref, (snap) => {
-              if(!snap.exists()) return; // 문서가 없으면(아직 시드 전) 아무것도 하지 않는다 — 로컬 데이터 보존
+              if(!snap.exists()) return; // 문서가 없으면 아무것도 하지 않는다 — 로컬 데이터 보존
               const payload = snap.data();
               if(payload.value == null) return; // 값이 비어있는 스냅샷으로 로컬을 지우지 않는다
+              if(isEmptyVal(key, payload.value)) return; // 이중 가드: 빈 값 스냅샷은 절대 반영하지 않음
               try{ localStorage.setItem(storageKey, JSON.stringify(payload.value)); }catch(e){}
               window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail: { key, data: payload.value } }));
             }, (err) => console.error(`[한솔2/Firebase] ${key} 구독 실패`, err));
           });
 
-          window.dispatchEvent(new CustomEvent('shin2-cloud-ready'));
           console.info('[한솔2/Firebase] 실시간 동기화 연결됨 (uid: ' + uid.slice(0,6) + '…)');
+        }
+
+        // 최초 동기화 — [클라우드 동기화 시작] 버튼에서만 호출된다(자동 호출 없음).
+        // §2~4의 CASE A/B/C를 키별로 정확히 수행하고, 실행 직전에 스냅샷 백업을 남긴다(§10).
+        async function startInitialSync(onProgress){
+          if(!currentUid) throw new Error('not-authenticated');
+          const uid = currentUid;
+
+          // §10: 이 스냅샷 저장은 오직 이 버튼 클릭 경로 안에서만 실행된다(페이지 로드 시
+          // 자동 실행되지 않음 — 이 함수 자체가 명시적 버튼 클릭으로만 호출되기 때문).
+          const snapshot = {};
+          Object.keys(SHIN2_SYNC_KEYS).forEach((k) => {
+            const sk = SHIN2_SYNC_KEYS[k];
+            try{ const raw = localStorage.getItem(sk); snapshot[k] = raw ? JSON.parse(raw) : null; }catch(e){ snapshot[k] = null; }
+          });
+          const now = new Date();
+          const pad = (n) => String(n).padStart(2, '0');
+          const snapKey = `shin2-pre-firebase-backup-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+          try{ localStorage.setItem(snapKey, JSON.stringify({ takenAt: now.toISOString(), data: snapshot })); }catch(e){}
+
+          const results = [];
+          for(const key of Object.keys(SHIN2_SYNC_KEYS)){
+            const storageKey = SHIN2_SYNC_KEYS[key];
+            const ref = doc(db, 'users', uid, 'shin2', key);
+            let local = null;
+            try{ const raw = localStorage.getItem(storageKey); local = raw ? JSON.parse(raw) : null; }catch(e){}
+            const localEmpty = isEmptyVal(key, local);
+
+            const snap = await getDoc(ref);
+            let cloud = null;
+            if(snap.exists()){
+              const payload = snap.data();
+              cloud = (payload && payload.value != null) ? payload.value : null;
+            }
+            const cloudEmpty = isEmptyVal(key, cloud);
+
+            if(cloudEmpty && !localEmpty){
+              // CASE A: 클라우드 비어있음 + 로컬 있음 → 로컬을 그대로 두고 클라우드로 업로드만.
+              await setDoc(ref, { value: local, updatedAt: serverTimestamp() });
+              const verify = await getDoc(ref);
+              if(!verify.exists()) console.error(`[한솔2/Firebase] ${key} 최초 업로드 검증 실패`);
+              results.push({ key, case: 'A' });
+            } else if(!cloudEmpty && localEmpty){
+              // CASE B: 클라우드 있음 + 로컬 비어있음 → 클라우드 값을 로컬로 불러오기(로컬엔 지울 게 없음).
+              try{ localStorage.setItem(storageKey, JSON.stringify(cloud)); }catch(e){}
+              results.push({ key, case: 'B' });
+            } else if(!cloudEmpty && !localEmpty){
+              // CASE C: 둘 다 있음 → 즉시 덮어쓰기 금지, id/createdAt/updatedAt 비교해 안전 병합.
+              const merged = mergeValues(key, local, cloud);
+              if(!isEmptyVal(key, merged)){
+                try{ localStorage.setItem(storageKey, JSON.stringify(merged)); }catch(e){}
+                await setDoc(ref, { value: merged, updatedAt: serverTimestamp() });
+              }
+              results.push({ key, case: 'C' });
+            } else {
+              // 둘 다 비어있음 → 아무것도 하지 않는다(빈 값을 클라우드에 쓰지 않음 — §15).
+              results.push({ key, case: 'skip-empty' });
+            }
+            if(typeof onProgress === 'function') onProgress(results[results.length-1]);
+          }
+
+          localStorage.setItem('shin2-cloud-sync-enabled', '1');
+          enableLiveSync();
+          return results;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          if(!user) return;
+          currentUid = user.uid;
+          window.__shin2CloudSync = window.__shin2CloudSync || {};
+          window.__shin2CloudSync.push = noopPush; // 동기화 시작 전까지는 어떤 push도 클라우드에 쓰지 않는다
+          window.__shin2CloudSync.ready = false;
+          window.__shin2CloudSync.startInitialSync = startInitialSync;
+          window.dispatchEvent(new CustomEvent('shin2-firebase-ready'));
+          // 이 기기에서 예전에 이미 [클라우드 동기화 시작] 버튼을 눌러 최초 동기화를 마친 적이
+          // 있다면(=이 localStorage 플래그가 있다면) 재접속 시마다 다시 버튼을 누르지 않아도
+          // 되도록 실시간 동기화만 재개한다. 이 플래그는 오직 startInitialSync() 안에서만
+          // 설정되므로(§12), 이 분기 자체가 "버튼을 한 번도 누른 적 없는 기기"에서는 절대
+          // 실행되지 않는다 — 자동 최초 동기화가 아니다.
+          if(localStorage.getItem('shin2-cloud-sync-enabled') === '1'){
+            enableLiveSync();
+          }
         });
 
         // 사이트 잠금 해제 시점에 그 비밀번호로 Firebase 로그인을 시도한다(비밀번호는 여기서만
@@ -1181,6 +1349,17 @@
 
 <div class="app" id="appRoot" style="display:none;">
   <button type="button" id="siteLockBtn" class="site-lock-btn">잠금</button>
+
+  <!-- 데이터 백업/복원/클라우드 동기화 — §8~9/§12/§13 UI. 새 디자인 시스템 없이 잠금 버튼과
+       같은 작은 텍스트형 버튼만 추가한다. 클라우드 동기화 버튼은 오직 사용자가 직접 눌러야만
+       최초 동기화(CASE A/B/C)가 시작되며, 그 외 어떤 이벤트에도 연결되어 있지 않다(§12). -->
+  <div class="shin2-sync-bar" id="shin2SyncBar">
+    <button type="button" id="shin2BackupBtn" class="shin2-sync-btn" title="업체/지식/TODO/업무/전화기록/메모/즐겨찾기를 JSON 파일로 내보냅니다">데이터 백업</button>
+    <button type="button" id="shin2RestoreBtn" class="shin2-sync-btn" title="백업 JSON 파일을 불러와 기존 데이터에 추가/병합합니다(덮어쓰지 않음)">백업 복원</button>
+    <input type="file" id="shin2RestoreFile" accept="application/json,.json" style="display:none;" />
+    <button type="button" id="shin2CloudSyncBtn" class="shin2-sync-btn" style="display:none;" title="이 PC 데이터를 클라우드와 안전하게 합칩니다(버튼을 누르기 전까지는 아무 것도 하지 않습니다)">클라우드 동기화 시작</button>
+    <span class="shin2-sync-status" id="shin2SyncStatus"></span>
+  </div>
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-main">한솔</div>
@@ -4286,6 +4465,144 @@ ${text}
     }
   };
   window.dispatchEvent(new CustomEvent('shin2-accounts-api-ready'));
+})();
+</script>
+
+<!-- ─────────────────────────────────────────────────────────────────────
+     [데이터 백업]/[백업 복원]/[클라우드 동기화 시작] 버튼 배선.
+     - 백업/복원은 Firebase 설정 유무와 무관하게 항상 동작한다(순수 localStorage↔JSON 파일).
+     - 클라우드 동기화 버튼은 firebaseConfig.js가 있고 로그인이 성공한 뒤에만 나타나며,
+       클릭 이전에는 절대 아무 것도 하지 않는다(§12) — 'shin2-firebase-ready' 이벤트가 와야
+       버튼이 보이고, 클릭 시점에만 window.__shin2CloudSync.startInitialSync()를 호출한다. -->
+<script>
+(function(){
+  'use strict';
+  var ACCT_KEY = 'shin2-accounts-vault'; // 계정함 — 백업에는 이미 암호화된 그대로만 포함, 복원 대상에서는 항상 제외
+  var backupBtn = document.getElementById('shin2BackupBtn');
+  var restoreBtn = document.getElementById('shin2RestoreBtn');
+  var restoreFile = document.getElementById('shin2RestoreFile');
+  var cloudBtn = document.getElementById('shin2CloudSyncBtn');
+  var statusEl = document.getElementById('shin2SyncStatus');
+
+  function setStatus(msg){ if(statusEl) statusEl.textContent = msg || ''; }
+
+  function collectBackupData(){
+    var keys = window.SHIN2_SYNC_KEYS || {};
+    var data = {};
+    Object.keys(keys).forEach(function(k){
+      try{ var raw = localStorage.getItem(keys[k]); data[k] = raw ? JSON.parse(raw) : null; }catch(e){ data[k] = null; }
+    });
+    // 계정 비밀번호는 민감정보라 절대 복호화해서 넣지 않는다 — shin2-accounts-vault에 저장된
+    // 값은 이미 AES-GCM cipher/iv 형태(평문 아님)이므로, 그 원본 그대로만 포함한다.
+    var vaultRaw = null;
+    try{ vaultRaw = localStorage.getItem(ACCT_KEY); }catch(e){}
+    return {
+      app: 'hansol2',
+      exportedAt: new Date().toISOString(),
+      data: data,
+      accountsVaultEncrypted: vaultRaw ? JSON.parse(vaultRaw) : null // salt/check/{cipher,iv} — 암호문 그대로
+    };
+  }
+
+  backupBtn && backupBtn.addEventListener('click', function(){
+    try{
+      var payload = collectBackupData();
+      var json = JSON.stringify(payload, null, 2);
+      var blob = new Blob([json], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var now = new Date();
+      var pad = function(n){ return String(n).padStart(2,'0'); };
+      a.href = url;
+      a.download = 'hansol2-backup-' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '-' + pad(now.getHours()) + pad(now.getMinutes()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      setStatus('백업 파일을 저장했습니다.');
+    }catch(e){
+      console.error('[한솔2] 백업 실패', e);
+      setStatus('백업 중 오류가 발생했습니다.');
+    }
+  });
+
+  restoreBtn && restoreBtn.addEventListener('click', function(){
+    restoreFile.value = '';
+    restoreFile.click();
+  });
+
+  restoreFile && restoreFile.addEventListener('change', function(){
+    var file = restoreFile.files && restoreFile.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(String(reader.result));
+        if(!parsed || typeof parsed !== 'object' || !parsed.data){
+          setStatus('올바른 백업 파일이 아닙니다.');
+          return;
+        }
+        var merge = window.SHIN2_SYNC_MERGE;
+        var keys = window.SHIN2_SYNC_KEYS || {};
+        var touched = [];
+        Object.keys(keys).forEach(function(key){
+          if(!(key in parsed.data)) return; // 백업에 이 키가 아예 없으면 손대지 않는다
+          var incoming = parsed.data[key];
+          var storageKey = keys[key];
+          var current = null;
+          try{ var raw = localStorage.getItem(storageKey); current = raw ? JSON.parse(raw) : null; }catch(e){}
+          var merged;
+          if(merge.isEmptyVal(key, current)){
+            merged = incoming; // 로컬이 비어있으면 백업 내용을 그대로 채택(잃을 로컬 데이터가 없음)
+          } else if(merge.isEmptyVal(key, incoming)){
+            merged = current; // 백업 쪽이 비어있으면 로컬을 그대로 둔다(빈 값으로 덮어쓰지 않음)
+          } else {
+            merged = merge.mergeValues(key, current, incoming); // 둘 다 있으면 삭제 없이 병합
+          }
+          try{ localStorage.setItem(storageKey, JSON.stringify(merged)); }catch(e){}
+          if(window.__shin2CloudSync && typeof window.__shin2CloudSync.push === 'function'){
+            window.__shin2CloudSync.push(key, merged);
+          }
+          touched.push(key);
+        });
+        // 계정함(비밀번호)은 기기마다 다른 salt로 암호화되어 있어 자동 병합 시 복호화 실패
+        // 위험이 있으므로, 복원 대상에서 의도적으로 제외한다(§8 보고 대상 — 안전을 위한 결정).
+        setStatus('복원 완료(' + touched.length + '개 항목 병합, 계정함 제외) — 잠시 후 새로고침됩니다.');
+        setTimeout(function(){ location.reload(); }, 1200);
+      }catch(e){
+        console.error('[한솔2] 복원 실패', e);
+        setStatus('백업 파일을 읽는 중 오류가 발생했습니다. 로컬 데이터는 변경되지 않았습니다.');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // 클라우드 동기화 버튼 — firebaseConfig.js가 있고 로그인에 성공했을 때만 노출된다.
+  // 'shin2-firebase-ready' 이벤트는 로그인 성공 시 위 module script에서 디스패치하지만,
+  // 그 이벤트 리스너 자체는 아무 Firestore 읽기/쓰기도 하지 않는다 — 오직 버튼을 보여줄 뿐이다.
+  // 실제 CASE A/B/C 판단은 아래 click 리스너 안에서, 사용자가 버튼을 누른 그 순간에만 실행된다.
+  window.addEventListener('shin2-firebase-ready', function(){
+    if(cloudBtn) cloudBtn.style.display = '';
+  });
+
+  cloudBtn && cloudBtn.addEventListener('click', function(){
+    if(!window.__shin2CloudSync || typeof window.__shin2CloudSync.startInitialSync !== 'function'){
+      setStatus('Firebase 연결 준비 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    cloudBtn.disabled = true;
+    setStatus('동기화 중...');
+    window.__shin2CloudSync.startInitialSync(function(progress){
+      setStatus('동기화 중... (' + progress.key + ')');
+    }).then(function(results){
+      setStatus('동기화 완료 — 잠시 후 화면이 새로고침됩니다.');
+      setTimeout(function(){ location.reload(); }, 1200);
+    }).catch(function(err){
+      console.error('[한솔2/Firebase] 최초 동기화 실패', err);
+      setStatus('동기화 중 오류가 발생했습니다. 로컬 데이터는 변경되지 않았습니다.');
+      cloudBtn.disabled = false;
+    });
+  });
 })();
 </script>
 
