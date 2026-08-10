@@ -202,6 +202,17 @@
     font-size:12.5px;
     color:#B91C1C;
   }
+  .ai-error-row{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .ai-retry-btn{
+    height:24px;
+    padding:0 8px;
+    font-size:11.5px;
+  }
 
   .ai-result{
     margin-top:16px;
@@ -3838,10 +3849,23 @@ ${text}
     typesWrap.querySelectorAll('.ai-type-btn').forEach(b=>b.classList.toggle('active', b === btn));
   });
 
+  // 오류 메시지 + "[다시 시도]" 버튼을 함께 그린다. 재시도는 저장해둔 값이 아니라
+  // 클릭 시점의 textarea 실제 값을 다시 읽어 동일한 요청을 재실행한다(runAi() 재호출).
   function setError(msg){
     state.error = msg || '';
-    errorEl.style.display = state.error ? 'block' : 'none';
-    errorEl.textContent = state.error;
+    if(!state.error){
+      errorEl.style.display = 'none';
+      errorEl.innerHTML = '';
+      return;
+    }
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<div class="ai-error-row"><span class="ai-error-text"></span>' +
+      '<button type="button" class="ai-copy-btn ai-retry-btn" id="aiRetryBtn">[다시 시도]</button></div>';
+    errorEl.querySelector('.ai-error-text').textContent = state.error;
+    const retryBtn = errorEl.querySelector('#aiRetryBtn');
+    if(retryBtn){
+      retryBtn.addEventListener('click', ()=>{ runAi(); });
+    }
   }
 
   function setLoading(loading){
@@ -3917,6 +3941,8 @@ ${text}
     if(!text) return;
     const apiKey = getApiKey();
     if(!apiKey){
+      console.error('[SHIN2/AI] API key missing');
+      setError('OpenAI API 키가 등록되어 있지 않습니다. 키를 등록해주세요.');
       promptForApiKey((key)=> doRun(key, text));
       return;
     }
@@ -3930,7 +3956,7 @@ ${text}
     const prompt = buildPrompt(type, text);
     if(!apiKey){
       console.error('[SHIN2/AI] API key missing');
-      setError('API 키가 없습니다. 다시 시도하면 키 등록창이 뜹니다.');
+      setError('OpenAI API 키가 등록되어 있지 않습니다. 키를 등록해주세요.');
       setLoading(false);
       return;
     }
@@ -3951,7 +3977,7 @@ ${text}
         setError('API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해주세요.');
       } else if(err && err.kind === 'http' && err.status === 429 && (err.errCode === 'insufficient_quota' || err.errType === 'insufficient_quota')){
         console.error('[SHIN2/AI] 429 insufficient_quota — 결제/쿼터 소진', err.detail);
-        setError('AI 사용 한도가 소진되었습니다. API 설정을 확인해주세요.');
+        setError('AI 사용 한도가 소진되었습니다. API 사용량 또는 결제 상태를 확인해주세요.');
       } else if(err && err.kind === 'http' && err.status === 429){
         console.error('[SHIN2/AI] 429', err.errType || err.errCode || '(type 미상)', '— 일시적 요청 과다', err.detail);
         setError('AI 요청이 일시적으로 많습니다. 잠시 후 다시 시도해주세요.');
