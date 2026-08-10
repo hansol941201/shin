@@ -124,11 +124,12 @@
     font-weight:700;
     color:var(--text);
   }
-  .ai-subtitle{
-    font-size:12px;
-    color:var(--text-muted);
-    margin-top:3px;
-    margin-bottom:12px;
+  .ai-head-row{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-bottom:10px;
   }
   .ai-textarea{
     width:100%;
@@ -150,7 +151,7 @@
   .ai-toolbar{
     display:flex;
     align-items:center;
-    justify-content:space-between;
+    justify-content:flex-end;
     gap:10px;
     margin-top:10px;
   }
@@ -825,7 +826,8 @@
 
   /* 홈 "오늘 확인할 업무" 요약 — 컴팩트한 행 목록, 상태는 작은 텍스트 배지로만 구분 */
   .home-task-block{ margin-top:22px; max-width:800px; }
-  .home-task-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .home-task-head{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+  .home-task-head-left{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; }
   .home-task-title{ font-size:14px; font-weight:700; color:var(--text); }
   .home-task-more{ font-size:12px; color:var(--text-muted); text-decoration:none; background:none; border:none; cursor:pointer; font-family:inherit; }
   .home-task-more:hover{ color:var(--navy); }
@@ -1306,15 +1308,16 @@
         <div class="kb-search-results" id="mainSearchResults"></div>
 
         <div class="ai-section">
-          <div class="ai-title">AI 문구정리</div>
-          <div class="ai-subtitle">업무 중 메모한 내용을 그대로 입력하세요.</div>
-          <textarea id="aiInput" class="ai-textarea" placeholder="전화내용, 메모, 단어를 편하게 입력하세요.&#10;예) 신광건설 / 질문서 회신 / 1차미팅 빨리 원함"></textarea>
-          <div class="ai-toolbar">
+          <div class="ai-head-row">
+            <div class="ai-title">AI 문구정리</div>
             <div class="ai-types" id="aiTypes">
               <button type="button" class="ai-type-btn active" data-type="report">보고용</button>
               <button type="button" class="ai-type-btn" data-type="kakao">카톡용</button>
               <button type="button" class="ai-type-btn" data-type="mail">메일용</button>
             </div>
+          </div>
+          <textarea id="aiInput" class="ai-textarea" placeholder="전화내용, 메모, 단어를 편하게 입력하세요.&#10;예) 신광건설 / 질문서 회신 / 1차미팅 빨리 원함"></textarea>
+          <div class="ai-toolbar">
             <button type="button" id="aiRunBtn" class="ai-run-btn">AI로 정리</button>
           </div>
           <div id="aiError" class="ai-error" style="display:none;"></div>
@@ -2650,16 +2653,17 @@
     var items = getRecentForHome();
     var html = '<div class="home-task-block">' +
       '<div class="home-task-head">' +
-        '<div class="home-task-title">전화 온 내용</div>' +
+        '<div class="home-task-head-left">' +
+          '<div class="home-task-title">전화 온 내용</div>' +
+          '<div class="call-type-btns" style="display:flex;gap:6px;">' +
+            CALL_TYPE_CHOICES.map(function(t){
+              return '<button type="button" class="co-filter-btn call-type-btn" data-call-type="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
         '<button type="button" class="home-task-more" data-call-action="view-all">전체 보기 &gt;</button>' +
       '</div>' +
       '<div class="call-input-block">' +
-        '<div class="shin2-memo-title" style="margin-bottom:6px;">구분</div>' +
-        '<div class="call-type-btns" style="display:flex;gap:6px;margin-bottom:8px;">' +
-          CALL_TYPE_CHOICES.map(function(t){
-            return '<button type="button" class="co-filter-btn call-type-btn" data-call-type="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
-          }).join('') +
-        '</div>' +
         '<textarea id="callMemoInput" class="ai-textarea" placeholder="전화 온 내용을 편하게 적어주세요." style="min-height:78px;"></textarea>' +
         '<div class="call-memo-actions">' +
           '<span class="home-task-row-sub" id="callTypeHint" style="margin:0 8px 0 0;white-space:nowrap;">구분을 선택해주세요</span>' +
