@@ -861,12 +861,25 @@
   .shin2-memo-cancel-btn:hover{ background:#F0F1F4; }
   .shin2-memo-save-btn{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
 
-  /* 빠른 고객기록(§5~10) — 업체명을 포함해 한 줄로 적고 Enter만 누르면 기록되는 작은 입력창 */
+  /* 홈 전화기록 2열 레이아웃 — "시공사 전화기록"(좌)과 "아파트 문의·전화기록"(우)을
+     데스크톱에서는 나란히 50:50, 좁은 화면에서는 위아래로 쌓는다. 카드 테두리/그림자 없이
+     기존 얇은 선/여백 톤을 그대로 쓰고, 가로 스크롤이 생기지 않게 한다. */
+  .home-call-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:0 28px; align-items:start;
+    margin-top:22px; max-width:800px;
+  }
+  .home-call-grid .qr-block, .home-call-grid .home-task-block{ margin-top:0; max-width:none; }
+  @media (max-width: 720px){
+    .home-call-grid{ grid-template-columns:1fr; gap:22px 0; }
+  }
+
+  /* 빠른 고객기록(표시명: "시공사 전화기록", §5~10) — 업체명을 포함해 한 줄로 적고 Enter만
+     누르면 기록되는 작은 입력창 */
   .qr-block{ margin-top:22px; max-width:800px; }
   .qr-head{ margin-bottom:8px; }
   .qr-title{ font-size:14px; font-weight:700; color:var(--text); }
   .qr-input{
-    width:100%; height:38px; padding:0 12px; font-size:13px; font-family:inherit; color:var(--text);
+    width:100%; height:56px; padding:0 12px; font-size:13px; font-family:inherit; color:var(--text);
     background:var(--surface); border:1px solid var(--line); border-radius:8px; outline:none; box-sizing:border-box;
   }
   .qr-input:focus{ border-color:#C7CEDB; }
@@ -937,6 +950,8 @@
   .task-pop-row.done .task-pop-row-title{ color:var(--text-muted); text-decoration:line-through; }
   .task-pop-row-title{ flex:1 1 auto; min-width:0; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .task-pop-row-meta{ flex:none; font-size:11.5px; color:var(--text-muted); }
+  .task-pop-date-head{ font-size:11.5px; font-weight:700; color:var(--text-muted); padding:10px 6px 4px; }
+  .task-pop-date-head:first-child{ padding-top:2px; }
   .task-form-field{ margin-bottom:14px; }
   .task-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
   .task-form-field input, .task-form-field select, .task-form-field textarea{
@@ -1673,15 +1688,22 @@
         <div class="hint" id="mainSearchHint">한솔 — 필요한 내용을 검색해서 시작하세요.</div>
         <div class="kb-search-results" id="mainSearchResults"></div>
 
-        <!-- §5~10: 빠른 고객기록 — 업체를 먼저 선택하지 않고 한 줄 입력→Enter만으로 기록완료.
-             자동으로 업체를 찾지 못하면 절대 새 업체를 만들지 않는다(§ "자동 생성 금지"). -->
-        <div class="qr-block" id="qrBlock">
-          <div class="qr-head"><div class="qr-title">빠른 고객기록</div></div>
-          <input type="text" id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (입력 후 Enter)" autocomplete="off" />
-          <div id="qrResult"></div>
-        </div>
+        <!-- 홈 전화기록 2열: 왼쪽(시공사 전화기록=구 빠른 고객기록, CRM 활동으로 저장)과
+             오른쪽(아파트 문의·전화기록=구 전화 온 내용, shin2-call-entries-v1로 저장)을
+             나란히 둔다. 두 입력 경로는 서로 절대 섞이지 않는다 — 왼쪽은 customerActivities만,
+             오른쪽은 shin2-call-entries-v1만 쓴다(§7). -->
+        <div class="home-call-grid" id="homeCallGrid">
+          <!-- §5~10: 빠른 고객기록(표시명만 "시공사 전화기록") — 업체를 먼저 선택하지 않고
+               한 줄 입력→Enter만으로 기록완료. 자동으로 업체를 찾지 못하면 절대 새 업체를
+               만들지 않는다(§ "자동 생성 금지"). 로직/데이터는 그대로, 라벨만 바꿨다. -->
+          <div class="qr-block" id="qrBlock">
+            <div class="qr-head"><div class="qr-title">시공사 전화기록</div></div>
+            <input type="text" id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (입력 후 Enter)" autocomplete="off" />
+            <div id="qrResult"></div>
+          </div>
 
-        <div id="homeCallSlot"></div>
+          <div id="homeCallSlot"></div>
+        </div>
 
         <div class="ai-section">
           <div class="ai-head-row">
@@ -3024,11 +3046,13 @@
 
   function renderHomeBlock(){
     if(!homeCallSlotEl) return;
-    var items = getRecentForHome();
+    // §5(신규): 홈 화면은 입력 중심으로 두고, 계속 길어지는 과거 기록 목록은 더 이상 입력창
+    // 바로 아래에 렌더링하지 않는다. 데이터(shin2-call-entries-v1)는 전혀 지우지 않으며,
+    // 과거 기록은 "전체 보기"(renderBrowse, 아래 카테고리함)에서 그대로 다시 볼 수 있다.
     var html = '<div class="home-task-block">' +
       '<div class="home-task-head">' +
         '<div class="home-task-head-left">' +
-          '<div class="home-task-title">전화 온 내용</div>' +
+          '<div class="home-task-title">아파트 문의·전화기록</div>' +
           '<div class="call-type-btns" style="display:flex;gap:6px;">' +
             CALL_TYPE_CHOICES.map(function(t){
               return '<button type="button" class="co-filter-btn call-type-btn" data-call-type="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
@@ -3038,20 +3062,13 @@
         '<button type="button" class="home-task-more" data-call-action="view-all">전체 보기 &gt;</button>' +
       '</div>' +
       '<div class="call-input-block">' +
-        '<textarea id="callMemoInput" class="ai-textarea" placeholder="전화 온 내용을 편하게 적어주세요." style="min-height:78px;"></textarea>' +
+        '<textarea id="callMemoInput" class="ai-textarea" placeholder="아파트 문의·전화 내용을 편하게 적어주세요." style="min-height:64px;"></textarea>' +
         '<div class="call-memo-actions">' +
           '<span class="home-task-row-sub" id="callTypeHint" style="margin:0 8px 0 0;white-space:nowrap;">구분을 선택해주세요</span>' +
           '<button type="button" id="callMemoSaveBtn" class="ai-run-btn" disabled>저장</button>' +
         '</div>' +
-      '</div>';
-    if(items.length){
-      html += '<div class="home-task-list">' + items.map(renderHomeRowHtml).join('') + '</div>';
-    } else {
-      html += '<div class="home-task-empty">아직 전화 온 내용이 없습니다.</div>';
-    }
-    // §4: "확인·처리완료된 기록은 삭제되지 않습니다" 같은 설명문은 홈에서 제거 —
-    // 필요한 사람은 "전체 보기"(renderBrowse) 상단에서 작게 다시 볼 수 있다.
-    html += '</div>';
+      '</div>' +
+    '</div>';
     homeCallSlotEl.innerHTML = html;
 
     var ta = homeCallSlotEl.querySelector('#callMemoInput');
@@ -3195,7 +3212,9 @@
   // 레코드도 숨기거나 지우지 않는다(전체 탭을 고르면 항상 모든 기록이 다시 보인다).
   var STATUS_TABS = [['all','전체'],['new','미확인'],['confirmed','확인완료'],['handled','처리완료']];
   function renderBrowse(){
-    var tabs = [['all','전체'],['시공사','시공사'],['아파트','아파트']];
+    // §6(신규): 카테고리함 필터 탭은 홈 입력창의 분류 버튼(CALL_TYPE_CHOICES: 아파트/시공사/기타)과
+    // 동일한 3종을 그대로 노출한다 — 기존에는 "기타"가 빠져 있었다.
+    var tabs = [['all','전체']].concat(CALL_TYPE_CHOICES.map(function(t){ return [t, t]; }));
     var all = loadAll();
     var byTab = all.filter(function(r){
       if(pState.tab === 'all') return true;
@@ -3208,7 +3227,11 @@
     var ql = (pState.search||'').trim().toLowerCase();
     var items = byStatus.filter(function(r){
       if(!ql) return true;
-      var hay = [r.originalText, r.companyCandidateName, r.apartmentName, r.contactName, r.siteName, r.inquiryType, r.workType, r.requestText, r.followUp, r.phone].join(' ').toLowerCase();
+      // §6(신규): originalText는 검색을 위해서도 절대 가공/정제하지 않고 그대로 매칭에만
+      // 사용한다(표시용 값도 동일 — 원문 불변). callerType(카테고리)과 연결된 업체명(있으면)도
+      // 검색 대상에 포함한다.
+      var linkedCompany = findCompanyById(r.companyId);
+      var hay = [r.originalText, r.callerType, r.companyCandidateName, (linkedCompany?linkedCompany.name:''), r.apartmentName, r.contactName, r.siteName, r.inquiryType, r.workType, r.requestText, r.followUp, r.phone].join(' ').toLowerCase();
       return hay.indexOf(ql) !== -1;
     }).sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
 
@@ -3223,6 +3246,8 @@
     if(!items.length){
       html += '<div class="acct-empty">해당하는 전화 기록이 없습니다.</div>';
     } else {
+      // §6(신규): 날짜별로 묶어서 보여준다(그룹 내부는 그대로 최신순).
+      var lastDateKey = null;
       html += items.map(function(r){
         var company = findCompanyById(r.companyId);
         var titleBits = [];
@@ -3230,7 +3255,13 @@
         if(nameLabel) titleBits.push(nameLabel);
         if(r.siteName) titleBits.push(r.siteName);
         var title = titleBits.length ? titleBits.join(' · ') : (r.originalText||'').slice(0, 30);
-        return '<div class="task-pop-row" data-id="' + r.id + '">' +
+        var dateKey = localDateStr(r.createdAt);
+        var groupHeaderHtml = '';
+        if(dateKey !== lastDateKey){
+          lastDateKey = dateKey;
+          groupHeaderHtml = '<div class="task-pop-date-head">' + escapeHtml(dateKey === todayStr() ? '오늘' : dateKey) + '</div>';
+        }
+        return groupHeaderHtml + '<div class="task-pop-row" data-id="' + r.id + '">' +
           '<span class="task-badge ' + callerBadgeClass(r.callerType) + '">' + escapeHtml('[' + r.callerType + ']') + '</span>' +
           '<span class="task-badge ' + statusBadgeClass(r.status||'new') + '" style="margin-left:4px;">' + escapeHtml(statusLabel(r.status||'new')) + '</span>' +
           '<span class="task-pop-row-title">' + escapeHtml(title) + '</span>' +
