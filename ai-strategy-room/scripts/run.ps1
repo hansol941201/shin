@@ -8,13 +8,17 @@
 #   3) 문제가 없으면 127.0.0.1:8787 에 로컬 HTTP 서버를 띄움
 #        - 정적 파일(index.html/css/js)을 그대로 서빙
 #        - POST /api/complete  → 이 PC의 "claude -p" 를 실행해서 응답을 반환
-#        - GET  /api/health    → 브라우저(app.js)가 로컬 연결 여부를 확인할 때 사용
+#        - GET  /api/health    → 브라우저(app.js)가 서버 연결 자체를 빠르게 확인할 때 사용
+#        - GET  /api/status    → claude 설치/로그인 상태를 실시간으로 재확인해 반환
 #   4) 기본 브라우저로 http://127.0.0.1:8787/index.html 자동 오픈
 #
 # 브라우저 자바스크립트는 이 PC의 어떤 프로그램도 직접 실행할 수 없다는
 # 제약을 그대로 지킨다 — 이 서버가 "브라우저 ↔ claude CLI" 사이의 유일한
-# 다리이며, 실행 중인 동안에만 실제 AI 회의가 가능하다(이 창을 닫으면 다시
-# 데모 모드로 자동 전환된다).
+# 다리이며, 실행 중인 동안에만 실제 AI 회의가 가능하다(이 창을 닫으면
+# 브라우저 화면은 "Claude 연결 안 됨"으로 바뀐다 — 데모로 몰래 전환되지 않는다).
+#
+# 문제가 재발할 경우를 대비해 이 폴더 안 logs\run.log 에 모든 점검 단계와
+# 요청 로그를 남긴다 — 사용자는 PowerShell 없이 그냥 메모장으로 열어보면 된다.
 #
 # Python, Node.js 설치가 필요 없다 — Windows에 기본 내장된 PowerShell과
 # .NET(System.Net.HttpListener)만 사용한다.
@@ -30,10 +34,26 @@ $RootDir   = Split-Path -Parent $ScriptDir   # ai-strategy-room 폴더
 $Port      = 8787
 $BaseUrl   = "http://127.0.0.1:$Port"
 
-function Write-Info($msg)  { Write-Host $msg -ForegroundColor Cyan }
-function Write-Ok($msg)    { Write-Host $msg -ForegroundColor Green }
-function Write-Warn2($msg) { Write-Host $msg -ForegroundColor Yellow }
-function Write-Err2($msg)  { Write-Host $msg -ForegroundColor Red }
+# 진단용 로그 파일 — 문제가 재발했을 때 사용자가 PowerShell 없이도
+# 그냥 메모장으로 열어서 내용을 확인/공유할 수 있도록 프로그램 폴더 안에 둔다.
+$LogDir  = Join-Path $RootDir 'logs'
+$LogFile = Join-Path $LogDir 'run.log'
+try {
+    if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
+} catch { }
+
+function Write-Log($line) {
+    try {
+        $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        Add-Content -Path $LogFile -Value "[$stamp] $line" -Encoding UTF8
+    } catch { }
+}
+Write-Log '===== run.ps1 시작 ====='
+
+function Write-Info($msg)  { Write-Host $msg -ForegroundColor Cyan;   Write-Log $msg }
+function Write-Ok($msg)    { Write-Host $msg -ForegroundColor Green;  Write-Log $msg }
+function Write-Warn2($msg) { Write-Host $msg -ForegroundColor Yellow; Write-Log $msg }
+function Write-Err2($msg)  { Write-Host $msg -ForegroundColor Red;    Write-Log $msg }
 
 function Show-FatalAndExit($lines) {
     Write-Host ""
@@ -42,6 +62,8 @@ function Show-FatalAndExit($lines) {
     Write-Err2 "======================================================"
     Write-Host ""
     Write-Host "이 창은 닫아도 되지만, 문제를 해결한 뒤 AI전략회의실.bat 을 다시 실행해주세요."
+    Write-Host "(같은 폴더의 logs\run.log 파일에 자세한 기록이 남습니다 — 문의 시 함께 보내주시면 원인 파악에 도움이 됩니다.)"
+    Write-Log '===== 종료 (오류) ====='
     exit 1
 }
 
@@ -61,6 +83,7 @@ foreach ($f in $requiredFiles) {
     if (-not (Test-Path $p)) { $missing += $f }
 }
 if ($missing.Count -gt 0) {
+    Write-Log "누락된 파일: $($missing -join ', ')"
     Show-FatalAndExit @(
         "[오류] 필요한 프로그램 파일이 없습니다.",
         "누락된 파일: $($missing -join ', ')",
@@ -76,6 +99,25 @@ Write-Ok "      OK"
 Write-Info "[2/4] Claude Code 설치 확인 중..."
 $claudeCmd = Get-Command claude -ErrorAction SilentlyContinue
 if (-not $claudeCmd) {
+    # PATH가 방금 설치 직후라 아직 갱신되지 않았을 수 있으므로 흔히 설치되는
+    # 위치도 한 번 더 직접 찾아본다 (탐색기에서 방금 켠 창은 PATH가 최신이
+    # 아닐 수 있다 — 재부팅/재로그인 전에도 동작하도록 하기 위함).
+    Write-Log "Get-Command claude 실패. PATH: $env:PATH"
+    $fallbackPaths = @(
+        (Join-Path $env:LOCALAPPDATA 'Programs\claude\claude.exe'),
+        (Join-Path $env:USERPROFILE '.local\bin\claude.exe'),
+        (Join-Path $env:USERPROFILE '.claude\local\claude.exe')
+    )
+    foreach ($fp in $fallbackPaths) {
+        if (Test-Path $fp) {
+            Write-Log "대체 경로에서 claude 발견: $fp"
+            $claudeCmd = Get-Item $fp | Select-Object -Property @{n='Source';e={$_.FullName}}
+            break
+        }
+    }
+}
+if (-not $claudeCmd) {
+    Write-Log "claude 명령을 찾지 못함 (설치 안 됨으로 판단)"
     Show-FatalAndExit @(
         "[안내] Claude Code가 설치되어 있지 않습니다.",
         "최초 1회 설치가 필요합니다.",
@@ -84,16 +126,19 @@ if (-not $claudeCmd) {
         "설치 후에는 새 터미널(또는 재부팅)에서 다시 이 프로그램을 실행해주세요."
     )
 }
-Write-Ok "      OK ($($claudeCmd.Source))"
+$ClaudePath = $claudeCmd.Source
+Write-Ok "      OK ($ClaudePath)"
 
 # ---------------------------------------------------------------------
 # 2) claude 정상 실행 가능한지 확인
 # ---------------------------------------------------------------------
 Write-Info "[3/4] Claude Code 상태 확인 중..."
 try {
-    $verOutput = & claude --version 2>&1
+    $verOutput = & claude --version 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
+    Write-Log "claude --version 결과: $($verOutput.Trim())"
 } catch {
+    Write-Log "claude --version 실행 실패: $_"
     Show-FatalAndExit @(
         "[오류] Claude Code 실행 중 문제가 발생했습니다.",
         "$_",
@@ -104,10 +149,14 @@ try {
 # 로그인 여부 확인 (claude auth status → JSON)
 function Test-ClaudeLoggedIn {
     $raw = & claude auth status 2>&1 | Out-String
+    Write-Log "claude auth status 원본 응답: $($raw.Trim())"
     try {
         $obj = $raw | ConvertFrom-Json
         return [bool]($obj -and $obj.loggedIn)
-    } catch { return $false }
+    } catch {
+        Write-Log "claude auth status 응답을 JSON으로 해석하지 못함: $_"
+        return $false
+    }
 }
 
 if (-not (Test-ClaudeLoggedIn)) {
@@ -301,6 +350,7 @@ $listener.Prefixes.Add("$BaseUrl/")
 try {
     $listener.Start()
 } catch {
+    Write-Log "리스너 시작 실패: $_"
     Show-FatalAndExit @(
         "[오류] 로컬 서버($BaseUrl)를 시작하지 못했습니다.",
         "$_",
@@ -310,26 +360,31 @@ try {
     )
 }
 
-Write-Ok "      OK — 서버가 시작되었습니다."
+Write-Ok "      OK — 서버가 시작되었습니다. (포트 $Port)"
 Write-Host ""
 Write-Ok "브라우저에서 AI 전략회의실을 엽니다..."
+Write-Log "브라우저 오픈 시도: $BaseUrl"
 Start-Process $BaseUrl
 
 Write-Host ""
 Write-Host "----------------------------------------------------------"
 Write-Host " AI 전략회의실이 실행 중입니다."
-Write-Host " 이 창을 닫으면 프로그램이 종료됩니다 (브라우저는 데모 모드로 전환됩니다)."
+Write-Host " 이 창을 닫으면 프로그램이 종료되고, 브라우저 화면은"
+Write-Host " '● Claude 연결 안 됨' 으로 바뀝니다."
 Write-Host "----------------------------------------------------------"
 Write-Host ""
 
+Write-Log '서버 요청 대기 시작'
 while ($listener.IsListening) {
     try {
         $context = $listener.GetContext()
     } catch {
+        Write-Log "GetContext 오류로 요청 대기 루프 종료: $_"
         break
     }
     $request = $context.Request
     $response = $context.Response
+    Write-Log "요청 수신: $($request.HttpMethod) $($request.Url.AbsolutePath)"
 
     try {
         if ($request.HttpMethod -eq 'OPTIONS') {
@@ -343,6 +398,20 @@ while ($listener.IsListening) {
 
         if ($request.HttpMethod -eq 'GET' -and $request.Url.AbsolutePath -eq '/api/health') {
             Send-Json $response 200 @{ ok = $true }
+            continue
+        }
+
+        if ($request.HttpMethod -eq 'GET' -and $request.Url.AbsolutePath -eq '/api/status') {
+            # 매 요청마다 실시간으로 재확인한다 — 서버 시작 이후 로그인 세션이
+            # 만료되는 등 상태가 바뀌었을 수도 있는 경우까지 정확히 반영하기 위함.
+            $liveLoggedIn = Test-ClaudeLoggedIn
+            Send-Json $response 200 @{
+                ok              = $true
+                claudeInstalled = $true
+                claudePath      = $ClaudePath
+                loggedIn        = $liveLoggedIn
+                port            = $Port
+            }
             continue
         }
 
@@ -379,10 +448,12 @@ while ($listener.IsListening) {
         $response.StatusCode = 404
         $response.OutputStream.Close()
     } catch {
+        Write-Log "요청 처리 중 오류: $_"
         try {
             Send-Json $response 500 @{ ok = $false; message = "서버 내부 오류: $_" }
         } catch {}
     }
 }
 
+Write-Log '===== 서버 종료 ====='
 $listener.Stop()

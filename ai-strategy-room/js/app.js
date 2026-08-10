@@ -68,12 +68,31 @@ function restoreFromStorage() {
   }
 }
 
-/* ---------- 상단 연결 상태 표시 (● Claude 연결됨 / ● Claude 연결 안 됨) ---------- */
+/* ---------- 상단 연결 상태 표시 ---------- */
+// 연결 안 됨의 원인을 최대한 구체적으로 구분해서 보여준다:
+// 미설치 / 로그인 필요 / 로컬 서버(포트)에 아예 연결 안 됨.
+const CONN_STATUS_TEXT = {
+  connected: 'Claude 연결됨',
+  'not-installed': 'Claude Code 설치 필요',
+  'login-required': 'Claude 로그인 필요',
+  'server-unreachable': 'Claude 연결 안 됨'
+};
+const CONN_STATUS_HINT = {
+  'not-installed':
+    '이 PC에 Claude Code가 설치되어 있지 않습니다. 같은 폴더의 "설치안내.txt"를 참고해 설치한 뒤 AI전략회의실.bat을 다시 실행해주세요.',
+  'login-required':
+    'Claude 로그인이 아직 완료되지 않았습니다. AI전략회의실.bat 창을 확인해주세요 — 곧 브라우저 로그인 창이 자동으로 뜨거나 이미 떠 있을 수 있습니다.',
+  'server-unreachable':
+    '로컬 서버(127.0.0.1:8787)에 연결하지 못했습니다. "AI전략회의실.bat"을 더블클릭해서 실행했는지, 그 창이 아직 열려있는지 확인해주세요. 계속 안 되면 같은 폴더의 logs\\run.log 파일을 열어 내용을 확인해주세요.'
+};
+
 async function refreshConnStatus() {
   const ok = await AiProvider.detectLocalServer();
+  const status = AiProvider.getConnStatus();
+
   els.connStatus.classList.toggle('connected', ok);
   els.connStatus.classList.toggle('disconnected', !ok);
-  els.connText.textContent = ok ? 'Claude 연결됨' : 'Claude 연결 안 됨';
+  els.connText.textContent = CONN_STATUS_TEXT[status] || 'Claude 연결 안 됨';
 
   if (els.connHint) {
     if (ok) {
@@ -81,11 +100,24 @@ async function refreshConnStatus() {
       els.connHint.textContent = '';
     } else {
       els.connHint.hidden = false;
-      els.connHint.textContent =
-        'Claude Code에 연결되어 있지 않습니다. "AI전략회의실.bat"을 더블클릭해서 실행했는지 확인해주세요. (설치가 안 되어 있거나 로그인이 필요한 경우, 실행 창이 자동으로 안내합니다)';
+      els.connHint.textContent = CONN_STATUS_HINT[status] || CONN_STATUS_HINT['server-unreachable'];
     }
   }
   return ok;
+}
+
+/**
+ * 페이지가 막 열린 직후에는 로컬 서버가 아주 살짝 늦게 뜰 수 있어(느린 PC,
+ * 브라우저 콜드 스타트 등) 한 번의 확인만으로 "연결 안 됨"이라고 단정하지
+ * 않는다 — 최대 10회, 1초 간격으로 재확인해 순간적인 지연을 오탐하지 않는다.
+ */
+async function warmupConnStatus() {
+  for (let i = 0; i < 10; i++) {
+    const ok = await refreshConnStatus();
+    if (ok) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
 }
 function safeParseJson(str) {
   try { return JSON.parse(str); } catch (e) { return null; }
@@ -326,8 +358,8 @@ els.logModalOverlay.addEventListener('click', (e) => { if (e.target === els.logM
 
 /* ---------- 초기화 ---------- */
 (async function initApp() {
-  await refreshConnStatus(); // 연결 상태 표시를 먼저 끝내야 배지가 정확하게 표시된다
-  restoreFromStorage();
+  restoreFromStorage();       // 화면부터 먼저 그려서 사용자가 기다리지 않게 한다
+  await warmupConnStatus();   // 콜드 스타트 지연을 감안해 초반에는 여러 번 재확인
   // .bat으로 실행한 경우에도 창을 오래 켜두면 연결 상태가 바뀔 수 있으니 주기적으로 재확인한다.
   setInterval(refreshConnStatus, 15000);
 })();
