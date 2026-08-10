@@ -153,6 +153,16 @@ body{
 .report-card h3:first-child{margin-top:0;}
 .report-card p{font-size:14px;line-height:1.85;color:var(--text-dark);margin:0 0 14px;}
 
+/* ---------- 보고서 보완 요청 ---------- */
+.refine-box{
+  margin-top:18px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
+  padding:18px 20px;
+}
+.refine-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-top:8px;}
+.refine-row .text-input{flex:1 1 320px;resize:vertical;}
+.refine-row .btn-primary{flex:0 0 auto;align-self:flex-start;}
+.refine-hint{margin:10px 0 0;font-size:11.5px;color:var(--text-faint);line-height:1.6;}
+
 /* ---------- Modal ---------- */
 .modal-overlay{
   display:none;position:fixed;inset:0;background:rgba(15,20,30,.45);
@@ -174,6 +184,19 @@ body{
 .log-entry{border-left:2px solid var(--card-border);padding-left:12px;margin-bottom:8px;}
 .log-entry-expert{font-size:12.5px;font-weight:700;color:var(--text-dark);margin-bottom:3px;}
 .log-entry-text{font-size:12.5px;color:var(--text-gray);line-height:1.6;white-space:pre-wrap;}
+
+.log-retry-section{margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--card-border);}
+.retry-entry{border-left-color:#fdba74;}
+.retry-tag{
+  display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;border-radius:4px;
+  padding:1px 6px;margin-right:6px;color:#fff;
+}
+.retry-tag-network{background:var(--text-faint);}
+.retry-tag-quality{background:#e08e2a;}
+
+.version-entry{border-left-color:var(--navy);}
+.version-preview{font-style:italic;}
+.version-entry .btn-ghost{margin-top:8px;}
 
 .select-input, .text-input{
   width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);

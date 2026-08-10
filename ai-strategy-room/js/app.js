@@ -30,6 +30,13 @@ const els = {
   logModalOverlay: document.getElementById('logModalOverlay'),
   logModalClose: document.getElementById('logModalClose'),
   logBody: document.getElementById('logBody'),
+  logRetrySection: document.getElementById('logRetrySection'),
+  refineCommentInput: document.getElementById('refineCommentInput'),
+  refineBtn: document.getElementById('refineBtn'),
+  versionsBtn: document.getElementById('versionsBtn'),
+  versionsModalOverlay: document.getElementById('versionsModalOverlay'),
+  versionsModalClose: document.getElementById('versionsModalClose'),
+  versionsBody: document.getElementById('versionsBody'),
   demoBadge: document.getElementById('demoBadge'),
   connStatus: document.getElementById('connStatus'),
   connDot: document.getElementById('connDot'),
@@ -42,6 +49,7 @@ let lastRunWasExample = false; // 마지막으로 화면에 보여준 결과가 
 let currentReportText = '';
 let currentLog = [];
 let isMeetingRunning = false; // 버튼 연타·중복 호출 방지 (요구사항 10)
+let isRefining = false; // 보고서 보완 버튼 연타 방지
 
 /** 라운드 id를 "N단계" 표시용 숫자로 바꾼다 (예: 'redesign' → 3) */
 function roundStepNumber(roundId) {
@@ -91,8 +99,11 @@ function renderPausedBanner() {
   }
   const doneCount = Object.keys(p.roundTexts || {}).length;
   if (p.status === 'paused' && p.pausedAtRound) {
+    const prefix = p.pausedReason === 'quality'
+      ? `${roundStepNumber(p.pausedAtRound)}단계 품질검증 실패로 일시 중단되었습니다`
+      : `${roundStepNumber(p.pausedAtRound)}단계에서 일시 중단됨`;
     els.pausedBannerText.textContent =
-      `${roundStepNumber(p.pausedAtRound)}단계에서 일시 중단됨 — ${p.pausedMessage || 'Claude 호출에 실패했습니다.'} ` +
+      `${prefix} — ${p.pausedMessage || 'Claude 호출에 실패했습니다.'} ` +
       `(${doneCount}개 단계는 이미 완료되어 다시 호출하지 않습니다)`;
   } else {
     els.pausedBannerText.textContent =
@@ -237,6 +248,7 @@ function renderReport(reportText, log, warning, mode, transport) {
   }
 
   els.demoBadge.hidden = mode !== 'demo';
+  refreshVersionsButton();
 }
 
 function renderLog(log) {
@@ -261,6 +273,83 @@ function renderLog(log) {
       </div>`
     )
     .join('');
+}
+
+/* ---------- 재시도 기록 (네트워크 재시도 / 품질 재시도 구분 표시) ---------- */
+function renderRetryLog() {
+  if (!els.logRetrySection) return;
+  const log = MeetingProgress.loadRetryLog();
+  if (!log.length) {
+    els.logRetrySection.innerHTML = '';
+    els.logRetrySection.hidden = true;
+    return;
+  }
+  els.logRetrySection.hidden = false;
+  els.logRetrySection.innerHTML =
+    '<div class="log-round-title">재시도 기록</div>' +
+    log
+      .slice()
+      .reverse()
+      .map((entry) => {
+        const tag = entry.type === 'network' ? '네트워크 재시도' : '품질 재시도';
+        const cls = entry.type === 'network' ? 'retry-tag-network' : 'retry-tag-quality';
+        return `
+        <div class="log-entry retry-entry">
+          <div class="log-entry-expert"><span class="retry-tag ${cls}">${tag}</span> ${escapeHtml(entry.roundId)} · 시도 #${entry.attempt}</div>
+          <div class="log-entry-text">${escapeHtml(entry.detail)}</div>
+        </div>`;
+      })
+      .join('');
+}
+
+/* ---------- 보고서 버전 기록 (보완 요청으로 바뀔 때마다 이전 버전 보존) ---------- */
+function refreshVersionsButton() {
+  if (!els.versionsBtn) return;
+  const topic = els.topicInput.value.trim();
+  const history = MeetingProgress.getReportHistory(topic);
+  els.versionsBtn.hidden = history.length === 0;
+}
+
+function renderVersionsModal() {
+  const topic = els.topicInput.value.trim();
+  const history = MeetingProgress.getReportHistory(topic);
+  if (!history.length) {
+    els.versionsBody.innerHTML = '<p class="modal-desc">이전 버전이 없습니다.</p>';
+    return;
+  }
+  els.versionsBody.innerHTML = history
+    .slice()
+    .reverse()
+    .map((v, i) => {
+      const idx = history.length - 1 - i; // 원래 인덱스(복원 시 사용)
+      const when = new Date(v.at).toLocaleString('ko-KR');
+      const originLabel = idx === 0 ? '(원본 보고서)' : `(${idx}번째 보완 이전 버전)`;
+      const changeLabel = v.comment ? `"${escapeHtml(v.comment)}" 요청으로 다음 버전으로 교체됨` : '이후 다른 버전으로 교체됨';
+      return `
+      <div class="log-entry version-entry">
+        <div class="log-entry-expert">${originLabel} · ${when}</div>
+        <div class="log-entry-text version-preview">${escapeHtml((v.report || '').slice(0, 200))}${(v.report || '').length > 200 ? '…' : ''}</div>
+        <div class="log-entry-text">${changeLabel}</div>
+        <button class="btn-ghost btn-sm" data-restore-index="${idx}">이 버전으로 복원</button>
+      </div>`;
+    })
+    .join('');
+}
+
+function restoreReportVersion(index) {
+  const topic = els.topicInput.value.trim();
+  const history = MeetingProgress.getReportHistory(topic);
+  const entry = history[index];
+  if (!entry) return;
+
+  // replaceReportWithHistory가 "지금까지 보던 최신본"을 먼저 이력에 남긴 뒤 교체하므로
+  // 나중에 다시 최신본으로 돌아오고 싶으면 버전 기록에서 그것도 선택할 수 있다.
+  MeetingProgress.replaceReportWithHistory(topic, entry.report, '[복원] 이전 버전으로 되돌림');
+  currentReportText = entry.report;
+  Storage.saveReport(entry.report);
+  renderReport(entry.report, currentLog, null, 'live', AiProvider.getActiveTransport());
+  els.versionsModalOverlay.classList.remove('open');
+  showToast('이전 버전으로 복원했습니다.');
 }
 
 /* ---------- 전략회의 시작 / 이어서 진행 (공용 로직) ---------- */
@@ -341,8 +430,9 @@ async function startMeeting({ resumeState } = {}) {
     els.startBtn.disabled = false;
     els.resumeBtn.disabled = false;
     if (err && err.isPaused) {
-      // 재시도까지 모두 실패 — 처음부터 다시 하지 않고, 어디서 멈췄는지 정확히 안내한다.
-      showToast(`${roundStepNumber(err.pausedAtRound)}단계에서 일시 중단됨. 이어서 진행할 수 있습니다.`);
+      // 재시도까지 모두 실패 — 처음부터 다시 하지 않고, 어디서/왜 멈췄는지 정확히 안내한다.
+      const reasonLabel = err.pausedReason === 'quality' ? '품질검증 실패' : '오류';
+      showToast(`${roundStepNumber(err.pausedAtRound)}단계 ${reasonLabel}로 일시 중단됨. 이어서 진행할 수 있습니다.`);
     } else {
       // 실패를 예시 결과로 감추지 않고, 실패 사유를 그대로 보여준다.
       showToast((err && err.message) || '회의 진행 중 오류가 발생했습니다.');
@@ -436,6 +526,8 @@ els.newTopicBtn.addEventListener('click', () => {
   currentLog = [];
   lastRunWasExample = false;
   els.demoBadge.hidden = true;
+  els.refineCommentInput.value = '';
+  els.versionsBtn.hidden = true;
   Storage.clearAll();
   renderPausedBanner(); // 주제가 비었으니 배너도 함께 정리
   showView('input');
@@ -443,9 +535,66 @@ els.newTopicBtn.addEventListener('click', () => {
 });
 
 /* ---------- 내부 회의 로그 모달 ---------- */
-els.logToggleBtn.addEventListener('click', () => els.logModalOverlay.classList.add('open'));
+els.logToggleBtn.addEventListener('click', () => {
+  renderRetryLog();
+  els.logModalOverlay.classList.add('open');
+});
 els.logModalClose.addEventListener('click', () => els.logModalOverlay.classList.remove('open'));
 els.logModalOverlay.addEventListener('click', (e) => { if (e.target === els.logModalOverlay) els.logModalOverlay.classList.remove('open'); });
+
+/* ---------- 보고서 보완 요청 (요구사항 3) ---------- */
+els.refineBtn.addEventListener('click', async () => {
+  if (isRefining) return; // 버튼 연타·중복 호출 방지
+  const comment = els.refineCommentInput.value.trim();
+  if (!comment) {
+    showToast('보완 요청 내용을 입력해주세요.');
+    return; // 코멘트 없이 보완 버튼을 누르면 실행하지 않는다
+  }
+
+  const topic = els.topicInput.value.trim();
+  const previousReport = currentReportText;
+
+  isRefining = true;
+  els.refineBtn.disabled = true;
+  els.refineBtn.textContent = '보완 중...';
+
+  try {
+    const refined = await MeetingEngine.refineReport({
+      topic,
+      previousReport,
+      transcript: currentLog,
+      comment
+    });
+
+    // 기존 보고서를 덮어쓰기 전에 이전 버전을 먼저 보존한다.
+    MeetingProgress.replaceReportWithHistory(topic, refined, comment);
+    currentReportText = refined;
+    Storage.saveReport(refined);
+    renderReport(refined, currentLog, null, 'live', AiProvider.getActiveTransport());
+    els.refineCommentInput.value = '';
+    showToast('보고서를 보완했습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast((err && err.message) || '보고서 보완 중 오류가 발생했습니다.');
+  } finally {
+    isRefining = false;
+    els.refineBtn.disabled = false;
+    els.refineBtn.textContent = '보완하기';
+  }
+});
+
+/* ---------- 보고서 버전 기록 모달 ---------- */
+els.versionsBtn.addEventListener('click', () => {
+  renderVersionsModal();
+  els.versionsModalOverlay.classList.add('open');
+});
+els.versionsModalClose.addEventListener('click', () => els.versionsModalOverlay.classList.remove('open'));
+els.versionsModalOverlay.addEventListener('click', (e) => { if (e.target === els.versionsModalOverlay) els.versionsModalOverlay.classList.remove('open'); });
+els.versionsBody.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-restore-index]');
+  if (!btn) return;
+  restoreReportVersion(Number(btn.dataset.restoreIndex));
+});
 
 /* ---------- 초기화 ---------- */
 (async function initApp() {

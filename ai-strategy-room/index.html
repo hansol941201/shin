@@ -78,12 +78,22 @@
         <button class="btn-ghost btn-sm" id="retryBtn">다시 회의</button>
         <button class="btn-ghost btn-sm" id="newTopicBtn">새 주제</button>
       </div>
+      <button class="btn-ghost btn-sm" id="versionsBtn" hidden>버전 기록</button>
       <button class="btn-ghost btn-sm" id="logToggleBtn">내부 회의 보기</button>
     </div>
 
     <div class="warning-banner" id="warningBanner" hidden></div>
 
     <div class="report-card" id="reportCard"></div>
+
+    <div class="refine-box">
+      <label class="field-label" for="refineCommentInput">보고서 보완 요청</label>
+      <div class="refine-row">
+        <textarea id="refineCommentInput" class="text-input" rows="2" placeholder='예) "시공사 입장에서 더 현실적으로 다시 정리해줘", "비용 부분을 더 구체적으로", "팀장에게 보고할 수 있게 더 짧게"'></textarea>
+        <button class="btn-primary btn-sm" id="refineBtn" type="button">보완하기</button>
+      </div>
+      <p class="refine-hint">전체 회의를 다시 하지 않고, 기존 보고서를 코멘트에 맞춰 1회만 더 다듬습니다. 이전 보고서는 [버전 기록]에서 다시 볼 수 있습니다.</p>
+    </div>
   </section>
 
 </main>
@@ -96,7 +106,20 @@
       <button class="icon-btn" id="logModalClose">✕</button>
     </div>
     <p class="modal-desc">전문가들이 실제로 주고받은 반박·검증 과정입니다. 최종 보고서에는 이 중 살아남은 내용만 반영됩니다.</p>
+    <div class="log-retry-section" id="logRetrySection" hidden></div>
     <div class="log-body" id="logBody"></div>
+  </div>
+</div>
+
+<!-- 보고서 버전 기록 모달 (기본적으로 숨김) -->
+<div class="modal-overlay" id="versionsModalOverlay">
+  <div class="modal log-modal">
+    <div class="modal-head">
+      <h2>보고서 버전 기록</h2>
+      <button class="icon-btn" id="versionsModalClose">✕</button>
+    </div>
+    <p class="modal-desc">보완 요청으로 보고서가 바뀔 때마다 이전 버전이 여기 남습니다. 필요하면 예전 버전으로 되돌릴 수 있습니다.</p>
+    <div class="log-body" id="versionsBody"></div>
   </div>
 </div>
 
@@ -104,6 +127,7 @@
 
 <script src="js/storage.js"></script>
 <script src="js/meeting-progress.js"></script>
+<script src="js/quality-guardrails.js"></script>
 <script src="js/file-parser.js"></script>
 <script src="js/data-analyzer.js"></script>
 <script src="js/experts.js"></script>

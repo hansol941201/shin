@@ -8,9 +8,15 @@
  * 저장하지는 않는다 — 매번 파일 저장 대화상자가 뜨면 오히려 불편하다. 대신
  * localStorage에 라운드별 원문(roundTexts)을 그대로 저장해 같은 역할을 한다.
  * 이 파일이 그 저장/복원을 전담한다.)
+ *
+ * 추가로 이 파일은:
+ *   - 네트워크 재시도 / 품질 가드레일 재시도 기록(retryLog)을 별도 키에 남긴다.
+ *   - 사용자의 "보고서 보완 요청"으로 보고서가 바뀔 때마다 이전 버전을
+ *     reportHistory에 보존해서 나중에 되돌릴 수 있게 한다.
  */
 
 const MEETING_PROGRESS_KEY = 'strategy-room-meeting-progress';
+const MEETING_RETRY_LOG_KEY = 'strategy-room-meeting-retry-log';
 
 const MeetingProgress = {
   save(obj) {
@@ -36,7 +42,9 @@ const MeetingProgress = {
   },
 
   /** 라운드 하나가 성공(또는 실패로 일시중단)할 때마다 호출하는 체크포인트 저장 */
-  saveCheckpoint({ topic, attachedText, hasAttachment, context, transcript, roundTexts, status, pausedAtRound, pausedMessage }) {
+  saveCheckpoint({ topic, attachedText, hasAttachment, context, transcript, roundTexts, status, pausedAtRound, pausedReason, pausedMessage }) {
+    const existing = this.load();
+    const reportHistory = existing && existing.topic === topic && Array.isArray(existing.reportHistory) ? existing.reportHistory : [];
     this.save({
       topic,
       attachedText: attachedText || '',
@@ -44,22 +52,28 @@ const MeetingProgress = {
       context,
       transcript,
       roundTexts,
+      reportHistory,
       status, // 'in-progress' | 'paused'
       pausedAtRound: pausedAtRound || null,
+      pausedReason: pausedReason || null, // 'network' | 'quality'
       pausedMessage: pausedMessage || null
     });
   },
 
-  /** 최종 보고서까지 완성됐을 때만 완료 상태로 바꾼다 (요구사항 8) */
+  /** 최종 보고서까지 완성됐을 때만 완료 상태로 바꾼다 */
   markDone({ topic, attachedText, hasAttachment, report, transcript }) {
+    const existing = this.load();
+    const reportHistory = existing && existing.topic === topic && Array.isArray(existing.reportHistory) ? existing.reportHistory : [];
     this.save({
       topic,
       attachedText: attachedText || '',
       hasAttachment: !!hasAttachment,
       report,
       transcript,
+      reportHistory,
       status: 'done',
       pausedAtRound: null,
+      pausedReason: null,
       pausedMessage: null
     });
   },
@@ -71,5 +85,48 @@ const MeetingProgress = {
     if (p.topic !== topic) return null;
     if (p.status !== 'paused' && p.status !== 'in-progress') return null;
     return p;
+  },
+
+  /* ---------- 보고서 보완(코멘트) 버전 기록 ---------- */
+
+  /** 보완 전 보고서를 이력에 남기고, 새 보고서로 교체한다 */
+  replaceReportWithHistory(topic, newReport, comment) {
+    const p = this.load();
+    if (!p || p.topic !== topic) return;
+    const history = Array.isArray(p.reportHistory) ? p.reportHistory.slice() : [];
+    history.push({ report: p.report, comment: comment || '', at: Date.now() });
+    this.save({ ...p, report: newReport, reportHistory: history });
+  },
+
+  getReportHistory(topic) {
+    const p = this.load();
+    if (!p || p.topic !== topic) return [];
+    return Array.isArray(p.reportHistory) ? p.reportHistory : [];
+  },
+
+  /* ---------- 재시도 로그 (네트워크 / 품질 구분) ---------- */
+
+  pushRetryLog(entry) {
+    try {
+      const raw = localStorage.getItem(MEETING_RETRY_LOG_KEY);
+      const log = raw ? JSON.parse(raw) : [];
+      log.push({ ...entry, at: Date.now() });
+      localStorage.setItem(MEETING_RETRY_LOG_KEY, JSON.stringify(log.slice(-50)));
+    } catch (e) {
+      /* 무시 */
+    }
+  },
+
+  loadRetryLog() {
+    try {
+      const raw = localStorage.getItem(MEETING_RETRY_LOG_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  clearRetryLog() {
+    try { localStorage.removeItem(MEETING_RETRY_LOG_KEY); } catch (e) { /* 무시 */ }
   }
 };
