@@ -47,7 +47,7 @@ echo.
 echo [포트 확인] 사용 가능한 포트를 찾는 중...
 
 set "APP_PORT="
-for %%P in (5173 5174 5175 5176 5177 5178 5179 5180 5181 5182) do (
+for %%P in (5173 5174 5175 5176 5177 5178 5179 5180 5181 5182 5183 5184) do (
     if not defined APP_PORT (
         netstat -ano | findstr /r /c:":%%P .*LISTENING" >nul 2>nul
         if errorlevel 1 (
@@ -57,7 +57,7 @@ for %%P in (5173 5174 5175 5176 5177 5178 5179 5180 5181 5182) do (
 )
 
 if not defined APP_PORT (
-    echo [오류] 5173~5182 포트가 모두 사용 중입니다.
+    echo [오류] 5173~5184 포트가 모두 사용 중입니다.
     echo         다른 프로그램을 종료한 뒤 다시 시도해주세요.
     echo.
     pause

@@ -1,0 +1,4 @@
+# launch_silent.vbs는 한글 Windows에서도 MsgBox 문구가 깨지지 않도록
+# UTF-16(BOM) 인코딩으로 저장되어 있습니다. git이 줄바꿈/인코딩을
+# 건드리지 않도록 바이너리로 취급합니다.
+*.vbs -text
