@@ -73,7 +73,7 @@ function Show-FatalAndExit($lines) {
 Write-Info "[1/4] 프로그램 파일 확인 중..."
 $requiredFiles = @(
     'index.html', 'css\style.css',
-    'js\storage.js', 'js\file-parser.js', 'js\data-analyzer.js', 'js\experts.js',
+    'js\storage.js', 'js\meeting-progress.js', 'js\file-parser.js', 'js\data-analyzer.js', 'js\experts.js',
     'js\ai-provider.js', 'js\report-builder.js', 'js\demo-data.js',
     'js\meeting-engine.js', 'js\app.js'
 )
@@ -262,7 +262,9 @@ function Invoke-ClaudeComplete {
         $writer.Flush()
         $writer.Close()
 
-        $timeoutMs = if ($AllowWebSearch) { 240000 } else { 180000 }  # 웹검색 라운드는 더 오래 걸릴 수 있어 여유를 둠
+        # 최종 보고서처럼 긴 응답을 작성하는 라운드도 충분히 기다릴 수 있도록 넉넉하게 잡는다.
+        # (짧게 잡으면 실제로는 정상 진행 중인데 타임아웃으로 끊겨 "실패"로 잘못 처리될 수 있다)
+        $timeoutMs = if ($AllowWebSearch) { 360000 } else { 300000 }  # 웹검색 라운드는 검색 시간까지 더해 더 오래 걸릴 수 있어 여유를 둠
         $finished = $proc.WaitForExit($timeoutMs)
         Unregister-Event -SourceIdentifier $outSub.Name -ErrorAction SilentlyContinue
         Unregister-Event -SourceIdentifier $errSub.Name -ErrorAction SilentlyContinue

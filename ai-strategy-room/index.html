@@ -31,6 +31,14 @@
       <p>주제 하나를 입력하면 내부 전문가 회의 후 실행 가능한 보고서를 만듭니다.</p>
     </div>
 
+    <div class="paused-banner" id="pausedBanner" hidden>
+      <p class="paused-banner-text" id="pausedBannerText"></p>
+      <div class="paused-banner-actions">
+        <button class="btn-primary btn-sm" id="resumeBtn" type="button">이어서 진행</button>
+        <button class="btn-ghost btn-sm" id="discardProgressBtn" type="button">새로 시작</button>
+      </div>
+    </div>
+
     <div class="card">
       <label class="field-label" for="topicInput">주제</label>
       <textarea id="topicInput" class="topic-textarea" rows="6"
@@ -95,6 +103,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/storage.js"></script>
+<script src="js/meeting-progress.js"></script>
 <script src="js/file-parser.js"></script>
 <script src="js/data-analyzer.js"></script>
 <script src="js/experts.js"></script>

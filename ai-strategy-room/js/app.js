@@ -14,6 +14,10 @@ const els = {
   startBtn: document.getElementById('startBtn'),
   exampleBtn: document.getElementById('exampleBtn'),
   connHint: document.getElementById('connHint'),
+  pausedBanner: document.getElementById('pausedBanner'),
+  pausedBannerText: document.getElementById('pausedBannerText'),
+  resumeBtn: document.getElementById('resumeBtn'),
+  discardProgressBtn: document.getElementById('discardProgressBtn'),
   stepList: document.getElementById('stepList'),
   progressModeLabel: document.getElementById('progressModeLabel'),
   reportCard: document.getElementById('reportCard'),
@@ -37,6 +41,13 @@ let attachedFiles = []; // File 객체 목록
 let lastRunWasExample = false; // 마지막으로 화면에 보여준 결과가 [예시 보기]로 나온 것인지
 let currentReportText = '';
 let currentLog = [];
+let isMeetingRunning = false; // 버튼 연타·중복 호출 방지 (요구사항 10)
+
+/** 라운드 id를 "N단계" 표시용 숫자로 바꾼다 (예: 'redesign' → 3) */
+function roundStepNumber(roundId) {
+  const idx = MEETING_ROUNDS.findIndex((r) => r.id === roundId);
+  return idx >= 0 ? idx + 1 : '?';
+}
 
 /* ---------- 화면 전환 ---------- */
 function showView(name) {
@@ -67,6 +78,47 @@ function restoreFromStorage() {
     showView('result');
   }
 }
+
+/* ---------- 이어서 진행 배너 (요구사항 5, 7) ---------- */
+// 입력된 주제와 정확히 일치하는, 아직 안 끝난 회의가 저장돼 있으면 배너를 보여준다.
+// 프로그램/브라우저가 실수로 닫혔다가 다시 실행했을 때도 여기서 안내된다.
+function renderPausedBanner() {
+  const topic = els.topicInput.value.trim();
+  const p = MeetingProgress.findResumable(topic);
+  if (!p) {
+    els.pausedBanner.hidden = true;
+    return;
+  }
+  const doneCount = Object.keys(p.roundTexts || {}).length;
+  if (p.status === 'paused' && p.pausedAtRound) {
+    els.pausedBannerText.textContent =
+      `${roundStepNumber(p.pausedAtRound)}단계에서 일시 중단됨 — ${p.pausedMessage || 'Claude 호출에 실패했습니다.'} ` +
+      `(${doneCount}개 단계는 이미 완료되어 다시 호출하지 않습니다)`;
+  } else {
+    els.pausedBannerText.textContent =
+      `진행 중인 회의가 있습니다 (완료된 단계 ${doneCount}개). 프로그램이 중간에 닫혔을 수 있습니다 — 이어서 진행하시겠습니까?`;
+  }
+  els.pausedBanner.hidden = false;
+}
+
+els.topicInput.addEventListener('input', renderPausedBanner);
+
+els.discardProgressBtn.addEventListener('click', () => {
+  MeetingProgress.clear();
+  els.pausedBanner.hidden = true;
+  showToast('저장된 진행 상태를 지웠습니다. 새로 시작합니다.');
+});
+
+els.resumeBtn.addEventListener('click', () => {
+  const topic = els.topicInput.value.trim();
+  const p = MeetingProgress.findResumable(topic);
+  if (!p) {
+    showToast('이어서 진행할 회의를 찾지 못했습니다.');
+    renderPausedBanner();
+    return;
+  }
+  startMeeting({ resumeState: p });
+});
 
 /* ---------- 상단 연결 상태 표시 ---------- */
 // 연결 안 됨의 원인을 최대한 구체적으로 구분해서 보여준다:
@@ -211,8 +263,15 @@ function renderLog(log) {
     .join('');
 }
 
-/* ---------- 전략회의 시작 ---------- */
-els.startBtn.addEventListener('click', async () => {
+/* ---------- 전략회의 시작 / 이어서 진행 (공용 로직) ---------- */
+/**
+ * resumeState가 있으면 이미 성공한 단계는 다시 호출하지 않고 이어서 진행한다
+ * (요구사항 6). 시작 버튼과 "이어서 진행" 버튼이 이 함수 하나를 공유한다.
+ */
+async function startMeeting({ resumeState } = {}) {
+  // 버튼 연타·중복 실행 방지 (요구사항 10) — disabled 속성보다 먼저, 가장 앞에서 막는다.
+  if (isMeetingRunning) return;
+
   const topic = els.topicInput.value.trim();
   if (!topic) {
     showToast('주제를 입력해주세요');
@@ -228,13 +287,20 @@ els.startBtn.addEventListener('click', async () => {
     return;
   }
 
+  isMeetingRunning = true;
   els.startBtn.disabled = true;
+  els.resumeBtn.disabled = true;
+  els.pausedBanner.hidden = true;
   Storage.saveTopic(topic);
 
-  // 첨부자료 유무로 모드 자동 판단 (사용자가 직접 고르지 않음)
+  // 이어서 진행이면 저장된 첨부자료 텍스트를 그대로 재사용한다(파일을 다시 올릴 필요 없음).
+  // 새로 시작이면 지금 첨부된 파일을 파싱한다.
   let attachedText = '';
   let hasUsableAttachment = false;
-  if (attachedFiles.length) {
+  if (resumeState) {
+    attachedText = resumeState.attachedText || '';
+    hasUsableAttachment = !!resumeState.hasAttachment;
+  } else if (attachedFiles.length) {
     const results = await parseFiles(attachedFiles);
     const parts = [];
     results.forEach((r) => {
@@ -250,9 +316,15 @@ els.startBtn.addEventListener('click', async () => {
 
   showView('progress');
   renderSteps();
-  els.progressModeLabel.textContent = hasUsableAttachment
-    ? '첨부자료를 반영한 근거분석 모드로 진행합니다.'
-    : '전략회의 모드로 진행합니다.';
+  // 이어서 진행이면 이미 끝난 단계를 화면에도 곧바로 완료로 표시해준다.
+  if (resumeState && resumeState.roundTexts) {
+    Object.keys(resumeState.roundTexts).forEach((roundId) => updateStep(roundId, 'done'));
+  }
+  els.progressModeLabel.textContent = resumeState
+    ? '이어서 진행합니다 — 이미 완료된 단계는 다시 호출하지 않습니다.'
+    : hasUsableAttachment
+      ? '첨부자료를 반영한 근거분석 모드로 진행합니다.'
+      : '전략회의 모드로 진행합니다.';
 
   let result;
   try {
@@ -260,14 +332,23 @@ els.startBtn.addEventListener('click', async () => {
       topic,
       attachedText,
       hasAttachment: hasUsableAttachment,
-      onProgress: updateStep
+      onProgress: updateStep,
+      resumeState
     });
   } catch (err) {
     console.error(err);
-    // 실패를 예시 결과로 감추지 않고, 실패 사유를 그대로 보여준다.
-    showToast((err && err.message) || '회의 진행 중 오류가 발생했습니다.');
-    showView('input');
+    isMeetingRunning = false;
     els.startBtn.disabled = false;
+    els.resumeBtn.disabled = false;
+    if (err && err.isPaused) {
+      // 재시도까지 모두 실패 — 처음부터 다시 하지 않고, 어디서 멈췄는지 정확히 안내한다.
+      showToast(`${roundStepNumber(err.pausedAtRound)}단계에서 일시 중단됨. 이어서 진행할 수 있습니다.`);
+    } else {
+      // 실패를 예시 결과로 감추지 않고, 실패 사유를 그대로 보여준다.
+      showToast((err && err.message) || '회의 진행 중 오류가 발생했습니다.');
+    }
+    showView('input');
+    renderPausedBanner();
     return;
   }
 
@@ -280,14 +361,21 @@ els.startBtn.addEventListener('click', async () => {
 
   renderReport(result.report, result.log, result.warning, 'live', result.transport);
   showView('result');
+  isMeetingRunning = false;
   els.startBtn.disabled = false;
-});
+  els.resumeBtn.disabled = false;
+}
+
+els.startBtn.addEventListener('click', () => startMeeting());
 
 /* ---------- 예시 보기 (사용자가 직접 선택했을 때만 데모 표시) ---------- */
 els.exampleBtn.addEventListener('click', async () => {
+  if (isMeetingRunning) return; // 버튼 연타 방지
   const topic = els.topicInput.value.trim();
 
+  isMeetingRunning = true;
   els.exampleBtn.disabled = true;
+  els.startBtn.disabled = true;
   showView('progress');
   renderSteps();
   els.progressModeLabel.textContent = '예시 보기 — 실제 회의가 아닌 예시 결과를 보여줍니다.';
@@ -303,7 +391,9 @@ els.exampleBtn.addEventListener('click', async () => {
 
   renderReport(result.report, result.log, null, 'demo', 'none');
   showView('result');
+  isMeetingRunning = false;
   els.exampleBtn.disabled = false;
+  els.startBtn.disabled = false;
 });
 
 /* ---------- 결과 화면 버튼 ---------- */
@@ -347,6 +437,7 @@ els.newTopicBtn.addEventListener('click', () => {
   lastRunWasExample = false;
   els.demoBadge.hidden = true;
   Storage.clearAll();
+  renderPausedBanner(); // 주제가 비었으니 배너도 함께 정리
   showView('input');
   els.topicInput.focus();
 });
@@ -359,6 +450,7 @@ els.logModalOverlay.addEventListener('click', (e) => { if (e.target === els.logM
 /* ---------- 초기화 ---------- */
 (async function initApp() {
   restoreFromStorage();       // 화면부터 먼저 그려서 사용자가 기다리지 않게 한다
+  renderPausedBanner();       // 진행 중인/일시중단된 회의가 있으면 즉시 안내 (요구사항 7)
   await warmupConnStatus();   // 콜드 스타트 지연을 감안해 초반에는 여러 번 재확인
   // .bat으로 실행한 경우에도 창을 오래 켜두면 연결 상태가 바뀔 수 있으니 주기적으로 재확인한다.
   setInterval(refreshConnStatus, 15000);
