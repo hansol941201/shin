@@ -785,6 +785,10 @@
   .acct-field .shin2-memo-block{ max-width:none; }
   .shin2-memo-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .shin2-memo-title{ font-size:13px; font-weight:700; color:var(--text); }
+  /* 홈에서만 다른 섹션 제목(AI 문구정리/전화 온 내용, 14px/700)과 크기를 맞춘다(§9) —
+     shin2-memo-title은 업체/계정/업무 상세 등 다른 화면에서도 재사용되므로 기본값은
+     그대로 두고, 홈 메모 헤더에만 이 클래스를 덧붙인다. */
+  .shin2-memo-title-lg{ font-size:14px; }
   .shin2-memo-add-btn{
     height:26px; padding:0 10px; font-size:12px; font-weight:600; color:var(--text-muted);
     background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-family:inherit;
@@ -1252,6 +1256,16 @@
     </div>
   </div>
 
+  <div class="acct-popup-overlay" id="memoPopupOverlay">
+    <div class="acct-popup task-popup" id="memoPopup" role="dialog" aria-modal="true" aria-label="메모 전체 보기">
+      <div class="acct-popup-head">
+        <div class="acct-popup-title">메모 전체 보기</div>
+        <button type="button" class="acct-popup-close" id="memoPopupCloseBtn">&times;</button>
+      </div>
+      <div class="acct-popup-body" id="memoPopupBody"></div>
+    </div>
+  </div>
+
   <div class="qlink-modal-overlay" id="qlinkModalOverlay" style="display:none;">
     <div class="qlink-modal" id="qlinkModal">
       <div class="qlink-modal-title" id="qlinkModalTitle">바로가기 추가</div>
@@ -1418,6 +1432,10 @@
     var d = new Date(ts);
     return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
   }
+  function fmtCompact(ts){
+    var d = new Date(ts);
+    return pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
   function escapeHtml(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -1435,6 +1453,14 @@
    * container: 메모 섹션을 그려 넣을 빈 엘리먼트
    * targetType/targetId: 이 메모가 연결된 대상
    * opts.title: 섹션 제목 (기본 '메모 기록')
+   * opts.compactHome: 홈 요약 모드 — 최근 3개만 보여주고(§6), 각 행의 수정/삭제는
+   *   기본적으로 숨긴 뒤 그 행을 클릭했을 때만 노출한다(§7-b). 날짜도 "MM.DD HH:MM"
+   *   짧은 형식으로 표기한다. 다른 화면(업체/계정/업무 상세)의 기존 호출에는 opts를
+   *   전달하지 않으므로 이 옵션 추가는 그쪽 동작에 전혀 영향을 주지 않는다.
+   * opts.onViewAll: 지정하면 헤더에 "전체 보기 >" 버튼이 추가되고 클릭 시 호출된다
+   *   (홈에서는 전체 메모 팝업을 여는 데 사용, §6).
+   * opts.forceExpanded: true면 3개로 자르지 않고 처음부터 전체를 보여준다(전체 메모
+   *   팝업에서 사용).
    */
   function mount(container, targetType, targetId, opts){
     if(!container) return null;
@@ -1442,7 +1468,8 @@
     var title = opts.title || '메모 기록';
     var mode = 'list'; // 'list' | 'add' | 'edit'
     var editId = null;
-    var expanded = false;
+    var expanded = !!opts.forceExpanded;
+    var activeActionsId = null; // compactHome 전용: 지금 수정/삭제가 펼쳐진 행
 
     function formHtml(text, id){
       return '' +
@@ -1458,14 +1485,19 @@
     function itemHtml(m){
       if(mode === 'edit' && editId === m.id) return formHtml(m.text, m.id);
       var wasEdited = m.updatedAt && m.updatedAt !== m.createdAt;
+      // §7: compactHome에서는 지금 선택된(activeActionsId) 행에서만 수정/삭제를 보여준다 —
+      // 평상시엔 날짜+내용만 깔끔하게 보이고, 행을 클릭하면 그 행에 한해 펼쳐진다.
+      var showActions = !opts.compactHome || activeActionsId === m.id;
+      var metaText = opts.compactHome ? fmtCompact(m.createdAt) : fmtFull(m.createdAt);
       return '' +
-        '<div class="shin2-memo-item" data-id="' + m.id + '">' +
-          '<div class="shin2-memo-meta">' + fmtFull(m.createdAt) + (wasEdited ? ' · 수정됨 ' + fmtTime(m.updatedAt) : '') + '</div>' +
+        '<div class="shin2-memo-item" data-id="' + m.id + '"' + (opts.compactHome ? ' style="cursor:pointer;"' : '') + '>' +
+          '<div class="shin2-memo-meta">' + metaText + (wasEdited ? ' · 수정됨 ' + fmtTime(m.updatedAt) : '') + '</div>' +
           '<div class="shin2-memo-text">' + escapeHtml(m.text) + '</div>' +
-          '<div class="shin2-memo-item-actions">' +
-            '<button type="button" class="shin2-memo-mini-btn" data-m-action="edit" data-id="' + m.id + '">수정</button>' +
-            '<button type="button" class="shin2-memo-mini-btn danger" data-m-action="delete" data-id="' + m.id + '">삭제</button>' +
-          '</div>' +
+          (showActions ?
+            '<div class="shin2-memo-item-actions">' +
+              '<button type="button" class="shin2-memo-mini-btn" data-m-action="edit" data-id="' + m.id + '">수정</button>' +
+              '<button type="button" class="shin2-memo-mini-btn danger" data-m-action="delete" data-id="' + m.id + '">삭제</button>' +
+            '</div>' : '') +
         '</div>';
     }
 
@@ -1473,10 +1505,14 @@
       var items = getFor(targetType, targetId);
       var visible = expanded ? items : items.slice(0, 3);
       var countLabel = items.length ? (' ' + items.length) : '';
+      var titleCls = 'shin2-memo-title' + (opts.compactHome ? ' shin2-memo-title-lg' : '');
+      var headRight = '';
+      if(mode === 'list') headRight += '<button type="button" class="shin2-memo-add-btn" data-m-action="add">+ 추가</button>';
+      if(opts.onViewAll) headRight += '<button type="button" class="home-task-more" data-m-action="view-all" style="margin-left:8px;">전체 보기 &gt;</button>';
       var html = '<div class="shin2-memo-block">' +
         '<div class="shin2-memo-head">' +
-          '<div class="shin2-memo-title">' + escapeHtml(title) + countLabel + '</div>' +
-          (mode === 'list' ? '<button type="button" class="shin2-memo-add-btn" data-m-action="add">+ 추가</button>' : '') +
+          '<div class="' + titleCls + '">' + escapeHtml(title) + countLabel + '</div>' +
+          (headRight ? '<div style="display:flex;align-items:center;">' + headRight + '</div>' : '') +
         '</div>';
       if(mode === 'add') html += formHtml('');
       if(!items.length && mode !== 'add'){
@@ -1484,7 +1520,9 @@
       } else if(items.length){
         html += '<div class="shin2-memo-list">' + visible.map(itemHtml).join('') + '</div>';
       }
-      if(items.length > 3){
+      // compactHome은 헤더의 "전체 보기 >"가 이미 전체 목록으로 가는 길이므로, 목록 아래
+      // 별도의 "전체보기(N)/접기" 버튼은 만들지 않는다(중복 UI 방지).
+      if(!opts.compactHome && items.length > 3){
         html += '<button type="button" class="shin2-memo-more-btn" data-m-action="toggle-expand">' + (expanded ? '접기' : ('전체보기 (' + items.length + ')')) + '</button>';
       }
       html += '</div>';
@@ -1499,7 +1537,8 @@
 
     function wire(){
       Array.prototype.forEach.call(container.querySelectorAll('[data-m-action]'), function(el){
-        el.addEventListener('click', function(){
+        el.addEventListener('click', function(e){
+          e.stopPropagation();
           var action = el.dataset.mAction;
           if(action === 'add'){ mode = 'add'; editId = null; render(); focusInput(); }
           else if(action === 'cancel'){ mode = 'list'; editId = null; render(); }
@@ -1510,8 +1549,21 @@
               render();
             }
           } else if(action === 'toggle-expand'){ expanded = !expanded; render(); }
+          else if(action === 'view-all'){ if(opts.onViewAll) opts.onViewAll(); }
         });
       });
+      // §7-b: compactHome에서 행 자체(수정/삭제 버튼 제외)를 클릭하면 그 행에 한해
+      // 수정/삭제를 펼치거나 접는다. 다시 클릭하면 접힌다.
+      if(opts.compactHome){
+        Array.prototype.forEach.call(container.querySelectorAll('.shin2-memo-item'), function(el){
+          el.addEventListener('click', function(e){
+            if(e.target.closest('[data-m-action]')) return;
+            var id = el.getAttribute('data-id');
+            activeActionsId = (activeActionsId === id) ? null : id;
+            render();
+          });
+        });
+      }
       var form = container.querySelector('[data-m-form="save"]');
       if(form){
         form.addEventListener('submit', function(e){
@@ -1539,9 +1591,31 @@
 
   window.SHIN2_MEMO = { mount: mount, getFor: getFor, countFor: countFor, loadAll: loadAll };
 
+  // §6/§7: 홈 화면 메모(targetType 'home')는 최근 3개만 요약으로 보여주고(compactHome),
+  // 수정/삭제는 행을 클릭했을 때만 나타난다. "전체 보기"는 계정/업무 팝업과 같은
+  // acct-popup 톤을 재사용한 새 memoPopup을 열어 전체 메모를 forceExpanded로 보여준다
+  // — 기존에 전체 메모만 따로 보는 화면이 없었기 때문에 새로 추가했다.
+  var memoPopupOverlay = document.getElementById('memoPopupOverlay');
+  var memoPopupBody = document.getElementById('memoPopupBody');
+  var memoPopupCloseBtn = document.getElementById('memoPopupCloseBtn');
+  var homeMemoHandle = null;
+
+  function openMemoPopup(){
+    if(!memoPopupOverlay || !memoPopupBody) return;
+    memoPopupOverlay.classList.add('open');
+    mount(memoPopupBody, 'home', 'home', { title: '메모 전체', forceExpanded: true });
+  }
+  function closeMemoPopup(){
+    if(!memoPopupOverlay) return;
+    memoPopupOverlay.classList.remove('open');
+    if(homeMemoHandle) homeMemoHandle.refresh();
+  }
+  if(memoPopupCloseBtn) memoPopupCloseBtn.addEventListener('click', closeMemoPopup);
+  if(memoPopupOverlay) memoPopupOverlay.addEventListener('click', function(e){ if(e.target === memoPopupOverlay) closeMemoPopup(); });
+
   // 홈 화면 메모(targetType 'home')는 화면이 하나뿐이라 정적 컨테이너에 바로 마운트한다.
   var homeSlot = document.getElementById('homeMemoSlot');
-  if(homeSlot) mount(homeSlot, 'home', 'home');
+  if(homeSlot) homeMemoHandle = mount(homeSlot, 'home', 'home', { title: '메모', compactHome: true, onViewAll: openMemoPopup });
 })();
 </script>
 
@@ -1661,17 +1735,20 @@
 
   /* ---------- 홈 요약 (최대 5건, 상세관리 버튼 없음) ---------- */
   var homeSlotEl = null;
+  // §5: 홈에는 "처리할 업무"가 있을 때만 섹션 자체를 그린다 — 0건이면 빈 상태 안내문도
+  // 없이 섹션을 통째로 렌더링하지 않는다(기능/데이터는 그대로, 홈 노출만 조건부).
+  // 있을 때는 최대 2~3건만 보여주고 헤더에 "처리할 업무 N건"으로 총 건수를 알려준다.
   function renderHomeSummary(){
     if(!homeSlotEl) return;
-    var items = sortForHome(loadAll().filter(function(t){ return !t.done; })).slice(0, 5);
+    var all = sortForHome(loadAll().filter(function(t){ return !t.done; }));
+    if(!all.length){ homeSlotEl.innerHTML = ''; return; }
+    var items = all.slice(0, 3);
     var html = '<div class="home-task-block">' +
       '<div class="home-task-head">' +
-        '<div class="home-task-title">오늘 확인할 업무</div>' +
+        '<div class="home-task-title">처리할 업무 ' + all.length + '건</div>' +
         '<button type="button" class="home-task-more" data-t-action="view-all">전체 보기 &gt;</button>' +
       '</div>';
-    if(!items.length){
-      html += '<div class="home-task-empty">확인할 업무가 없습니다 · <button type="button" class="home-task-more" data-t-action="add" style="display:inline;padding:0;">+ 업무 추가</button></div>';
-    } else {
+    {
       html += '<div class="home-task-list">' + items.map(function(t){
         var meta = STATUS_META[t.status] || STATUS_META.normal;
         return '<div class="home-task-row" data-t-action="open" data-id="' + t.id + '">' +
@@ -2130,8 +2207,9 @@
   // [처리완료]로 status가 바뀌면 홈에서는 빠지지만 배열에서 제거되는 것은 절대 아니다 —
   // getAll()/전체보기/검색/업체·아파트 히스토리에는 status와 무관하게 계속 나온다.
   function getRecentForHome(){
+    // §3: 홈에는 최근 3건까지만 — 4건째부터는 "전체 보기"에서만 보인다.
     return loadAll().filter(function(r){ return (r.status||'new') === 'new'; })
-      .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); }).slice(0, 5);
+      .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); }).slice(0, 3);
   }
   function getForCompany(companyId){
     return loadAll().filter(function(r){ return r.companyId === companyId; })
@@ -2582,7 +2660,7 @@
             return '<button type="button" class="co-filter-btn call-type-btn" data-call-type="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
           }).join('') +
         '</div>' +
-        '<textarea id="callMemoInput" class="ai-textarea" placeholder="전화 온 내용을 편하게 적어주세요." style="min-height:110px;"></textarea>' +
+        '<textarea id="callMemoInput" class="ai-textarea" placeholder="전화 온 내용을 편하게 적어주세요." style="min-height:78px;"></textarea>' +
         '<div class="call-memo-actions">' +
           '<span class="home-task-row-sub" id="callTypeHint" style="margin:0 8px 0 0;white-space:nowrap;">구분을 선택해주세요</span>' +
           '<button type="button" id="callMemoSaveBtn" class="ai-run-btn" disabled>저장</button>' +
@@ -2593,7 +2671,8 @@
     } else {
       html += '<div class="home-task-empty">아직 전화 온 내용이 없습니다.</div>';
     }
-    html += '<div class="home-task-row-sub" style="padding:6px 2px 0;">확인·처리완료된 기록은 삭제되지 않습니다 — "전체 보기"에서 언제든 다시 볼 수 있어요.</div>';
+    // §4: "확인·처리완료된 기록은 삭제되지 않습니다" 같은 설명문은 홈에서 제거 —
+    // 필요한 사람은 "전체 보기"(renderBrowse) 상단에서 작게 다시 볼 수 있다.
     html += '</div>';
     homeCallSlotEl.innerHTML = html;
 
@@ -2761,7 +2840,8 @@
     '<div class="task-tabs" style="margin-top:-4px;">' + STATUS_TABS.map(function(t){
       return '<button type="button" class="task-tab' + (pState.statusTab===t[0]?' active':'') + '" data-status-tab="' + t[0] + '">' + t[1] + '</button>';
     }).join('') + '</div>' +
-    '<div class="search-box acct-search-box"><input type="text" id="callSearchInput" placeholder="업체명 / 아파트명 / 전화자 / 전화내용 검색" value="' + escapeAttr(pState.search) + '" /></div>';
+    '<div class="search-box acct-search-box"><input type="text" id="callSearchInput" placeholder="업체명 / 아파트명 / 전화자 / 전화내용 검색" value="' + escapeAttr(pState.search) + '" /></div>' +
+    '<div class="home-task-row-sub" style="padding:6px 2px 10px;">확인·처리완료된 기록은 삭제되지 않습니다 — 여기서 언제든 다시 볼 수 있어요.</div>';
     if(!items.length){
       html += '<div class="acct-empty">해당하는 전화 기록이 없습니다.</div>';
     } else {
