@@ -7,3 +7,4 @@ dist/
 .server.lock
 .server.log
 .launch_status
+.install_status
