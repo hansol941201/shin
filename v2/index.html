@@ -1109,6 +1109,49 @@
   .cal-event-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
   .cal-event-actions{ display:flex; gap:12px; margin-top:4px; }
   .cal-empty-hint{ font-size:12px; color:var(--text-muted); padding:14px 0; text-align:center; }
+
+  /* ---------- 월간 그리드(달력) 뷰 — 팝오버 기본 화면 ----------
+     작은 팝오버 안에 들어가는 컴팩트 그리드. 셀 안에는 날짜 숫자 + 아주 작은
+     점(일반 일정) / 연노랑 하이라이트 마크(중요 일정, .kb-hl 재사용)만 두고
+     일정 제목 등 텍스트는 절대 넣지 않는다(§요구사항 4). */
+  .cal-grid-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:8px; }
+  .cal-grid-nav{ display:flex; align-items:center; gap:2px; }
+  .cal-grid-nav-btn{
+    width:22px; height:22px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--text-muted);
+    cursor:pointer; font-size:12px; line-height:1;
+  }
+  .cal-grid-nav-btn:hover{ background:#F0F1F4; color:var(--navy); }
+  .cal-grid-title{ font-size:12.5px; font-weight:700; color:var(--text); min-width:84px; text-align:center; }
+  .cal-grid-today-btn{
+    height:22px; padding:0 8px; font-size:10.5px; font-family:inherit; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer;
+  }
+  .cal-grid-today-btn:hover{ background:#F0F1F4; color:var(--navy); }
+  .cal-grid-weekdays{
+    display:grid; grid-template-columns:repeat(7,1fr); text-align:center;
+    font-size:10px; color:var(--text-muted); margin-bottom:2px;
+  }
+  .cal-grid-weekdays span{ padding:2px 0; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:1px; }
+  .cal-grid-cell{
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    height:32px; padding-top:2px; border:none; background:transparent; border-radius:6px;
+    cursor:pointer; font-family:inherit; color:var(--text);
+  }
+  .cal-grid-cell:hover{ background:#F0F1F4; }
+  .cal-grid-cell.out{ color:var(--text-muted); opacity:0.42; }
+  .cal-grid-cell.selected{ background:#EEF1F8; }
+  .cal-grid-daynum{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:19px; height:19px; border-radius:50%; font-size:11px; box-sizing:border-box;
+  }
+  .cal-grid-cell.today .cal-grid-daynum{ border:1.3px solid var(--navy); }
+  .cal-grid-dot-row{ height:6px; display:flex; align-items:center; justify-content:center; gap:2px; margin-top:1px; }
+  .cal-grid-dot{ width:4px; height:4px; border-radius:50%; background:#B5B9C2; }
+  .cal-grid-hl-mark{ width:9px; height:4px; border-radius:2px; }
+  .cal-date-events{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+  .cal-date-events-head{ font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 
@@ -8234,7 +8277,11 @@ ${text}
   var popCloseBtn = document.getElementById('calPopCloseBtn');
   if(!fabBtn || !popover || !popBody) return;
 
-  var state = { viewMode:'today', filter:'all', mode:'list', editingId:null, formDeleteConfirmId:null };
+  // mode: 'grid'(월간 그리드, 기본) | 'list'(오늘/주간 목록) | 'form'(추가/수정)
+  // gridRef: 그리드에 현재 표시 중인 달(month)의 기준일. selectedDate: 그리드에서 클릭해
+  // 선택한 날짜(YYYY-MM-DD) — 그 날짜의 일정 목록을 그리드 아래에 그대로 이어서 보여준다.
+  var state = { viewMode:'month', filter:'all', mode:'grid', editingId:null, formDeleteConfirmId:null,
+    gridRef: new Date(), selectedDate: null, formReturn: 'grid' };
 
   function pad2(n){ return String(n).padStart(2,'0'); }
   function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
@@ -8365,7 +8412,12 @@ ${text}
   function openPopover(){
     popover.style.display = 'flex';
     fabBtn.classList.add('active');
-    state.mode = 'list';
+    // 아이콘을 클릭할 때마다 항상 이번 달 월간 그리드로 먼저 연다(요구사항: 목록이 먼저
+    // 뜨는 일은 없어야 한다). 이전에 선택돼 있던 날짜/이동해 놨던 달도 초기화한다.
+    state.mode = 'grid';
+    state.viewMode = 'month';
+    state.gridRef = new Date();
+    state.selectedDate = null;
     render();
   }
   function closePopover(){
@@ -8391,44 +8443,88 @@ ${text}
   });
 
   // ---------- 렌더링 ----------
+  var VIEW_LABEL = { today:'오늘', week:'주간', month:'월간' };
+
   function render(){
     if(state.mode === 'form') return renderForm();
+    if(state.mode === 'grid') return renderGrid();
     renderList();
+  }
+
+  // 상단 [오늘][주간][월간] 탭 — 월간이 기본/주(main) 탭이며 이 아이콘을 열 때마다 항상
+  // 월간 그리드로 먼저 뜬다(openPopover). 오늘/주간은 기존 목록 화면 그대로 남겨둔다.
+  function tabsRowHtml(){
+    return '<div class="cal-tabs-row">' +
+      ['today','week','month'].map(function(v){
+        var active = (v === 'month') ? (state.mode === 'grid') : (state.mode === 'list' && state.viewMode === v);
+        return '<button type="button" class="cal-tab-btn' + (active?' active':'') + '" data-view="' + v + '">' + VIEW_LABEL[v] + '</button>';
+      }).join('') +
+    '</div>';
+  }
+  function bindTabsRow(){
+    popBody.querySelectorAll('[data-view]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var v = btn.dataset.view;
+        if(v === 'month'){ state.mode = 'grid'; state.viewMode = 'month'; }
+        else { state.mode = 'list'; state.viewMode = v; }
+        render();
+      });
+    });
+  }
+
+  // 일정 한 줄(목록/날짜별 하위목록 공용) — 수정/완료/완료취소/삭제 액션 포함.
+  function eventRowHtml(ev){
+    var company = findCompany(ev.companyId);
+    var titleHtml = ev.isImportant
+      ? '<mark class="kb-hl cal-event-title' + (ev.status==='completed'?' done':'') + '">' + escapeHtml(ev.title) + '</mark>'
+      : '<span class="cal-event-title' + (ev.status==='completed'?' done':'') + '">' + escapeHtml(ev.title) + '</span>';
+    var metaParts = [];
+    if(company) metaParts.push(escapeHtml(company.name));
+    if(ev.memo) metaParts.push(escapeHtml(ev.memo));
+    return '' +
+      '<div class="cal-event-row" data-id="' + ev.id + '">' +
+        '<div class="cal-event-top"><span class="cal-event-date">' + escapeHtml([ev.date, ev.time].filter(Boolean).join(' ')) + '</span>' + titleHtml + '</div>' +
+        (metaParts.length ? '<div class="cal-event-meta">' + metaParts.join(' · ') + '</div>' : '') +
+        '<div class="cal-event-actions" id="calActions_' + ev.id + '">' +
+          '<button type="button" class="acct-text-action" data-act="edit" data-id="' + ev.id + '">수정</button>' +
+          (ev.status === 'completed'
+            ? '<button type="button" class="acct-text-action" data-act="undo" data-id="' + ev.id + '">완료 취소</button>'
+            : '<button type="button" class="acct-text-action" data-act="complete" data-id="' + ev.id + '">완료</button>') +
+          '<button type="button" class="acct-text-action danger" data-act="del" data-id="' + ev.id + '">삭제</button>' +
+        '</div>' +
+      '</div>';
+  }
+  // renderList/renderGrid가 공통으로 그려 넣는 [수정/완료/완료취소/삭제] 버튼들의 동작을
+  // 한 곳에서 바인딩한다(중복 방지). 삭제는 인라인 확인 후에만 실행된다.
+  function bindEventActions(afterChangeRender){
+    popBody.querySelectorAll('[data-act]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.dataset.id;
+        var act = btn.dataset.act;
+        if(act === 'edit') openForm(id);
+        else if(act === 'complete'){ setStatus(id, 'completed'); afterChangeRender(); }
+        else if(act === 'undo'){ setStatus(id, 'active'); afterChangeRender(); }
+        else if(act === 'del'){
+          var row = document.getElementById('calActions_' + id);
+          if(!row) return;
+          row.innerHTML = '<div class="co-confirm-row"><span>이 일정을 삭제하시겠습니까?</span>' +
+            '<button type="button" class="acct-text-action" data-act="del-cancel" data-id="' + id + '">취소</button>' +
+            '<button type="button" class="acct-text-action danger" data-act="del-confirm" data-id="' + id + '">삭제</button></div>';
+          row.querySelector('[data-act="del-cancel"]').addEventListener('click', function(){ afterChangeRender(); });
+          row.querySelector('[data-act="del-confirm"]').addEventListener('click', function(){ remove(id); afterChangeRender(); });
+        }
+      });
+    });
   }
 
   function renderList(){
     var items = filteredList();
-    var viewLabel = { today:'오늘', week:'주간', month:'월간' };
     var listHtml = !items.length
-      ? '<div class="cal-empty-hint">' + viewLabel[state.viewMode] + ' 일정이 없습니다</div>'
-      : '<div class="cal-list">' + items.map(function(ev){
-          var company = findCompany(ev.companyId);
-          var titleHtml = ev.isImportant
-            ? '<mark class="kb-hl cal-event-title' + (ev.status==='completed'?' done':'') + '">' + escapeHtml(ev.title) + '</mark>'
-            : '<span class="cal-event-title' + (ev.status==='completed'?' done':'') + '">' + escapeHtml(ev.title) + '</span>';
-          var metaParts = [];
-          if(company) metaParts.push(escapeHtml(company.name));
-          if(ev.memo) metaParts.push(escapeHtml(ev.memo));
-          return '' +
-            '<div class="cal-event-row" data-id="' + ev.id + '">' +
-              '<div class="cal-event-top"><span class="cal-event-date">' + escapeHtml([ev.date, ev.time].filter(Boolean).join(' ')) + '</span>' + titleHtml + '</div>' +
-              (metaParts.length ? '<div class="cal-event-meta">' + metaParts.join(' · ') + '</div>' : '') +
-              '<div class="cal-event-actions" id="calActions_' + ev.id + '">' +
-                '<button type="button" class="acct-text-action" data-act="edit" data-id="' + ev.id + '">수정</button>' +
-                (ev.status === 'completed'
-                  ? '<button type="button" class="acct-text-action" data-act="undo" data-id="' + ev.id + '">완료 취소</button>'
-                  : '<button type="button" class="acct-text-action" data-act="complete" data-id="' + ev.id + '">완료</button>') +
-                '<button type="button" class="acct-text-action danger" data-act="del" data-id="' + ev.id + '">삭제</button>' +
-              '</div>' +
-            '</div>';
-        }).join('') + '</div>';
+      ? '<div class="cal-empty-hint">' + VIEW_LABEL[state.viewMode] + ' 일정이 없습니다</div>'
+      : '<div class="cal-list">' + items.map(eventRowHtml).join('') + '</div>';
 
     popBody.innerHTML = '' +
-      '<div class="cal-tabs-row">' +
-        ['today','week','month'].map(function(v){
-          return '<button type="button" class="cal-tab-btn' + (state.viewMode===v?' active':'') + '" data-view="' + v + '">' + viewLabel[v] + '</button>';
-        }).join('') +
-      '</div>' +
+      tabsRowHtml() +
       '<div class="cal-tabs-row">' +
         ['all','important'].map(function(f){
           return '<button type="button" class="cal-tab-btn' + (state.filter===f?' active':'') + '" data-filter="' + f + '">' + (f==='all'?'전체':'중요') + '</button>';
@@ -8437,43 +8533,135 @@ ${text}
       '<div class="cal-add-toggle-row"><button type="button" class="acct-add-btn" id="calAddBtn">+ 일정 추가</button></div>' +
       listHtml;
 
-    popBody.querySelectorAll('[data-view]').forEach(function(btn){
-      btn.addEventListener('click', function(){ state.viewMode = btn.dataset.view; render(); });
-    });
+    bindTabsRow();
     popBody.querySelectorAll('[data-filter]').forEach(function(btn){
       btn.addEventListener('click', function(){ state.filter = btn.dataset.filter; render(); });
     });
     var addBtn = document.getElementById('calAddBtn');
     if(addBtn) addBtn.addEventListener('click', function(){ openForm(null); });
 
-    popBody.querySelectorAll('[data-act]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.dataset.id;
-        var act = btn.dataset.act;
-        if(act === 'edit') openForm(id);
-        else if(act === 'complete'){ setStatus(id, 'completed'); render(); }
-        else if(act === 'undo'){ setStatus(id, 'active'); render(); }
-        else if(act === 'del'){
-          var row = document.getElementById('calActions_' + id);
-          if(!row) return;
-          row.innerHTML = '<div class="co-confirm-row"><span>이 일정을 삭제하시겠습니까?</span>' +
-            '<button type="button" class="acct-text-action" data-act="del-cancel" data-id="' + id + '">취소</button>' +
-            '<button type="button" class="acct-text-action danger" data-act="del-confirm" data-id="' + id + '">삭제</button></div>';
-          row.querySelector('[data-act="del-cancel"]').addEventListener('click', function(){ render(); });
-          row.querySelector('[data-act="del-confirm"]').addEventListener('click', function(){ remove(id); render(); });
-        }
-      });
-    });
+    bindEventActions(render);
   }
 
-  function openForm(id){
+  // ---------- 월간 그리드 뷰(팝오버 기본 화면) ----------
+  function ymd(y,m,d){ return y + '-' + pad2(m+1) + '-' + pad2(d); }
+  // 월요일 시작 주 배치를 위한 요일 인덱스 변환(일=0..토=6 → 월=0..일=6).
+  function mondayIndex(jsDay){ return (jsDay + 6) % 7; }
+
+  function eventsByDateMap(){
+    var map = {};
+    loadAll().forEach(function(ev){
+      if(!ev.date) return;
+      if(!map[ev.date]) map[ev.date] = { hasImportant:false, hasNormal:false };
+      if(ev.isImportant) map[ev.date].hasImportant = true;
+      else map[ev.date].hasNormal = true;
+    });
+    return map;
+  }
+
+  function renderGrid(){
+    var ref = state.gridRef;
+    var y = ref.getFullYear(), m = ref.getMonth();
+    var firstOfMonth = new Date(y, m, 1);
+    var startOffset = mondayIndex(firstOfMonth.getDay());
+    var gridStart = new Date(y, m, 1 - startOffset);
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+    var evMap = eventsByDateMap();
+    var t = todayStr();
+
+    var cellsHtml = '';
+    for(var i = 0; i < totalCells; i++){
+      var cellDate = new Date(gridStart);
+      cellDate.setDate(gridStart.getDate() + i);
+      var dateStr = ymd(cellDate.getFullYear(), cellDate.getMonth(), cellDate.getDate());
+      var inMonthCell = cellDate.getMonth() === m;
+      var info = evMap[dateStr];
+      var dotHtml = '';
+      if(info && info.hasImportant) dotHtml = '<span class="kb-hl cal-grid-hl-mark"></span>';
+      else if(info && info.hasNormal) dotHtml = '<span class="cal-grid-dot"></span>';
+      var cls = 'cal-grid-cell' +
+        (inMonthCell ? '' : ' out') +
+        (dateStr === t ? ' today' : '') +
+        (dateStr === state.selectedDate ? ' selected' : '');
+      cellsHtml += '' +
+        '<button type="button" class="' + cls + '" data-date="' + dateStr + '">' +
+          '<span class="cal-grid-daynum">' + cellDate.getDate() + '</span>' +
+          '<span class="cal-grid-dot-row">' + dotHtml + '</span>' +
+        '</button>';
+    }
+
+    var weekdayHtml = ['월','화','수','목','금','토','일'].map(function(w){ return '<span>' + w + '</span>'; }).join('');
+
+    var dateEventsHtml = '';
+    if(state.selectedDate){
+      var d = parseYmd(state.selectedDate);
+      var headLabel = d ? (d.getMonth() + 1) + '월 ' + d.getDate() + '일 일정' : state.selectedDate + ' 일정';
+      var dayItems = loadAll().filter(function(ev){ return ev.date === state.selectedDate; })
+        .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+      dateEventsHtml = '' +
+        '<div class="cal-date-events">' +
+          '<div class="cal-date-events-head">' + escapeHtml(headLabel) + '</div>' +
+          (dayItems.length
+            ? '<div class="cal-list">' + dayItems.map(eventRowHtml).join('') + '</div>'
+            : '<div class="cal-empty-hint">등록된 일정이 없습니다.</div>') +
+          '<div class="cal-add-toggle-row" style="margin-top:8px;"><button type="button" class="acct-add-btn" id="calGridAddBtn">+ 일정 추가</button></div>' +
+        '</div>';
+    }
+
+    popBody.innerHTML = '' +
+      tabsRowHtml() +
+      '<div class="cal-grid-head">' +
+        '<div class="cal-grid-nav">' +
+          '<button type="button" class="cal-grid-nav-btn" id="calGridPrev" aria-label="이전 달">&lsaquo;</button>' +
+          '<span class="cal-grid-title">' + y + '년 ' + (m+1) + '월</span>' +
+          '<button type="button" class="cal-grid-nav-btn" id="calGridNext" aria-label="다음 달">&rsaquo;</button>' +
+        '</div>' +
+        '<button type="button" class="cal-grid-today-btn" id="calGridToday">오늘</button>' +
+      '</div>' +
+      '<div class="cal-grid-weekdays">' + weekdayHtml + '</div>' +
+      '<div class="cal-grid">' + cellsHtml + '</div>' +
+      dateEventsHtml;
+
+    bindTabsRow();
+    document.getElementById('calGridPrev').addEventListener('click', function(){
+      state.gridRef = new Date(y, m - 1, 1);
+      render();
+    });
+    document.getElementById('calGridNext').addEventListener('click', function(){
+      state.gridRef = new Date(y, m + 1, 1);
+      render();
+    });
+    document.getElementById('calGridToday').addEventListener('click', function(){
+      state.gridRef = new Date();
+      render();
+    });
+    popBody.querySelectorAll('[data-date]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var ds = btn.dataset.date;
+        state.selectedDate = (state.selectedDate === ds) ? null : ds;
+        render();
+      });
+    });
+    var gridAddBtn = document.getElementById('calGridAddBtn');
+    if(gridAddBtn) gridAddBtn.addEventListener('click', function(){ openForm(null, state.selectedDate); });
+
+    bindEventActions(render);
+  }
+
+  // prefillDate: 그리드에서 날짜를 선택한 뒤 [+ 일정 추가]를 눌렀을 때 그 날짜를
+  // 기존 생성 폼의 날짜 입력값으로 미리 채워 넣기 위한 값(신규 등록일 때만 사용).
+  function openForm(id, prefillDate){
+    // 폼을 닫을 때(취소/저장) 어느 화면으로 돌아갈지 기억해 둔다 — 그리드에서 들어왔으면
+    // 그리드로, 오늘/주간 목록에서 들어왔으면 그 목록으로 돌아간다.
+    state.formReturn = state.mode === 'grid' ? 'grid' : 'list';
     state.mode = 'form';
     state.editingId = id;
     if(id){
       var rec = loadAll().find(function(x){ return x.id === id; });
       state.formValues = rec ? Object.assign({}, rec) : { title:'', date:todayStr(), time:'', companyId:'', memo:'', isImportant:false };
     } else {
-      state.formValues = { title:'', date:todayStr(), time:'', companyId:'', memo:'', isImportant:false };
+      state.formValues = { title:'', date: prefillDate || todayStr(), time:'', companyId:'', memo:'', isImportant:false };
     }
     render();
   }
@@ -8505,7 +8693,7 @@ ${text}
         '<button type="button" class="ai-run-btn" id="calFormSave">저장</button>' +
       '</div>';
 
-    document.getElementById('calFormCancel').addEventListener('click', function(){ state.mode = 'list'; render(); });
+    document.getElementById('calFormCancel').addEventListener('click', function(){ state.mode = state.formReturn; render(); });
     document.getElementById('calFormSave').addEventListener('click', function(){
       var titleEl = document.getElementById('calFTitle');
       var dateEl = document.getElementById('calFDate');
@@ -8526,7 +8714,7 @@ ${text}
       };
       if(isNew) add(fields);
       else update(state.editingId, fields);
-      state.mode = 'list';
+      state.mode = state.formReturn;
       render();
     });
   }
@@ -8534,7 +8722,7 @@ ${text}
   window.addEventListener('shin2-cloud-update', function(e){
     if(e.detail.key !== 'calendar') return;
     renderBadge();
-    if(isOpen() && state.mode === 'list') render();
+    if(isOpen() && (state.mode === 'list' || state.mode === 'grid')) render();
   });
 
   window.SHIN2_CALENDAR = { getAll: loadAll, add: add, update: update, setStatus: setStatus, remove: remove };
