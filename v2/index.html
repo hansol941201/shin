@@ -876,24 +876,55 @@
      데스크톱에서는 나란히 50:50, 좁은 화면에서는 위아래로 쌓는다. 카드 테두리/그림자 없이
      기존 얇은 선/여백 톤을 그대로 쓰고, 가로 스크롤이 생기지 않게 한다. */
   .home-call-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:0 28px; align-items:start;
+    display:grid; grid-template-columns:1fr 1fr; gap:0 28px; align-items:stretch;
     margin-top:22px; max-width:800px;
   }
-  .home-call-grid .qr-block, .home-call-grid .home-task-block{ margin-top:0; max-width:none; }
+  .home-call-grid .qr-block, .home-call-grid .home-task-block{
+    margin-top:0; max-width:none; display:flex; flex-direction:column;
+  }
+  /* 좌/우 열의 제목 줄 높이를 맞춘다 — 우측은 분류버튼+"전체 보기 >"까지 같은 줄에
+     들어가므로, 좌측 제목줄도 같은 min-height/정렬로 맞춰 Y좌표를 일치시킨다. */
+  .home-call-grid .qr-head{ min-height:26px; display:flex; align-items:center; margin-bottom:8px; }
+  .home-call-grid .home-task-head{ min-height:26px; }
+  /* 입력창 아래 영역이 남는 세로공간을 채워, 하단 줄(저장 버튼/안내)이 항상 같은
+     baseline에 오도록 한다. */
+  .home-call-grid .qr-body, .home-call-grid .call-input-block{
+    display:flex; flex-direction:column; flex:1 1 auto; margin-bottom:0;
+  }
+  .home-call-grid .qr-bottom-row, .home-call-grid .call-memo-actions{
+    margin-top:auto; display:flex; align-items:center; justify-content:flex-end; gap:8px; padding-top:8px; height:32px;
+  }
+  /* "전체 보기 >"가 제목 줄과 같은 줄에 오도록 하는 nowrap 배치는 열 너비가 충분한
+     데스크톱 폭(2열 그리드가 실제로 나란히 배치되는 720px 초과)에서만 적용한다 —
+     좁은 화면(1열로 쌓일 때)은 기존처럼 자유롭게 줄바꿈되도록 그대로 둔다. */
+  @media (min-width: 721px){
+    .home-call-grid .home-task-head{ flex-wrap:nowrap; }
+    .home-call-grid .home-task-head-left{ flex-wrap:nowrap; min-width:0; gap:10px; }
+    .home-call-grid .home-task-head-left .home-task-title{ white-space:nowrap; flex:none; }
+    .home-call-grid .home-task-head .call-type-btns{ flex:none; }
+    .home-call-grid .home-task-head .call-type-btn{ white-space:nowrap; }
+    .home-call-grid .home-task-more{ flex:none; white-space:nowrap; }
+  }
   @media (max-width: 720px){
-    .home-call-grid{ grid-template-columns:1fr; gap:22px 0; }
+    .home-call-grid{ grid-template-columns:1fr; gap:22px 0; align-items:start; }
+    .home-call-grid .qr-block, .home-call-grid .home-task-block{ display:block; }
+    .home-call-grid .qr-body, .home-call-grid .call-input-block{ display:block; }
+    .home-call-grid .qr-bottom-row, .home-call-grid .call-memo-actions{ margin-top:8px; }
   }
 
-  /* 빠른 고객기록(표시명: "시공사 전화기록", §5~10) — 업체명을 포함해 한 줄로 적고 Enter만
-     누르면 기록되는 작은 입력창 */
+  /* 빠른 고객기록(표시명: "시공사 전화기록", §5~10) — 업체명을 포함해 여러 줄로 적고
+     Enter로 저장(Shift+Enter는 줄바꿈)하는 입력창. 우측 "아파트 문의·전화기록"
+     textarea와 높이를 맞췄다(§정렬). */
   .qr-block{ margin-top:22px; max-width:800px; }
   .qr-head{ margin-bottom:8px; }
   .qr-title{ font-size:14px; font-weight:700; color:var(--text); }
   .qr-input{
-    width:100%; height:56px; padding:0 12px; font-size:13px; font-family:inherit; color:var(--text);
+    width:100%; min-height:108px; resize:vertical; padding:10px 12px; font-size:13px; line-height:1.5;
+    font-family:inherit; color:var(--text);
     background:var(--surface); border:1px solid var(--line); border-radius:8px; outline:none; box-sizing:border-box;
   }
   .qr-input:focus{ border-color:#C7CEDB; }
+  .qr-hint{ font-size:12.5px; color:var(--text-muted); white-space:nowrap; }
   .qr-inline-ok{ font-size:12.5px; color:var(--navy); margin-top:8px; }
   .qr-inline-empty{ font-size:12.5px; color:var(--text-muted); margin-top:8px; }
   .qr-notfound{ margin-top:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
@@ -1709,8 +1740,11 @@
                만들지 않는다(§ "자동 생성 금지"). 로직/데이터는 그대로, 라벨만 바꿨다. -->
           <div class="qr-block" id="qrBlock">
             <div class="qr-head"><div class="qr-title">시공사 전화기록</div></div>
-            <input type="text" id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (입력 후 Enter)" autocomplete="off" />
-            <div id="qrResult"></div>
+            <div class="qr-body">
+              <textarea id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (Enter로 저장, Shift+Enter는 줄바꿈)"></textarea>
+              <div id="qrResult"></div>
+              <div class="qr-bottom-row"><span class="qr-hint">Enter로 저장 · Shift+Enter로 줄바꿈</span></div>
+            </div>
           </div>
 
           <div id="homeCallSlot"></div>
@@ -3073,7 +3107,7 @@
         '<button type="button" class="home-task-more" data-call-action="view-all">전체 보기 &gt;</button>' +
       '</div>' +
       '<div class="call-input-block">' +
-        '<textarea id="callMemoInput" class="ai-textarea" placeholder="아파트 문의·전화 내용을 편하게 적어주세요." style="min-height:64px;"></textarea>' +
+        '<textarea id="callMemoInput" class="ai-textarea" placeholder="아파트 문의·전화 내용을 편하게 적어주세요." style="min-height:108px;"></textarea>' +
         '<div class="call-memo-actions">' +
           '<span class="home-task-row-sub" id="callTypeHint" style="margin:0 8px 0 0;white-space:nowrap;">구분을 선택해주세요</span>' +
           '<button type="button" id="callMemoSaveBtn" class="ai-run-btn" disabled>저장</button>' +
@@ -8300,7 +8334,9 @@ ${text}
   }
 
   input.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ e.preventDefault(); handleEnter(); }
+    // textarea로 바뀌면서 Shift+Enter는 줄바꿈으로 남겨두고(기본 동작 그대로 허용),
+    // 순수 Enter만 저장을 트리거한다(기존 동작과 동일).
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleEnter(); }
   });
 })();
 </script>
