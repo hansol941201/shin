@@ -631,6 +631,15 @@
   .co-text-action.danger:hover{ color:#B91C1C; }
   .co-confirm-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-muted); }
 
+  /* §14: 업체 상세의 "최근 활동" — CRM(customerActivities)과 완전히 같은 데이터를 요약만 보여준다 */
+  .co-activity-block{ margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+  .co-activity-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .co-activity-row{ display:flex; gap:8px; align-items:baseline; padding:6px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .co-activity-row:last-child{ border-bottom:none; }
+  .co-activity-cat{ flex:none; color:var(--navy); font-weight:600; }
+  .co-activity-text{ color:var(--text); word-break:break-word; }
+  .co-activity-empty{ font-size:12px; color:var(--text-muted); padding:6px 0; }
+
   .co-form-field{ margin-bottom:14px; }
   .co-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
   .co-form-field input, .co-form-field textarea{
@@ -663,6 +672,11 @@
   }
   .co-thumb-remove:hover{ color:#B91C1C; border-color:#B91C1C; }
   .co-thumb-label{ font-size:10.5px; color:var(--text-muted); margin-top:3px; }
+  .co-raw-ocr{
+    width:180px; max-width:220px; text-align:left; white-space:pre-wrap; word-break:break-word;
+    font-size:11px; color:var(--text-muted); background:var(--bg); border:1px solid var(--line);
+    border-radius:6px; padding:6px 8px; margin-top:4px;
+  }
   .co-ocr-note{ font-size:12px; color:var(--text-muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:12px; }
   .co-conflict{ background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:-6px 0 12px; }
   .co-conflict-label{ font-size:11.5px; color:var(--text-muted); margin-bottom:6px; }
@@ -838,6 +852,28 @@
   .shin2-memo-cancel-btn{ background:var(--surface); border:1px solid var(--line); color:var(--text-muted); }
   .shin2-memo-cancel-btn:hover{ background:#F0F1F4; }
   .shin2-memo-save-btn{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
+
+  /* 빠른 고객기록(§5~10) — 업체명을 포함해 한 줄로 적고 Enter만 누르면 기록되는 작은 입력창 */
+  .qr-block{ margin-top:22px; max-width:800px; }
+  .qr-head{ margin-bottom:8px; }
+  .qr-title{ font-size:14px; font-weight:700; color:var(--text); }
+  .qr-input{
+    width:100%; height:38px; padding:0 12px; font-size:13px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; outline:none; box-sizing:border-box;
+  }
+  .qr-input:focus{ border-color:#C7CEDB; }
+  .qr-inline-ok{ font-size:12.5px; color:var(--navy); margin-top:8px; }
+  .qr-inline-empty{ font-size:12.5px; color:var(--text-muted); margin-top:8px; }
+  .qr-notfound{ margin-top:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  .qr-notfound-text{ font-size:12.5px; color:var(--text); margin-bottom:8px; }
+  .qr-candidates{ margin-top:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  .qr-candidates-text{ font-size:12.5px; color:var(--text); margin-bottom:8px; }
+  .qr-candidate-btn{
+    display:block; width:100%; text-align:left; padding:7px 10px; margin-bottom:4px; font-size:12.5px;
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-family:inherit; color:var(--text);
+  }
+  .qr-candidate-btn:hover{ background:#F0F1F4; }
+  .qr-action-row{ display:flex; gap:8px; }
 
   /* 홈 "오늘 확인할 업무" 요약 — 컴팩트한 행 목록, 상태는 작은 텍스트 배지로만 구분 */
   .home-task-block{ margin-top:22px; max-width:800px; }
@@ -1038,8 +1074,30 @@
     todos: 'shin2-todos',
     knowledge: 'shin2-knowledge-v1',
     favorites: 'shin2-quicklinks-v1',
-    calls: 'shin2-call-entries-v1'
+    calls: 'shin2-call-entries-v1',
+    // CRM(고객업무관리카드, crm/index.html)에서 추가한 두 키 — 기존 키와 완전히 동일한 안전
+    // 패턴(§2~4 CASE A/B/C, §15 빈 값 가드)을 그대로 따른다. 메커니즘 자체는 바뀌지 않았고
+    // (여전히 [클라우드 동기화 시작] 버튼 클릭에서만 최초 동기화 실행), 동기화 대상 배열이
+    // 두 개 늘었을 뿐이다.
+    customerActivities: 'shin2-customer-activities-v1',
+    customerDocuments: 'shin2-customer-documents-v1'
   };
+  // crm/index.html은 별도 페이지지만 같은 origin이라 localStorage를 직접 공유한다(§4/§37) —
+  // 다만 그쪽 탭에서 쓴 값은 이 탭의 인메모리 push 경로를 거치지 않으므로, 이 탭이 이미
+  // 실시간 동기화 중일 때(window.__shin2CloudSync.ready)만 그 변경을 그대로 전달해준다.
+  // 새 동기화 경로가 아니라 "이미 켜져 있는 기존 push 함수를 다른 탭의 변경에도 호출해주는
+  // 전달자"일 뿐이며, 최초 동기화(CASE A/B/C) 판단이나 자동 실행을 전혀 새로 만들지 않는다.
+  window.addEventListener('storage', function(e){
+    if(!e.key || e.newValue == null) return;
+    if(!window.__shin2CloudSync || !window.__shin2CloudSync.ready) return;
+    var keys = window.SHIN2_SYNC_KEYS || {};
+    var matchedKey = Object.keys(keys).find(function(k){ return keys[k] === e.key; });
+    if(!matchedKey) return;
+    try{
+      var data = JSON.parse(e.newValue);
+      window.__shin2CloudSync.push(matchedKey, data);
+    }catch(err){ /* 파싱 실패 시 무시 — 로컬 데이터는 이미 각 탭에서 정상 저장된 상태 */ }
+  });
   window.SHIN2_SYNC_MERGE = (function(){
     function tsOf(item){
       var t = item && (item.updatedAt || item.createdAt);
@@ -1354,10 +1412,13 @@
        같은 작은 텍스트형 버튼만 추가한다. 클라우드 동기화 버튼은 오직 사용자가 직접 눌러야만
        최초 동기화(CASE A/B/C)가 시작되며, 그 외 어떤 이벤트에도 연결되어 있지 않다(§12). -->
   <div class="shin2-sync-bar" id="shin2SyncBar">
-    <button type="button" id="shin2BackupBtn" class="shin2-sync-btn" title="업체/지식/TODO/업무/전화기록/메모/즐겨찾기를 JSON 파일로 내보냅니다">데이터 백업</button>
+    <button type="button" id="shin2BackupBtn" class="shin2-sync-btn" title="업체/지식/TODO/업무/전화기록/메모/즐겨찾기/고객활동/고객서류를 JSON 파일로 내보냅니다">데이터 백업</button>
     <button type="button" id="shin2RestoreBtn" class="shin2-sync-btn" title="백업 JSON 파일을 불러와 기존 데이터에 추가/병합합니다(덮어쓰지 않음)">백업 복원</button>
     <input type="file" id="shin2RestoreFile" accept="application/json,.json" style="display:none;" />
     <button type="button" id="shin2CloudSyncBtn" class="shin2-sync-btn" style="display:none;" title="이 PC 데이터를 클라우드와 안전하게 합칩니다(버튼을 누르기 전까지는 아무 것도 하지 않습니다)">클라우드 동기화 시작</button>
+    <!-- §28: 고객업무관리 CRM(별도 페이지)으로 새 탭에서 이동. 기존 백업/복원/동기화 버튼과
+         동일한 shin2-sync-btn 스타일을 그대로 재사용한다(새 디자인 없음). -->
+    <button type="button" id="shin2CrmLinkBtn" class="shin2-sync-btn" title="고객업무관리 카드(CRM)를 새 탭에서 엽니다">고객관리</button>
     <span class="shin2-sync-status" id="shin2SyncStatus"></span>
   </div>
   <aside class="sidebar">
@@ -1485,6 +1546,14 @@
         </div>
         <div class="hint" id="mainSearchHint">한솔 — 필요한 내용을 검색해서 시작하세요.</div>
         <div class="kb-search-results" id="mainSearchResults"></div>
+
+        <!-- §5~10: 빠른 고객기록 — 업체를 먼저 선택하지 않고 한 줄 입력→Enter만으로 기록완료.
+             자동으로 업체를 찾지 못하면 절대 새 업체를 만들지 않는다(§ "자동 생성 금지"). -->
+        <div class="qr-block" id="qrBlock">
+          <div class="qr-head"><div class="qr-title">빠른 고객기록</div></div>
+          <input type="text" id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (입력 후 Enter)" autocomplete="off" />
+          <div id="qrResult"></div>
+        </div>
 
         <div class="ai-section">
           <div class="ai-head-row">
@@ -4483,6 +4552,11 @@ ${text}
   var restoreFile = document.getElementById('shin2RestoreFile');
   var cloudBtn = document.getElementById('shin2CloudSyncBtn');
   var statusEl = document.getElementById('shin2SyncStatus');
+  var crmLinkBtn = document.getElementById('shin2CrmLinkBtn');
+  // §28: 새 탭으로 연다 — 현재 탭(한솔2)은 그대로 유지된다.
+  crmLinkBtn && crmLinkBtn.addEventListener('click', function(){
+    window.open('../crm/', '_blank', 'noopener');
+  });
 
   function setStatus(msg){ if(statusEl) statusEl.textContent = msg || ''; }
 
@@ -6621,7 +6695,10 @@ ${text}
   // 핵심 원칙: 애매하면 값을 채우지 않고 ambiguous:true 를 반환한다. 절대 자신 있게 틀린 값을
   // 채우지 않는다("빈칸 + 확인 필요" > "그럴듯하지만 틀릴 수 있는 값").
   // ============================================================================
-  const DECOR_RE = /^[□�│●■※\s]+|[□�│●■※\s]+$/g;
+  // §PART2-8: 업체명 앞뒤의 "명백한 장식기호/노이즈"만 제거한다 — 실제 회사명에 쓰일 수 있는
+  // (주)/㈜/&/-/./영문 등은 절대 이 목록에 넣지 않는다. rawOcrText 자체(원문)는 이 함수를
+  // 절대 거치지 않고 그대로 보존된다(별도 필드에 원본 그대로 저장, §PART2-9).
+  const DECOR_RE = /^[□�│●■※§|·•‣◆\s]+|[□�│●■※§|·•‣◆\s]+$/g;
   function coStripDecor(line){ return String(line || '').replace(DECOR_RE, ''); }
 
   const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
@@ -6630,8 +6707,14 @@ ${text}
   const BIZNO_RE = /\d{3}[-.\s]?\d{2}[-.\s]?\d{5}/;
   const DATE_RE = /\d{4}[.\-\/]\s?\d{1,2}[.\-\/]\s?\d{1,2}|\d{4}\s?년\s?\d{1,2}\s?월\s?\d{1,2}\s?일/;
   const LABEL_RE = /(대표자|사업자등록번호|법인등록번호|TEL|Tel|전화|FAX|Fax|팩스|주소|사업자등록증|성명)\s*[:：]?/;
-  const NAME_POS_RE = /(주식회사|㈜|\(주\)|유한회사|건설|도장|산업|엔지니어링|이엔지|ENG|E&C)/i;
-  const TITLE_RE = /(대표이사|대표|사장|부장|차장|과장|대리|팀장|매니저|이사|본부장|실장|소장|주임)/;
+  // §PART2-1/7: 법인표기(주식회사/㈜/(주)/유한회사 등 OCR 변형 포함)는 업체명의 정상적인
+  // 일부이며 절대 제거 대상이 아니다 — 오히려 업체명 후보 스코어링에서 가점 신호로 쓴다.
+  // §PART2-7: 건설/도장/방수 등 업종 키워드도 가점 목록에 추가한다(요청 목록 최소 포함).
+  const NAME_POS_RE = /(주식회사|㈜|\(주\)|주\)|\(주|유한회사|\(유\)|건설산업|종합건설|건설사|건설|도장|방수|개발|주택|기업|상사|산업|테크|엔지니어링|이엔지|ENG|E&C)/i;
+  // §PART2-3: 최소 직책 사전(스펙 목록) — prefix 충돌(예: "대표"가 "대표이사"의 앞부분)이 있는
+  // 항목은 반드시 더 긴/구체적인 표현을 먼저 배치해야 한다(JS 정규식 교대는 "가장 먼저 매치되는
+  // 대안"을 택하지, 가장 긴 대안을 택하지 않기 때문).
+  const TITLE_RE = /(대표이사|대표|현장소장|사업부장|부회장|회장|부사장|사장|전무|상무|본부장|이사|부장|차장|과장|대리|주임|팀장|실장|소장|공장장|연구원|매니저|담당자|담당)/;
 
   function coIsAddressLine(line){
     const s = String(line || '').trim();
@@ -6752,24 +6835,42 @@ ${text}
     return { value:'', ambiguous:false };
   }
 
-  // 담당자(명함 문맥): 직책 근처 이름만 신뢰한다. 대표자와 한 필드로 합치지 않는다(다른 사람일 수 있음).
-  // 명함에서는 "홍길동 과장"(이름 뒤 직책)과 "과장 홍길동"(직책 뒤 이름) 두 배치 모두 흔하므로 둘 다 확인한다.
-  function coExtractContactName(lines){
+  // §PART2-2/3/4/5: 담당자+직책(명함 문맥) — 대표이사를 포함해 어떤 직책이든 실제 연락 상대이므로
+  // contactName(담당자)으로 저장 가능해야 한다(대표자 representative 필드와는 별개, 자동으로
+  // 서로 덮어쓰지 않는다). 다음 4가지 배치를 모두 지원한다:
+  //   1) [직책] [이름]  같은 줄 (예: "대표이사 김동노")
+  //   2) [이름] [직책]  같은 줄 (예: "김동노 대표이사")
+  //   3) [이름]\n[직책] 다른 줄, 인접
+  //   4) [직책]\n[이름] 다른 줄, 인접
+  // 이름 후보는 순수 한글 2~4자만 신뢰한다(업체명/주소 일부를 이름으로 오판하지 않기 위해) —
+  // 직책 문자열 자체가 이름에 섞여 들어가지 않도록 항상 TITLE_RE로 매치된 부분을 잘라내고 남은
+  // 부분만 이름 후보로 검사한다.
+  const NAME_ONLY_RE = /^[가-힣]{2,4}$/;
+  function coExtractContactAndPosition(lines){
     for(let i=0;i<lines.length;i++){
       const line = lines[i];
       const m = line.match(TITLE_RE);
-      if(m){
-        const before = line.slice(0, m.index).trim();
-        if(/^[가-힣]{2,4}$/.test(before)) return { value: before, ambiguous:false };
-        const after = line.slice(m.index + m[0].length).trim();
-        if(/^[가-힣]{2,4}$/.test(after)) return { value: after, ambiguous:false };
-        const prev = (lines[i-1] || '').trim();
-        if(/^[가-힣]{2,4}$/.test(prev) && !TITLE_RE.test(prev)) return { value: prev, ambiguous:false };
-        return { value:'', ambiguous:true }; // 직책은 찾았지만 이름이 명확하지 않음
-      }
+      if(!m) continue;
+      const position = m[0];
+      // 1) [직책] [이름] — 같은 줄, 직책 뒤에 남은 문자열이 이름 패턴
+      const after = line.slice(m.index + m[0].length).trim();
+      if(NAME_ONLY_RE.test(after)) return { name:{ value: after, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      // 2) [이름] [직책] — 같은 줄, 직책 앞에 남은 문자열이 이름 패턴
+      const before = line.slice(0, m.index).trim();
+      if(NAME_ONLY_RE.test(before)) return { name:{ value: before, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      // 3) [이름]\n[직책] — 이전 줄이 이름 패턴이고 직책 단어를 포함하지 않음
+      const prev = (lines[i-1] || '').trim();
+      if(NAME_ONLY_RE.test(prev) && !TITLE_RE.test(prev)) return { name:{ value: prev, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      // 4) [직책]\n[이름] — 다음 줄이 이름 패턴이고 직책 단어를 포함하지 않음
+      const next = (lines[i+1] || '').trim();
+      if(NAME_ONLY_RE.test(next) && !TITLE_RE.test(next)) return { name:{ value: next, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      // 직책은 찾았지만 이름이 명확하지 않음 — 틀린 값을 자신 있게 채우지 않는다(§PART2-18).
+      return { name:{ value:'', ambiguous:true }, position:{ value: position, ambiguous:false } };
     }
-    return { value:'', ambiguous:false };
+    return { name:{ value:'', ambiguous:false }, position:{ value:'', ambiguous:false } };
   }
+  // 이전 함수명 호환(다른 호출부/테스트에서 이름만 필요할 때).
+  function coExtractContactName(lines){ return coExtractContactAndPosition(lines).name; }
 
   // 상호(사업자등록증 문맥): "상호" 라벨이 있으면 그 값을 우선 신뢰하고, 없으면 일반 업체명 스코어링으로 대체한다.
   function coExtractBizRegName(lines){
@@ -6788,19 +6889,23 @@ ${text}
     return String(rawText || '').split('\n').map(l=> coStripDecor(l.trim())).filter(Boolean);
   }
 
-  // 명함 원문 → 후보 필드
+  // 명함 원문 → 후보 필드. rawOcrText는 절대 가공 없이 그대로 함께 반환한다(§PART2-9) — 후처리
+  // 결과(name/contactName 등)가 이 원문을 덮어쓰는 일은 없으며, 호출부가 그대로 보존/노출한다.
   function extractFromCardText(rawText){
     const lines = coPrepLines(rawText);
     const pf = coExtractPhoneFax(lines);
+    const cp = coExtractContactAndPosition(lines);
     return {
       name: coExtractNameCandidate(lines),
       repName: { value:'', ambiguous:false },
-      contactName: coExtractContactName(lines),
+      contactName: cp.name,
+      position: cp.position,
       phone: { value: pf.phone, ambiguous: pf.phoneAmbiguous },
       fax: { value: pf.fax, ambiguous: pf.faxAmbiguous },
       email: coExtractEmail(lines),
       bizRegNo: { value:'', ambiguous:false },
-      address: coExtractAddress(lines)
+      address: coExtractAddress(lines),
+      rawOcrText: String(rawText || '')
     };
   }
 
@@ -6812,11 +6917,13 @@ ${text}
       name: coExtractBizRegName(lines),
       repName: coExtractRepName(lines),
       contactName: { value:'', ambiguous:false },
+      position: { value:'', ambiguous:false },
       phone: { value:'', ambiguous:false },
       fax: { value:'', ambiguous:false },
       email: { value:'', ambiguous:false },
       bizRegNo: coExtractBizRegNo(full),
-      address: coExtractAddress(lines)
+      address: coExtractAddress(lines),
+      rawOcrText: String(rawText || '')
     };
   }
 
@@ -6824,7 +6931,7 @@ ${text}
   // 두 문서가 서로 다른 값을 확실하게 준 필드는 임의로 하나를 버리지 않고 conflicts로 보고한다
   // (UI에서 라디오로 사용자가 직접 선택하게 한다). 둘 다 비었고 어느 한쪽이 애매했던 필드는 ambiguous로 표시.
   const CO_PRIORITY_DOC = { name:'bizreg', repName:'bizreg', bizRegNo:'bizreg', address:'bizreg',
-                             contactName:'card', phone:'card', fax:'card', email:'card' };
+                             contactName:'card', position:'card', phone:'card', fax:'card', email:'card' };
   function mergeExtractions(card, bizreg){
     const merged = {}, ambiguous = {}, conflicts = {};
     Object.keys(CO_PRIORITY_DOC).forEach(f=>{
@@ -6848,7 +6955,7 @@ ${text}
   const FIELD_INPUT_ID = { name:'coFName', repName:'coFRep', contactName:'coFContact', position:'coFPosition',
                             phone:'coFPhone', mobile:'coFMobile', fax:'coFFax', email:'coFEmail', bizRegNo:'coFBiz',
                             address:'coFAddr', website:'coFWebsite' };
-  const FIELD_LABEL = { name:'업체명', repName:'대표자', contactName:'담당자', phone:'전화번호',
+  const FIELD_LABEL = { name:'업체명', repName:'대표자', contactName:'담당자', position:'직책', phone:'전화번호',
                          fax:'팩스', email:'이메일', bizRegNo:'사업자등록번호', address:'주소' };
 
   // 문서 자동판별(명함 vs 사업자등록증): 사용자가 어떤 사진인지 알려주지 않아도(§드래그앤드롭
@@ -7063,6 +7170,25 @@ ${text}
     </div>`;
   }
 
+  // §14: 기본정보 아래 "최근 활동" 요약 + 전체 고객카드(CRM)로 바로가기.
+  function coRenderRecentActivities(rec){
+    const items = window.SHIN2_ACTIVITIES ? window.SHIN2_ACTIVITIES.forCompany(rec.id) : [];
+    const recent = items.slice(0, 5);
+    const rowsHtml = recent.length
+      ? recent.map(a=> `<div class="co-activity-row">
+          <span class="co-activity-cat">${coEscapeHtml(a.category || '기타')}</span>
+          <span class="co-activity-text">${coEscapeHtml(a.activityText || a.originalText || '')}</span>
+        </div>`).join('')
+      : '<div class="co-activity-empty">최근 활동이 없습니다.</div>';
+    return `<div class="co-activity-block">
+      <div class="co-activity-head">
+        <div class="co-field-label">최근 활동</div>
+        <button type="button" class="co-text-action" id="coFullCardBtn">전체 고객카드 보기</button>
+      </div>
+      ${rowsHtml}
+    </div>`;
+  }
+
   function coRenderDetail(rec){
     if(!rec){
       coDetailCol.innerHTML = `<div class="co-detail-empty">업체를 선택하세요.</div>`;
@@ -7105,6 +7231,7 @@ ${text}
       ${row('address','주소')}
       ${row('website','홈페이지', {link:true})}
       ${rec.memo ? `<div class="co-field"><div class="co-field-label">기본메모</div><div class="co-field-value co-memo">${coEscapeHtml(rec.memo)}</div></div>` : ''}
+      ${coRenderRecentActivities(rec)}
       <div class="co-detail-actions" id="coActionsRow">
         <button type="button" class="co-text-action" id="coEditBtn">수정</button>
         <button type="button" class="co-text-action danger" id="coDeleteBtn">삭제</button>
@@ -7115,6 +7242,14 @@ ${text}
     document.getElementById('coEditBtn').addEventListener('click', ()=> coOpenEditForm(rec));
     document.getElementById('coDeleteBtn').addEventListener('click', ()=> coRenderDeleteConfirm(rec));
     document.getElementById('coCopyAllBtn').addEventListener('click', (e)=> coCopyText(coBuildFullInfoText(rec), e.currentTarget));
+    const coFullCardBtn = document.getElementById('coFullCardBtn');
+    if(coFullCardBtn){
+      coFullCardBtn.addEventListener('click', ()=>{
+        // §14/§29: CRM 첫 화면이 아니라 이 업체의 고객카드를 바로 연다(URL 파라미터는
+        // 업체명이 아니라 company.id — 이름이 바뀌어도, 이름이 겹쳐도 항상 정확한 레코드를 연다).
+        window.open('../crm/?company=' + encodeURIComponent(rec.id), '_blank', 'noopener');
+      });
+    }
     coDetailCol.querySelectorAll('.co-doc-checkbox').forEach(cb=>{
       cb.addEventListener('change', ()=> coToggleDoc(rec.id, cb.dataset.docField, cb.checked));
     });
@@ -7240,7 +7375,8 @@ ${text}
 
     for(const file of images){
       const dataUrl = await coFileToDataUrl(file);
-      const entry = { id: coGenFileId(), kind:'card', thumb: dataUrl, extracted:null, error:false };
+      // §PART2-9: rawOcrText는 항상 원문 그대로 보존한다(후처리 결과가 이 값을 덮어쓰지 않음).
+      const entry = { id: coGenFileId(), kind:'card', thumb: dataUrl, extracted:null, error:false, rawOcrText:'', showRaw:false };
       coState.ocr.files.push(entry);
       coState.ocr.statusMsg = '이미지 인식 중...';
       coRender();
@@ -7255,6 +7391,7 @@ ${text}
         coRender();
         continue;
       }
+      entry.rawOcrText = result.text || '';
       const kind = coClassifyDocType(result.text);
       entry.kind = kind;
       entry.extracted = kind === 'card' ? extractFromCardText(result.text) : extractFromBizRegText(result.text);
@@ -7300,6 +7437,8 @@ ${text}
               <button type="button" class="co-thumb-remove" data-remove-file="${f.id}" title="삭제">×</button>
             </div>
             <div class="co-thumb-label">${f.kind === 'bizreg' ? '사업자등록증' : '명함'}${f.error ? ' (인식 실패)' : ''}</div>
+            ${f.rawOcrText ? `<button type="button" class="co-text-action" data-toggle-raw="${f.id}" style="font-size:11px;">${f.showRaw ? '원문 숨기기' : '원문 OCR 보기'}</button>` : ''}
+            ${f.showRaw ? `<pre class="co-raw-ocr">${coEscapeHtml(f.rawOcrText)}</pre>` : ''}
           </div>`).join('')}
         </div>` : ''}
         <input type="file" id="coAttachInput" accept="image/*" multiple style="display:none;" />
@@ -7386,6 +7525,14 @@ ${text}
         btn.addEventListener('click', (e)=>{
           e.stopPropagation();
           coRemoveOcrFile(btn.getAttribute('data-remove-file'));
+        });
+      });
+      dropzone.querySelectorAll('[data-toggle-raw]').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const f = (coState.ocr.files || []).find(x=> x.id === btn.getAttribute('data-toggle-raw'));
+          if(f) f.showRaw = !f.showRaw;
+          coRenderForm();
         });
       });
     }
@@ -7757,6 +7904,222 @@ ${text}
   });
 
   render();
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   SHIN2_ACTIVITIES — 고객 활동(§11~13, CRM PART1 spec) 공용 데이터 계층.
+   저장: localStorage 'shin2-customer-activities-v1' =
+     [{id, companyId, originalText, activityText, category, createdAt, updatedAt}]
+   기존 업체 저장소('shin2-companies-staging')를 읽기만 하고 절대 쓰지 않는다 — 새 업체를
+   자동으로 만들지 않는다(§ 자동생성 금지 원칙, 최우선 규칙). crm/index.html도 동일한
+   localStorage 키를 그대로 읽고 쓰므로(동일 origin) 한솔2와 CRM은 항상 같은 데이터를 본다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var ACT_KEY = 'shin2-customer-activities-v1';
+  var CO_KEY = 'shin2-companies-staging';
+
+  function loadCompanies(){
+    try{ var raw = localStorage.getItem(CO_KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch(e){ return []; }
+  }
+  function loadActivities(){
+    try{ var raw = localStorage.getItem(ACT_KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch(e){ return []; }
+  }
+  function saveActivities(list){
+    try{ localStorage.setItem(ACT_KEY, JSON.stringify(list)); }catch(e){}
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('customerActivities', list);
+  }
+  function genId(){ return 'act_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+
+  // §13: AI 없이 규칙 기반 자동분류.
+  function classifyActivity(text){
+    var t = String(text || '');
+    if(/(협약|MOU)/i.test(t)) return '협약';
+    if(/(견적)/.test(t)) return '견적문의';
+    if(/(공법)/.test(t)) return '공법문의';
+    if(/(시방서|제안서|자료)/.test(t)) return '자료요청';
+    if(/(PT|설명회)/i.test(t)) return 'PT/설명회';
+    if(/(자재)/.test(t)) return '자재문의';
+    if(/(공사진행|공사중|일정)/.test(t)) return '공사진행';
+    if(/(미팅|회의)/.test(t)) return '미팅';
+    if(/(전화)/.test(t)) return '전화';
+    return '기타';
+  }
+
+  // 업체명 부분/전체 매칭(§9): 정확히 한 곳만 특정되면 즉시 확정, 애매하면 후보 목록,
+  // 없으면 null(자동 생성 금지 — 호출부가 등록 UI를 보여준다).
+  // §PART2-1: 법인표기(㈜/(주)/주식회사 등)는 업체명 원문(name)에서 절대 지우지 않지만,
+  // 빠른기록 매칭 시에는 사용자가 "(주)" 없이 typing하는 경우가 매우 흔하므로(그 반대도
+  // 가능) 매칭 판단에만 쓰는 정규화 버전을 별도로 만든다 — name 필드 자체는 건드리지 않는다.
+  var DESIGNATION_PREFIX_RE = /^(주식회사\s*|㈜\s*|\(주\)\s*|주\)\s*|\(주\s*|유한회사\s*|\(유\)\s*)+/;
+  function stripDesignationPrefix(s){ return String(s || '').replace(DESIGNATION_PREFIX_RE, ''); }
+
+  function matchCompany(rawText){
+    var text = String(rawText || '').trim();
+    if(!text) return { status:'empty' };
+    var companies = loadCompanies().filter(function(c){ return c && c.name; });
+    if(!companies.length) return { status:'none', originalText: text };
+
+    var normText = stripDesignationPrefix(text);
+
+    // 1) 입력문이 업체명 전체를 포함(접두)하는 정확 일치 — 여러 개면 가장 긴(가장 구체적인) 것을 채택.
+    //    업체명/입력문 양쪽 다 법인표기 유무가 다를 수 있으므로 정규화 버전으로 비교한다.
+    var exact = companies.filter(function(c){ return normText.indexOf(stripDesignationPrefix(c.name)) === 0; });
+    if(exact.length){
+      exact.sort(function(a,b){ return stripDesignationPrefix(b.name).length - stripDesignationPrefix(a.name).length; });
+      var maxLen = stripDesignationPrefix(exact[0].name).length;
+      var tied = exact.filter(function(c){ return stripDesignationPrefix(c.name).length === maxLen; });
+      if(tied.length === 1){
+        var co = tied[0];
+        var consumedLen = text.length - normText.length + stripDesignationPrefix(co.name).length;
+        var rest = text.slice(consumedLen).replace(/^[\s,:\-]+/, '').trim();
+        return { status:'matched', company: co, originalText: text, activityText: rest };
+      }
+      return { status:'ambiguous', originalText: text, candidates: tied };
+    }
+
+    // 2) 입력된 선행 토큰이 업체명의 접두어인 경우(예: "신광"만 입력) — 여러 후보면 애매.
+    var leadingToken = (normText.split(/\s+/)[0] || '').trim();
+    if(leadingToken.length >= 2){
+      var prefixMatches = companies.filter(function(c){ return stripDesignationPrefix(c.name).indexOf(leadingToken) === 0; });
+      if(prefixMatches.length === 1){
+        var co2 = prefixMatches[0];
+        var consumedLen2 = text.length - normText.length + leadingToken.length;
+        var rest2 = text.slice(consumedLen2).replace(/^[\s,:\-]+/, '').trim();
+        return { status:'matched', company: co2, originalText: text, activityText: rest2 };
+      }
+      if(prefixMatches.length > 1){
+        return { status:'ambiguous', originalText: text, candidates: prefixMatches };
+      }
+    }
+    return { status:'none', originalText: text };
+  }
+
+  function addActivity(companyId, originalText, activityText){
+    var now = new Date().toISOString();
+    var rec = {
+      id: genId(), companyId: companyId, originalText: originalText,
+      activityText: activityText, category: classifyActivity(activityText),
+      createdAt: now, updatedAt: now
+    };
+    var all = loadActivities();
+    all.push(rec);
+    saveActivities(all);
+    return rec;
+  }
+  function forCompany(companyId){
+    return loadActivities().filter(function(a){ return a.companyId === companyId; })
+      .sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+  }
+  function updateActivity(id, fields){
+    var all = loadActivities();
+    var rec = all.find(function(a){ return a.id === id; });
+    if(!rec) return null;
+    if(fields.activityText !== undefined) rec.activityText = fields.activityText;
+    if(fields.category !== undefined) rec.category = fields.category;
+    rec.updatedAt = new Date().toISOString();
+    saveActivities(all);
+    return rec;
+  }
+  function deleteActivity(id){
+    saveActivities(loadActivities().filter(function(a){ return a.id !== id; }));
+  }
+
+  window.SHIN2_ACTIVITIES = {
+    loadCompanies: loadCompanies, loadAll: loadActivities, matchCompany: matchCompany,
+    classify: classifyActivity, add: addActivity, forCompany: forCompany,
+    update: updateActivity, remove: deleteActivity, stripDesignationPrefix: stripDesignationPrefix
+  };
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   빠른 고객기록 UI(§5~10) — 홈 화면의 입력 한 줄. 드롭다운/모달 없이 입력→Enter→기록완료.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var input = document.getElementById('qrInput');
+  var resultEl = document.getElementById('qrResult');
+  if(!input || !resultEl) return;
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function clearResult(){ resultEl.innerHTML = ''; }
+
+  function showMatched(rec, companyName){
+    resultEl.innerHTML = '<div class="qr-inline-ok">' + escapeHtml(companyName) + '에 기록했습니다.</div>';
+    input.value = '';
+    setTimeout(function(){ if(resultEl.firstChild) clearResult(); }, 3000);
+  }
+
+  function showAmbiguous(m){
+    var html = '<div class="qr-candidates"><div class="qr-candidates-text">여러 업체가 후보로 보입니다. 하나를 선택하세요.</div>';
+    m.candidates.forEach(function(c){
+      html += '<button type="button" class="qr-candidate-btn" data-co="' + escapeHtml(c.id) + '">' + escapeHtml(c.name) + '</button>';
+    });
+    html += '<button type="button" class="co-text-action" data-cancel="1">취소</button></div>';
+    resultEl.innerHTML = html;
+    resultEl.querySelectorAll('[data-co]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var co = m.candidates.find(function(c){ return c.id === btn.getAttribute('data-co'); });
+        if(!co) return;
+        var strip = window.SHIN2_ACTIVITIES.stripDesignationPrefix;
+        var normText = strip(m.originalText);
+        var normName = strip(co.name);
+        var rest = normText.indexOf(normName) === 0
+          ? m.originalText.slice(m.originalText.length - normText.length + normName.length).replace(/^[\s,:\-]+/, '').trim()
+          : m.originalText;
+        window.SHIN2_ACTIVITIES.add(co.id, m.originalText, rest);
+        showMatched(null, co.name);
+      });
+    });
+    resultEl.querySelector('[data-cancel]').addEventListener('click', clearResult);
+  }
+
+  function showNotFound(originalText){
+    var html = '<div class="qr-notfound"><div class="qr-notfound-text">등록된 고객을 찾지 못했습니다.</div>' +
+      '<div class="qr-action-row"><button type="button" class="co-text-action" data-register="1">고객 등록</button>' +
+      '<button type="button" class="co-text-action" data-cancel2="1">취소</button></div></div>';
+    resultEl.innerHTML = html;
+    resultEl.querySelector('[data-register]').addEventListener('click', function(){
+      if(!window.SHIN2_COMPANIES) return;
+      // 입력했던 원문에서 업체명으로 보이는 첫 토큰을 이름으로 미리 채워둔다 — 저장은
+      // 여전히 사용자가 [저장]을 눌러야만 확정된다(자동 생성 아님).
+      var guessName = (originalText.split(/\s+/)[0] || '').trim();
+      var navCompaniesBtn = document.getElementById('navCompanies');
+      if(navCompaniesBtn) navCompaniesBtn.click();
+      window.SHIN2_COMPANIES.openAddPrefilled({ name: guessName }, function(){});
+    });
+    resultEl.querySelector('[data-cancel2]').addEventListener('click', clearResult);
+    // §9: 입력했던 원문은 그대로 유지한다(지우지 않음).
+  }
+
+  function handleEnter(){
+    var text = input.value;
+    if(!text || !text.trim()) return;
+    var m = window.SHIN2_ACTIVITIES.matchCompany(text);
+    if(m.status === 'matched'){
+      window.SHIN2_ACTIVITIES.add(m.company.id, m.originalText, m.activityText);
+      showMatched(null, m.company.name);
+    } else if(m.status === 'ambiguous'){
+      showAmbiguous(m);
+    } else if(m.status === 'none'){
+      showNotFound(m.originalText);
+    }
+  }
+
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); handleEnter(); }
+  });
 })();
 </script>
 

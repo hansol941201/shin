@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>한솔 고객관리</title>
+<style>
+  /* ─────────────────────────────────────────────────────────────────────
+     디자인 시스템: v2/index.html의 :root 토큰/서체/버튼/필드 스타일을 그대로 이식했다
+     (공유 CSS 파일로 추출하지 않고 이 파일에 복제한 이유: v2는 지금 이 순간에도 살아있는
+     프로덕션 화면이라 <link>로 묶으면 앞으로 v2를 고칠 때 CRM이 의도치 않게 함께 깨질 수
+     있고, 반대로 CRM 전용 규칙을 추가하다 v2 셀렉터와 충돌할 위험도 있다. 두 파일이
+     완전히 독립적으로 배포/롤백될 수 있도록 값만 그대로 복제했다 — 색/간격 값이 바뀌면
+     양쪽을 각각 맞춰야 하지만, 지금 단계에서는 안전성이 더 중요하다고 판단했다.) ───────── */
+  :root{
+    --bg: #F8F9FB;
+    --surface: #FFFFFF;
+    --navy: #1E2A4A;
+    --text: #1F2937;
+    --text-muted: #6B7280;
+    --line: #E5E7EB;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background:var(--bg); color:var(--text);
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  button, input, textarea, select{ font-family:inherit; }
+
+  /* ---------- Gate(사이트 잠금) — v2와 동일한 비밀번호로 열람 확인만 한다(계정함 내용은
+       CRM에서 다루지 않으므로 복호화하지 않음, §CRITICAL 재확인: 계정 vault는 절대 건드리지 않는다) ---------- */
+  .gate-screen{
+    position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:14px; background:var(--bg);
+  }
+  .gate-brand{ font-size:20px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+  .gate-desc{ font-size:13px; color:var(--text-muted); }
+  .gate-input{
+    width:100%; max-width:260px; height:40px; padding:0 12px; font-size:14px; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; outline:none; text-align:center;
+  }
+  .gate-input:focus{ border-color:#C7CEDB; }
+  .gate-error{ font-size:12px; color:#B91C1C; }
+  .gate-enter-btn{
+    width:100%; max-width:260px; height:38px; font-size:13px; font-weight:600; color:#fff;
+    background:var(--navy); border:none; border-radius:6px; cursor:pointer;
+  }
+  .gate-enter-btn:hover{ opacity:0.92; }
+  .gate-enter-btn:disabled{ opacity:0.6; cursor:default; }
+  .gate-sub-link{ font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; text-decoration:underline; }
+
+  /* ---------- Header ---------- */
+  .app{ max-width:1080px; margin:0 auto; padding:26px 28px 60px; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+  .brand{ font-size:19px; font-weight:600; color:var(--navy); }
+  .brand-sub{ font-size:12px; color:var(--text-muted); font-weight:400; margin-left:8px; }
+  .topbar-actions{ display:flex; align-items:center; gap:8px; }
+  .tb-btn{
+    height:30px; padding:0 12px; font-size:12.5px; color:var(--text-muted); background:var(--surface);
+    border:1px solid var(--line); border-radius:6px; cursor:pointer;
+  }
+  .tb-btn:hover{ background:#F0F1F4; color:var(--text); }
+
+  /* ---------- Search + list (첫 화면) ---------- */
+  .search-box{
+    display:flex; align-items:center; gap:8px; height:42px; padding:0 14px;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; max-width:520px;
+  }
+  .search-box svg{ flex:none; color:var(--text-muted); }
+  .search-box input{ flex:1; border:none; outline:none; font-size:14px; color:var(--text); background:transparent; }
+  .search-box input::placeholder{ color:#9CA3AF; }
+
+  .list-head{ display:flex; justify-content:space-between; align-items:center; margin:22px 0 8px; }
+  .list-title{ font-size:14px; font-weight:700; color:var(--text); }
+  .list-add-btn{
+    height:30px; padding:0 12px; font-size:12.5px; font-weight:600; color:#fff; background:var(--navy);
+    border:none; border-radius:6px; cursor:pointer;
+  }
+  .list-add-btn:hover{ opacity:0.92; }
+
+  .co-table-head{ display:flex; gap:12px; padding:8px 10px; font-size:11.5px; color:var(--text-muted); border-bottom:1px solid var(--line); }
+  .co-list{ }
+  .co-row{
+    display:flex; gap:12px; padding:12px 10px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center;
+  }
+  .co-row:hover{ background:#F8F9FB; }
+  .col-name{ flex:1 1 180px; min-width:0; font-weight:600; color:var(--text); }
+  .col-contact{ flex:1 1 140px; min-width:0; color:var(--text-muted); font-size:12.5px; }
+  .col-recent{ flex:2 1 240px; min-width:0; color:var(--text-muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-date{ flex:0 0 110px; color:var(--text-muted); font-size:12px; text-align:right; }
+  .empty-note{ font-size:12.5px; color:var(--text-muted); padding:24px 4px; text-align:center; }
+
+  /* ---------- Customer card ---------- */
+  .back-link{ font-size:12.5px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:0; margin-bottom:14px; }
+  .back-link:hover{ color:var(--navy); }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .card-title{ font-size:20px; font-weight:700; color:var(--text); }
+  .card-copy-all-btn{
+    height:28px; padding:0 12px; font-size:12px; color:var(--text-muted); background:var(--surface);
+    border:1px solid var(--line); border-radius:6px; cursor:pointer;
+  }
+  .card-copy-all-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .card-saved-toast{ font-size:11.5px; color:var(--navy); font-weight:600; }
+
+  .card-section{ margin-top:26px; padding-top:16px; border-top:1px solid var(--line); }
+  .card-section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .card-section-title{ font-size:14px; font-weight:700; color:var(--text); }
+
+  .co-field{ margin-bottom:8px; }
+  .co-field-label{ font-size:11.5px; color:var(--text-muted); margin-bottom:3px; }
+  .co-field-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .co-field-value{ font-size:13.5px; color:var(--text); line-height:1.5; word-break:break-word; }
+  .co-field-copy-btn{ flex:none; border:none; background:transparent; cursor:pointer; font-size:11.5px; color:var(--text-muted); padding:2px 0 2px 8px; white-space:nowrap; }
+  .co-field-copy-btn:hover{ color:var(--navy); text-decoration:underline; }
+  .co-copied{ font-size:11px; color:var(--navy); padding-left:8px; white-space:nowrap; }
+  .co-text-action{ border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-muted); padding:2px 0; font-family:inherit; }
+  .co-text-action:hover{ color:var(--text); }
+  .co-text-action.danger:hover{ color:#B91C1C; }
+  .co-text-action.primary{ color:var(--navy); font-weight:600; }
+
+  .co-form-field{ margin-bottom:12px; max-width:520px; }
+  .co-form-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .co-form-field input, .co-form-field textarea{
+    width:100%; padding:8px 10px; font-size:13.5px; color:var(--text); background:var(--surface);
+    border:1px solid var(--line); border-radius:6px; outline:none;
+  }
+  .co-form-field input:focus, .co-form-field textarea:focus{ border-color:#C7CEDB; }
+  .co-form-field textarea{ min-height:56px; resize:vertical; }
+
+  /* ---------- 서류함(4분류) ---------- */
+  .doc-tabs{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .doc-tab{ height:28px; padding:0 12px; font-size:12.5px; color:var(--text-muted); background:var(--surface); border:1px solid var(--line); border-radius:14px; cursor:pointer; }
+  .doc-tab.active{ background:#EEF1F8; color:var(--navy); font-weight:600; border-color:#C7CEDB; }
+  .doc-tab:hover:not(.active){ background:#F0F1F4; }
+  .doc-dropzone{
+    border:1px dashed var(--line); border-radius:8px; padding:16px; text-align:center; cursor:pointer; margin-bottom:12px;
+    color:var(--text-muted); font-size:12.5px;
+  }
+  .doc-dropzone:hover{ border-color:#C7CEDB; }
+  .doc-blocked-note{ font-size:11.5px; color:#9A6B00; background:#FFF7E6; border:1px solid #F0DDA8; border-radius:6px; padding:8px 10px; margin-bottom:12px; }
+  .doc-item{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--line); }
+  .doc-item:last-child{ border-bottom:none; }
+  .doc-thumb{ width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid var(--line); flex:none; background:var(--bg); }
+  .doc-thumb-generic{ width:52px; height:52px; border-radius:6px; border:1px solid var(--line); flex:none; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-muted); }
+  .doc-main{ flex:1; min-width:0; }
+  .doc-name{ font-size:13px; color:var(--text); font-weight:600; word-break:break-all; }
+  .doc-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .doc-memo{ font-size:12px; color:var(--text-muted); margin-top:4px; white-space:pre-wrap; }
+  .doc-actions{ display:flex; gap:10px; margin-top:6px; }
+  .doc-empty{ font-size:12px; color:var(--text-muted); padding:10px 0; }
+  .doc-rename-row{ display:flex; gap:6px; margin-top:6px; }
+  .doc-rename-row input{ flex:1; padding:5px 8px; font-size:12px; border:1px solid var(--line); border-radius:5px; }
+
+  /* ---------- OCR 확인 화면 ---------- */
+  .ocr-review{ border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:14px; background:var(--surface); }
+  .ocr-review-title{ font-size:13px; font-weight:700; margin-bottom:10px; }
+  .ocr-badge{ font-size:10.5px; color:#9A6B00; background:#FFF3D6; border-radius:4px; padding:1px 6px; margin-left:6px; }
+  .ocr-raw-box{ white-space:pre-wrap; word-break:break-word; font-size:11.5px; color:var(--text-muted); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin-top:8px; max-height:180px; overflow:auto; }
+  .ocr-actions{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  .ocr-dup-box{ margin-top:10px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  .ocr-dup-actions{ display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
+  .co-checkbox-row{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-muted); }
+
+  /* ---------- 활동 타임라인 ---------- */
+  .act-add-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .act-add-row input{ flex:1; height:36px; padding:0 10px; font-size:13px; border:1px solid var(--line); border-radius:6px; outline:none; }
+  .act-add-row input:focus{ border-color:#C7CEDB; }
+  .act-add-row button{ height:36px; padding:0 14px; font-size:12.5px; font-weight:600; color:#fff; background:var(--navy); border:none; border-radius:6px; cursor:pointer; flex:none; }
+  .act-date-group{ margin-bottom:14px; }
+  .act-date-label{ font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; }
+  .act-row{ padding:8px 0; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:baseline; }
+  .act-row:last-child{ border-bottom:none; }
+  .act-time{ flex:none; font-size:11.5px; color:var(--text-muted); width:40px; }
+  .act-cat{ flex:none; font-size:11.5px; color:var(--navy); font-weight:600; }
+  .act-text{ flex:1; font-size:13px; color:var(--text); word-break:break-word; }
+  .act-row-actions{ flex:none; display:flex; gap:8px; }
+  .act-edit-row{ display:flex; gap:6px; width:100%; }
+  .act-edit-row input{ flex:1; padding:5px 8px; font-size:12.5px; border:1px solid var(--line); border-radius:5px; }
+
+  /* ---------- 메모(공용 컴포넌트, shin2-memos-v1 재사용) ---------- */
+  .memo-block{ }
+  .memo-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .memo-add-btn{ height:26px; padding:0 10px; font-size:12px; font-weight:600; color:var(--text-muted); background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer; }
+  .memo-add-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .memo-empty{ font-size:12.5px; color:var(--text-muted); padding:10px 2px; }
+  .memo-item{ padding:9px 2px; border-bottom:1px solid var(--line); }
+  .memo-item:last-child{ border-bottom:none; }
+  .memo-meta{ font-size:11px; color:var(--text-muted); margin-bottom:3px; }
+  .memo-text{ font-size:13px; color:var(--text); line-height:1.55; white-space:pre-wrap; }
+  .memo-item-actions{ display:flex; gap:10px; margin-top:5px; }
+  .memo-form textarea{ width:100%; min-height:56px; resize:vertical; padding:8px 10px; font-size:13px; border:1px solid var(--line); border-radius:6px; outline:none; }
+  .memo-form-actions{ display:flex; justify-content:flex-end; gap:6px; margin-top:6px; }
+</style>
+</head>
+<body>
+
+<div class="gate-screen" id="gateScreen">
+  <div class="gate-brand">한솔 고객관리</div>
+  <div class="gate-desc" id="gateDesc">비밀번호를 입력해주세요</div>
+  <input type="password" id="gatePasswordInput" class="gate-input" placeholder="비밀번호" autocomplete="off" />
+  <div class="gate-error" id="gateError" style="display:none;"></div>
+  <button type="button" id="gateEnterBtn" class="gate-enter-btn">들어가기</button>
+  <button type="button" id="gateNoVaultBtn" class="gate-sub-link" style="display:none;">계정정보가 아직 없어요 — 한솔 업무페이지에서 먼저 잠금을 해제해주세요</button>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+  <div class="topbar">
+    <div><span class="brand">한솔 고객관리</span><span class="brand-sub">고객업무관리카드</span></div>
+    <div class="topbar-actions">
+      <button type="button" id="hansolLinkBtn" class="tb-btn" title="한솔 업무페이지(v2)를 새 탭에서 엽니다">한솔 업무페이지</button>
+    </div>
+  </div>
+
+  <div id="listView">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="crmSearchInput" placeholder="업체명 / 담당자 / 활동내용 검색" />
+    </div>
+    <div class="list-head">
+      <div class="list-title" id="crmListTitle">고객</div>
+      <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
+    </div>
+    <div class="co-table-head">
+      <div class="col-name">고객명</div>
+      <div class="col-contact">담당자</div>
+      <div class="col-recent">최근활동</div>
+      <div class="col-date">마지막 활동일</div>
+    </div>
+    <div class="co-list" id="crmList"></div>
+  </div>
+
+  <div id="cardView" style="display:none;"></div>
+</div>
+
+<script>
+/* ==========================================================================
+   §PART2 개선 OCR 순수 함수 — v2/index.html(shin2-companies-staging §업체 서류)에서
+   개선한 것과 동일한 로직을 그대로 복제했다("한 번 개선해서 양쪽에서 재사용"). 이 파일은
+   독립 HTML이라 <script> import를 공유할 수 없어 텍스트를 그대로 복제하는 방식을 택했다
+   — 두 파일 중 하나만 고치면 어긋날 수 있으므로, 다음에 OCR 로직을 또 고칠 때는 반드시
+   이 블록과 v2/index.html의 §PART2 블록을 함께 수정해야 한다(주석으로 남겨둔다).
+   ========================================================================== */
+window.SHIN2_CRM_OCR = (function(){
+  'use strict';
+  const DECOR_RE = /^[□�│●■※§|·•‣◆\s]+|[□�│●■※§|·•‣◆\s]+$/g;
+  function coStripDecor(line){ return String(line || '').replace(DECOR_RE, ''); }
+  const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  const MOBILE_RE = /01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}/;
+  const LANDLINE_RE = /0(2|3[1-3]|4[1-4]|5[1-5]|6[1-4])[-.\s]?\d{3,4}[-.\s]?\d{4}/;
+  const BIZNO_RE = /\d{3}[-.\s]?\d{2}[-.\s]?\d{5}/;
+  const DATE_RE = /\d{4}[.\-\/]\s?\d{1,2}[.\-\/]\s?\d{1,2}|\d{4}\s?년\s?\d{1,2}\s?월\s?\d{1,2}\s?일/;
+  const LABEL_RE = /(대표자|사업자등록번호|법인등록번호|TEL|Tel|전화|FAX|Fax|팩스|주소|사업자등록증|성명)\s*[:：]?/;
+  const NAME_POS_RE = /(주식회사|㈜|\(주\)|주\)|\(주|유한회사|\(유\)|건설산업|종합건설|건설사|건설|도장|방수|개발|주택|기업|상사|산업|테크|엔지니어링|이엔지|ENG|E&C)/i;
+  const TITLE_RE = /(대표이사|대표|현장소장|사업부장|부회장|회장|부사장|사장|전무|상무|본부장|이사|부장|차장|과장|대리|주임|팀장|실장|소장|공장장|연구원|매니저|담당자|담당)/;
+  const NAME_ONLY_RE = /^[가-힣]{2,4}$/;
+
+  function coIsAddressLine(line){
+    const s = String(line || '').trim();
+    if(!s) return false;
+    if(BIZNO_RE.test(s)) return false;
+    if(/(사업자등록번호|법인등록번호|등록번호)/.test(s)) return false;
+    if(/(특별시|광역시|자치도|자치시)/.test(s)) return true;
+    if(/[가-힣]{1,4}(시|도|군|구|읍|면|동|로|길|번길)\s?\d/.test(s)) return true;
+    if(/\d{5}\)?\s*$/.test(s) && /[가-힣]/.test(s) && s.length >= 6) return true;
+    return false;
+  }
+  function coScoreNameLine(line, idx){
+    const s = String(line || '').trim();
+    if(!s) return -999;
+    let score = 0;
+    if(BIZNO_RE.test(s)) score -= 6;
+    if(EMAIL_RE.test(s)) score -= 6;
+    if(MOBILE_RE.test(s) || LANDLINE_RE.test(s)) score -= 5;
+    if(LABEL_RE.test(s)) score -= 4;
+    if(DATE_RE.test(s)) score -= 5;
+    if(coIsAddressLine(s)) score -= 7;
+    if(NAME_POS_RE.test(s)) score += 5;
+    if(idx <= 2) score += 2;
+    if(s.length <= 20) score += 1;
+    if(s.length > 30) score -= 2;
+    return score;
+  }
+  function coExtractNameCandidate(lines){
+    const scored = lines.map((l, i)=> ({ line: l, score: coScoreNameLine(l, i) })).filter(x=> x.line.trim());
+    if(!scored.length) return { value:'', ambiguous:false };
+    scored.sort((a,b)=> b.score - a.score);
+    const top = scored[0];
+    const second = scored[1];
+    if(top.score <= 0) return { value:'', ambiguous:true };
+    if(second && second.score > 0 && (top.score - second.score) < 2) return { value:'', ambiguous:true };
+    return { value: top.line.trim().replace(/\s{2,}/g,' '), ambiguous:false };
+  }
+  function coExtractEmail(lines){
+    for(const line of lines){
+      const spaced = line.replace(/\s*@\s*/g, '@');
+      const m = spaced.match(EMAIL_RE);
+      if(m) return { value: m[0], ambiguous:false };
+      if(/@/.test(line)) return { value:'', ambiguous:true };
+    }
+    return { value:'', ambiguous:false };
+  }
+  function coNormalizePhone(num){ return String(num || '').replace(/[.\s]/g,'-').replace(/-{2,}/g,'-'); }
+  function coExtractPhoneFax(lines){
+    const candidates = [];
+    lines.forEach(line=>{
+      const isFaxLabel = /fax|팩스/i.test(line);
+      const isTelLabel = !isFaxLabel && /(tel|전화)/i.test(line);
+      const m = line.match(MOBILE_RE) || line.match(LANDLINE_RE);
+      if(m) candidates.push({ num: coNormalizePhone(m[0]), isFaxLabel, isTelLabel, mobile: MOBILE_RE.test(m[0]) });
+    });
+    let phone = '', fax = '', phoneAmbiguous = false, faxAmbiguous = false;
+    const faxLabeled = candidates.find(c=> c.isFaxLabel);
+    if(faxLabeled) fax = faxLabeled.num;
+    const telLabeled = candidates.find(c=> c.isTelLabel && c !== faxLabeled);
+    if(telLabeled) phone = telLabeled.num;
+    if(!phone){ const mobile = candidates.find(c=> c.mobile && c !== faxLabeled); if(mobile) phone = mobile.num; }
+    const remaining = candidates.filter(c=> c.num !== phone && c.num !== fax);
+    if(!fax){ if(remaining.length === 1) fax = remaining[0].num; else if(remaining.length > 1) faxAmbiguous = true; }
+    if(!phone && !fax && candidates.length > 1) phoneAmbiguous = true;
+    return { phone, fax, phoneAmbiguous, faxAmbiguous };
+  }
+  function coExtractBizRegNo(text){
+    const collapsed = String(text || '').replace(/(\d)[ \t]+(?=\d)/g,'$1').replace(/[ \t]*-[ \t]*/g,'-');
+    const m = collapsed.match(/\b\d{3}-\d{2}-\d{5}\b/);
+    if(m) return { value: m[0], ambiguous:false };
+    const loose = String(text || '').match(/(사업자등록번호|등록번호)[^\d]{0,6}([\d\s-]{10,16})/);
+    if(loose){
+      const digits = loose[2].replace(/\D/g,'');
+      if(digits.length === 10) return { value: digits.slice(0,3) + '-' + digits.slice(3,5) + '-' + digits.slice(5), ambiguous:false };
+      return { value:'', ambiguous:true };
+    }
+    return { value:'', ambiguous:false };
+  }
+  function coExtractAddress(lines){
+    const found = lines.find(l=> coIsAddressLine(l));
+    if(!found) return { value:'', ambiguous:false };
+    const cleaned = found.replace(/.*(사업장\s*소재지|소재지|주소)\s*[:：]?\s*/, '').trim();
+    return { value: cleaned, ambiguous:false };
+  }
+  function coExtractRepName(lines){
+    for(const line of lines){
+      if(/(대표자|성명)\s*[:：]/.test(line) || /^(대표자|성명)\b/.test(line)){
+        const v = line.replace(/.*(대표자|성명)\s*[:：]?\s*/, '').trim();
+        if(!v) return { value:'', ambiguous:true };
+        if(BIZNO_RE.test(v) || v.length > 8) return { value:'', ambiguous:true };
+        return { value: v, ambiguous:false };
+      }
+    }
+    return { value:'', ambiguous:false };
+  }
+  function coExtractContactAndPosition(lines){
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      const m = line.match(TITLE_RE);
+      if(!m) continue;
+      const position = m[0];
+      const after = line.slice(m.index + m[0].length).trim();
+      if(NAME_ONLY_RE.test(after)) return { name:{ value: after, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      const before = line.slice(0, m.index).trim();
+      if(NAME_ONLY_RE.test(before)) return { name:{ value: before, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      const prev = (lines[i-1] || '').trim();
+      if(NAME_ONLY_RE.test(prev) && !TITLE_RE.test(prev)) return { name:{ value: prev, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      const next = (lines[i+1] || '').trim();
+      if(NAME_ONLY_RE.test(next) && !TITLE_RE.test(next)) return { name:{ value: next, ambiguous:false }, position:{ value: position, ambiguous:false } };
+      return { name:{ value:'', ambiguous:true }, position:{ value: position, ambiguous:false } };
+    }
+    return { name:{ value:'', ambiguous:false }, position:{ value:'', ambiguous:false } };
+  }
+  function coExtractBizRegName(lines){
+    for(const line of lines){
+      if(/상호\s*[:：]/.test(line) || /^상호\b/.test(line)){
+        const v = line.replace(/.*상호\s*[:：]?\s*/, '').trim();
+        if(!v) return { value:'', ambiguous:true };
+        if(coIsAddressLine(v)) return { value:'', ambiguous:true };
+        return { value: v, ambiguous:false };
+      }
+    }
+    return coExtractNameCandidate(lines);
+  }
+  function coPrepLines(rawText){
+    return String(rawText || '').split('\n').map(l=> coStripDecor(l.trim())).filter(Boolean);
+  }
+  function extractFromCardText(rawText){
+    const lines = coPrepLines(rawText);
+    const pf = coExtractPhoneFax(lines);
+    const cp = coExtractContactAndPosition(lines);
+    return {
+      name: coExtractNameCandidate(lines), repName: { value:'', ambiguous:false },
+      contactName: cp.name, position: cp.position,
+      phone: { value: pf.phone, ambiguous: pf.phoneAmbiguous }, fax: { value: pf.fax, ambiguous: pf.faxAmbiguous },
+      email: coExtractEmail(lines), bizRegNo: { value:'', ambiguous:false }, address: coExtractAddress(lines),
+      rawOcrText: String(rawText || '')
+    };
+  }
+  function extractFromBizRegText(rawText){
+    const lines = coPrepLines(rawText);
+    const full = lines.join('\n');
+    return {
+      name: coExtractBizRegName(lines), repName: coExtractRepName(lines),
+      contactName: { value:'', ambiguous:false }, position: { value:'', ambiguous:false },
+      phone: { value:'', ambiguous:false }, fax: { value:'', ambiguous:false }, email: { value:'', ambiguous:false },
+      bizRegNo: coExtractBizRegNo(full), address: coExtractAddress(lines), rawOcrText: String(rawText || '')
+    };
+  }
+  function coClassifyDocType(rawText){
+    const t = String(rawText || '');
+    let bizScore = 0, cardScore = 0;
+    if(/사업자\s*등록증/.test(t)) bizScore += 4;
+    if(/사업자등록번호/.test(t)) bizScore += 3;
+    if(/법인등록번호/.test(t)) bizScore += 2;
+    if(/(관할세무서|업태|종목|개업연월일|법인명)/.test(t)) bizScore += 2;
+    if(BIZNO_RE.test(t)) bizScore += 1;
+    if(TITLE_RE.test(t)) cardScore += 2;
+    if(MOBILE_RE.test(t)) cardScore += 1;
+    if(EMAIL_RE.test(t)) cardScore += 1;
+    if(/(www\.|https?:\/\/)/i.test(t)) cardScore += 1;
+    return bizScore > cardScore ? 'bizreg' : 'card';
+  }
+  return { extractFromCardText, extractFromBizRegText, coClassifyDocType, coIsAddressLine, coExtractBizRegNo, coStripDecor };
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   Gate — v2/index.html의 사이트 잠금과 동일한 비밀번호(계정함 마스터 비밀번호)로만
+   열람을 확인한다. 계정함(shin2-accounts-vault)의 개별 레코드는 이 페이지에서 절대
+   읽거나 복호화하지 않는다 — 오직 "이 비밀번호가 맞는지"만 PBKDF2+AES-GCM check로
+   검증한다(기존 v2 게이트와 동일 알고리즘/파라미터, salt/check 메타데이터만 읽음).
+   계정함이 아직 한 번도 만들어지지 않은 브라우저(=v2를 먼저 연 적이 없음)에서는 CRM
+   단독으로 새 비밀번호를 만들지 않는다 — 먼저 v2에서 잠금을 풀어달라고 안내한다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  const ACCT_KEY = 'shin2-accounts-vault';
+  const PBKDF2_ITERATIONS = 150000;
+  const CHECK_PLAINTEXT = 'shin2-vault-check-v1';
+  const CRM_SESSION_KEY = 'shin2-crm-gate-session-ok'; // sessionStorage(탭 한정): 통과 여부만 기록, 비밀번호/키는 저장하지 않음
+
+  function b64FromBuf(buf){ const b=new Uint8Array(buf); let s=''; for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+  function bufFromB64(b64){ const bin=atob(b64); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return a.buffer; }
+  async function deriveRawKeyBytes(password, saltBytes){
+    const enc = new TextEncoder();
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash:'SHA-256' }, baseKey, 256);
+    return new Uint8Array(bits);
+  }
+  async function importAesKey(rawBytes){ return crypto.subtle.importKey('raw', rawBytes, { name:'AES-GCM' }, false, ['decrypt']); }
+  async function decryptStr(key, cipherB64, ivB64){
+    const iv = new Uint8Array(bufFromB64(ivB64));
+    const cipherBuf = bufFromB64(cipherB64);
+    const plainBuf = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, cipherBuf);
+    return new TextDecoder().decode(plainBuf);
+  }
+  function loadVaultRaw(){
+    try{ const raw = localStorage.getItem(ACCT_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+  }
+
+  const gateScreen = document.getElementById('gateScreen');
+  const gateDesc = document.getElementById('gateDesc');
+  const gatePasswordInput = document.getElementById('gatePasswordInput');
+  const gateError = document.getElementById('gateError');
+  const gateEnterBtn = document.getElementById('gateEnterBtn');
+  const gateNoVaultBtn = document.getElementById('gateNoVaultBtn');
+  const appRoot = document.getElementById('appRoot');
+
+  // SHIN2_CRM_APP_INIT은 이 스크립트보다 아래쪽 <script>에서 정의된다(파싱 순서상 아직 없을 수
+  // 있음) — 그래서 직접 호출하지 않고 "통과했다"는 사실만 플래그+이벤트로 남기고, 아래쪽
+  // 초기화 스크립트가 스스로 이 플래그를 확인해서 실행하도록 한다(순서에 안전).
+  function showGateError(msg){ gateError.textContent = msg; gateError.style.display = msg ? 'block' : 'none'; }
+  function showApp(){
+    gateScreen.style.display = 'none';
+    appRoot.style.removeProperty('display');
+    window.SHIN2_CRM_GATE_PASSED = true;
+    window.dispatchEvent(new CustomEvent('shin2-crm-gate-passed'));
+  }
+
+  const existing = loadVaultRaw();
+  if(!existing){
+    gateDesc.textContent = '아직 계정정보가 없습니다.';
+    gatePasswordInput.style.display = 'none';
+    gateEnterBtn.style.display = 'none';
+    gateNoVaultBtn.style.display = 'inline-block';
+    gateNoVaultBtn.addEventListener('click', ()=>{ window.open('../v2/', '_blank', 'noopener'); });
+  } else {
+    try{
+      if(sessionStorage.getItem(CRM_SESSION_KEY) === '1'){ showApp(); return; }
+    }catch(e){}
+  }
+
+  async function handleGateEnter(){
+    const pw = gatePasswordInput.value;
+    showGateError('');
+    if(!pw) return;
+    gateEnterBtn.disabled = true;
+    try{
+      const current = loadVaultRaw();
+      if(!current){ showGateError('아직 계정정보가 없습니다. 한솔 업무페이지에서 먼저 잠금을 해제해주세요.'); return; }
+      const saltBytes = new Uint8Array(bufFromB64(current.salt));
+      const rawBytes = await deriveRawKeyBytes(pw, saltBytes);
+      const key = await importAesKey(rawBytes);
+      let ok = false;
+      try{ ok = (await decryptStr(key, current.check.cipher, current.check.iv)) === CHECK_PLAINTEXT; }catch(e){ ok = false; }
+      if(!ok){ showGateError('비밀번호가 올바르지 않습니다.'); return; }
+      try{ sessionStorage.setItem(CRM_SESSION_KEY, '1'); }catch(e){}
+      showApp();
+    } finally {
+      gateEnterBtn.disabled = false;
+    }
+  }
+  gateEnterBtn.addEventListener('click', handleGateEnter);
+  gatePasswordInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') handleGateEnter(); });
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   CRM 데이터 계층 — 기존 companies(shin2-companies-staging)를 그대로 재사용하고,
+   customerActivities/customerDocuments를 v2와 동일한 localStorage 키로 읽고 쓴다.
+   company.id는 절대 새로 만들지 않는다(§3) — 이 파일은 companies 배열에 새 레코드를
+   push할 때도 항상 v2와 동일한 id 포맷(co_...)을 쓰고, 기존 레코드의 id는 절대 바꾸지 않는다.
+   파일 바이너리는 Firestore로 동기화되는 customerDocuments 메타데이터에 절대 넣지 않고
+   별도의 로컬 전용 키(shin2-customer-doc-blobs-v1, SHIN2_SYNC_KEYS에 없음 = 절대 클라우드로
+   안 나감)에만 dataURL로 보관한다 — Firebase Storage 자격증명이 이 세션에 없으므로(BLOCKED,
+   §25) 로컬 폴백으로 메타데이터만이라도 실제로 저장/조회 가능하게 만들었다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  const CO_KEY = 'shin2-companies-staging';
+  const ACT_KEY = 'shin2-customer-activities-v1';
+  const DOC_KEY = 'shin2-customer-documents-v1';
+  const BLOB_KEY = 'shin2-customer-doc-blobs-v1'; // 로컬 전용 — SHIN2_SYNC_KEYS에 절대 추가하지 않는다(§25)
+  const MEMO_KEY = 'shin2-memos-v1';
+
+  function readArr(key){ try{ const raw = localStorage.getItem(key); const a = raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function writeArr(key, arr){ try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('저장 실패', key, e); } }
+  function readObj(key){ try{ const raw = localStorage.getItem(key); const o = raw?JSON.parse(raw):{}; return (o && typeof o==='object')?o:{}; }catch(e){ return {}; } }
+  function writeObj(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){ console.error('저장 실패(용량 초과 가능)', key, e); } }
+
+  function genId(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function nowIso(){ return new Date().toISOString(); }
+
+  // ---- companies (기존 저장소, 재사용만) ----
+  function loadCompanies(){ return readArr(CO_KEY); }
+  function saveCompanies(list){ writeArr(CO_KEY, list); } // §37: 화면 개편과 무관하게 항상 이 키 그대로 유지
+  function findCompany(id){ return loadCompanies().find(c=> c.id === id) || null; }
+  function addCompany(fields){
+    const rec = Object.assign({ id: genId('co'), name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'' }, fields);
+    const list = loadCompanies();
+    list.push(rec);
+    saveCompanies(list);
+    return rec;
+  }
+  function updateCompany(id, patch, opts){
+    const list = loadCompanies();
+    const rec = list.find(c=> c.id === id);
+    if(!rec) return null;
+    Object.keys(patch).forEach(k=>{
+      // §PART2-12: "빈 정보만 채우기" — 기존 값이 있으면 절대 덮어쓰지 않는다.
+      if(opts && opts.onlyFillEmpty){
+        if(!rec[k]) rec[k] = patch[k];
+      } else {
+        rec[k] = patch[k];
+      }
+    });
+    saveCompanies(list);
+    return rec;
+  }
+
+  // ---- customerActivities ----
+  function loadActivities(){ return readArr(ACT_KEY); }
+  function saveActivities(list){ writeArr(ACT_KEY, list); }
+  function classifyActivity(text){
+    const t = String(text || '');
+    if(/(협약|MOU)/i.test(t)) return '협약';
+    if(/(견적)/.test(t)) return '견적문의';
+    if(/(공법)/.test(t)) return '공법문의';
+    if(/(시방서|제안서|자료)/.test(t)) return '자료요청';
+    if(/(PT|설명회)/i.test(t)) return 'PT/설명회';
+    if(/(자재)/.test(t)) return '자재문의';
+    if(/(공사진행|공사중|일정)/.test(t)) return '공사진행';
+    if(/(미팅|회의)/.test(t)) return '미팅';
+    if(/(전화)/.test(t)) return '전화';
+    return '기타';
+  }
+  function addActivity(companyId, text){
+    const rec = { id: genId('act'), companyId, originalText: text, activityText: text, category: classifyActivity(text), createdAt: nowIso(), updatedAt: nowIso() };
+    const list = loadActivities(); list.push(rec); saveActivities(list); return rec;
+  }
+  function updateActivityText(id, text){
+    const list = loadActivities();
+    const rec = list.find(a=> a.id === id);
+    if(!rec) return null;
+    rec.activityText = text; rec.category = classifyActivity(text); rec.updatedAt = nowIso();
+    saveActivities(list);
+    return rec;
+  }
+  function deleteActivity(id){ saveActivities(loadActivities().filter(a=> a.id !== id)); }
+  function activitiesForCompany(companyId){
+    return loadActivities().filter(a=> a.companyId === companyId).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  // ---- customerDocuments (메타데이터만 — 바이너리는 별도 로컬 전용 blob 저장소) ----
+  function loadDocuments(){ return readArr(DOC_KEY); }
+  function saveDocuments(list){ writeArr(DOC_KEY, list); }
+  function documentsForCompany(companyId, type){
+    return loadDocuments().filter(d=> d.companyId === companyId && (!type || d.documentType === type))
+      .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  }
+  function addDocument(companyId, documentType, file, dataUrl, extracted){
+    const id = genId('doc');
+    const rec = {
+      id, companyId, documentType, fileName: file.name, storagePath: 'local:' + id,
+      mimeType: file.type || '', size: file.size || 0, memo:'', createdAt: nowIso(), updatedAt: nowIso()
+    };
+    if(extracted){
+      rec.extractedContactName = extracted.contactName && extracted.contactName.value || '';
+      rec.extractedPosition = extracted.position && extracted.position.value || '';
+      rec.extractedPhone = extracted.phone && extracted.phone.value || '';
+      rec.extractedMobile = '';
+      rec.extractedEmail = extracted.email && extracted.email.value || '';
+      rec.extractedCompanyName = extracted.name && extracted.name.value || '';
+      rec.rawOcrText = extracted.rawOcrText || '';
+    }
+    const list = loadDocuments(); list.push(rec); saveDocuments(list);
+    const blobs = readObj(BLOB_KEY);
+    blobs[id] = dataUrl;
+    writeObj(BLOB_KEY, blobs);
+    return rec;
+  }
+  function getBlob(id){ const blobs = readObj(BLOB_KEY); return blobs[id] || ''; }
+  function renameDocument(id, fileName){
+    const list = loadDocuments(); const rec = list.find(d=> d.id===id); if(!rec) return;
+    rec.fileName = fileName; rec.updatedAt = nowIso(); saveDocuments(list);
+  }
+  function setDocumentMemo(id, memo){
+    const list = loadDocuments(); const rec = list.find(d=> d.id===id); if(!rec) return;
+    rec.memo = memo; rec.updatedAt = nowIso(); saveDocuments(list);
+  }
+  function deleteDocument(id){
+    saveDocuments(loadDocuments().filter(d=> d.id !== id));
+    const blobs = readObj(BLOB_KEY);
+    delete blobs[id];
+    writeObj(BLOB_KEY, blobs);
+  }
+
+  // ---- memos (공용 컴포넌트 재사용 — targetType 'company', v2의 SHIN2_MEMO와 완전히 동일한 스키마) ----
+  function loadMemos(){ return readArr(MEMO_KEY); }
+  function saveMemos(list){ writeArr(MEMO_KEY, list); }
+  function memosFor(companyId){
+    return loadMemos().filter(m=> m.targetType==='company' && String(m.targetId)===String(companyId))
+      .sort((a,b)=> (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt));
+  }
+  function addMemo(companyId, text){
+    const now = Date.now();
+    const list = loadMemos();
+    list.push({ id: genId('memo'), targetType:'company', targetId:String(companyId), text, createdAt: now, updatedAt: now });
+    saveMemos(list);
+  }
+  function updateMemo(id, text){
+    const list = loadMemos(); const rec = list.find(m=> m.id===id); if(!rec) return;
+    rec.text = text; rec.updatedAt = Date.now(); saveMemos(list);
+  }
+  function deleteMemo(id){ saveMemos(loadMemos().filter(m=> m.id !== id)); }
+
+  window.SHIN2_CRM_DATA = {
+    loadCompanies, findCompany, addCompany, updateCompany,
+    loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
+    loadDocuments, documentsForCompany, addDocument, getBlob, renameDocument, setDocumentMemo, deleteDocument,
+    memosFor, addMemo, updateMemo, deleteMemo
+  };
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   CRM 화면 렌더링 — 데이터 계층(SHIN2_CRM_DATA)과 렌더 레이어를 분리해서(§37) 화면을
+   앞으로 계속 바꿔도 데이터 구조/저장 위치는 그대로 유지되게 한다.
+   ========================================================================== */
+window.SHIN2_CRM_APP_INIT = function(){
+  'use strict';
+  const D = window.SHIN2_CRM_DATA;
+  const OCR = window.SHIN2_CRM_OCR;
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function fmtDate(iso){
+    const d = new Date(iso); if(isNaN(d)) return '';
+    const p = n=> String(n).padStart(2,'0');
+    return d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate());
+  }
+  function fmtTime(iso){
+    const d = new Date(iso); if(isNaN(d)) return '';
+    const p = n=> String(n).padStart(2,'0');
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function copyText(text, btn){
+    if(!navigator.clipboard || !text) return;
+    navigator.clipboard.writeText(text).then(()=>{
+      const span = document.createElement('span');
+      span.className = 'co-copied'; span.textContent = '복사됨';
+      btn.insertAdjacentElement('afterend', span);
+      setTimeout(()=> span.remove(), 1200);
+    }).catch(()=>{});
+  }
+
+  const listEl = document.getElementById('crmList');
+  const listView = document.getElementById('listView');
+  const cardView = document.getElementById('cardView');
+  const searchInput = document.getElementById('crmSearchInput');
+  const listTitle = document.getElementById('crmListTitle');
+  let searchQuery = '';
+  let currentCompanyId = null;
+
+  function companySummary(co){
+    const acts = D.activitiesForCompany(co.id);
+    return { last: acts[0] || null, count: acts.length };
+  }
+
+  function matchesSearch(co, acts, q){
+    if(!q) return true;
+    q = q.toLowerCase();
+    const hay = [co.name, co.repName, co.contactName, co.phone, co.mobile, co.address, co.bizRegNo]
+      .concat(acts.map(a=> a.activityText)).join(' ').toLowerCase();
+    return hay.includes(q);
+  }
+
+  function renderList(){
+    const companies = D.loadCompanies();
+    listTitle.textContent = '고객 ' + companies.length + '건';
+    const rows = companies.map(co=>{
+      const acts = D.activitiesForCompany(co.id);
+      return { co, acts, summary: acts[0] || null };
+    }).filter(r=> matchesSearch(r.co, r.acts, searchQuery));
+
+    if(!rows.length){
+      listEl.innerHTML = `<div class="empty-note">${companies.length===0 ? '등록된 고객이 없습니다.' : '검색 결과가 없습니다.'}</div>`;
+      return;
+    }
+    // 최근 활동일 최신순 → 없으면 이름순
+    rows.sort((a,b)=>{
+      const ta = a.summary ? new Date(a.summary.createdAt).getTime() : 0;
+      const tb = b.summary ? new Date(b.summary.createdAt).getTime() : 0;
+      if(tb !== ta) return tb - ta;
+      return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+    });
+    listEl.innerHTML = rows.map(r=> `
+      <div class="co-row" data-id="${esc(r.co.id)}">
+        <div class="col-name">${esc(r.co.name)}</div>
+        <div class="col-contact">${esc(r.co.contactName || r.co.repName || '-')}</div>
+        <div class="col-recent">${r.summary ? esc(r.summary.activityText || r.summary.originalText) : '-'}</div>
+        <div class="col-date">${r.summary ? fmtDate(r.summary.createdAt) : '-'}</div>
+      </div>
+    `).join('');
+    listEl.querySelectorAll('.co-row').forEach(row=>{
+      row.addEventListener('click', ()=> openCard(row.getAttribute('data-id')));
+    });
+  }
+
+  function openCard(id){
+    const co = D.findCompany(id);
+    if(!co){ openList(); return; }
+    currentCompanyId = id;
+    listView.style.display = 'none';
+    cardView.style.display = 'block';
+    history.replaceState(null, '', '?company=' + encodeURIComponent(id));
+    renderCard(co);
+  }
+  function openList(){
+    currentCompanyId = null;
+    cardView.style.display = 'none';
+    listView.style.display = 'block';
+    history.replaceState(null, '', location.pathname);
+    renderList();
+  }
+
+  // ================= 고객카드 =================
+  const CO_FIELD_LABELS = [
+    ['name','업체명'], ['repName','대표자'], ['contactName','담당자'], ['position','직책'],
+    ['phone','전화번호'], ['mobile','휴대전화'], ['fax','팩스'], ['email','이메일'],
+    ['bizRegNo','사업자번호'], ['address','주소'], ['website','홈페이지']
+  ];
+  let cardState = { docTab: 'businessCard', editingCompany: false, ocrReview: null };
+
+  function buildFullInfoText(co){
+    return CO_FIELD_LABELS.filter(([k])=> co[k]).map(([k,label])=> `${label} : ${co[k]}`).join('\n');
+  }
+
+  function renderCard(co){
+    cardView.innerHTML = `
+      <button type="button" class="back-link" id="crmBackBtn">&larr; 고객 목록</button>
+      <div class="card-head">
+        <div class="card-title">${esc(co.name)}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="card-saved-toast" id="crmSavedToast" style="display:none;">저장됨</span>
+          <button type="button" class="card-copy-all-btn" id="crmCopyAllBtn">전체정보 복사</button>
+          <button type="button" class="co-text-action" id="crmEditBtn">수정</button>
+        </div>
+      </div>
+      <div id="crmBasicInfo"></div>
+      <div class="card-section">
+        <div class="card-section-head"><div class="card-section-title">서류함</div></div>
+        <div id="crmDocsSection"></div>
+      </div>
+      <div class="card-section">
+        <div class="card-section-head"><div class="card-section-title">활동 타임라인</div></div>
+        <div id="crmActivitySection"></div>
+      </div>
+      <div class="card-section">
+        <div class="card-section-head"><div class="card-section-title">메모</div></div>
+        <div id="crmMemoSection"></div>
+      </div>
+    `;
+    document.getElementById('crmBackBtn').addEventListener('click', openList);
+    document.getElementById('crmCopyAllBtn').addEventListener('click', (e)=> copyText(buildFullInfoText(co), e.currentTarget));
+    document.getElementById('crmEditBtn').addEventListener('click', ()=> renderBasicInfoForm(co));
+    renderBasicInfoView(co);
+    renderDocsSection(co);
+    renderActivitySection(co);
+    renderMemoSection(co);
+  }
+
+  function renderBasicInfoView(co){
+    const wrap = document.getElementById('crmBasicInfo');
+    const row = (key, label)=>{
+      const value = co[key];
+      if(!value) return '';
+      const openBtn = key==='website' ? `<a class="co-text-action" style="margin-left:8px;" href="${esc(/^https?:\/\//i.test(value)?value:('https://'+value))}" target="_blank" rel="noopener noreferrer">열기</a>` : '';
+      return `<div class="co-field">
+        <div class="co-field-label">${label}</div>
+        <div class="co-field-row">
+          <div class="co-field-value">${esc(value)}</div>
+          <div style="display:flex;align-items:center;flex:none;">
+            <button type="button" class="co-field-copy-btn" data-copy="${key}">복사</button>${openBtn}
+          </div>
+        </div>
+      </div>`;
+    };
+    wrap.innerHTML = CO_FIELD_LABELS.map(([k,l])=> row(k,l)).join('') +
+      (co.memo ? `<div class="co-field"><div class="co-field-label">기본메모</div><div class="co-field-value" style="white-space:pre-wrap;">${esc(co.memo)}</div></div>` : '');
+    wrap.querySelectorAll('[data-copy]').forEach(btn=>{
+      btn.addEventListener('click', (e)=> copyText(co[btn.getAttribute('data-copy')] || '', e.currentTarget));
+    });
+  }
+
+  function renderBasicInfoForm(co){
+    const wrap = document.getElementById('crmBasicInfo');
+    wrap.innerHTML = CO_FIELD_LABELS.concat([['memo','기본메모']]).map(([k,l])=> `
+      <div class="co-form-field"><label>${l}</label>
+        ${k==='memo' ? `<textarea id="crmF_${k}">${esc(co[k]||'')}</textarea>` : `<input type="text" id="crmF_${k}" value="${esc(co[k]||'')}" />`}
+      </div>
+    `).join('') + `<div style="display:flex;gap:10px;margin-top:6px;">
+        <button type="button" class="co-text-action" id="crmFormCancel">취소</button>
+        <button type="button" class="co-text-action primary" id="crmFormSave">저장</button>
+      </div>`;
+    document.getElementById('crmFormCancel').addEventListener('click', ()=> renderBasicInfoView(co));
+    document.getElementById('crmFormSave').addEventListener('click', ()=>{
+      const patch = {};
+      CO_FIELD_LABELS.concat([['memo','기본메모']]).forEach(([k])=>{
+        const el = document.getElementById('crmF_' + k);
+        if(el) patch[k] = el.value.trim();
+      });
+      if(!patch.name){ return; }
+      D.updateCompany(co.id, patch);
+      const fresh = D.findCompany(co.id);
+      renderCard(fresh);
+      const toast = document.getElementById('crmSavedToast');
+      if(toast){ toast.style.display = 'inline'; setTimeout(()=>{ toast.style.display='none'; }, 1400); }
+    });
+  }
+
+  // ---------------- 서류함(4분류) ----------------
+  const DOC_TYPES = [ ['businessCard','명함'], ['businessRegistration','사업자등록증'], ['questionnaire','질문서'], ['logo','로고'] ];
+
+  function fileToDataUrl(file){
+    return new Promise(res=>{
+      const reader = new FileReader();
+      reader.onload = ()=> res(reader.result);
+      reader.onerror = ()=> res('');
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderDocsSection(co){
+    const wrap = document.getElementById('crmDocsSection');
+    const tabsHtml = DOC_TYPES.map(([type,label])=> `<button type="button" class="doc-tab${cardState.docTab===type?' active':''}" data-doc-tab="${type}">${label}</button>`).join('');
+    wrap.innerHTML = `
+      <div class="doc-tabs">${tabsHtml}</div>
+      <div class="doc-blocked-note">실제 파일은 Firebase Storage 자격증명이 이 세션에 없어 연결이 BLOCKED 상태입니다 — 대신 이 브라우저(localStorage)에 안전하게 로컬 보관되며, 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함됩니다. 바이너리 자체는 어떤 경우에도 Firestore로 전송되지 않습니다.</div>
+      <div class="doc-dropzone" id="crmDocDrop" tabindex="0">${DOC_TYPES.find(t=>t[0]===cardState.docTab)[1]} 파일을 여기에 끌어다 놓거나 클릭해서 선택하세요${cardState.docTab==='businessCard' ? ' (자동으로 텍스트를 인식해 확인 화면을 보여줍니다)' : ''}</div>
+      <input type="file" id="crmDocInput" accept="image/*" multiple style="display:none;" />
+      <div id="crmOcrReviewSlot"></div>
+      <div id="crmDocList"></div>
+    `;
+    wrap.querySelectorAll('[data-doc-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ cardState.docTab = btn.getAttribute('data-doc-tab'); cardState.ocrReview = null; renderDocsSection(co); });
+    });
+    const drop = document.getElementById('crmDocDrop');
+    const input = document.getElementById('crmDocInput');
+    drop.addEventListener('click', ()=> input.click());
+    drop.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); input.click(); } });
+    drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.style.borderColor = '#C7CEDB'; });
+    drop.addEventListener('dragleave', ()=>{ drop.style.borderColor = ''; });
+    drop.addEventListener('drop', (e)=>{ e.preventDefault(); drop.style.borderColor=''; if(e.dataTransfer.files.length) handleDocFiles(co, e.dataTransfer.files); });
+    input.addEventListener('change', (e)=>{ const files = e.target.files; e.target.value=''; if(files.length) handleDocFiles(co, files); });
+    renderDocList(co);
+    renderOcrReviewSlot(co);
+  }
+
+  function renderDocList(co){
+    const listWrap = document.getElementById('crmDocList');
+    if(!listWrap) return;
+    const docs = D.documentsForCompany(co.id, cardState.docTab);
+    if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">등록된 파일이 없습니다.</div>'; return; }
+    listWrap.innerHTML = docs.map(doc=>{
+      const blob = D.getBlob(doc.id);
+      const isImg = (doc.mimeType||'').startsWith('image/');
+      return `<div class="doc-item" data-doc-id="${esc(doc.id)}">
+        ${isImg && blob ? `<img class="doc-thumb" src="${blob}" alt="${esc(doc.fileName)}" />` : `<div class="doc-thumb-generic">FILE</div>`}
+        <div class="doc-main">
+          <div class="doc-name" data-name-view="${esc(doc.id)}">${esc(doc.fileName)}</div>
+          <div class="doc-meta">${fmtDate(doc.createdAt)} ${fmtTime(doc.createdAt)}${doc.extractedContactName ? ' · 추출: ' + esc(doc.extractedContactName) + (doc.extractedPosition ? '('+esc(doc.extractedPosition)+')' : '') : ''}</div>
+          ${doc.memo ? `<div class="doc-memo">${esc(doc.memo)}</div>` : ''}
+          <div class="doc-actions">
+            ${blob ? `<a class="co-text-action" href="${blob}" download="${esc(doc.fileName)}" target="_blank" rel="noopener">다운로드</a>` : ''}
+            <button type="button" class="co-text-action" data-rename="${esc(doc.id)}">이름변경</button>
+            <button type="button" class="co-text-action" data-memo="${esc(doc.id)}">메모</button>
+            <button type="button" class="co-text-action danger" data-del="${esc(doc.id)}">삭제</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    listWrap.querySelectorAll('[data-rename]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const item = btn.closest('.doc-item');
+        const nameEl = item.querySelector('[data-name-view]');
+        const id = btn.getAttribute('data-rename');
+        const doc = docs.find(d=> d.id===id);
+        nameEl.innerHTML = `<div class="doc-rename-row"><input type="text" id="renameInput_${id}" value="${esc(doc.fileName)}" /><button type="button" class="co-text-action primary" data-rename-save="${id}">저장</button></div>`;
+        item.querySelector('[data-rename-save]').addEventListener('click', ()=>{
+          const val = document.getElementById('renameInput_' + id).value.trim();
+          if(val){ D.renameDocument(id, val); }
+          renderDocList(co);
+        });
+      });
+    });
+    listWrap.querySelectorAll('[data-memo]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const item = btn.closest('.doc-item');
+        const id = btn.getAttribute('data-memo');
+        const doc = docs.find(d=> d.id===id);
+        const box = document.createElement('div');
+        box.innerHTML = `<div class="doc-rename-row"><input type="text" id="memoInput_${id}" value="${esc(doc.memo||'')}" placeholder="짧은 메모" /><button type="button" class="co-text-action primary" data-memo-save="${id}">저장</button></div>`;
+        item.querySelector('.doc-main').appendChild(box);
+        box.querySelector('[data-memo-save]').addEventListener('click', ()=>{
+          D.setDocumentMemo(id, document.getElementById('memoInput_' + id).value.trim());
+          renderDocList(co);
+        });
+      });
+    });
+    listWrap.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const item = btn.closest('.doc-item');
+        const id = btn.getAttribute('data-del');
+        item.querySelector('.doc-actions').innerHTML = `<span style="font-size:12px;color:var(--text-muted);">삭제할까요?</span>
+          <button type="button" class="co-text-action" data-del-cancel="1">취소</button>
+          <button type="button" class="co-text-action danger" data-del-confirm="${id}">삭제</button>`;
+        item.querySelector('[data-del-cancel]').addEventListener('click', ()=> renderDocList(co));
+        item.querySelector('[data-del-confirm]').addEventListener('click', ()=>{ D.deleteDocument(id); renderDocList(co); });
+      });
+    });
+  }
+
+  async function handleDocFiles(co, fileList){
+    const files = Array.from(fileList || []).filter(f=> f.type && f.type.startsWith('image/'));
+    for(const file of files){
+      const dataUrl = await fileToDataUrl(file);
+      if(cardState.docTab === 'businessCard' && typeof Tesseract !== 'undefined'){
+        // §PART2-10: 명함은 OCR 후 즉시 저장하지 않고 확인 화면을 먼저 보여준다.
+        cardState.ocrReview = { status:'recognizing', file, dataUrl };
+        renderOcrReviewSlot(co);
+        try{
+          const { data } = await Tesseract.recognize(URL.createObjectURL(file), 'kor+eng');
+          const kind = OCR.coClassifyDocType(data.text || '');
+          const extracted = kind === 'card' ? OCR.extractFromCardText(data.text || '') : OCR.extractFromBizRegText(data.text || '');
+          cardState.ocrReview = { status:'ready', file, dataUrl, extracted, showRaw:false };
+        } catch(e){
+          cardState.ocrReview = { status:'error', file, dataUrl, message:'이미지 인식에 실패했습니다. 파일은 저장하고 정보는 직접 입력해주세요.' };
+        }
+        renderOcrReviewSlot(co);
+      } else {
+        // 사업자등록증/질문서/로고는 확인 화면 없이 바로 메타데이터 저장(§19~24 — 단순 서류함).
+        D.addDocument(co.id, cardState.docTab, file, dataUrl, null);
+        renderDocList(co);
+      }
+    }
+  }
+
+  function renderOcrReviewSlot(co){
+    const slot = document.getElementById('crmOcrReviewSlot');
+    if(!slot) return;
+    const r = cardState.ocrReview;
+    if(!r){ slot.innerHTML = ''; return; }
+    if(r.status === 'recognizing'){ slot.innerHTML = '<div class="ocr-review">이미지 인식 중...</div>'; return; }
+    if(r.status === 'error'){ slot.innerHTML = `<div class="ocr-review">${esc(r.message)}
+      <div class="ocr-actions"><button type="button" class="co-text-action" id="ocrKeepFileBtn">파일만 저장</button><button type="button" class="co-text-action" id="ocrCancelBtn">취소</button></div></div>`;
+      document.getElementById('ocrKeepFileBtn').addEventListener('click', ()=>{ D.addDocument(co.id, 'businessCard', r.file, r.dataUrl, null); cardState.ocrReview=null; renderDocsSection(co); });
+      document.getElementById('ocrCancelBtn').addEventListener('click', ()=>{ cardState.ocrReview=null; renderOcrReviewSlot(co); });
+      return;
+    }
+    const ex = r.extracted;
+    const field = (key, label)=> `<div class="co-form-field"><label>${label}${ex[key] && ex[key].ambiguous ? '<span class="ocr-badge">확인 필요</span>' : ''}</label><input type="text" id="ocrF_${key}" value="${esc(ex[key] ? ex[key].value : '')}" /></div>`;
+    slot.innerHTML = `<div class="ocr-review">
+      <div class="ocr-review-title">명함 인식 결과</div>
+      ${field('name','업체명')}${field('contactName','담당자')}${field('position','직책')}
+      ${field('phone','전화번호')}${field('email','이메일')}${field('address','주소')}
+      <div class="co-checkbox-row"><input type="checkbox" id="ocrOnlyEmpty" checked /> <label for="ocrOnlyEmpty">빈 정보만 채우기(기존 값이 있는 필드는 유지)</label></div>
+      <div class="ocr-actions">
+        <button type="button" class="co-text-action" id="ocrViewRawBtn">${r.showRaw ? '원문 숨기기' : '원문 OCR 보기'}</button>
+        <button type="button" class="co-text-action" id="ocrCancelBtn2">취소</button>
+        <button type="button" class="co-text-action primary" id="ocrApplyBtn">업체정보에 반영</button>
+      </div>
+      ${r.showRaw ? `<div class="ocr-raw-box">${esc(ex.rawOcrText || '')}</div>` : ''}
+      <div id="ocrDupSlot"></div>
+    </div>`;
+    document.getElementById('ocrViewRawBtn').addEventListener('click', ()=>{ r.showRaw = !r.showRaw; renderOcrReviewSlot(co); });
+    document.getElementById('ocrCancelBtn2').addEventListener('click', ()=>{ cardState.ocrReview = null; renderOcrReviewSlot(co); });
+    document.getElementById('ocrApplyBtn').addEventListener('click', ()=>{
+      // 사용자가 편집한 최종 값으로 문서를 먼저 저장(명함 고유 메타데이터, §16) — 회사 기본정보와는 별개.
+      const editedExtracted = {};
+      ['name','contactName','position','phone','email','address'].forEach(k=>{
+        const el = document.getElementById('ocrF_' + k);
+        editedExtracted[k] = { value: el ? el.value.trim() : '', ambiguous:false };
+      });
+      editedExtracted.rawOcrText = ex.rawOcrText;
+      D.addDocument(co.id, 'businessCard', r.file, r.dataUrl, editedExtracted);
+      const onlyEmpty = document.getElementById('ocrOnlyEmpty').checked;
+      const patch = {};
+      if(editedExtracted.contactName.value) patch.contactName = editedExtracted.contactName.value;
+      if(editedExtracted.position.value) patch.position = editedExtracted.position.value;
+      if(editedExtracted.phone.value) patch.phone = editedExtracted.phone.value;
+      if(editedExtracted.email.value) patch.email = editedExtracted.email.value;
+      if(editedExtracted.address.value) patch.address = editedExtracted.address.value;
+      // §PART2-11: 반영 직전 최종 확인 — 사용자가 [반영]을 눌렀다는 것 자체가 "이 명함을 이
+      // 고객에 추가"하는 명시적 확인이므로 여기서 다시 묻지 않고, 그 값을 그대로 회사 필드에
+      // 병합한다(§12: 빈 정보만 채우기 옵션 반영). 값이 비어있으면 아무 필드도 건드리지 않는다.
+      if(Object.keys(patch).length) D.updateCompany(co.id, patch, { onlyFillEmpty: onlyEmpty });
+      cardState.ocrReview = null;
+      const fresh = D.findCompany(co.id);
+      renderCard(fresh);
+    });
+  }
+
+  // ---------------- 활동 타임라인 ----------------
+  function renderActivitySection(co){
+    const wrap = document.getElementById('crmActivitySection');
+    const items = D.activitiesForCompany(co.id);
+    const groups = [];
+    items.forEach(a=>{
+      const key = fmtDate(a.createdAt);
+      let g = groups.find(x=> x.key===key);
+      if(!g){ g = { key, items:[] }; groups.push(g); }
+      g.items.push(a);
+    });
+    wrap.innerHTML = `
+      <div class="act-add-row"><input type="text" id="crmActInput" placeholder="활동 내용을 입력하세요 (예: 견적문의 재도장)" /><button type="button" id="crmActAddBtn">기록</button></div>
+      <div id="crmActGroups">${groups.length ? groups.map(g=> `
+        <div class="act-date-group">
+          <div class="act-date-label">${esc(g.key)}</div>
+          ${g.items.map(a=> `<div class="act-row" data-act-id="${esc(a.id)}">
+            <span class="act-time">${fmtTime(a.createdAt)}</span>
+            <span class="act-cat">${esc(a.category)}</span>
+            <span class="act-text">${esc(a.activityText || a.originalText)}</span>
+            <span class="act-row-actions">
+              <button type="button" class="co-text-action" data-act-edit="${esc(a.id)}">수정</button>
+              <button type="button" class="co-text-action danger" data-act-del="${esc(a.id)}">삭제</button>
+            </span>
+          </div>`).join('')}
+        </div>`).join('') : '<div class="doc-empty">기록된 활동이 없습니다.</div>'}</div>
+    `;
+    document.getElementById('crmActAddBtn').addEventListener('click', ()=>{
+      const input = document.getElementById('crmActInput');
+      const text = input.value.trim();
+      if(!text) return;
+      D.addActivity(co.id, text);
+      input.value = '';
+      renderActivitySection(co);
+      renderList();
+    });
+    document.getElementById('crmActInput').addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('crmActAddBtn').click(); }
+    });
+    wrap.querySelectorAll('[data-act-del]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const row = btn.closest('.act-row');
+        row.querySelector('.act-row-actions').innerHTML = `<span style="font-size:11.5px;color:var(--text-muted);">삭제할까요?</span>
+          <button type="button" class="co-text-action" data-act-del-cancel="1">취소</button>
+          <button type="button" class="co-text-action danger" data-act-del-confirm="${btn.getAttribute('data-act-del')}">삭제</button>`;
+        row.querySelector('[data-act-del-cancel]').addEventListener('click', ()=> renderActivitySection(co));
+        row.querySelector('[data-act-del-confirm]').addEventListener('click', ()=>{
+          D.deleteActivity(btn.getAttribute('data-act-del'));
+          renderActivitySection(co);
+        });
+      });
+    });
+    wrap.querySelectorAll('[data-act-edit]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-act-edit');
+        const row = btn.closest('.act-row');
+        const a = items.find(x=> x.id===id);
+        row.querySelector('.act-text').outerHTML = `<span class="act-edit-row"><input type="text" id="actEditInput_${id}" value="${esc(a.activityText||a.originalText)}" /><button type="button" class="co-text-action primary" data-act-save="${id}">저장</button></span>`;
+        row.querySelector('[data-act-save]').addEventListener('click', ()=>{
+          const val = document.getElementById('actEditInput_' + id).value.trim();
+          if(val) D.updateActivityText(id, val);
+          renderActivitySection(co);
+          renderList();
+        });
+      });
+    });
+  }
+
+  // ---------------- 메모(공용 컴포넌트 패턴 재사용) ----------------
+  function renderMemoSection(co){
+    const wrap = document.getElementById('crmMemoSection');
+    let mode = 'list';
+    function render(){
+      const items = D.memosFor(co.id);
+      wrap.innerHTML = `
+        <div class="memo-head"><span></span><button type="button" class="memo-add-btn" id="crmMemoAddBtn">${mode==='add' ? '닫기' : '+ 추가'}</button></div>
+        ${mode==='add' ? `<div class="memo-form"><textarea id="crmMemoInput" placeholder="메모를 입력하세요"></textarea>
+          <div class="memo-form-actions"><button type="button" class="co-text-action" id="crmMemoCancel">취소</button><button type="button" class="co-text-action primary" id="crmMemoSave">저장</button></div></div>` : ''}
+        ${items.length ? items.map(m=> `<div class="memo-item" data-memo-id="${esc(m.id)}">
+            <div class="memo-meta">${fmtDate(new Date(m.createdAt).toISOString())} ${fmtTime(new Date(m.createdAt).toISOString())}</div>
+            <div class="memo-text">${esc(m.text)}</div>
+            <div class="memo-item-actions"><button type="button" class="co-text-action danger" data-memo-del="${esc(m.id)}">삭제</button></div>
+          </div>`).join('') : '<div class="memo-empty">등록된 메모가 없습니다</div>'}
+      `;
+      document.getElementById('crmMemoAddBtn').addEventListener('click', ()=>{ mode = mode==='add' ? 'list' : 'add'; render(); if(mode==='add') document.getElementById('crmMemoInput').focus(); });
+      const cancelBtn = document.getElementById('crmMemoCancel');
+      if(cancelBtn) cancelBtn.addEventListener('click', ()=>{ mode='list'; render(); });
+      const saveBtn = document.getElementById('crmMemoSave');
+      if(saveBtn) saveBtn.addEventListener('click', ()=>{
+        const text = document.getElementById('crmMemoInput').value.trim();
+        if(!text) return;
+        D.addMemo(co.id, text);
+        mode = 'list';
+        render();
+      });
+      wrap.querySelectorAll('[data-memo-del]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const item = btn.closest('.memo-item');
+          item.querySelector('.memo-item-actions').innerHTML = `<span style="font-size:11.5px;color:var(--text-muted);">삭제할까요?</span>
+            <button type="button" class="co-text-action" data-memo-del-cancel="1">취소</button>
+            <button type="button" class="co-text-action danger" data-memo-del-confirm="${btn.getAttribute('data-memo-del')}">삭제</button>`;
+          item.querySelector('[data-memo-del-cancel]').addEventListener('click', render);
+          item.querySelector('[data-memo-del-confirm]').addEventListener('click', ()=>{ D.deleteMemo(btn.getAttribute('data-memo-del')); render(); });
+        });
+      });
+    }
+    render();
+  }
+
+  // ================= 고객 등록(신규) =================
+  function openAddCompanyForm(){
+    const co = { id:null, name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'' };
+    cardView.innerHTML = `
+      <button type="button" class="back-link" id="crmBackBtn2">&larr; 고객 목록</button>
+      <div class="card-title" style="margin-bottom:14px;">신규 고객 등록</div>
+      <div id="crmAddFormWrap"></div>
+    `;
+    listView.style.display = 'none';
+    cardView.style.display = 'block';
+    document.getElementById('crmBackBtn2').addEventListener('click', openList);
+    const wrap = document.getElementById('crmAddFormWrap');
+    wrap.innerHTML = CO_FIELD_LABELS.map(([k,l])=> `<div class="co-form-field"><label>${l}</label><input type="text" id="crmNewF_${k}" /></div>`).join('') +
+      `<div id="crmNewFErr" style="display:none;color:#B91C1C;font-size:12px;margin-bottom:8px;">업체명을 입력하세요.</div>
+       <button type="button" class="co-text-action primary" id="crmNewFSave">등록</button>`;
+    document.getElementById('crmNewFSave').addEventListener('click', ()=>{
+      const patch = {};
+      CO_FIELD_LABELS.forEach(([k])=>{ patch[k] = document.getElementById('crmNewF_' + k).value.trim(); });
+      if(!patch.name){ document.getElementById('crmNewFErr').style.display = 'block'; return; }
+      const rec = D.addCompany(patch);
+      openCard(rec.id);
+      renderList();
+    });
+  }
+
+  // ---------------- 진입 ----------------
+  document.getElementById('crmAddBtn').addEventListener('click', openAddCompanyForm);
+  document.getElementById('hansolLinkBtn').addEventListener('click', ()=> window.open('../v2/', '_blank', 'noopener'));
+  searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim(); renderList(); });
+
+  const params = new URLSearchParams(location.search);
+  const initialCompanyId = params.get('company');
+  if(initialCompanyId && D.findCompany(initialCompanyId)){
+    openCard(initialCompanyId);
+  } else {
+    renderList();
+  }
+};
+// 게이트가 이 스크립트보다 먼저 통과되어 있었을 수도(세션 복원) 있고, 아직 안 됐을 수도
+// 있다 — 두 경우 모두 정확히 한 번만 초기화되도록 플래그를 먼저 확인하고, 없으면 이벤트를 기다린다.
+if(window.SHIN2_CRM_GATE_PASSED){ window.SHIN2_CRM_APP_INIT(); }
+else { window.addEventListener('shin2-crm-gate-passed', window.SHIN2_CRM_APP_INIT, { once:true }); }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" onerror="console.warn('Tesseract 로드 실패 — 서류함 업로드는 파일 저장만 되고 자동인식은 건너뜁니다.')"></script>
+</body>
+</html>
