@@ -9472,10 +9472,10 @@ ${text}
   // mode: 'grid'(월간 그리드, 기본) | 'list'(오늘/주간 목록) | 'form'(추가/수정)
   // gridRef: 그리드에 현재 표시 중인 달(month)의 기준일. selectedDate: 그리드에서 클릭해
   // 선택한 날짜(YYYY-MM-DD) — 그 날짜의 일정 목록을 그리드 아래에 그대로 이어서 보여준다.
-  // srcFilter: 'all'/'mine'/'team' — 전체/내 일정/팀장 일정 필터(그리드 점 + 날짜별 상세
-  // 양쪽에 동일하게 적용). 기존 filter('all'/'important')는 목록 화면(오늘/주간)의
-  // 중요도 필터로 그대로 남겨두고, srcFilter는 별도의 새 상태다.
-  var state = { viewMode:'month', filter:'all', srcFilter:'all', mode:'grid', editingId:null, formDeleteConfirmId:null,
+  // srcFilter: 'mine'/'team' — 내 일정/팀장 일정 필터(그리드 점 + 날짜별 상세
+  // 양쪽에 동일하게 적용, 기본값은 '내 일정'). 기존 filter('all'/'important')는 목록
+  // 화면(오늘/주간)의 중요도 필터로 그대로 남겨두고, srcFilter는 별도의 새 상태다.
+  var state = { viewMode:'month', filter:'all', srcFilter:'mine', mode:'grid', editingId:null, formDeleteConfirmId:null,
     gridRef: new Date(), selectedDate: null, formReturn: 'grid' };
 
   function pad2(n){ return String(n).padStart(2,'0'); }
@@ -9613,6 +9613,7 @@ ${text}
     state.viewMode = 'month';
     state.gridRef = new Date();
     state.selectedDate = null;
+    state.srcFilter = 'mine';
     render();
   }
   function closePopover(){
@@ -9770,10 +9771,10 @@ ${text}
 
   // 전체/내 일정/팀장 일정 필터 탭 — 활성 탭은 연한 네이비 배경만 쓰고(과도한 색상 금지),
   // 그리드 점과 날짜별 상세 양쪽에 동일하게 적용된다.
-  var SRC_FILTER_LABEL = { all:'전체', mine:'내 일정', team:'팀장 일정' };
+  var SRC_FILTER_LABEL = { mine:'내 일정', team:'팀장 일정' };
   function sourceTabsRowHtml(){
     return '<div class="cal-src-tabs-row">' +
-      ['all','mine','team'].map(function(f){
+      ['mine','team'].map(function(f){
         return '<button type="button" class="cal-src-tab-btn' + (state.srcFilter===f?' active':'') + '" data-src-filter="' + f + '">' + SRC_FILTER_LABEL[f] + '</button>';
       }).join('') +
     '</div>';
