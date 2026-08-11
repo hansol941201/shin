@@ -53,9 +53,16 @@ where curl >nul 2>nul
 set "HAS_CURL=1"
 if errorlevel 1 set "HAS_CURL=0"
 
+rem netstat의 상태 표시("LISTENING")는 한글 Windows 등 일부 로캘에서 번역되어
+rem 나올 수 있어 findstr로는 못 잡을 수 있다. Get-NetTCPConnection은 로캘과
+rem 무관하게 항상 영문 상수(Listen)로 비교하므로 이걸 우선 사용하고,
+rem PowerShell을 못 쓰는 예외적인 경우에만 netstat으로 대체한다.
 set "BLOCK_PID="
-for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
-    if not defined BLOCK_PID set "BLOCK_PID=%%A"
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort %APP_PORT% -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess)" 2^>nul`) do set "BLOCK_PID=%%A"
+if not defined BLOCK_PID (
+    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
+        if not defined BLOCK_PID set "BLOCK_PID=%%A"
+    )
 )
 
 if not defined BLOCK_PID goto port_is_free

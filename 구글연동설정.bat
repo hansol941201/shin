@@ -210,8 +210,17 @@ echo.
 rem ============================================================
 rem  5단계: 서버를 완전히 껐다가 새로 켠다(구버전 서버가 다른 폴더에
 rem  있어도 함께 정리한다). 브라우저까지 자동으로 연다.
+rem  재시작이 "진짜로" 일어났는지 눈으로 확인할 수 있도록, 종료 전/시작 후의
+rem  PID를 각각 보여준다(같은 PID가 그대로 남아있다면 재시작이 안 된 것).
 rem ============================================================
-echo [5/6] 새 설정을 적용하기 위해 서버를 재시작합니다...
+echo [5/6] 새 설정을 적용하기 위해 기존 서버를 확인/종료합니다...
+set "OLD_PID="
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess)" 2^>nul`) do set "OLD_PID=%%A"
+if defined OLD_PID (
+    echo   - 재시작 전 5173을 쓰던 프로세스: PID !OLD_PID!
+) else (
+    echo   - 재시작 전 5173을 쓰던 프로세스 없음
+)
 call :restart_all_servers
 echo.
 
@@ -225,7 +234,21 @@ if exist "%TARGET_DIR%\_launch_core.bat" (
         if /i "!LAUNCH_FIRST_LINE!"=="OK" set "LAUNCH_OK=1"
     )
     if "!LAUNCH_OK!"=="1" (
+        set "NEW_PID="
+        for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess)" 2^>nul`) do set "NEW_PID=%%A"
         echo   - 서버가 정상적으로 시작되어 브라우저가 자동으로 열립니다.
+        if defined NEW_PID (
+            echo   - 새로 시작된 서버 프로세스: PID !NEW_PID!
+            if defined OLD_PID (
+                if "!NEW_PID!"=="!OLD_PID!" (
+                    echo   [주의] 새 PID가 이전 PID와 동일합니다. 서버가 재시작되지
+                    echo          않았을 수 있습니다. 이 창의 위쪽 로그를 캡처해서
+                    echo          알려주세요.
+                ) else (
+                    echo   - 이전과 다른 PID로 새로 떴습니다^(정상적으로 재시작됨^).
+                )
+            )
+        )
     ) else (
         echo   [주의] 서버 자동 시작 중 문제가 있었습니다. 아래 내용을 확인해주세요.
         if exist "!LAUNCH_STATUS_FILE!" type "!LAUNCH_STATUS_FILE!"
@@ -243,6 +266,8 @@ echo ============================================
 echo   http://localhost:5173 에서 헤더의 "Google 캘린더 연결"
 echo   버튼을 확인하세요. 만약 창이 자동으로 뜨지 않았다면
 echo   바탕화면의 "팀장 일정" 아이콘을 실행하면 됩니다.
+echo   ^(⚙ 설정 팝오버의 "개발자 진단"에서 "환경변수 로드됨: 예"가
+echo     보이면 정상 적용된 것입니다^)
 echo ============================================
 exit /b 0
 
@@ -317,8 +342,23 @@ exit /b 0
 :kill_port
 set "P=%~1"
 if "%P%"=="" exit /b 0
-for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%P% .*LISTENING"') do (
-    taskkill /PID %%A /F >nul 2>nul
-    set "FOUND=1"
+rem netstat의 상태 표시("LISTENING")는 한글 Windows 등 일부 로캘에서 번역되어
+rem 나올 수 있어 findstr로는 못 잡을 수 있다. Get-NetTCPConnection을 우선
+rem 사용하고(로캘 무관), 안 되면 netstat으로 대체한다.
+set "KP_ANY=0"
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort %P% -State Listen -ErrorAction SilentlyContinue).OwningProcess" 2^>nul`) do (
+    if not "%%A"=="" (
+        echo   - 포트 %P%에서 이전 서버 종료 중... ^(PID %%A^)
+        taskkill /PID %%A /F >nul 2>nul
+        set "FOUND=1"
+        set "KP_ANY=1"
+    )
+)
+if "!KP_ANY!"=="0" (
+    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%P% .*LISTENING"') do (
+        echo   - 포트 %P%에서 이전 서버 종료 중... ^(PID %%A^)
+        taskkill /PID %%A /F >nul 2>nul
+        set "FOUND=1"
+    )
 )
 exit /b 0

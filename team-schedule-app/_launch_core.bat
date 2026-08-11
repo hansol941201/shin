@@ -82,6 +82,11 @@ if not exist "%~dp0node_modules" (
 rem ---------- 완전히 분리된 숨김 프로세스로 서버 시작 ----------
 rem (리다이렉션은 _run_server.bat 파일 안에서 처리하여, 여러 겹의
 rem  따옴표 안에 >> / 2^>^&1 같은 기호가 섞여 잘못 해석되는 것을 방지)
+rem _run_server.bat은 포트를 인자가 아니라 APP_PORT 환경변수로 전달받으므로
+rem 반드시 Start-Process를 실행하기 "전"에 여기서 설정해야 한다
+rem (이 설정이 빠지면 _run_server.bat이 빈 값으로 npm run dev를 실행해
+rem  --port 옵션이 깨진 채로 서버가 뜨게 된다).
+set "APP_PORT=5173"
 del "%LOG%" >nul 2>nul
 set "SERVER_PID="
 for /f "usebackq delims=" %%I in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$p = Start-Process -FilePath '%~dp0_run_server.bat' -WorkingDirectory '%~dp0' -WindowStyle Hidden -PassThru; Write-Output $p.Id"`) do set "SERVER_PID=%%I"
@@ -137,8 +142,15 @@ set "BLOCK_NAME="
 set "BLOCK_CMDLINE="
 set "SELF_DIR=%~dp0"
 
-for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":5173 .*LISTENING"') do (
-    if not defined BLOCK_PID set "BLOCK_PID=%%A"
+rem netstat의 상태 표시("LISTENING")는 한글 Windows 등 일부 로캘에서 번역되어
+rem 나올 수 있어 findstr로는 못 잡을 수 있다. Get-NetTCPConnection은 로캘과
+rem 무관하게 항상 영문 상수(Listen)로 비교하므로 이걸 우선 사용하고,
+rem PowerShell을 못 쓰는 예외적인 경우에만 netstat으로 대체한다.
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess)" 2^>nul`) do set "BLOCK_PID=%%A"
+if not defined BLOCK_PID (
+    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":5173 .*LISTENING"') do (
+        if not defined BLOCK_PID set "BLOCK_PID=%%A"
+    )
 )
 if not defined BLOCK_PID exit /b 0
 

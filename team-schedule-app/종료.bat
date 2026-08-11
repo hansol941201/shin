@@ -47,9 +47,23 @@ exit /b 0
 :kill_port
 set "P=%~1"
 if "%P%"=="" exit /b 0
-for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%P% .*LISTENING"') do (
-    echo [종료] 포트 %P% 서버 종료 중... ^(PID %%A^)
-    taskkill /PID %%A /F >nul 2>nul
-    set "FOUND=1"
+rem netstat의 상태 표시("LISTENING")는 한글 Windows 등 일부 로캘에서 번역되어
+rem 나올 수 있어 findstr로는 못 잡을 수 있다. Get-NetTCPConnection을 우선
+rem 사용하고(로캘 무관), 안 되면 netstat으로 대체한다.
+set "KP_ANY=0"
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort %P% -State Listen -ErrorAction SilentlyContinue).OwningProcess" 2^>nul`) do (
+    if not "%%A"=="" (
+        echo [종료] 포트 %P% 서버 종료 중... ^(PID %%A^)
+        taskkill /PID %%A /F >nul 2>nul
+        set "FOUND=1"
+        set "KP_ANY=1"
+    )
+)
+if "!KP_ANY!"=="0" (
+    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%P% .*LISTENING"') do (
+        echo [종료] 포트 %P% 서버 종료 중... ^(PID %%A^)
+        taskkill /PID %%A /F >nul 2>nul
+        set "FOUND=1"
+    )
 )
 exit /b 0
