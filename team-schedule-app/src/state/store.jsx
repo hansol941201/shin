@@ -432,6 +432,31 @@ export function AppProvider({ children }) {
     return event;
   }, [dispatchAndPersist]);
 
+  // 한솔 개인 일정: 팀장님 승인 절차가 없다 — 저장 즉시 confirmed로 만들고
+  // googleCalendarEventId는 절대 채우지 않는다(=Google Calendar API 호출
+  // 없이 앱 내부 데이터로만 관리, updateEvent/deleteEventAction도 이
+  // 필드가 없으면 로컬 전용으로 동작하므로 그대로 재사용 가능).
+  const addPersonalEvent = useCallback((draft) => {
+    const now = new Date().toISOString();
+    const event = {
+      id: makeId('personal'),
+      title: draft.title,
+      start: draft.start,
+      end: draft.end,
+      location: draft.location || '',
+      memo: draft.memo || '',
+      requester: '한솔',
+      owner: 'hansol',
+      status: 'confirmed',
+      googleCalendarEventId: null,
+      createdAt: now,
+      updatedAt: now,
+      source: 'hansol_personal',
+    };
+    dispatchAndPersist({ type: 'ADD_REQUEST', event });
+    return event;
+  }, [dispatchAndPersist]);
+
   // 팀장 수락: Google 연동이 켜져 있으면 (1) 그 사이 다른 일정이 생기지
   // 않았는지 재확인 -> (2) 실제 Google Calendar에 이벤트 생성 -> (3) 성공
   // 시에만 confirmed로 전환한다. 연동이 꺼져 있으면(데모) 기존처럼 즉시
@@ -683,6 +708,7 @@ export function AppProvider({ children }) {
       setCursorDate,
       events,
       addRequest,
+      addPersonalEvent,
       acceptRequest,
       rejectRequest,
       proposeReschedule,
@@ -724,6 +750,7 @@ export function AppProvider({ children }) {
       cursorDate,
       events,
       addRequest,
+      addPersonalEvent,
       acceptRequest,
       rejectRequest,
       proposeReschedule,

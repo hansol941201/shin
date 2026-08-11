@@ -42,10 +42,12 @@ function SummaryListPopover({ title, items, anchor, onClose, onPick }) {
 
 // 상단 요약 카드: [팀장 | 한솔] 필터에 맞춰 숫자가 즉시 바뀐다.
 // - 팀장: 확정 일정(파랑, Google 기본 + 한솔 요청 수락분) / 승인대기(분홍,
-//   한솔의 pending만) + 작게 시간변경 건수(있을 때만).
-// - 한솔: 승인대기(분홍) / 시간변경(주황) / 거절(빨강) / 확정(파랑) — 전부
-//   한솔이 요청한 일정(source==='platform')만 대상으로 하고, 팀장이
-//   Google에 직접 등록한 일반 일정은 포함하지 않는다.
+//   한솔의 pending만) + 작게 시간변경 건수(있을 때만). 한솔 개인 일정은
+//   팀장 업무와 무관하므로 전부 제외한다.
+// - 한솔: 팀장 일정(파랑, source==='google'만) / 승인대기(분홍) / 시간변경
+//   (주황) / 내 일정(노랑, source==='hansol_personal') — 너무 복잡해지지
+//   않게 4개로 정리하고, 거절 건이 있을 때만 아주 작은 보조 표시를 덧붙인다
+//   (거절 자체는 달력에서 이미 빨간색으로 계속 보이므로 상단은 보조 역할).
 // 숫자를 클릭하면 해당 상태의 일정 목록을 바로 확인할 수 있다.
 export default function SummaryCards() {
   const { events, cursorDate, role } = useApp();
@@ -64,10 +66,33 @@ export default function SummaryCards() {
     setDetailPopover({ event: ev, x: mouseEvent.clientX, y: mouseEvent.clientY });
   }
 
+  const listAndDetailPopovers = (
+    <>
+      {listPopover && (
+        <SummaryListPopover
+          title={listPopover.title}
+          items={listPopover.items}
+          anchor={{ x: listPopover.x, y: listPopover.y }}
+          onClose={() => setListPopover(null)}
+          onPick={pickItem}
+        />
+      )}
+      {detailPopover && (
+        <EventDetailPopover
+          event={detailPopover.event}
+          anchor={{ x: detailPopover.x, y: detailPopover.y }}
+          onClose={() => setDetailPopover(null)}
+        />
+      )}
+    </>
+  );
+
   if (role === 'manager') {
-    const confirmedItems = monthEvents.filter((e) => e.status === 'confirmed');
-    const pendingItems = monthEvents.filter((e) => e.source === 'platform' && e.status === 'pending');
-    const rescheduleItems = monthEvents.filter((e) => e.source === 'platform' && e.status === 'reschedule_requested');
+    // 개인 일정(source==='hansol_personal')은 팀장 화면에서 완전히 숨긴다.
+    const managerEvents = monthEvents.filter((e) => e.source !== 'hansol_personal');
+    const confirmedItems = managerEvents.filter((e) => e.status === 'confirmed');
+    const pendingItems = managerEvents.filter((e) => e.source === 'platform' && e.status === 'pending');
+    const rescheduleItems = managerEvents.filter((e) => e.source === 'platform' && e.status === 'reschedule_requested');
 
     return (
       <div className="summary-bar">
@@ -96,35 +121,28 @@ export default function SummaryCards() {
             시간변경 {rescheduleItems.length}
           </button>
         )}
-
-        {listPopover && (
-          <SummaryListPopover
-            title={listPopover.title}
-            items={listPopover.items}
-            anchor={{ x: listPopover.x, y: listPopover.y }}
-            onClose={() => setListPopover(null)}
-            onPick={pickItem}
-          />
-        )}
-        {detailPopover && (
-          <EventDetailPopover
-            event={detailPopover.event}
-            anchor={{ x: detailPopover.x, y: detailPopover.y }}
-            onClose={() => setDetailPopover(null)}
-          />
-        )}
+        {listAndDetailPopovers}
       </div>
     );
   }
 
-  const hansolEvents = monthEvents.filter((e) => e.source === 'platform');
-  const pendingItems = hansolEvents.filter((e) => e.status === 'pending');
-  const rescheduleItems = hansolEvents.filter((e) => e.status === 'reschedule_requested');
-  const rejectedItems = hansolEvents.filter((e) => e.status === 'rejected');
-  const confirmedItems = hansolEvents.filter((e) => e.status === 'confirmed');
+  // 한솔 화면: 팀장 일정 + 내 요청 + 내 개인 일정을 모두 한 화면에서 본다.
+  const managerScheduleItems = monthEvents.filter((e) => e.source === 'google');
+  const hansolRequestEvents = monthEvents.filter((e) => e.source === 'platform');
+  const pendingItems = hansolRequestEvents.filter((e) => e.status === 'pending');
+  const rescheduleItems = hansolRequestEvents.filter((e) => e.status === 'reschedule_requested');
+  const rejectedItems = hansolRequestEvents.filter((e) => e.status === 'rejected');
+  const personalItems = monthEvents.filter((e) => e.source === 'hansol_personal');
 
   return (
     <div className="summary-bar">
+      <button
+        className="summary-card summary-card-confirmed"
+        onClick={(e) => openList(e, '팀장 일정', managerScheduleItems)}
+      >
+        <span className="summary-card-label">팀장 일정</span>
+        <span className="summary-card-num">{managerScheduleItems.length}</span>
+      </button>
       <button
         className="summary-card summary-card-pending"
         onClick={(e) => openList(e, '승인대기', pendingItems)}
@@ -142,38 +160,21 @@ export default function SummaryCards() {
         <span className="summary-card-num">{rescheduleItems.length}</span>
       </button>
       <button
-        className="summary-card summary-card-rejected"
-        onClick={(e) => openList(e, '거절', rejectedItems)}
+        className="summary-card summary-card-personal"
+        onClick={(e) => openList(e, '내 일정', personalItems)}
       >
-        <img className="summary-card-icon" src={woodpeckerIcon} alt="한솔 요청" />
-        <span className="summary-card-label">거절</span>
-        <span className="summary-card-num">{rejectedItems.length}</span>
+        <span className="summary-card-label">내 일정</span>
+        <span className="summary-card-num">{personalItems.length}</span>
       </button>
-      <button
-        className="summary-card summary-card-confirmed"
-        onClick={(e) => openList(e, '확정', confirmedItems)}
-      >
-        <img className="summary-card-icon" src={woodpeckerIcon} alt="한솔 요청" />
-        <span className="summary-card-label">확정</span>
-        <span className="summary-card-num">{confirmedItems.length}</span>
-      </button>
-
-      {listPopover && (
-        <SummaryListPopover
-          title={listPopover.title}
-          items={listPopover.items}
-          anchor={{ x: listPopover.x, y: listPopover.y }}
-          onClose={() => setListPopover(null)}
-          onPick={pickItem}
-        />
+      {rejectedItems.length > 0 && (
+        <button
+          className="summary-card-mini summary-card-mini-reject"
+          onClick={(e) => openList(e, '거절', rejectedItems)}
+        >
+          거절 {rejectedItems.length}
+        </button>
       )}
-      {detailPopover && (
-        <EventDetailPopover
-          event={detailPopover.event}
-          anchor={{ x: detailPopover.x, y: detailPopover.y }}
-          onClose={() => setDetailPopover(null)}
-        />
-      )}
+      {listAndDetailPopovers}
     </div>
   );
 }

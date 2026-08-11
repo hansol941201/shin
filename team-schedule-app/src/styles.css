@@ -33,6 +33,12 @@
   --reject-border: #e8a099;
   --reject-text: #b23a26;
 
+  /* 한솔 개인 일정(승인 절차 없음) 전용 색: 연한 노랑 배경 + 진한 골드
+     왼쪽 선. 글씨는 다른 색상 카테고리와 달리 짙은 회색을 그대로 쓴다. */
+  --personal-bg: #fdf8e3;
+  --personal-border: #d9a92c;
+  --personal-text: #3f3f3f;
+
   --today-bg: #eef4fb;
   --lunch-bg: #f4f5f6;
 
@@ -217,8 +223,13 @@ button, select, input, textarea {
   color: var(--reject-text);
   border: 1px solid var(--reject-border);
 }
-/* 팀장 화면에서 상단을 복잡하게 만들지 않기 위한 아주 작은 보조 표시
-   (시간변경 건수가 있을 때만 노출). */
+.summary-card-personal {
+  background: var(--personal-bg);
+  color: var(--personal-text);
+  border-left: 3px solid var(--personal-border);
+}
+/* 상단을 복잡하게 만들지 않기 위한 아주 작은 보조 표시(팀장 화면의
+   시간변경 건수, 한솔 화면의 거절 건수 — 값이 있을 때만 노출). */
 .summary-card-mini {
   align-self: center;
   background: none;
@@ -231,6 +242,7 @@ button, select, input, textarea {
   padding: 2px 4px;
 }
 .summary-card-mini:hover { text-decoration: underline; }
+.summary-card-mini-reject { color: var(--reject-text); }
 
 .approval-menu-list {
   display: flex;
@@ -552,6 +564,48 @@ button, select, input, textarea {
 }
 .pv-submit:hover { background: var(--navy-dark); }
 .pv-submit:disabled { opacity: .6; cursor: default; }
+.pv-submit-personal { background: var(--personal-border); color: #3f3220; }
+.pv-submit-personal:hover { filter: brightness(0.95); }
+
+.pv-warning {
+  color: var(--pending-text);
+  background: var(--pending-bg);
+  border: 1px solid var(--pending-border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  white-space: pre-line;
+  margin-bottom: 8px;
+}
+
+/* 날짜 칸 클릭 시 뜨는 "일정 종류" 선택(팀장님께 요청 / 한솔 개인 일정) */
+.pv-kind-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pv-kind-btn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.pv-kind-request {
+  background: var(--own-bg);
+  color: var(--own-text);
+  border: 1px solid var(--own-border);
+}
+.pv-kind-request:hover { filter: brightness(0.97); }
+.pv-kind-personal {
+  background: var(--personal-bg);
+  color: var(--personal-text);
+  border: 1px solid var(--personal-border);
+}
+.pv-kind-personal:hover { filter: brightness(0.97); }
 
 .pv-title { font-size: 15.5px; font-weight: 700; margin-bottom: 4px; }
 .pv-meta { font-size: 13px; color: var(--text-sub); margin-bottom: 3px; }
@@ -573,6 +627,7 @@ button, select, input, textarea {
 .pv-status-pending { background: var(--own-bg); color: var(--own-text); border: 1px solid var(--own-border); }
 .pv-status-reschedule_requested { background: var(--pending-bg); color: var(--pending-text); border: 1px solid var(--pending-border); }
 .pv-status-rejected { background: var(--reject-bg); color: var(--reject-text); border: 1px solid var(--reject-border); }
+.pv-status-personal { background: var(--personal-bg); color: var(--personal-text); border: 1px solid var(--personal-border); }
 
 .pv-reschedule-box {
   margin-top: 8px;
@@ -857,6 +912,11 @@ button, select, input, textarea {
   background: var(--reject-bg);
   color: var(--reject-text);
   border: 1px solid var(--reject-border);
+}
+.month-event-chip.dot-personal {
+  background: var(--personal-bg);
+  color: var(--personal-text);
+  border-left: 3px solid var(--personal-border);
 }
 .month-chip-icon {
   width: 18px;

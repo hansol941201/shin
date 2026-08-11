@@ -3,14 +3,18 @@ import { useApp } from '../state/store.jsx';
 import { addDays, dateKey, getWeekStart, isSameDay, startOfDay } from '../utils/time.js';
 import { busyIntervalsForDay } from '../utils/eventHelpers.js';
 import RequestPopover from './RequestPopover.jsx';
+import PersonalEventPopover from './PersonalEventPopover.jsx';
+import CreateKindPopover from './CreateKindPopover.jsx';
 import EventDetailPopover from './EventDetailPopover.jsx';
 import woodpeckerIcon from '../assets/woodpecker.png';
 
-// 한솔이 요청한 일정(source==='platform')은 상태별로 색이 다르다 — 팀장이
-// Google에 직접 등록한 일반 일정(source==='google')은 기존 파란 계열
-// 그대로 두고, 한솔 요청은 승인대기/확정=분홍, 시간변경 요청=주황,
-// 거절=빨강으로 색만 봐도 처리 결과를 바로 알 수 있게 한다.
+// 세 가지 출처가 색으로 한눈에 구분된다:
+// - source==='google' (팀장 Google 기본 일정): 기존 파란 계열
+// - source==='platform' (한솔 → 팀장 요청): 승인대기/확정=분홍, 시간변경
+//   요청=주황, 거절=빨강 — 상태에 따라 처리 결과가 바로 보인다.
+// - source==='hansol_personal' (한솔 개인 일정, 승인 절차 없음): 노란 계열
 function chipClass(e) {
+  if (e.source === 'hansol_personal') return 'dot-personal';
   if (e.source !== 'platform') return 'dot-confirmed';
   if (e.status === 'reschedule_requested') return 'dot-reschedule';
   if (e.status === 'rejected') return 'dot-rejected';
@@ -18,6 +22,7 @@ function chipClass(e) {
 }
 
 // 상태별 짧은 배지. 승인대기는 문구 대신 체크 표시(✓)로 짧게 표시한다.
+// 개인 일정은 색만으로 이미 구분되므로 배지를 따로 붙이지 않는다.
 function chipBadge(e) {
   if (e.source !== 'platform') return null;
   if (e.status === 'confirmed') return '확정';
@@ -41,10 +46,12 @@ function hasOverlap(busyIntervals, startMin, endMin) {
 // 시작/종료 시간은 30분 단위 선택지가 아니라 자유 입력(<input type="time">)
 // 이며, 근무시간(09~18시) 범위 밖이어도 그대로 등록/수정할 수 있다.
 export default function MonthView() {
-  const { cursorDate, events, settings, addRequest, role } = useApp();
+  const { cursorDate, events, settings, addRequest, addPersonalEvent, role } = useApp();
   const today = startOfDay(new Date());
 
-  const [createPopover, setCreatePopover] = useState(null); // {day, startMin, endMin, x, y}
+  // createPopover: {day, startMin, endMin, x, y, kind}
+  // kind: null(한솔 화면에서 아직 "요청/개인 일정" 선택 전) | 'request' | 'personal'
+  const [createPopover, setCreatePopover] = useState(null);
   const [detailPopover, setDetailPopover] = useState(null); // {event, x, y}
 
   // cursorDate가 속한 달을 기준으로 월 전체 그리드(항상 6주) 구성
@@ -56,15 +63,16 @@ export default function MonthView() {
   // - 팀장: 팀장님의 실제 일정(Google 기본 일정) + 팀장님이 확인/처리해야
   //   하는 한솔의 모든 요청(승인대기/시간변경/거절/수락 완료)까지 전부
   //   보여준다 — 승인대기를 캘린더에서 숨기면 놓치기 쉬우므로 반드시 표시한다.
-  // - 한솔: 한솔이 팀장님께 요청한 일정만(승인대기/시간변경/거절/수락 완료).
-  //   팀장이 Google에 직접 등록한 일반 일정은 숨긴다.
-  // 거절된 요청도 이제 빨간색으로 계속 표시해 한솔이 처리 결과를 놓치지
-  // 않게 한다(예전에는 화면에서 완전히 숨겼음).
+  //   한솔 개인 일정(source==='hansol_personal')은 팀장 업무와 무관하므로
+  //   팀장 화면에서는 숨긴다.
+  // - 한솔: 팀장 Google 일정 + 한솔이 팀장님께 요청한 일정(승인대기/시간변경/
+  //   거절/수락 완료) + 한솔 개인 일정까지 전부 보여준다 — "팀장님 일정 +
+  //   내 요청 + 내 개인 일정"을 한 화면에서 같이 보는 것이 목표.
   // source/requester는 store.jsx가 명시적으로 채워 넣는 값이라 여기서는
   // 그 값만 그대로 사용한다(ID/상태 추측 금지).
   function visibleByRole(e) {
-    if (role === 'manager') return true;
-    return e.source === 'platform';
+    if (e.source === 'hansol_personal') return role === 'coordinator';
+    return true;
   }
 
   function dayEvents(d) {
@@ -73,7 +81,7 @@ export default function MonthView() {
 
   function handleCellClick(d) {
     setDetailPopover(null);
-    setCreatePopover({
+    const base = {
       day: d,
       // 시간 입력 필드의 초기값일 뿐, 사용자가 자유롭게 바꿀 수 있다.
       startMin: settings.workStartMin,
@@ -82,7 +90,10 @@ export default function MonthView() {
       // (날짜 칸 어디를 눌러도 팝업 위치가 안정적이도록).
       x: window.innerWidth / 2 - 140,
       y: window.innerHeight / 3,
-    });
+    };
+    // 한솔 화면에서만 "팀장님께 요청 / 한솔 개인 일정"을 먼저 고른다.
+    // 팀장 화면은 개인 일정 개념이 없으므로 기존처럼 바로 요청 폼을 연다.
+    setCreatePopover({ ...base, kind: role === 'coordinator' ? null : 'request' });
   }
 
   function handleEventClick(ev, e) {
@@ -94,15 +105,39 @@ export default function MonthView() {
   async function handleSubmitRequest(payload) {
     const { day } = createPopover;
     // 제출 시점에 다시 한 번 겹치는 일정이 없는지 확인(그 사이 다른 일정이
-    // 생겼을 수 있음). 근무시간 범위로 자르지 않고 실제 일정끼리만 비교한다.
-    const busy = busyIntervalsForDay(events, day);
+    // 생겼을 수 있음). 근무시간 범위로 자르지 않고 실제 일정끼리만 비교
+    // 하되, 한솔 개인 일정은 팀장님과 무관한 별개 일정이므로 "이미 다른
+    // 일정이 있습니다" 하드 차단 대상에서는 제외하고 아래에서 경고로만
+    // 안내한다.
+    const teamEvents = events.filter((e) => e.source !== 'hansol_personal');
+    const busy = busyIntervalsForDay(teamEvents, day);
     if (hasOverlap(busy, payload.startMin, payload.endMin)) {
       return { error: '해당 시간에 이미 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
+    }
+    if (!payload.force) {
+      const personalEvents = events.filter((e) => e.source === 'hansol_personal');
+      const personalBusy = busyIntervalsForDay(personalEvents, day);
+      if (hasOverlap(personalBusy, payload.startMin, payload.endMin)) {
+        return {
+          warning: '이 시간에는 한솔 개인 일정이 있습니다.\n그래도 팀장님께 요청하시겠습니까?',
+        };
+      }
     }
     const base = startOfDay(day);
     const start = new Date(base.getTime() + payload.startMin * 60000).toISOString();
     const end = new Date(base.getTime() + payload.endMin * 60000).toISOString();
     addRequest({ title: payload.title, location: payload.location, memo: payload.memo, start, end });
+    setCreatePopover(null);
+    return { ok: true };
+  }
+
+  // 한솔 개인 일정은 팀장님 승인 절차/겹침 차단이 없다 — 저장 즉시 확정.
+  async function handleSubmitPersonal(payload) {
+    const { day } = createPopover;
+    const base = startOfDay(day);
+    const start = new Date(base.getTime() + payload.startMin * 60000).toISOString();
+    const end = new Date(base.getTime() + payload.endMin * 60000).toISOString();
+    addPersonalEvent({ title: payload.title, location: payload.location, memo: payload.memo, start, end });
     setCreatePopover(null);
     return { ok: true };
   }
@@ -149,7 +184,16 @@ export default function MonthView() {
         })}
       </div>
 
-      {createPopover && (
+      {createPopover && createPopover.kind === null && (
+        <CreateKindPopover
+          anchor={{ x: createPopover.x, y: createPopover.y }}
+          day={createPopover.day}
+          onClose={() => setCreatePopover(null)}
+          onPick={(kind) => setCreatePopover({ ...createPopover, kind })}
+        />
+      )}
+
+      {createPopover && createPopover.kind === 'request' && (
         <RequestPopover
           anchor={{ x: createPopover.x, y: createPopover.y }}
           day={createPopover.day}
@@ -157,6 +201,17 @@ export default function MonthView() {
           initialEnd={createPopover.endMin}
           onClose={() => setCreatePopover(null)}
           onSubmit={handleSubmitRequest}
+        />
+      )}
+
+      {createPopover && createPopover.kind === 'personal' && (
+        <PersonalEventPopover
+          anchor={{ x: createPopover.x, y: createPopover.y }}
+          day={createPopover.day}
+          initialStart={createPopover.startMin}
+          initialEnd={createPopover.endMin}
+          onClose={() => setCreatePopover(null)}
+          onSubmit={handleSubmitPersonal}
         />
       )}
 

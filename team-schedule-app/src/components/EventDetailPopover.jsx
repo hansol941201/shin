@@ -192,8 +192,12 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
   return (
     <PopoverShell anchor={anchor} onClose={onClose} width={296}>
       <div className="pv-head">
-        <span className={`pv-status-badge pv-status-${event.status}`}>
-          {event.status === 'rejected' ? rejectionLabel(event) : STATUS_LABEL[event.status]}
+        <span
+          className={`pv-status-badge ${event.source === 'hansol_personal' ? 'pv-status-personal' : `pv-status-${event.status}`}`}
+        >
+          {event.source === 'hansol_personal'
+            ? '개인 일정'
+            : event.status === 'rejected' ? rejectionLabel(event) : STATUS_LABEL[event.status]}
         </span>
         <button className="pv-close" onClick={onClose} aria-label="닫기">✕</button>
       </div>
