@@ -1219,8 +1219,8 @@
   }
   .cal-popover{
     position:fixed; right:18px; bottom:64px; z-index:66;
-    width:340px; max-width:calc(100vw - 24px);
-    max-height:min(560px, calc(100vh - 90px));
+    width:min(390px, calc(100vw - 24px));
+    max-height:75vh;
     display:flex; flex-direction:column;
     background:var(--surface); border:1px solid var(--line); border-radius:10px;
     box-shadow:0 4px 16px rgba(17,24,39,0.10);
@@ -1231,9 +1231,34 @@
     padding:12px 14px; border-bottom:1px solid var(--line); flex:0 0 auto;
   }
   .cal-pop-title{ font-size:13.5px; font-weight:700; color:var(--text); }
+  .cal-pop-head-right{ display:flex; align-items:center; gap:10px; }
+  .cal-team-link-btn{
+    border:none; background:transparent; cursor:pointer; padding:0;
+    font-size:11px; font-family:inherit; color:var(--navy); font-weight:600;
+  }
+  .cal-team-link-btn:hover{ text-decoration:underline; }
   .cal-pop-close{ border:none; background:transparent; cursor:pointer; font-size:16px; line-height:1; color:var(--text-muted); padding:2px 4px; }
   .cal-pop-close:hover{ color:var(--text); }
   .cal-pop-body{ padding:12px 14px; overflow-y:auto; flex:1 1 auto; }
+  /* ---------- 소스 필터(전체/내 일정/팀장 일정) — 연한 네이비 배경만, 과도한 색 금지 ---------- */
+  .cal-src-tabs-row{ display:flex; gap:6px; margin-bottom:8px; }
+  .cal-src-tab-btn{
+    flex:1 1 0; height:24px; font-size:11px; font-family:inherit; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer;
+  }
+  .cal-src-tab-btn:hover{ background:#F0F1F4; }
+  .cal-src-tab-btn.active{ background:#EEF1F8; border-color:#EEF1F8; color:var(--navy); font-weight:600; }
+  /* ---------- 팀장 일정(team-schedule, 읽기전용) 표시 ---------- */
+  .cal-grid-team-dot{ width:5px; height:5px; border-radius:50%; background:#8E9FCE; }
+  .cal-team-section{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); }
+  .cal-team-section-head{ font-size:12px; font-weight:700; color:var(--navy); margin-bottom:6px; }
+  .cal-team-row{ padding:8px 0; border-bottom:1px solid var(--line); }
+  .cal-team-row:last-child{ border-bottom:none; }
+  .cal-team-row-top{ display:flex; align-items:baseline; gap:6px; }
+  .cal-team-row-time{ font-size:11px; color:var(--text-muted); flex:0 0 auto; }
+  .cal-team-row-title{ font-size:12.5px; color:var(--text); }
+  .cal-team-row-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .cal-team-readonly-tag{ font-size:10px; color:var(--text-muted); background:#EEF1F8; border-radius:4px; padding:0 4px; margin-left:4px; }
   .cal-tabs-row{ display:flex; gap:6px; margin-bottom:8px; }
   .cal-tab-btn{
     flex:1 1 0; height:26px; font-size:11.5px; font-family:inherit; color:var(--text-muted);
@@ -1869,7 +1894,10 @@
   <div class="cal-popover" id="calPopover" style="display:none;">
     <div class="cal-pop-head">
       <div class="cal-pop-title">일정관리</div>
-      <button type="button" class="cal-pop-close" id="calPopCloseBtn">&times;</button>
+      <div class="cal-pop-head-right">
+        <button type="button" class="cal-team-link-btn" id="calTeamLinkBtn">팀장 일정 ↗</button>
+        <button type="button" class="cal-pop-close" id="calPopCloseBtn">&times;</button>
+      </div>
     </div>
     <div class="cal-pop-body" id="calPopBody"></div>
   </div>
@@ -9387,18 +9415,67 @@ ${text}
   'use strict';
   var STORAGE_KEY = 'shin2-calendar-events-v1';
   var COMPANY_STORAGE_KEY = 'shin2-companies-staging';
+  // 팀장 일정(team-schedule 앱, https://hansol941201.github.io/shin/team-schedule/)이
+  // 실제로 쓰는 localStorage 키를 그대로 읽기 전용으로 읽는다(team-schedule/assets의
+  // 번들 JS를 직접 확인: yd = "team-schedule-app:events:v1", 이벤트 형태는
+  // {id,title,start,end,location,memo,requester,manager,status,googleCalendarEventId,
+  // createdAt,updatedAt,source} — ISO start/end만 있고 date/time 필드가 따로 없음).
+  // v2와 team-schedule은 둘 다 https://hansol941201.github.io/shin/... 아래에서
+  // 서빙되므로 origin이 같아 localStorage를 그대로 공유한다(§9b58b31과 동일한 근거).
+  // 이 키는 절대 쓰지 않는다(setItem/removeItem 호출 없음) — team-schedule의 유일한
+  // 쓰기 경로(그 앱 자신의 리듀서)를 그대로 존중한다. 복제본도 새로 만들지 않는다 —
+  // 렌더링마다 이 함수로 원본을 그대로 다시 읽는다.
+  var TEAM_STORAGE_KEY = 'team-schedule-app:events:v1';
+  var TEAM_SCHEDULE_URL = 'https://hansol941201.github.io/shin/team-schedule/';
+
+  function loadTeamEvents(){
+    try{
+      var raw = localStorage.getItem(TEAM_STORAGE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      if(!Array.isArray(list)) return [];
+      // cancelled/rejected는 더 이상 유효하지 않은 일정이라 표시하지 않는다(원본 데이터를
+      // 바꾸는 게 아니라 이 렌더링 레이어에서만 걸러낸다).
+      return list.filter(function(ev){
+        return ev && ev.status !== 'cancelled' && ev.status !== 'rejected';
+      }).map(function(ev){
+        var sd = ev.start ? new Date(ev.start) : null;
+        var ed = ev.end ? new Date(ev.end) : null;
+        return {
+          id: ev.id,
+          title: ev.title || '',
+          date: (sd && !isNaN(sd.getTime())) ? (sd.getFullYear() + '-' + pad2(sd.getMonth()+1) + '-' + pad2(sd.getDate())) : '',
+          startTime: (sd && !isNaN(sd.getTime())) ? (pad2(sd.getHours()) + ':' + pad2(sd.getMinutes())) : '',
+          endTime: (ed && !isNaN(ed.getTime())) ? (pad2(ed.getHours()) + ':' + pad2(ed.getMinutes())) : '',
+          memo: ev.memo || '',
+          source: 'teamLead'
+        };
+      });
+    }catch(e){ return []; }
+  }
 
   var fabBtn = document.getElementById('calFabBtn');
   var fabBadge = document.getElementById('calFabBadge');
   var popover = document.getElementById('calPopover');
   var popBody = document.getElementById('calPopBody');
   var popCloseBtn = document.getElementById('calPopCloseBtn');
+  var teamLinkBtn = document.getElementById('calTeamLinkBtn');
   if(!fabBtn || !popover || !popBody) return;
+
+  if(teamLinkBtn){
+    // 현재 v2 탭은 그대로 두고 새 탭에서만 team-schedule을 연다(window.open + '_blank').
+    teamLinkBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      window.open(TEAM_SCHEDULE_URL, '_blank');
+    });
+  }
 
   // mode: 'grid'(월간 그리드, 기본) | 'list'(오늘/주간 목록) | 'form'(추가/수정)
   // gridRef: 그리드에 현재 표시 중인 달(month)의 기준일. selectedDate: 그리드에서 클릭해
   // 선택한 날짜(YYYY-MM-DD) — 그 날짜의 일정 목록을 그리드 아래에 그대로 이어서 보여준다.
-  var state = { viewMode:'month', filter:'all', mode:'grid', editingId:null, formDeleteConfirmId:null,
+  // srcFilter: 'all'/'mine'/'team' — 전체/내 일정/팀장 일정 필터(그리드 점 + 날짜별 상세
+  // 양쪽에 동일하게 적용). 기존 filter('all'/'important')는 목록 화면(오늘/주간)의
+  // 중요도 필터로 그대로 남겨두고, srcFilter는 별도의 새 상태다.
+  var state = { viewMode:'month', filter:'all', srcFilter:'all', mode:'grid', editingId:null, formDeleteConfirmId:null,
     gridRef: new Date(), selectedDate: null, formReturn: 'grid' };
 
   function pad2(n){ return String(n).padStart(2,'0'); }
@@ -9666,15 +9743,62 @@ ${text}
   // 월요일 시작 주 배치를 위한 요일 인덱스 변환(일=0..토=6 → 월=0..일=6).
   function mondayIndex(jsDay){ return (jsDay + 6) % 7; }
 
+  // srcFilter를 반영해 "내 일정"/"팀장 일정" 각각을 그릴지 여부만 결정한다(둘 다 원본을
+  // 그대로 읽으며, 어느 쪽도 새로 복제하지 않는다).
+  function includeMine(){ return state.srcFilter !== 'team'; }
+  function includeTeam(){ return state.srcFilter !== 'mine'; }
+
   function eventsByDateMap(){
     var map = {};
-    loadAll().forEach(function(ev){
-      if(!ev.date) return;
-      if(!map[ev.date]) map[ev.date] = { hasImportant:false, hasNormal:false };
-      if(ev.isImportant) map[ev.date].hasImportant = true;
-      else map[ev.date].hasNormal = true;
-    });
+    if(includeMine()){
+      loadAll().forEach(function(ev){
+        if(!ev.date) return;
+        if(!map[ev.date]) map[ev.date] = { hasImportant:false, hasNormal:false, hasTeam:false };
+        if(ev.isImportant) map[ev.date].hasImportant = true;
+        else map[ev.date].hasNormal = true;
+      });
+    }
+    if(includeTeam()){
+      loadTeamEvents().forEach(function(ev){
+        if(!ev.date) return;
+        if(!map[ev.date]) map[ev.date] = { hasImportant:false, hasNormal:false, hasTeam:false };
+        map[ev.date].hasTeam = true;
+      });
+    }
     return map;
+  }
+
+  // 전체/내 일정/팀장 일정 필터 탭 — 활성 탭은 연한 네이비 배경만 쓰고(과도한 색상 금지),
+  // 그리드 점과 날짜별 상세 양쪽에 동일하게 적용된다.
+  var SRC_FILTER_LABEL = { all:'전체', mine:'내 일정', team:'팀장 일정' };
+  function sourceTabsRowHtml(){
+    return '<div class="cal-src-tabs-row">' +
+      ['all','mine','team'].map(function(f){
+        return '<button type="button" class="cal-src-tab-btn' + (state.srcFilter===f?' active':'') + '" data-src-filter="' + f + '">' + SRC_FILTER_LABEL[f] + '</button>';
+      }).join('') +
+    '</div>';
+  }
+  function bindSourceTabsRow(){
+    popBody.querySelectorAll('[data-src-filter]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        state.srcFilter = btn.dataset.srcFilter;
+        render();
+      });
+    });
+  }
+
+  // 팀장 일정 한 줄 — 읽기전용: 수정/완료/삭제 버튼을 단 하나도 넣지 않는다.
+  function teamEventRowHtml(ev){
+    var timeLabel = [ev.startTime, ev.endTime].filter(Boolean).join('~');
+    return '' +
+      '<div class="cal-team-row" data-team-id="' + escapeAttr(ev.id) + '">' +
+        '<div class="cal-team-row-top">' +
+          (timeLabel ? '<span class="cal-team-row-time">' + escapeHtml(timeLabel) + '</span>' : '') +
+          '<span class="cal-team-row-title">' + escapeHtml(ev.title) + '</span>' +
+          '<span class="cal-team-readonly-tag">읽기전용</span>' +
+        '</div>' +
+        (ev.memo ? '<div class="cal-team-row-meta">' + escapeHtml(ev.memo) + '</div>' : '') +
+      '</div>';
   }
 
   function renderGrid(){
@@ -9696,8 +9820,9 @@ ${text}
       var inMonthCell = cellDate.getMonth() === m;
       var info = evMap[dateStr];
       var dotHtml = '';
-      if(info && info.hasImportant) dotHtml = '<span class="kb-hl cal-grid-hl-mark"></span>';
-      else if(info && info.hasNormal) dotHtml = '<span class="cal-grid-dot"></span>';
+      if(info && info.hasImportant) dotHtml += '<span class="kb-hl cal-grid-hl-mark"></span>';
+      else if(info && info.hasNormal) dotHtml += '<span class="cal-grid-dot"></span>';
+      if(info && info.hasTeam) dotHtml += '<span class="cal-grid-team-dot"></span>';
       var cls = 'cal-grid-cell' +
         (inMonthCell ? '' : ' out') +
         (dateStr === t ? ' today' : '') +
@@ -9715,20 +9840,37 @@ ${text}
     if(state.selectedDate){
       var d = parseYmd(state.selectedDate);
       var headLabel = d ? (d.getMonth() + 1) + '월 ' + d.getDate() + '일 일정' : state.selectedDate + ' 일정';
-      var dayItems = loadAll().filter(function(ev){ return ev.date === state.selectedDate; })
-        .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
-      dateEventsHtml = '' +
-        '<div class="cal-date-events">' +
-          '<div class="cal-date-events-head">' + escapeHtml(headLabel) + '</div>' +
+      var mineHtml = '';
+      if(includeMine()){
+        var dayItems = loadAll().filter(function(ev){ return ev.date === state.selectedDate; })
+          .sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); });
+        mineHtml = '' +
           (dayItems.length
             ? '<div class="cal-list">' + dayItems.map(eventRowHtml).join('') + '</div>'
             : '<div class="cal-empty-hint">등록된 일정이 없습니다.</div>') +
-          '<div class="cal-add-toggle-row" style="margin-top:8px;"><button type="button" class="acct-add-btn" id="calGridAddBtn">+ 일정 추가</button></div>' +
-        '</div>';
+          '<div class="cal-add-toggle-row" style="margin-top:8px;"><button type="button" class="acct-add-btn" id="calGridAddBtn">+ 일정 추가</button></div>';
+      }
+      var teamHtml = '';
+      if(includeTeam()){
+        var teamItems = loadTeamEvents().filter(function(ev){ return ev.date === state.selectedDate; })
+          .sort(function(a,b){ return (a.startTime||'').localeCompare(b.startTime||''); });
+        teamHtml = '' +
+          '<div class="cal-team-section">' +
+            '<div class="cal-team-section-head">팀장 일정</div>' +
+            (teamItems.length
+              ? teamItems.map(teamEventRowHtml).join('')
+              : '<div class="cal-empty-hint">팀장 일정이 없습니다.</div>') +
+          '</div>';
+      }
+      dateEventsHtml = '<div class="cal-date-events">' +
+        '<div class="cal-date-events-head">' + escapeHtml(headLabel) + '</div>' +
+        mineHtml + teamHtml +
+      '</div>';
     }
 
     popBody.innerHTML = '' +
       tabsRowHtml() +
+      sourceTabsRowHtml() +
       '<div class="cal-grid-head">' +
         '<div class="cal-grid-nav">' +
           '<button type="button" class="cal-grid-nav-btn" id="calGridPrev" aria-label="이전 달">&lsaquo;</button>' +
@@ -9742,6 +9884,7 @@ ${text}
       dateEventsHtml;
 
     bindTabsRow();
+    bindSourceTabsRow();
     document.getElementById('calGridPrev').addEventListener('click', function(){
       state.gridRef = new Date(y, m - 1, 1);
       render();
@@ -9841,6 +9984,17 @@ ${text}
     if(e.detail.key !== 'calendar') return;
     renderBadge();
     if(isOpen() && (state.mode === 'list' || state.mode === 'grid')) render();
+  });
+
+  // 팀장 일정(team-schedule) 실시간 반영 — team-schedule 탭이 같은 origin에서 자신의
+  // localStorage 키(team-schedule-app:events:v1)를 바꾸면 브라우저가 이 탭에 'storage'
+  // 이벤트를 보내준다(§9b58b31과 동일한 근거: 같은 origin이면 다른 탭의 localStorage 변경이
+  // storage 이벤트로 전달됨 — 단, 이 이벤트를 발생시킨 탭 자신에게는 오지 않고 "다른" 탭에만
+  // 온다). 팝오버가 열려 있고 그리드 화면일 때만 다시 그린다 — 데이터를 복제하지 않고 매번
+  // loadTeamEvents()로 원본을 새로 읽는다.
+  window.addEventListener('storage', function(e){
+    if(e.key !== TEAM_STORAGE_KEY) return;
+    if(isOpen() && state.mode === 'grid') render();
   });
 
   window.SHIN2_CALENDAR = { getAll: loadAll, add: add, update: update, setStatus: setStatus, remove: remove };
