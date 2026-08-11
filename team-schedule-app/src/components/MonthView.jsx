@@ -14,12 +14,13 @@ function chipClass(e) {
   return 'dot-confirmed';
 }
 
-// 분홍 칩 중에서도 상태를 아주 작은 글자로 구분해준다.
+// 분홍 칩 중에서도 상태를 아주 작은 글자로 구분해준다. 승인대기는 문구
+// 대신 체크 표시(✓) 하나로 짧게 표시한다.
 function chipBadge(e) {
   if (e.source !== 'platform') return null;
   if (e.status === 'confirmed') return '확정';
   if (e.status === 'reschedule_requested') return '시간변경';
-  if (e.status === 'pending') return '승인대기';
+  if (e.status === 'pending') return '✓';
   return null;
 }
 
