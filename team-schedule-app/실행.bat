@@ -8,6 +8,14 @@ echo   팀장 일정 조율 캘린더 실행 준비 중...
 echo   (이 창을 닫으면 서버도 함께 종료됩니다)
 echo ============================================
 echo.
+echo [경로 확인] 실행.bat 위치^(= 이 npm/vite가 실행될 프로젝트 루트^): %~dp0
+echo [경로 확인] .env.local이 있어야 할 위치: %~dp0.env.local
+if exist "%~dp0.env.local" (
+    echo [경로 확인] .env.local 존재함
+) else (
+    echo [경로 확인] .env.local 없음 ^(Google 연동 미설정 상태로 뜹니다^)
+)
+echo.
 
 where node >nul 2>nul
 if errorlevel 1 (

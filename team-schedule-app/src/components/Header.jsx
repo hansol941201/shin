@@ -143,6 +143,28 @@ function SettingsPopover({ anchor, onClose }) {
             <b>{googleClientIdMasked || '(비어있음)'}</b>
           </div>
         )}
+        <div className="settings-diag-row">
+          <span>실행 프로젝트 경로</span>
+          <b>{typeof __APP_PROJECT_ROOT__ !== 'undefined' ? __APP_PROJECT_ROOT__ : '(알 수 없음)'}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>MODE</span>
+          <b>{import.meta.env.MODE}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>DEV</span>
+          <b>{String(import.meta.env.DEV)}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>BASE_URL</span>
+          <b>{import.meta.env.BASE_URL}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>VITE_GOOGLE_CLIENT_ID 존재</span>
+          <b className={googleConfigured ? 'diag-ok' : 'diag-bad'}>
+            {typeof import.meta.env.VITE_GOOGLE_CLIENT_ID === 'string' && import.meta.env.VITE_GOOGLE_CLIENT_ID.length > 0 ? '예' : '아니오'}
+          </b>
+        </div>
       </div>
     </PopoverShell>
   );

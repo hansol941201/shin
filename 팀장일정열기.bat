@@ -9,6 +9,10 @@ chcp 65001 >nul
 title 팀장 일정 조율 캘린더
 cd /d "%~dp0"
 
+echo [경로 확인] 팀장일정열기.bat 위치: %~dp0
+echo [경로 확인] 실행할 프로젝트 폴더: %~dp0team-schedule-app
+echo.
+
 if not exist "%~dp0team-schedule-app\실행.bat" (
     echo [오류] team-schedule-app\실행.bat 을 찾을 수 없습니다.
     echo         이 파일이 프로젝트 루트에 있는지 확인해주세요.

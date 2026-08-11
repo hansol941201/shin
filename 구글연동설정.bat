@@ -43,6 +43,21 @@ if not defined TARGET_DIR (
     exit /b 1
 )
 echo [0/6] 실제 프로젝트 루트 확인됨: %TARGET_DIR%
+
+rem 압축을 여러 번 풀어서 같은 이름의 프로젝트 복사본이 여러 개 있으면
+rem 어느 걸 실행하고 있는지 헷갈리는 원인이 될 수 있어, Desktop/Downloads
+rem 아래에 다른 team-schedule-app 폴더가 더 있는지 참고용으로만 알려준다
+rem (자동으로 지우거나 손대지 않음).
+for %%B in ("%USERPROFILE%\Desktop" "%USERPROFILE%\Downloads") do (
+    if exist "%%~B" (
+        for /f "usebackq delims=" %%D in (`dir /s /b /ad "%%~B\team-schedule-app" 2^>nul`) do (
+            if /i not "%%~D"=="%TARGET_DIR%" (
+                echo   [참고] 다른 위치에 team-schedule-app 복사본 발견: %%~D
+                echo          ^(지금은 위의 실제 프로젝트 루트만 사용합니다^)
+            )
+        )
+    )
+)
 echo.
 
 set "ENV_FILE=%TARGET_DIR%\.env.local"
@@ -218,6 +233,11 @@ set "OLD_PID="
 for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess)" 2^>nul`) do set "OLD_PID=%%A"
 if defined OLD_PID (
     echo   - 재시작 전 5173을 쓰던 프로세스: PID !OLD_PID!
+    rem 그 프로세스가 정확히 어느 폴더의 vite를 실행 중인지(명령줄에 실제
+    rem node_modules\vite\... 경로가 그대로 찍혀 나온다) 그대로 보여준다.
+    set "OLD_CMDLINE="
+    for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=!OLD_PID!' -ErrorAction SilentlyContinue).CommandLine"`) do set "OLD_CMDLINE=%%L"
+    if defined OLD_CMDLINE echo   - 그 프로세스의 실행 명령줄^(어느 폴더 소속인지 확인 가능^): !OLD_CMDLINE!
 ) else (
     echo   - 재시작 전 5173을 쓰던 프로세스 없음
 )
@@ -239,6 +259,19 @@ if exist "%TARGET_DIR%\_launch_core.bat" (
         echo   - 서버가 정상적으로 시작되어 브라우저가 자동으로 열립니다.
         if defined NEW_PID (
             echo   - 새로 시작된 서버 프로세스: PID !NEW_PID!
+            set "NEW_CMDLINE="
+            for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=!NEW_PID!' -ErrorAction SilentlyContinue).CommandLine"`) do set "NEW_CMDLINE=%%L"
+            if defined NEW_CMDLINE echo   - 그 프로세스의 실행 명령줄: !NEW_CMDLINE!
+            echo !NEW_CMDLINE! | findstr /i /c:"!TARGET_DIR!" >nul
+            if errorlevel 1 (
+                echo   [주의] 새로 뜬 서버의 명령줄에 방금 설정한 프로젝트 경로
+                echo          ^(!TARGET_DIR!^)가 보이지 않습니다. 다른 폴더의
+                echo          vite가 떴을 수 있습니다. 이 창의 로그를 캡처해서
+                echo          알려주세요.
+            ) else (
+                echo   - 새로 뜬 서버가 방금 설정한 프로젝트 경로^(!TARGET_DIR!^)에서
+                echo          실행되었음을 명령줄로 확인했습니다.
+            )
             if defined OLD_PID (
                 if "!NEW_PID!"=="!OLD_PID!" (
                     echo   [주의] 새 PID가 이전 PID와 동일합니다. 서버가 재시작되지
