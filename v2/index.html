@@ -555,7 +555,29 @@
   .kb-search-box{ max-width:none; height:36px; margin:14px 0 10px; }
 
   /* ---------- 자료실(신규) — 회사 공용 자료 저장소 ---------- */
+  .lib-header-btns{ display:flex; gap:8px; }
   .lib-banner{ font-size:11.5px; color:var(--text-muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin:10px 0 4px; }
+  /* ---------- 폴더 일괄 등록(신규) ---------- */
+  .lib-bulk-summary{ font-size:12.5px; color:var(--text-muted); margin-bottom:12px; }
+  .lib-bulk-list{ max-height:360px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin-bottom:12px; }
+  .lib-bulk-row{ display:flex; align-items:center; gap:8px; padding:8px 2px; border-bottom:1px solid var(--line); }
+  .lib-bulk-row:last-child{ border-bottom:none; }
+  .lib-bulk-row.excluded{ opacity:0.5; }
+  .lib-bulk-check{ display:flex; align-items:center; gap:6px; flex:0 0 auto; max-width:34%; cursor:pointer; }
+  .lib-bulk-chk{ width:15px; height:15px; accent-color:var(--navy); cursor:pointer; flex:none; }
+  .lib-bulk-fname{ font-size:12px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lib-bulk-title{ flex:1; min-width:0; padding:7px 9px; font-size:12.5px; font-family:inherit; color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:6px; outline:none; box-sizing:border-box; }
+  .lib-bulk-title:focus{ border-color:#C7CEDB; }
+  .lib-bulk-dup{ flex:0 0 auto; font-size:10.5px; color:#B08A00; background:#FEF6B2; padding:2px 7px; border-radius:8px; white-space:nowrap; }
+  .lib-bulk-status{ flex:0 0 16px; text-align:center; font-size:12px; }
+  .lib-bulk-status.ok{ color:var(--navy); }
+  .lib-bulk-status.fail{ color:#B91C1C; }
+  .lib-bulk-selcount{ font-size:12px; color:var(--text-muted); }
+  .lib-bulk-result-list{ margin-bottom:12px; }
+  .lib-bulk-result-row{ display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .lib-bulk-result-row:last-child{ border-bottom:none; }
+  .lib-bulk-result-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+  .lib-bulk-result-err{ font-size:11px; color:#B91C1C; }
   .lib-recent-label{ font-size:12px; font-weight:600; color:var(--text-muted); margin:16px 0 6px; }
   .lib-row{ display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
   .lib-row:hover{ background:#F0F1F4; }
@@ -2046,8 +2068,15 @@
       <div class="kb-view" id="libraryView" style="display:none;">
         <div class="kb-header">
           <div class="kb-title">자료실</div>
-          <button type="button" id="libAddBtn" class="kb-add-btn">+ 자료 추가</button>
+          <div class="lib-header-btns">
+            <button type="button" id="libAddBtn" class="kb-add-btn">+ 자료 추가</button>
+            <button type="button" id="libBulkAddBtn" class="kb-add-btn">폴더 일괄 등록</button>
+          </div>
         </div>
+        <!-- 폴더 선택은 100% 클라이언트 사이드 <input type=file webkitdirectory> 브라우저 표준
+             패턴만 사용한다(§2) — 서버/백엔드가 사용자 파일시스템에 직접 접근하지 않으며, OS
+             네이티브 선택창이 접근을 대신하고 사용자가 매번 직접 트리거해야만 열린다. -->
+        <input type="file" id="libBulkFolderInput" webkitdirectory multiple style="display:none;" />
         <div class="lib-banner" id="libBanner"></div>
         <div class="search-box kb-search-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -10013,6 +10042,304 @@ ${text}
       });
     }
     saveBtn.addEventListener('click', ()=> trySave());
+  }
+
+  // ======================= 폴더 일괄 등록(신규) =======================
+  // 폴더 선택은 <input type="file" webkitdirectory multiple>만 사용한다 — 서버/백엔드가 파일
+  // 시스템에 접근하지 않으며, OS 네이티브 선택창이 사용자의 명시적 선택을 대신한다(§2, §10).
+  // 이 기능은 기존 saveLibraryFile()/D.addDoc()을 파일 개수만큼 그대로 재사용한다 — 별도의
+  // 업로드 경로를 새로 만들지 않는다(§8, 저장 로직 재사용 원칙).
+
+  function libCleanFileNameTitle(fileName){
+    const base = String(fileName || '').replace(/\.[^.]+$/, '');
+    return base.replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim() || fileName;
+  }
+
+  // 기존 사용자 작성 레코드(title vs originalFileName)를 읽어 표기 스타일을 느슨하게 참고한다
+  // (§4). 하드코딩된 규칙이 아니라 "대괄호로 공종/공법을 앞에 표기하는 비율이 높은가"만 보는
+  // 휴리스틱이며, 이 결과는 항상 편집 가능한 기본값을 만드는 데만 쓰인다 — 자동 제출되지 않는다.
+  function libAnalyzeTitleStyle(){
+    const docs = D.loadDocs();
+    if(!docs.length) return null; // 학습할 기존 레코드가 0개면 파일명 정리 폴백만 사용한다(§4).
+    let bracketCount = 0;
+    docs.forEach(d=>{ if(/^\s*[\[(][^\])]+[\])]/.test(d.title || '')) bracketCount++; });
+    return { bracketPrefixRatio: bracketCount / docs.length };
+  }
+
+  function libSuggestTitle(fileName, commonWorkType, styleInfo){
+    const cleaned = libCleanFileNameTitle(fileName);
+    if(styleInfo && styleInfo.bracketPrefixRatio >= 0.5 && commonWorkType){
+      return `[${commonWorkType}] ${cleaned}`;
+    }
+    return cleaned;
+  }
+
+  // 중복 가능성 판정: originalFileName 완전일치 또는 title 부분포함(단순 정규화 문자열 비교,
+  // AI 유사도 판정 아님 — §6). 발견되어도 자동 제외/자동 덮어쓰기는 절대 하지 않고 표시만 한다.
+  function libFindDupCandidate(fileName, title){
+    const fn = norm(fileName);
+    const t = norm(title);
+    const docs = D.loadDocs();
+    return docs.find(d=>{
+      if(norm(d.originalFileName) === fn) return true;
+      if(t && norm(d.title) && (norm(d.title).includes(t) || t.includes(norm(d.title)))) return true;
+      return false;
+    }) || null;
+  }
+
+  // 제한된 동시성(§8 "순차 또는 제한된 병렬")으로 tasks를 실행한다. 실패한 항목이 있어도 나머지는
+  // 계속 진행하며, 이미 성공한 항목을 롤백하지 않는다.
+  function libRunLimited(tasks, limit, onEach){
+    return new Promise(resolve=>{
+      const results = new Array(tasks.length);
+      let idx = 0, active = 0, doneCount = 0;
+      if(tasks.length === 0){ resolve(results); return; }
+      function kick(){
+        while(active < limit && idx < tasks.length){
+          const i = idx++;
+          active++;
+          tasks[i]().then(v=> ({ ok:true, value:v })).catch(e=> ({ ok:false, error:e })).then(r=>{
+            results[i] = r;
+            active--; doneCount++;
+            if(onEach) onEach(i, r);
+            if(doneCount >= tasks.length){ resolve(results); return; }
+            kick();
+          });
+        }
+      }
+      kick();
+    });
+  }
+
+  function openBulkForm(files){
+    const fileList = Array.from(files || []);
+    if(!fileList.length) return;
+    // 폴더명: webkitRelativePath의 첫 세그먼트(선택된 폴더 이름). 없으면 "선택한 파일"로 대체.
+    const firstRel = fileList[0].webkitRelativePath || '';
+    const folderName = firstRel.indexOf('/') > -1 ? firstRel.split('/')[0] : '선택한 파일';
+    const styleInfo = libAnalyzeTitleStyle();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal wide">
+        <div class="kb-modal-title">폴더 일괄 등록</div>
+        <div class="lib-bulk-summary">선택한 폴더: <b>${esc(folderName)}</b> · 파일 ${fileList.length}개</div>
+        <div class="kb-form-field">
+          <label>자료분류 (전체 파일 공통)</label>
+          <select id="libBulkCategory">
+            <option value="">선택 안 함</option>
+            ${D.LIB_CATEGORIES.map(c=> `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="kb-form-field">
+          <label>공종 (전체 파일 공통 — 파일마다 다시 입력하지 않습니다)</label>
+          <input type="text" id="libBulkWorkType" />
+        </div>
+        <div id="libBulkListWrap">
+          <div class="kb-form-field" style="margin-bottom:6px;"><label>등록할 파일</label></div>
+          <div class="lib-bulk-list" id="libBulkList"></div>
+        </div>
+        <div id="libBulkErr" class="kb-form-error" style="display:none;">등록할 파일을 1개 이상 선택하세요.</div>
+        <div class="kb-form-actions">
+          <div class="lib-bulk-selcount" id="libBulkSelCount"></div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="kb-text-action" id="libBulkCancel">취소</button>
+            <button type="button" class="ai-run-btn" id="libBulkSubmit"></button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // items: {file, checked, title} — originalFileName은 항상 file.name 그대로이며(§5) 제목
+    // 편집 UI가 이 값을 절대 바꾸지 않는다. 아래에서 file 객체 자체도 읽기 전용으로만 쓴다(§10).
+    const items = fileList.map(f=> ({
+      file: f,
+      checked: true,
+      title: libSuggestTitle(f.name, '', styleInfo)
+    }));
+
+    const listEl = overlay.querySelector('#libBulkList');
+    const selCountEl = overlay.querySelector('#libBulkSelCount');
+    const submitBtn = overlay.querySelector('#libBulkSubmit');
+    const categorySel = overlay.querySelector('#libBulkCategory');
+    const workTypeInput = overlay.querySelector('#libBulkWorkType');
+
+    function refreshSuggestedTitles(){
+      // 공종 입력이 바뀌면(대괄호 스타일을 학습했을 때) 사용자가 아직 손대지 않은 제목만
+      // 다시 제안한다 — 이미 직접 수정한 제목은 덮어쓰지 않는다(§4 "항상 편집 가능한 기본값").
+      const wt = workTypeInput.value.trim();
+      items.forEach(it=>{
+        if(!it.edited){
+          it.title = libSuggestTitle(it.file.name, wt, styleInfo);
+        }
+      });
+    }
+
+    function updateSelCount(){
+      const n = items.filter(it=> it.checked).length;
+      selCountEl.textContent = `선택 ${n}개`;
+      submitBtn.textContent = `${n}개 등록`;
+      submitBtn.disabled = n === 0;
+    }
+
+    function renderItems(){
+      listEl.innerHTML = items.map((it, i)=>{
+        const dup = libFindDupCandidate(it.file.name, it.title);
+        return `<div class="lib-bulk-row${it.checked?'':' excluded'}" data-idx="${i}">
+          <label class="lib-bulk-check">
+            <input type="checkbox" class="lib-bulk-chk" data-chk="${i}" ${it.checked?'checked':''} />
+            <span class="lib-bulk-fname" title="${esc(it.file.name)}">${esc(it.file.name)}</span>
+          </label>
+          <input type="text" class="lib-bulk-title" data-title="${i}" value="${esc(it.title)}" />
+          ${dup ? `<span class="lib-bulk-dup" title="기존 자료와 파일명/제목이 비슷합니다">중복 가능</span>` : ''}
+        </div>`;
+      }).join('');
+      listEl.querySelectorAll('[data-chk]').forEach(chk=>{
+        chk.addEventListener('change', ()=>{
+          const i = Number(chk.getAttribute('data-chk'));
+          items[i].checked = chk.checked;
+          renderItems();
+          updateSelCount();
+        });
+      });
+      listEl.querySelectorAll('[data-title]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const i = Number(inp.getAttribute('data-title'));
+          items[i].title = inp.value;
+          items[i].edited = true; // 사용자가 직접 수정한 제목은 자동 재제안 대상에서 제외한다.
+          const row = inp.closest('.lib-bulk-row');
+          const dup = libFindDupCandidate(items[i].file.name, items[i].title);
+          const existingBadge = row.querySelector('.lib-bulk-dup');
+          if(dup && !existingBadge){
+            const badge = document.createElement('span');
+            badge.className = 'lib-bulk-dup';
+            badge.title = '기존 자료와 파일명/제목이 비슷합니다';
+            badge.textContent = '중복 가능';
+            row.appendChild(badge);
+          } else if(!dup && existingBadge){
+            existingBadge.remove();
+          }
+        });
+      });
+    }
+
+    renderItems();
+    updateSelCount();
+
+    categorySel.addEventListener('change', ()=>{ /* 공통 필드 — 파일마다 재입력 없음(§7) */ });
+    workTypeInput.addEventListener('input', ()=>{ refreshSuggestedTitles(); renderItems(); updateSelCount(); });
+
+    function close(){ overlay.remove(); }
+    overlay.querySelector('#libBulkCancel').addEventListener('click', close);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+
+    submitBtn.addEventListener('click', ()=>{
+      const checkedItems = items.filter(it=> it.checked);
+      overlay.querySelector('#libBulkErr').style.display = checkedItems.length ? 'none' : 'block';
+      if(!checkedItems.length) return;
+      submitBtn.disabled = true;
+      overlay.querySelector('#libBulkCancel').disabled = true;
+      const commonMeta = {
+        category: categorySel.value,
+        workType: workTypeInput.value.trim()
+      };
+      runBulkUpload(overlay, checkedItems, commonMeta);
+    });
+  }
+
+  // runBulkUpload: 체크된 파일들을 제한된 병렬(3개)로 기존 D.addDoc()에 그대로 위임해 업로드한다
+  // (§8). 개별 실패가 나머지 파일 처리를 막지 않고, 이미 성공한 파일을 되돌리지 않는다(§8, §9).
+  function runBulkUpload(overlay, checkedItems, commonMeta){
+    const modal = overlay.querySelector('.kb-modal');
+    modal.innerHTML = `
+      <div class="kb-modal-title">폴더 일괄 등록 — 등록 중...</div>
+      <div class="lib-bulk-summary" id="libBulkProgressLabel">0 / ${checkedItems.length} 처리됨</div>
+    `;
+
+    const tasks = checkedItems.map(it=> ()=> D.addDoc(it.file, {
+      title: (it.title || '').trim() || it.file.name,
+      category: commonMeta.category,
+      workType: commonMeta.workType
+    }, null, {}));
+
+    let processed = 0;
+    const progressLabel = modal.querySelector('#libBulkProgressLabel');
+    libRunLimited(tasks, 3, ()=>{
+      processed++;
+      if(progressLabel) progressLabel.textContent = `${processed} / ${checkedItems.length} 처리됨`;
+    }).then(results=>{
+      renderBulkResult(overlay, checkedItems, results, commonMeta);
+      renderAll();
+    });
+  }
+
+  function renderBulkResult(overlay, checkedItems, results, commonMeta){
+    const modal = overlay.querySelector('.kb-modal');
+    const successCount = results.filter(r=> r.ok).length;
+    const failCount = results.length - successCount;
+    const failRowsHtml = results.map((r, i)=>{
+      if(r.ok) return '';
+      const it = checkedItems[i];
+      return `<div class="lib-bulk-result-row" data-fail-idx="${i}">
+        <span class="lib-bulk-status fail">✕</span>
+        <span class="lib-bulk-result-name">${esc(it.file.name)}</span>
+        <span class="lib-bulk-result-err">${esc((r.error && (r.error.code || r.error.message)) || '실패')}</span>
+        <button type="button" class="co-text-action" data-retry="${i}">[다시 업로드]</button>
+      </div>`;
+    }).join('');
+    modal.innerHTML = `
+      <div class="kb-modal-title">폴더 일괄 등록 — 결과</div>
+      <div class="lib-bulk-summary">성공 ${successCount} / 실패 ${failCount}</div>
+      <div class="lib-bulk-result-list" id="libBulkResultList">${failRowsHtml || ''}</div>
+      <div class="kb-form-actions">
+        <div></div>
+        <div class="kb-form-actions-right">
+          <button type="button" class="ai-run-btn" id="libBulkDone">완료</button>
+        </div>
+      </div>
+    `;
+    modal.querySelector('#libBulkDone').addEventListener('click', ()=> overlay.remove());
+    modal.querySelectorAll('[data-retry]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const i = Number(btn.getAttribute('data-retry'));
+        const it = checkedItems[i];
+        btn.disabled = true;
+        btn.textContent = '재시도 중...';
+        // 이 파일 하나만 다시 시도한다 — 이미 성공한 다른 파일들은 절대 재실행하지 않는다(§9).
+        D.addDoc(it.file, {
+          title: (it.title || '').trim() || it.file.name,
+          category: commonMeta.category,
+          workType: commonMeta.workType
+        }, null, {}).then(()=>{
+          results[i] = { ok:true };
+          const row = modal.querySelector(`[data-fail-idx="${i}"]`);
+          if(row) row.remove();
+          const remainingFail = results.filter(r=> !r.ok).length;
+          const successNow = results.filter(r=> r.ok).length;
+          modal.querySelector('.lib-bulk-summary').textContent = `성공 ${successNow} / 실패 ${remainingFail}`;
+          renderAll();
+        }).catch(()=>{
+          btn.disabled = false;
+          btn.textContent = '[다시 업로드]';
+        });
+      });
+    });
+  }
+
+  const libBulkAddBtn = document.getElementById('libBulkAddBtn');
+  const libBulkFolderInput = document.getElementById('libBulkFolderInput');
+  if(libBulkAddBtn && libBulkFolderInput){
+    libBulkAddBtn.addEventListener('click', ()=>{
+      libBulkFolderInput.value = ''; // 같은 폴더를 연속으로 골라도 change가 다시 발생하도록 초기화.
+      libBulkFolderInput.click();
+    });
+    libBulkFolderInput.addEventListener('change', ()=>{
+      const files = libBulkFolderInput.files;
+      if(files && files.length) openBulkForm(files);
+      libBulkFolderInput.value = '';
+    });
   }
 
   function openDetail(id){
