@@ -1,25 +1,30 @@
 :root {
   --navy: #1b3a5c;
-  --navy-soft: #e7edf5;
+  --navy-soft: #eef2f7;
   --navy-dark: #142d47;
-  --border: #e3e7ee;
-  --border-strong: #cdd5e0;
+  --border: #e5e7eb;
+  --border-strong: #d7dbe3;
   --text: #1f2937;
   --text-sub: #6b7280;
   --text-faint: #9aa3af;
+  --text-faint2: #b3bac4;
 
-  --free-bg: #fff9b0;
-  --free-bg-hover: #fff387;
-  --free-border: #f4e24d;
+  /* 아주 연한 형광 노랑 — 면적감을 줄이기 위해 채도를 크게 낮춤 */
+  --free-bg: #fffef4;
+  --free-bg-hover: #fffbe0;
+  --free-border: #e9dfa0;
+  --free-text: #9c8a3a;
 
-  --confirmed-bg: #eaf1fb;
+  --confirmed-bg: #f0f5fb;
   --confirmed-border: #1b3a5c;
 
-  --pending-bg: #fff3e2;
-  --pending-border: #e5922f;
+  /* 아주 연한 주황/베이지 */
+  --pending-bg: #fdf6ee;
+  --pending-border: #e0a565;
+  --pending-text: #a56a2a;
 
-  --today-bg: #eef4fc;
-  --lunch-bg: #f1f2f4;
+  --today-bg: #eef4fb;
+  --lunch-bg: #f4f5f6;
 
   --danger: #e0563f;
 }
@@ -54,16 +59,16 @@ button, select, input, textarea {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 7px 18px;
   border-bottom: 1px solid var(--border);
 }
 
 .topbar-left {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   color: var(--navy);
   flex: 0 0 auto;
-  min-width: 90px;
+  min-width: 80px;
 }
 
 .topbar-center {
@@ -75,10 +80,10 @@ button, select, input, textarea {
 }
 
 .topbar-range {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  min-width: 210px;
+  min-width: 190px;
   text-align: center;
 }
 
@@ -86,11 +91,11 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   background: #fff;
   color: var(--navy);
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
 }
 .nav-arrow:hover { background: var(--navy-soft); }
@@ -98,21 +103,21 @@ button, select, input, textarea {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex: 0 0 auto;
 }
 
 .view-switch {
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 6px;
   overflow: hidden;
 }
 .view-switch button {
   border: none;
   background: #fff;
-  padding: 6px 12px;
-  font-size: 12.5px;
+  padding: 5px 11px;
+  font-size: 12px;
   color: var(--text-sub);
   cursor: pointer;
   border-left: 1px solid var(--border);
@@ -127,35 +132,36 @@ button, select, input, textarea {
 .icon-btn {
   border: 1px solid var(--border);
   background: #fff;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   cursor: pointer;
   color: var(--text-sub);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 .icon-btn:hover { background: var(--navy-soft); color: var(--navy); }
 
 .role-switch select {
   border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 5px 8px;
-  font-size: 12.5px;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 12px;
   color: var(--text);
   background: #fff;
 }
 
 .legend {
   display: flex;
-  gap: 10px;
-  font-size: 11px;
+  gap: 9px;
+  font-size: 10.5px;
   color: var(--text-faint);
 }
 .legend-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .legend-swatch {
-  width: 9px; height: 9px; border-radius: 2px; display: inline-block;
+  width: 8px; height: 8px; border-radius: 2px; display: inline-block;
 }
-.legend-free { background: var(--free-bg); border: 1px solid var(--free-border); }
+/* 실제 캘린더 블록보다 살짝 진하게: 8px짜리 범례 칩은 원래 색 그대로면 거의 안 보임 */
+.legend-free { background: #f6e9a3; border: 1px solid var(--free-border); }
 .legend-confirmed { background: var(--confirmed-bg); border-left: 2px solid var(--confirmed-border); }
 .legend-pending { background: var(--pending-bg); border: 1px dashed var(--pending-border); }
 
@@ -165,12 +171,16 @@ button, select, input, textarea {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center; /* 자식(캘린더)을 가로 중앙 정렬 */
 }
 
 /* ---------- Week view ---------- */
 .week-wrap {
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
 }
@@ -180,25 +190,25 @@ button, select, input, textarea {
   display: flex;
   border-bottom: 1px solid var(--border);
 }
-.week-header-axis-spacer { width: 52px; flex: 0 0 52px; }
+.week-header-axis-spacer { width: 42px; flex: 0 0 42px; }
 .week-header-cell {
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 0 10px;
+  gap: 3px;
+  padding: 6px 0 7px;
   border-left: 1px solid var(--border);
 }
 .week-header-cell.is-today { background: var(--today-bg); }
-.wh-weekday { font-size: 11.5px; color: var(--text-faint); font-weight: 600; }
+.wh-weekday { font-size: 10.5px; color: var(--text-faint); font-weight: 600; }
 .wh-date {
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text);
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,8 +228,8 @@ button, select, input, textarea {
 }
 
 .time-axis {
-  width: 52px;
-  flex: 0 0 52px;
+  width: 42px;
+  flex: 0 0 42px;
   position: relative;
 }
 .time-axis-label {
@@ -227,8 +237,8 @@ button, select, input, textarea {
   left: 0;
   right: 6px;
   text-align: right;
-  font-size: 11px;
-  color: var(--text-faint);
+  font-size: 10px;
+  color: var(--text-faint2);
 }
 
 .day-col {
@@ -246,7 +256,7 @@ button, select, input, textarea {
   border-top: 1px solid var(--border);
 }
 .gridline-half {
-  border-top: 1px dashed #eceff3;
+  border-top: 1px dashed #f0f1f4;
 }
 
 .lunch-block {
@@ -261,7 +271,7 @@ button, select, input, textarea {
   border-radius: 3px;
 }
 .lunch-block span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-faint);
 }
 
@@ -271,21 +281,21 @@ button, select, input, textarea {
   right: 2px;
   background: var(--free-bg);
   border: 1px solid var(--free-border);
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
   overflow: hidden;
   transition: background .1s ease;
 }
 .free-block:hover { background: var(--free-bg-hover); }
 .free-block-inner {
-  padding: 4px 7px;
+  padding: 3px 6px;
   display: flex;
   flex-direction: column;
   gap: 1px;
   pointer-events: none;
 }
-.free-time { font-size: 11px; font-weight: 600; color: #7a6a12; }
-.free-cta { font-size: 10.5px; color: #8a7714; }
+.free-time { font-size: 10px; font-weight: 600; color: var(--free-text); }
+.free-cta { font-size: 9.5px; font-weight: 500; color: var(--free-text); opacity: .85; }
 
 .drag-overlay {
   position: absolute;
@@ -294,7 +304,7 @@ button, select, input, textarea {
   background: rgba(27, 58, 92, 0.16);
   border: 1.5px solid var(--navy);
   border-radius: 5px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--navy);
   padding: 3px 6px;
@@ -307,50 +317,57 @@ button, select, input, textarea {
   left: 2px;
   right: 2px;
   border-radius: 4px;
-  padding: 4px 7px;
-  min-height: 30px; /* 아주 짧은 일정도 최소한의 표시 공간 확보 */
+  padding: 3px 6px;
+  min-height: 26px; /* 아주 짧은 일정도 최소한의 표시 공간 확보 */
   overflow: visible; /* 짧은 시간 블록에 긴 일정명이 들어와도 잘리지 않도록 */
   cursor: pointer;
   z-index: 3;
 }
 .event-block:hover { z-index: 6; }
-.event-time { font-size: 10.5px; color: var(--text-sub); }
+.event-time { font-size: 9.5px; color: var(--text-sub); line-height: 1.2; }
 .event-title {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
-  line-height: 1.25;
+  line-height: 1.2;
 }
-.event-location { font-size: 10.5px; color: var(--text-sub); margin-top: 1px; }
+.event-location {
+  font-size: 9.5px;
+  color: var(--text-faint);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .event-confirmed {
   background: var(--confirmed-bg);
-  border-left: 4px solid var(--confirmed-border);
+  border-left: 3px solid var(--confirmed-border);
 }
 .event-check {
   position: absolute;
-  top: 4px; right: 6px;
-  font-size: 10px;
+  top: 3px; right: 5px;
+  font-size: 9px;
   color: var(--confirmed-border);
 }
 
 .event-pending {
   background: var(--pending-bg);
-  border: 1.5px dashed var(--pending-border);
+  border: 1px dashed var(--pending-border);
 }
 .event-reschedule {
   background: var(--pending-bg);
-  border: 1.5px dashed var(--pending-border);
+  border: 1px dashed var(--pending-border);
 }
 .event-badge {
   position: absolute;
-  top: 3px; right: 5px;
-  font-size: 9.5px;
+  top: 3px; right: 4px;
+  font-size: 8.5px;
   font-weight: 700;
-  color: #a85d00;
-  background: #ffe3bf;
-  padding: 1px 5px;
-  border-radius: 8px;
+  color: var(--pending-text);
+  background: #fbe8d3;
+  padding: 1px 4px;
+  border-radius: 7px;
 }
 
 .now-line {
@@ -456,17 +473,17 @@ button, select, input, textarea {
   border-radius: 10px;
 }
 .pv-status-confirmed { background: var(--confirmed-bg); color: var(--navy); }
-.pv-status-pending { background: var(--pending-bg); color: #a85d00; }
-.pv-status-reschedule_requested { background: var(--pending-bg); color: #a85d00; }
+.pv-status-pending { background: var(--pending-bg); color: var(--pending-text); }
+.pv-status-reschedule_requested { background: var(--pending-bg); color: var(--pending-text); }
 .pv-status-rejected { background: #f1f2f4; color: var(--text-faint); }
 
 .pv-reschedule-box {
   margin-top: 8px;
-  background: #fff3e2;
+  background: var(--pending-bg);
   border-radius: 7px;
   padding: 8px 10px;
 }
-.pv-reschedule-title { font-size: 11.5px; color: #a85d00; font-weight: 600; margin-bottom: 2px; }
+.pv-reschedule-title { font-size: 11.5px; color: var(--pending-text); font-weight: 600; margin-bottom: 2px; }
 .pv-reschedule-diff { font-size: 13px; font-weight: 700; color: var(--text); }
 
 .pv-actions { display: flex; gap: 6px; margin-top: 10px; }
@@ -507,6 +524,9 @@ button, select, input, textarea {
 .month-wrap {
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   padding: 4px 10px 10px;
@@ -557,7 +577,7 @@ button, select, input, textarea {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.month-event-chip.dot-pending { background: var(--pending-bg); color: #a85d00; }
+.month-event-chip.dot-pending { background: var(--pending-bg); color: var(--pending-text); }
 .month-more { font-size: 10px; color: var(--text-faint); }
 
 /* ---------- Mobile approval list ---------- */
@@ -595,7 +615,7 @@ button, select, input, textarea {
 }
 .approval-pending-note {
   font-size: 12px;
-  color: #a85d00;
+  color: var(--pending-text);
   margin: 6px 0;
   font-weight: 600;
 }
@@ -611,7 +631,7 @@ button, select, input, textarea {
 }
 
 @media (max-width: 768px) {
-  .week-header-cell .wh-date { width: 26px; height: 26px; font-size: 15px; }
-  .time-axis { width: 38px; flex-basis: 38px; }
-  .week-header-axis-spacer { width: 38px; flex-basis: 38px; }
+  .week-header-cell .wh-date { width: 24px; height: 24px; font-size: 14px; }
+  .time-axis { width: 34px; flex-basis: 34px; }
+  .week-header-axis-spacer { width: 34px; flex-basis: 34px; }
 }
