@@ -116,6 +116,34 @@ function SettingsPopover({ anchor, onClose }) {
         <span>샘플 데이터 사용 (개발용)</span>
       </label>
       {googleActive && <div className="pv-hint">Google 연동 중에는 사용되지 않습니다.</div>}
+
+      <hr className="settings-sep" />
+
+      <div className="settings-block-title">개발자 진단</div>
+      <div className="settings-diag">
+        <div className="settings-diag-row">
+          <span>환경변수 로드됨</span>
+          <b className={googleConfigured ? 'diag-ok' : 'diag-bad'}>{googleConfigured ? '예' : '아니오'}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>Client ID 형식 정상</span>
+          <b className={googleClientIdValid ? 'diag-ok' : 'diag-bad'}>{googleClientIdValid ? '예' : '아니오'}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>현재 origin</span>
+          <b>{window.location.origin}</b>
+        </div>
+        <div className="settings-diag-row">
+          <span>Google 연결 상태</span>
+          <b className={googleSignedIn ? 'diag-ok' : 'diag-bad'}>{googleSignedIn ? '연결됨' : '미연결'}</b>
+        </div>
+        {googleConfigured && (
+          <div className="settings-diag-row">
+            <span>Client ID</span>
+            <b>{googleClientIdMasked || '(비어있음)'}</b>
+          </div>
+        )}
+      </div>
     </PopoverShell>
   );
 }
@@ -196,8 +224,8 @@ export default function Header() {
               {googleEventsLoading ? '…' : '↻'}
             </button>
           )}
-          <button ref={gearRef} className="icon-btn" onClick={openSettings} title="근무시간/캘린더 설정" aria-label="설정">⚙</button>
           <GoogleConnectButton />
+          <button ref={gearRef} className="icon-btn" onClick={openSettings} title="근무시간/캘린더 설정" aria-label="설정">⚙</button>
           <div className="role-switch">
             <select value={role} onChange={(e) => setRole(e.target.value)} title="역할(데모용)">
               <option value="coordinator">코디네이터</option>

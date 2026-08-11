@@ -540,6 +540,20 @@ button, select, input, textarea {
 }
 .settings-checkbox-row input { cursor: pointer; }
 
+.settings-diag { display: flex; flex-direction: column; gap: 4px; }
+.settings-diag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-sub);
+}
+.settings-diag-row span { flex: 0 0 auto; }
+.settings-diag-row b { font-weight: 700; text-align: right; word-break: break-all; }
+.diag-ok { color: #2ea043; }
+.diag-bad { color: var(--pending-text); }
+
 /* ---------- Google 연결 버튼 ---------- */
 .google-btn {
   display: flex;
@@ -558,11 +572,12 @@ button, select, input, textarea {
 .google-btn:hover { background: var(--navy-soft); color: var(--navy); }
 .google-btn:disabled { opacity: .6; cursor: default; }
 .google-btn-disabled {
-  cursor: default;
-  color: var(--text-faint);
-  font-weight: 500;
+  color: var(--text-sub);
+  font-weight: 600;
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }
-.google-btn-disabled:hover { background: #fff; color: var(--text-faint); }
+.google-btn-disabled:hover { background: #e9eaee; color: var(--navy); }
 .google-btn-warn {
   color: var(--pending-text);
   background: var(--pending-bg);
