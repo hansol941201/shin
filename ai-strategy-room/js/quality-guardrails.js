@@ -217,9 +217,10 @@ const QualityGuardrails = {
   },
 
   /* ================================================================
-   * [우리 팀 실행 방향] 섹션 검증 — 8개 하위 항목이 모두 있는지, 표/체크리스트
-   * 형식을 실제로 지켰는지까지 확인한다. 필수 항목 누락은 확실한 실패,
-   * 형식(표/체크박스) 미준수나 근거 없는 목표 수치는 애매함 신호로만 쓴다.
+   * [우리 팀 실행 방향] = "30초 요약" 섹션 검증 — 7개 하위 항목이 모두
+   * 있는지, 표/체크리스트/화살표 흐름/X표시 형식을 실제로 지켰는지까지
+   * 확인한다. 필수 항목 누락은 확실한 실패, 형식 미준수나 근거 없는 목표
+   * 수치는 애매함 신호로만 써서 라운드당 최대 1회의 LLM 보조판정에 넘긴다.
    * ================================================================ */
   _actionPlan(actionPlanText, hasAttachment) {
     const ap = String(actionPlanText || '');
@@ -227,14 +228,13 @@ const QualityGuardrails = {
     const ambiguousConcerns = [];
 
     const requiredSubs = [
-      { re: /결론\s*한\s*줄/, label: '1. 결론 한 줄' },
-      { re: /준비해야\s*할\s*것|준비물/, label: '2. 우리가 준비해야 할 것' },
-      { re: /실행\s*순서/, label: '3. 실행 순서' },
-      { re: /역할\s*분담/, label: '4. 역할 분담' },
-      { re: /지금\s*당장\s*할\s*일/, label: '5. 지금 당장 할 일' },
-      { re: /준비\s*완료\s*기준/, label: '6. 준비 완료 기준' },
-      { re: /하지\s*말아야\s*할\s*것/, label: '7. 하지 말아야 할 것' },
-      { re: /효과\s*확인\s*방법/, label: '8. 효과 확인 방법' }
+      { re: /결론/, label: '1. 그래서 결론은?' },
+      { re: /준비할\s*것|준비물/, label: '2. 우리가 준비할 것' },
+      { re: /이렇게\s*하면\s*됨/, label: '3. 이렇게 하면 됨' },
+      { re: /지금\s*당장\s*할\s*일/, label: '4. 지금 당장 할 일' },
+      { re: /누가\s*뭘\s*하지/, label: '5. 누가 뭘 하지?' },
+      { re: /하지\s*말아야\s*할\s*것/, label: '6. 하지 말아야 할 것' },
+      { re: /성공했는지\s*어떻게\s*알지/, label: '7. 성공했는지 어떻게 알지?' }
     ];
     const missingSubs = requiredSubs.filter((r) => !r.re.test(ap)).map((r) => r.label);
     if (missingSubs.length) {
@@ -243,15 +243,21 @@ const QualityGuardrails = {
     }
 
     if (!/\|/.test(ap)) {
-      ambiguousConcerns.push('[역할 분담]이 표(| 담당 | 해야 할 일 | 필요한 자료 | 완료 기준 |) 형태로 작성됐는지 애매합니다.');
+      ambiguousConcerns.push('[우리가 준비할 것]/[누가 뭘 하지?]가 표 형태로 작성됐는지 애매합니다.');
     }
     if (!/[□☐]/.test(ap)) {
-      ambiguousConcerns.push('[지금 당장 할 일]/[준비 완료 기준]이 체크리스트(□) 형태로 작성됐는지 애매합니다.');
+      ambiguousConcerns.push('[지금 당장 할 일]이 체크리스트(□) 형태로 작성됐는지 애매합니다.');
+    }
+    if (!/[→↓]/.test(ap)) {
+      ambiguousConcerns.push('[이렇게 하면 됨]/[성공했는지 어떻게 알지?]가 화살표로 이어지는 흐름 형태로 작성됐는지 애매합니다.');
+    }
+    if (!/[Xx✕✗]\s*\S/.test(ap)) {
+      ambiguousConcerns.push('[하지 말아야 할 것]이 "X " 표시로 명확히 구분됐는지 애매합니다.');
     }
     if (!hasAttachment) {
       const fabricated = this._findFabricatedNumbers(ap);
       if (fabricated.length) {
-        ambiguousConcerns.push(`[효과 확인 방법]에 근거 없는 목표 수치로 보이는 표현이 있습니다(${fabricated.slice(0, 3).join(', ')}).`);
+        ambiguousConcerns.push(`[성공했는지 어떻게 알지?]에 근거 없는 목표 수치로 보이는 표현이 있습니다(${fabricated.slice(0, 3).join(', ')}).`);
       }
     }
 

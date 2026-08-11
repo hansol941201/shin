@@ -138,15 +138,16 @@ const MeetingMemory = {
   extractSummary(report) {
     const t = String(report || '');
 
-    // [우리 팀 실행 방향] 섹션이 있으면(현재 버전 보고서) 거기서 바로 뽑는다 —
-    // 이미 "결론 한 줄"/"지금 당장 할 일"/"하지 말아야 할 것"으로 정리되어
-    // 있으므로 과거 회의 배너 미리보기용으로 훨씬 정확하다.
+    // [우리 팀 실행 방향]("30초 요약") 섹션이 있으면(현재 버전 보고서) 거기서
+    // 바로 뽑는다 — 이미 "그래서 결론은?"/"지금 당장 할 일"/"하지 말아야 할
+    // 것"으로 쉬운 말로 정리되어 있으므로 과거 회의 배너 미리보기용으로 훨씬
+    // 정확하다.
     const apMatch = t.match(/^##\s*우리\s*팀\s*실행\s*방향\s*$/m);
     if (apMatch) {
       const apText = t.slice(apMatch.index);
-      const conclusion = this._extractActionPlanSub(apText, /결론\s*한\s*줄/);
+      const conclusion = this._extractActionPlanSub(apText, /결론/);
       const today = this._extractActionPlanSub(apText, /지금\s*당장\s*할\s*일/);
-      const order = this._extractActionPlanSub(apText, /실행\s*순서/);
+      const order = this._extractActionPlanSub(apText, /이렇게\s*하면\s*됨|실행\s*순서/);
       const dontDo = this._extractActionPlanSub(apText, /하지\s*말아야\s*할\s*것/);
 
       const conclusionSummary = this._preview(conclusion || apText, 220);

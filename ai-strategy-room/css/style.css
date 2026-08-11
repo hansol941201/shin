@@ -166,18 +166,26 @@ body{
 .report-card h3:first-child{margin-top:0;}
 .report-card p{font-size:14px;line-height:1.85;color:var(--text-dark);margin:0 0 14px;}
 
-/* ---------- [우리 팀 실행 방향] ---------- */
+/* ---------- [우리 팀 실행 방향] = "30초 요약" ---------- */
 .action-plan{
   background:#f4f8ff;border:1px solid #c9dcfa;border-radius:12px;
-  padding:22px 24px 8px;margin:0 0 28px;
+  padding:22px 24px 8px;margin:0 0 20px;
 }
 .action-plan-badge{
   display:inline-block;background:var(--navy);color:#fff;font-size:12px;font-weight:700;
-  letter-spacing:.02em;padding:4px 10px;border-radius:6px;margin-bottom:12px;
+  letter-spacing:.02em;padding:4px 10px;border-radius:6px;margin-bottom:14px;
 }
+/* "그래서 결론은?" — 화면에서 가장 먼저 눈에 띄어야 하는 배너 */
 .action-plan-conclusion{
-  font-size:16px;font-weight:700;line-height:1.6;color:var(--navy-dark);
-  margin:0 0 16px;
+  background:#fff;border:1.5px solid var(--navy);border-radius:10px;
+  padding:16px 18px;margin:0 0 16px;
+}
+.action-plan-conclusion-label{
+  display:block;font-size:11.5px;font-weight:700;color:var(--text-gray);
+  letter-spacing:.02em;margin-bottom:6px;
+}
+.action-plan-conclusion p{
+  margin:0;font-size:18px;font-weight:700;line-height:1.55;color:var(--navy-dark);
 }
 .action-plan-card{
   background:#fff;border:1px solid var(--card-border);border-radius:10px;
@@ -191,12 +199,51 @@ body{
 .action-plan-checklist .chk{color:var(--navy);font-weight:700;flex:0 0 auto;}
 .action-plan-card--warn{border-color:#fdba74;background:#fff7ed;}
 .action-plan-card--warn h4{color:#9a5b13;}
+/* [하지 말아야 할 것] — 기본 불릿 대신 빨간 X 표시 */
+.action-plan-list--x{list-style:none;padding-left:0;}
+.action-plan-list--x li{padding-left:20px;position:relative;}
+.action-plan-list--x li::before{
+  content:"✕";position:absolute;left:0;top:0;color:#c0392b;font-weight:700;font-size:12px;
+}
 .action-plan-table-wrap{overflow-x:auto;}
 .action-plan-table{width:100%;border-collapse:collapse;font-size:13px;}
 .action-plan-table th,.action-plan-table td{
   border:1px solid var(--card-border);padding:7px 10px;text-align:left;vertical-align:top;
 }
 .action-plan-table th{background:var(--hover-soft);color:var(--navy);font-weight:700;}
+/* [3. 이렇게 하면 됨] — 가로 화살표 흐름 */
+.action-plan-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+.flow-step{
+  display:flex;align-items:center;gap:6px;background:var(--hover-soft);color:var(--navy-dark);
+  font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:999px;
+}
+.flow-num{
+  display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+  border-radius:50%;background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;flex:0 0 auto;
+}
+.flow-arrow{color:var(--text-faint);font-weight:700;flex:0 0 auto;}
+/* [7. 성공했는지 어떻게 알지?] — 세로 깔때기 흐름 */
+.action-plan-funnel{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+.funnel-step{
+  background:var(--hover-soft);color:var(--navy-dark);font-size:13px;font-weight:600;
+  padding:7px 14px;border-radius:8px;
+}
+.funnel-arrow{color:var(--text-faint);font-weight:700;padding-left:14px;font-size:13px;}
+
+/* ---------- 상세 분석 보기 (기존 상세 보고서를 접어둠) ---------- */
+.detail-report-toggle{
+  border:1px solid var(--card-border);border-radius:12px;padding:0;overflow:hidden;
+}
+.detail-report-toggle summary{
+  cursor:pointer;list-style:none;padding:14px 18px;font-size:13.5px;font-weight:700;
+  color:var(--navy);background:var(--bg);user-select:none;
+}
+.detail-report-toggle summary::-webkit-details-marker{display:none;}
+.detail-report-toggle summary::before{content:"▸ ";color:var(--text-faint);}
+.detail-report-toggle[open] summary::before{content:"▾ ";}
+.detail-report-toggle[open] summary{border-bottom:1px solid var(--card-border);}
+.detail-report-body{padding:6px 24px 20px;}
+.detail-report-body h3:first-child{margin-top:20px;}
 
 /* ---------- 보고서 보완 요청 ---------- */
 .refine-box{
