@@ -9874,12 +9874,9 @@ ${text}
   }
 
   function renderRecent(){
-    // 최근 자료(§13) — 전체(필터 무관) 중 최신순 8건. createdAt 기준(단순함을 택함).
-    const recent = D.loadDocs().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
-    if(!recent.length){ libRecentSection.innerHTML = ''; libAllLabel.style.display = 'none'; return; }
-    libAllLabel.style.display = 'block';
-    libRecentSection.innerHTML = `<div class="lib-recent-label">최근 자료</div>` + recent.map(renderRow).join('');
-    bindRowActions(libRecentSection);
+    // 최근 자료 섹션은 UI에서 숨김(데이터/로직은 유지, 화면 노출만 제거).
+    libRecentSection.innerHTML = '';
+    libAllLabel.style.display = 'none';
   }
 
   function renderAll(){
