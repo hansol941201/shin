@@ -196,6 +196,8 @@
   .memo-item-actions{ display:flex; gap:10px; margin-top:5px; }
   .memo-form textarea{ width:100%; min-height:56px; resize:vertical; padding:8px 10px; font-size:13px; border:1px solid var(--line); border-radius:6px; outline:none; }
   .memo-form-actions{ display:flex; justify-content:flex-end; gap:6px; margin-top:6px; }
+  .memo-preview-text{ font-size:12.5px; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .memo-preview-actions{ flex:none; display:flex; gap:6px; }
 
   /* ---------- 검색어 강조(공용) — v2 .kb-hl과 동일한 값을 그대로 복제 ---------- */
   .kb-hl{ background:#FEF6B2; padding:0 1px; border-radius:2px; }
@@ -239,13 +241,26 @@
   .chart-section-head .chart-section-title{ margin-bottom:0; }
   .chart-empty{ font-size:11.5px; color:#9CA3AF; }
 
+  /* ---- 이 업체 한눈에 보기(§ 5-10초 브리핑 카드 라운드, 신규) — dealStage/최근 활동/대기중인
+       업무/니즈/특이사항/가까운 일정 등 "이미 있는 데이터"만 조합한 규칙 기반 요약 한 줄.
+       AI 호출 없음(buildChartBrief는 순수 JS 문자열 조립 함수) ---- */
+  .chart-brief{ font-size:13px; color:var(--text); background:#F5F7FB; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:14px; line-height:1.5; }
+  .chart-brief-label{ font-size:10.5px; font-weight:700; color:var(--text-muted); margin-bottom:3px; }
+
+  /* ---- 핵심 3-strip(현재 상태/최근 요청/다음 액션) — 카드에서 가장 먼저 읽혀야 하는 행이라는
+       사용자의 명시적 요구에 따라 옅은 배경 + 값 텍스트를 살짝 키워 시각적 비중을 높인다
+       (기존 white/navy/gray 팔레트 안에서만 — 새 색상 추가 없음). ---- */
   .chart-strip{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .chart-strip-emphasis{ background:#F7F8FA; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
   .chart-strip-label{ font-size:10.5px; color:var(--text-muted); margin-bottom:3px; }
   .chart-strip-value{ font-size:13px; color:var(--text); line-height:1.4; word-break:break-word; }
+  .chart-strip-emphasis .chart-strip-value{ font-size:14px; font-weight:700; }
   .chart-strip-value.muted{ color:#9CA3AF; }
   .chart-strip-sub{ font-size:11px; color:var(--text-muted); margin-top:2px; }
 
   .chart-2col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .chart-combined-empty{ display:flex; align-items:baseline; gap:8px; }
+  .chart-combined-empty .chart-section-title{ margin-bottom:0; }
 
   .chart-important-inline{ margin-bottom:10px; font-size:12.5px; }
   .chart-important-edit{ display:flex; gap:8px; margin-bottom:10px; }
@@ -1153,32 +1168,28 @@ window.SHIN2_CRM_APP_INIT = function(){
   // ---- 고객 차트 팝업 뼈대 — 배경 목록은 그대로 두고(§4 목록화면은 단순하게 유지) 위에
   // 오버레이만 띄운다. 내부 각 섹션은 독립된 render*() 함수가 채운다(§37 렌더 레이어 분리 관례
   // 그대로 유지) — 서류함/활동기록/메모는 기존 함수를 그대로 재사용한다(중복 구현 금지).
+  // ---- 정보 우선순위(§ 5-10초 브리핑 카드 라운드) — ①헤더 ②한눈에 보기(신규) ③핵심
+  // 3-strip ④고객니즈/특이사항 ⑤최근 이력/예정 일정 ⑥서류 요약 ⑦업체정보·전체이력·메모
+  // (모두 펼치기 방식의 보조영역)를 이 순서 그대로 DOM에 둔다. ----
   function renderChart(co){
     cardView.innerHTML = `
       <div class="chart-overlay" id="chartOverlay">
         <div class="chart-panel" role="dialog" aria-modal="true" aria-label="고객 차트">
           <div class="chart-header" id="chartHeader"></div>
           <div class="chart-body" id="chartBody">
-            <div class="chart-strip" id="chartStrip"></div>
+            <div class="chart-brief" id="chartBrief"></div>
+
+            <div class="chart-strip chart-strip-emphasis" id="chartStrip"></div>
 
             <div class="chart-hr"></div>
             <div id="chartImportant"></div>
-            <div class="chart-2col">
-              <div>
-                <div class="chart-section-title">고객 니즈</div>
-                <div id="chartNeeds"></div>
-              </div>
-              <div>
-                <div class="chart-section-title">특이사항</div>
-                <div id="chartSpecial"></div>
-              </div>
-            </div>
+            <div id="chartNeedsSpecialWrap"></div>
 
             <div class="chart-hr"></div>
             <div class="chart-2col">
               <div>
                 <div class="chart-section-head">
-                  <div class="chart-section-title">최근 활동</div>
+                  <div class="chart-section-title">최근 이력</div>
                   <button type="button" class="co-text-action" id="chartHistoryToggleBtn">전체 이력 보기</button>
                 </div>
                 <div id="chartRecentActs"></div>
@@ -1188,6 +1199,21 @@ window.SHIN2_CRM_APP_INIT = function(){
                 <div id="chartCalendar"></div>
               </div>
             </div>
+
+            <div class="chart-hr"></div>
+            <div class="chart-section-head">
+              <div class="chart-section-title">서류</div>
+              <button type="button" class="co-text-action" id="chartDocsToggleBtn">서류함 열기</button>
+            </div>
+            <div id="chartDocCounts"></div>
+
+            <div class="chart-hr"></div>
+            <div class="chart-section-head">
+              <div class="chart-section-title">업체정보</div>
+              <button type="button" class="co-text-action" id="chartInfoToggleBtn">업체정보 보기</button>
+            </div>
+            <div id="crmBasicInfo" class="chart-expand" style="display:none;"></div>
+
             <div id="chartHistoryWrap" class="chart-expand" style="display:none;">
               <div class="chart-section-title">전체 이력</div>
               <div id="chartTimeline"></div>
@@ -1197,30 +1223,12 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div id="crmActivitySection" style="display:none;"></div>
             </div>
 
-            <div class="chart-hr"></div>
-            <div class="chart-2col">
-              <div>
-                <div class="chart-section-head">
-                  <div class="chart-section-title">서류</div>
-                  <button type="button" class="co-text-action" id="chartDocsToggleBtn">서류함 열기</button>
-                </div>
-                <div id="chartDocCounts"></div>
-              </div>
-              <div>
-                <div class="chart-section-head">
-                  <div class="chart-section-title">업체정보</div>
-                  <button type="button" class="co-text-action" id="chartInfoToggleBtn">업체정보 보기</button>
-                </div>
-              </div>
-            </div>
-            <div id="crmBasicInfo" class="chart-expand" style="display:none;"></div>
             <div id="chartDocsFullWrap" class="chart-expand" style="display:none;">
               <div class="chart-section-title">서류함</div>
               <div id="crmDocsSection"></div>
             </div>
 
-            <div class="chart-hr"></div>
-            <div>
+            <div class="chart-expand">
               <div class="chart-section-title">메모</div>
               <div id="crmMemoSection"></div>
             </div>
@@ -1230,10 +1238,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     document.body.classList.add('chart-lock');
     renderChartHeader(co);
+    renderChartBrief(co);
     renderTopStrip(co);
     renderImportantSection(co);
-    renderNeedsSection(co);
-    renderSpecialSection(co);
+    renderNeedsSpecialSection(co);
     renderRecentActivities(co);
     if(cardState.chartEditing){ renderBasicInfoForm(co); document.getElementById('crmBasicInfo').style.display = 'block'; document.getElementById('chartInfoToggleBtn').textContent = '업체정보 접기'; }
     else { renderBasicInfoView(co); }
@@ -1330,9 +1338,90 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="chart-strip-value${stage ? '' : ' muted'}">${esc(stage || '—')}</div></div>
       <div class="chart-strip-block"><div class="chart-strip-label">최근 요청</div>
         ${last ? `<div class="chart-strip-value">${esc(last.activityText || last.originalText)}</div><div class="chart-strip-sub">${fmtDate(last.createdAt)} ${fmtTime(last.createdAt)}</div>` : `<div class="chart-strip-value muted">—</div>`}</div>
-      <div class="chart-strip-block"><div class="chart-strip-label">다음 할 일</div>
+      <div class="chart-strip-block"><div class="chart-strip-label">다음 액션</div>
         ${todoCount ? `<div class="chart-strip-value">${esc(nextText)}</div><div class="chart-strip-sub">${todoCount}건 처리 대기</div>` : `<div class="chart-strip-value muted">—</div>`}</div>
     `;
+  }
+
+  // ---- 이 업체 한눈에 보기(§ 5-10초 브리핑 카드 라운드, 신규) ----
+  // AI 호출이 아니라 순수 JS 규칙 기반 문자열 조립이다 — dealStage/최근 활동 텍스트(사전에
+  // 등록된 업무 키워드가 실제로 그 텍스트 안에 등장할 때만 뽑아쓴다)/대기중인 활동·업무/
+  // 니즈/특이사항/가까운 일정, 이 여섯 가지 "이미 저장된 데이터"만 조합해서 한 문장을
+  // 만든다. 저장하지 않고 카드를 열 때마다 다시 계산한다(캐시 없음 — 항상 최신 데이터 반영).
+  const CHART_BRIEF_KEYWORDS = ['시방서','실적자료','견적서','견적','도면','계약서','제안서','자재','샘플','공법','협약서','현장방문','품질서류','인증서'];
+  function buildChartBrief(co){
+    const acts = D.activitiesForCompany(co.id);
+    const needs = co.needs || [];
+    const notes = co.specialNotes || [];
+    const pendingActs = D.pendingActivitiesForCompany(co.id);
+    const pendingTasks = D.tasksForCompany(co.id);
+    const events = D.upcomingCalendarEventsForCompany(co.id);
+    const stage = co.dealStage || '';
+
+    const hasAnySignal = acts.length || needs.length || notes.length || pendingActs.length || pendingTasks.length || stage || events.length;
+    if(!hasAnySignal) return '기본정보만 등록됨';
+
+    // 최근 활동 텍스트(최대 3건) 안에서 실제로 등장하는 업무 키워드만 뽑는다 — 사전에 없는
+    // 단어나 활동에 안 적힌 사실은 절대 만들어내지 않는다.
+    const recentKeywords = [];
+    acts.slice(0,3).forEach(a=>{
+      const text = a.activityText || a.originalText || '';
+      CHART_BRIEF_KEYWORDS.forEach(kw=>{ if(text.includes(kw) && !recentKeywords.includes(kw)) recentKeywords.push(kw); });
+    });
+    let recentClause = '';
+    if(recentKeywords.length){
+      recentClause = '최근 ' + recentKeywords.slice(0,3).join('·') + '를 요청';
+    } else if(acts[0]){
+      recentClause = '최근 ' + (acts[0].category || '활동') + ' 기록 있음';
+    }
+
+    const nextTitle = (pendingActs[0] && (pendingActs[0].activityText || pendingActs[0].originalText)) || (pendingTasks[0] && pendingTasks[0].title) || '';
+    let nextClause = '';
+    if(nextTitle) nextClause = /(필요|확인)\s*$/.test(nextTitle) ? nextTitle : (nextTitle + ' 확인 필요');
+    else if(stage) nextClause = stage + ' 단계';
+
+    let sentence = [recentClause, nextClause].filter(Boolean).join('하며 ');
+    if(!sentence){
+      if(needs.length) sentence = '등록된 니즈 ' + needs.length + '건';
+      else if(notes.length) sentence = '특이사항 ' + notes.length + '건 등록됨';
+      else if(events.length) sentence = '예정 일정 "' + (events[0].title || '') + '" 있음';
+      else if(stage) sentence = stage + ' 단계';
+    }
+    if(!sentence) return '기본정보만 등록됨';
+    return sentence + ' 업체';
+  }
+  function renderChartBrief(co){
+    const wrap = document.getElementById('chartBrief');
+    wrap.innerHTML = `<div class="chart-brief-label">이 업체 한눈에 보기</div><div>${esc(buildChartBrief(co))}</div>`;
+  }
+
+  // ---- 고객 니즈 / 특이사항 — 둘 다 비어 있고(편집모드가 아니고, 등록 제안도 없을 때) 한
+  // 줄로 합쳐 접는다(§4 콤팩트 카드 추가 압축). 편집 중이거나 둘 중 하나라도 내용이 있으면
+  // 기존 2열 레이아웃을 그대로 쓴다(§ db4f817의 접근을 유지) ----
+  function renderNeedsSpecialSection(co){
+    const wrap = document.getElementById('chartNeedsSpecialWrap');
+    const needs = co.needs || [];
+    const notes = co.specialNotes || [];
+    const editing = cardState.chartEditing;
+    const suggestion = D.suggestNeedFor(co.id);
+    if(!editing && !needs.length && !notes.length && !suggestion){
+      wrap.innerHTML = `<div class="chart-combined-empty"><div class="chart-section-title">고객 니즈 · 특이사항</div><div class="chart-empty">—</div></div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="chart-2col">
+        <div>
+          <div class="chart-section-title">고객 니즈</div>
+          <div id="chartNeeds"></div>
+        </div>
+        <div>
+          <div class="chart-section-title">특이사항</div>
+          <div id="chartSpecial"></div>
+        </div>
+      </div>
+    `;
+    renderNeedsSection(co);
+    renderSpecialSection(co);
   }
 
   function renderNeedsSection(co){
@@ -1433,7 +1522,7 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   function renderCalendarSection(co){
     const wrap = document.getElementById('chartCalendar');
-    const events = D.upcomingCalendarEventsForCompany(co.id).slice(0, 3);
+    const events = D.upcomingCalendarEventsForCompany(co.id).slice(0, 2);
     wrap.innerHTML = events.length ? events.map(ev=> `<div class="chart-cal-item"><span class="chart-cal-date">${esc(ev.date)}${ev.time ? ' ' + esc(ev.time) : ''}</span>${ev.isImportant ? `<mark class="kb-hl">${esc(ev.title)}</mark>` : esc(ev.title)}</div>`).join('') : '<div class="chart-empty">—</div>';
   }
 
@@ -1926,24 +2015,38 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
   // ---------------- 메모(공용 컴포넌트 패턴 재사용) ----------------
+  // ---- 메모(공용 컴포넌트 패턴 재사용) — §5-10초 브리핑 카드 라운드에서 기본 노출을
+  // "미리보기 1줄"로 줄인다. 메모 리스트/추가 폼 자체는 그대로 재사용하고(중복 구현 금지),
+  // 기본 표시 모드만 preview로 바꿔서 [보기]를 눌러야 기존 목록이 펼쳐지게 한다. ----
   function renderMemoSection(co){
     const wrap = document.getElementById('crmMemoSection');
-    let mode = 'list';
+    let mode = 'preview'; // 'preview' | 'list' | 'add'
     function render(){
       const items = D.memosFor(co.id);
+      const latest = items[0];
+      const previewRaw = latest ? String(latest.text || '').split('\n')[0] : '';
+      const previewText = previewRaw.length > 40 ? previewRaw.slice(0,40) + '…' : previewRaw;
       wrap.innerHTML = `
-        <div class="memo-head"><span></span><button type="button" class="memo-add-btn" id="crmMemoAddBtn">${mode==='add' ? '닫기' : '+ 추가'}</button></div>
+        <div class="memo-head">
+          ${mode === 'preview' ? `<span class="memo-preview-text">${latest ? esc(previewText) : '—'}</span>` : '<span></span>'}
+          <span class="memo-preview-actions">
+            ${mode !== 'add' ? `<button type="button" class="co-text-action" id="crmMemoListBtn">${mode==='list' ? '접기' : '보기'}</button>` : ''}
+            <button type="button" class="memo-add-btn" id="crmMemoAddBtn">${mode==='add' ? '닫기' : '+ 추가'}</button>
+          </span>
+        </div>
         ${mode==='add' ? `<div class="memo-form"><textarea id="crmMemoInput" placeholder="메모를 입력하세요"></textarea>
           <div class="memo-form-actions"><button type="button" class="co-text-action" id="crmMemoCancel">취소</button><button type="button" class="co-text-action primary" id="crmMemoSave">저장</button></div></div>` : ''}
-        ${items.length ? items.map(m=> `<div class="memo-item" data-memo-id="${esc(m.id)}">
+        ${mode==='list' ? (items.length ? items.map(m=> `<div class="memo-item" data-memo-id="${esc(m.id)}">
             <div class="memo-meta">${fmtDate(new Date(m.createdAt).toISOString())} ${fmtTime(new Date(m.createdAt).toISOString())}</div>
             <div class="memo-text">${esc(m.text)}</div>
             <div class="memo-item-actions"><button type="button" class="co-text-action danger" data-memo-del="${esc(m.id)}">삭제</button></div>
-          </div>`).join('') : '<div class="memo-empty">—</div>'}
+          </div>`).join('') : '<div class="memo-empty">—</div>') : ''}
       `;
-      document.getElementById('crmMemoAddBtn').addEventListener('click', ()=>{ mode = mode==='add' ? 'list' : 'add'; render(); if(mode==='add') document.getElementById('crmMemoInput').focus(); });
+      const listBtn = document.getElementById('crmMemoListBtn');
+      if(listBtn) listBtn.addEventListener('click', ()=>{ mode = mode==='list' ? 'preview' : 'list'; render(); });
+      document.getElementById('crmMemoAddBtn').addEventListener('click', ()=>{ mode = mode==='add' ? 'preview' : 'add'; render(); if(mode==='add') document.getElementById('crmMemoInput').focus(); });
       const cancelBtn = document.getElementById('crmMemoCancel');
-      if(cancelBtn) cancelBtn.addEventListener('click', ()=>{ mode='list'; render(); });
+      if(cancelBtn) cancelBtn.addEventListener('click', ()=>{ mode='preview'; render(); });
       const saveBtn = document.getElementById('crmMemoSave');
       if(saveBtn) saveBtn.addEventListener('click', ()=>{
         const text = document.getElementById('crmMemoInput').value.trim();
@@ -1973,10 +2076,11 @@ window.SHIN2_CRM_APP_INIT = function(){
   function refreshChartDerived(co){
     const fresh = D.findCompany(co.id);
     if(!fresh) return;
+    renderChartBrief(fresh);
     renderTopStrip(fresh);
     renderRecentActivities(fresh);
     renderTimelineSection(fresh);
-    renderNeedsSection(fresh);
+    renderNeedsSpecialSection(fresh);
   }
 
   // ================= 고객 등록(신규) =================
