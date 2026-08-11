@@ -2,3 +2,8 @@
 # UTF-16(BOM) 인코딩으로 저장되어 있습니다. git이 줄바꿈/인코딩을
 # 건드리지 않도록 바이너리로 취급합니다.
 *.vbs -text
+
+# Windows 배치 파일은 CRLF 줄바꿈이 표준입니다. 어떤 OS에서 체크아웃해도
+# CRLF로 고정되도록 명시합니다(LF-only 배치 파일은 cmd.exe에서 예기치
+# 않게 동작할 수 있습니다).
+*.bat text eol=crlf
