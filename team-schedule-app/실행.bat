@@ -60,27 +60,44 @@ for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENIN
 
 if not defined BLOCK_PID goto port_is_free
 
-rem 1) 이미 우리 서버가 5173에서 정상 응답 중이면 그대로 재사용
-if "%HAS_CURL%"=="1" (
-    curl --max-time 2 --silent --output NUL --fail "http://localhost:%APP_PORT%/" >nul 2>nul
-    if not errorlevel 1 (
-        echo [확인] 이미 5173에서 팀장 일정 서버가 실행 중입니다. 새로 켜지 않고 그 주소를 엽니다.
-        echo %APP_PORT%> "%~dp0.last_port"
-        start "" "http://localhost:%APP_PORT%/"
-        echo.
-        pause
-        exit /b 0
-    )
-)
-
-rem 2) 응답은 없지만 team-schedule-app 프로젝트 소속 프로세스라면 멈춰버린
-rem    우리 서버로 보고 정리한 뒤 이어서 새로 시작한다.
+rem 주의: "응답이 온다 = 우리 서버니까 재사용해도 된다"고 판단하면 안 된다.
+rem 같은 team-schedule-app을 다른 폴더(예: 이전에 압축을 푼 구버전)에서 실행해둔
+rem 서버가 5173을 잡고 있을 수도 있는데, 그 서버는 최신 코드가 아니므로 그대로
+rem 재사용하면 안 되고 종료 후 지금 이 폴더의 코드로 새로 띄워야 한다.
+rem 그래서 응답 여부보다 "이 폴더(%~dp0)에서 실행된 프로세스인가"를 먼저 확인한다.
 set "BLOCK_CMDLINE="
 for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=%BLOCK_PID%' -ErrorAction SilentlyContinue).CommandLine"`) do set "BLOCK_CMDLINE=%%L"
 
+set "SAME_FOLDER=0"
+echo %BLOCK_CMDLINE% | findstr /i /c:"%~dp0" >nul
+if not errorlevel 1 set "SAME_FOLDER=1"
+
+rem 1) 지금 이 폴더에서 실행된 프로세스이면서 실제로 정상 응답 중이면
+rem    -> 최신 코드 그대로이므로 재시작 없이 재사용
+if "%SAME_FOLDER%"=="1" (
+    if "%HAS_CURL%"=="1" (
+        curl --max-time 2 --silent --output NUL --fail "http://localhost:%APP_PORT%/" >nul 2>nul
+        if not errorlevel 1 (
+            echo [확인] 이미 5173에서 팀장 일정 서버가 실행 중입니다. 새로 켜지 않고 그 주소를 엽니다.
+            echo %APP_PORT%> "%~dp0.last_port"
+            start "" "http://localhost:%APP_PORT%/"
+            echo.
+            pause
+            exit /b 0
+        )
+    )
+    echo [정리] 응답 없는 이전 팀장 일정 서버^(PID %BLOCK_PID%^)를 종료하고 새로 시작합니다.
+    taskkill /PID %BLOCK_PID% /F >nul 2>nul
+    del "%~dp0.server.lock" >nul 2>nul
+    timeout /t 1 /nobreak >nul
+    goto port_is_free
+)
+
+rem 2) 다른 폴더에 있는 team-schedule-app(예: 이전 버전 압축 해제본)이면
+rem    응답 여부와 무관하게 종료 후 지금 폴더의 최신 코드로 새로 시작한다.
 echo %BLOCK_CMDLINE% | findstr /i /c:"team-schedule-app" >nul
 if not errorlevel 1 (
-    echo [정리] 응답 없는 이전 팀장 일정 서버^(PID %BLOCK_PID%^)를 종료하고 새로 시작합니다.
+    echo [정리] 다른 폴더의 팀장 일정 서버^(PID %BLOCK_PID%^)가 5173을 사용 중이라 종료하고 이 폴더의 최신 버전으로 새로 시작합니다.
     taskkill /PID %BLOCK_PID% /F >nul 2>nul
     del "%~dp0.server.lock" >nul 2>nul
     timeout /t 1 /nobreak >nul

@@ -122,31 +122,55 @@ exit /b 1
 
 rem ============================================================
 rem  :port_guard — 5173 포트를 누가 쓰고 있는지 판별해 PORT_STATE로 반환
+rem
+rem  주의: "응답이 온다 = 우리 서버니까 재사용해도 된다"고 판단하면 안 된다.
+rem  같은 team-schedule-app을 다른 폴더(예: 이전에 압축을 푼 구버전)에서
+rem  실행해둔 서버가 5173을 잡고 있을 수도 있는데, 그 서버는 최신 코드가
+rem  아니므로 절대 그대로 재사용하면 안 되고 종료 후 우리 걸로 새로 띄워야
+rem  한다. 그래서 응답 여부보다 "이 폴더(%~dp0)에서 실행된 프로세스인가"를
+rem  먼저 확인한다.
 rem ============================================================
 :port_guard
 set "PORT_STATE=FREE"
 set "BLOCK_PID="
 set "BLOCK_NAME="
 set "BLOCK_CMDLINE="
+set "SELF_DIR=%~dp0"
 
 for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":5173 .*LISTENING"') do (
     if not defined BLOCK_PID set "BLOCK_PID=%%A"
 )
 if not defined BLOCK_PID exit /b 0
 
-rem 1) 이미 우리 서버가 5173에서 정상 응답 중이면 그대로 재사용
-if "!HAS_CURL!"=="1" (
-    curl --max-time 2 --silent --output NUL --fail "http://localhost:5173/" >nul 2>nul
-    if not errorlevel 1 (
-        set "PORT_STATE=REUSE"
-        exit /b 0
-    )
-)
-
-rem 2) 응답은 없지만 그 프로세스가 team-schedule-app 프로젝트 소속인지
-rem    명령줄(실행 경로)로 확인 -> 맞으면 멈춰버린 우리 서버로 간주하고 정리
 for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=!BLOCK_PID!' -ErrorAction SilentlyContinue).CommandLine"`) do set "BLOCK_CMDLINE=%%L"
 
+rem 1) 지금 이 폴더(%SELF_DIR%)에서 실행된 프로세스인지 먼저 확인.
+rem    같은 폴더 소속이면서 실제로 응답까지 정상이면 -> 최신 코드 그대로 재사용.
+rem    같은 폴더 소속인데 응답이 없으면(멈춤) -> 정리하고 우리가 새로 시작.
+echo !BLOCK_CMDLINE! | findstr /i /c:"!SELF_DIR!" >nul
+if not errorlevel 1 (
+    set "SAME_FOLDER=1"
+) else (
+    set "SAME_FOLDER=0"
+)
+
+if "!SAME_FOLDER!"=="1" (
+    if "!HAS_CURL!"=="1" (
+        curl --max-time 2 --silent --output NUL --fail "http://localhost:5173/" >nul 2>nul
+        if not errorlevel 1 (
+            set "PORT_STATE=REUSE"
+            exit /b 0
+        )
+    )
+    taskkill /PID !BLOCK_PID! /F >nul 2>nul
+    timeout /t 1 /nobreak >nul
+    del "%LOCK%" >nul 2>nul
+    set "PORT_STATE=KILLED_STALE"
+    exit /b 0
+)
+
+rem 2) 다른 폴더에 있는 team-schedule-app(예: 이전 버전의 압축 해제본)이면
+rem    응답 여부와 무관하게 종료 후 지금 폴더의 최신 코드로 새로 시작한다.
 echo !BLOCK_CMDLINE! | findstr /i /c:"team-schedule-app" >nul
 if not errorlevel 1 (
     taskkill /PID !BLOCK_PID! /F >nul 2>nul
