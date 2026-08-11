@@ -70,7 +70,7 @@ button, select, input, textarea {
 
 .topbar-left {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--navy);
   flex: 0 0 auto;
   min-width: 80px;
@@ -85,7 +85,7 @@ button, select, input, textarea {
 }
 
 .topbar-range {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   min-width: 190px;
@@ -100,7 +100,7 @@ button, select, input, textarea {
   height: 24px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
 }
 .nav-arrow:hover { background: var(--navy-soft); }
@@ -122,7 +122,7 @@ button, select, input, textarea {
   border: none;
   background: #fff;
   padding: 5px 11px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-sub);
   cursor: pointer;
   border-left: 1px solid var(--border);
@@ -142,7 +142,7 @@ button, select, input, textarea {
   border-radius: 6px;
   cursor: pointer;
   color: var(--text-sub);
-  font-size: 12.5px;
+  font-size: 13.5px;
 }
 .icon-btn:hover { background: var(--navy-soft); color: var(--navy); }
 
@@ -150,7 +150,7 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 7px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text);
   background: #fff;
 }
@@ -158,7 +158,7 @@ button, select, input, textarea {
 .legend {
   display: flex;
   gap: 9px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--text-faint);
 }
 .legend-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -206,9 +206,9 @@ button, select, input, textarea {
   border-left: 1px solid var(--border);
 }
 .week-header-cell.is-today { background: var(--today-bg); }
-.wh-weekday { font-size: 10.5px; color: var(--text-faint); font-weight: 600; }
+.wh-weekday { font-size: 11.5px; color: var(--text-faint); font-weight: 600; }
 .wh-date {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
   width: 26px;
@@ -241,7 +241,7 @@ button, select, input, textarea {
   left: 0;
   right: 6px;
   text-align: right;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-faint2);
 }
 
@@ -275,7 +275,7 @@ button, select, input, textarea {
   border-radius: 3px;
 }
 .lunch-block span {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-faint);
 }
 
@@ -298,8 +298,8 @@ button, select, input, textarea {
   gap: 1px;
   pointer-events: none;
 }
-.free-time { font-size: 10px; font-weight: 600; color: var(--free-text); }
-.free-cta { font-size: 9.5px; font-weight: 500; color: var(--free-text); opacity: .85; }
+.free-time { font-size: 11px; font-weight: 600; color: var(--free-text); }
+.free-cta { font-size: 10.5px; font-weight: 500; color: var(--free-text); opacity: .85; }
 
 .drag-overlay {
   position: absolute;
@@ -308,7 +308,7 @@ button, select, input, textarea {
   background: rgba(27, 58, 92, 0.16);
   border: 1.5px solid var(--navy);
   border-radius: 5px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--navy);
   padding: 3px 6px;
@@ -328,15 +328,15 @@ button, select, input, textarea {
   z-index: 3;
 }
 .event-block:hover { z-index: 6; }
-.event-time { font-size: 9.5px; color: var(--text-sub); line-height: 1.2; }
+.event-time { font-size: 10.5px; color: var(--text-sub); line-height: 1.2; }
 .event-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
 }
 .event-location {
-  font-size: 9.5px;
+  font-size: 10.5px;
   color: var(--text-faint);
   margin-top: 1px;
   white-space: nowrap;
@@ -351,7 +351,7 @@ button, select, input, textarea {
 .event-check {
   position: absolute;
   top: 3px; right: 5px;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--confirmed-border);
 }
 
@@ -366,7 +366,7 @@ button, select, input, textarea {
 .event-badge {
   position: absolute;
   top: 3px; right: 4px;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 700;
   color: var(--pending-text);
   background: #fbe8d3;
@@ -385,7 +385,7 @@ button, select, input, textarea {
   position: absolute;
   left: -50px;
   top: -8px;
-  font-size: 10px;
+  font-size: 11px;
   color: #e0563f;
   width: 46px;
   text-align: right;
@@ -400,7 +400,7 @@ button, select, input, textarea {
   box-shadow: 0 10px 30px rgba(20, 30, 50, 0.16);
   padding: 12px 14px 14px;
   z-index: 1000;
-  font-size: 13px;
+  font-size: 14px;
   transition: opacity .08s ease;
 }
 .pv-head {
@@ -409,10 +409,10 @@ button, select, input, textarea {
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.pv-date { font-size: 12.5px; font-weight: 700; color: var(--navy); }
-.pv-title-sm { font-size: 12.5px; font-weight: 700; color: var(--navy); }
+.pv-date { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+.pv-title-sm { font-size: 13.5px; font-weight: 700; color: var(--navy); }
 .pv-close {
-  border: none; background: none; cursor: pointer; color: var(--text-faint); font-size: 12px;
+  border: none; background: none; cursor: pointer; color: var(--text-faint); font-size: 13px;
   padding: 2px;
 }
 .pv-row { display: flex; align-items: center; margin-bottom: 8px; }
@@ -422,7 +422,7 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 4px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-family: inherit;
   color: var(--text);
   background: #fff;
@@ -434,7 +434,7 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 7px 9px;
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 7px;
 }
 .pv-textarea {
@@ -442,13 +442,13 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 7px 9px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   margin-bottom: 8px;
   resize: vertical;
 }
 .pv-error {
   color: var(--danger);
-  font-size: 11.5px;
+  font-size: 12.5px;
   margin-bottom: 8px;
 }
 .pv-submit {
@@ -458,25 +458,25 @@ button, select, input, textarea {
   border: none;
   border-radius: 7px;
   padding: 9px 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
 .pv-submit:hover { background: var(--navy-dark); }
 .pv-submit:disabled { opacity: .6; cursor: default; }
 
-.pv-title { font-size: 14.5px; font-weight: 700; margin-bottom: 4px; }
-.pv-meta { font-size: 12px; color: var(--text-sub); margin-bottom: 3px; }
+.pv-title { font-size: 15.5px; font-weight: 700; margin-bottom: 4px; }
+.pv-meta { font-size: 13px; color: var(--text-sub); margin-bottom: 3px; }
 .pv-memo {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text);
   background: #f7f8fa;
   border-radius: 6px;
   padding: 7px 9px;
 }
 .pv-status-badge {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 10px;
@@ -492,8 +492,8 @@ button, select, input, textarea {
   border-radius: 7px;
   padding: 8px 10px;
 }
-.pv-reschedule-title { font-size: 11.5px; color: var(--own-text); font-weight: 600; margin-bottom: 2px; }
-.pv-reschedule-diff { font-size: 13px; font-weight: 700; color: var(--text); }
+.pv-reschedule-title { font-size: 12.5px; color: var(--own-text); font-weight: 600; margin-bottom: 2px; }
+.pv-reschedule-diff { font-size: 14px; font-weight: 700; color: var(--text); }
 
 .pv-actions { display: flex; gap: 6px; margin-top: 10px; }
 .pv-btn {
@@ -502,7 +502,7 @@ button, select, input, textarea {
   background: #fff;
   border-radius: 7px;
   padding: 7px 0;
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   color: var(--text);
@@ -512,7 +512,7 @@ button, select, input, textarea {
 .pv-btn-primary:hover { background: var(--navy-dark); }
 .pv-btn-danger { color: var(--danger); border-color: #f3d3cb; }
 .pv-btn-danger:hover { background: #fdf0ed; }
-.pv-hint { font-size: 11.5px; color: var(--text-faint); }
+.pv-hint { font-size: 12.5px; color: var(--text-faint); }
 
 /* 확정/승인대기 일정 상세의 수정·삭제 줄: 본문 액션과 분리되도록 구분선을 둔다 */
 .pv-actions-editrow {
@@ -532,7 +532,7 @@ button, select, input, textarea {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-faint);
   font-weight: 600;
 }
@@ -540,13 +540,13 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 8px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text);
   font-weight: 400;
 }
 .pv-edit-textarea { resize: vertical; min-height: 44px; }
 
-.pv-confirm-text { font-size: 12.5px; color: var(--text); margin: 8px 0 2px; }
+.pv-confirm-text { font-size: 13.5px; color: var(--text); margin: 8px 0 2px; }
 
 .settings-row {
   display: flex;
@@ -554,30 +554,30 @@ button, select, input, textarea {
   gap: 6px;
   margin-bottom: 8px;
 }
-.settings-row label { width: 34px; font-size: 12px; color: var(--text-sub); }
+.settings-row label { width: 34px; font-size: 13px; color: var(--text-sub); }
 .settings-row select {
   flex: 1 1 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 5px 4px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .settings-sep { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
-.settings-block-title { font-size: 11.5px; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; }
+.settings-block-title { font-size: 12.5px; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; }
 .settings-select-full {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 6px;
-  font-size: 12px;
+  font-size: 13px;
   margin-top: 2px;
 }
 .settings-checkbox-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-sub);
   cursor: pointer;
 }
@@ -589,7 +589,7 @@ button, select, input, textarea {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--text-sub);
 }
 .settings-diag-row span { flex: 0 0 auto; }
@@ -606,7 +606,7 @@ button, select, input, textarea {
   background: #fff;
   border-radius: 7px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-sub);
   cursor: pointer;
@@ -633,14 +633,14 @@ button, select, input, textarea {
   background: #2ea043; flex: 0 0 auto;
 }
 .google-btn-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
-.google-btn-line1 { font-size: 11.5px; color: var(--text); }
-.google-btn-line2 { font-size: 9.5px; color: var(--text-faint); font-weight: 500; }
+.google-btn-line1 { font-size: 12.5px; color: var(--text); }
+.google-btn-line2 { font-size: 10.5px; color: var(--text-faint); font-weight: 500; }
 
 .google-error-banner {
   flex: 0 0 auto;
   background: #fdf0ed;
   color: #b3401f;
-  font-size: 12px;
+  font-size: 13px;
   padding: 6px 18px;
   border-bottom: 1px solid #f3d3cb;
   white-space: pre-line;
@@ -667,7 +667,7 @@ button, select, input, textarea {
 }
 .month-head-cell {
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-faint);
   font-weight: 600;
   padding: 8px 0;
@@ -692,7 +692,7 @@ button, select, input, textarea {
 .month-cell-out { color: var(--text-faint); }
 .month-cell-out .month-cell-date { color: var(--text-faint); }
 .month-cell-today { background: var(--today-bg); }
-.month-cell-date { font-size: 13px; font-weight: 700; }
+.month-cell-date { font-size: 14px; font-weight: 700; }
 .month-cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; flex: 0 0 auto; }
 
 /* 빈 공간 클릭 = 일정 추가. 평소엔 아무 표시도 없는 깨끗한 흰 칸으로 두고,
@@ -707,7 +707,7 @@ button, select, input, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   color: var(--text-faint);
   background: var(--navy-soft);
@@ -721,7 +721,7 @@ button, select, input, textarea {
   display: flex;
   align-items: center;
   gap: 3px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   padding: 1px 5px;
   border-radius: 3px;
   background: var(--confirmed-bg);
@@ -749,12 +749,12 @@ button, select, input, textarea {
 }
 .month-chip-badge {
   margin-left: 2px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   opacity: 0.85;
   flex: 0 0 auto;
 }
-.month-more { font-size: 10px; color: var(--text-faint); }
+.month-more { font-size: 11px; color: var(--text-faint); }
 
 /* ---------- Mobile approval list ---------- */
 .approval-list {
@@ -769,7 +769,7 @@ button, select, input, textarea {
 .approval-empty {
   text-align: center;
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: 14px;
   padding: 40px 0;
 }
 .approval-card {
@@ -778,25 +778,25 @@ button, select, input, textarea {
   border-radius: 12px;
   padding: 14px 16px;
 }
-.approval-card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-.approval-card-meta { font-size: 13px; color: var(--text-sub); margin-bottom: 2px; }
-.approval-card-time { font-size: 15px; font-weight: 700; color: var(--text); }
+.approval-card-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.approval-card-meta { font-size: 14px; color: var(--text-sub); margin-bottom: 2px; }
+.approval-card-time { font-size: 16px; font-weight: 700; color: var(--text); }
 .approval-card-memo {
   margin-top: 6px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text);
   background: #f7f8fa;
   border-radius: 8px;
   padding: 8px 10px;
 }
 .approval-pending-note {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--pending-text);
   margin: 6px 0;
   font-weight: 600;
 }
 .approval-actions { display: flex; gap: 8px; margin-top: 12px; }
-.approval-actions .pv-btn { padding: 11px 0; font-size: 13.5px; border-radius: 9px; }
+.approval-actions .pv-btn { padding: 11px 0; font-size: 14.5px; border-radius: 9px; }
 .approval-change-form { margin-top: 10px; }
 
 /* ---------- Responsive ---------- */
@@ -807,7 +807,7 @@ button, select, input, textarea {
 }
 
 @media (max-width: 768px) {
-  .week-header-cell .wh-date { width: 24px; height: 24px; font-size: 14px; }
+  .week-header-cell .wh-date { width: 24px; height: 24px; font-size: 15px; }
   .time-axis { width: 34px; flex-basis: 34px; }
   .week-header-axis-spacer { width: 34px; flex-basis: 34px; }
 }
