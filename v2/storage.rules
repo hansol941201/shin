@@ -1,0 +1,33 @@
+rules_version = '2';
+// 한솔2(v2) 자료실(자료실, users/{uid}/library/...) 전용 Firebase Storage 보안 규칙 참고 파일.
+//
+// ⚠️ 지금은 이 규칙을 "게시할 곳"이 없다 — 이 샌드박스에는 Firebase Storage 버킷 자체가
+// 연결되어 있지 않다(BLOCKED). 이 파일은 나중에 Firebase Console에서 Storage를 실제로
+// 켤 때 그대로 붙여넣어 쓰라고 미리 준비해 둔 참고용 문서다.
+//
+// v2/firestore.rules(users/{uid}/shin2/{docId} 패턴)와 동일한 원칙을 그대로 따른다:
+// 로그인한 사용자가 "자기 자신의 uid" 아래 경로에만 읽기/쓰기가 가능하도록 제한한다.
+//
+// ---- 자료실이 쓸 경로 ----
+// users/{uid}/library/{fileId}/{originalFileName}
+//   - CRM 업체별 서류함(users/{uid}/customers/{companyId}/documents/...)과는 완전히 분리된
+//     경로다 — 같은 규칙 파일 안에서도 서로 다른 match 블록으로 관리해 섞이지 않게 한다.
+//
+// ---- 앞으로 Storage를 연결할 때 할 일(수동, 코드로 불가능한 부분) ----
+// 1. Firebase Console → Storage → 시작하기(버킷 생성, 아직 안 되어 있다면).
+// 2. Storage → Rules 탭에 아래 내용을 그대로 붙여넣고 [게시].
+// 3. v2/index.html의 saveLibraryFile()/replaceFile() 안 TODO 주석 위치에 실제
+//    import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage' 코드를
+//    추가하고, 로컬 dataURL 폴백(LIB_MAX_LOCAL_BYTES 상한)을 실제 업로드 경로로 교체한다.
+//
+// service firebase.storage {
+//   match /b/{bucket}/o {
+//     match /users/{uid}/library/{fileId}/{fileName} {
+//       allow read, write: if request.auth != null && request.auth.uid == uid;
+//     }
+//     // 참고: CRM 업체별 서류함(별도 라운드에서 필요해질 경우)도 같은 원칙으로 추가한다.
+//     match /users/{uid}/customers/{companyId}/documents/{fileName} {
+//       allow read, write: if request.auth != null && request.auth.uid == uid;
+//     }
+//   }
+// }

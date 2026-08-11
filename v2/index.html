@@ -553,6 +553,22 @@
   }
   .kb-add-btn:hover{ background:#F0F1F4; color:var(--text); }
   .kb-search-box{ max-width:none; height:36px; margin:14px 0 10px; }
+
+  /* ---------- 자료실(신규) — 회사 공용 자료 저장소 ---------- */
+  .lib-banner{ font-size:11.5px; color:var(--text-muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin:10px 0 4px; }
+  .lib-recent-label{ font-size:12px; font-weight:600; color:var(--text-muted); margin:16px 0 6px; }
+  .lib-row{ display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
+  .lib-row:hover{ background:#F0F1F4; }
+  .lib-row-fav{ flex:0 0 20px; border:none; background:transparent; cursor:pointer; font-size:15px; line-height:1; color:var(--text-muted); padding:0; }
+  .lib-row-fav.active{ color:var(--navy); }
+  .lib-row-main{ flex:1; min-width:0; cursor:pointer; }
+  .lib-row-title{ font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lib-row-sub{ font-size:11.5px; color:var(--text-muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lib-row-actions{ flex:0 0 auto; display:flex; gap:10px; align-items:center; }
+  .lib-progress{ height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:8px; }
+  .lib-progress-bar{ height:100%; width:0%; background:var(--navy); transition:width .15s linear; }
+  .lib-upload-err{ font-size:11.5px; color:#B91C1C; margin-top:6px; }
+  .lib-file-note{ font-size:11px; color:var(--text-muted); margin-top:4px; }
   .kb-tabs{ display:flex; gap:4px; margin-bottom:14px; }
   .kb-tab{
     height:28px; padding:0 12px; font-size:12.5px; font-family:inherit;
@@ -1670,6 +1686,12 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V6a2 2 0 0 1 2-2h13v15.5"/><path d="M6 22a2 2 0 0 1 0-4h13"/><path d="M8 7h9M8 10.5h9"/></svg>
         <span>지식</span>
       </button>
+      <!-- 자료실(신규) — 회사 공용 자료 저장소. 기존 nav-item과 완전히 동일한 스타일/구조,
+           showView()의 'library' 분기 하나만 추가한다(§1). -->
+      <button type="button" class="nav-item" id="navLibrary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+        <span>자료실</span>
+      </button>
     </nav>
   </aside>
 
@@ -1906,6 +1928,28 @@
             <div class="co-detail-empty">업체를 선택하세요.</div>
           </div>
         </div>
+      </div>
+
+      <!-- 자료실(신규) — 업체별 서류함(CRM)과 완전히 분리된 회사 공용 자료 저장소(§1).
+           업체관리/지식과 같은 kb-view/kb-header/kb-add-btn/kb-search-box/co-filter-btn
+           디자인 클래스를 그대로 재사용한다(§14, 새 색상·새 레이아웃 없음). -->
+      <div class="kb-view" id="libraryView" style="display:none;">
+        <div class="kb-header">
+          <div class="kb-title">자료실</div>
+          <button type="button" id="libAddBtn" class="kb-add-btn">+ 자료 추가</button>
+        </div>
+        <div class="lib-banner" id="libBanner"></div>
+        <div class="search-box kb-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="text" id="libSearchInput" placeholder="자료명 / 공법 / 공종 / 태그 검색" />
+        </div>
+        <div class="co-filter-row">
+          <div class="co-status-filters" id="libCatTabs"></div>
+          <button type="button" class="co-filter-btn" id="libFavToggleBtn">★ 즐겨찾기</button>
+        </div>
+        <div id="libRecentSection"></div>
+        <div class="lib-recent-label" id="libAllLabel">전체 자료</div>
+        <div class="kb-list" id="libList"></div>
       </div>
     </div>
   </main>
@@ -4120,16 +4164,20 @@ ${text}
   const navCompanies = document.getElementById('navCompanies');
   const navAccounts = document.getElementById('navAccounts');
   const navKnowledge = document.getElementById('navKnowledge');
+  const navLibrary = document.getElementById('navLibrary');
   const homeView = document.getElementById('homeView');
   const companiesView = document.getElementById('companiesView');
   const knowledgeView = document.getElementById('knowledgeView');
+  const libraryView = document.getElementById('libraryView');
 
   function showView(view){
     homeView.style.display = view === 'home' ? 'block' : 'none';
     companiesView.style.display = view === 'companies' ? 'block' : 'none';
     knowledgeView.style.display = view === 'knowledge' ? 'block' : 'none';
+    libraryView.style.display = view === 'library' ? 'block' : 'none';
     navCompanies.classList.toggle('active', view === 'companies');
     navKnowledge.classList.toggle('active', view === 'knowledge');
+    navLibrary.classList.toggle('active', view === 'library');
   }
   brandHomeBtn.addEventListener('click', ()=> showView('home'));
   navCompanies.addEventListener('click', ()=>{
@@ -4137,6 +4185,10 @@ ${text}
     if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.onEnter();
   });
   navAccounts.addEventListener('click', ()=> openAcctPopup());
+  navLibrary.addEventListener('click', ()=>{
+    showView('library');
+    if(window.SHIN2_LIBRARY) window.SHIN2_LIBRARY.onEnter();
+  });
   navKnowledge.addEventListener('click', ()=>{
     showView('knowledge');
     if(window.SHIN2_KB) window.SHIN2_KB.renderKbList();
@@ -5089,6 +5141,37 @@ ${text}
     if(user && (user === q || user.includes(q))) return 20;
     return 0;
   }
+  // 자료실(신규, §11) — 메타데이터 필드(제목/원본파일명/분류/공법/공종/연도/태그/설명)까지만
+  // 채점 대상에 포함한다. 파일 바이너리는 애초에 이 레코드에 들어있지 않으므로 검색되지 않는다.
+  // 민감 필드는 이 스키마에 존재하지 않는다(§11 확인 사항).
+  function kbScoreLibrary(doc, q){
+    if(!q) return 0;
+    const title = kbNormalize(doc.title);
+    if(title && title === q) return 100;
+    if(title && title.includes(q)) return 90;
+    const fname = kbNormalize(doc.originalFileName);
+    if(fname && fname.includes(q)) return 70;
+    if(doc.category && kbNormalize(doc.category).includes(q)) return 60;
+    const tags = (doc.tags || []).map(kbNormalize);
+    if(tags.some(t=> t.includes(q) || q.includes(t))) return 60;
+    if(doc.method && kbNormalize(doc.method).includes(q)) return 50;
+    if(doc.workType && kbNormalize(doc.workType).includes(q)) return 50;
+    if(doc.year && kbNormalize(String(doc.year)).includes(q)) return 45;
+    if(doc.description && kbNormalize(doc.description).includes(q)) return 40;
+    return 0;
+  }
+  function kbRenderLibraryCard(doc, isTop, q){
+    const lines = [];
+    if(doc.category) lines.push(`분류: ${kbEscapeHtml(doc.category)}`);
+    if(doc.method) lines.push(`공법: ${kbHighlight(doc.method, q)}`);
+    if(doc.workType) lines.push(`공종: ${kbHighlight(doc.workType, q)}`);
+    if(doc.originalFileName) lines.push(`파일: ${kbHighlight(doc.originalFileName, q)}`);
+    return `<div class="kb-result-card${isTop?' top':''}" data-lib-id="${kbEscapeAttr(doc.id)}">
+      <div class="kb-result-cat">자료</div>
+      <div class="kb-result-title">${kbHighlight(doc.title, q)}</div>
+      <div class="kb-plain-content">${lines.join('<br>')}</div>
+    </div>`;
+  }
 
   // ---------- 통합검색 인덱스 빌더 (확장 포인트) ----------
   // 새 데이터 소스(예: 향후 업체관리)를 검색에 포함시키려면 이 배열에 { type, getRecords, score, render }
@@ -5133,6 +5216,14 @@ ${text}
       getRecords: ()=> (window.SHIN2_MEMO ? window.SHIN2_MEMO.loadAll() : []),
       score: kbScoreMemo,
       render: kbRenderMemoCard
+    },
+    // 자료실(shin2-library-documents-v1, 신규 §11) — 메타데이터만 조회한다(getSearchable이
+    // 파일 바이너리/blob 저장소는 아예 참조하지 않는다).
+    {
+      type:'library',
+      getRecords: ()=> (window.SHIN2_LIBRARY ? window.SHIN2_LIBRARY.getSearchable() : []),
+      score: kbScoreLibrary,
+      render: kbRenderLibraryCard
     }
   ];
 
@@ -5571,6 +5662,16 @@ ${text}
       const coId = coCard.getAttribute('data-co-id');
       if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
       if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(coId);
+      return;
+    }
+    // 자료실 검색 결과 카드 클릭(§11, 신규): 자료실 화면으로 전환 후 해당 자료의 수정 팝업을 연다.
+    const libCard = e.target.closest('[data-lib-id]');
+    if(libCard){
+      if(window.SHIN2_NAV) window.SHIN2_NAV.showView('library');
+      if(window.SHIN2_LIBRARY){
+        window.SHIN2_LIBRARY.onEnter();
+        window.SHIN2_LIBRARY.openDetail(libCard.getAttribute('data-lib-id'));
+      }
       return;
     }
     // 업무 검색 결과 카드 클릭: 업무 상세 팝업을 바로 연다.
@@ -9299,6 +9400,567 @@ ${text}
   window.SHIN2_CALENDAR = { getAll: loadAll, add: add, update: update, setStatus: setStatus, remove: remove };
 
   renderBadge();
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   자료실(SHIN2_LIBRARY) — 회사 공용 자료 저장소 (신규).
+   업체별 서류함(CRM, users/{uid}/customers/{companyId}/documents/...)과는 완전히 분리된
+   users/{uid}/library/{fileId}/{originalFileName} 대상 기능이다. 업체관리/지식/할일 등
+   기존 모듈의 저장소·로직은 이 블록이 전혀 건드리지 않는다(§15, 완전 추가형).
+
+   ---- 저장 구조 ----
+   메타데이터: localStorage['shin2-library-documents-v1'] = [{id, title, originalFileName,
+     category, method, workType, year, tags[], description, storagePath, mimeType, size,
+     favorite, fileStored, createdAt, updatedAt}]  — 민감 필드 없음(§11 확인).
+   파일 바이트: localStorage['shin2-library-blobs-v1'] = { [id]: dataURL } — 로컬 전용,
+     SHIN2_SYNC_KEYS에 절대 추가하지 않는다(클라우드로 전혀 나가지 않음).
+
+   ---- Storage 연결 여부 ----
+   이 샌드박스에는 Firebase Storage 자격증명/버킷 설정이 없다(BLOCKED — CRM 서류함 라운드와
+   동일한 결론). saveLibraryFile()에 실제 uploadBytes() 자리를 TODO로 명확히 표시해 두었다.
+   지금은 CRM 서류함과 동일한 "로컬 전용 폴백" 패턴을 재사용하되, 자료실은 문서가 더 크고
+   많을 수 있다는 경고(§ "수천 개 문서" 스케일)를 반영해 파일당 크기 상한(LIB_MAX_LOCAL_BYTES)을
+   두었다 — 이 상한을 넘는 파일은 "로컬 저장 한도 초과"로 명확히 실패 처리하고(§9 실패 UI),
+   절대 조용히 잘라서 저장하거나 metadata-only로 만들어 넘어가지 않는다. 이 로컬 폴백은
+   최종 아키텍처가 아니며 수천 건 규모에는 맞지 않는다는 점을 보고서에 명시한다.
+
+   ---- 클라우드 동기화 여부(이번 라운드의 판단) ----
+   메타데이터만이라도 SHIN2_SYNC_KEYS에 추가하면 여러 기기에서 자료 목록을 공유할 수 있지만,
+   지금은 예산/범위상 자료실 메타데이터를 클라우드 동기화 대상에 포함하지 않았다(이 기기
+   로컬에만 저장) — 새 동기화 메커니즘을 만들지 않고, 기존 [클라우드 동기화 시작] 버튼의
+   범위도 넓히지 않기 위함이다. 필요해지면 SHIN2_SYNC_KEYS.library를 추가하고 saveDocs()에서
+   window.__shin2CloudSync.push('library', list)만 호출하면 되도록 코드를 이미 그 형태로
+   분리해 두었다(§ "your call, 문서화" 요구사항 반영).
+   ========================================================================== */
+(function(){
+  'use strict';
+  const LIB_KEY = 'shin2-library-documents-v1';
+  const LIB_BLOB_KEY = 'shin2-library-blobs-v1'; // 로컬 전용 — SHIN2_SYNC_KEYS에 절대 추가하지 않는다
+  const LIB_MAX_LOCAL_BYTES = 2 * 1024 * 1024; // 2MB — 로컬 폴백 한도(§ 대용량 base64 금지 원칙)
+  const LOCAL_ONLY_NOTICE = '이 자료 파일은 현재 이 기기에만 저장되어 있습니다(클라우드 파일 저장 연결 전 — 다른 기기에서는 목록만 보이고 파일은 없을 수 있습니다).';
+  const BLOCKED_NOTICE = '파일 저장은 클라우드 연결 후 가능합니다. 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다.';
+
+  // 기본 분류 — 하드코딩된 enum이 아니라 그냥 문자열 배열이라 나중에 얼마든지 추가할 수 있다(§1).
+  const LIB_CATEGORIES = ['시방서','단가표','실적자료','공법소개서','회사소개서','카탈로그','협약자료','공고문양식','교육자료','기타'];
+  const LIB_ACCEPT = '.pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.jpg,.jpeg,.png,.webp,.zip';
+
+  function readArr(key){ try{ const raw = localStorage.getItem(key); const a = raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function writeArr(key, arr){ try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('[자료실] 저장 실패', key, e); } }
+  function readObj(key){ try{ const raw = localStorage.getItem(key); const o = raw?JSON.parse(raw):{}; return (o && typeof o==='object')?o:{}; }catch(e){ return {}; } }
+  function writeObj(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){ console.error('[자료실] 저장 실패(용량 초과 가능)', key, e); } }
+  function genId(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function nowIso(){ return new Date().toISOString(); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function norm(s){ return (s == null ? '' : String(s)).trim().toLowerCase(); }
+
+  function loadDocs(){ return readArr(LIB_KEY); }
+  function saveDocs(list){
+    writeArr(LIB_KEY, list);
+    // 지금은 자료실 메타데이터를 클라우드로 보내지 않는다(위 헤더 주석 참고) — 이 줄은 의도적으로
+    // window.__shin2CloudSync.push(...)를 호출하지 않는다.
+  }
+  function findDoc(id){ return loadDocs().find(d=> d.id === id) || null; }
+  function getBlob(id){ const blobs = readObj(LIB_BLOB_KEY); return blobs[id] || ''; }
+  function writeBlob(id, dataUrl){ const blobs = readObj(LIB_BLOB_KEY); blobs[id] = dataUrl; writeObj(LIB_BLOB_KEY, blobs); }
+  function removeBlob(id){ const blobs = readObj(LIB_BLOB_KEY); delete blobs[id]; writeObj(LIB_BLOB_KEY, blobs); }
+
+  // saveLibraryFile: 실제 파일 바이트를 저장하는 유일한 진입점.
+  // onProgress(pct)는 FileReader의 진짜 진행률(loaded/total)을 그대로 전달한다 — 가짜 100%를
+  // 만들지 않는다. 실패(용량 초과/읽기 오류)는 그대로 reject되어 호출부가 재시도 UI를 띄운다.
+  function saveLibraryFile(file, onProgress){
+    return new Promise((resolve, reject)=>{
+      if(file.size > LIB_MAX_LOCAL_BYTES){
+        reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
+        return;
+      }
+      // TODO(Storage 연결 시): 여기서 로컬 저장 대신(또는 추가로)
+      //   const path = `users/{uid}/library/${fileId}/${file.name}`;
+      //   await uploadBytes(ref(storage, path), file, { onProgress: ... })
+      // 를 호출해 storagePath를 실제 Storage 경로로 갱신하는 분기를 추가하면 된다.
+      // 지금은 Firebase Storage 자격증명이 이 샌드박스에 없어 BLOCKED — 로컬 dataURL로만 저장한다.
+      const reader = new FileReader();
+      reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
+      reader.onload = ()=>{ if(onProgress) onProgress(100); resolve(reader.result); };
+      reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function addDoc(file, meta, onProgress){
+    const id = genId('lib');
+    return saveLibraryFile(file, onProgress).then(dataUrl=>{
+      writeBlob(id, dataUrl);
+      const now = nowIso();
+      const rec = {
+        id,
+        title: (meta.title || file.name || '').trim() || file.name,
+        originalFileName: file.name, // 업로드 이후 절대 바꾸지 않는다(파일 교체 시에만 갱신).
+        category: meta.category || '',
+        method: meta.method || '',
+        workType: meta.workType || '',
+        year: meta.year || '',
+        tags: meta.tags || [],
+        description: meta.description || '',
+        storagePath: 'local:' + id,
+        mimeType: file.type || '',
+        size: file.size || 0,
+        favorite: false,
+        fileStored: true,
+        localOnly: true, // Storage BLOCKED 상태에서 만들어진 자료 — 이 기기에만 파일 바이트가 있다는 표시
+        createdAt: now, updatedAt: now
+      };
+      const list = loadDocs(); list.push(rec); saveDocs(list);
+      return rec;
+    });
+  }
+
+  function updateMeta(id, patch){
+    const list = loadDocs();
+    const rec = list.find(d=> d.id === id);
+    if(!rec) return null;
+    // 메타데이터 수정은 파일에 전혀 손대지 않는다(§9 "수정" ≠ "파일 교체").
+    ['title','category','method','workType','year','tags','description'].forEach(k=>{
+      if(k in patch) rec[k] = patch[k];
+    });
+    rec.updatedAt = nowIso();
+    saveDocs(list);
+    return rec;
+  }
+
+  // replaceFile: 새 파일 저장이 "성공"한 뒤에만 기존 파일을 덮어쓴다(§9 순서 안전) — 저장이
+  // 실패하면 기존 blob/메타데이터는 그대로 남는다.
+  function replaceFile(id, file, onProgress){
+    return saveLibraryFile(file, onProgress).then(dataUrl=>{
+      const list = loadDocs();
+      const rec = list.find(d=> d.id === id);
+      if(!rec) throw new Error('NOT_FOUND');
+      writeBlob(id, dataUrl); // 새 파일 저장 성공 후에만 덮어쓴다(원래 id 그대로 재사용 — 교체이지 신규 추가가 아님)
+      rec.originalFileName = file.name;
+      rec.mimeType = file.type || '';
+      rec.size = file.size || 0;
+      rec.fileStored = true;
+      rec.updatedAt = nowIso();
+      saveDocs(list);
+      return rec;
+    });
+  }
+
+  function toggleFavorite(id){
+    const list = loadDocs();
+    const rec = list.find(d=> d.id === id);
+    if(!rec) return null;
+    rec.favorite = !rec.favorite;
+    rec.updatedAt = nowIso();
+    saveDocs(list);
+    return rec;
+  }
+
+  function deleteDoc(id){
+    // 메타데이터와 파일을 함께, 그리고 이 id 하나만 지운다 — 다른 자료에는 영향 없음(§10).
+    saveDocs(loadDocs().filter(d=> d.id !== id));
+    removeBlob(id);
+  }
+
+  // getSearchable: 통합검색(§11)에 넘기는 뷰. 원본 배열을 그대로 참조만 하며(복사 저장 없음),
+  // 파일 바이너리/blob 저장소는 이 함수가 아예 참조하지 않는다 — 검색은 메타데이터 필드만 대상.
+  function getSearchable(){ return loadDocs(); }
+
+  window.SHIN2_LIBRARY_DATA = {
+    LIB_CATEGORIES, LIB_ACCEPT, LIB_MAX_LOCAL_BYTES, LOCAL_ONLY_NOTICE, BLOCKED_NOTICE,
+    loadDocs, findDoc, addDoc, updateMeta, replaceFile, toggleFavorite, deleteDoc,
+    getBlob, getSearchable
+  };
+
+  // ======================= 화면 렌더링 =======================
+  const D = window.SHIN2_LIBRARY_DATA;
+  let libState = { search:'', category:'all', favOnly:false };
+  const libBlobUrlCache = {};
+
+  function dataUrlToBlob(dataUrl){
+    try{
+      const commaIdx = dataUrl.indexOf(',');
+      const meta = dataUrl.slice(0, commaIdx);
+      const isBase64 = /;base64/.test(meta);
+      const mimeMatch = /^data:([^;]*)/.exec(meta);
+      const mime = (mimeMatch && mimeMatch[1]) || 'application/octet-stream';
+      const raw = dataUrl.slice(commaIdx + 1);
+      const bin = isBase64 ? atob(raw) : decodeURIComponent(raw);
+      const arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }catch(e){ return null; }
+  }
+  function getDocObjectUrl(doc){
+    if(libBlobUrlCache[doc.id]) return libBlobUrlCache[doc.id];
+    const dataUrl = D.getBlob(doc.id);
+    if(!dataUrl) return '';
+    const blob = dataUrlToBlob(dataUrl);
+    if(!blob) return '';
+    const url = URL.createObjectURL(blob);
+    libBlobUrlCache[doc.id] = url;
+    return url;
+  }
+  function canPreviewInline(doc){
+    const m = (doc.mimeType || '').toLowerCase();
+    return m.startsWith('image/') || m === 'application/pdf';
+  }
+  function fmtDate(iso){
+    const d = new Date(iso); if(isNaN(d)) return '';
+    const p = n=> String(n).padStart(2,'0');
+    return d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate());
+  }
+  function showToast(btn, text){
+    const span = document.createElement('span');
+    span.className = 'kb-copied-tag';
+    span.textContent = text;
+    btn.insertAdjacentElement('afterend', span);
+    setTimeout(()=>{ if(span.parentNode) span.remove(); }, 1500);
+  }
+
+  const libBanner = document.getElementById('libBanner');
+  const libAddBtn = document.getElementById('libAddBtn');
+  const libSearchInput = document.getElementById('libSearchInput');
+  const libCatTabs = document.getElementById('libCatTabs');
+  const libFavToggleBtn = document.getElementById('libFavToggleBtn');
+  const libRecentSection = document.getElementById('libRecentSection');
+  const libAllLabel = document.getElementById('libAllLabel');
+  const libList = document.getElementById('libList');
+
+  if(libBanner) libBanner.textContent = D.BLOCKED_NOTICE;
+
+  function renderCatTabs(){
+    const cats = ['all'].concat(D.LIB_CATEGORIES);
+    libCatTabs.innerHTML = cats.map(c=> `<button type="button" class="co-filter-btn${(libState.category===c)?' active':''}" data-cat="${esc(c)}">${c==='all'?'전체':esc(c)}</button>`).join('');
+  }
+
+  function matchesSearch(doc, q){
+    if(!q) return true;
+    const hay = norm([doc.title, doc.originalFileName, doc.category, doc.method, doc.workType, doc.year, (doc.tags||[]).join(' '), doc.description].filter(Boolean).join(' '));
+    return hay.includes(q);
+  }
+  function filteredDocs(){
+    const q = norm(libState.search);
+    return D.loadDocs().filter(d=>{
+      if(libState.category !== 'all' && d.category !== libState.category) return false;
+      if(libState.favOnly && !d.favorite) return false;
+      return matchesSearch(d, q);
+    }).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  function docSubLabel(doc){
+    const parts = [];
+    if(doc.category) parts.push(doc.category);
+    if(doc.method) parts.push(doc.method);
+    if(doc.workType) parts.push(doc.workType);
+    if(doc.year) parts.push(String(doc.year));
+    parts.push(fmtDate(doc.createdAt));
+    return parts.join(' · ');
+  }
+
+  function renderRow(doc){
+    const hasBlob = doc.fileStored && !!D.getBlob(doc.id);
+    return `<div class="lib-row" data-doc-id="${esc(doc.id)}">
+      <button type="button" class="lib-row-fav${doc.favorite?' active':''}" data-fav="${esc(doc.id)}" title="즐겨찾기">${doc.favorite?'★':'☆'}</button>
+      <div class="lib-row-main" data-open="${esc(doc.id)}">
+        <div class="lib-row-title">${esc(doc.title)}</div>
+        <div class="lib-row-sub">${esc(docSubLabel(doc))} · ${esc(doc.originalFileName)}${!hasBlob ? ' · 파일 미저장' : ''}</div>
+      </div>
+      <div class="lib-row-actions">
+        ${hasBlob && canPreviewInline(doc) ? `<button type="button" class="co-text-action" data-view="${esc(doc.id)}">보기</button>` : ''}
+        ${hasBlob ? `<button type="button" class="co-text-action" data-download="${esc(doc.id)}">다운로드</button>` : ''}
+        <button type="button" class="co-text-action" data-copylink="${esc(doc.id)}">링크복사</button>
+      </div>
+    </div>`;
+  }
+
+  function bindRowActions(container, afterDelete){
+    container.querySelectorAll('[data-fav]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{ e.stopPropagation(); D.toggleFavorite(btn.getAttribute('data-fav')); renderAll(); });
+    });
+    container.querySelectorAll('[data-open]').forEach(el=>{
+      el.addEventListener('click', ()=> openDetail(el.getAttribute('data-open')));
+    });
+    container.querySelectorAll('[data-view]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const doc = D.findDoc(btn.getAttribute('data-view'));
+        const url = doc && getDocObjectUrl(doc);
+        if(url) window.open(url, '_blank', 'noopener');
+      });
+    });
+    container.querySelectorAll('[data-download]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const doc = D.findDoc(btn.getAttribute('data-download'));
+        const url = doc && getDocObjectUrl(doc);
+        if(!url) return;
+        const a = document.createElement('a');
+        a.href = url; a.download = doc.originalFileName || doc.title || 'file';
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+    });
+    container.querySelectorAll('[data-copylink]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        // Storage가 BLOCKED라 공개 URL이 없다 — 같은 계정/기기에서만 의미 있는 내부 딥링크를
+        // 대신 복사한다(§8). 실제 공유 가능한 외부 링크가 아님을 사용자에게 알려야 한다.
+        const id = btn.getAttribute('data-copylink');
+        const link = location.origin + location.pathname + '#library?doc=' + encodeURIComponent(id);
+        if(navigator.clipboard){
+          navigator.clipboard.writeText(link).then(()=> showToast(btn, '복사됨')).catch(()=>{});
+        }
+      });
+    });
+  }
+
+  function renderList(){
+    const docs = filteredDocs();
+    if(!docs.length){
+      libList.innerHTML = `<div class="kb-no-result">${D.loadDocs().length===0 ? '등록된 자료가 없습니다. + 자료 추가로 등록하세요.' : '검색 결과가 없습니다.'}</div>`;
+      return;
+    }
+    libList.innerHTML = docs.map(renderRow).join('');
+    bindRowActions(libList);
+  }
+
+  function renderRecent(){
+    // 최근 자료(§13) — 전체(필터 무관) 중 최신순 8건. createdAt 기준(단순함을 택함).
+    const recent = D.loadDocs().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
+    if(!recent.length){ libRecentSection.innerHTML = ''; libAllLabel.style.display = 'none'; return; }
+    libAllLabel.style.display = 'block';
+    libRecentSection.innerHTML = `<div class="lib-recent-label">최근 자료</div>` + recent.map(renderRow).join('');
+    bindRowActions(libRecentSection);
+  }
+
+  function renderAll(){
+    renderRecent();
+    renderList();
+  }
+
+  libSearchInput.addEventListener('input', ()=>{ libState.search = libSearchInput.value; renderList(); });
+  libCatTabs.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-cat]');
+    if(!btn) return;
+    libState.category = btn.getAttribute('data-cat');
+    renderCatTabs();
+    renderList();
+  });
+  libFavToggleBtn.addEventListener('click', ()=>{
+    libState.favOnly = !libState.favOnly;
+    libFavToggleBtn.classList.toggle('active', libState.favOnly);
+    renderList();
+  });
+
+  // ======================= 자료 추가/수정 팝업 =======================
+  function tagsToArr(s){ return String(s||'').split(',').map(t=> t.trim()).filter(Boolean); }
+
+  function openAddForm(){
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal">
+        <div class="kb-modal-title">자료 추가</div>
+        <div class="kb-form-field">
+          <label>파일 (필수, PDF/HWP/HWPX/DOC(X)/XLS(X)/PPT(X)/CSV/TXT/JPG/PNG/WEBP/ZIP)</label>
+          <input type="file" id="libFFile" accept="${D.LIB_ACCEPT}" />
+          <div class="lib-file-note">${esc(D.BLOCKED_NOTICE)}</div>
+          <div id="libProgressWrap" style="display:none;"><div class="lib-progress"><div class="lib-progress-bar" id="libProgressBar"></div></div></div>
+          <div id="libUploadErr" class="lib-upload-err" style="display:none;"></div>
+        </div>
+        <div class="kb-form-field">
+          <label>자료명 (필수)</label>
+          <input type="text" id="libFTitle" />
+        </div>
+        <div id="libFTitleErr" class="kb-form-error" style="display:none;">자료명을 입력하세요.</div>
+        <div class="kb-form-field">
+          <label>자료분류</label>
+          <select id="libFCategory">
+            <option value="">선택 안 함</option>
+            ${D.LIB_CATEGORIES.map(c=> `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="kb-form-field"><label>공법</label><input type="text" id="libFMethod" /></div>
+        <div class="kb-form-field"><label>공종</label><input type="text" id="libFWorkType" /></div>
+        <div class="kb-form-field"><label>연도</label><input type="text" id="libFYear" placeholder="예: 2026" /></div>
+        <div class="kb-form-field"><label>검색 태그 (쉼표로 구분)</label><input type="text" id="libFTags" /></div>
+        <div class="kb-form-field"><label>설명 · 메모</label><textarea id="libFDesc"></textarea></div>
+        <div class="kb-form-actions">
+          <div></div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="kb-text-action" id="libFormCancel">취소</button>
+            <button type="button" class="ai-run-btn" id="libFormSave">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const fileInput = overlay.querySelector('#libFFile');
+    const titleInput = overlay.querySelector('#libFTitle');
+    fileInput.addEventListener('change', ()=>{
+      const f = fileInput.files[0];
+      if(f && !titleInput.value.trim()) titleInput.value = f.name.replace(/\.[^.]+$/, '');
+    });
+
+    function close(){ overlay.remove(); }
+    overlay.querySelector('#libFormCancel').addEventListener('click', close);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+
+    const saveBtn = overlay.querySelector('#libFormSave');
+    const progressWrap = overlay.querySelector('#libProgressWrap');
+    const progressBar = overlay.querySelector('#libProgressBar');
+    const errBox = overlay.querySelector('#libUploadErr');
+
+    function trySave(){
+      const file = fileInput.files[0];
+      const title = titleInput.value.trim();
+      overlay.querySelector('#libFTitleErr').style.display = title ? 'none' : 'block';
+      if(!file || !title) return;
+      errBox.style.display = 'none';
+      progressWrap.style.display = 'block';
+      progressBar.style.width = '0%';
+      saveBtn.disabled = true;
+      saveBtn.textContent = '저장 중...';
+      const meta = {
+        title,
+        category: overlay.querySelector('#libFCategory').value,
+        method: overlay.querySelector('#libFMethod').value.trim(),
+        workType: overlay.querySelector('#libFWorkType').value.trim(),
+        year: overlay.querySelector('#libFYear').value.trim(),
+        tags: tagsToArr(overlay.querySelector('#libFTags').value),
+        description: overlay.querySelector('#libFDesc').value.trim()
+      };
+      D.addDoc(file, meta, (pct)=>{ progressBar.style.width = pct + '%'; }).then(()=>{
+        close();
+        renderAll();
+      }).catch(err=>{
+        saveBtn.disabled = false;
+        saveBtn.textContent = '저장';
+        const code = err && err.code;
+        errBox.style.display = 'block';
+        if(code === 'SIZE_LIMIT'){
+          errBox.textContent = '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 연결 전에는 저장할 수 없습니다. [다시 시도]';
+        } else {
+          errBox.textContent = '업로드에 실패했습니다. 입력한 내용은 그대로 남아 있습니다. [다시 시도]';
+        }
+      });
+    }
+    saveBtn.addEventListener('click', trySave);
+  }
+
+  function openDetail(id){
+    const doc = D.findDoc(id);
+    if(!doc) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'kb-modal-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal">
+        <div class="kb-modal-title">자료 수정</div>
+        <div class="kb-form-field"><label>원본 파일명 (변경 불가 — 파일 교체로만 변경됨)</label><input type="text" value="${esc(doc.originalFileName)}" disabled /></div>
+        <div class="kb-form-field">
+          <label>자료명 (필수)</label>
+          <input type="text" id="libEFTitle" value="${esc(doc.title)}" />
+        </div>
+        <div id="libEFTitleErr" class="kb-form-error" style="display:none;">자료명을 입력하세요.</div>
+        <div class="kb-form-field">
+          <label>자료분류</label>
+          <select id="libEFCategory">
+            <option value="">선택 안 함</option>
+            ${D.LIB_CATEGORIES.map(c=> `<option value="${esc(c)}"${doc.category===c?' selected':''}>${esc(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="kb-form-field"><label>공법</label><input type="text" id="libEFMethod" value="${esc(doc.method)}" /></div>
+        <div class="kb-form-field"><label>공종</label><input type="text" id="libEFWorkType" value="${esc(doc.workType)}" /></div>
+        <div class="kb-form-field"><label>연도</label><input type="text" id="libEFYear" value="${esc(doc.year)}" /></div>
+        <div class="kb-form-field"><label>검색 태그 (쉼표로 구분)</label><input type="text" id="libEFTags" value="${esc((doc.tags||[]).join(', '))}" /></div>
+        <div class="kb-form-field"><label>설명 · 메모</label><textarea id="libEFDesc">${esc(doc.description)}</textarea></div>
+
+        <div class="kb-form-field">
+          <label>파일 교체 (메타데이터 수정과 별개 — 새 파일 저장이 성공한 뒤에만 기존 파일이 바뀝니다)</label>
+          <input type="file" id="libEFFile" accept="${D.LIB_ACCEPT}" />
+          <div id="libEProgressWrap" style="display:none;"><div class="lib-progress"><div class="lib-progress-bar" id="libEProgressBar"></div></div></div>
+          <div id="libEUploadErr" class="lib-upload-err" style="display:none;"></div>
+        </div>
+
+        <div class="kb-form-actions">
+          <div id="libEActionsLeft"><button type="button" class="kb-text-action danger" id="libDeleteBtn">삭제</button></div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="kb-text-action" id="libFormCancel">취소</button>
+            <button type="button" class="ai-run-btn" id="libFormSave">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    function close(){ overlay.remove(); }
+    overlay.querySelector('#libFormCancel').addEventListener('click', close);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+
+    overlay.querySelector('#libFormSave').addEventListener('click', ()=>{
+      const title = overlay.querySelector('#libEFTitle').value.trim();
+      overlay.querySelector('#libEFTitleErr').style.display = title ? 'none' : 'block';
+      if(!title) return;
+      D.updateMeta(doc.id, {
+        title,
+        category: overlay.querySelector('#libEFCategory').value,
+        method: overlay.querySelector('#libEFMethod').value.trim(),
+        workType: overlay.querySelector('#libEFWorkType').value.trim(),
+        year: overlay.querySelector('#libEFYear').value.trim(),
+        tags: tagsToArr(overlay.querySelector('#libEFTags').value)
+        ,description: overlay.querySelector('#libEFDesc').value.trim()
+      });
+      close();
+      renderAll();
+    });
+
+    const efFile = overlay.querySelector('#libEFFile');
+    const eProgressWrap = overlay.querySelector('#libEProgressWrap');
+    const eProgressBar = overlay.querySelector('#libEProgressBar');
+    const eErrBox = overlay.querySelector('#libEUploadErr');
+    efFile.addEventListener('change', ()=>{
+      const f = efFile.files[0];
+      if(!f) return;
+      eErrBox.style.display = 'none';
+      eProgressWrap.style.display = 'block';
+      eProgressBar.style.width = '0%';
+      D.replaceFile(doc.id, f, (pct)=>{ eProgressBar.style.width = pct + '%'; }).then(()=>{
+        close();
+        renderAll();
+      }).catch(err=>{
+        const code = err && err.code;
+        eErrBox.style.display = 'block';
+        eErrBox.textContent = (code === 'SIZE_LIMIT')
+          ? '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 기존 파일은 그대로 유지됩니다. [다시 시도]'
+          : '업로드에 실패했습니다. 기존 파일은 그대로 유지됩니다. [다시 시도]';
+        efFile.value = '';
+      });
+    });
+
+    // 삭제 — 네이티브 confirm() 대신 인라인 확인만 사용(§10, 기존 co-confirm-row 관례).
+    overlay.querySelector('#libDeleteBtn').addEventListener('click', ()=>{
+      const left = overlay.querySelector('#libEActionsLeft');
+      left.innerHTML = `<div class="kb-confirm-row"><span>이 자료를 삭제할까요?</span><button type="button" class="kb-text-action" id="libDelCancel">취소</button><button type="button" class="kb-text-action danger" id="libDelConfirm">삭제</button></div>`;
+      overlay.querySelector('#libDelCancel').addEventListener('click', ()=>{ close(); openDetail(doc.id); });
+      overlay.querySelector('#libDelConfirm').addEventListener('click', ()=>{
+        D.deleteDoc(doc.id);
+        close();
+        renderAll();
+      });
+    });
+  }
+
+  libAddBtn.addEventListener('click', openAddForm);
+
+  function onEnter(){
+    renderCatTabs();
+    renderAll();
+  }
+
+  window.SHIN2_LIBRARY = { onEnter, openDetail, getSearchable: D.getSearchable };
+  renderCatTabs();
 })();
 </script>
 
