@@ -4,6 +4,7 @@ import { addDays, dateKey, getWeekStart, isSameDay, startOfDay } from '../utils/
 import { busyIntervalsForDay } from '../utils/eventHelpers.js';
 import RequestPopover from './RequestPopover.jsx';
 import EventDetailPopover from './EventDetailPopover.jsx';
+import woodpeckerIcon from '../assets/woodpecker.png';
 
 // 한솔이 요청한 일정(source==='platform')은 상태와 무관하게 분홍 계열로
 // 표시한다. 팀장이 Google에 직접 등록한 일반 일정(source==='google')은
@@ -127,7 +128,10 @@ export default function MonthView() {
                       className={`month-event-chip ${chipClass(e)}`}
                       onClick={(ev) => handleEventClick(e, ev)}
                     >
-                      {e.title}
+                      {e.source === 'platform' && (
+                        <img className="month-chip-icon" src={woodpeckerIcon} alt="한솔 요청" />
+                      )}
+                      <span className="month-chip-title">{e.title}</span>
                       {chipBadge(e) && <span className="month-chip-badge">{chipBadge(e)}</span>}
                     </div>
                   ))}

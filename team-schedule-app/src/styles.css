@@ -167,6 +167,7 @@ button, select, input, textarea {
 }
 .legend-confirmed { background: var(--confirmed-bg); border-left: 2px solid var(--confirmed-border); }
 .legend-pending { background: var(--own-bg); border: 1px solid var(--own-border); }
+.legend-woodpecker { width: 16px; height: 16px; object-fit: contain; }
 
 /* ---------- Main area ---------- */
 .main-area {
@@ -717,6 +718,9 @@ button, select, input, textarea {
 .month-cell:hover .month-cell-plus-hint { opacity: 1; }
 
 .month-event-chip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10.5px;
   padding: 1px 5px;
   border-radius: 3px;
@@ -724,7 +728,6 @@ button, select, input, textarea {
   color: var(--navy);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
 }
 .month-event-chip:hover { filter: brightness(0.97); }
@@ -733,11 +736,23 @@ button, select, input, textarea {
   color: var(--own-text);
   border: 1px solid var(--own-border);
 }
+.month-chip-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.month-chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 .month-chip-badge {
-  margin-left: 4px;
+  margin-left: 2px;
   font-size: 9px;
   font-weight: 700;
   opacity: 0.85;
+  flex: 0 0 auto;
 }
 .month-more { font-size: 10px; color: var(--text-faint); }
 
