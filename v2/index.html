@@ -2064,6 +2064,13 @@
 
         <div id="homeTaskSlot"></div>
 
+        <!-- §신규 라운드(역할 분리): "고객 업무" — customerActivities(status:pending, 시공사
+             전화기록에서 넘어온 업체 연결 기록)와 shin2-tasks-v1(companyId가 설정된 항목,
+             !done)을 합쳐서 보여주는 새 홈 섹션. 새 저장소를 만들지 않고 두 기존 데이터를
+             그대로 읽기만 한다 — CRM(crm/index.html)의 "다음 액션"이 읽는 것과 완전히 같은
+             두 소스(D.pendingActivitiesForCompany/D.tasksForCompany와 동일한 필터 조건)다. -->
+        <div id="homeCustomerTaskSlot"></div>
+
         <div id="homeMemoSlot"></div>
       </div>
 
@@ -2525,7 +2532,13 @@
   // 있을 때는 최대 2~3건만 보여주고 헤더에 "처리할 업무 N건"으로 총 건수를 알려준다.
   function renderHomeSummary(){
     if(!homeSlotEl) return;
-    var all = sortForHome(loadAll().filter(function(t){ return !t.done; }));
+    // §신규 라운드(역할 분리): companyId가 붙은 항목은 이제 별도 "고객 업무" 홈 섹션
+    // (homeCustomerTaskSlot, 아래 별도 IIFE)이 담당한다 — 같은 레코드를 두 섹션에 동시에
+    // 그리면 사용자가 헷갈리므로, 여기 "처리할 업무" 섹션은 companyId가 없는(순수 개인)
+    // 항목만 보여주도록 필터만 좁혔다. 데이터(shin2-tasks-v1)/필드/저장 로직은 전혀
+    // 바뀌지 않았고, companyId가 있는 항목도 여전히 이 배열 안에 그대로 남아있다 —
+    // "업무 상세" 팝업의 전체 보기(filteredForBrowse)에서는 지금까지처럼 전체가 보인다.
+    var all = sortForHome(loadAll().filter(function(t){ return !t.done && !t.companyId; }));
     if(!all.length){ homeSlotEl.innerHTML = ''; return; }
     var items = all.slice(0, 3);
     var html = '<div class="home-task-block">' +
@@ -2701,9 +2714,16 @@
       });
     });
     var completeBtn = document.getElementById('taskCompleteBtn');
-    if(completeBtn) completeBtn.addEventListener('click', function(){ setDone(rec.id, true); renderHomeSummary(); renderDetail(); });
+    if(completeBtn) completeBtn.addEventListener('click', function(){
+      setDone(rec.id, true); renderHomeSummary(); renderDetail();
+      // companyId가 있는 업무는 홈 "고객 업무" 섹션도 같은 레코드를 보여주므로 즉시 갱신한다.
+      if(rec.companyId && window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
+    });
     var undoBtn = document.getElementById('taskUndoBtn');
-    if(undoBtn) undoBtn.addEventListener('click', function(){ setDone(rec.id, false); renderHomeSummary(); renderDetail(); });
+    if(undoBtn) undoBtn.addEventListener('click', function(){
+      setDone(rec.id, false); renderHomeSummary(); renderDetail();
+      if(rec.companyId && window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
+    });
 
     if(window.SHIN2_MEMO){
       window.SHIN2_MEMO.mount(document.getElementById('taskMemoSlot'), 'task', rec.id, { title:'메모' });
@@ -2765,6 +2785,8 @@
         pState.mode = 'detail';
       }
       renderHomeSummary();
+      // companyId가 있는(고객 업무) 새 업무/수정은 홈 "고객 업무" 섹션도 즉시 갱신한다.
+      if(fields.companyId && window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
       renderPopup();
     });
   }
@@ -3761,6 +3783,10 @@
         // 않으므로 클릭해도 레코드는 검색/전체보기/히스토리에 계속 남는다.
         (statusVal === 'new' ? '<button type="button" class="acct-text-action" id="callConfirmBtn">확인</button>' : '') +
         (statusVal !== 'handled' ? '<button type="button" class="acct-text-action" id="callHandledBtn">처리완료</button>' : '') +
+        // §신규 라운드: 전화가 왔다고 자동으로 고객업무를 만들지 않는다(명시적 하드룰) —
+        // 이 버튼을 사용자가 직접 눌렀을 때만 shin2-tasks-v1에 새 레코드 1건을 만든다.
+        // 이 전화기록(rec) 자체는 절대 바뀌지 않는다(그대로 로그로 남는다).
+        '<button type="button" class="acct-text-action" id="callAddTaskBtn">고객업무로 추가</button>' +
         '<button type="button" class="acct-text-action danger" id="callDeleteBtn">삭제</button>' +
       '</div>' +
       '<div class="shin2-memo-block" style="border-top:none;padding-top:0;">' +
@@ -3798,6 +3824,56 @@
       setStatus(rec.id, 'handled');
       renderHomeBlock();
       renderDetail();
+    });
+
+    // §신규 라운드: "[고객업무로 추가]" — 이 전화기록을 근거로 shin2-tasks-v1에 새
+    // 레코드 1건을 companyId와 함께 만든다. 새 저장소를 만들지 않고 기존 SHIN2_TASKS.add()를
+    // 그대로 호출한다(§ CRM 고객카드 "다음 액션"이 읽는 바로 그 저장소). 원본 전화기록(rec)의
+    // 어떤 필드도 이 함수에서 바꾸지 않는다 — 별도 레코드를 하나 더 만들 뿐이다.
+    function callSummaryTitle(){
+      var t = (rec.requestText && rec.requestText.trim()) || (rec.followUp && rec.followUp.trim()) ||
+        (rec.originalText || '').trim();
+      return t.length > 50 ? (t.slice(0, 50) + '…') : (t || '전화기록에서 추가된 업무');
+    }
+    function createCustomerTask(companyId){
+      if(!window.SHIN2_TASKS) return null;
+      var task = window.SHIN2_TASKS.add({
+        title: callSummaryTitle(), companyId: companyId, content: rec.originalText || '', status: 'confirm'
+      });
+      if(window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
+      return task;
+    }
+    var addTaskBtn = document.getElementById('callAddTaskBtn');
+    if(addTaskBtn) addTaskBtn.addEventListener('click', function(){
+      var actionsRow = document.getElementById('callDetailActions');
+      if(isCo && company){
+        // 이미 시공사와 연결되어 있으면 바로 만든다 — 업체를 다시 고르게 하지 않는다.
+        createCustomerTask(company.id);
+        actionsRow.insertAdjacentHTML('beforeend',
+          '<div class="co-confirm-row"><span>"' + escapeHtml(company.name) + '"의 고객 업무로 추가되었습니다.</span></div>');
+        return;
+      }
+      // 아파트/기타/미확정 시공사처럼 연결된 업체가 없으면, 업무 추가 폼과 같은 "업체 선택"
+      // 셀렉트(getCompanies())를 재사용해 먼저 업체를 고르게 한다 — 새 연결 UI를 만들지 않는다.
+      var companies = getCompanies();
+      var optsHtml = '<option value="">업체를 선택하세요</option>' + companies.map(function(c){
+        return '<option value="' + escapeAttr(c.id) + '">' + escapeHtml(c.name) + '</option>';
+      }).join('');
+      actionsRow.innerHTML = '<div class="co-confirm-row" style="flex-wrap:wrap;">' +
+        '<span>고객 업무로 추가할 업체를 선택하세요</span>' +
+        '<select id="callTaskCoSelect">' + optsHtml + '</select>' +
+        '<button type="button" class="acct-text-action" id="callTaskCoCancel">취소</button>' +
+        '<button type="button" class="acct-text-action" id="callTaskCoConfirm">추가</button>' +
+      '</div>';
+      document.getElementById('callTaskCoCancel').addEventListener('click', renderDetail);
+      document.getElementById('callTaskCoConfirm').addEventListener('click', function(){
+        var sel = document.getElementById('callTaskCoSelect');
+        if(!sel || !sel.value) return;
+        var chosen = findCompanyById(sel.value);
+        createCustomerTask(sel.value);
+        actionsRow.innerHTML = '<div class="co-confirm-row"><span>"' + escapeHtml(chosen ? chosen.name : '') +
+          '"의 고객 업무로 추가되었습니다.</span></div>';
+      });
     });
 
     // §20: 삭제 전 인라인 확인(alert/confirm 금지) — 기존 업무/업체 삭제와 동일한 패턴 재사용.
@@ -8924,6 +9000,8 @@ ${text}
     input.value = '';
     setTimeout(function(){ if(resultEl.firstChild) clearResult(); }, 3000);
     renderPending();
+    // 새로 저장된 customerActivities 레코드가 홈 "고객 업무" 섹션에도 즉시 보이도록 갱신한다.
+    if(window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
   }
 
   function showAmbiguous(m){
@@ -9102,6 +9180,8 @@ ${text}
       btn.addEventListener('click', function(){
         window.SHIN2_ACTIVITIES.complete(btn.getAttribute('data-pending-confirm'));
         renderPending();
+        // 홈 "고객 업무" 섹션도 같은 customerActivities 레코드를 보여주므로 즉시 갱신한다.
+        if(window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
       });
     });
     pendingWrap.querySelectorAll('[data-pending-edit]').forEach(function(btn){
@@ -9146,6 +9226,120 @@ ${text}
   window.addEventListener('storage', function(e){
     if(e.key === 'shin2-customer-activities-v1' || e.key === 'shin2-companies-staging') renderPending();
   });
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   홈 "고객 업무" 섹션(§신규 라운드 — 역할 분리) — "내 할 일"(shin2-todos, 개인
+   체크리스트)과 명확히 구분되는 "업체별로 처리할 업무"를 홈에서 한 곳에 모아 보여준다.
+
+   새 저장소를 만들지 않는다. 이미 있는 두 소스를 그대로 읽기만 한다:
+     1) customerActivities(=SHIN2_ACTIVITIES, shin2-customer-activities-v1) 중
+        companyId가 있고 status가 'pending'인 것 — SHIN2_ACTIVITIES.pendingList()가
+        이미 정확히 이 조건으로 반환한다(위 인라인 미처리 목록과 동일 소스).
+     2) shin2-tasks-v1(SHIN2_TASKS) 중 companyId가 있고 done이 아닌 것.
+   이 두 소스는 CRM(crm/index.html)의 "다음 액션"이 읽는 D.pendingActivitiesForCompany/
+   D.tasksForCompany와 정확히 같은 필터 조건이다 — v2와 crm은 서로 다른 HTML 문서라
+   함수를 직접 공유할 수는 없지만, 같은 localStorage 키를 같은 조건으로 읽으므로 실제
+   데이터는 완전히 하나다. 여기서 [완료]를 누르면 그 원본 레코드의 status/done 필드만
+   바뀌고(레코드 삭제 없음), CRM 쪽도 같은 레코드를 다시 읽으므로 그대로 반영된다.
+   ========================================================================== */
+(function(){
+  'use strict';
+  var slotEl = null;
+  var CAP = 5;
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function summarize(text, max){
+    var t = String(text || '').trim();
+    if(t.length > max) t = t.slice(0, max) + '…';
+    return t;
+  }
+
+  // 두 소스를 합쳐 {kind, id, companyId, title, sub, ts} 모양으로 통일한다 — 렌더링만
+  // 공통화할 뿐, 원본 레코드(customerActivities/shin2-tasks-v1)는 전혀 바꾸지 않는다.
+  function loadItems(){
+    var items = [];
+    if(window.SHIN2_ACTIVITIES){
+      window.SHIN2_ACTIVITIES.pendingList().forEach(function(a){
+        items.push({
+          kind: 'act', id: a.id, companyId: a.companyId,
+          title: summarize(a.activityText || a.originalText, 40),
+          sub: '', ts: new Date(a.createdAt).getTime() || 0
+        });
+      });
+    }
+    if(window.SHIN2_TASKS){
+      window.SHIN2_TASKS.getAll().filter(function(t){ return t.companyId && !t.done; }).forEach(function(t){
+        items.push({
+          kind: 'task', id: t.id, companyId: t.companyId,
+          title: summarize(t.title, 40), sub: t.content ? summarize(t.content, 60) : '',
+          ts: t.updatedAt || t.createdAt || 0
+        });
+      });
+    }
+    items.sort(function(a,b){ return b.ts - a.ts; });
+    return items;
+  }
+
+  function companyName(companyId){
+    if(!window.SHIN2_ACTIVITIES) return '';
+    var co = window.SHIN2_ACTIVITIES.loadCompanies().find(function(c){ return c && c.id === companyId; });
+    return co ? co.name : '(삭제된 업체)';
+  }
+
+  function render(){
+    if(!slotEl) return;
+    var all = loadItems();
+    if(!all.length){ slotEl.innerHTML = ''; return; }
+    var items = all.slice(0, CAP);
+    var html = '<div class="home-task-block">' +
+      '<div class="home-task-head"><div class="home-task-title">고객 업무 ' + all.length + '건</div></div>' +
+      '<div class="home-task-list">' + items.map(function(it){
+        return '<div class="home-task-row">' +
+          '<div class="home-task-row-main">' +
+            '<div class="home-task-row-top">' +
+              '<span class="home-task-row-title">' + escapeHtml(companyName(it.companyId)) + ' · ' + escapeHtml(it.title) + '</span>' +
+            '</div>' +
+            (it.sub ? '<div class="home-task-row-sub">' + escapeHtml(it.sub) + '</div>' : '') +
+          '</div>' +
+          '<button type="button" class="co-text-action" data-cust-task-done="' + it.kind + ':' + escapeHtml(it.id) + '">완료</button>' +
+        '</div>';
+      }).join('') + '</div>' +
+    '</div>';
+    slotEl.innerHTML = html;
+    slotEl.querySelectorAll('[data-cust-task-done]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var raw = btn.getAttribute('data-cust-task-done');
+        var sep = raw.indexOf(':');
+        var kind = raw.slice(0, sep), id = raw.slice(sep + 1);
+        // §하드룰: 레코드를 지우지 않고 상태만 바꾼다 — customerActivities는 complete()가
+        // status:'completed'로, shin2-tasks-v1은 setDone(id,true)가 done:true로 바꿀 뿐이다.
+        // 둘 다 CRM 고객카드 "다음 액션"이 읽는 바로 그 필드라 반대편도 같은 레코드로 반영된다.
+        if(kind === 'act' && window.SHIN2_ACTIVITIES) window.SHIN2_ACTIVITIES.complete(id);
+        else if(kind === 'task' && window.SHIN2_TASKS) window.SHIN2_TASKS.setDone(id, true);
+        render();
+      });
+    });
+  }
+
+  slotEl = document.getElementById('homeCustomerTaskSlot');
+  render();
+
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e.detail && (e.detail.key === 'customerActivities' || e.detail.key === 'tasks' || e.detail.key === 'companies')) render();
+  });
+  window.addEventListener('storage', function(e){
+    if(e.key === 'shin2-customer-activities-v1' || e.key === 'shin2-tasks-v1' || e.key === 'shin2-companies-staging') render();
+  });
+
+  window.SHIN2_CUSTOMER_TASKS_HOME = { render: render };
 })();
 </script>
 
