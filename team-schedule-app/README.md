@@ -73,7 +73,14 @@ Google Calendar API를 직접 호출합니다. 비밀번호는 어떤 형태로�
 
 ### 2) 앱에 클라이언트 ID 설정
 
-`team-schedule-app/.env.example`을 같은 폴더에 `.env.local`로 복사한 뒤:
+**Windows(권장):** 저장소 최상위(루트)의 `구글연동설정.bat`을 더블클릭 →
+발급받은 클라이언트 ID를 붙여넣고 Enter. `team-schedule-app\.env.local`
+파일에 자동으로 저장되며(Git에는 포함되지 않음), 실행 중이던 서버가 있으면
+자동으로 종료해줍니다. 이후 바탕화면의 "팀장 일정" 아이콘을 다시 실행하면
+헤더에 **"Google 캘린더 연결"** 버튼이 나타납니다.
+
+**수동으로 하려면:** `team-schedule-app/.env.example`을 같은 폴더에
+`.env.local`로 복사한 뒤:
 
 ```
 VITE_GOOGLE_CLIENT_ID=여기에_복사한_클라이언트_ID
