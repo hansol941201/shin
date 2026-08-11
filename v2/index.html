@@ -1448,14 +1448,24 @@
           liveSyncStarted = true;
           const uid = currentUid;
           const pushTimers = {};
+          // [버그 수정 — 삭제 항목 되살아남] localRev: 로컬에서 저장(삭제 포함)할 때마다
+          // localStorage에 즉시(디바운스 전에) 기록해두는 단조증가 타임스탬프. onSnapshot이
+          // 이 값보다 오래된(=아직 이 기기의 최신 로컬 변경을 반영하지 못한) 클라우드 스냅샷을
+          // 받으면 그걸로 localStorage를 덮어쓰지 않는다 — 예전 코드는 스냅샷을 무조건
+          // 덮어썼는데, 그게 "삭제 직후 새로고침하면 다시 나타남" 버그의 원인이었다
+          // (삭제 후 500ms 디바운스가 아직 클라우드에 반영되기 전에 새로고침하면, 재연결
+          // 시점의 첫 onSnapshot이 삭제 이전의 오래된 클라우드 값을 그대로 로컬에 다시 써버림).
+          function localRevKey(key){ return 'shin2-sync-rev-' + key; }
           function pushToCloud(key, data){
             if(!SHIN2_SYNC_KEYS[key]) return;
             // §15 가드: 빈 배열/빈 객체는 애초에 클라우드에 쓰지 않는다(집 PC의 빈 상태가
             // 회사 데이터를 덮어쓰는 경쟁 상태 방지).
             if(isEmptyVal(key, data)) return;
+            const rev = Date.now();
+            try{ localStorage.setItem(localRevKey(key), String(rev)); }catch(e){}
             clearTimeout(pushTimers[key]);
             pushTimers[key] = setTimeout(async () => {
-              try{ await setDoc(doc(db, 'users', uid, 'shin2', key), { value: data, updatedAt: serverTimestamp() }); }
+              try{ await setDoc(doc(db, 'users', uid, 'shin2', key), { value: data, updatedAt: serverTimestamp(), localRev: rev }); }
               catch(e){ console.error(`[한솔2/Firebase] ${key} 저장 실패`, e); }
             }, 500);
           }
@@ -1470,6 +1480,18 @@
               const payload = snap.data();
               if(payload.value == null) return; // 값이 비어있는 스냅샷으로 로컬을 지우지 않는다
               if(isEmptyVal(key, payload.value)) return; // 이중 가드: 빈 값 스냅샷은 절대 반영하지 않음
+              // 이 기기가 이 스냅샷보다 더 최신 로컬 변경(삭제 포함)을 이미 갖고 있다면, 오래된
+              // 클라우드 값으로 되돌리지 않는다 — 대신 현재 로컬 값을 다시 밀어넣어 클라우드가
+              // 따라잡게 한다(삭제를 잃지 않음, 데이터 유실 없음).
+              let localRev = 0;
+              try{ localRev = parseInt(localStorage.getItem(localRevKey(key)) || '0', 10) || 0; }catch(e){}
+              const snapRev = (typeof payload.localRev === 'number') ? payload.localRev : 0;
+              if(localRev && localRev > snapRev){
+                let currentLocal = null;
+                try{ const raw = localStorage.getItem(storageKey); currentLocal = raw ? JSON.parse(raw) : null; }catch(e){}
+                if(!isEmptyVal(key, currentLocal)) pushToCloud(key, currentLocal);
+                return;
+              }
               try{ localStorage.setItem(storageKey, JSON.stringify(payload.value)); }catch(e){}
               window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail: { key, data: payload.value } }));
             }, (err) => console.error(`[한솔2/Firebase] ${key} 구독 실패`, err));
@@ -6574,6 +6596,17 @@ ${text}
   });
   panelCloseBtn.addEventListener('click', closePanel);
   overlayEl.addEventListener('click', closePanel);
+
+  // [버그 수정] 클라우드에서 이 데이터가 갱신되면(다른 기기 동기화) 인메모리 todos를
+  // localStorage와 다시 맞춘다. 이게 없으면 이 탭이 들고 있던 오래된 인메모리 배열이
+  // 다음 로컬 편집(추가/삭제 등) 때 그대로 저장되면서 방금 클라우드에서 받은 최신 상태를
+  // (그 안의 삭제 내용까지) 덮어써버릴 수 있다 — 다른 키(companies 등)는 이미 이렇게
+  // 처리하고 있었는데 todos에만 빠져 있었다.
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e.detail.key !== 'todos') return;
+    todos = loadTodos();
+    renderTodos();
+  });
 
   // 한솔1 이전(migration) 전용 API: sourceSystem/sourceId 기준으로 중복을 건너뛴다.
   window.SHIN2_TODOS = {
