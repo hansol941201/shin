@@ -970,6 +970,25 @@
   .qr-candidate-btn:hover{ background:#F0F1F4; }
   .qr-action-row{ display:flex; gap:8px; }
 
+  /* 시공사 전화기록 인라인 미처리 목록(§신규 라운드) — 저장 직후 팝업을 열지 않고 입력창
+     바로 아래에서 확인하는 목적. task-pop-row/co-text-action 톤을 그대로 재사용한다. */
+  .qr-pending-wrap{ margin-top:14px; }
+  .qr-pending-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .qr-pending-title{ font-size:12.5px; font-weight:700; color:var(--text-muted); }
+  .qr-pending-row{ display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--line); }
+  .qr-pending-row:last-child{ border-bottom:none; }
+  .qr-pending-main{ flex:1 1 auto; min-width:0; }
+  .qr-pending-co{ font-size:13px; font-weight:700; color:var(--text); }
+  .qr-pending-contact{ font-size:11.5px; color:var(--text-muted); margin-left:6px; }
+  .qr-pending-summary{ font-size:12.5px; color:var(--text); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qr-pending-meta{ flex:none; font-size:11.5px; color:var(--text-muted); }
+  .qr-pending-actions{ flex:none; display:flex; gap:6px; }
+  .qr-pending-more-btn{
+    background:none; border:none; font-size:12px; color:var(--navy); cursor:pointer; font-family:inherit; padding:4px 0;
+  }
+  .qr-pending-empty{ font-size:12px; color:var(--text-muted); padding:4px; }
+  .qr-pending-edit{ margin-top:6px; }
+
   /* 미등록 시공사 기록(§신규) — 업체명이 매칭되지 않아도 저장을 막지 않고, 규칙 기반으로
      추정한 업체명/특이사항을 사용자가 확인·수정한 뒤 저장하는 인라인 확인 UI. qr-notfound와
      같은 톤을 그대로 재사용한다. */
@@ -1921,6 +1940,10 @@
                   <button type="button" id="qrToAiBtn" class="home-bridge-btn" data-bridge-from="qrInput">AI로 다듬기</button>
                   <button type="button" id="qrSaveBtn" class="ai-run-btn">저장</button>
                 </div>
+                <!-- §신규 라운드: 저장 직후 확인은 이제 팝업(전체 보기)이 아니라 이 인라인
+                     미처리 목록이 담당한다(요구사항 1/2). 전체 보기는 계속 남아있지만
+                     "오늘 막 저장한 걸 확인하는" 1차 동선에서는 빠진다. -->
+                <div class="qr-pending-wrap" id="qrPendingWrap"></div>
               </div>
             </div>
           </div>
@@ -2147,6 +2170,23 @@
   }
   function countFor(targetType, targetId){ return getFor(targetType, targetId).length; }
 
+  // §신규 라운드: 폼 UI 없이 프로그램적으로 메모 한 건을 "추가"하는 API(시공사 전화기록
+  // 저장 시 업체 메모에 자동으로 한 줄 남기기 위함, 요구사항 7). mount()의 폼 제출 핸들러가
+  // 새 항목을 만들 때 쓰는 것과 완전히 같은 모양({id, targetType, targetId, text, createdAt,
+  // updatedAt})으로 push한 뒤 같은 saveAll()을 호출한다 — 기존 메모를 절대 지우거나
+  // 덮어쓰지 않고 배열에 새 항목만 추가하는 순수 append이며, 별도의 메모 저장소를 새로
+  // 만들지 않는다.
+  function addFor(targetType, targetId, text){
+    var t = String(text || '').trim();
+    if(!t) return null;
+    var now = Date.now();
+    var rec = { id: uid(), targetType: targetType, targetId: String(targetId), text: t, createdAt: now, updatedAt: now };
+    var all = loadAll();
+    all.push(rec);
+    saveAll(all);
+    return rec;
+  }
+
   /**
    * container: 메모 섹션을 그려 넣을 빈 엘리먼트
    * targetType/targetId: 이 메모가 연결된 대상
@@ -2287,7 +2327,7 @@
     return { refresh: render };
   }
 
-  window.SHIN2_MEMO = { mount: mount, getFor: getFor, countFor: countFor, loadAll: loadAll };
+  window.SHIN2_MEMO = { mount: mount, getFor: getFor, countFor: countFor, loadAll: loadAll, addFor: addFor };
 
   // §6/§7: 홈 화면 메모(targetType 'home')는 최근 3개만 요약으로 보여주고(compactHome),
   // 수정/삭제는 행을 클릭했을 때만 나타난다. "전체 보기"는 계정/업무 팝업과 같은
@@ -8242,7 +8282,29 @@ ${text}
   // openAddPrefilled: 업체 추가 폼을 값 미리채움 상태로 연다(§18: 전화 온 내용의 "신규 시공사
   // [업체정보 등록]"이 같은 폼/드래그앤드롭 컴포넌트를 재사용하기 위한 진입점). onSaved는 사용자가
   // 실제로 [저장]을 눌러 업체가 만들어졌을 때만 새 업체 레코드와 함께 호출된다.
-  window.SHIN2_COMPANIES = { openDetail: coOpenDetailById, onEnter: coOnEnter, openAddPrefilled: coOpenAddForm };
+  //
+  // autoCreate: §신규 라운드(요구사항 5) — 시공사 전화기록이 "확신 높은" 미등록 업체명을
+  // 만났을 때, 폼을 여는 대신 즉시 최소 정보(업체명 + 추출됐다면 담당자/직책/전화)만으로
+  // 업체 레코드를 하나 만든다. coAttemptSave()의 add 분기와 완전히 같은 저장 경로
+  // (coGenId → coState.records.push → coWriteAll, 같은 id 생성 함수)를 그대로 타므로 별도
+  // 저장소나 다른 id 채번 규칙을 새로 만들지 않는다. name 외의 값은 전달되지 않으면 빈
+  // 문자열로 남긴다(주소/사업자등록번호 등을 억지로 채우지 않음, §5 요구사항).
+  function coAutoCreateMinimal(fields){
+    fields = fields || {};
+    var name = String(fields.name || '').trim();
+    if(!name) return null;
+    var newRec = Object.assign({ id: coGenId() }, CO_EMPTY_FORM, {
+      name: name,
+      contactName: fields.contactName || '',
+      position: fields.position || '',
+      phone: fields.phone || '',
+      autoCreated: true
+    });
+    coState.records.push(newRec);
+    coWriteAll(coState.records);
+    return newRec;
+  }
+  window.SHIN2_COMPANIES = { openDetail: coOpenDetailById, onEnter: coOnEnter, openAddPrefilled: coOpenAddForm, autoCreate: coAutoCreateMinimal };
 
   // 다른 기기에서 업체 데이터가 바뀌면 반영한다 — 단, 지금 입력 중인 폼이 있으면
   // 사용자의 작성 내용을 덮어쓰지 않도록 새로고침을 건너뛴다.
@@ -8484,6 +8546,13 @@ ${text}
   'use strict';
   var ACT_KEY = 'shin2-customer-activities-v1';
   var CO_KEY = 'shin2-companies-staging';
+  // 업체관리 모듈(coExtractRepName 부근)의 TITLE_RE/NAME_ONLY_RE, 아파트 문의·전화기록
+  // 모듈의 PHONE_RE와 각각 동일한 패턴을 이 IIFE 안에 그대로 복제해 쓴다(§ 이 파일 전체가
+  // 이미 채택 중인 "모듈별 로컬 상수 복제" 관례 — normalizeApartmentName/COMPANY_STORAGE_KEY
+  // 등도 모두 같은 방식) — 새 정규식을 발명하지 않고 기존 것과 글자 그대로 동일하게 유지한다.
+  var CONTACT_TITLE_RE = /(대표이사|대표|현장소장|사업부장|부회장|회장|부사장|사장|전무|상무보|상무|본부장|이사대우|이사|부장|차장|과장|대리|주임|팀장|실장|소장|공장장|연구원|매니저|담당자|담당|사원)(님)?/;
+  var CONTACT_NAME_ONLY_RE = /^[가-힣]{2,4}$/;
+  var PHONE_RE = /01[016789][-\s]?\d{3,4}[-\s]?\d{4}|02[-\s]?\d{3,4}[-\s]?\d{4}|0(?:3[1-3]|4[1-4]|5[1-5]|6[1-4])[-\s]?\d{3,4}[-\s]?\d{4}/;
 
   function loadCompanies(){
     try{ var raw = localStorage.getItem(CO_KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
@@ -8568,7 +8637,12 @@ ${text}
     var rec = {
       id: genId(), companyId: companyId, originalText: originalText,
       activityText: activityText, category: classifyActivity(activityText),
-      matchStatus: 'matched', createdAt: now, updatedAt: now
+      matchStatus: 'matched',
+      // §신규 라운드: 새로 만드는 레코드는 항상 명시적으로 status:'pending'을 써준다(요구사항
+      // 3) — 기존(레거시) 레코드는 이 필드가 아예 없고, pendingStatusOf()가 그걸 읽는 시점에
+      // 'completed'로 기본 처리하므로 과거 기록이 갑자기 새 미처리 목록에 쏟아지지 않는다.
+      status: 'pending',
+      createdAt: now, updatedAt: now
     };
     var all = loadActivities();
     all.push(rec);
@@ -8600,14 +8674,85 @@ ${text}
     return (rec && rec.matchStatus) || (rec && rec.companyId ? 'matched' : 'unmatched');
   }
 
+  // §신규 라운드: 인라인 미처리 목록용 상태 읽기. 반드시 rec.status || 'completed'로
+  // 기본값을 잡는다(rec.status || 'pending'이 아니다) — status 필드가 아예 없는 과거
+  // 기록(이 라운드 이전에 만들어진 모든 레코드)이 전부 'completed'로 취급되어 새로 만든
+  // 미처리 목록 UI에 갑자기 나타나지 않게 하기 위함이다. 앞으로 새로 만드는 레코드는
+  // addActivity가 항상 status:'pending'을 명시적으로 써주므로 이 기본값과 무관하게 정상
+  // 동작한다.
+  function pendingStatusOf(rec){ return (rec && rec.status) || 'completed'; }
+
+  // §신규 라운드: [확인] — 레코드를 지우지 않고 상태만 'completed'로 바꾼다(요구사항 3).
+  // customerActivities는 그대로 영구 기록으로 남고, 전체 보기/CRM 활동이력에서는 계속
+  // 그대로 보인다 — 여기서 하는 일은 saveActivities를 한 번 더 호출하는 것뿐, 새 저장소나
+  // 별도 저장 경로를 만들지 않는다(9a38fa1/058e4da의 localRev 가드가 걸린 동일한
+  // saveActivities → __shin2CloudSync.push 경로를 그대로 탄다).
+  function completeActivity(id){
+    var all = loadActivities();
+    var rec = all.find(function(a){ return a.id === id; });
+    if(!rec) return null;
+    rec.status = 'completed';
+    rec.completedAt = new Date().toISOString();
+    rec.updatedAt = rec.completedAt;
+    saveActivities(all);
+    return rec;
+  }
+
+  // §신규 라운드: 홈 인라인 미처리 목록이 읽는 단일 소스. companyId가 있는(=matched) 레코드
+  // 중 pendingStatusOf가 'pending'인 것만, 최신순으로 돌려준다. companyId가 없는(§ 저확신
+  // 미등록 레코드, matchStatus:'unmatched') 레코드는 여기 절대 섞이지 않는다 — 그쪽은 여전히
+  // 기존 "전체 보기"의 미등록업체 탭/인라인 확인 UI가 담당한다.
+  function pendingList(){
+    return loadActivities().filter(function(a){
+      return a && a.companyId && pendingStatusOf(a) === 'pending';
+    }).sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+  }
+
+  // §신규 라운드: 업체명 중복 등록 방지용 정규화 키(요구사항 6) — matchCompany()가 이미 쓰는
+  // stripDesignationPrefix()를 그대로 재사용하고, 공백/대소문자 차이만 추가로 지운다
+  // (normalizeApartmentName()과 같은 "정규화 키로 비교" 패턴).
+  function normCompanyKey(s){ return stripDesignationPrefix(String(s || '')).replace(/\s+/g, '').toLowerCase(); }
+  function findExistingCompanyByName(name){
+    var key = normCompanyKey(name);
+    if(!key) return null;
+    var companies = loadCompanies();
+    for(var i=0;i<companies.length;i++){
+      if(companies[i] && companies[i].name && normCompanyKey(companies[i].name) === key) return companies[i];
+    }
+    return null;
+  }
+
+  // §신규 라운드: 미등록 추정 결과(guessUnmatched)의 남은 문장에서 "이름 + 직책" 후보를
+  // 찾는다(예: "김동건 과장님" → {contactName:'김동건', position:'과장'}). 업체관리
+  // coExtractRepName과 같은 TITLE_RE/NAME_ONLY_RE 조합을 이 모듈 안에서 그대로 다시 쓴다.
+  // 애매하면 빈 값을 돌려준다(억지로 채우지 않음).
+  function extractContactHint(text){
+    var tokens = String(text || '').split(/\s+/).filter(Boolean);
+    for(var i = 0; i < tokens.length; i++){
+      var tm = tokens[i].match(CONTACT_TITLE_RE);
+      if(tm && tm.index === 0 && i > 0 && CONTACT_NAME_ONLY_RE.test(tokens[i-1])){
+        return { contactName: tokens[i-1], position: tm[1] };
+      }
+    }
+    return { contactName:'', position:'' };
+  }
+  function extractPhoneHint(text){
+    var m = String(text || '').match(PHONE_RE);
+    return m ? m[0] : '';
+  }
+
   // §신규: "미등록 시공사 기록" 규칙 기반 업체명/특이사항 추정(AI 미사용, API KEY 불필요).
   // parseCallMemoLocally()의 "업체 접미어(OO건설 등)"/"토큰 단위" 휴리스틱을 이 모듈 안에서
   // 그대로 다시 사용한다. 판단이 애매하면 원문 전체를 특이사항에 넣는다(억지로 쪼개지 않음).
   var UNMATCHED_SUFFIXES = ['건설','산업','개발','기업','상사','이엔지','E&C','EnC','주식회사'];
   var UNMATCHED_NOTE_START_WORDS = ['협력사','견적','문의','요청','자료','리스트','시방서','샘플','미팅','방문','공사','시공','담당자','전화','연락','제안서'];
+  // §신규 라운드: confidence('high'|'low')를 함께 돌려준다(요구사항 5) — "OO건설"류처럼
+  // 업체 접미어가 뚜렷한 1번 규칙만 high로 취급하고, 2번(문장 앞부분을 통째로 업체명으로
+  // 추정)/3번(첫 토큰만 업체명 후보) 규칙은 애매한 추정이므로 항상 low로 남긴다. 자동 업체
+  // 등록은 오직 high일 때만 호출부(빠른 고객기록 UI)가 시도한다.
   function guessUnmatched(rawText){
     var text = String(rawText || '').trim();
-    if(!text) return { companyName:'', note:'' };
+    if(!text) return { companyName:'', note:'', confidence:'low' };
 
     // 1) "OO건설"류 업체 접미어가 있으면 그 토막을 업체명 후보로, 나머지를 특이사항으로.
     var sufAlt = UNMATCHED_SUFFIXES.map(function(k){ return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
@@ -8616,7 +8761,7 @@ ${text}
     if(sufM){
       var name1 = sufM[1].trim();
       var rest1 = text.slice(sufM[0].length).replace(/^[\s,:\-]+/, '').trim();
-      return { companyName: name1, note: rest1 || text };
+      return { companyName: name1, note: rest1 || text, confidence:'high' };
     }
 
     // 2) 첫 토큰들 뒤에 "특이사항이 시작되는 흔한 단어"가 나오면 그 앞까지를 업체명으로.
@@ -8625,12 +8770,12 @@ ${text}
       if(UNMATCHED_NOTE_START_WORDS.indexOf(tokens[i]) !== -1){
         var name2 = tokens.slice(0, i).join(' ');
         var note2 = tokens.slice(i).join(' ');
-        return { companyName: name2, note: note2 || text };
+        return { companyName: name2, note: note2 || text, confidence:'low' };
       }
     }
 
     // 3) 판단이 어려우면 첫 토큰만 업체명 후보로 삼고, 원문 전체를 그대로 특이사항에 둔다.
-    return { companyName: tokens[0] || '', note: text };
+    return { companyName: tokens[0] || '', note: text, confidence:'low' };
   }
 
   // §신규: 미등록 기록 생성 — companyId는 절대 자동 생성하지 않고 null로 둔다(자동 생성 금지
@@ -8680,7 +8825,11 @@ ${text}
     classify: classifyActivity, add: addActivity, forCompany: forCompany,
     update: updateActivity, remove: deleteActivity, stripDesignationPrefix: stripDesignationPrefix,
     statusOf: statusOf, guessUnmatched: guessUnmatched, addUnmatched: addUnmatchedActivity,
-    updateUnmatched: updateUnmatchedActivity, linkToCompany: linkActivityToCompany
+    updateUnmatched: updateUnmatchedActivity, linkToCompany: linkActivityToCompany,
+    // §신규 라운드(요구사항 2/3/5/6):
+    pendingStatusOf: pendingStatusOf, complete: completeActivity, pendingList: pendingList,
+    normCompanyKey: normCompanyKey, findExistingCompanyByName: findExistingCompanyByName,
+    extractContactHint: extractContactHint, extractPhoneHint: extractPhoneHint
   };
 })();
 </script>
@@ -8693,6 +8842,7 @@ ${text}
   'use strict';
   var input = document.getElementById('qrInput');
   var resultEl = document.getElementById('qrResult');
+  var pendingWrap = document.getElementById('qrPendingWrap');
   if(!input || !resultEl) return;
 
   function escapeHtml(s){
@@ -8700,13 +8850,33 @@ ${text}
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function localDateStr(ts){ var d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function fmtTime(ts){ var d = new Date(ts); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function fmtShort(ts){
+    var d = new Date(ts);
+    return (localDateStr(ts) === todayStr()) ? fmtTime(ts)
+      : (pad2(d.getMonth()+1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()));
+  }
 
   function clearResult(){ resultEl.innerHTML = ''; }
 
-  function showMatched(rec, companyName){
+  // §신규 라운드: 시공사 전화기록 저장 시 업체 메모에도 같은 내용을 한 줄 남긴다(요구사항 7).
+  // 기존 SHIN2_MEMO(targetType:'company')를 그대로 재사용 — 새 메모 저장소를 만들지 않고,
+  // addFor()는 항상 append만 한다(기존 메모를 지우거나 덮어쓰지 않음).
+  function appendCompanyMemo(companyId, activityText, originalText){
+    if(!companyId || !window.SHIN2_MEMO) return;
+    var body = (activityText && activityText.trim()) ? activityText.trim() : (originalText || '').trim();
+    if(!body) return;
+    window.SHIN2_MEMO.addFor('company', companyId, fmtTime(Date.now()) + ' ' + body);
+  }
+
+  function showMatched(companyName){
     resultEl.innerHTML = '<div class="qr-inline-ok">' + escapeHtml(companyName) + '에 기록했습니다.</div>';
     input.value = '';
     setTimeout(function(){ if(resultEl.firstChild) clearResult(); }, 3000);
+    renderPending();
   }
 
   function showAmbiguous(m){
@@ -8727,7 +8897,8 @@ ${text}
           ? m.originalText.slice(m.originalText.length - normText.length + normName.length).replace(/^[\s,:\-]+/, '').trim()
           : m.originalText;
         window.SHIN2_ACTIVITIES.add(co.id, m.originalText, rest);
-        showMatched(null, co.name);
+        appendCompanyMemo(co.id, rest, m.originalText);
+        showMatched(co.name);
       });
     });
     resultEl.querySelector('[data-cancel]').addEventListener('click', clearResult);
@@ -8736,7 +8907,8 @@ ${text}
   // §신규: "미등록 시공사 기록" — 매칭되는 업체가 없어도 저장을 막지 않는다. 규칙 기반으로
   // 업체명/특이사항을 추정해 미리 채워두고, 사용자가 확인·수정한 뒤 저장하면 companyId:null,
   // matchStatus:'unmatched' 레코드로 customerActivities에 그대로 기록된다(새 업체/새 저장소를
-  // 자동으로 만들지 않는다).
+  // 자동으로 만들지 않는다). §신규 라운드: 이 인라인 폼은 오직 "확신 낮은" 업체명 추정일
+  // 때만 뜬다(요구사항 5/11) — 팝업이 아닌 입력창 바로 아래 인라인 패널 그대로 유지한다.
   function showUnmatchedConfirm(originalText){
     var guess = window.SHIN2_ACTIVITIES.guessUnmatched(originalText);
     var html = '<div class="qr-unmatched">' +
@@ -8751,10 +8923,39 @@ ${text}
       var nameVal = resultEl.querySelector('#qrUnmatchedName').value.trim();
       var noteVal = resultEl.querySelector('#qrUnmatchedNote').value.trim();
       window.SHIN2_ACTIVITIES.addUnmatched(nameVal, noteVal, originalText);
-      showMatched(null, nameVal || '미등록 업체');
+      showMatched(nameVal || '미등록 업체');
     });
     resultEl.querySelector('[data-unmatched-cancel]').addEventListener('click', clearResult);
     // §9: 입력했던 원문은 그대로 유지한다(지우지 않음) — 취소해도 textarea 값은 남는다.
+  }
+
+  // §신규 라운드(요구사항 5/6): 확신 높은 미등록 업체명을 만나면, 팝업/수동입력 없이 즉시
+  // 최소 정보(업체명 + 뽑히면 담당자/직책/전화)로 새 업체를 만들고 그 업체로 기록을 붙인다.
+  // 자동 생성 직전에도 정규화 키로 한 번 더 기존 업체와 겹치는지 확인한다(요구사항 6,
+  // matchCompany가 이미 대부분 걸러내지만 이중 방어).
+  function tryAutoRegister(originalText, guess){
+    var ACT = window.SHIN2_ACTIVITIES;
+    var existing = ACT.findExistingCompanyByName(guess.companyName);
+    if(existing){
+      // 이미 있는 업체였다 — 새로 만들지 않고 그대로 그 업체에 붙인다(중복 생성 방지).
+      ACT.add(existing.id, originalText, guess.note);
+      appendCompanyMemo(existing.id, guess.note, originalText);
+      showMatched(existing.name);
+      return;
+    }
+    if(!window.SHIN2_COMPANIES || !window.SHIN2_COMPANIES.autoCreate){
+      showUnmatchedConfirm(originalText);
+      return;
+    }
+    var contact = ACT.extractContactHint(guess.note);
+    var phone = ACT.extractPhoneHint(originalText);
+    var newCo = window.SHIN2_COMPANIES.autoCreate({
+      name: guess.companyName, contactName: contact.contactName, position: contact.position, phone: phone
+    });
+    if(!newCo){ showUnmatchedConfirm(originalText); return; }
+    ACT.add(newCo.id, originalText, guess.note);
+    appendCompanyMemo(newCo.id, guess.note, originalText);
+    showMatched(newCo.name);
   }
 
   function handleEnter(){
@@ -8763,11 +8964,17 @@ ${text}
     var m = window.SHIN2_ACTIVITIES.matchCompany(text);
     if(m.status === 'matched'){
       window.SHIN2_ACTIVITIES.add(m.company.id, m.originalText, m.activityText);
-      showMatched(null, m.company.name);
+      appendCompanyMemo(m.company.id, m.activityText, m.originalText);
+      showMatched(m.company.name);
     } else if(m.status === 'ambiguous'){
       showAmbiguous(m);
     } else if(m.status === 'none'){
-      showUnmatchedConfirm(m.originalText);
+      var guess = window.SHIN2_ACTIVITIES.guessUnmatched(m.originalText);
+      if(guess.confidence === 'high' && guess.companyName){
+        tryAutoRegister(m.originalText, guess);
+      } else {
+        showUnmatchedConfirm(m.originalText);
+      }
     }
   }
 
@@ -8781,6 +8988,117 @@ ${text}
   // 호출한다. 별도의 저장 로직을 새로 만들지 않는다(중복 기록 방지).
   var saveBtn = document.getElementById('qrSaveBtn');
   if(saveBtn) saveBtn.addEventListener('click', function(){ handleEnter(); });
+
+  // ==========================================================================
+  // §신규 라운드: 인라인 미처리 목록(요구사항 1/2/3/4/10) — 저장 직후 확인을 팝업("전체
+  // 보기")이 아니라 이 목록이 담당한다. 데이터는 여전히 SHIN2_ACTIVITIES(customerActivities)
+  // 하나뿐이고, 여기서는 pendingList()/complete()/update()만 호출한다(새 저장소 없음).
+  // ==========================================================================
+  var pState = { expanded: false, editingId: null };
+  var PENDING_CAP = 5;
+
+  function pendingSummary(r){
+    var t = (r.activityText && r.activityText.trim()) ? r.activityText.trim() : (r.originalText || '').trim();
+    if(t.length > 40) t = t.slice(0, 40) + '…';
+    return t;
+  }
+
+  function renderPending(){
+    if(!pendingWrap || !window.SHIN2_ACTIVITIES) return;
+    var ACT = window.SHIN2_ACTIVITIES;
+    var companies = ACT.loadCompanies();
+    function findCo(id){ return companies.find(function(c){ return c && c.id === id; }); }
+    var all = ACT.pendingList();
+    if(!all.length){
+      pendingWrap.innerHTML = '';
+      return;
+    }
+    var visible = pState.expanded ? all : all.slice(0, PENDING_CAP);
+    var html = '<div class="qr-pending-head"><span class="qr-pending-title">미처리 ' + all.length + '건</span></div>';
+    html += visible.map(function(r){
+      var co = findCo(r.companyId);
+      var name = co ? co.name : '(삭제된 업체)';
+      var contact = co && co.contactName ? (co.contactName + (co.position ? ' ' + co.position : '')) : '';
+      if(pState.editingId === r.id){
+        return '<div class="qr-pending-row" data-id="' + escapeHtml(r.id) + '" style="flex-direction:column;align-items:stretch;">' +
+          '<div class="qr-pending-main"><span class="qr-pending-co">' + escapeHtml(name) + '</span>' +
+            (contact ? '<span class="qr-pending-contact">' + escapeHtml(contact) + '</span>' : '') + '</div>' +
+          '<div class="qr-pending-edit"><textarea id="qrPendingEditText" class="qr-unmatched-field" style="width:100%;min-height:52px;box-sizing:border-box;padding:7px 9px;font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;">' + escapeHtml(r.activityText || '') + '</textarea></div>' +
+          '<div class="qr-action-row" style="margin-top:6px;"><button type="button" class="ai-run-btn" data-pending-save-edit="' + escapeHtml(r.id) + '">저장</button>' +
+          '<button type="button" class="co-text-action" data-pending-cancel-edit="1">취소</button></div>' +
+        '</div>';
+      }
+      return '<div class="qr-pending-row" data-id="' + escapeHtml(r.id) + '">' +
+        '<div class="qr-pending-main">' +
+          '<span class="qr-pending-co">' + escapeHtml(name) + '</span>' +
+          (contact ? '<span class="qr-pending-contact">' + escapeHtml(contact) + '</span>' : '') +
+          '<div class="qr-pending-summary">' + escapeHtml(pendingSummary(r)) + '</div>' +
+        '</div>' +
+        '<span class="qr-pending-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
+        '<div class="qr-pending-actions">' +
+          '<button type="button" class="co-text-action" data-pending-edit="' + escapeHtml(r.id) + '">수정</button>' +
+          '<button type="button" class="ai-run-btn" data-pending-confirm="' + escapeHtml(r.id) + '">확인</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    if(!pState.expanded && all.length > PENDING_CAP){
+      html += '<button type="button" class="qr-pending-more-btn" data-pending-more="1">더 보기 (' + (all.length - PENDING_CAP) + '건 더)</button>';
+    } else if(pState.expanded && all.length > PENDING_CAP){
+      html += '<button type="button" class="qr-pending-more-btn" data-pending-more="1">접기</button>';
+    }
+    pendingWrap.innerHTML = html;
+    wirePending();
+  }
+
+  function wirePending(){
+    pendingWrap.querySelectorAll('[data-pending-confirm]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        window.SHIN2_ACTIVITIES.complete(btn.getAttribute('data-pending-confirm'));
+        renderPending();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-pending-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        pState.editingId = btn.getAttribute('data-pending-edit');
+        renderPending();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-pending-cancel-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        pState.editingId = null;
+        renderPending();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-pending-save-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-pending-save-edit');
+        var ta = document.getElementById('qrPendingEditText');
+        // originalText는 이 저장 경로에서 절대 건드리지 않는다(update가 activityText만 갱신).
+        window.SHIN2_ACTIVITIES.update(id, { activityText: ta ? ta.value.trim() : '' });
+        pState.editingId = null;
+        renderPending();
+      });
+    });
+    var moreBtn = pendingWrap.querySelector('[data-pending-more]');
+    if(moreBtn){
+      moreBtn.addEventListener('click', function(){
+        pState.expanded = !pState.expanded;
+        renderPending();
+      });
+    }
+  }
+
+  renderPending();
+
+  // 다른 탭(같은 origin의 CRM 등)에서 customerActivities/companies가 바뀌면 이 목록도
+  // 즉시 반영한다(§ localRev 가드가 걸린 클라우드 동기화 경로와 동일하게, 여기서는 읽기만
+  // 다시 한다 — 별도 쓰기 경로를 추가하지 않는다).
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e.detail && (e.detail.key === 'customerActivities' || e.detail.key === 'companies')) renderPending();
+  });
+  window.addEventListener('storage', function(e){
+    if(e.key === 'shin2-customer-activities-v1' || e.key === 'shin2-companies-staging') renderPending();
+  });
 })();
 </script>
 
