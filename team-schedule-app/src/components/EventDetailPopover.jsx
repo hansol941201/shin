@@ -22,11 +22,15 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
   const [mode, setMode] = useState('view'); // 'view' | 'reschedule-form'
   const [newStart, setNewStart] = useState(null);
   const [newEnd, setNewEnd] = useState(null);
+  const [actionError, setActionError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const start = new Date(event.start);
   const end = new Date(event.end);
   const dateLabel = `${start.getMonth() + 1}월 ${start.getDate()}일 (${'일월화수목금토'[start.getDay()]})`;
-  const timeLabel = `${formatHM(start.getHours() * 60 + start.getMinutes())} ~ ${formatHM(end.getHours() * 60 + end.getMinutes())}`;
+  const timeLabel = event.allDay
+    ? '종일'
+    : `${formatHM(start.getHours() * 60 + start.getMinutes())} ~ ${formatHM(end.getHours() * 60 + end.getMinutes())}`;
 
   const startOptions = useMemo(() => slotOptions(dayWorkStart, dayWorkEnd - 30), [dayWorkStart, dayWorkEnd]);
   const endOptions = useMemo(() => {
@@ -54,6 +58,30 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
   const isManager = role === 'manager';
   const isCoordinator = role === 'coordinator';
 
+  async function handleAccept() {
+    setActionError('');
+    setSubmitting(true);
+    const res = await acceptRequest(event.id);
+    setSubmitting(false);
+    if (res?.error) {
+      setActionError(res.error);
+      return;
+    }
+    onClose();
+  }
+
+  async function handleAcceptReschedule() {
+    setActionError('');
+    setSubmitting(true);
+    const res = await acceptReschedule(event.id);
+    setSubmitting(false);
+    if (res?.error) {
+      setActionError(res.error);
+      return;
+    }
+    onClose();
+  }
+
   return (
     <PopoverShell anchor={anchor} onClose={onClose} width={296}>
       <div className="pv-head">
@@ -78,18 +106,24 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
             </div>
           )}
 
+          {actionError && <div className="pv-error">{actionError}</div>}
+
           <div className="pv-actions">
             {isManager && event.status === 'pending' && (
               <>
-                <button className="pv-btn pv-btn-primary" onClick={() => { acceptRequest(event.id); onClose(); }}>수락</button>
-                <button className="pv-btn" onClick={beginReschedule}>시간변경</button>
-                <button className="pv-btn pv-btn-danger" onClick={() => { rejectRequest(event.id); onClose(); }}>거절</button>
+                <button className="pv-btn pv-btn-primary" onClick={handleAccept} disabled={submitting}>
+                  {submitting ? '처리 중…' : '수락'}
+                </button>
+                <button className="pv-btn" onClick={beginReschedule} disabled={submitting}>시간변경</button>
+                <button className="pv-btn pv-btn-danger" onClick={() => { rejectRequest(event.id); onClose(); }} disabled={submitting}>거절</button>
               </>
             )}
             {isCoordinator && event.status === 'reschedule_requested' && (
               <>
-                <button className="pv-btn pv-btn-primary" onClick={() => { acceptReschedule(event.id); onClose(); }}>수락</button>
-                <button className="pv-btn" onClick={() => { cancelReschedule(event.id); onClose(); }}>다른 시간 선택</button>
+                <button className="pv-btn pv-btn-primary" onClick={handleAcceptReschedule} disabled={submitting}>
+                  {submitting ? '처리 중…' : '수락'}
+                </button>
+                <button className="pv-btn" onClick={() => { cancelReschedule(event.id); onClose(); }} disabled={submitting}>다른 시간 선택</button>
               </>
             )}
             {isManager && event.status === 'reschedule_requested' && (

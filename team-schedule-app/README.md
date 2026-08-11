@@ -27,7 +27,9 @@
 같은 폴더의 `종료.bat`으로도 서버를 종료할 수 있습니다.
 
 공통: Node.js가 설치되어 있지 않으면 https://nodejs.org 에서 LTS 버전을 먼저
-설치해주세요. Google/Firebase 설정 없이도 데모 모드로 정상 동작합니다.
+설치해주세요. 아래 "Google Calendar 연동 설정"을 마치기 전까지는 빈 캘린더가
+보이며, 연동 없이 기능만 미리 보고 싶다면 설정(⚙) 팝오버의 "샘플 데이터 사용
+(개발용)"을 켜면 됩니다.
 
 ### macOS/Linux, 또는 수동 실행
 
@@ -37,38 +39,81 @@ npm install
 npm run dev
 ```
 
-브라우저에서 `http://localhost:5173` 접속. 별도 설정 없이 **데모 모드**로 동작하며
-샘플 일정(현재 주 월~금)과 승인대기/시간변경 예시가 미리 채워져 있습니다.
+브라우저에서 `http://localhost:5173` 접속.
 
-- 상단 우측 "코디네이터 / 팀장" 셀렉트로 역할을 바꿔가며 전체 흐름(요청 → 승인대기 →
-  수락/시간변경/거절 → 확정)을 테스트할 수 있습니다. (실 서비스에서는 Google
-  로그인 계정에 따라 역할이 자동으로 결정되어야 하며, 이 셀렉트는 데모/QA용입니다.)
-- 데이터는 브라우저 `localStorage`에 저장되어 새로고침해도 유지됩니다. 초기화하려면
-  브라우저 개발자도구에서 `localStorage.clear()`.
+---
 
-## 지금 데모 모드로 동작하는 이유
+## Google Calendar 연동 설정 (팀장님/관리자가 한 번만)
 
-이 프로젝트에는 실제 Google OAuth 클라이언트 ID와 Firebase 프로젝트 자격증명이
-없습니다(비밀값이므로 코드에 넣을 수 없습니다). 아래 두 서비스 어댑터가 그
-경계를 담당하며, 지금은 데모 데이터를 반환하도록 되어 있습니다.
+이 앱은 백엔드 서버 없이, 브라우저에서 Google Identity Services로 로그인해
+Google Calendar API를 직접 호출합니다. 비밀번호는 어떤 형태로도 저장하지
+않고, Google 계정 자체를 저장하지도 않습니다(로그인 세션은 탭을 닫으면
+사라지는 브라우저 sessionStorage에만 잠깐 보관됩니다).
 
-- `src/services/googleCalendar.js` — Google Calendar 읽기/쓰기 어댑터
-- `src/services/firebase.js` — Firestore 저장 어댑터 (지금은 localStorage로 대체)
+### 1) Google Cloud 프로젝트 준비 (딱 한 번만 하면 됩니다)
 
-### 실제 연동 체크리스트
+1. https://console.cloud.google.com 접속 → 새 프로젝트 생성(또는 기존 프로젝트 사용)
+2. **API 및 서비스 → 라이브러리**에서 `Google Calendar API` 검색 후 **사용 설정**
+3. **API 및 서비스 → OAuth 동의 화면**
+   - User Type: 조직 내부용이면 "내부", 아니면 "외부" 선택
+   - 앱 이름/지원 이메일 등 기본 정보만 입력
+   - 범위(Scopes) 추가: 아래 3개만 추가하면 됩니다(그 이상 필요 없음)
+     - `.../auth/calendar.readonly`
+     - `.../auth/calendar.events`
+     - `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`
+   - 테스트 사용자에 팀장님/코디네이터 Google 계정을 추가(앱을 "게시"하지 않고
+     테스트 상태로만 둬도 등록된 테스트 사용자는 바로 사용 가능합니다)
+4. **API 및 서비스 → 사용자 인증 정보 → 사용자 인증 정보 만들기 → OAuth 클라이언트 ID**
+   - 애플리케이션 유형: **웹 애플리케이션**
+   - **승인된 자바스크립트 원본**에 이 앱이 실제로 열리는 주소를 추가
+     - 로컬 개발: `http://localhost:5173` (포트가 자동으로 바뀌면 그 포트도 추가)
+     - 실제 배포 주소가 있다면 그 주소도 추가 (예: `https://schedule.example.com`)
+   - 리디렉션 URI는 필요 없습니다(입력하지 않아도 됩니다)
+5. 발급된 **클라이언트 ID**를 복사
 
-1. **Google Cloud Console**에서 OAuth 2.0 클라이언트(웹 애플리케이션) 생성 +
-   Calendar API 활성화 → `VITE_GOOGLE_CLIENT_ID` 발급
-2. **Firebase 프로젝트** 생성 → Authentication(Google 로그인) + Firestore 활성화 →
-   `.env.example`을 `.env.local`로 복사 후 `VITE_FIREBASE_*` 값 입력
-3. `googleCalendar.js`의 `fetchManagerEvents/createManagerEvent/updateManagerEvent`를
-   실제 `googleapis` Calendar v3 REST 호출로 교체 (파일 상단 주석에 엔드포인트 명시)
-4. `firebase.js`를 Firestore `collection('events')`의 `onSnapshot`/`setDoc` 호출로 교체
-5. 삼성 캘린더는 직접 제어하지 않습니다. 팀장님 기기에서 Google 계정 동기화가
-   켜져 있으면, Google Calendar에 생성된 확정 일정이 자동으로 삼성 캘린더에도
-   반영되는 구조를 그대로 활용합니다.
+### 2) 앱에 클라이언트 ID 설정
 
-비밀번호는 어떤 형태로도 저장하지 않습니다(Google OAuth만 사용).
+`team-schedule-app/.env.example`을 같은 폴더에 `.env.local`로 복사한 뒤:
+
+```
+VITE_GOOGLE_CLIENT_ID=여기에_복사한_클라이언트_ID
+```
+
+저장 후 개발 서버를 다시 시작하면(또는 `실행.bat`/바탕화면 아이콘을 다시 실행)
+헤더 오른쪽에 **"Google 캘린더 연결"** 버튼이 나타납니다.
+
+### 3) 팀장님 Google Calendar 공유 (코디네이터가 대신 일정을 넣으려면 필수)
+
+팀장님 Google Calendar(웹)에서:
+
+1. 왼쪽 "내 캘린더" 목록에서 공유할 캘린더에 마우스를 올리고 **⋮ → 설정 및 공유**
+2. **특정 사용자와 공유**에서 **사용자 추가**
+3. 코디네이터의 Google 계정 이메일 입력
+4. 권한을 **"일정 변경" (Make changes to events)** 이상으로 설정 — 이게 없으면
+   앱에서 수락을 눌러도 "이 캘린더에는 일정 등록 권한이 없습니다" 오류가 납니다
+5. 저장
+
+### 4) 앱에서 연결
+
+1. 코디네이터 계정으로 앱 접속 → 헤더의 **"Google 캘린더 연결"** 클릭 → Google
+   로그인 팝업에서 동의
+2. 헤더의 ⚙(설정) 클릭 → **팀장 캘린더**에서 방금 공유받은 캘린더 선택
+   (기본 캘린더를 임의로 쓰지 않고, 실제로 접근 가능한 캘린더 목록에서 고릅니다)
+3. 선택 즉시 그 캘린더의 실제 일정과 빈 시간이 표시됩니다
+
+### Samsung Calendar
+
+Samsung Calendar를 이 앱이 직접 제어하지는 않습니다. 팀장님 휴대폰에서 Samsung
+Calendar가 같은 Google 계정과 동기화되어 있으면, 이 앱이 Google Calendar에
+생성한 확정 일정이 동기화를 통해 Samsung Calendar에도 자동으로 보이는 구조를
+그대로 활용합니다.
+
+### 권한 범위(scope)
+
+일정 조회에 필요한 `calendar.readonly`, 확정 일정 생성에 필요한
+`calendar.events`, 헤더에 로그인 이메일을 보여주기 위한 최소 프로필 정보
+(`openid`, `email`, `profile`)만 요청합니다. 캘린더 자체를 삭제/공유설정
+변경할 수 있는 더 넓은 권한은 요청하지 않습니다.
 
 ## 핵심 데이터 모델
 
@@ -77,30 +122,57 @@ npm run dev
   id, title, start, end, location, memo,
   requester, manager,
   status: 'pending' | 'confirmed' | 'reschedule_requested' | 'rejected',
-  googleCalendarEventId, createdAt, updatedAt,
+  googleEventId, googleCalendarEventId, calendarId,
+  createdAt, updatedAt,
   proposedStart?, proposedEnd?   // 팀장이 시간변경을 제안했을 때만
+  allDay?                        // Google 하루종일 일정인 경우 true
+  source: 'google' | 'platform'  // 'google' = Calendar에서 읽어온 확정 일정
 }
 ```
 
-상태 전이: `요청(pending) → 팀장 수락 → confirmed` /
-`팀장 시간변경 → reschedule_requested → 코디네이터 수락 → confirmed` /
+상태 전이: `요청(pending) → 팀장 수락 → Google Calendar에 실제 생성 → confirmed` /
+`팀장 시간변경 → reschedule_requested → 코디네이터 수락 → Google Calendar에 실제 생성 → confirmed` /
 `팀장 거절 → rejected(빈 시간으로 복귀)`.
+
+화면에 보이는 일정 목록은 **Google Calendar에서 읽어온 확정 일정**과 **이 앱이
+로컬로 들고 있는 승인대기/시간변경 요청**을 합쳐서 보여줍니다(이미 Google에
+생성되어 다음 조회에 잡히는 항목은 중복 표시되지 않도록 자동으로 걸러집니다).
 
 ## 구현된 기능
 
 - 주간 캘린더 기본 화면 (월~금, 09~18시, 1시간 단위 라벨 + 30분 점선 그리드)
-- 기존(확정) 일정 표시, 연속된 빈 시간을 하나의 노란 블록으로 병합 표시
+- **Google Calendar 로그인(Google Identity Services) + 팀장 캘린더 선택**
+- **선택한 캘린더의 실제 일정 조회**(주간/월간 각각 보고 있는 기간만, 반복 일정
+  포함, 하루종일 일정은 "종일"로 표시), 그 데이터를 기준으로 실제 빈 시간 자동 계산
+- 연속된 빈 시간을 하나의 노란 블록으로 병합 표시, 월간뷰도 동일하게 빈 시간 표시
 - 점심시간(기본 12~13시) 회색 처리, 근무시간/점심시간 설정 팝오버
 - 빈 시간 클릭 또는 드래그(30분 단위 스냅) → 클릭 위치 근처 팝오버로 일정 요청
-- 요청 제출 시점에 빈 시간 재확인(동시성/중복 방지)
-- 승인대기 → 팀장 수락/시간변경/거절, 코디네이터의 시간변경 재확인(수락/다른 시간 선택)
-- 월간보기(날짜별 요약, 클릭 시 해당 주간으로 이동)
+  (이 시점에는 아직 Google Calendar에 쓰지 않고 로컬 승인대기 상태로만 저장)
+- 요청 제출 시점 + **팀장 수락 시점 두 번** Google Calendar를 다시 조회해 그 사이
+  다른 일정이 생기지 않았는지 확인(동시성/중복 방지)
+- **팀장 수락 시에만 실제 `events.insert` 호출로 Google Calendar에 확정 일정 생성**,
+  성공한 뒤에만 화면 상태를 confirmed로 전환. 쓰기 권한이 없으면 한글 오류 메시지 표시
+- 팀장 시간변경/거절, 코디네이터의 시간변경 재확인(수락/다른 시간 선택)
+- 상단 **↻ 새로고침** 버튼 + 주/월 이동 시 자동 재조회로 Google Calendar에서 직접
+  추가/수정/삭제한 내용을 앱에도 반영(수동 새로고침 기반 — 실시간 push는 아직 아님)
+- 월간보기(날짜별 요약 + 빈 시간 표시, 클릭 시 해당 주간으로 이동)
 - 오늘 날짜 강조 + 실시간 빨간 현재시간 선
 - 팀장이 모바일로 접속 시 수락/거절/시간변경에 최적화된 리스트 화면으로 전환
 - 상태별 색상 규칙(빈 시간=노랑, 확정=연한 남색+좌측선, 승인대기=주황 점선) + 우측 상단 미니 범례
+- **데모 모드(개발용 옵션)**: 설정 팝오버에서 켜면 Google 연동 없이도 샘플 데이터로
+  전체 흐름(요청 → 승인대기 → 수락/시간변경/거절 → 확정)을 테스트할 수 있습니다.
+  Google 연동이 켜져 있으면 데모 데이터는 사용되지 않습니다.
 
-## 아직 실제 연동이 필요한 부분 (자격증명 필요)
+## 알려진 제한 / 다음 단계
 
-- Google OAuth 로그인 UI 자체 (현재는 역할 셀렉트로 대체)
-- Google Calendar 실제 읽기/쓰기, 양방향 동기화
-- Firestore 실 저장 (현재는 localStorage)
+- 로그인 세션은 탭 안에서만 유지됩니다(refresh token 없음, 순수 브라우저 토큰
+  클라이언트 방식). 액세스 토큰이 만료되면(보통 1시간) 다시 "Google 캘린더 연결"을
+  눌러야 합니다.
+- 여러 날짜에 걸친 하루종일(멀티데이 all-day) 일정은 시작일에만 표시됩니다.
+- Google → 앱 동기화는 "새로고침 버튼 / 화면 진입 / 주·월 이동" 시점에만
+  일어나는 폴링 방식입니다. Google Calendar Push Notifications(watch API)로
+  실시간 반영하도록 확장할 수 있는 구조(`src/services/googleCalendar.js`)로
+  분리되어 있습니다.
+- Firestore 실 저장은 아직입니다(`src/services/firebase.js`가 현재는
+  localStorage로 대체 — 승인대기/시간변경 같은 로컬 상태만 해당하며, 확정 일정
+  자체는 이미 실제 Google Calendar에 저장됩니다).

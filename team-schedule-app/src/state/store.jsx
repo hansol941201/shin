@@ -1,9 +1,24 @@
-import React, { createContext, useCallback, useContext, useMemo, useReducer, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
 import { buildSampleEvents } from './sampleData.js';
-import { DEFAULT_SETTINGS, getWeekStart } from '../utils/time.js';
+import { DEFAULT_SETTINGS, getWeekStart, addDays } from '../utils/time.js';
 import { makeId } from '../utils/id.js';
 import { loadPersistedEvents, persistEvents } from '../services/firebase.js';
-import { createManagerEvent, updateManagerEvent } from '../services/googleCalendar.js';
+import * as googleCalendarApi from '../services/googleCalendar.js';
+import {
+  GOOGLE_CONFIGURED,
+  requestAccessToken,
+  revokeAccessToken,
+  fetchUserInfo,
+  saveSession,
+  loadSession,
+  clearSession,
+} from '../services/googleAuth.js';
+import {
+  getDemoModeFlag,
+  setDemoModeFlag,
+  getManagerCalendarId,
+  setManagerCalendarId as persistManagerCalendarId,
+} from '../services/localSettings.js';
 
 const AppContext = createContext(null);
 
@@ -82,29 +97,180 @@ export function AppProvider({ children }) {
   const [role, setRole] = useState('coordinator'); // 'coordinator' | 'manager'
   const [view, setView] = useState('week'); // 'week' | 'month'
   // cursorDate: 사용자가 현재 보고 있는 기준 날짜. 주간뷰는 이 날짜가 속한 주,
-  // 월간뷰는 이 날짜가 속한 달을 보여준다. (주 시작일을 직접 들고 있으면 월 이동 시
-  // "그 달 1일이 속한 주"로 정확히 되돌아오지 못하는 경계 버그가 생겨 cursorDate로 분리함)
+  // 월간뷰는 이 날짜가 속한 달을 보여준다.
   const [cursorDate, setCursorDate] = useState(() => new Date());
   const currentWeekStart = useMemo(() => getWeekStart(cursorDate), [cursorDate]);
 
-  const [events, dispatch] = useReducer(eventsReducer, null, () => {
-    const persisted = loadPersistedEvents();
-    if (persisted && Array.isArray(persisted) && persisted.length) return persisted;
-    return buildSampleEvents(getWeekStart(new Date()));
-  });
+  // ---------------------------------------------------------------------
+  // 로컬(플랫폼) 일정: 승인대기/시간변경/거절, 그리고 데모 모드일 때만 쓰는
+  // 샘플 확정 일정. 실제 Google 연동이 켜져 있으면 "확정" 일정은 Google
+  // 쪽 데이터가 우선이므로, 아래 REPLACE_ALL 판단에서 데모 여부를 본다.
+  // ---------------------------------------------------------------------
+  const [demoMode, setDemoModeState] = useState(getDemoModeFlag);
 
-  const persist = useCallback((next) => {
-    persistEvents(next);
-  }, []);
+  const [localEvents, dispatch] = useReducer(eventsReducer, null, () => {
+    const persisted = loadPersistedEvents();
+    if (persisted && Array.isArray(persisted)) return persisted;
+    return getDemoModeFlag() ? buildSampleEvents(getWeekStart(new Date())) : [];
+  });
 
   const dispatchAndPersist = useCallback((action) => {
     dispatch(action);
   }, []);
 
-  // events 변경 시마다 저장(데모: localStorage / 운영: Firestore로 교체)
-  React.useEffect(() => {
-    persist(events);
-  }, [events, persist]);
+  useEffect(() => {
+    persistEvents(localEvents);
+  }, [localEvents]);
+
+  const setDemoMode = useCallback(
+    (next) => {
+      setDemoModeState(next);
+      setDemoModeFlag(next);
+      dispatchAndPersist({
+        type: 'REPLACE_ALL',
+        events: next ? buildSampleEvents(getWeekStart(new Date())) : [],
+      });
+    },
+    [dispatchAndPersist]
+  );
+
+  // ---------------------------------------------------------------------
+  // Google 로그인 상태
+  // ---------------------------------------------------------------------
+  const [googleSignedIn, setGoogleSignedIn] = useState(false);
+  const [accessToken, setAccessToken] = useState(null);
+  const [googleUserEmail, setGoogleUserEmail] = useState('');
+  const [googleAuthLoading, setGoogleAuthLoading] = useState(false);
+  const [googleAuthError, setGoogleAuthError] = useState('');
+
+  const [calendars, setCalendars] = useState([]);
+  const [calendarsLoading, setCalendarsLoading] = useState(false);
+  const [calendarsError, setCalendarsError] = useState('');
+  const [managerCalendarId, setManagerCalendarIdState] = useState(getManagerCalendarId);
+
+  const [googleEvents, setGoogleEvents] = useState([]);
+  const [googleEventsLoading, setGoogleEventsLoading] = useState(false);
+  const [googleEventsError, setGoogleEventsError] = useState('');
+
+  const googleActive = GOOGLE_CONFIGURED && googleSignedIn && Boolean(managerCalendarId) && Boolean(accessToken);
+
+  const loadCalendars = useCallback(async (token) => {
+    const tok = token;
+    if (!tok) return;
+    setCalendarsLoading(true);
+    setCalendarsError('');
+    const res = await googleCalendarApi.fetchCalendarList(tok);
+    setCalendarsLoading(false);
+    if (!res.ok) {
+      setCalendarsError(res.message);
+      return;
+    }
+    setCalendars(res.calendars);
+  }, []);
+
+  // 탭을 새로고침해도(같은 세션 안에서는) 다시 로그인하지 않도록 세션 복원 시도
+  useEffect(() => {
+    const session = loadSession();
+    if (!session) return;
+    setAccessToken(session.accessToken);
+    setGoogleUserEmail(session.email || '');
+    setGoogleSignedIn(true);
+    loadCalendars(session.accessToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const signInGoogle = useCallback(async () => {
+    setGoogleAuthLoading(true);
+    setGoogleAuthError('');
+    try {
+      const response = await requestAccessToken({ prompt: 'consent' });
+      const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
+      const info = await fetchUserInfo(response.access_token);
+      const session = { accessToken: response.access_token, expiresAt, email: info?.email || '' };
+      saveSession(session);
+      setAccessToken(session.accessToken);
+      setGoogleUserEmail(session.email);
+      setGoogleSignedIn(true);
+      await loadCalendars(session.accessToken);
+    } catch (err) {
+      setGoogleAuthError('Google 로그인에 실패했거나 취소되었습니다.');
+    } finally {
+      setGoogleAuthLoading(false);
+    }
+  }, [loadCalendars]);
+
+  const signOutGoogle = useCallback(async () => {
+    await revokeAccessToken(accessToken);
+    clearSession();
+    setAccessToken(null);
+    setGoogleUserEmail('');
+    setGoogleSignedIn(false);
+    setCalendars([]);
+    setGoogleEvents([]);
+    setCalendarsError('');
+    setGoogleEventsError('');
+  }, [accessToken]);
+
+  const selectManagerCalendar = useCallback((id) => {
+    setManagerCalendarIdState(id);
+    persistManagerCalendarId(id);
+  }, []);
+
+  // ---------------------------------------------------------------------
+  // 현재 보고 있는 주간/월간 범위의 Google 일정 조회
+  // ---------------------------------------------------------------------
+  const visibleRange = useMemo(() => {
+    if (view === 'month') {
+      const monthAnchor = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1);
+      const gridStart = getWeekStart(monthAnchor);
+      return { start: gridStart, end: addDays(gridStart, 42) };
+    }
+    return { start: currentWeekStart, end: addDays(currentWeekStart, 7) };
+  }, [view, cursorDate, currentWeekStart]);
+
+  const fetchGoogleEvents = useCallback(async () => {
+    if (!googleActive) return;
+    setGoogleEventsLoading(true);
+    setGoogleEventsError('');
+    const res = await googleCalendarApi.fetchEvents({
+      accessToken,
+      calendarId: managerCalendarId,
+      timeMinISO: visibleRange.start.toISOString(),
+      timeMaxISO: visibleRange.end.toISOString(),
+      settings,
+    });
+    setGoogleEventsLoading(false);
+    if (!res.ok) {
+      setGoogleEventsError(res.message);
+      if (res.code === 'UNAUTHORIZED') {
+        // 토큰이 만료된 상태 -> 로그인 정보 초기화(사용자가 다시 연결하도록)
+        clearSession();
+        setAccessToken(null);
+        setGoogleSignedIn(false);
+      }
+      return;
+    }
+    setGoogleEvents(res.events);
+  }, [googleActive, accessToken, managerCalendarId, visibleRange, settings]);
+
+  useEffect(() => {
+    fetchGoogleEvents();
+  }, [fetchGoogleEvents]);
+
+  // 화면에 보여줄 최종 일정 목록: Google에서 가져온 확정 일정 + 우리 쪽
+  // 승인대기/시간변경 요청. 이미 Google 쪽에서 확인된(confirmed) 로컬
+  // 레코드는 중복 표시되지 않도록 제외한다.
+  const events = useMemo(() => {
+    if (!googleActive) return localEvents;
+    const platformVisible = localEvents.filter((e) => {
+      if (e.status === 'rejected') return false;
+      if (e.status === 'confirmed') {
+        return !googleEvents.some((g) => g.googleEventId && g.googleEventId === e.googleCalendarEventId);
+      }
+      return true;
+    });
+    return [...googleEvents, ...platformVisible];
+  }, [googleActive, googleEvents, localEvents]);
 
   const addRequest = useCallback((draft) => {
     const now = new Date().toISOString();
@@ -127,10 +293,54 @@ export function AppProvider({ children }) {
     return event;
   }, [dispatchAndPersist]);
 
-  const acceptRequest = useCallback(async (id) => {
-    const res = await createManagerEvent();
-    dispatchAndPersist({ type: 'ACCEPT_REQUEST', id, googleCalendarEventId: res.googleCalendarEventId });
-  }, [dispatchAndPersist]);
+  // 팀장 수락: Google 연동이 켜져 있으면 (1) 그 사이 다른 일정이 생기지
+  // 않았는지 재확인 -> (2) 실제 Google Calendar에 이벤트 생성 -> (3) 성공
+  // 시에만 confirmed로 전환한다. 연동이 꺼져 있으면(데모) 기존처럼 즉시
+  // 확정 처리한다.
+  const acceptRequest = useCallback(
+    async (id) => {
+      const target = localEvents.find((e) => e.id === id);
+      if (!target) return { error: '요청을 찾을 수 없습니다.' };
+
+      if (!googleActive) {
+        dispatchAndPersist({ type: 'ACCEPT_REQUEST', id, googleCalendarEventId: `demo_${id}` });
+        return { ok: true };
+      }
+
+      const conflict = await googleCalendarApi.hasConflict({
+        accessToken,
+        calendarId: managerCalendarId,
+        startISO: target.start,
+        endISO: target.end,
+      });
+      if (!conflict.ok) {
+        if (conflict.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: conflict.message };
+      }
+      if (conflict.conflict) {
+        return { error: '해당 시간에 새로운 일정이 등록되어 있습니다.\n다른 시간을 선택해주세요.' };
+      }
+
+      const created = await googleCalendarApi.createEvent({
+        accessToken,
+        calendarId: managerCalendarId,
+        title: target.title,
+        location: target.location,
+        description: target.memo,
+        startISO: target.start,
+        endISO: target.end,
+      });
+      if (!created.ok) {
+        if (created.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: created.message };
+      }
+
+      dispatchAndPersist({ type: 'ACCEPT_REQUEST', id, googleCalendarEventId: created.googleEventId });
+      fetchGoogleEvents();
+      return { ok: true };
+    },
+    [localEvents, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+  );
 
   const rejectRequest = useCallback((id) => {
     dispatchAndPersist({ type: 'REJECT_REQUEST', id });
@@ -140,10 +350,51 @@ export function AppProvider({ children }) {
     dispatchAndPersist({ type: 'PROPOSE_RESCHEDULE', id, proposedStart, proposedEnd });
   }, [dispatchAndPersist]);
 
-  const acceptReschedule = useCallback(async (id) => {
-    const res = await createManagerEvent();
-    dispatchAndPersist({ type: 'ACCEPT_RESCHEDULE', id, googleCalendarEventId: res.googleCalendarEventId });
-  }, [dispatchAndPersist]);
+  // 코디네이터가 팀장의 시간변경 제안을 수락하는 경우도 동일하게 처리한다.
+  const acceptReschedule = useCallback(
+    async (id) => {
+      const target = localEvents.find((e) => e.id === id);
+      if (!target) return { error: '요청을 찾을 수 없습니다.' };
+
+      if (!googleActive) {
+        dispatchAndPersist({ type: 'ACCEPT_RESCHEDULE', id, googleCalendarEventId: `demo_${id}` });
+        return { ok: true };
+      }
+
+      const conflict = await googleCalendarApi.hasConflict({
+        accessToken,
+        calendarId: managerCalendarId,
+        startISO: target.proposedStart,
+        endISO: target.proposedEnd,
+      });
+      if (!conflict.ok) {
+        if (conflict.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: conflict.message };
+      }
+      if (conflict.conflict) {
+        return { error: '해당 시간에 새로운 일정이 등록되어 있습니다.\n다른 시간을 선택해주세요.' };
+      }
+
+      const created = await googleCalendarApi.createEvent({
+        accessToken,
+        calendarId: managerCalendarId,
+        title: target.title,
+        location: target.location,
+        description: target.memo,
+        startISO: target.proposedStart,
+        endISO: target.proposedEnd,
+      });
+      if (!created.ok) {
+        if (created.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: created.message };
+      }
+
+      dispatchAndPersist({ type: 'ACCEPT_RESCHEDULE', id, googleCalendarEventId: created.googleEventId });
+      fetchGoogleEvents();
+      return { ok: true };
+    },
+    [localEvents, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+  );
 
   const cancelReschedule = useCallback((id) => {
     dispatchAndPersist({ type: 'CANCEL_RESCHEDULE', id });
@@ -171,6 +422,26 @@ export function AppProvider({ children }) {
       proposeReschedule,
       acceptReschedule,
       cancelReschedule,
+      // Google 연동
+      googleConfigured: GOOGLE_CONFIGURED,
+      googleActive,
+      googleSignedIn,
+      googleUserEmail,
+      googleAuthLoading,
+      googleAuthError,
+      signInGoogle,
+      signOutGoogle,
+      calendars,
+      calendarsLoading,
+      calendarsError,
+      managerCalendarId,
+      selectManagerCalendar,
+      googleEventsLoading,
+      googleEventsError,
+      refreshGoogleEvents: fetchGoogleEvents,
+      // 데모 모드(개발용)
+      demoMode,
+      setDemoMode,
     }),
     [
       settings,
@@ -186,6 +457,23 @@ export function AppProvider({ children }) {
       proposeReschedule,
       acceptReschedule,
       cancelReschedule,
+      googleActive,
+      googleSignedIn,
+      googleUserEmail,
+      googleAuthLoading,
+      googleAuthError,
+      signInGoogle,
+      signOutGoogle,
+      calendars,
+      calendarsLoading,
+      calendarsError,
+      managerCalendarId,
+      selectManagerCalendar,
+      googleEventsLoading,
+      googleEventsError,
+      fetchGoogleEvents,
+      demoMode,
+      setDemoMode,
     ]
   );
 
@@ -197,6 +485,3 @@ export function useApp() {
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
 }
-
-// unused import guard removal helper (kept for clarity of intent)
-void updateManagerEvent;

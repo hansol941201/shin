@@ -7,6 +7,16 @@ const WEEKDAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
 function ApprovalCard({ event }) {
   const { acceptRequest, rejectRequest, proposeReschedule } = useApp();
   const [changing, setChanging] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleAccept() {
+    setError('');
+    setSubmitting(true);
+    const res = await acceptRequest(event.id);
+    setSubmitting(false);
+    if (res?.error) setError(res.error);
+  }
 
   const start = new Date(event.start);
   const end = new Date(event.end);
@@ -41,11 +51,15 @@ function ApprovalCard({ event }) {
         <div className="approval-pending-note">코디네이터 응답 대기 중</div>
       )}
 
+      {error && <div className="pv-error">{error}</div>}
+
       {event.status === 'pending' && !changing && (
         <div className="approval-actions">
-          <button className="pv-btn pv-btn-primary" onClick={() => acceptRequest(event.id)}>수락</button>
-          <button className="pv-btn" onClick={() => setChanging(true)}>시간변경</button>
-          <button className="pv-btn pv-btn-danger" onClick={() => rejectRequest(event.id)}>거절</button>
+          <button className="pv-btn pv-btn-primary" onClick={handleAccept} disabled={submitting}>
+            {submitting ? '처리 중…' : '수락'}
+          </button>
+          <button className="pv-btn" onClick={() => setChanging(true)} disabled={submitting}>시간변경</button>
+          <button className="pv-btn pv-btn-danger" onClick={() => rejectRequest(event.id)} disabled={submitting}>거절</button>
         </div>
       )}
 
@@ -73,19 +87,32 @@ function ApprovalCard({ event }) {
 // 코디네이터가 팀장의 시간변경 제안에 응답하는 카드(모바일에서 코디네이터도 사용 가능)
 function ResponseCard({ event }) {
   const { acceptReschedule, cancelReschedule } = useApp();
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const start = new Date(event.start);
   const proposed = new Date(event.proposedStart);
   const sMin = start.getHours() * 60 + start.getMinutes();
   const pMin = proposed.getHours() * 60 + proposed.getMinutes();
+
+  async function handleAccept() {
+    setError('');
+    setSubmitting(true);
+    const res = await acceptReschedule(event.id);
+    setSubmitting(false);
+    if (res?.error) setError(res.error);
+  }
 
   return (
     <div className="approval-card">
       <div className="approval-card-title">{event.title}</div>
       <div className="approval-pending-note">팀장님이 시간을 변경했습니다.</div>
       <div className="approval-card-time">{formatHM(sMin)} → {formatHM(pMin)}</div>
+      {error && <div className="pv-error">{error}</div>}
       <div className="approval-actions">
-        <button className="pv-btn pv-btn-primary" onClick={() => acceptReschedule(event.id)}>수락</button>
-        <button className="pv-btn" onClick={() => cancelReschedule(event.id)}>다른 시간 선택</button>
+        <button className="pv-btn pv-btn-primary" onClick={handleAccept} disabled={submitting}>
+          {submitting ? '처리 중…' : '수락'}
+        </button>
+        <button className="pv-btn" onClick={() => cancelReschedule(event.id)} disabled={submitting}>다른 시간 선택</button>
       </div>
     </div>
   );

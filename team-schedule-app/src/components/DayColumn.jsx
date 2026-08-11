@@ -141,7 +141,7 @@ export default function DayColumn({ day, events, settings, isToday, now, onCreat
           >
             {STATUS_BADGE[ev.status] && <span className="event-badge">{STATUS_BADGE[ev.status]}</span>}
             {ev.status === 'confirmed' && <span className="event-check">✓</span>}
-            <div className="event-time">{formatHM(s)}–{formatHM(en)}</div>
+            <div className="event-time">{ev.allDay ? '종일' : `${formatHM(s)}–${formatHM(en)}`}</div>
             <div className="event-title">{ev.title}</div>
             {ev.location && <div className="event-location">{ev.location}</div>}
           </div>
