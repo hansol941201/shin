@@ -284,7 +284,19 @@ export function AppProvider({ children }) {
     setGoogleAuthLoading(true);
     setGoogleAuthError('');
     try {
-      const response = await requestAccessToken({ prompt: 'consent' });
+      // 버튼 클릭은 실제 사용자 제스처이므로(페이지 로드 시 자동 시도와 달리
+      // 팝업 차단에 걸리지 않는다) 먼저 조용히(prompt: '') 재사용을 시도한다.
+      // 이미 이 브라우저에 Google 로그인이 되어 있고 이 앱에 동의한 이력이
+      // 있으면, 무거운 계정 선택/동의 화면 없이 거의 즉시 성공한다. 그
+      // 조건이 하나라도 안 맞아 실패할 때만 정식 동의 화면(prompt:
+      // 'consent')으로 넘어간다 — 최초 연결이거나 권한이 철회된 경우.
+      let response;
+      try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('silent-reauth-timeout')), 6000));
+        response = await Promise.race([requestAccessToken({ prompt: '' }), timeout]);
+      } catch {
+        response = await requestAccessToken({ prompt: 'consent' });
+      }
       const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
       const info = await fetchUserInfo(response.access_token);
       const session = { accessToken: response.access_token, expiresAt, email: info?.email || '' };
