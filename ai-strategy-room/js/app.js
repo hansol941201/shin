@@ -804,5 +804,12 @@ els.versionsBody.addEventListener('click', (e) => {
   refreshMemoryManageBtn();
   await warmupConnStatus();   // 콜드 스타트 지연을 감안해 초반에는 여러 번 재확인
   // .bat으로 실행한 경우에도 창을 오래 켜두면 연결 상태가 바뀔 수 있으니 주기적으로 재확인한다.
-  setInterval(refreshConnStatus, 15000);
+  // 단, 회의/보완이 진행 중일 때는 건너뛴다 — 로컬 서버(run.ps1)는 한 번에 요청
+  // 하나만 처리하므로, claude 응답을 기다리는 동안에는 이 상태확인 요청 자체가
+  // 응답을 못 받고 타임아웃돼서 "연결 안 됨"으로 잘못 표시될 수 있다(실제로는
+  // 서버가 바쁠 뿐 정상 동작 중임 — 오탐 방지).
+  setInterval(() => {
+    if (isMeetingRunning || isRefining) return;
+    refreshConnStatus();
+  }, 15000);
 })();

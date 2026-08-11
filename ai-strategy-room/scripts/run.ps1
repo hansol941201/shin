@@ -63,7 +63,36 @@ function Show-FatalAndExit($lines) {
     Write-Host ""
     Write-Host "이 창은 닫아도 되지만, 문제를 해결한 뒤 AI전략회의실.bat 을 다시 실행해주세요."
     Write-Host "(같은 폴더의 logs\run.log 파일에 자세한 기록이 남습니다 — 문의 시 함께 보내주시면 원인 파악에 도움이 됩니다.)"
+    Write-Host ""
+    Write-Host "아무 키나 누르면 종료합니다."
     Write-Log '===== 종료 (오류) ====='
+    # .bat 쪽의 pause에만 의존하지 않고 여기서도 직접 키 입력을 기다린다 —
+    # 어떤 경로로 이 함수가 호출되든 창이 원인 설명 없이 바로 닫히지 않게 하기 위함.
+    try { [void][System.Console]::ReadKey($true) } catch { Start-Sleep -Seconds 20 }
+    exit 1
+}
+
+# 요청 루프 실행 중 예기치 못한 예외가 발생했을 때(=claude 호출 실패가 아니라
+# run.ps1/서버 자체가 위험해지는 진짜 치명적 상황) 원인을 보여주고 키 입력을
+# 기다린 뒤 종료한다. claude -p 실행 실패는 Invoke-ClaudeComplete 안에서 항상
+# 잡아서 정상 응답(ok:false)으로 돌려주므로 여기까지 올라오지 않는다 —
+# 이 함수는 그 외의(리스너 자체 문제 등) 정말 예상 못한 경우를 위한 최종 안전망이다.
+function Show-UnexpectedFatalAndExit($errorRecord) {
+    $errDetail = "$($errorRecord.Exception.GetType().FullName): $($errorRecord.Exception.Message)"
+    Write-Log "===== 치명적 오류로 서버 종료 ====="
+    Write-Log "오류: $errDetail"
+    Write-Log "스택 추적: $($errorRecord.ScriptStackTrace)"
+    Write-Host ""
+    Write-Err2 "======================================================"
+    Write-Err2 "[FATAL ERROR]"
+    Write-Err2 "$($errorRecord.Exception.Message)"
+    Write-Host ""
+    Write-Err2 "로그:"
+    Write-Err2 "logs\run.log"
+    Write-Err2 "======================================================"
+    Write-Host ""
+    Write-Host "아무 키나 누르면 종료합니다."
+    try { [void][System.Console]::ReadKey($true) } catch { Start-Sleep -Seconds 20 }
     exit 1
 }
 
@@ -203,6 +232,12 @@ if (-not (Test-ClaudeLoggedIn)) {
 Write-Info "[4/4] 로컬 서버 시작 중... ($BaseUrl)"
 
 # --- claude -p 호출 헬퍼 -------------------------------------------------
+# 중요: 이 함수는 절대로 예외를 밖으로 던지지 않는다(끝에 catch-all 있음).
+# claude -p 호출이 어떤 이유로 실패하든 항상 @{ok=$false; message=...} 형태로만
+# 반환한다 — claude 프로세스가 죽거나 예외가 나도 로컬 서버(요청 루프) 자체는
+# 절대 죽지 않도록 하는 최종 방어선이다. 대신 모든 단계(시작시간/종료시간/
+# ExitCode/stdout·stderr 전체/타임아웃 여부/예외 상세)를 logs\run.log에 남겨서
+# 문제가 재발해도 원인을 바로 확인할 수 있게 한다.
 function Invoke-ClaudeComplete {
     param(
         [string]$SystemText,
@@ -210,14 +245,20 @@ function Invoke-ClaudeComplete {
         [bool]$AllowWebSearch
     )
 
+    $callId = [guid]::NewGuid().ToString('N').Substring(0, 8)
     $tempDir = Join-Path $env:TEMP 'ai-strategy-room'
-    if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir | Out-Null }
-    $sysFile = Join-Path $tempDir ("sys-" + [guid]::NewGuid().ToString('N') + ".txt")
-
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($sysFile, $SystemText, $utf8NoBom)
+    $sysFile = $null
+    $proc = $null
+    $outSub = $null
+    $errSub = $null
 
     try {
+        if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
+        $sysFile = Join-Path $tempDir ("sys-" + [guid]::NewGuid().ToString('N') + ".txt")
+
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($sysFile, $SystemText, $utf8NoBom)
+
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = $claudeCmd.Source
         $argParts = @(
@@ -253,7 +294,12 @@ function Invoke-ClaudeComplete {
         $outSub = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action $outAction -MessageData $outSb
         $errSub = Register-ObjectEvent -InputObject $proc -EventName ErrorDataReceived -Action $outAction -MessageData $errSb
 
+        $startTime = Get-Date
+        Write-Log "[$callId] claude -p 호출 시작 (webSearch=$AllowWebSearch)"
+
         [void]$proc.Start()
+        $claudePid = $proc.Id
+        Write-Log "[$callId] 프로세스 시작됨 (PID=$claudePid, 시작시각=$($startTime.ToString('yyyy-MM-dd HH:mm:ss')))"
         $proc.BeginOutputReadLine()
         $proc.BeginErrorReadLine()
 
@@ -266,33 +312,59 @@ function Invoke-ClaudeComplete {
         # (짧게 잡으면 실제로는 정상 진행 중인데 타임아웃으로 끊겨 "실패"로 잘못 처리될 수 있다)
         $timeoutMs = if ($AllowWebSearch) { 360000 } else { 300000 }  # 웹검색 라운드는 검색 시간까지 더해 더 오래 걸릴 수 있어 여유를 둠
         $finished = $proc.WaitForExit($timeoutMs)
+        $endTime = Get-Date
+        $durationSec = [math]::Round((New-TimeSpan -Start $startTime -End $endTime).TotalSeconds, 1)
+
         Unregister-Event -SourceIdentifier $outSub.Name -ErrorAction SilentlyContinue
         Unregister-Event -SourceIdentifier $errSub.Name -ErrorAction SilentlyContinue
+        $outSub = $null; $errSub = $null
 
         if (-not $finished) {
-            try { $proc.Kill() } catch {}
+            Write-Log "[$callId] 타임아웃 (제한 ${timeoutMs}ms / 실제 경과 ${durationSec}초, 종료시각=$($endTime.ToString('yyyy-MM-dd HH:mm:ss'))) — claude 프로세스(PID=$claudePid)를 강제 종료합니다. (서버 자체는 계속 실행됨)"
+            try { $proc.Kill() } catch { Write-Log "[$callId] 강제종료 중 오류(무시): $_" }
             return @{ ok = $false; message = 'Claude 응답 시간이 너무 오래 걸려 중단했습니다. 잠시 후 다시 시도해주세요.' }
         }
 
+        $exitCode = $proc.ExitCode
         $stdout = $outSb.ToString()
         $stderr = $errSb.ToString()
 
-        if ($proc.ExitCode -ne 0) {
-            return @{ ok = $false; message = "Claude 실행 오류 (종료 코드 $($proc.ExitCode)): $stderr" }
+        Write-Log "[$callId] claude -p 종료 (PID=$claudePid, ExitCode=$exitCode, 종료시각=$($endTime.ToString('yyyy-MM-dd HH:mm:ss')), 실제 소요시간=${durationSec}초)"
+        Write-Log "[$callId] stdout 길이=$($stdout.Length)자, stderr 길이=$($stderr.Length)자"
+        if ($stderr.Trim().Length -gt 0) { Write-Log "[$callId] stderr 전체 내용: $stderr" }
+        $stdoutForLog = if ($stdout.Length -gt 3000) { $stdout.Substring(0, 3000) + " ...(이하 생략, 전체 $($stdout.Length)자)" } else { $stdout }
+        Write-Log "[$callId] stdout 내용: $stdoutForLog"
+
+        if ($exitCode -ne 0) {
+            Write-Log "[$callId] claude 프로세스가 오류 코드로 종료됨 — 서버는 계속 실행되며 이 요청만 실패로 처리합니다."
+            return @{ ok = $false; message = "Claude 실행 오류 (종료 코드 $exitCode): $stderr" }
         }
 
         $resultObj = $null
         try { $resultObj = $stdout | ConvertFrom-Json } catch {
+            Write-Log "[$callId] JSON 파싱 실패: $_"
             return @{ ok = $false; message = "Claude 응답을 해석하지 못했습니다: $stdout" }
         }
 
         if ($resultObj.is_error) {
+            Write-Log "[$callId] Claude가 is_error를 반환함: $($resultObj.result)"
             return @{ ok = $false; message = "Claude 오류: $($resultObj.result)" }
         }
 
         return @{ ok = $true; text = [string]$resultObj.result }
+    } catch {
+        # claude -p 실행 과정 어디서든 예기치 못한 예외(프로세스 시작 실패, 파이프
+        # 오류 등)가 발생하면 여기서 반드시 잡는다 — 이 함수는 절대 예외를 밖으로
+        # 던지지 않고, 항상 실패 결과만 반환해서 요청 루프/서버가 죽지 않게 한다.
+        $errDetail = "$($_.Exception.GetType().FullName): $($_.Exception.Message)"
+        Write-Log "[$callId] Invoke-ClaudeComplete 예외 발생(서버는 계속 실행됨): $errDetail"
+        Write-Log "[$callId] 스택 추적: $($_.ScriptStackTrace)"
+        return @{ ok = $false; message = "Claude 실행 중 예외가 발생했습니다: $($_.Exception.Message)" }
     } finally {
-        Remove-Item $sysFile -ErrorAction SilentlyContinue
+        if ($outSub) { Unregister-Event -SourceIdentifier $outSub.Name -ErrorAction SilentlyContinue }
+        if ($errSub) { Unregister-Event -SourceIdentifier $errSub.Name -ErrorAction SilentlyContinue }
+        if ($proc) { try { $proc.Dispose() } catch {} }
+        if ($sysFile) { Remove-Item $sysFile -ErrorAction SilentlyContinue }
     }
 }
 
@@ -377,85 +449,106 @@ Write-Host "----------------------------------------------------------"
 Write-Host ""
 
 Write-Log '서버 요청 대기 시작'
-while ($listener.IsListening) {
-    try {
-        $context = $listener.GetContext()
-    } catch {
-        Write-Log "GetContext 오류로 요청 대기 루프 종료: $_"
-        break
-    }
-    $request = $context.Request
-    $response = $context.Response
-    Write-Log "요청 수신: $($request.HttpMethod) $($request.Url.AbsolutePath)"
 
-    try {
-        if ($request.HttpMethod -eq 'OPTIONS') {
-            $response.Headers.Add('Access-Control-Allow-Origin', '*')
-            $response.Headers.Add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            $response.Headers.Add('Access-Control-Allow-Headers', 'Content-Type')
-            $response.StatusCode = 204
-            $response.OutputStream.Close()
-            continue
+# 이 블록 전체를 최상위 안전망으로 감싼다. claude -p 호출 실패는 이미
+# Invoke-ClaudeComplete 안에서 전부 잡아서 정상 응답으로 돌려주므로 여기까지
+# 올라오지 않는다 — 만약 그 예상을 벗어나 정말 예기치 못한 예외(리스너 자체
+# 문제 등)가 새어나온다면, 서버 창이 설명 없이 그냥 닫히는 대신 원인을 보여주고
+# 키 입력을 기다린 뒤 종료한다.
+try {
+    while ($listener.IsListening) {
+        try {
+            $context = $listener.GetContext()
+        } catch {
+            Write-Log "GetContext 오류로 요청 대기 루프 종료(정상적인 리스너 종료일 수 있음): $_"
+            break
         }
+        $request = $context.Request
+        $response = $context.Response
+        Write-Log "요청 수신: $($request.HttpMethod) $($request.Url.AbsolutePath)"
 
-        if ($request.HttpMethod -eq 'GET' -and $request.Url.AbsolutePath -eq '/api/health') {
-            Send-Json $response 200 @{ ok = $true }
-            continue
-        }
-
-        if ($request.HttpMethod -eq 'GET' -and $request.Url.AbsolutePath -eq '/api/status') {
-            # 매 요청마다 실시간으로 재확인한다 — 서버 시작 이후 로그인 세션이
-            # 만료되는 등 상태가 바뀌었을 수도 있는 경우까지 정확히 반영하기 위함.
-            $liveLoggedIn = Test-ClaudeLoggedIn
-            Send-Json $response 200 @{
-                ok              = $true
-                claudeInstalled = $true
-                claudePath      = $ClaudePath
-                loggedIn        = $liveLoggedIn
-                port            = $Port
-            }
-            continue
-        }
-
-        if ($request.HttpMethod -eq 'POST' -and $request.Url.AbsolutePath -eq '/api/complete') {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
-            $bodyText = $reader.ReadToEnd()
-            $reader.Close()
-
-            $body = $null
-            try { $body = $bodyText | ConvertFrom-Json } catch { $body = $null }
-
-            if (-not $body -or -not $body.prompt) {
-                Send-Json $response 400 @{ ok = $false; message = '잘못된 요청입니다 (prompt 누락).' }
+        try {
+            if ($request.HttpMethod -eq 'OPTIONS') {
+                $response.Headers.Add('Access-Control-Allow-Origin', '*')
+                $response.Headers.Add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+                $response.Headers.Add('Access-Control-Allow-Headers', 'Content-Type')
+                $response.StatusCode = 204
+                $response.OutputStream.Close()
                 continue
             }
 
-            Write-Info ("  · 회의 요청 처리 중" + ($(if ($body.webSearch) { ' (웹검색 포함)' } else { '' })) + "...")
-            $result = Invoke-ClaudeComplete -SystemText ([string]$body.system) -UserText ([string]$body.prompt) -AllowWebSearch ([bool]$body.webSearch)
-
-            if ($result.ok) {
-                Send-Json $response 200 @{ ok = $true; text = $result.text }
-            } else {
-                Write-Warn2 ("    ! 실패: " + $result.message)
-                Send-Json $response 200 @{ ok = $false; message = $result.message }
+            if ($request.HttpMethod -eq 'GET' -and $request.Url.AbsolutePath -eq '/api/health') {
+                Send-Json $response 200 @{ ok = $true }
+                continue
             }
-            continue
-        }
 
-        if ($request.HttpMethod -eq 'GET') {
-            Send-StaticFile $response $request.Url.AbsolutePath
-            continue
-        }
+            if ($request.HttpMethod -eq 'GET' -and $request.Url.AbsolutePath -eq '/api/status') {
+                # 매 요청마다 실시간으로 재확인한다 — 서버 시작 이후 로그인 세션이
+                # 만료되는 등 상태가 바뀌었을 수도 있는 경우까지 정확히 반영하기 위함.
+                $liveLoggedIn = Test-ClaudeLoggedIn
+                Send-Json $response 200 @{
+                    ok              = $true
+                    claudeInstalled = $true
+                    claudePath      = $ClaudePath
+                    loggedIn        = $liveLoggedIn
+                    port            = $Port
+                }
+                continue
+            }
 
-        $response.StatusCode = 404
-        $response.OutputStream.Close()
-    } catch {
-        Write-Log "요청 처리 중 오류: $_"
-        try {
-            Send-Json $response 500 @{ ok = $false; message = "서버 내부 오류: $_" }
-        } catch {}
+            if ($request.HttpMethod -eq 'POST' -and $request.Url.AbsolutePath -eq '/api/complete') {
+                $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
+                $bodyText = $reader.ReadToEnd()
+                $reader.Close()
+
+                $body = $null
+                try { $body = $bodyText | ConvertFrom-Json } catch { $body = $null }
+
+                if (-not $body -or -not $body.prompt) {
+                    Send-Json $response 400 @{ ok = $false; message = '잘못된 요청입니다 (prompt 누락).' }
+                    continue
+                }
+
+                Write-Info ("  · 회의 요청 처리 중" + ($(if ($body.webSearch) { ' (웹검색 포함)' } else { '' })) + "...")
+                # Invoke-ClaudeComplete는 절대 예외를 던지지 않는다(항상 ok:true/false로만
+                # 돌아온다) — 그래도 방어적으로 이 호출 자체를 try/catch로 한 번 더 감싼다.
+                try {
+                    $result = Invoke-ClaudeComplete -SystemText ([string]$body.system) -UserText ([string]$body.prompt) -AllowWebSearch ([bool]$body.webSearch)
+                } catch {
+                    Write-Log "예상치 못하게 Invoke-ClaudeComplete가 예외를 던짐(claude 프로세스만 실패, 서버는 계속 실행됨): $($_.Exception.GetType().FullName): $($_.Exception.Message)"
+                    $result = @{ ok = $false; message = "Claude 호출 중 예기치 못한 오류: $($_.Exception.Message)" }
+                }
+
+                if ($result.ok) {
+                    Send-Json $response 200 @{ ok = $true; text = $result.text }
+                } else {
+                    Write-Warn2 ("    ! 실패: " + $result.message)
+                    Send-Json $response 200 @{ ok = $false; message = $result.message }
+                }
+                continue
+            }
+
+            if ($request.HttpMethod -eq 'GET') {
+                Send-StaticFile $response $request.Url.AbsolutePath
+                continue
+            }
+
+            $response.StatusCode = 404
+            $response.OutputStream.Close()
+        } catch {
+            Write-Log "요청 처리 중 오류(이 요청 한 건만 실패 처리, 서버는 계속 실행됨): $($_.Exception.GetType().FullName): $($_.Exception.Message)"
+            Write-Log "스택 추적: $($_.ScriptStackTrace)"
+            try {
+                Send-Json $response 500 @{ ok = $false; message = "서버 내부 오류: $($_.Exception.Message)" }
+            } catch {}
+        }
     }
-}
 
-Write-Log '===== 서버 종료 ====='
-$listener.Stop()
+    Write-Log '===== 서버 종료 ====='
+    $listener.Stop()
+} catch {
+    # 위 while 루프 내부의 모든 요청 처리는 이미 자체적으로 catch되므로, 여기까지
+    # 올라오는 예외는 정말 예상 밖의 상황이다(예: 리스너 자체의 치명적 오류).
+    try { $listener.Stop() } catch {}
+    Show-UnexpectedFatalAndExit $_
+}
