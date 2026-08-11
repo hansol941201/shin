@@ -888,47 +888,35 @@
   .shin2-memo-cancel-btn:hover{ background:#F0F1F4; }
   .shin2-memo-save-btn{ background:var(--navy); border:1px solid var(--navy); color:#fff; }
 
-  /* 홈 전화기록 2열 레이아웃 — "시공사 전화기록"(좌)과 "아파트 문의·전화기록"(우)을
-     데스크톱에서는 나란히 50:50, 좁은 화면에서는 위아래로 쌓는다. 카드 테두리/그림자 없이
-     기존 얇은 선/여백 톤을 그대로 쓰고, 가로 스크롤이 생기지 않게 한다. */
-  .home-call-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:0 28px; align-items:stretch;
-    margin-top:22px; max-width:800px;
+  /* 통합 업무 입력 패널(§신규) — 기존 "시공사 전화기록"/"아파트 문의·전화기록"/
+     "AI 문구정리" 3개의 개별 박스를 탭 1개로 묶는 얇은 컨테이너. 카드 테두리/그림자/
+     새 색 없이 기존 얇은 선(var(--line))과 은은한 네이비 강조만 쓴다. */
+  .home-tabs-panel{ margin-top:22px; max-width:800px; }
+  .home-tabs-head{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .home-tab-btn{
+    height:34px; padding:0 14px; font-size:13px; font-weight:600; font-family:inherit;
+    color:var(--text-muted); background:transparent; border:none; border-bottom:2px solid transparent;
+    margin-bottom:-1px; border-radius:6px 6px 0 0; cursor:pointer;
   }
-  .home-call-grid .qr-block, .home-call-grid .home-task-block{
-    margin-top:0; max-width:none; display:flex; flex-direction:column;
+  .home-tab-btn:hover{ background:#F0F1F4; color:var(--text); }
+  .home-tab-btn.active{ color:var(--navy); background:#EEF1F8; border-bottom-color:var(--navy); }
+  /* 탭 내용 영역 안에서는 각 섹션의 기존 margin-top/max-width가 패널과 중복되지 않게
+     0으로 눌러준다 — 섹션 자체의 내부 마크업/클래스는 손대지 않는다. */
+  .home-tab-content .qr-block, .home-tab-content .home-task-block, .home-tab-content .ai-section{
+    margin-top:0; max-width:none;
   }
-  /* 좌/우 열의 제목 줄 높이를 맞춘다 — 우측은 분류버튼+"전체 보기 >"까지 같은 줄에
-     들어가므로, 좌측 제목줄도 같은 min-height/정렬로 맞춰 Y좌표를 일치시킨다. */
-  .home-call-grid .qr-head{ min-height:26px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
-  .home-call-grid .home-task-head{ min-height:26px; }
-  /* 입력창 아래 영역이 남는 세로공간을 채워, 하단 줄(저장 버튼/안내)이 항상 같은
-     baseline에 오도록 한다. */
-  .home-call-grid .qr-body, .home-call-grid .call-input-block{
-    display:flex; flex-direction:column; flex:1 1 auto; margin-bottom:0;
+  /* 탭 간 전환 시 세로 점프를 줄이기 위해 세 탭의 입력창 높이를 비슷하게(3~4줄) 맞춘다.
+     완전히 똑같을 필요는 없다 — 탭2는 분류버튼 줄, 탭1/3은 각자의 여분 줄이 있어 약간의
+     차이는 자연스럽다. */
+  #aiInput{ min-height:112px; }
+  .home-bridge-btn{
+    height:32px; padding:0 12px; font-size:12.5px; font-weight:600; font-family:inherit;
+    color:var(--navy); background:var(--surface); border:1px solid var(--line); border-radius:6px; cursor:pointer;
   }
-  .home-call-grid .qr-bottom-row, .home-call-grid .call-memo-actions{
-    margin-top:auto; display:flex; align-items:center; justify-content:flex-end; gap:8px; padding-top:8px; height:32px;
-  }
-  /* "전체 보기 >"가 제목 줄과 같은 줄에 오도록 하는 nowrap 배치는 열 너비가 충분한
-     데스크톱 폭(2열 그리드가 실제로 나란히 배치되는 720px 초과)에서만 적용한다 —
-     좁은 화면(1열로 쌓일 때)은 기존처럼 자유롭게 줄바꿈되도록 그대로 둔다. */
-  @media (min-width: 721px){
-    .home-call-grid .qr-head{ flex-wrap:nowrap; }
-    .home-call-grid .qr-title{ white-space:nowrap; flex:none; }
-    .home-call-grid .home-task-head{ flex-wrap:nowrap; }
-    .home-call-grid .home-task-head-left{ flex-wrap:nowrap; min-width:0; gap:10px; }
-    .home-call-grid .home-task-head-left .home-task-title{ white-space:nowrap; flex:none; }
-    .home-call-grid .home-task-head .call-type-btns{ flex:none; }
-    .home-call-grid .home-task-head .call-type-btn{ white-space:nowrap; }
-    .home-call-grid .home-task-more{ flex:none; white-space:nowrap; }
-  }
+  .home-bridge-btn:hover{ background:#F0F1F4; }
   @media (max-width: 720px){
-    .home-call-grid{ grid-template-columns:1fr; gap:22px 0; align-items:start; }
-    .home-call-grid .qr-block, .home-call-grid .home-task-block{ display:block; }
-    .home-call-grid .qr-body, .home-call-grid .call-input-block{ display:block; }
-    .home-call-grid .qr-bottom-row, .home-call-grid .call-memo-actions{ margin-top:8px; flex-wrap:wrap; height:auto; }
-    .home-call-grid .qr-hint{ white-space:normal; }
+    .home-tabs-head{ flex-wrap:wrap; }
+    .home-tab-btn{ flex:1 1 auto; }
   }
 
   /* 빠른 고객기록(표시명: "시공사 전화기록", §5~10) — 업체명을 포함해 여러 줄로 적고
@@ -943,7 +931,8 @@
     background:var(--surface); border:1px solid var(--line); border-radius:8px; outline:none; box-sizing:border-box;
   }
   .qr-input:focus{ border-color:#C7CEDB; }
-  .qr-hint{ font-size:12.5px; color:var(--text-muted); white-space:nowrap; }
+  .qr-bottom-row{ display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .qr-hint{ font-size:12.5px; color:var(--text-muted); white-space:nowrap; margin-right:auto; }
   .qr-inline-ok{ font-size:12.5px; color:var(--navy); margin-top:8px; }
   .qr-inline-empty{ font-size:12.5px; color:var(--text-muted); margin-top:8px; }
   .qr-notfound{ margin-top:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
@@ -1012,7 +1001,7 @@
   /* 전화메모 입력창(§전화메모 스펙) — "오늘 확인할 업무" 섹션 안에 얹히는 자유 입력창.
      기존 ai-textarea/ai-run-btn 스타일을 그대로 재사용하고, 배치용 여백만 추가한다. */
   .call-input-block{ margin-bottom:10px; }
-  .call-memo-actions{ display:flex; justify-content:flex-end; margin-top:8px; }
+  .call-memo-actions{ display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:8px; flex-wrap:wrap; }
 
   .task-badge{
     flex:none; display:inline-block; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px;
@@ -1822,45 +1811,107 @@
         <div class="hint" id="mainSearchHint">한솔 — 필요한 내용을 검색해서 시작하세요.</div>
         <div class="kb-search-results" id="mainSearchResults"></div>
 
-        <!-- 홈 전화기록 2열: 왼쪽(시공사 전화기록=구 빠른 고객기록, CRM 활동으로 저장)과
-             오른쪽(아파트 문의·전화기록=구 전화 온 내용, shin2-call-entries-v1로 저장)을
-             나란히 둔다. 두 입력 경로는 서로 절대 섞이지 않는다 — 왼쪽은 customerActivities만,
-             오른쪽은 shin2-call-entries-v1만 쓴다(§7). -->
-        <div class="home-call-grid" id="homeCallGrid">
-          <!-- §5~10: 빠른 고객기록(표시명만 "시공사 전화기록") — 업체를 먼저 선택하지 않고
-               한 줄 입력→Enter만으로 기록완료. 자동으로 업체를 찾지 못하면 절대 새 업체를
-               만들지 않는다(§ "자동 생성 금지"). 로직/데이터는 그대로, 라벨만 바꿨다. -->
-          <div class="qr-block" id="qrBlock">
-            <div class="qr-head">
-              <div class="qr-title">시공사 전화기록</div>
-              <button type="button" class="home-task-more" id="qrViewAllBtn">전체 보기 &gt;</button>
-            </div>
-            <div class="qr-body">
-              <textarea id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (Enter로 저장, Shift+Enter는 줄바꿈)"></textarea>
-              <div id="qrResult"></div>
-              <div class="qr-bottom-row"><span class="qr-hint">Enter로 저장 · Shift+Enter로 줄바꿈</span><button type="button" id="qrSaveBtn" class="ai-run-btn">저장</button></div>
+        <!-- 통합 업무 입력 패널(§신규): 기존 "시공사 전화기록"/"아파트 문의·전화기록"/
+             "AI 문구정리" 3개 박스를 탭 3개로 묶어 보여준다. 이건 순수하게 '보여주는
+             방식'만 바꾼 것이고, 각 탭의 내부 마크업/로직/저장 함수/스토리지 키는 그대로
+             옮겨왔을 뿐 하나도 합치지 않았다 — 시공사 전화기록은 여전히 customerActivities/
+             미등록 레코드만, 아파트 문의·전화기록은 여전히 shin2-call-entries-v1만,
+             AI 문구정리는 여전히 aiRewrite 서버 함수만 사용한다(§9). 탭 전환은 DOM을
+             지우지 않고 display만 토글하므로, 다른 탭으로 갔다 와도 입력값이 그대로 남는다. -->
+        <div class="home-tabs-panel" id="homeTabsPanel">
+          <div class="home-tabs-head" id="homeTabsHead">
+            <button type="button" class="home-tab-btn active" data-home-tab="call">시공사 전화기록</button>
+            <button type="button" class="home-tab-btn" data-home-tab="apt">아파트 문의·전화기록</button>
+            <button type="button" class="home-tab-btn" data-home-tab="ai">AI 문구정리</button>
+          </div>
+
+          <div class="home-tab-content" data-home-tab-content="call">
+            <!-- §5~10: 빠른 고객기록(표시명만 "시공사 전화기록") — 업체를 먼저 선택하지 않고
+                 한 줄 입력→Enter만으로 기록완료. 자동으로 업체를 찾지 못하면 절대 새 업체를
+                 만들지 않는다(§ "자동 생성 금지"). 로직/데이터는 그대로, 라벨만 바꿨다. -->
+            <div class="qr-block" id="qrBlock">
+              <div class="qr-head">
+                <div class="qr-title">시공사 전화기록</div>
+                <button type="button" class="home-task-more" id="qrViewAllBtn">전체 보기 &gt;</button>
+              </div>
+              <div class="qr-body">
+                <textarea id="qrInput" class="qr-input" placeholder="예) 신광건설 견적문의 재도장 (Enter로 저장, Shift+Enter는 줄바꿈)"></textarea>
+                <div id="qrResult"></div>
+                <div class="qr-bottom-row">
+                  <span class="qr-hint">Enter로 저장 · Shift+Enter로 줄바꿈</span>
+                  <button type="button" id="qrToAiBtn" class="home-bridge-btn" data-bridge-from="qrInput">AI로 다듬기</button>
+                  <button type="button" id="qrSaveBtn" class="ai-run-btn">저장</button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div id="homeCallSlot"></div>
-        </div>
+          <div class="home-tab-content" data-home-tab-content="apt" style="display:none;">
+            <div id="homeCallSlot"></div>
+          </div>
 
-        <div class="ai-section">
-          <div class="ai-head-row">
-            <div class="ai-title">AI 문구정리</div>
-            <div class="ai-types" id="aiTypes">
-              <button type="button" class="ai-type-btn active" data-type="report">보고용</button>
-              <button type="button" class="ai-type-btn" data-type="kakao">카톡용</button>
-              <button type="button" class="ai-type-btn" data-type="mail">메일용</button>
+          <div class="home-tab-content" data-home-tab-content="ai" style="display:none;">
+            <div class="ai-section">
+              <div class="ai-head-row">
+                <div class="ai-title">AI 문구정리</div>
+                <div class="ai-types" id="aiTypes">
+                  <button type="button" class="ai-type-btn active" data-type="report">보고용</button>
+                  <button type="button" class="ai-type-btn" data-type="kakao">카톡용</button>
+                  <button type="button" class="ai-type-btn" data-type="mail">메일용</button>
+                </div>
+              </div>
+              <textarea id="aiInput" class="ai-textarea" placeholder="전화내용, 메모, 단어를 편하게 입력하세요.&#10;예) 신광건설 / 질문서 회신 / 1차미팅 빨리 원함"></textarea>
+              <div class="ai-toolbar">
+                <button type="button" id="aiRunBtn" class="ai-run-btn">AI로 정리</button>
+              </div>
+              <div id="aiError" class="ai-error" style="display:none;"></div>
+              <div id="aiResult"></div>
             </div>
           </div>
-          <textarea id="aiInput" class="ai-textarea" placeholder="전화내용, 메모, 단어를 편하게 입력하세요.&#10;예) 신광건설 / 질문서 회신 / 1차미팅 빨리 원함"></textarea>
-          <div class="ai-toolbar">
-            <button type="button" id="aiRunBtn" class="ai-run-btn">AI로 정리</button>
-          </div>
-          <div id="aiError" class="ai-error" style="display:none;"></div>
-          <div id="aiResult"></div>
         </div>
+
+        <script>
+        // 통합 업무 입력 패널의 탭 전환 + "AI로 다듬기" 브리지 버튼(§신규).
+        // 순수 표시 전환만 한다 — DOM을 지우거나 다시 그리지 않으므로 탭을 오가도
+        // 각 탭의 입력값은 그대로 남는다. 시공사/아파트 저장 로직, AI 문구정리 서버 호출
+        // 로직은 여기서 전혀 건드리지 않는다(§9).
+        (function(){
+          function initHomeTabs(){
+            var panel = document.getElementById('homeTabsPanel');
+            if(!panel) return;
+            var tabBtns = panel.querySelectorAll('.home-tab-btn');
+            var contents = panel.querySelectorAll('.home-tab-content');
+            function activate(tab){
+              tabBtns.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-home-tab') === tab); });
+              contents.forEach(function(c){ c.style.display = (c.getAttribute('data-home-tab-content') === tab) ? '' : 'none'; });
+            }
+            tabBtns.forEach(function(b){
+              b.addEventListener('click', function(){ activate(b.getAttribute('data-home-tab')); });
+            });
+
+            // "AI로 다듬기": 원본 textarea의 텍스트를 AI 문구정리 textarea로 "복사"만 하고
+            // (원본 textarea 값은 절대 지우지 않는다), AI 문구정리 탭으로 전환한다.
+            // AI 요청은 여기서 자동으로 보내지 않는다 — 사용자가 [AI로 정리]를 직접 눌러야 한다.
+            // 이벤트 위임을 써서 아파트 탭처럼 나중에(renderHomeBlock으로) 다시 그려지는
+            // 버튼도 항상 동작한다.
+            panel.addEventListener('click', function(e){
+              var btn = e.target.closest ? e.target.closest('[data-bridge-from]') : null;
+              if(!btn || !panel.contains(btn)) return;
+              var srcEl = document.getElementById(btn.getAttribute('data-bridge-from'));
+              var aiEl = document.getElementById('aiInput');
+              if(!srcEl || !aiEl) return;
+              aiEl.value = srcEl.value;
+              activate('ai');
+              aiEl.focus();
+            });
+          }
+          if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', initHomeTabs);
+          } else {
+            initHomeTabs();
+          }
+        })();
+        </script>
 
         <div id="homeTaskSlot"></div>
 
@@ -3226,7 +3277,8 @@
       '<div class="call-input-block">' +
         '<textarea id="callMemoInput" class="ai-textarea" placeholder="아파트 문의·전화 내용을 편하게 적어주세요." style="min-height:108px;"></textarea>' +
         '<div class="call-memo-actions">' +
-          '<span class="home-task-row-sub" id="callTypeHint" style="margin:0 8px 0 0;white-space:nowrap;">구분을 선택해주세요</span>' +
+          '<span class="home-task-row-sub" id="callTypeHint" style="margin-right:auto;white-space:nowrap;">구분을 선택해주세요</span>' +
+          '<button type="button" id="callMemoToAiBtn" class="home-bridge-btn" data-bridge-from="callMemoInput">AI로 다듬기</button>' +
           '<button type="button" id="callMemoSaveBtn" class="ai-run-btn" disabled>저장</button>' +
         '</div>' +
       '</div>' +
