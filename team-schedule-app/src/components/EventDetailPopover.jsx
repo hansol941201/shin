@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import PopoverShell from './PopoverShell.jsx';
-import { formatHM, dateKey } from '../utils/time.js';
+import { formatHM, parseHM, dateKey } from '../utils/time.js';
 import { useApp } from '../state/store.jsx';
 
 const STATUS_LABEL = {
@@ -10,14 +10,10 @@ const STATUS_LABEL = {
   rejected: '거절됨',
 };
 
-function slotOptions(minMin, maxMin, step = 30) {
-  const opts = [];
-  for (let m = minMin; m <= maxMin; m += step) opts.push(m);
-  return opts;
-}
-
-// 일정 블록(확정/승인대기/시간변경) 클릭 시 뜨는 상세/액션 팝오버
-export default function EventDetailPopover({ event, anchor, onClose, dayWorkStart, dayWorkEnd }) {
+// 일정 블록(확정/승인대기/시간변경) 클릭 시 뜨는 상세/액션 팝오버.
+// 시작/종료 시간은 30분 단위 선택지가 아니라 <input type="time">으로 자유롭게
+// 입력한다(RequestPopover와 동일한 패턴 — 근무시간 범위에 갇히지 않음).
+export default function EventDetailPopover({ event, anchor, onClose }) {
   const {
     role,
     acceptRequest,
@@ -50,28 +46,20 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
     ? '종일'
     : `${formatHM(start.getHours() * 60 + start.getMinutes())} ~ ${formatHM(end.getHours() * 60 + end.getMinutes())}`;
 
-  const startOptions = useMemo(() => slotOptions(dayWorkStart, dayWorkEnd - 30), [dayWorkStart, dayWorkEnd]);
-  const endOptions = useMemo(() => {
-    const base = newStart ?? dayWorkStart;
-    return slotOptions(base + 30, dayWorkEnd);
-  }, [newStart, dayWorkStart, dayWorkEnd]);
-
-  const editStartOptions = useMemo(() => slotOptions(dayWorkStart, dayWorkEnd - 30), [dayWorkStart, dayWorkEnd]);
-  const editEndOptions = useMemo(() => {
-    const base = editStart ?? dayWorkStart;
-    return slotOptions(base + 30, dayWorkEnd);
-  }, [editStart, dayWorkStart, dayWorkEnd]);
-
   function beginReschedule() {
     const sm = start.getHours() * 60 + start.getMinutes();
+    const em = end.getHours() * 60 + end.getMinutes();
     setNewStart(sm);
-    setNewEnd(Math.min(sm + (end - start) / 60000, dayWorkEnd));
+    setNewEnd(em);
     setActionError('');
     setMode('reschedule-form');
   }
 
   function submitReschedule() {
-    if (newEnd <= newStart) return;
+    if (newEnd <= newStart) {
+      setActionError('종료시간은 시작시간보다 늦어야 합니다.');
+      return;
+    }
     const dayBase = new Date(start);
     dayBase.setHours(0, 0, 0, 0);
     const proposedStart = new Date(dayBase.getTime() + newStart * 60000).toISOString();
@@ -93,7 +81,7 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
 
   async function submitEdit() {
     if (editEnd <= editStart) {
-      setActionError('시작 시간이 종료 시간보다 빨라야 합니다.');
+      setActionError('종료시간은 시작시간보다 늦어야 합니다.');
       return;
     }
     if (!editTitle.trim()) {
@@ -233,18 +221,21 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
           <div className="pv-title">새 시간 제안</div>
           <div className="pv-meta">{dateLabel}</div>
           <div className="pv-row pv-row-time">
-            <select value={newStart} onChange={(e) => setNewStart(Number(e.target.value))}>
-              {startOptions.map((m) => (
-                <option key={m} value={m}>{formatHM(m)}</option>
-              ))}
-            </select>
+            <input
+              type="time"
+              className="pv-time-input"
+              value={formatHM(newStart)}
+              onChange={(e) => setNewStart(parseHM(e.target.value))}
+            />
             <span className="pv-tilde">~</span>
-            <select value={newEnd} onChange={(e) => setNewEnd(Number(e.target.value))}>
-              {endOptions.map((m) => (
-                <option key={m} value={m}>{formatHM(m)}</option>
-              ))}
-            </select>
+            <input
+              type="time"
+              className="pv-time-input"
+              value={formatHM(newEnd)}
+              onChange={(e) => setNewEnd(parseHM(e.target.value))}
+            />
           </div>
+          {actionError && <div className="pv-error">{actionError}</div>}
           <div className="pv-actions">
             <button className="pv-btn pv-btn-primary" onClick={submitReschedule}>제안 보내기</button>
             <button className="pv-btn" onClick={() => setMode('view')}>취소</button>
@@ -275,17 +266,19 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
               />
             </label>
             <div className="pv-row pv-row-time">
-              <select value={editStart} onChange={(e) => setEditStart(Number(e.target.value))}>
-                {editStartOptions.map((m) => (
-                  <option key={m} value={m}>{formatHM(m)}</option>
-                ))}
-              </select>
+              <input
+                type="time"
+                className="pv-time-input"
+                value={formatHM(editStart)}
+                onChange={(e) => setEditStart(parseHM(e.target.value))}
+              />
               <span className="pv-tilde">~</span>
-              <select value={editEnd} onChange={(e) => setEditEnd(Number(e.target.value))}>
-                {editEndOptions.map((m) => (
-                  <option key={m} value={m}>{formatHM(m)}</option>
-                ))}
-              </select>
+              <input
+                type="time"
+                className="pv-time-input"
+                value={formatHM(editEnd)}
+                onChange={(e) => setEditEnd(parseHM(e.target.value))}
+              />
             </div>
             <label className="pv-edit-label">
               장소

@@ -1,9 +1,40 @@
 import React, { useRef, useState } from 'react';
 import { useApp } from '../state/store.jsx';
-import { formatMonthLabel } from '../utils/time.js';
+import { formatHM, formatMonthLabel } from '../utils/time.js';
 import Legend from './Legend.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
+import EventDetailPopover from './EventDetailPopover.jsx';
+
+// "팀장" 화면은 실제 확정 일정만 보여주므로(요구사항), 승인대기/시간변경
+// 요청은 달력에서 클릭할 수 없다. 대신 헤더의 작은 배지에서 목록을 열어
+// 기존 EventDetailPopover(수락/시간변경/거절)를 그대로 재사용한다 — 승인
+// 관련 로직/버튼은 하나도 새로 만들지 않고 기존 컴포넌트를 그대로 연다.
+function PendingApprovalMenu({ anchor, items, onClose, onPick }) {
+  return (
+    <PopoverShell anchor={anchor} onClose={onClose} width={260}>
+      <div className="pv-head">
+        <span className="pv-title-sm">승인대기 / 시간변경</span>
+        <button className="pv-close" onClick={onClose} aria-label="닫기">✕</button>
+      </div>
+      {items.length === 0 && <div className="pv-hint">대기 중인 요청이 없습니다.</div>}
+      <div className="approval-menu-list">
+        {items.map((e) => {
+          const s = new Date(e.start);
+          return (
+            <button key={e.id} className="approval-menu-item" onClick={(ev) => onPick(e, ev)}>
+              <span className="approval-menu-title">{e.title}</span>
+              <span className="approval-menu-time">
+                {s.getMonth() + 1}/{s.getDate()} {formatHM(s.getHours() * 60 + s.getMinutes())}
+                {e.status === 'reschedule_requested' ? ' · 시간변경' : ''}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </PopoverShell>
+  );
+}
 
 function SettingsPopover({ anchor, onClose }) {
   const {
@@ -182,9 +213,28 @@ export default function Header() {
     calendarsError,
     googleAuthError,
     refreshGoogleEvents,
+    events,
   } = useApp();
   const [settingsAnchor, setSettingsAnchor] = useState(null);
   const gearRef = useRef(null);
+  const approvalRef = useRef(null);
+  const [approvalMenuAnchor, setApprovalMenuAnchor] = useState(null);
+  const [approvalDetail, setApprovalDetail] = useState(null); // {event, x, y}
+
+  // "팀장" 화면에서 숨겨진 승인대기/시간변경 요청 — 개수 배지 + 목록에 쓴다.
+  const pendingItems = events
+    .filter((e) => e.status === 'pending' || e.status === 'reschedule_requested')
+    .sort((a, b) => new Date(a.start) - new Date(b.start));
+
+  function openApprovalMenu() {
+    const rect = approvalRef.current.getBoundingClientRect();
+    setApprovalMenuAnchor({ x: rect.left, y: rect.bottom + 6 });
+  }
+
+  function pickApprovalItem(ev, mouseEvent) {
+    setApprovalMenuAnchor(null);
+    setApprovalDetail({ event: ev, x: mouseEvent.clientX, y: mouseEvent.clientY });
+  }
 
   // 이제 월간 화면이 유일한 화면이므로 이전/다음은 항상 월 단위로 이동한다
   // (오늘/주간 버튼은 삭제 — 요구사항에 따라 UI에서 완전히 제거).
@@ -227,16 +277,49 @@ export default function Header() {
             </button>
           )}
           <GoogleConnectButton />
+          {role === 'manager' && pendingItems.length > 0 && (
+            <button
+              ref={approvalRef}
+              className="icon-btn approval-badge-btn"
+              onClick={openApprovalMenu}
+              title="승인대기 / 시간변경 요청"
+            >
+              승인대기 {pendingItems.length}
+            </button>
+          )}
           <button ref={gearRef} className="icon-btn" onClick={openSettings} title="근무시간/캘린더 설정" aria-label="설정">⚙</button>
-          <div className="role-switch">
-            <select value={role} onChange={(e) => setRole(e.target.value)} title="역할(데모용)">
-              <option value="coordinator">코디네이터</option>
-              <option value="manager">팀장</option>
-            </select>
+          <div className="role-switch view-switch" title="달력 보기 전환 — 팀장: 팀장님 실제 일정만 / 한솔: 내가 요청한 일정만">
+            <button
+              className={role === 'manager' ? 'active' : ''}
+              onClick={() => setRole('manager')}
+            >
+              팀장
+            </button>
+            <button
+              className={role === 'coordinator' ? 'active' : ''}
+              onClick={() => setRole('coordinator')}
+            >
+              한솔
+            </button>
           </div>
         </div>
 
         {settingsAnchor && <SettingsPopover anchor={settingsAnchor} onClose={() => setSettingsAnchor(null)} />}
+        {approvalMenuAnchor && (
+          <PendingApprovalMenu
+            anchor={approvalMenuAnchor}
+            items={pendingItems}
+            onClose={() => setApprovalMenuAnchor(null)}
+            onPick={pickApprovalItem}
+          />
+        )}
+        {approvalDetail && (
+          <EventDetailPopover
+            event={approvalDetail.event}
+            anchor={{ x: approvalDetail.x, y: approvalDetail.y }}
+            onClose={() => setApprovalDetail(null)}
+          />
+        )}
       </header>
 
       {bannerMessage && (

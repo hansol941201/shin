@@ -146,6 +146,42 @@ button, select, input, textarea {
 }
 .icon-btn:hover { background: var(--navy-soft); color: var(--navy); }
 
+.approval-badge-btn {
+  width: auto;
+  padding: 0 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--own-text);
+  background: var(--own-bg);
+  border-color: var(--own-border);
+  white-space: nowrap;
+}
+.approval-badge-btn:hover { filter: brightness(0.97); }
+
+.approval-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.approval-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  border: 1px solid var(--own-border);
+  background: var(--own-bg);
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.approval-menu-item:hover { filter: brightness(0.97); }
+.approval-menu-title { font-size: 12.5px; font-weight: 600; color: var(--own-text); }
+.approval-menu-time { font-size: 11px; color: var(--text-sub); }
+
 .role-switch select {
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -415,12 +451,17 @@ button, select, input, textarea {
   padding: 2px;
 }
 .pv-row { display: flex; align-items: center; margin-bottom: 8px; }
-.pv-row-time select {
+.pv-row-time select,
+.pv-row-time .pv-time-input {
   flex: 1 1 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 4px;
   font-size: 12.5px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+  min-width: 0;
 }
 .pv-tilde { margin: 0 6px; color: var(--text-faint); }
 .pv-input {
@@ -727,6 +768,12 @@ button, select, input, textarea {
   background: var(--own-bg);
   color: var(--own-text);
   border: 1px solid var(--own-border);
+}
+.month-chip-badge {
+  margin-left: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.85;
 }
 .month-more { font-size: 10px; color: var(--text-faint); }
 

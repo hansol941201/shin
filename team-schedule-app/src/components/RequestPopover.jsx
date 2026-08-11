@@ -1,15 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import PopoverShell from './PopoverShell.jsx';
-import { formatHM } from '../utils/time.js';
+import { formatHM, parseHM } from '../utils/time.js';
 
-function slotOptions(minMin, maxMin, step = 30) {
-  const opts = [];
-  for (let m = minMin; m <= maxMin; m += step) opts.push(m);
-  return opts;
-}
-
-// 빈 시간 클릭/드래그 후 뜨는 일정 요청 입력 팝오버
-export default function RequestPopover({ anchor, day, blockStart, blockEnd, initialStart, initialEnd, onClose, onSubmit }) {
+// 빈 시간 클릭/드래그 후 뜨는 일정 요청 입력 팝오버.
+// 시작/종료 시간은 30분 단위 선택지가 아니라 <input type="time">으로 자유롭게
+// 입력한다(근무시간 범위에 갇히지 않음 — 07:30, 21:00 등도 그대로 입력 가능).
+export default function RequestPopover({ anchor, day, initialStart, initialEnd, onClose, onSubmit }) {
   const [startMin, setStartMin] = useState(initialStart);
   const [endMin, setEndMin] = useState(initialEnd);
   const [title, setTitle] = useState('');
@@ -17,15 +13,6 @@ export default function RequestPopover({ anchor, day, blockStart, blockEnd, init
   const [memo, setMemo] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const startOptions = useMemo(() => slotOptions(blockStart, blockEnd - 30), [blockStart, blockEnd]);
-  const endOptions = useMemo(() => slotOptions(startMin + 30, blockEnd), [startMin, blockEnd]);
-
-  function handleStartChange(v) {
-    const next = Number(v);
-    setStartMin(next);
-    if (endMin <= next) setEndMin(Math.min(next + 30, blockEnd));
-  }
 
   async function handleSubmit() {
     setError('');
@@ -61,17 +48,19 @@ export default function RequestPopover({ anchor, day, blockStart, blockEnd, init
       </div>
 
       <div className="pv-row pv-row-time">
-        <select value={startMin} onChange={(e) => handleStartChange(e.target.value)}>
-          {startOptions.map((m) => (
-            <option key={m} value={m}>{formatHM(m)}</option>
-          ))}
-        </select>
+        <input
+          type="time"
+          className="pv-time-input"
+          value={formatHM(startMin)}
+          onChange={(e) => setStartMin(parseHM(e.target.value))}
+        />
         <span className="pv-tilde">~</span>
-        <select value={endMin} onChange={(e) => setEndMin(Number(e.target.value))}>
-          {endOptions.map((m) => (
-            <option key={m} value={m}>{formatHM(m)}</option>
-          ))}
-        </select>
+        <input
+          type="time"
+          className="pv-time-input"
+          value={formatHM(endMin)}
+          onChange={(e) => setEndMin(parseHM(e.target.value))}
+        />
       </div>
 
       <input

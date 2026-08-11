@@ -51,7 +51,7 @@ export function buildSampleEvents(weekStart) {
     end: at(tue, 15, 0).toISOString(),
     location: '본사 회의실',
     memo: '협약서 초안 지참',
-    requester: '코디네이터',
+    requester: '한솔',
     manager: '팀장',
     status: 'pending',
     googleCalendarEventId: null,
@@ -68,7 +68,7 @@ export function buildSampleEvents(weekStart) {
     end: at(wed, 16, 30).toISOString(),
     location: '',
     memo: '',
-    requester: '코디네이터',
+    requester: '한솔',
     manager: '팀장',
     status: 'reschedule_requested',
     // 원래 15:30~16:30 요청 -> 팀장이 16:00~17:00으로 제안 (기존 종료시각과 겹치지 않게 표기 명확화)

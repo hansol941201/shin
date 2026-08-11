@@ -31,6 +31,12 @@ export function formatTimeRange(startMin, endMin) {
   return `${formatHM(startMin)}–${formatHM(endMin)}`;
 }
 
+// "HH:MM" (input type="time" 값) -> 자정 기준 분. 자유 시간 입력에 사용.
+export function parseHM(hhmm) {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  return h * 60 + m;
+}
+
 export function minutesOfDay(date) {
   return date.getHours() * 60 + date.getMinutes();
 }

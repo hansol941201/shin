@@ -48,7 +48,7 @@ function ApprovalCard({ event }) {
       {event.memo && <div className="approval-card-memo">{event.memo}</div>}
 
       {event.status === 'reschedule_requested' && (
-        <div className="approval-pending-note">코디네이터 응답 대기 중</div>
+        <div className="approval-pending-note">한솔 응답 대기 중</div>
       )}
 
       {error && <div className="pv-error">{error}</div>}

@@ -379,18 +379,25 @@ export function AppProvider({ children }) {
   }, [fetchGoogleEvents]);
 
   // 화면에 보여줄 최종 일정 목록: Google에서 가져온 확정 일정 + 우리 쪽
-  // 승인대기/시간변경 요청. 이미 Google 쪽에서 확인된(confirmed) 로컬
-  // 레코드는 중복 표시되지 않도록 제외한다.
+  // 승인대기/시간변경/확정 요청. 한솔이 요청해서 확정된 일정은 실제로는
+  // Google Calendar에도 생성돼 있지만, 화면에는 "한솔 요청 출처"가 살아있는
+  // 로컬(platform) 버전을 그대로 보여준다 — 팀장/한솔 필터가 source 필드로
+  // 구분해야 하는데, Google 쪽 사본만 남기면 그 출처 정보가 사라지기
+  // 때문이다(요구사항: 수락돼도 한솔 화면에서 계속 보여야 함). 대신 같은
+  // 일정이 두 번 표시되지 않도록, 그 일정에 대응하는 Google 쪽 사본은
+  // 목록에서 제외한다.
   const events = useMemo(() => {
     if (!googleActive) return localEvents;
-    const platformVisible = localEvents.filter((e) => {
-      if (e.status === 'rejected') return false;
-      if (e.status === 'confirmed') {
-        return !googleEvents.some((g) => g.googleEventId && g.googleEventId === e.googleCalendarEventId);
-      }
-      return true;
-    });
-    return [...googleEvents, ...platformVisible];
+    const hansolConfirmedGoogleIds = new Set(
+      localEvents
+        .filter((e) => e.source === 'platform' && e.status === 'confirmed' && e.googleCalendarEventId)
+        .map((e) => e.googleCalendarEventId)
+    );
+    const googleVisible = googleEvents.filter(
+      (g) => !(g.googleEventId && hansolConfirmedGoogleIds.has(g.googleEventId))
+    );
+    const platformVisible = localEvents.filter((e) => e.status !== 'rejected');
+    return [...googleVisible, ...platformVisible];
   }, [googleActive, googleEvents, localEvents]);
 
   const addRequest = useCallback((draft) => {
@@ -402,7 +409,7 @@ export function AppProvider({ children }) {
       end: draft.end,
       location: draft.location || '',
       memo: draft.memo || '',
-      requester: '코디네이터',
+      requester: '한솔',
       manager: '팀장',
       status: 'pending',
       googleCalendarEventId: null,
