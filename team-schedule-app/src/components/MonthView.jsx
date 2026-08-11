@@ -12,9 +12,11 @@ const STATUS_DOT = {
   reschedule_requested: 'dot-pending',
 };
 
-// 월간 화면이 유일한 화면이 되면서(주간 화면 진입 없이), 일정 클릭 →
-// 상세 팝오버, 빈 시간 클릭 → 일정 요청 팝오버를 모두 이 화면 안에서
-// 직접 처리한다(예전에는 셀 클릭 시 주간 화면으로 이동해서 처리했음).
+// 월간 화면이 유일한 화면이다. 노란 "빈 시간" 박스/"+ 일정 배정" 문구는
+// 쓰지 않고, 날짜 칸의 빈 공간 자체가 클릭 가능한 "일정 추가" 버튼 역할을
+// 한다(호버 시에만 아주 작은 + 힌트를 보여줌). 이미 일정이 있는 칸도 빈
+// 공간을 클릭하면 새 일정을 추가할 수 있다. 기존 일정 칩 클릭은
+// stopPropagation으로 셀 클릭과 분리해 상세/수정 팝오버로만 이어진다.
 export default function MonthView() {
   const { cursorDate, events, settings, addRequest } = useApp();
   const today = startOfDay(new Date());
@@ -31,27 +33,29 @@ export default function MonthView() {
     return events.filter((e) => e.status !== 'rejected' && isSameDay(new Date(e.start), d));
   }
 
-  // 주간뷰와 동일한 계산(computeFreeBlocks)을 재사용해 이 날짜의 빈 시간
-  // 블록 목록을 그대로 얻는다(요청 생성 시 기본 시간 범위로 사용).
-  function freeBlocksFor(d) {
+  // 일정 추가 팝오버의 기본 시간 범위를 정할 때만 내부적으로 사용(화면에는
+  // 더 이상 노란 박스로 표시하지 않음). 빈 시간이 없는 날(완전히 예약됨)은
+  // 근무시간 전체를 기본 범위로 두고, 실제 겹침 여부는 제출 시 다시 확인한다.
+  function firstFreeBlock(d) {
     const busy = busyIntervalsForDay(events, d);
-    return computeFreeBlocks(busy, settings);
+    const blocks = computeFreeBlocks(busy, settings);
+    if (blocks.length > 0) return blocks[0];
+    return { start: settings.workStartMin, end: settings.workEndMin };
   }
 
-  function handleFreeAreaClick(d, e) {
-    e.stopPropagation();
-    const blocks = freeBlocksFor(d);
-    if (blocks.length === 0) return;
-    const first = blocks[0];
+  function handleCellClick(d) {
+    const block = firstFreeBlock(d);
     setDetailPopover(null);
     setCreatePopover({
       day: d,
-      blockStart: first.start,
-      blockEnd: first.end,
-      startMin: first.start,
-      endMin: Math.min(first.start + 30, first.end),
-      x: e.clientX,
-      y: e.clientY,
+      blockStart: block.start,
+      blockEnd: block.end,
+      startMin: block.start,
+      endMin: Math.min(block.start + 30, block.end),
+      // 팝오버는 클릭 좌표 대신 셀 중앙 근처에 뜨도록 화면 중앙값을 씀
+      // (날짜 칸 어디를 눌러도 팝업 위치가 안정적이도록).
+      x: window.innerWidth / 2 - 140,
+      y: window.innerHeight / 3,
     });
   }
 
@@ -69,18 +73,14 @@ export default function MonthView() {
     const free = computeFreeBlocks(busy, settings);
     const stillFree = free.some((f) => f.start <= payload.startMin && f.end >= payload.endMin);
     if (!stillFree) {
-      return { error: '방금 다른 일정이 등록되었습니다. 다른 빈 시간을 선택해주세요.' };
+      return { error: '해당 시간에 이미 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
     }
     const base = startOfDay(day);
-    const start = addDaysMinutes(base, payload.startMin);
-    const end = addDaysMinutes(base, payload.endMin);
+    const start = new Date(base.getTime() + payload.startMin * 60000).toISOString();
+    const end = new Date(base.getTime() + payload.endMin * 60000).toISOString();
     addRequest({ title: payload.title, location: payload.location, memo: payload.memo, start, end });
     setCreatePopover(null);
     return { ok: true };
-  }
-
-  function addDaysMinutes(base, minutes) {
-    return new Date(base.getTime() + minutes * 60000).toISOString();
   }
 
   return (
@@ -94,30 +94,28 @@ export default function MonthView() {
         {cells.map((d) => {
           const inMonth = d.getMonth() === monthAnchor.getMonth();
           const evts = dayEvents(d);
-          const free = freeBlocksFor(d);
           return (
             <div
               key={dateKey(d)}
               className={`month-cell${inMonth ? '' : ' month-cell-out'}${isSameDay(d, today) ? ' month-cell-today' : ''}`}
+              onClick={() => handleCellClick(d)}
             >
               <div className="month-cell-date">{d.getDate()}</div>
-              <div className="month-cell-events">
-                {evts.slice(0, 3).map((e) => (
-                  <div
-                    key={e.id}
-                    className={`month-event-chip ${STATUS_DOT[e.status] || ''}`}
-                    onClick={(ev) => handleEventClick(e, ev)}
-                  >
-                    {e.title}
-                  </div>
-                ))}
-                {evts.length > 3 && <div className="month-more">+{evts.length - 3}</div>}
-              </div>
-              {free.length > 0 && (
-                <div className="month-free-area" onClick={(e) => handleFreeAreaClick(d, e)}>
-                  <span>+ 일정 배정</span>
+              {evts.length > 0 && (
+                <div className="month-cell-events">
+                  {evts.slice(0, 3).map((e) => (
+                    <div
+                      key={e.id}
+                      className={`month-event-chip ${STATUS_DOT[e.status] || ''}`}
+                      onClick={(ev) => handleEventClick(e, ev)}
+                    >
+                      {e.title}
+                    </div>
+                  ))}
+                  {evts.length > 3 && <div className="month-more">+{evts.length - 3}</div>}
                 </div>
               )}
+              <span className="month-cell-plus-hint">+</span>
             </div>
           );
         })}

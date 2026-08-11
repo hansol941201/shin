@@ -18,10 +18,15 @@
   --confirmed-bg: #f0f5fb;
   --confirmed-border: #1b3a5c;
 
-  /* 아주 연한 주황/베이지 */
+  /* 아주 연한 주황/베이지 — Week view/구글버튼 경고 상태 등에서 계속 사용 */
   --pending-bg: #fdf6ee;
   --pending-border: #e0a565;
   --pending-text: #a56a2a;
+
+  /* 내가 등록한 일정/승인대기 일정 전용 색(월간뷰): 연한 분홍/분홍 테두리/진한 분홍 글씨 */
+  --own-bg: #fdeef4;
+  --own-border: #e8a0c1;
+  --own-text: #b23368;
 
   --today-bg: #eef4fb;
   --lunch-bg: #f4f5f6;
@@ -160,10 +165,8 @@ button, select, input, textarea {
 .legend-swatch {
   width: 8px; height: 8px; border-radius: 2px; display: inline-block;
 }
-/* 실제 캘린더 블록보다 살짝 진하게: 8px짜리 범례 칩은 원래 색 그대로면 거의 안 보임 */
-.legend-free { background: #f6e9a3; border: 1px solid var(--free-border); }
 .legend-confirmed { background: var(--confirmed-bg); border-left: 2px solid var(--confirmed-border); }
-.legend-pending { background: var(--pending-bg); border: 1px dashed var(--pending-border); }
+.legend-pending { background: var(--own-bg); border: 1px solid var(--own-border); }
 
 /* ---------- Main area ---------- */
 .main-area {
@@ -473,17 +476,17 @@ button, select, input, textarea {
   border-radius: 10px;
 }
 .pv-status-confirmed { background: var(--confirmed-bg); color: var(--navy); }
-.pv-status-pending { background: var(--pending-bg); color: var(--pending-text); }
-.pv-status-reschedule_requested { background: var(--pending-bg); color: var(--pending-text); }
+.pv-status-pending { background: var(--own-bg); color: var(--own-text); border: 1px solid var(--own-border); }
+.pv-status-reschedule_requested { background: var(--own-bg); color: var(--own-text); border: 1px solid var(--own-border); }
 .pv-status-rejected { background: #f1f2f4; color: var(--text-faint); }
 
 .pv-reschedule-box {
   margin-top: 8px;
-  background: var(--pending-bg);
+  background: var(--own-bg);
   border-radius: 7px;
   padding: 8px 10px;
 }
-.pv-reschedule-title { font-size: 11.5px; color: var(--pending-text); font-weight: 600; margin-bottom: 2px; }
+.pv-reschedule-title { font-size: 11.5px; color: var(--own-text); font-weight: 600; margin-bottom: 2px; }
 .pv-reschedule-diff { font-size: 13px; font-weight: 700; color: var(--text); }
 
 .pv-actions { display: flex; gap: 6px; margin-top: 10px; }
@@ -668,6 +671,7 @@ button, select, input, textarea {
   grid-template-rows: repeat(6, 1fr);
 }
 .month-cell {
+  position: relative;
   border: 1px solid var(--border);
   margin: -1px 0 0 -1px;
   padding: 6px;
@@ -676,6 +680,8 @@ button, select, input, textarea {
   gap: 4px;
   min-height: 0;
   overflow: hidden;
+  background: #fff;
+  cursor: pointer;
 }
 .month-cell-out { color: var(--text-faint); }
 .month-cell-out .month-cell-date { color: var(--text-faint); }
@@ -683,30 +689,28 @@ button, select, input, textarea {
 .month-cell-date { font-size: 13px; font-weight: 700; }
 .month-cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; flex: 0 0 auto; }
 
-/* 월간뷰 빈 시간 표시: 일정이 전혀 없는 날은 셀의 남는 영역 전체가,
-   일정이 일부 있는 날은 그 아래 남은 공간만 연한 노랑으로 채워진다.
-   일정 블록보다 시각적 우선순위가 낮도록 아주 옅은 색만 사용한다. */
-.month-free-area {
-  flex: 1 1 auto;
-  min-height: 14px;
-  margin-top: 2px;
-  background: var(--free-bg);
-  border: 1px solid var(--free-border);
-  border-radius: 3px;
+/* 빈 공간 클릭 = 일정 추가. 평소엔 아무 표시도 없는 깨끗한 흰 칸으로 두고,
+   마우스를 올렸을 때만 우측 하단에 아주 작은 +를 살짝 보여준다. */
+.month-cell-plus-hint {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 3px 5px;
-  overflow: hidden;
-  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-faint);
+  background: var(--navy-soft);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
 }
-.month-free-area:hover { filter: brightness(0.97); }
-.month-free-area span {
-  font-size: 9.5px;
-  font-weight: 600;
-  color: #8a6d2c;
-  white-space: nowrap;
-}
+.month-cell:hover .month-cell-plus-hint { opacity: 1; }
+
 .month-event-chip {
   font-size: 10.5px;
   padding: 1px 5px;
@@ -719,7 +723,11 @@ button, select, input, textarea {
   cursor: pointer;
 }
 .month-event-chip:hover { filter: brightness(0.97); }
-.month-event-chip.dot-pending { background: var(--pending-bg); color: var(--pending-text); }
+.month-event-chip.dot-pending {
+  background: var(--own-bg);
+  color: var(--own-text);
+  border: 1px solid var(--own-border);
+}
 .month-more { font-size: 10px; color: var(--text-faint); }
 
 /* ---------- Mobile approval list ---------- */
