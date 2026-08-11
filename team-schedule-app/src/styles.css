@@ -566,7 +566,30 @@ button, select, input, textarea {
 .month-cell-out .month-cell-date { color: var(--text-faint); }
 .month-cell-today { background: var(--today-bg); }
 .month-cell-date { font-size: 13px; font-weight: 700; }
-.month-cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.month-cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; flex: 0 0 auto; }
+
+/* 월간뷰 빈 시간 표시: 일정이 전혀 없는 날은 셀의 남는 영역 전체가,
+   일정이 일부 있는 날은 그 아래 남은 공간만 연한 노랑으로 채워진다.
+   일정 블록보다 시각적 우선순위가 낮도록 아주 옅은 색만 사용한다. */
+.month-free-area {
+  flex: 1 1 auto;
+  min-height: 14px;
+  margin-top: 2px;
+  background: var(--free-bg);
+  border: 1px solid var(--free-border);
+  border-radius: 3px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 3px 5px;
+  overflow: hidden;
+}
+.month-free-area span {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #8a6d2c;
+  white-space: nowrap;
+}
 .month-event-chip {
   font-size: 10.5px;
   padding: 1px 5px;
