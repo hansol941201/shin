@@ -1,0 +1,91 @@
+name: Deploy team-schedule-app to GitHub Pages
+
+# team-schedule-app 소스가 바뀔 때마다 production build를 만들어 GitHub
+# Pages가 실제로 서빙하는 브랜치(claude/fix-nqvozd)의 team-schedule/
+# 하위 폴더에만 반영한다. 그 브랜치의 다른 파일(루트 index.html, v2/ 등
+# 기존 페이지)은 절대 건드리지 않는다 — 이 브랜치를 통째로 checkout한 뒤
+# team-schedule/ 폴더만 새 빌드 결과로 교체하고 그 부분만 커밋한다.
+#
+# Pages 소스가 이미 "브랜치에서 배포(Deploy from a branch)"로 설정되어
+# 있으므로, 이 워크플로가 claude/fix-nqvozd에 커밋을 push하면 GitHub의
+# 내장 pages-build-deployment가 자동으로 이어서 실제 배포를 수행한다
+# (별도의 actions/deploy-pages 단계가 필요 없음).
+
+on:
+  push:
+    branches:
+      - claude/team-lead-schedule-coordinator-oiy316
+    paths:
+      - 'team-schedule-app/**'
+      - '.github/workflows/deploy-team-schedule.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-team-schedule
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source branch (team-schedule-app 코드)
+        uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: source/team-schedule-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: source/team-schedule-app
+        run: npm ci
+
+      - name: Build (production, GitHub Pages 하위 경로 기준)
+        working-directory: source/team-schedule-app
+        env:
+          VITE_BASE_PATH: /shin/team-schedule/
+          # 저장소 Settings → Secrets and variables → Actions에 등록한
+          # VITE_GOOGLE_CLIENT_ID 값을 빌드 시점에 그대로 주입한다.
+          # Client ID는 비밀번호/Client Secret이 아니라 프론트엔드 번들에
+          # 원래 그대로 노출되는 값이지만, 저장소 코드에 직접 커밋하지
+          # 않기 위해 여기서만 주입한다. Secret이 비어 있으면 앱은
+          # "Google 미설정" 상태로 정상적으로 뜨고, 이후 Secret을 추가한
+          # 뒤 이 워크플로를 한 번 더 실행하면 그때부터 반영된다.
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+        run: npm run build
+
+      - name: Checkout Pages branch (기존 다른 페이지가 있는 브랜치)
+        uses: actions/checkout@v4
+        with:
+          ref: claude/fix-nqvozd
+          path: pages
+          fetch-depth: 0
+
+      - name: Sync build output into team-schedule/ subfolder only
+        run: |
+          rm -rf pages/team-schedule
+          mkdir -p pages/team-schedule
+          cp -r source/team-schedule-app/dist/. pages/team-schedule/
+          # Jekyll이 정적 파일을 잘못 건드리지 않도록 보장(기존 루트 콘텐츠에는
+          # 영향 없음 — 이미 정상 서빙 중이던 파일들은 그대로 둠).
+          touch pages/.nojekyll
+
+      - name: Commit and push (team-schedule/ 및 .nojekyll만 변경)
+        working-directory: pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add team-schedule .nojekyll
+          if git diff --cached --quiet; then
+            echo "No changes to deploy."
+          else
+            git commit -m "Deploy team-schedule-app (${{ github.sha }})"
+            git push origin HEAD:claude/fix-nqvozd
+          fi
