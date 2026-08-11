@@ -44,21 +44,33 @@ if not exist "%~dp0node_modules" (
 )
 
 echo.
-echo [포트 확인] 사용 가능한 포트를 찾는 중...
+echo [포트 확인] 5173 포트를 확인하는 중...
+rem Google OAuth 승인된 자바스크립트 원본이 포트까지 등록되어 있으므로,
+rem 항상 5173으로 고정한다(다른 포트로 자동 전환하지 않음).
+set "APP_PORT=5173"
 
-set "APP_PORT="
-for %%P in (5173 5174 5175 5176 5177 5178 5179 5180 5181 5182 5183 5184) do (
-    if not defined APP_PORT (
-        netstat -ano | findstr /r /c:":%%P .*LISTENING" >nul 2>nul
-        if errorlevel 1 (
-            set "APP_PORT=%%P"
-        )
+where curl >nul 2>nul
+if not errorlevel 1 (
+    curl --max-time 2 --silent --output NUL --fail "http://localhost:%APP_PORT%/" >nul 2>nul
+    if not errorlevel 1 (
+        echo [확인] 이미 5173에서 팀장 일정 서버가 실행 중입니다. 새로 켜지 않고 그 주소를 엽니다.
+        echo %APP_PORT%> "%~dp0.last_port"
+        start "" "http://localhost:%APP_PORT%/"
+        echo.
+        pause
+        exit /b 0
     )
 )
 
-if not defined APP_PORT (
-    echo [오류] 5173~5184 포트가 모두 사용 중입니다.
-    echo         다른 프로그램을 종료한 뒤 다시 시도해주세요.
+netstat -ano | findstr /r /c:":%APP_PORT% .*LISTENING" >nul 2>nul
+if not errorlevel 1 (
+    set "BLOCK_PID="
+    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
+        if not defined BLOCK_PID set "BLOCK_PID=%%A"
+    )
+    echo [오류] 5173 포트를 이미 다른 프로그램이 사용하고 있습니다. ^(PID %BLOCK_PID%^)
+    echo         Google 로그인이 깨지지 않도록 다른 포트로 자동 전환하지 않습니다.
+    echo         작업 관리자에서 해당 프로그램을 종료한 뒤 다시 실행해주세요.
     echo.
     pause
     exit /b 1

@@ -65,18 +65,24 @@ if not exist "%~dp0node_modules" (
     )
 )
 
-rem ---------- 사용 가능한 포트 탐색 ----------
-set "APP_PORT="
-for %%P in (5173 5174 5175 5176 5177 5178 5179 5180 5181 5182 5183 5184) do (
-    if not defined APP_PORT (
-        netstat -ano | findstr /r /c:":%%P .*LISTENING" >nul 2>nul
-        if errorlevel 1 set "APP_PORT=%%P"
+rem ---------- 포트는 항상 5173으로 고정 ----------
+rem Google OAuth의 "승인된 자바스크립트 원본"이 포트까지 포함해 등록되어
+rem 있으므로, 다른 포트로 자동으로 넘어가면 로그인이 깨진다. 그래서
+rem 5173이 이미 우리 서버가 아닌 다른 프로그램에 의해 사용 중이면
+rem 다른 포트를 시도하지 않고 여기서 바로 멈춘다(위의 재사용 검사에서
+rem 이미 "우리 서버가 5173에서 응답 중"인 경우는 걸러지고 반환됐다).
+set "APP_PORT=5173"
+netstat -ano | findstr /r /c:":%APP_PORT% .*LISTENING" >nul 2>nul
+if not errorlevel 1 (
+    set "BLOCK_PID="
+    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
+        if not defined BLOCK_PID set "BLOCK_PID=%%A"
     )
-)
-if not defined APP_PORT (
     > "%STATUS%" echo ERROR
-    >> "%STATUS%" echo 5173~5184 포트가 모두 사용 중입니다.
-    >> "%STATUS%" echo 다른 프로그램을 종료한 뒤 다시 시도해주세요.
+    >> "%STATUS%" echo 5173 포트를 이미 다른 프로그램이 사용하고 있어 팀장 일정 서버를 시작할 수 없습니다.
+    >> "%STATUS%" echo ^(사용 중인 프로세스 PID: !BLOCK_PID!^)
+    >> "%STATUS%" echo Google 로그인이 깨지지 않도록 다른 포트로 자동 전환하지 않습니다.
+    >> "%STATUS%" echo 작업 관리자에서 해당 프로그램을 종료한 뒤 다시 실행해주세요.
     exit /b 1
 )
 
