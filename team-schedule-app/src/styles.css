@@ -28,6 +28,11 @@
   --own-border: #e8a0c1;
   --own-text: #b23368;
 
+  /* 팀장이 거절한 한솔 요청(일정 불가/기타 사유) 전용 색: 연한 빨강 */
+  --reject-bg: #fdecea;
+  --reject-border: #e8a099;
+  --reject-text: #b23a26;
+
   --today-bg: #eef4fb;
   --lunch-bg: #f4f5f6;
 
@@ -184,7 +189,11 @@ button, select, input, textarea {
   padding: 6px 12px;
   border-radius: 8px;
   font-weight: 600;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
 }
+.summary-card:hover { filter: brightness(0.97); }
 .summary-card-icon { width: 18px; height: 18px; object-fit: contain; }
 .summary-card-label { font-size: 12.5px; }
 .summary-card-num { font-size: 15px; font-weight: 800; }
@@ -198,6 +207,55 @@ button, select, input, textarea {
   color: var(--own-text);
   border: 1px solid var(--own-border);
 }
+.summary-card-reschedule {
+  background: var(--pending-bg);
+  color: var(--pending-text);
+  border: 1px solid var(--pending-border);
+}
+.summary-card-rejected {
+  background: var(--reject-bg);
+  color: var(--reject-text);
+  border: 1px solid var(--reject-border);
+}
+/* 팀장 화면에서 상단을 복잡하게 만들지 않기 위한 아주 작은 보조 표시
+   (시간변경 건수가 있을 때만 노출). */
+.summary-card-mini {
+  align-self: center;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pending-text);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.summary-card-mini:hover { text-decoration: underline; }
+
+.approval-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.approval-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.approval-menu-item:hover { background: var(--navy-soft); }
+.approval-menu-title { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.approval-menu-time { font-size: 11px; color: var(--text-sub); }
 
 /* ---------- Main area ---------- */
 .main-area {
@@ -513,17 +571,41 @@ button, select, input, textarea {
 }
 .pv-status-confirmed { background: var(--confirmed-bg); color: var(--navy); }
 .pv-status-pending { background: var(--own-bg); color: var(--own-text); border: 1px solid var(--own-border); }
-.pv-status-reschedule_requested { background: var(--own-bg); color: var(--own-text); border: 1px solid var(--own-border); }
-.pv-status-rejected { background: #f1f2f4; color: var(--text-faint); }
+.pv-status-reschedule_requested { background: var(--pending-bg); color: var(--pending-text); border: 1px solid var(--pending-border); }
+.pv-status-rejected { background: var(--reject-bg); color: var(--reject-text); border: 1px solid var(--reject-border); }
 
 .pv-reschedule-box {
   margin-top: 8px;
-  background: var(--own-bg);
+  background: var(--pending-bg);
   border-radius: 7px;
   padding: 8px 10px;
 }
-.pv-reschedule-title { font-size: 12.5px; color: var(--own-text); font-weight: 600; margin-bottom: 2px; }
+.pv-reschedule-title { font-size: 12.5px; color: var(--pending-text); font-weight: 600; margin-bottom: 2px; }
 .pv-reschedule-diff { font-size: 14px; font-weight: 700; color: var(--text); }
+
+.pv-reject-box {
+  margin-top: 8px;
+  background: var(--reject-bg);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+.pv-reject-title { font-size: 12.5px; color: var(--reject-text); font-weight: 600; margin-bottom: 2px; }
+.pv-reject-detail { font-size: 12.5px; color: var(--text); }
+
+.pv-reject-options {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 6px 0 8px;
+}
+.pv-reject-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
 
 .pv-actions { display: flex; gap: 6px; margin-top: 10px; }
 .pv-btn {
@@ -765,6 +847,16 @@ button, select, input, textarea {
   background: var(--own-bg);
   color: var(--own-text);
   border: 1px solid var(--own-border);
+}
+.month-event-chip.dot-reschedule {
+  background: var(--pending-bg);
+  color: var(--pending-text);
+  border: 1px solid var(--pending-border);
+}
+.month-event-chip.dot-rejected {
+  background: var(--reject-bg);
+  color: var(--reject-text);
+  border: 1px solid var(--reject-border);
 }
 .month-chip-icon {
   width: 18px;

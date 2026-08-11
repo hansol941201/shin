@@ -69,7 +69,15 @@ function eventsReducer(events, action) {
     case 'REJECT_REQUEST': {
       return events.map((e) =>
         e.id === action.id
-          ? { ...e, status: 'rejected', updatedAt: new Date().toISOString(), rejectedAt: new Date().toISOString() }
+          ? {
+              ...e,
+              status: 'rejected',
+              // 'unavailable'(일정 불가) | 'other'(기타, 사유 직접 입력)
+              rejectionReason: action.reason || 'unavailable',
+              rejectionDetail: action.detail || '',
+              updatedAt: new Date().toISOString(),
+              rejectedAt: new Date().toISOString(),
+            }
           : e
       );
     }
@@ -396,8 +404,11 @@ export function AppProvider({ children }) {
     const googleVisible = googleEvents.filter(
       (g) => !(g.googleEventId && hansolConfirmedGoogleIds.has(g.googleEventId))
     );
-    const platformVisible = localEvents.filter((e) => e.status !== 'rejected');
-    return [...googleVisible, ...platformVisible];
+    // 거절된 요청도 이제 한솔 화면에 빨간색으로 계속 보여줘야 하므로 더 이상
+    // status로 걸러내지 않는다(취소된 승인대기 요청은 DELETE_LOCAL_EVENT로
+    // 배열에서 아예 제거되므로 여기 남아있는 rejected는 전부 "팀장이 실제로
+    // 거절 처리한" 요청뿐이다).
+    return [...googleVisible, ...localEvents];
   }, [googleActive, googleEvents, localEvents]);
 
   const addRequest = useCallback((draft) => {
@@ -470,8 +481,10 @@ export function AppProvider({ children }) {
     [localEvents, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
   );
 
-  const rejectRequest = useCallback((id) => {
-    dispatchAndPersist({ type: 'REJECT_REQUEST', id });
+  // reason: 'unavailable'(일정 불가) | 'other'(기타). detail: 'other'일 때
+  // 팀장이 직접 입력한 사유 텍스트.
+  const rejectRequest = useCallback((id, reason, detail) => {
+    dispatchAndPersist({ type: 'REJECT_REQUEST', id, reason, detail });
   }, [dispatchAndPersist]);
 
   const proposeReschedule = useCallback((id, proposedStart, proposedEnd) => {

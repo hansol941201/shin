@@ -6,9 +6,15 @@ import { useApp } from '../state/store.jsx';
 const STATUS_LABEL = {
   confirmed: '확정',
   pending: '승인대기',
-  reschedule_requested: '시간변경 제안',
+  reschedule_requested: '시간변경 요청',
   rejected: '거절됨',
 };
+
+// 거절 사유에 따른 표시 문구. '일정 불가'는 그대로, '기타'는 "거절"로
+// 짧게 표시하고 상세 사유는 별도 줄에 보여준다.
+function rejectionLabel(e) {
+  return e.rejectionReason === 'unavailable' ? '일정 불가' : '거절';
+}
 
 // 일정 블록(확정/승인대기/시간변경) 클릭 시 뜨는 상세/액션 팝오버.
 // 시작/종료 시간은 30분 단위 선택지가 아니라 <input type="time">으로 자유롭게
@@ -25,11 +31,16 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
     updateEvent,
     deleteEventAction,
   } = useApp();
-  const [mode, setMode] = useState('view'); // 'view' | 'reschedule-form' | 'edit-form' | 'delete-confirm'
+  // 'view' | 'reschedule-form' | 'edit-form' | 'delete-confirm' | 'reject-reason'
+  const [mode, setMode] = useState('view');
   const [newStart, setNewStart] = useState(null);
   const [newEnd, setNewEnd] = useState(null);
   const [actionError, setActionError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // 거절 사유 선택 폼
+  const [rejectReason, setRejectReason] = useState('unavailable'); // 'unavailable' | 'reschedule_request' | 'other'
+  const [rejectDetail, setRejectDetail] = useState('');
 
   // 수정 폼 필드
   const [editTitle, setEditTitle] = useState('');
@@ -65,6 +76,31 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
     const proposedStart = new Date(dayBase.getTime() + newStart * 60000).toISOString();
     const proposedEnd = new Date(dayBase.getTime() + newEnd * 60000).toISOString();
     proposeReschedule(event.id, proposedStart, proposedEnd);
+    onClose();
+  }
+
+  function beginRejectReason() {
+    setRejectReason('unavailable');
+    setRejectDetail('');
+    setActionError('');
+    setMode('reject-reason');
+  }
+
+  // '일정 변경 요청'을 고르면 완전히 거절하지 않고, 기존 시간변경 제안
+  // 흐름(beginReschedule → submitReschedule → proposeReschedule)을 그대로
+  // 재사용한다 — 결과 상태는 reschedule_requested로 [시간변경] 버튼을 눌렀을
+  // 때와 동일하게 처리된다.
+  function submitRejectReason() {
+    if (rejectReason === 'reschedule_request') {
+      beginReschedule();
+      return;
+    }
+    if (rejectReason === 'other' && !rejectDetail.trim()) {
+      setActionError('사유를 입력해주세요.');
+      return;
+    }
+    setActionError('');
+    rejectRequest(event.id, rejectReason, rejectReason === 'other' ? rejectDetail.trim() : '');
     onClose();
   }
 
@@ -156,7 +192,9 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
   return (
     <PopoverShell anchor={anchor} onClose={onClose} width={296}>
       <div className="pv-head">
-        <span className={`pv-status-badge pv-status-${event.status}`}>{STATUS_LABEL[event.status]}</span>
+        <span className={`pv-status-badge pv-status-${event.status}`}>
+          {event.status === 'rejected' ? rejectionLabel(event) : STATUS_LABEL[event.status]}
+        </span>
         <button className="pv-close" onClick={onClose} aria-label="닫기">✕</button>
       </div>
 
@@ -170,10 +208,19 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
 
           {event.status === 'reschedule_requested' && (
             <div className="pv-reschedule-box">
-              <div className="pv-reschedule-title">팀장님이 시간을 변경했습니다.</div>
+              <div className="pv-reschedule-title">팀장님이 시간변경을 요청했습니다.</div>
               <div className="pv-reschedule-diff">
                 {timeLabel.split(' ~ ')[0]} → {formatHM(new Date(event.proposedStart).getHours() * 60 + new Date(event.proposedStart).getMinutes())}
               </div>
+            </div>
+          )}
+
+          {event.status === 'rejected' && (
+            <div className="pv-reject-box">
+              <div className="pv-reject-title">{rejectionLabel(event)}</div>
+              {event.rejectionDetail && (
+                <div className="pv-reject-detail">사유: {event.rejectionDetail}</div>
+              )}
             </div>
           )}
 
@@ -186,19 +233,19 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
                   {submitting ? '처리 중…' : '수락'}
                 </button>
                 <button className="pv-btn" onClick={beginReschedule} disabled={submitting}>시간변경</button>
-                <button className="pv-btn pv-btn-danger" onClick={() => { rejectRequest(event.id); onClose(); }} disabled={submitting}>거절</button>
+                <button className="pv-btn pv-btn-danger" onClick={beginRejectReason} disabled={submitting}>거절</button>
               </>
             )}
             {isCoordinator && event.status === 'reschedule_requested' && (
               <>
                 <button className="pv-btn pv-btn-primary" onClick={handleAcceptReschedule} disabled={submitting}>
-                  {submitting ? '처리 중…' : '수락'}
+                  {submitting ? '처리 중…' : '변경시간 확인'}
                 </button>
                 <button className="pv-btn" onClick={() => { cancelReschedule(event.id); onClose(); }} disabled={submitting}>다른 시간 선택</button>
               </>
             )}
             {isManager && event.status === 'reschedule_requested' && (
-              <div className="pv-hint">코디네이터 응답 대기 중</div>
+              <div className="pv-hint">한솔 응답 대기 중</div>
             )}
           </div>
 
@@ -239,6 +286,56 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
           <div className="pv-actions">
             <button className="pv-btn pv-btn-primary" onClick={submitReschedule}>제안 보내기</button>
             <button className="pv-btn" onClick={() => setMode('view')}>취소</button>
+          </div>
+        </>
+      )}
+
+      {mode === 'reject-reason' && (
+        <>
+          <div className="pv-title">거절 사유</div>
+          <div className="pv-meta">{event.title}</div>
+          <div className="pv-reject-options">
+            <label className="pv-reject-option">
+              <input
+                type="radio"
+                name="reject-reason"
+                checked={rejectReason === 'unavailable'}
+                onChange={() => setRejectReason('unavailable')}
+              />
+              일정 불가
+            </label>
+            <label className="pv-reject-option">
+              <input
+                type="radio"
+                name="reject-reason"
+                checked={rejectReason === 'reschedule_request'}
+                onChange={() => setRejectReason('reschedule_request')}
+              />
+              일정 변경 요청
+            </label>
+            <label className="pv-reject-option">
+              <input
+                type="radio"
+                name="reject-reason"
+                checked={rejectReason === 'other'}
+                onChange={() => setRejectReason('other')}
+              />
+              기타
+            </label>
+          </div>
+          {rejectReason === 'other' && (
+            <textarea
+              className="pv-edit-textarea"
+              placeholder="기타 사유"
+              value={rejectDetail}
+              onChange={(e) => setRejectDetail(e.target.value)}
+              autoFocus
+            />
+          )}
+          {actionError && <div className="pv-error">{actionError}</div>}
+          <div className="pv-actions">
+            <button className="pv-btn pv-btn-primary" onClick={submitRejectReason} disabled={submitting}>확인</button>
+            <button className="pv-btn" onClick={() => setMode('view')} disabled={submitting}>취소</button>
           </div>
         </>
       )}

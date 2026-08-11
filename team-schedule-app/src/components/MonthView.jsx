@@ -6,21 +6,24 @@ import RequestPopover from './RequestPopover.jsx';
 import EventDetailPopover from './EventDetailPopover.jsx';
 import woodpeckerIcon from '../assets/woodpecker.png';
 
-// 한솔이 요청한 일정(source==='platform')은 상태와 무관하게 분홍 계열로
-// 표시한다. 팀장이 Google에 직접 등록한 일반 일정(source==='google')은
-// 기존 파란 계열을 유지한다 — 색만 봐도 출처가 구분되도록.
+// 한솔이 요청한 일정(source==='platform')은 상태별로 색이 다르다 — 팀장이
+// Google에 직접 등록한 일반 일정(source==='google')은 기존 파란 계열
+// 그대로 두고, 한솔 요청은 승인대기/확정=분홍, 시간변경 요청=주황,
+// 거절=빨강으로 색만 봐도 처리 결과를 바로 알 수 있게 한다.
 function chipClass(e) {
-  if (e.source === 'platform') return 'dot-pending';
-  return 'dot-confirmed';
+  if (e.source !== 'platform') return 'dot-confirmed';
+  if (e.status === 'reschedule_requested') return 'dot-reschedule';
+  if (e.status === 'rejected') return 'dot-rejected';
+  return 'dot-pending';
 }
 
-// 분홍 칩 중에서도 상태를 아주 작은 글자로 구분해준다. 승인대기는 문구
-// 대신 체크 표시(✓) 하나로 짧게 표시한다.
+// 상태별 짧은 배지. 승인대기는 문구 대신 체크 표시(✓)로 짧게 표시한다.
 function chipBadge(e) {
   if (e.source !== 'platform') return null;
   if (e.status === 'confirmed') return '확정';
-  if (e.status === 'reschedule_requested') return '시간변경';
+  if (e.status === 'reschedule_requested') return '시간변경 요청';
   if (e.status === 'pending') return '✓';
+  if (e.status === 'rejected') return e.rejectionReason === 'unavailable' ? '일정 불가' : '거절';
   return null;
 }
 
@@ -51,14 +54,15 @@ export default function MonthView() {
 
   // 우측 상단 [팀장 | 한솔] 필터에 따라 보여줄 일정을 나눈다.
   // - 팀장: 팀장님의 실제 일정(Google 기본 일정) + 팀장님이 확인/처리해야
-  //   하는 한솔의 모든 요청(승인대기/시간변경/수락 완료)까지 전부 보여준다
-  //   — 승인대기를 캘린더에서 숨기면 놓치기 쉬우므로 반드시 표시한다.
-  // - 한솔: 한솔이 팀장님께 요청한 일정만(승인대기/시간변경/수락 완료). 팀장이
-  //   Google에 직접 등록한 일반 일정은 숨긴다.
+  //   하는 한솔의 모든 요청(승인대기/시간변경/거절/수락 완료)까지 전부
+  //   보여준다 — 승인대기를 캘린더에서 숨기면 놓치기 쉬우므로 반드시 표시한다.
+  // - 한솔: 한솔이 팀장님께 요청한 일정만(승인대기/시간변경/거절/수락 완료).
+  //   팀장이 Google에 직접 등록한 일반 일정은 숨긴다.
+  // 거절된 요청도 이제 빨간색으로 계속 표시해 한솔이 처리 결과를 놓치지
+  // 않게 한다(예전에는 화면에서 완전히 숨겼음).
   // source/requester는 store.jsx가 명시적으로 채워 넣는 값이라 여기서는
   // 그 값만 그대로 사용한다(ID/상태 추측 금지).
   function visibleByRole(e) {
-    if (e.status === 'rejected') return false;
     if (role === 'manager') return true;
     return e.source === 'platform';
   }
