@@ -129,17 +129,14 @@
   .co-form-field input:focus, .co-form-field textarea:focus{ border-color:#C7CEDB; }
   .co-form-field textarea{ min-height:56px; resize:vertical; }
 
-  /* ---------- 서류함(4분류) ---------- */
-  .doc-tabs{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
-  .doc-tab{ height:28px; padding:0 12px; font-size:12.5px; color:var(--text-muted); background:var(--surface); border:1px solid var(--line); border-radius:14px; cursor:pointer; }
-  .doc-tab.active{ background:#EEF1F8; color:var(--navy); font-weight:600; border-color:#C7CEDB; }
-  .doc-tab:hover:not(.active){ background:#F0F1F4; }
-  .doc-dropzone{
-    border:1px dashed var(--line); border-radius:8px; padding:16px; text-align:center; cursor:pointer; margin-bottom:12px;
-    color:var(--text-muted); font-size:12.5px;
-  }
-  .doc-dropzone:hover{ border-color:#C7CEDB; }
-  .doc-blocked-note{ font-size:11.5px; color:#9A6B00; background:#FFF7E6; border:1px solid #F0DDA8; border-radius:6px; padding:8px 10px; margin-bottom:12px; }
+  /* ---------- 서류함(4분류) — 고객별 파일 보관함 ---------- */
+  .doc-blocked-note{ font-size:11.5px; color:#9A6B00; background:#FFF7E6; border:1px solid #F0DDA8; border-radius:6px; padding:8px 10px; margin-bottom:14px; }
+  .doc-category{ border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; background:var(--surface); }
+  .doc-category.drag-over{ border-color:#C7CEDB; background:#F5F7FB; }
+  .doc-category:last-child{ margin-bottom:0; }
+  .doc-cat-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .doc-cat-title{ font-size:13.5px; font-weight:700; color:var(--text); }
+  .doc-add-btn{ font-size:12px; }
   .doc-item{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--line); }
   .doc-item:last-child{ border-bottom:none; }
   .doc-thumb{ width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid var(--line); flex:none; background:var(--bg); }
@@ -148,8 +145,9 @@
   .doc-name{ font-size:13px; color:var(--text); font-weight:600; word-break:break-all; }
   .doc-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
   .doc-memo{ font-size:12px; color:var(--text-muted); margin-top:4px; white-space:pre-wrap; }
-  .doc-actions{ display:flex; gap:10px; margin-top:6px; }
-  .doc-empty{ font-size:12px; color:var(--text-muted); padding:10px 0; }
+  .doc-local-note{ font-size:10.5px; color:#9A6B00; margin-top:4px; }
+  .doc-actions{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
+  .doc-empty{ font-size:12px; color:var(--text-muted); padding:6px 0; }
   .doc-rename-row{ display:flex; gap:6px; margin-top:6px; }
   .doc-rename-row input{ flex:1; padding:5px 8px; font-size:12px; border:1px solid var(--line); border-radius:5px; }
 
@@ -608,11 +606,25 @@ window.SHIN2_CRM_OCR = (function(){
     return loadDocuments().filter(d=> d.companyId === companyId && (!type || d.documentType === type))
       .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
   }
+  // saveDocumentFile: 실제 파일 바이트를 저장하는 유일한 진입점(§ 서류함 개편).
+  // 지금은 Firebase Storage 자격증명이 BLOCKED라서 로컬 전용 blob 저장소에만 쓴다.
+  // 나중에 Storage가 연결되면 이 함수 안에서 "로컬 저장" 대신(또는 추가로)
+  // Storage 업로드를 붙이면 되고, 호출부(addDocument)는 바뀔 필요가 없다.
+  function saveDocumentFile(id, dataUrl){
+    // TODO(Storage 연결 시): 여기서 uploadBytes(ref(storage, `users/{uid}/customers/{companyId}/...`), file)
+    // 를 호출해 storagePath를 실제 Storage 경로로 갱신하는 분기를 추가한다. 지금은 BLOCKED.
+    const blobs = readObj(BLOB_KEY);
+    blobs[id] = dataUrl;
+    writeObj(BLOB_KEY, blobs);
+  }
   function addDocument(companyId, documentType, file, dataUrl, extracted){
     const id = genId('doc');
     const rec = {
-      id, companyId, documentType, fileName: file.name, storagePath: 'local:' + id,
-      mimeType: file.type || '', size: file.size || 0, memo:'', createdAt: nowIso(), updatedAt: nowIso()
+      id, companyId, documentType,
+      fileName: file.name, originalFileName: file.name, // originalFileName은 업로드 이후 절대 바꾸지 않는다 — fileName만 "이름변경"으로 바뀔 수 있다.
+      storagePath: 'local:' + id,
+      mimeType: file.type || '', size: file.size || 0, memo:'', createdAt: nowIso(), updatedAt: nowIso(),
+      localOnly: true // Storage BLOCKED 상태에서 만들어진 문서 — 이 기기에만 파일 바이트가 있다는 표시
     };
     if(extracted){
       rec.extractedContactName = extracted.contactName && extracted.contactName.value || '';
@@ -624,9 +636,24 @@ window.SHIN2_CRM_OCR = (function(){
       rec.rawOcrText = extracted.rawOcrText || '';
     }
     const list = loadDocuments(); list.push(rec); saveDocuments(list);
-    const blobs = readObj(BLOB_KEY);
-    blobs[id] = dataUrl;
-    writeObj(BLOB_KEY, blobs);
+    // 파일 저장은 메타데이터 저장과 별개 단계 — OCR 등 다른 처리가 실패해도 이미 저장된 메타데이터/파일은 그대로 남는다.
+    saveDocumentFile(id, dataUrl);
+    return rec;
+  }
+  function updateDocumentExtracted(id, extracted){
+    // OCR은 저장 이후의 부가 결과일 뿐이다(§8) — 이미 저장된 파일/메타데이터를 지우거나 바꾸지 않고 추출필드만 덧붙인다.
+    const list = loadDocuments(); const rec = list.find(d=> d.id===id); if(!rec) return null;
+    if(extracted){
+      rec.extractedContactName = extracted.contactName && extracted.contactName.value || '';
+      rec.extractedPosition = extracted.position && extracted.position.value || '';
+      rec.extractedPhone = extracted.phone && extracted.phone.value || '';
+      rec.extractedMobile = '';
+      rec.extractedEmail = extracted.email && extracted.email.value || '';
+      rec.extractedCompanyName = extracted.name && extracted.name.value || '';
+      rec.rawOcrText = extracted.rawOcrText || '';
+    }
+    rec.updatedAt = nowIso();
+    saveDocuments(list);
     return rec;
   }
   function getBlob(id){ const blobs = readObj(BLOB_KEY); return blobs[id] || ''; }
@@ -639,6 +666,8 @@ window.SHIN2_CRM_OCR = (function(){
     rec.memo = memo; rec.updatedAt = nowIso(); saveDocuments(list);
   }
   function deleteDocument(id){
+    // companyId로만 연결되어 있으므로(§9) 이 id 하나만 지우면 같은 회사의 다른 문서,
+    // 다른 회사의 문서 모두 영향 없음 — 메타데이터와 blob을 함께, 그리고 이것만 지운다.
     saveDocuments(loadDocuments().filter(d=> d.id !== id));
     const blobs = readObj(BLOB_KEY);
     delete blobs[id];
@@ -667,7 +696,7 @@ window.SHIN2_CRM_OCR = (function(){
   window.SHIN2_CRM_DATA = {
     loadCompanies, findCompany, addCompany, updateCompany,
     loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
-    loadDocuments, documentsForCompany, addDocument, getBlob, renameDocument, setDocumentMemo, deleteDocument,
+    loadDocuments, documentsForCompany, addDocument, updateDocumentExtracted, getBlob, renameDocument, setDocumentMemo, deleteDocument,
     memosFor, addMemo, updateMemo, deleteMemo
   };
 })();
@@ -782,7 +811,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['phone','전화번호'], ['mobile','휴대전화'], ['fax','팩스'], ['email','이메일'],
     ['bizRegNo','사업자번호'], ['address','주소'], ['website','홈페이지']
   ];
-  let cardState = { docTab: 'businessCard', editingCompany: false, ocrReview: null };
+  let cardState = { editingCompany: false, ocrReview: null };
   // 다른 탭(v2 또는 CRM 다른 탭)에서 shin2-companies-staging이 바뀌었을 때 지금 이 탭이
   // 편집 폼을 띄워둔 상태라면 storage 이벤트로 인한 재렌더링이 사용자의 입력 중인 내용을
   // 덮어쓰지 않도록 막는 플래그(§ crm 신규등록 폼).
@@ -877,8 +906,51 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
   }
 
-  // ---------------- 서류함(4분류) ----------------
-  const DOC_TYPES = [ ['businessCard','명함'], ['businessRegistration','사업자등록증'], ['questionnaire','질문서'], ['logo','로고'] ];
+  // ---------------- 서류함(4분류) — 고객별 파일 보관함 ----------------
+  // §1~9 개편: 탭 뒤에 파일 하나만 숨기지 않고, 4개 분류를 모두 펼쳐서 각자 자기 파일 목록을
+  // 갖는 "진짜 다중 파일 보관함"으로 만든다. 카테고리별 accept는 실제로 올라올 만한 파일
+  // 형식을 반영(사업자등록증/질문서는 PDF·문서 파일도 허용, 명함/로고는 이미지 중심).
+  const DOC_TYPES = [
+    ['businessCard','명함', 'image/*'],
+    ['businessRegistration','사업자등록증', 'image/*,application/pdf'],
+    ['questionnaire','질문서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx,.txt'],
+    ['logo','로고', 'image/*']
+  ];
+  const LOCAL_ONLY_NOTICE = '이 파일은 현재 이 기기에만 저장되어 있습니다 (클라우드 파일 저장 연결 전)';
+  // 문서 id → Blob object URL 캐시. dataURL을 그대로 window.open에 넘기면 최신 브라우저가
+  // top-level 네비게이션을 막는 경우가 있어, 보기/다운로드는 항상 이 object URL을 쓴다.
+  const docBlobUrlCache = {};
+  function dataUrlToBlob(dataUrl){
+    try{
+      const commaIdx = dataUrl.indexOf(',');
+      const meta = dataUrl.slice(0, commaIdx); // e.g. "data:image/png;base64"
+      const isBase64 = /;base64/.test(meta);
+      const mimeMatch = /^data:([^;]*)/.exec(meta);
+      const mime = (mimeMatch && mimeMatch[1]) || 'application/octet-stream';
+      const raw = dataUrl.slice(commaIdx + 1);
+      const bin = isBase64 ? atob(raw) : decodeURIComponent(raw);
+      const arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }catch(e){ return null; }
+  }
+  function getDocObjectUrl(doc){
+    if(docBlobUrlCache[doc.id]) return docBlobUrlCache[doc.id];
+    const dataUrl = D.getBlob(doc.id);
+    if(!dataUrl) return '';
+    const blob = dataUrlToBlob(dataUrl);
+    if(!blob) return '';
+    const url = URL.createObjectURL(blob);
+    docBlobUrlCache[doc.id] = url;
+    return url;
+  }
+  function revokeDocObjectUrl(id){
+    if(docBlobUrlCache[id]){ try{ URL.revokeObjectURL(docBlobUrlCache[id]); }catch(e){} delete docBlobUrlCache[id]; }
+  }
+  function canPreviewInline(doc){
+    const m = (doc.mimeType || '').toLowerCase();
+    return m.startsWith('image/') || m === 'application/pdf';
+  }
 
   function fileToDataUrl(file){
     return new Promise(res=>{
@@ -891,46 +963,64 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   function renderDocsSection(co){
     const wrap = document.getElementById('crmDocsSection');
-    const tabsHtml = DOC_TYPES.map(([type,label])=> `<button type="button" class="doc-tab${cardState.docTab===type?' active':''}" data-doc-tab="${type}">${label}</button>`).join('');
     wrap.innerHTML = `
-      <div class="doc-tabs">${tabsHtml}</div>
-      <div class="doc-blocked-note">실제 파일은 Firebase Storage 자격증명이 이 세션에 없어 연결이 BLOCKED 상태입니다 — 대신 이 브라우저(localStorage)에 안전하게 로컬 보관되며, 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함됩니다. 바이너리 자체는 어떤 경우에도 Firestore로 전송되지 않습니다.</div>
-      <div class="doc-dropzone" id="crmDocDrop" tabindex="0">${DOC_TYPES.find(t=>t[0]===cardState.docTab)[1]} 파일을 여기에 끌어다 놓거나 클릭해서 선택하세요${cardState.docTab==='businessCard' ? ' (자동으로 텍스트를 인식해 확인 화면을 보여줍니다)' : ''}</div>
-      <input type="file" id="crmDocInput" accept="image/*" multiple style="display:none;" />
-      <div id="crmOcrReviewSlot"></div>
-      <div id="crmDocList"></div>
+      <div class="doc-blocked-note">실제 파일은 Firebase Storage 자격증명이 이 세션에 없어 연결이 BLOCKED 상태입니다 — ${esc(LOCAL_ONLY_NOTICE)}. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 어떤 경우에도 Firestore로 전송되지 않습니다.</div>
+      ${DOC_TYPES.map(([type,label])=> `
+        <div class="doc-category" data-doc-cat="${type}">
+          <div class="doc-cat-head">
+            <div class="doc-cat-title">${label}</div>
+            <button type="button" class="co-text-action primary doc-add-btn" data-doc-add="${type}">+ 파일 추가</button>
+          </div>
+          <input type="file" id="crmDocInput_${type}" style="display:none;" multiple />
+          <div id="crmOcrReviewSlot_${type}"></div>
+          <div class="doc-list" id="crmDocList_${type}"></div>
+        </div>
+      `).join('')}
     `;
-    wrap.querySelectorAll('[data-doc-tab]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ cardState.docTab = btn.getAttribute('data-doc-tab'); cardState.ocrReview = null; renderDocsSection(co); });
+    DOC_TYPES.forEach(([type,label,accept])=>{
+      const box = wrap.querySelector(`[data-doc-cat="${type}"]`);
+      const input = document.getElementById('crmDocInput_' + type);
+      input.setAttribute('accept', accept);
+      wrap.querySelector(`[data-doc-add="${type}"]`).addEventListener('click', ()=> input.click());
+      input.addEventListener('change', (e)=>{
+        // §2 실사용 버그 수정: e.target.files는 input에 연결된 살아있는(live) FileList라서
+        // 바로 아래에서 e.target.value=''로 입력을 비우면 이 참조도 함께 비어버려(길이 0)
+        // 파일 선택 자체가 통째로 무시되는 버그가 있었다 — Array.from으로 스냅샷을 떠서 분리한다.
+        const files = Array.from(e.target.files || []);
+        e.target.value = '';
+        if(files.length) handleDocFiles(co, type, files);
+      });
+      box.addEventListener('dragover', (e)=>{ e.preventDefault(); box.classList.add('drag-over'); });
+      box.addEventListener('dragleave', ()=> box.classList.remove('drag-over'));
+      box.addEventListener('drop', (e)=>{
+        e.preventDefault(); box.classList.remove('drag-over');
+        if(e.dataTransfer.files.length) handleDocFiles(co, type, e.dataTransfer.files);
+      });
+      renderDocList(co, type);
     });
-    const drop = document.getElementById('crmDocDrop');
-    const input = document.getElementById('crmDocInput');
-    drop.addEventListener('click', ()=> input.click());
-    drop.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); input.click(); } });
-    drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.style.borderColor = '#C7CEDB'; });
-    drop.addEventListener('dragleave', ()=>{ drop.style.borderColor = ''; });
-    drop.addEventListener('drop', (e)=>{ e.preventDefault(); drop.style.borderColor=''; if(e.dataTransfer.files.length) handleDocFiles(co, e.dataTransfer.files); });
-    input.addEventListener('change', (e)=>{ const files = e.target.files; e.target.value=''; if(files.length) handleDocFiles(co, files); });
-    renderDocList(co);
     renderOcrReviewSlot(co);
   }
 
-  function renderDocList(co){
-    const listWrap = document.getElementById('crmDocList');
+  function renderDocList(co, type){
+    const listWrap = document.getElementById('crmDocList_' + type);
     if(!listWrap) return;
-    const docs = D.documentsForCompany(co.id, cardState.docTab);
+    const docs = D.documentsForCompany(co.id, type);
     if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">등록된 파일이 없습니다.</div>'; return; }
     listWrap.innerHTML = docs.map(doc=>{
-      const blob = D.getBlob(doc.id);
+      const hasBlob = !!D.getBlob(doc.id);
       const isImg = (doc.mimeType||'').startsWith('image/');
+      const dataUrl = hasBlob ? D.getBlob(doc.id) : '';
+      const displayName = doc.fileName || doc.originalFileName || '(이름 없음)';
       return `<div class="doc-item" data-doc-id="${esc(doc.id)}">
-        ${isImg && blob ? `<img class="doc-thumb" src="${blob}" alt="${esc(doc.fileName)}" />` : `<div class="doc-thumb-generic">FILE</div>`}
+        ${isImg && dataUrl ? `<img class="doc-thumb" src="${dataUrl}" alt="${esc(displayName)}" />` : `<div class="doc-thumb-generic">FILE</div>`}
         <div class="doc-main">
-          <div class="doc-name" data-name-view="${esc(doc.id)}">${esc(doc.fileName)}</div>
+          <div class="doc-name" data-name-view="${esc(doc.id)}">${esc(displayName)}</div>
           <div class="doc-meta">${fmtDate(doc.createdAt)} ${fmtTime(doc.createdAt)}${doc.extractedContactName ? ' · 추출: ' + esc(doc.extractedContactName) + (doc.extractedPosition ? '('+esc(doc.extractedPosition)+')' : '') : ''}</div>
           ${doc.memo ? `<div class="doc-memo">${esc(doc.memo)}</div>` : ''}
+          ${doc.localOnly !== false ? `<div class="doc-local-note">${esc(LOCAL_ONLY_NOTICE)}</div>` : ''}
           <div class="doc-actions">
-            ${blob ? `<a class="co-text-action" href="${blob}" download="${esc(doc.fileName)}" target="_blank" rel="noopener">다운로드</a>` : ''}
+            ${hasBlob && canPreviewInline(doc) ? `<button type="button" class="co-text-action" data-view="${esc(doc.id)}">보기</button>` : ''}
+            ${hasBlob ? `<button type="button" class="co-text-action" data-download="${esc(doc.id)}">다운로드</button>` : ''}
             <button type="button" class="co-text-action" data-rename="${esc(doc.id)}">이름변경</button>
             <button type="button" class="co-text-action" data-memo="${esc(doc.id)}">메모</button>
             <button type="button" class="co-text-action danger" data-del="${esc(doc.id)}">삭제</button>
@@ -938,6 +1028,23 @@ window.SHIN2_CRM_APP_INIT = function(){
         </div>
       </div>`;
     }).join('');
+    listWrap.querySelectorAll('[data-view]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const doc = docs.find(d=> d.id === btn.getAttribute('data-view'));
+        const url = getDocObjectUrl(doc);
+        if(url) window.open(url, '_blank', 'noopener');
+      });
+    });
+    listWrap.querySelectorAll('[data-download]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const doc = docs.find(d=> d.id === btn.getAttribute('data-download'));
+        const url = getDocObjectUrl(doc);
+        if(!url) return;
+        const a = document.createElement('a');
+        a.href = url; a.download = doc.fileName || doc.originalFileName || 'file';
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+    });
     listWrap.querySelectorAll('[data-rename]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const item = btn.closest('.doc-item');
@@ -948,7 +1055,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         item.querySelector('[data-rename-save]').addEventListener('click', ()=>{
           const val = document.getElementById('renameInput_' + id).value.trim();
           if(val){ D.renameDocument(id, val); }
-          renderDocList(co);
+          renderDocList(co, type);
         });
       });
     });
@@ -962,86 +1069,87 @@ window.SHIN2_CRM_APP_INIT = function(){
         item.querySelector('.doc-main').appendChild(box);
         box.querySelector('[data-memo-save]').addEventListener('click', ()=>{
           D.setDocumentMemo(id, document.getElementById('memoInput_' + id).value.trim());
-          renderDocList(co);
+          renderDocList(co, type);
         });
       });
     });
     listWrap.querySelectorAll('[data-del]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+        // §6: alert()/confirm() 대신 인라인 확인만 사용 — 이 파일 하나만 지우고, 같은 분류의
+        // 다른 파일이나 다른 분류/다른 회사의 파일에는 전혀 영향을 주지 않는다(id 단위 삭제, §9).
         const item = btn.closest('.doc-item');
         const id = btn.getAttribute('data-del');
-        item.querySelector('.doc-actions').innerHTML = `<span style="font-size:12px;color:var(--text-muted);">삭제할까요?</span>
-          <button type="button" class="co-text-action" data-del-cancel="1">취소</button>
-          <button type="button" class="co-text-action danger" data-del-confirm="${id}">삭제</button>`;
-        item.querySelector('[data-del-cancel]').addEventListener('click', ()=> renderDocList(co));
-        item.querySelector('[data-del-confirm]').addEventListener('click', ()=>{ D.deleteDocument(id); renderDocList(co); });
+        item.querySelector('.doc-actions').innerHTML = `<span style="font-size:12px;color:var(--text-muted);">이 파일을 삭제할까요?</span>
+          <button type="button" class="co-text-action danger" data-del-confirm="${id}">삭제</button>
+          <button type="button" class="co-text-action" data-del-cancel="1">취소</button>`;
+        item.querySelector('[data-del-cancel]').addEventListener('click', ()=> renderDocList(co, type));
+        item.querySelector('[data-del-confirm]').addEventListener('click', ()=>{
+          revokeDocObjectUrl(id);
+          D.deleteDocument(id);
+          renderDocList(co, type);
+        });
       });
     });
   }
 
-  async function handleDocFiles(co, fileList){
-    const files = Array.from(fileList || []).filter(f=> f.type && f.type.startsWith('image/'));
+  async function handleDocFiles(co, type, fileList){
+    const files = Array.from(fileList || []);
     for(const file of files){
       const dataUrl = await fileToDataUrl(file);
-      if(cardState.docTab === 'businessCard' && typeof Tesseract !== 'undefined'){
-        // §PART2-10: 명함은 OCR 후 즉시 저장하지 않고 확인 화면을 먼저 보여준다.
-        cardState.ocrReview = { status:'recognizing', file, dataUrl };
+      // §8: 어떤 분류든 파일 저장이 먼저다 — OCR은 저장된 뒤에 벌어지는 부가 처리일 뿐,
+      // 저장의 전제조건이 아니다. OCR이 실패하거나 아예 안 돌아도 파일은 이미 저장되어 있다.
+      const rec = D.addDocument(co.id, type, file, dataUrl, null);
+      renderDocList(co, type);
+      if(type === 'businessCard' && file.type && file.type.startsWith('image/') && typeof Tesseract !== 'undefined'){
+        cardState.ocrReview = { docId: rec.id, status:'recognizing' };
         renderOcrReviewSlot(co);
         try{
           const { data } = await Tesseract.recognize(URL.createObjectURL(file), 'kor+eng');
           const kind = OCR.coClassifyDocType(data.text || '');
           const extracted = kind === 'card' ? OCR.extractFromCardText(data.text || '') : OCR.extractFromBizRegText(data.text || '');
-          cardState.ocrReview = { status:'ready', file, dataUrl, extracted, showRaw:false };
+          D.updateDocumentExtracted(rec.id, extracted); // 이미 저장된 문서에 추출 결과만 덧붙임 — 원본 파일은 그대로.
+          cardState.ocrReview = { docId: rec.id, status:'ready', extracted, showRaw:false };
         } catch(e){
-          cardState.ocrReview = { status:'error', file, dataUrl, message:'이미지 인식에 실패했습니다. 파일은 저장하고 정보는 직접 입력해주세요.' };
+          cardState.ocrReview = null; // 인식 실패해도 파일 저장은 이미 끝났으므로 조용히 넘어간다.
         }
+        renderDocList(co, 'businessCard');
         renderOcrReviewSlot(co);
-      } else {
-        // 사업자등록증/질문서/로고는 확인 화면 없이 바로 메타데이터 저장(§19~24 — 단순 서류함).
-        D.addDocument(co.id, cardState.docTab, file, dataUrl, null);
-        renderDocList(co);
       }
     }
   }
 
   function renderOcrReviewSlot(co){
-    const slot = document.getElementById('crmOcrReviewSlot');
+    const slot = document.getElementById('crmOcrReviewSlot_businessCard');
     if(!slot) return;
     const r = cardState.ocrReview;
     if(!r){ slot.innerHTML = ''; return; }
-    if(r.status === 'recognizing'){ slot.innerHTML = '<div class="ocr-review">이미지 인식 중...</div>'; return; }
-    if(r.status === 'error'){ slot.innerHTML = `<div class="ocr-review">${esc(r.message)}
-      <div class="ocr-actions"><button type="button" class="co-text-action" id="ocrKeepFileBtn">파일만 저장</button><button type="button" class="co-text-action" id="ocrCancelBtn">취소</button></div></div>`;
-      document.getElementById('ocrKeepFileBtn').addEventListener('click', ()=>{ D.addDocument(co.id, 'businessCard', r.file, r.dataUrl, null); cardState.ocrReview=null; renderDocsSection(co); });
-      document.getElementById('ocrCancelBtn').addEventListener('click', ()=>{ cardState.ocrReview=null; renderOcrReviewSlot(co); });
-      return;
-    }
+    if(r.status === 'recognizing'){ slot.innerHTML = '<div class="ocr-review">이미지 인식 중... (파일은 이미 저장되었습니다)</div>'; return; }
     const ex = r.extracted;
     const field = (key, label)=> `<div class="co-form-field"><label>${label}${ex[key] && ex[key].ambiguous ? '<span class="ocr-badge">확인 필요</span>' : ''}</label><input type="text" id="ocrF_${key}" value="${esc(ex[key] ? ex[key].value : '')}" /></div>`;
     slot.innerHTML = `<div class="ocr-review">
-      <div class="ocr-review-title">명함 인식 결과</div>
+      <div class="ocr-review-title">명함 인식 결과 (파일은 이미 저장되었습니다)</div>
       ${field('name','업체명')}${field('contactName','담당자')}${field('position','직책')}
       ${field('phone','전화번호')}${field('email','이메일')}${field('address','주소')}
       <div class="co-checkbox-row"><input type="checkbox" id="ocrOnlyEmpty" checked /> <label for="ocrOnlyEmpty">빈 정보만 채우기(기존 값이 있는 필드는 유지)</label></div>
       <div class="ocr-actions">
         <button type="button" class="co-text-action" id="ocrViewRawBtn">${r.showRaw ? '원문 숨기기' : '원문 OCR 보기'}</button>
-        <button type="button" class="co-text-action" id="ocrCancelBtn2">취소</button>
+        <button type="button" class="co-text-action" id="ocrCancelBtn2">닫기</button>
         <button type="button" class="co-text-action primary" id="ocrApplyBtn">업체정보에 반영</button>
       </div>
       ${r.showRaw ? `<div class="ocr-raw-box">${esc(ex.rawOcrText || '')}</div>` : ''}
-      <div id="ocrDupSlot"></div>
     </div>`;
     document.getElementById('ocrViewRawBtn').addEventListener('click', ()=>{ r.showRaw = !r.showRaw; renderOcrReviewSlot(co); });
     document.getElementById('ocrCancelBtn2').addEventListener('click', ()=>{ cardState.ocrReview = null; renderOcrReviewSlot(co); });
     document.getElementById('ocrApplyBtn').addEventListener('click', ()=>{
-      // 사용자가 편집한 최종 값으로 문서를 먼저 저장(명함 고유 메타데이터, §16) — 회사 기본정보와는 별개.
+      // 문서 자체는 이미 저장되어 있음 — 사용자가 편집한 최종 값을 문서의 추출필드에 반영하고,
+      // 회사 기본정보에도 병합한다(§12: 빈 정보만 채우기 옵션).
       const editedExtracted = {};
       ['name','contactName','position','phone','email','address'].forEach(k=>{
         const el = document.getElementById('ocrF_' + k);
         editedExtracted[k] = { value: el ? el.value.trim() : '', ambiguous:false };
       });
       editedExtracted.rawOcrText = ex.rawOcrText;
-      D.addDocument(co.id, 'businessCard', r.file, r.dataUrl, editedExtracted);
+      D.updateDocumentExtracted(r.docId, editedExtracted);
       const onlyEmpty = document.getElementById('ocrOnlyEmpty').checked;
       const patch = {};
       if(editedExtracted.contactName.value) patch.contactName = editedExtracted.contactName.value;
@@ -1049,9 +1157,6 @@ window.SHIN2_CRM_APP_INIT = function(){
       if(editedExtracted.phone.value) patch.phone = editedExtracted.phone.value;
       if(editedExtracted.email.value) patch.email = editedExtracted.email.value;
       if(editedExtracted.address.value) patch.address = editedExtracted.address.value;
-      // §PART2-11: 반영 직전 최종 확인 — 사용자가 [반영]을 눌렀다는 것 자체가 "이 명함을 이
-      // 고객에 추가"하는 명시적 확인이므로 여기서 다시 묻지 않고, 그 값을 그대로 회사 필드에
-      // 병합한다(§12: 빈 정보만 채우기 옵션 반영). 값이 비어있으면 아무 필드도 건드리지 않는다.
       if(Object.keys(patch).length) D.updateCompany(co.id, patch, { onlyFillEmpty: onlyEmpty });
       cardState.ocrReview = null;
       const fresh = D.findCompany(co.id);
