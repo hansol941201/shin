@@ -941,6 +941,37 @@
   .qr-candidate-btn:hover{ background:#F0F1F4; }
   .qr-action-row{ display:flex; gap:8px; }
 
+  /* 미등록 시공사 기록(§신규) — 업체명이 매칭되지 않아도 저장을 막지 않고, 규칙 기반으로
+     추정한 업체명/특이사항을 사용자가 확인·수정한 뒤 저장하는 인라인 확인 UI. qr-notfound와
+     같은 톤을 그대로 재사용한다. */
+  .qr-unmatched{ margin-top:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  .qr-unmatched-text{ font-size:12.5px; color:var(--text); margin-bottom:8px; }
+  .qr-unmatched-field{ margin-bottom:8px; }
+  .qr-unmatched-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+  .qr-unmatched-field input, .qr-unmatched-field textarea{
+    width:100%; padding:7px 9px; font-size:13px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; box-sizing:border-box; outline:none;
+  }
+  .qr-unmatched-field textarea{ min-height:52px; resize:vertical; }
+  .qr-unmatched-field input:focus, .qr-unmatched-field textarea:focus{ border-color:#C7CEDB; }
+
+  /* 시공사 전화기록 전체보기의 미등록 기록 행/필터탭(§신규) */
+  .act-filter-row{ margin-bottom:10px; }
+  .act-unmatched-row{ flex-direction:column; align-items:stretch; gap:6px; cursor:default; }
+  .act-unmatched-main{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .act-unmatched-tag{ flex:none; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px; background:#F0F1F4; color:var(--text-muted); }
+  .act-unmatched-actions{ display:flex; gap:12px; }
+  .act-edit-fields{ display:flex; flex-direction:column; gap:6px; }
+  .act-edit-fields input{
+    width:100%; padding:6px 8px; font-size:13px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; box-sizing:border-box; outline:none;
+  }
+  .act-link-search{
+    width:100%; padding:6px 8px; margin-bottom:6px; font-size:13px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; box-sizing:border-box; outline:none;
+  }
+  .act-link-list{ display:flex; flex-wrap:wrap; gap:6px; max-height:160px; overflow-y:auto; }
+
   /* 홈 "오늘 확인할 업무" 요약 — 컴팩트한 행 목록, 상태는 작은 텍스트 배지로만 구분 */
   .home-task-block{ margin-top:22px; max-width:800px; }
   .home-task-head{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
@@ -8236,7 +8267,7 @@ ${text}
     var rec = {
       id: genId(), companyId: companyId, originalText: originalText,
       activityText: activityText, category: classifyActivity(activityText),
-      createdAt: now, updatedAt: now
+      matchStatus: 'matched', createdAt: now, updatedAt: now
     };
     var all = loadActivities();
     all.push(rec);
@@ -8261,10 +8292,94 @@ ${text}
     saveActivities(loadActivities().filter(function(a){ return a.id !== id; }));
   }
 
+  // §신규: 매칭 상태 읽기 — 레거시 레코드(matchStatus 필드가 아예 없던 기존 기록)는 절대
+  // 다시 써서 고치지 않고, 읽는 시점에만 companyId 존재 여부로 기본값을 판단한다
+  // (documentsStatus가 이미 이 앱에서 쓰고 있는 "레거시-읽기시점-기본값" 패턴과 동일).
+  function statusOf(rec){
+    return (rec && rec.matchStatus) || (rec && rec.companyId ? 'matched' : 'unmatched');
+  }
+
+  // §신규: "미등록 시공사 기록" 규칙 기반 업체명/특이사항 추정(AI 미사용, API KEY 불필요).
+  // parseCallMemoLocally()의 "업체 접미어(OO건설 등)"/"토큰 단위" 휴리스틱을 이 모듈 안에서
+  // 그대로 다시 사용한다. 판단이 애매하면 원문 전체를 특이사항에 넣는다(억지로 쪼개지 않음).
+  var UNMATCHED_SUFFIXES = ['건설','산업','개발','기업','상사','이엔지','E&C','EnC','주식회사'];
+  var UNMATCHED_NOTE_START_WORDS = ['협력사','견적','문의','요청','자료','리스트','시방서','샘플','미팅','방문','공사','시공','담당자','전화','연락','제안서'];
+  function guessUnmatched(rawText){
+    var text = String(rawText || '').trim();
+    if(!text) return { companyName:'', note:'' };
+
+    // 1) "OO건설"류 업체 접미어가 있으면 그 토막을 업체명 후보로, 나머지를 특이사항으로.
+    var sufAlt = UNMATCHED_SUFFIXES.map(function(k){ return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
+    var sufRe = new RegExp('^([가-힣A-Za-z0-9]{1,10}(?:' + sufAlt + '))');
+    var sufM = text.match(sufRe);
+    if(sufM){
+      var name1 = sufM[1].trim();
+      var rest1 = text.slice(sufM[0].length).replace(/^[\s,:\-]+/, '').trim();
+      return { companyName: name1, note: rest1 || text };
+    }
+
+    // 2) 첫 토큰들 뒤에 "특이사항이 시작되는 흔한 단어"가 나오면 그 앞까지를 업체명으로.
+    var tokens = text.split(/\s+/).filter(Boolean);
+    for(var i = 1; i < tokens.length; i++){
+      if(UNMATCHED_NOTE_START_WORDS.indexOf(tokens[i]) !== -1){
+        var name2 = tokens.slice(0, i).join(' ');
+        var note2 = tokens.slice(i).join(' ');
+        return { companyName: name2, note: note2 || text };
+      }
+    }
+
+    // 3) 판단이 어려우면 첫 토큰만 업체명 후보로 삼고, 원문 전체를 그대로 특이사항에 둔다.
+    return { companyName: tokens[0] || '', note: text };
+  }
+
+  // §신규: 미등록 기록 생성 — companyId는 절대 자동 생성하지 않고 null로 둔다(자동 생성 금지
+  // 원칙 최우선 준수). originalText는 사용자가 입력창에 타이핑한 원문 그대로, 절대 가공하지
+  // 않는다(자동분리 로직이 손대는 값은 companyName/note뿐).
+  function addUnmatchedActivity(companyName, note, originalText){
+    var now = new Date().toISOString();
+    var rec = {
+      id: genId(), companyId: null, companyName: companyName || '', note: note || '',
+      originalText: originalText, matchStatus: 'unmatched', createdAt: now, updatedAt: now
+    };
+    var all = loadActivities();
+    all.push(rec);
+    saveActivities(all);
+    return rec;
+  }
+
+  // §신규: 미등록 기록의 companyName/note만 인라인 수정. originalText는 이 함수가 절대 건드리지
+  // 않는다(항상 최초 입력 그대로 유지).
+  function updateUnmatchedActivity(id, fields){
+    var all = loadActivities();
+    var rec = all.find(function(a){ return a.id === id; });
+    if(!rec) return null;
+    if(fields.companyName !== undefined) rec.companyName = fields.companyName;
+    if(fields.note !== undefined) rec.note = fields.note;
+    rec.updatedAt = new Date().toISOString();
+    saveActivities(all);
+    return rec;
+  }
+
+  // §신규: "[업체 연결]" — 사용자가 명시적으로 기존 업체를 골랐을 때만 호출된다. 같은 레코드를
+  // 그 자리에서 갱신할 뿐, 새 레코드를 만들거나 지우지 않는다(자동 병합은 어디서도 일어나지 않음).
+  function linkActivityToCompany(id, companyId){
+    if(!companyId) return null;
+    var all = loadActivities();
+    var rec = all.find(function(a){ return a.id === id; });
+    if(!rec) return null;
+    rec.companyId = companyId;
+    rec.matchStatus = 'matched';
+    rec.updatedAt = new Date().toISOString();
+    saveActivities(all);
+    return rec;
+  }
+
   window.SHIN2_ACTIVITIES = {
     loadCompanies: loadCompanies, loadAll: loadActivities, matchCompany: matchCompany,
     classify: classifyActivity, add: addActivity, forCompany: forCompany,
-    update: updateActivity, remove: deleteActivity, stripDesignationPrefix: stripDesignationPrefix
+    update: updateActivity, remove: deleteActivity, stripDesignationPrefix: stripDesignationPrefix,
+    statusOf: statusOf, guessUnmatched: guessUnmatched, addUnmatched: addUnmatchedActivity,
+    updateUnmatched: updateUnmatchedActivity, linkToCompany: linkActivityToCompany
   };
 })();
 </script>
@@ -8317,22 +8432,28 @@ ${text}
     resultEl.querySelector('[data-cancel]').addEventListener('click', clearResult);
   }
 
-  function showNotFound(originalText){
-    var html = '<div class="qr-notfound"><div class="qr-notfound-text">등록된 고객을 찾지 못했습니다.</div>' +
-      '<div class="qr-action-row"><button type="button" class="co-text-action" data-register="1">고객 등록</button>' +
-      '<button type="button" class="co-text-action" data-cancel2="1">취소</button></div></div>';
+  // §신규: "미등록 시공사 기록" — 매칭되는 업체가 없어도 저장을 막지 않는다. 규칙 기반으로
+  // 업체명/특이사항을 추정해 미리 채워두고, 사용자가 확인·수정한 뒤 저장하면 companyId:null,
+  // matchStatus:'unmatched' 레코드로 customerActivities에 그대로 기록된다(새 업체/새 저장소를
+  // 자동으로 만들지 않는다).
+  function showUnmatchedConfirm(originalText){
+    var guess = window.SHIN2_ACTIVITIES.guessUnmatched(originalText);
+    var html = '<div class="qr-unmatched">' +
+      '<div class="qr-unmatched-text">등록된 업체를 찾지 못했습니다. 아래 내용을 확인하고 저장하세요.</div>' +
+      '<div class="qr-unmatched-field"><label>업체명</label><input type="text" id="qrUnmatchedName" value="' + escapeHtml(guess.companyName) + '" /></div>' +
+      '<div class="qr-unmatched-field"><label>특이사항</label><textarea id="qrUnmatchedNote">' + escapeHtml(guess.note) + '</textarea></div>' +
+      '<div class="qr-action-row"><button type="button" id="qrUnmatchedSaveBtn" class="ai-run-btn">저장</button>' +
+      '<button type="button" class="co-text-action" data-unmatched-cancel="1">취소</button></div>' +
+    '</div>';
     resultEl.innerHTML = html;
-    resultEl.querySelector('[data-register]').addEventListener('click', function(){
-      if(!window.SHIN2_COMPANIES) return;
-      // 입력했던 원문에서 업체명으로 보이는 첫 토큰을 이름으로 미리 채워둔다 — 저장은
-      // 여전히 사용자가 [저장]을 눌러야만 확정된다(자동 생성 아님).
-      var guessName = (originalText.split(/\s+/)[0] || '').trim();
-      var navCompaniesBtn = document.getElementById('navCompanies');
-      if(navCompaniesBtn) navCompaniesBtn.click();
-      window.SHIN2_COMPANIES.openAddPrefilled({ name: guessName }, function(){});
+    resultEl.querySelector('#qrUnmatchedSaveBtn').addEventListener('click', function(){
+      var nameVal = resultEl.querySelector('#qrUnmatchedName').value.trim();
+      var noteVal = resultEl.querySelector('#qrUnmatchedNote').value.trim();
+      window.SHIN2_ACTIVITIES.addUnmatched(nameVal, noteVal, originalText);
+      showMatched(null, nameVal || '미등록 업체');
     });
-    resultEl.querySelector('[data-cancel2]').addEventListener('click', clearResult);
-    // §9: 입력했던 원문은 그대로 유지한다(지우지 않음).
+    resultEl.querySelector('[data-unmatched-cancel]').addEventListener('click', clearResult);
+    // §9: 입력했던 원문은 그대로 유지한다(지우지 않음) — 취소해도 textarea 값은 남는다.
   }
 
   function handleEnter(){
@@ -8345,7 +8466,7 @@ ${text}
     } else if(m.status === 'ambiguous'){
       showAmbiguous(m);
     } else if(m.status === 'none'){
-      showNotFound(m.originalText);
+      showUnmatchedConfirm(m.originalText);
     }
   }
 
@@ -8378,7 +8499,9 @@ ${text}
   var viewAllBtn = document.getElementById('qrViewAllBtn');
   if(!overlay || !body || !viewAllBtn) return;
 
-  var aState = { search:'' };
+  // filter: 'all' | 'matched' | 'unmatched'. editingId/linkingId/linkQuery는 미등록 기록의
+  // 인라인 수정/업체연결 UI 상태 — 둘 다 한 번에 하나의 레코드에만 열린다.
+  var aState = { search:'', filter:'all', editingId:null, linkingId:null, linkQuery:'' };
 
   function pad2(n){ return String(n).padStart(2,'0'); }
   function escapeHtml(s){
@@ -8396,6 +8519,10 @@ ${text}
 
   function openActPopup(){
     aState.search = '';
+    aState.filter = 'all';
+    aState.editingId = null;
+    aState.linkingId = null;
+    aState.linkQuery = '';
     overlay.classList.add('open');
     renderActBrowse();
   }
@@ -8404,50 +8531,119 @@ ${text}
   overlay.addEventListener('click', function(e){ if(e.target === overlay) closeActPopup(); });
   viewAllBtn.addEventListener('click', openActPopup);
 
+  var FILTER_TABS = [ ['all','전체'], ['matched','등록업체'], ['unmatched','미등록업체'] ];
+
   function renderActBrowse(){
     if(!window.SHIN2_ACTIVITIES) return;
+    var ACT = window.SHIN2_ACTIVITIES;
     // 업체명은 절대 별도로 저장하지 않고 매번 companyId → shin2-companies-staging에서
-    // 실시간으로 조회한다(§ 라이브 조회, 중복저장 금지).
-    var companies = window.SHIN2_ACTIVITIES.loadCompanies();
+    // 실시간으로 조회한다(§ 라이브 조회, 중복저장 금지). 미등록 기록의 companyName만 예외적으로
+    // 레코드 자체에 저장된 문자열을 그대로 쓴다(연결된 업체가 아직 없으므로 조회할 대상이 없음).
+    var companies = ACT.loadCompanies();
     function findCo(id){ return companies.find(function(c){ return c && c.id === id; }); }
 
-    var all = window.SHIN2_ACTIVITIES.loadAll().slice().sort(function(a,b){
+    var all = ACT.loadAll().slice().sort(function(a,b){
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
     var ql = (aState.search||'').trim().toLowerCase();
     var items = all.filter(function(r){
+      var status = ACT.statusOf(r);
+      if(aState.filter !== 'all' && status !== aState.filter) return false;
       if(!ql) return true;
       var co = findCo(r.companyId);
-      var hay = [co ? co.name : '', co ? co.contactName : '', r.originalText, r.activityText, r.category].join(' ').toLowerCase();
+      var hay = [
+        co ? co.name : '', co ? co.contactName : '', r.originalText, r.activityText, r.category,
+        r.companyName || '', r.note || ''
+      ].join(' ').toLowerCase();
       return hay.indexOf(ql) !== -1;
     });
 
-    var html = '<div class="search-box acct-search-box"><input type="text" id="actSearchInput" placeholder="업체명 / 담당자 / 전화내용 검색" value="' + escapeAttr(aState.search) + '" /></div>';
+    var html = '<div class="search-box acct-search-box"><input type="text" id="actSearchInput" placeholder="업체명 / 담당자 / 전화내용 / 특이사항 검색" value="' + escapeAttr(aState.search) + '" /></div>';
+    html += '<div class="task-tabs act-filter-row">' + FILTER_TABS.map(function(f){
+      return '<button type="button" class="task-tab act-filter-btn' + (aState.filter === f[0] ? ' active' : '') + '" data-act-filter="' + f[0] + '">' + f[1] + '</button>';
+    }).join('') + '</div>';
+
     if(!items.length){
       html += '<div class="acct-empty">해당하는 전화 기록이 없습니다.</div>';
     } else {
       var lastDateKey = null;
       html += items.map(function(r){
-        var co = findCo(r.companyId);
-        var name = co ? co.name : (r.companyId ? '(삭제된 업체)' : '(업체 미연결)');
-        var content = r.originalText || r.activityText || '';
+        var status = ACT.statusOf(r);
         var dateKey = localDateStr(r.createdAt);
         var groupHeaderHtml = '';
         if(dateKey !== lastDateKey){
           lastDateKey = dateKey;
           groupHeaderHtml = '<div class="task-pop-date-head">' + escapeHtml(dateKey === todayStr() ? '오늘' : dateKey) + '</div>';
         }
-        return groupHeaderHtml + '<div class="task-pop-row" data-id="' + escapeAttr(r.id) + '">' +
-          '<span class="task-pop-row-title">' + escapeHtml(name) + (content ? ' · ' + escapeHtml(content) : '') + '</span>' +
-          '<span class="task-pop-row-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
-        '</div>';
+        return groupHeaderHtml + (status === 'unmatched' ? renderUnmatchedRow(r) : renderMatchedRow(r, findCo(r.companyId)));
       }).join('');
     }
     body.innerHTML = html;
+    wireActBrowse(all);
+  }
 
+  function renderMatchedRow(r, co){
+    var name = co ? co.name : (r.companyId ? '(삭제된 업체)' : '(업체 미연결)');
+    var content = r.originalText || r.activityText || '';
+    return '<div class="task-pop-row" data-id="' + escapeAttr(r.id) + '" data-status="matched">' +
+      '<span class="task-pop-row-title">' + escapeHtml(name) + (content ? ' · ' + escapeHtml(content) : '') + '</span>' +
+      '<span class="task-pop-row-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
+    '</div>';
+  }
+
+  function renderUnmatchedRow(r){
+    var id = r.id;
+    if(aState.linkingId === id){
+      var companiesAll = window.SHIN2_ACTIVITIES.loadCompanies();
+      var lq = (aState.linkQuery || '').trim().toLowerCase();
+      var candidates = companiesAll.filter(function(c){
+        return c && c.name && (!lq || c.name.toLowerCase().indexOf(lq) !== -1);
+      }).slice(0, 30);
+      return '<div class="task-pop-row act-unmatched-row" data-id="' + escapeAttr(id) + '">' +
+        '<input type="text" class="act-link-search" id="actLinkSearch" placeholder="연결할 업체명 검색" value="' + escapeAttr(aState.linkQuery) + '" />' +
+        '<div class="act-link-list">' + (candidates.length
+          ? candidates.map(function(c){ return '<button type="button" class="qr-candidate-btn" data-act-link-pick="' + escapeAttr(c.id) + '">' + escapeHtml(c.name) + '</button>'; }).join('')
+          : '<div class="acct-empty">일치하는 업체가 없습니다.</div>') + '</div>' +
+        '<div class="qr-action-row"><button type="button" class="co-text-action" data-act-link-cancel="1">취소</button></div>' +
+      '</div>';
+    }
+    if(aState.editingId === id){
+      return '<div class="task-pop-row act-unmatched-row" data-id="' + escapeAttr(id) + '">' +
+        '<div class="act-edit-fields">' +
+          '<input type="text" id="actEditName" value="' + escapeAttr(r.companyName || '') + '" placeholder="업체명" />' +
+          '<input type="text" id="actEditNote" value="' + escapeAttr(r.note || '') + '" placeholder="특이사항" />' +
+        '</div>' +
+        '<div class="qr-action-row"><button type="button" class="ai-run-btn" data-act-save-edit="1">저장</button>' +
+        '<button type="button" class="co-text-action" data-act-cancel-edit="1">취소</button></div>' +
+      '</div>';
+    }
+    var nameLabel = r.companyName || '(업체명 없음)';
+    var noteLabel = r.note || '';
+    return '<div class="task-pop-row act-unmatched-row" data-id="' + escapeAttr(id) + '" data-status="unmatched">' +
+      '<div class="act-unmatched-main">' +
+        '<span class="act-unmatched-tag">[미등록]</span>' +
+        '<span class="task-pop-row-title">' + escapeHtml(nameLabel) + (noteLabel ? ' · ' + escapeHtml(noteLabel) : '') + '</span>' +
+        '<span class="task-pop-row-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
+      '</div>' +
+      '<div class="act-unmatched-actions">' +
+        '<button type="button" class="co-text-action" data-act-edit="1">수정</button>' +
+        '<button type="button" class="co-text-action" data-act-link="1">업체 연결</button>' +
+        '<button type="button" class="co-text-action" data-act-register="1">업체 등록</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function wireActBrowse(all){
     var searchInput = document.getElementById('actSearchInput');
     searchInput.addEventListener('input', function(){ aState.search = searchInput.value; renderActBrowse(); });
-    body.querySelectorAll('.task-pop-row').forEach(function(rowEl){
+    body.querySelectorAll('[data-act-filter]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        aState.filter = btn.getAttribute('data-act-filter');
+        renderActBrowse();
+      });
+    });
+
+    body.querySelectorAll('.task-pop-row[data-status="matched"]').forEach(function(rowEl){
       rowEl.addEventListener('click', function(){
         var rec = all.find(function(r){ return r.id === rowEl.getAttribute('data-id'); });
         if(!rec || !rec.companyId) return;
@@ -8457,6 +8653,90 @@ ${text}
         closeActPopup();
         if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
         if(window.SHIN2_COMPANIES) window.SHIN2_COMPANIES.openDetail(rec.companyId);
+      });
+    });
+
+    // ---- 미등록 기록: 인라인 수정 ----
+    body.querySelectorAll('[data-act-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        aState.editingId = btn.closest('.task-pop-row').getAttribute('data-id');
+        aState.linkingId = null;
+        renderActBrowse();
+      });
+    });
+    body.querySelectorAll('[data-act-save-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var rowEl = btn.closest('.task-pop-row');
+        var id = rowEl.getAttribute('data-id');
+        var nameVal = document.getElementById('actEditName').value.trim();
+        var noteVal = document.getElementById('actEditNote').value.trim();
+        // originalText는 이 저장 경로에서 절대 건드리지 않는다(updateUnmatched가 companyName/note만 갱신).
+        window.SHIN2_ACTIVITIES.updateUnmatched(id, { companyName: nameVal, note: noteVal });
+        aState.editingId = null;
+        renderActBrowse();
+      });
+    });
+    body.querySelectorAll('[data-act-cancel-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        aState.editingId = null;
+        renderActBrowse();
+      });
+    });
+
+    // ---- 미등록 기록: [업체 연결] ----
+    body.querySelectorAll('[data-act-link]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        aState.linkingId = btn.closest('.task-pop-row').getAttribute('data-id');
+        aState.editingId = null;
+        aState.linkQuery = '';
+        renderActBrowse();
+      });
+    });
+    var linkSearchInput = document.getElementById('actLinkSearch');
+    if(linkSearchInput){
+      linkSearchInput.addEventListener('input', function(){ aState.linkQuery = linkSearchInput.value; renderActBrowse(); });
+    }
+    body.querySelectorAll('[data-act-link-pick]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var rowEl = btn.closest('.task-pop-row');
+        var id = rowEl.getAttribute('data-id');
+        var companyId = btn.getAttribute('data-act-link-pick');
+        // 같은 레코드를 그 자리에서 갱신할 뿐, 새 레코드를 만들거나 지우지 않는다(자동 병합 금지).
+        window.SHIN2_ACTIVITIES.linkToCompany(id, companyId);
+        aState.linkingId = null;
+        aState.linkQuery = '';
+        renderActBrowse();
+      });
+    });
+    body.querySelectorAll('[data-act-link-cancel]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        aState.linkingId = null;
+        aState.linkQuery = '';
+        renderActBrowse();
+      });
+    });
+
+    // ---- 미등록 기록: [업체 등록] — 기존 업체관리 "신규 등록" 폼을 업체명만 미리 채워서 연다.
+    // 폼 제출 전까지는 업체가 생성되지 않고, 제출돼도 이 레코드에 자동으로 다시 연결하지
+    // 않는다(연결하려면 사용자가 [업체 연결]을 별도로 눌러야 함 — 자동 병합 금지).
+    body.querySelectorAll('[data-act-register]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var rowEl = btn.closest('.task-pop-row');
+        var id = rowEl.getAttribute('data-id');
+        var rec = all.find(function(r){ return r.id === id; });
+        var guessName = rec ? (rec.companyName || '') : '';
+        closeActPopup();
+        if(window.SHIN2_NAV) window.SHIN2_NAV.showView('companies');
+        if(window.SHIN2_COMPANIES && window.SHIN2_COMPANIES.openAddPrefilled){
+          window.SHIN2_COMPANIES.openAddPrefilled({ name: guessName }, function(){});
+        }
       });
     });
   }
