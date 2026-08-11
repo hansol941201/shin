@@ -146,7 +146,10 @@ function hasLocalOverlap(events, excludeId, startISO, endISO) {
 export function AppProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [role, setRole] = useState('coordinator'); // 'coordinator' | 'manager'
-  const [view, setView] = useState('week'); // 'week' | 'month'
+  // 월간 화면만 사용하는 정책으로 전환 — 항상 'month'로 시작한다.
+  // 'week'/setView/WeekView 관련 코드는 다른 기능이 깨질 위험을 피하려고
+  // 그대로 남겨뒀지만, UI에서는 더 이상 도달할 방법이 없다(진입점 삭제됨).
+  const [view, setView] = useState('month'); // 'week' | 'month'
   // cursorDate: 사용자가 현재 보고 있는 기준 날짜. 주간뷰는 이 날짜가 속한 주,
   // 월간뷰는 이 날짜가 속한 달을 보여준다.
   const [cursorDate, setCursorDate] = useState(() => new Date());

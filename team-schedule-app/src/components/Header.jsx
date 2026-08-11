@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useApp } from '../state/store.jsx';
-import { addDays, formatMonthRange, formatMonthLabel } from '../utils/time.js';
+import { formatMonthLabel } from '../utils/time.js';
 import Legend from './Legend.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
@@ -172,11 +172,8 @@ function SettingsPopover({ anchor, onClose }) {
 
 export default function Header() {
   const {
-    currentWeekStart,
     cursorDate,
     setCursorDate,
-    view,
-    setView,
     role,
     setRole,
     googleActive,
@@ -189,23 +186,13 @@ export default function Header() {
   const [settingsAnchor, setSettingsAnchor] = useState(null);
   const gearRef = useRef(null);
 
-  function goToday() {
-    setCursorDate(new Date());
-    setView('week');
-  }
+  // 이제 월간 화면이 유일한 화면이므로 이전/다음은 항상 월 단위로 이동한다
+  // (오늘/주간 버튼은 삭제 — 요구사항에 따라 UI에서 완전히 제거).
   function goPrev() {
-    if (view === 'month') {
-      setCursorDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-    } else {
-      setCursorDate((d) => addDays(d, -7));
-    }
+    setCursorDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   }
   function goNext() {
-    if (view === 'month') {
-      setCursorDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-    } else {
-      setCursorDate((d) => addDays(d, 7));
-    }
+    setCursorDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   }
 
   function openSettings() {
@@ -221,20 +208,13 @@ export default function Header() {
         <div className="topbar-left">팀장 일정</div>
 
         <div className="topbar-center">
-          <button className="nav-arrow" onClick={goPrev} aria-label="이전">‹</button>
-          <span className="topbar-range">
-            {view === 'month' ? formatMonthLabel(cursorDate) : formatMonthRange(currentWeekStart)}
-          </span>
-          <button className="nav-arrow" onClick={goNext} aria-label="다음">›</button>
+          <button className="nav-arrow" onClick={goPrev} aria-label="이전달">‹</button>
+          <span className="topbar-range">{formatMonthLabel(cursorDate)}</span>
+          <button className="nav-arrow" onClick={goNext} aria-label="다음달">›</button>
         </div>
 
         <div className="topbar-right">
           <Legend />
-          <div className="view-switch">
-            <button onClick={goToday}>오늘</button>
-            <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>주간</button>
-            <button className={view === 'month' ? 'active' : ''} onClick={() => setView('month')}>월간</button>
-          </div>
           {googleActive && (
             <button
               className="icon-btn"

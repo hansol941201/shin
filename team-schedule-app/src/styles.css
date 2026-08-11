@@ -671,14 +671,12 @@ button, select, input, textarea {
   border: 1px solid var(--border);
   margin: -1px 0 0 -1px;
   padding: 6px;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-height: 0;
   overflow: hidden;
 }
-.month-cell:hover { background: #fafbfc; }
 .month-cell-out { color: var(--text-faint); }
 .month-cell-out .month-cell-date { color: var(--text-faint); }
 .month-cell-today { background: var(--today-bg); }
@@ -700,7 +698,9 @@ button, select, input, textarea {
   justify-content: flex-start;
   padding: 3px 5px;
   overflow: hidden;
+  cursor: pointer;
 }
+.month-free-area:hover { filter: brightness(0.97); }
 .month-free-area span {
   font-size: 9.5px;
   font-weight: 600;
@@ -716,7 +716,9 @@ button, select, input, textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
 }
+.month-event-chip:hover { filter: brightness(0.97); }
 .month-event-chip.dot-pending { background: var(--pending-bg); color: var(--pending-text); }
 .month-more { font-size: 10px; color: var(--text-faint); }
 
