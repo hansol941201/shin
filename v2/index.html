@@ -7965,6 +7965,19 @@ ${text}
     coRender();
   });
 
+  // 다른 탭(같은 origin의 CRM(crm/index.html) 탭 등)에서 shin2-companies-staging을 바꾸면
+  // native storage 이벤트가 이 탭에 도착한다(자기 자신이 쓴 변경에는 절대 발생하지 않음 —
+  // 브라우저 표준 동작). 지금 이 탭이 업체 등록/수정 폼을 띄워둔 상태라면 사용자의 입력
+  // 중인 내용을 덮어쓰지 않도록 재렌더링을 건너뛴다. 클라우드 동기화와 무관하게 항상 동작하며,
+  // 새 Firestore/네트워크 동작은 전혀 추가하지 않는다 — 순수 localStorage 재조회 +
+  // 화면 재렌더링만 한다.
+  window.addEventListener('storage', (e)=>{
+    if(e.key !== CO_STORAGE_KEY) return;
+    if(coState.mode === 'add' || coState.mode === 'edit') return;
+    coRefresh();
+    coRender();
+  });
+
   coRefresh();
   coRender();
 })();

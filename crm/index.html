@@ -783,6 +783,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['bizRegNo','사업자번호'], ['address','주소'], ['website','홈페이지']
   ];
   let cardState = { docTab: 'businessCard', editingCompany: false, ocrReview: null };
+  // 다른 탭(v2 또는 CRM 다른 탭)에서 shin2-companies-staging이 바뀌었을 때 지금 이 탭이
+  // 편집 폼을 띄워둔 상태라면 storage 이벤트로 인한 재렌더링이 사용자의 입력 중인 내용을
+  // 덮어쓰지 않도록 막는 플래그(§ crm 신규등록 폼).
+  let addingNewCompany = false;
 
   function buildFullInfoText(co){
     return CO_FIELD_LABELS.filter(([k])=> co[k]).map(([k,label])=> `${label} : ${co[k]}`).join('\n');
@@ -823,6 +827,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
   function renderBasicInfoView(co){
+    cardState.editingCompany = false;
     const wrap = document.getElementById('crmBasicInfo');
     const row = (key, label)=>{
       const value = co[key];
@@ -846,6 +851,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
   function renderBasicInfoForm(co){
+    cardState.editingCompany = true;
     const wrap = document.getElementById('crmBasicInfo');
     wrap.innerHTML = CO_FIELD_LABELS.concat([['memo','기본메모']]).map(([k,l])=> `
       <div class="co-form-field"><label>${l}</label>
@@ -1164,6 +1170,7 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   // ================= 고객 등록(신규) =================
   function openAddCompanyForm(){
+    addingNewCompany = true;
     const co = { id:null, name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'' };
     cardView.innerHTML = `
       <button type="button" class="back-link" id="crmBackBtn2">&larr; 고객 목록</button>
@@ -1172,7 +1179,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     listView.style.display = 'none';
     cardView.style.display = 'block';
-    document.getElementById('crmBackBtn2').addEventListener('click', openList);
+    document.getElementById('crmBackBtn2').addEventListener('click', ()=>{ addingNewCompany = false; openList(); });
     const wrap = document.getElementById('crmAddFormWrap');
     wrap.innerHTML = CO_FIELD_LABELS.map(([k,l])=> `<div class="co-form-field"><label>${l}</label><input type="text" id="crmNewF_${k}" /></div>`).join('') +
       `<div id="crmNewFErr" style="display:none;color:#B91C1C;font-size:12px;margin-bottom:8px;">업체명을 입력하세요.</div>
@@ -1181,6 +1188,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       const patch = {};
       CO_FIELD_LABELS.forEach(([k])=>{ patch[k] = document.getElementById('crmNewF_' + k).value.trim(); });
       if(!patch.name){ document.getElementById('crmNewFErr').style.display = 'block'; return; }
+      addingNewCompany = false;
       const rec = D.addCompany(patch);
       openCard(rec.id);
       renderList();
@@ -1191,6 +1199,23 @@ window.SHIN2_CRM_APP_INIT = function(){
   document.getElementById('crmAddBtn').addEventListener('click', openAddCompanyForm);
   document.getElementById('hansolLinkBtn').addEventListener('click', ()=> window.open('../v2/', '_blank', 'noopener'));
   searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim(); renderList(); });
+
+  // 다른 탭(v2 또는 CRM의 다른 탭)에서 shin2-companies-staging을 바꾸면 native storage
+  // 이벤트가 이 탭에 도착한다(자기 자신이 쓴 변경에는 절대 발생하지 않음 — 브라우저 표준
+  // 동작). 지금 이 탭이 편집/신규등록 폼을 띄워둔 상태라면 사용자의 입력 중인 내용을
+  // 덮어쓰지 않도록 재렌더링을 건너뛴다. 새 Firestore/네트워크 동작은 전혀 추가하지 않는다 —
+  // 순수 localStorage 재조회 + 화면 재렌더링만 한다.
+  window.addEventListener('storage', (e)=>{
+    if(e.key !== 'shin2-companies-staging') return;
+    if(cardState.editingCompany || addingNewCompany) return;
+    if(cardView.style.display === 'block'){
+      if(!currentCompanyId) return; // 신규등록 폼 등 id가 아직 없는 화면은 건드리지 않는다
+      const co = D.findCompany(currentCompanyId);
+      if(co){ renderCard(co); } else { openList(); }
+    } else {
+      renderList();
+    }
+  });
 
   const params = new URLSearchParams(location.search);
   const initialCompanyId = params.get('company');
