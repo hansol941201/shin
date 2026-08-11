@@ -911,6 +911,12 @@ button, select, input, textarea {
   cursor: pointer;
 }
 .month-event-chip:hover { filter: brightness(0.97); }
+/* 팀장 Google 일정(파랑)도 분홍/주황/빨강/노랑 카드와 똑같이 눈에 띄는
+   테두리를 준다 — 배경색(--confirmed-bg)이 워낙 연해서 테두리가 없으면
+   카드처럼 안 보이고 밋밋한 텍스트로만 보이는 문제가 있었다. */
+.month-event-chip.dot-confirmed {
+  border: 1px solid var(--confirmed-border);
+}
 .month-event-chip.dot-pending {
   background: var(--own-bg);
   color: var(--own-text);
