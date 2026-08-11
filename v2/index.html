@@ -6608,16 +6608,46 @@ ${text}
     renderTodos();
   });
 
+  // [버그 수정 — 체크 완료 후 새로고침하면 되살아남] 한솔1에서 이전(import)된 할 일을 체크
+  // 완료(=목록에서 완전 제거, 위 saveTodos/checkbox 핸들러는 정상 동작함)하면 todos 배열에서
+  // 그 항목이 사라진다. 그런데 이 마이그레이션은 매 새로고침(shin2-app-unlocked)마다 다시
+  // 실행되고, 예전 dedup 로직은 "지금 todos 배열에 그 sourceId가 남아 있는지"만 봤다 —
+  // 한솔1 원본(work-guide-state-v1)은 읽기 전용이라 절대 바뀌지 않으므로, 완료 처리로
+  // todos 배열에서 사라진 순간부터는 dedup이 더 이상 그 항목을 "이미 이전됨"으로 인식하지
+  // 못해 매번 새로 다시 추가해버렸다(체크 완료 → 화면에서 사라짐 → 새로고침 → 마이그레이션
+  // 재실행 → 되살아남). 체크박스/삭제 핸들러 자체나 localRev 가드는 문제가 아니었다(둘 다
+  // saveTodos()를 통해 동일하게 localStorage/클라우드에 정상 반영됨, 9a38fa1에서 이미 검증).
+  // 수정: 실제로 이전된 sourceId를 배열과 별도로 영구 기록해두고(완료로 배열에서 빠져도
+  // 이 기록은 지우지 않음), dedup을 이 기록 기준으로 판단한다.
+  const IMPORTED_H1_IDS_KEY = 'shin2-todos-h1-imported-ids';
+  function loadImportedH1Ids(){
+    try{
+      const raw = localStorage.getItem(IMPORTED_H1_IDS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(arr) ? arr : []);
+    }catch(e){ return new Set(); }
+  }
+  function saveImportedH1Ids(set){
+    try{ localStorage.setItem(IMPORTED_H1_IDS_KEY, JSON.stringify(Array.from(set))); }catch(e){}
+  }
+
   // 한솔1 이전(migration) 전용 API: sourceSystem/sourceId 기준으로 중복을 건너뛴다.
   window.SHIN2_TODOS = {
     addFromHansol1: function(records){
       let added = 0, skipped = 0;
+      const importedIds = loadImportedH1Ids();
+      let idsChanged = false;
       (records||[]).forEach(r=>{
-        if(todos.some(t=> t.sourceSystem === 'hansol1' && t.sourceId === r.sourceId)){ skipped++; return; }
-        if(r.done) { skipped++; return; } // 완료=제거 모델이므로 이미 완료된 항목은 이전하지 않는다
+        if(importedIds.has(r.sourceId)){ skipped++; return; } // 예전에 이미 이전됐던 항목(완료로 지워졌어도)은 다시 넣지 않는다
+        if(todos.some(t=> t.sourceSystem === 'hansol1' && t.sourceId === r.sourceId)){
+          skipped++; importedIds.add(r.sourceId); idsChanged = true; return;
+        }
+        if(r.done) { skipped++; importedIds.add(r.sourceId); idsChanged = true; return; } // 완료=제거 모델이므로 이미 완료된 항목은 이전하지 않는다
         todos.push({ id: genTodoId(), text: r.text, sourceSystem: 'hansol1', sourceId: r.sourceId });
+        importedIds.add(r.sourceId); idsChanged = true;
         added++;
       });
+      if(idsChanged) saveImportedH1Ids(importedIds);
       if(added){ saveTodos(); renderTodos(); }
       return { added, skipped };
     }
