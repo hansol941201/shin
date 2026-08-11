@@ -1278,6 +1278,12 @@
     knowledge: 'shin2-knowledge-v1',
     favorites: 'shin2-quicklinks-v1',
     calls: 'shin2-call-entries-v1',
+    // 자료실 메타데이터(신규, § Storage 연결 라운드) — 기존 키와 완전히 동일한 안전 패턴
+    // (§2~4 CASE A/B/C, §15 빈 값 가드)만 그대로 따른다. [클라우드 동기화 시작] 버튼을
+    // 눌렀을 때만 최초 동기화되고, 그 외에는 기존 실시간 push 경로(saveDocs → push)만 탄다.
+    // 파일 바이트 자체(shin2-library-blobs-v1)는 여전히 이 목록에 없다 — 그건 로컬 전용
+    // 폴백일 뿐이며 클라우드로 나가는 것은 오직 이 메타데이터 배열(storagePath 포함)이다.
+    library: 'shin2-library-documents-v1',
     // CRM(고객업무관리카드, crm/index.html)에서 추가한 두 키 — 기존 키와 완전히 동일한 안전
     // 패턴(§2~4 CASE A/B/C, §15 빈 값 가드)을 그대로 따른다. 메커니즘 자체는 바뀌지 않았고
     // (여전히 [클라우드 동기화 시작] 버튼 클릭에서만 최초 동기화 실행), 동기화 대상 배열이
@@ -1422,10 +1428,19 @@
           getFirestore, doc, setDoc, onSnapshot, getDoc,
           enableIndexedDbPersistence, serverTimestamp
         } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
+        // Storage SDK — 자료실/CRM 서류함 파일 업로드용(신규). 기존 Auth/Firestore와 동일한
+        // CDN 동적 import 패턴을 그대로 따른다(새 로딩 방식을 만들지 않음). getStorage(app)를
+        // 버킷 이름 없이 호출하므로, firebaseConfig.js의 cfg.storageBucket 값(현재
+        // "pour-dashboard.firebasestorage.app")을 SDK가 그대로 사용한다 — 이 파일에서 버킷
+        // 이름을 직접 하드코딩하지 않는다(§ 실제 Console 값과 어긋날 위험 방지).
+        const {
+          getStorage, ref: storageRef, uploadBytesResumable, getDownloadURL
+        } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js');
 
         const app = initializeApp(cfg, 'shin2');
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         try{ await enableIndexedDbPersistence(db); }catch(e){ /* 여러 탭이면 실패할 수 있음 — 무시해도 안전 */ }
 
         // ─────────────────────────────────────────────────────────────────
@@ -1443,6 +1458,46 @@
         let currentUid = null;
 
         function noopPush(){ /* 아직 사용자가 동기화를 시작하지 않음 — 빈 값이든 아니든 아무것도 클라우드에 쓰지 않는다 */ }
+
+        // ─────────────────────────────────────────────────────────────────
+        // [신규] Firebase Storage 업로드/다운로드 공용 추상화. 공용 자료실(saveLibraryFile)과
+        // CRM 고객서류함(crm/index.html의 saveDocumentFile)이 이 동일한 로직을 각자 페이지에서
+        // 그대로 재사용한다 — 이 저장소는 독립 HTML 2개(<script> import 공유 불가)라서 SHIN2_CRM_OCR/
+        // SHIN2_COMPANY_OCR와 동일한 관례(텍스트 그대로 복제)로 crm/index.html에도 이 블록과
+        // 동일한 함수를 복제해 둔다 — 한쪽만 고치면 어긋나므로 다음에 고칠 때는 두 파일을 함께 수정.
+        //
+        // uploadToStorage(file, path, onProgress): uploadBytesResumable()로 진행률을 실시간
+        // 전달하며 업로드한다. 성공하면 { storagePath: path }로 resolve, 실패하면 그대로 reject
+        // (호출부가 "업로드 실패 + 재시도/로컬저장" UI를 그린다 — 여기서 조용히 로컬로 대체하지 않음).
+        // 2MB 같은 크기 상한을 여기서 절대 걸지 않는다(Storage는 대용량 파일을 resumable upload로
+        // 처리하기 위한 경로다 — 로컬 dataURL 폴백에만 있는 2MB 상한과는 완전히 다른 목적).
+        function uploadToStorage(file, path, onProgress){
+          return new Promise((resolve, reject) => {
+            if(!currentUid){
+              reject(Object.assign(new Error('NOT_AUTHENTICATED'), { code: 'NOT_AUTHENTICATED' }));
+              return;
+            }
+            let task;
+            try{ task = uploadBytesResumable(storageRef(storage, path), file); }
+            catch(e){ reject(Object.assign(e, { code: e.code || 'UPLOAD_FAILED' })); return; }
+            task.on('state_changed',
+              (snap) => { if(onProgress && snap.totalBytes) onProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)); },
+              (err) => { reject(Object.assign(err, { code: err.code || 'UPLOAD_FAILED' })); },
+              () => { resolve({ storagePath: path }); }
+            );
+          });
+        }
+        // getStorageFileURL(path): 클라우드 파일 보기/다운로드용 다운로드 URL을 매번 새로 요청한다
+        // (URL을 메타데이터에 캐싱하지 않음 — 항상 최신 보안규칙/토큰 기준으로 재발급).
+        function getStorageFileURL(path){
+          return getDownloadURL(storageRef(storage, path));
+        }
+        window.SHIN2_STORAGE = {
+          uploadFile: uploadToStorage,
+          getFileURL: getStorageFileURL,
+          isSignedIn: () => !!currentUid,
+          getUid: () => currentUid
+        };
 
         // 최초 동기화가 끝난 뒤(=사용자가 버튼을 눌러 이미 CASE A/B/C 판단을 명시적으로
         // 완료한 뒤)에만 호출되는, 평상시 실시간 동기화. 이 시점부터는 "이미 안전하게
@@ -9455,30 +9510,33 @@ ${text}
    파일 바이트: localStorage['shin2-library-blobs-v1'] = { [id]: dataURL } — 로컬 전용,
      SHIN2_SYNC_KEYS에 절대 추가하지 않는다(클라우드로 전혀 나가지 않음).
 
-   ---- Storage 연결 여부 ----
-   이 샌드박스에는 Firebase Storage 자격증명/버킷 설정이 없다(BLOCKED — CRM 서류함 라운드와
-   동일한 결론). saveLibraryFile()에 실제 uploadBytes() 자리를 TODO로 명확히 표시해 두었다.
-   지금은 CRM 서류함과 동일한 "로컬 전용 폴백" 패턴을 재사용하되, 자료실은 문서가 더 크고
-   많을 수 있다는 경고(§ "수천 개 문서" 스케일)를 반영해 파일당 크기 상한(LIB_MAX_LOCAL_BYTES)을
-   두었다 — 이 상한을 넘는 파일은 "로컬 저장 한도 초과"로 명확히 실패 처리하고(§9 실패 UI),
-   절대 조용히 잘라서 저장하거나 metadata-only로 만들어 넘어가지 않는다. 이 로컬 폴백은
-   최종 아키텍처가 아니며 수천 건 규모에는 맞지 않는다는 점을 보고서에 명시한다.
+   ---- Storage 연결 여부(§Storage 연결 라운드, 갱신) ----
+   코드 자체는 이제 실제 Firebase Storage 업로드(uploadBytesResumable, window.SHIN2_STORAGE —
+   위쪽 Auth/Firestore 초기화 블록에서 함께 정의)를 로그인 상태에서 자동으로 시도한다. 다만
+   이 샌드박스에는 실제 도달 가능한 Storage 버킷/네트워크가 없어(BLOCKED — 아웃바운드 요청이
+   프록시에서 403으로 막힘) 실제 업로드 성공은 이 환경에서 검증할 수 없었다 — 코드 경로/구문만
+   검증했다. saveLibraryFile()은 로그인 상태면 클라우드 업로드를 먼저 시도하고, 실패(또는
+   미로그인)하면 사용자가 [다시 시도]/[이 기기에만 저장] 중 하나를 명시적으로 선택해야 다음
+   단계로 진행한다 — 실패를 조용히 로컬로 대체하지 않는다. 로컬 폴백에만 여전히
+   LIB_MAX_LOCAL_BYTES(2MB) 상한이 있다(클라우드 업로드에는 이 상한이 없음 — resumable upload).
 
-   ---- 클라우드 동기화 여부(이번 라운드의 판단) ----
-   메타데이터만이라도 SHIN2_SYNC_KEYS에 추가하면 여러 기기에서 자료 목록을 공유할 수 있지만,
-   지금은 예산/범위상 자료실 메타데이터를 클라우드 동기화 대상에 포함하지 않았다(이 기기
-   로컬에만 저장) — 새 동기화 메커니즘을 만들지 않고, 기존 [클라우드 동기화 시작] 버튼의
-   범위도 넓히지 않기 위함이다. 필요해지면 SHIN2_SYNC_KEYS.library를 추가하고 saveDocs()에서
-   window.__shin2CloudSync.push('library', list)만 호출하면 되도록 코드를 이미 그 형태로
-   분리해 두었다(§ "your call, 문서화" 요구사항 반영).
+   ---- 클라우드 동기화 여부(§Storage 연결 라운드, 갱신) ----
+   자료실 메타데이터 키(library → shin2-library-documents-v1)를 SHIN2_SYNC_KEYS에 추가했다.
+   업로드(또는 로컬저장)가 실제로 성공한 뒤에만 메타데이터를 쓰고, saveDocs()가 기존 다른
+   모듈과 동일한 패턴으로 window.__shin2CloudSync.push('library', list)를 호출한다 — 로그인
+   전/[클라우드 동기화 시작] 버튼을 아직 누르지 않았으면 noopPush라 아무 일도 하지 않고, 빈
+   값은 pushToCloud 내부 isEmptyVal 가드가 막는다(§15). 새 동기화 메커니즘을 만들지 않았다.
    ========================================================================== */
 (function(){
   'use strict';
   const LIB_KEY = 'shin2-library-documents-v1';
   const LIB_BLOB_KEY = 'shin2-library-blobs-v1'; // 로컬 전용 — SHIN2_SYNC_KEYS에 절대 추가하지 않는다
   const LIB_MAX_LOCAL_BYTES = 2 * 1024 * 1024; // 2MB — 로컬 폴백 한도(§ 대용량 base64 금지 원칙)
-  const LOCAL_ONLY_NOTICE = '이 자료 파일은 현재 이 기기에만 저장되어 있습니다(클라우드 파일 저장 연결 전 — 다른 기기에서는 목록만 보이고 파일은 없을 수 있습니다).';
-  const BLOCKED_NOTICE = '파일 저장은 클라우드 연결 후 가능합니다. 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다.';
+  const LOCAL_ONLY_NOTICE = '이 자료 파일은 현재 이 기기에만 저장되어 있습니다(다른 기기에서는 목록만 보이고 파일은 없을 수 있습니다).';
+  // 로그인(클라우드 동기화) 상태면 파일을 자동으로 Storage 업로드를 시도한다 — 이 문구는
+  // 로그인이 안 되어 있거나 업로드가 실패했을 때만 보이는 안내다. 로그인 상태에서는
+  // openAddForm() 쪽에서 별도로 "클라우드에 업로드됩니다" 안내로 바뀐다.
+  const BLOCKED_NOTICE = '클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다. 사이트 잠금을 해제해 로그인하면 자동으로 클라우드 업로드가 시도됩니다.';
 
   // 기본 분류 — 하드코딩된 enum이 아니라 그냥 문자열 배열이라 나중에 얼마든지 추가할 수 있다(§1).
   const LIB_CATEGORIES = ['시방서','단가표','실적자료','공법소개서','회사소개서','카탈로그','협약자료','공고문양식','교육자료','기타'];
@@ -9496,8 +9554,11 @@ ${text}
   function loadDocs(){ return readArr(LIB_KEY); }
   function saveDocs(list){
     writeArr(LIB_KEY, list);
-    // 지금은 자료실 메타데이터를 클라우드로 보내지 않는다(위 헤더 주석 참고) — 이 줄은 의도적으로
-    // window.__shin2CloudSync.push(...)를 호출하지 않는다.
+    // [Storage 연결 라운드에서 추가] 다른 기존 모듈(companies/tasks/memos 등)과 완전히 동일한
+    // 패턴 — 새 동기화 메커니즘을 만들지 않고, 이미 있는 push 함수를 그대로 호출한다. 로그인
+    // 전/[클라우드 동기화 시작] 버튼을 아직 누르지 않은 상태에서는 noopPush라 아무 일도 하지
+    // 않고, 값이 비어있으면 pushToCloud 내부의 isEmptyVal 가드가 막는다(§15).
+    if(window.__shin2CloudSync) window.__shin2CloudSync.push('library', list);
   }
   function findDoc(id){ return loadDocs().find(d=> d.id === id) || null; }
   function getBlob(id){ const blobs = readObj(LIB_BLOB_KEY); return blobs[id] || ''; }
@@ -9505,31 +9566,44 @@ ${text}
   function removeBlob(id){ const blobs = readObj(LIB_BLOB_KEY); delete blobs[id]; writeObj(LIB_BLOB_KEY, blobs); }
 
   // saveLibraryFile: 실제 파일 바이트를 저장하는 유일한 진입점.
-  // onProgress(pct)는 FileReader의 진짜 진행률(loaded/total)을 그대로 전달한다 — 가짜 100%를
-  // 만들지 않는다. 실패(용량 초과/읽기 오류)는 그대로 reject되어 호출부가 재시도 UI를 띄운다.
-  function saveLibraryFile(file, onProgress){
+  // opts.forceLocal === true면 Storage를 아예 시도하지 않고 곧장 "이 기기에만 저장" 경로로
+  // 간다(사용자가 업로드 실패 후 명시적으로 "이 기기에만 저장"을 눌렀을 때만 이렇게 호출됨 —
+  // 실패를 조용히 로컬로 대체하는 코드가 아니라, 항상 사용자의 명시적 선택을 거친다).
+  // 그 외에는(Storage 로그인이 되어 있으면) 클라우드 업로드를 먼저 시도하고, 실패하면 그대로
+  // reject해 호출부가 "업로드 실패 + [다시 시도]/[이 기기에만 저장]" UI를 띄우게 한다 —
+  // 여기서 실패를 삼키고 로컬로 자동 전환하지 않는다(§ 안전 규칙).
+  // onProgress(pct)는 실제 진행률(클라우드: bytesTransferred/totalBytes, 로컬: FileReader
+  // loaded/total)을 그대로 전달한다 — 가짜 100%를 만들지 않는다.
+  // 반환: { localOnly, storagePath, dataUrl } — dataUrl은 localOnly일 때만 채워진다.
+  function saveLibraryFile(id, file, onProgress, opts){
+    opts = opts || {};
+    const ST = window.SHIN2_STORAGE;
+    const useCloud = !opts.forceLocal && ST && ST.isSignedIn && ST.isSignedIn();
+    if(useCloud){
+      // 클라우드 업로드 경로 — 2MB 로컬 폴백 상한은 여기 적용하지 않는다(resumable upload라
+      // 대용량 파일도 처리 가능). 실패하면 그대로 reject(로컬로 자동 대체하지 않음).
+      const path = `users/${ST.getUid()}/library/${id}/${file.name}`;
+      return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
+    }
+    // 로컬 전용 폴백 — Storage 미로그인이거나 사용자가 명시적으로 "이 기기에만 저장"을 선택한
+    // 경우에만 여기로 온다. localStorage 용량 한계 때문에 이 분기에만 2MB 상한이 있다.
     return new Promise((resolve, reject)=>{
       if(file.size > LIB_MAX_LOCAL_BYTES){
         reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
         return;
       }
-      // TODO(Storage 연결 시): 여기서 로컬 저장 대신(또는 추가로)
-      //   const path = `users/{uid}/library/${fileId}/${file.name}`;
-      //   await uploadBytes(ref(storage, path), file, { onProgress: ... })
-      // 를 호출해 storagePath를 실제 Storage 경로로 갱신하는 분기를 추가하면 된다.
-      // 지금은 Firebase Storage 자격증명이 이 샌드박스에 없어 BLOCKED — 로컬 dataURL로만 저장한다.
       const reader = new FileReader();
       reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
-      reader.onload = ()=>{ if(onProgress) onProgress(100); resolve(reader.result); };
+      reader.onload = ()=>{ if(onProgress) onProgress(100); resolve({ localOnly:true, storagePath: 'local:' + id, dataUrl: reader.result }); };
       reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
       reader.readAsDataURL(file);
     });
   }
 
-  function addDoc(file, meta, onProgress){
+  function addDoc(file, meta, onProgress, opts){
     const id = genId('lib');
-    return saveLibraryFile(file, onProgress).then(dataUrl=>{
-      writeBlob(id, dataUrl);
+    return saveLibraryFile(id, file, onProgress, opts).then(result=>{
+      if(result.dataUrl) writeBlob(id, result.dataUrl); // 클라우드 업로드 성공 시에는 로컬 blob을 만들지 않는다.
       const now = nowIso();
       const rec = {
         id,
@@ -9541,14 +9615,16 @@ ${text}
         year: meta.year || '',
         tags: meta.tags || [],
         description: meta.description || '',
-        storagePath: 'local:' + id,
+        storagePath: result.storagePath,
         mimeType: file.type || '',
         size: file.size || 0,
         favorite: false,
         fileStored: true,
-        localOnly: true, // Storage BLOCKED 상태에서 만들어진 자료 — 이 기기에만 파일 바이트가 있다는 표시
+        localOnly: result.localOnly, // true면 이 기기에만 파일 바이트가 있음, false면 Storage 업로드 완료
         createdAt: now, updatedAt: now
       };
+      // 업로드(또는 로컬 저장)가 "성공"한 뒤에만 메타데이터를 쓴다 — 실패한 파일의 메타데이터는
+      // 절대 만들지 않는다(§ 고아 메타데이터 금지, 위 saveLibraryFile의 reject가 여기 도달을 막음).
       const list = loadDocs(); list.push(rec); saveDocs(list);
       return rec;
     });
@@ -9569,16 +9645,19 @@ ${text}
 
   // replaceFile: 새 파일 저장이 "성공"한 뒤에만 기존 파일을 덮어쓴다(§9 순서 안전) — 저장이
   // 실패하면 기존 blob/메타데이터는 그대로 남는다.
-  function replaceFile(id, file, onProgress){
-    return saveLibraryFile(file, onProgress).then(dataUrl=>{
+  function replaceFile(id, file, onProgress, opts){
+    return saveLibraryFile(id, file, onProgress, opts).then(result=>{
       const list = loadDocs();
       const rec = list.find(d=> d.id === id);
       if(!rec) throw new Error('NOT_FOUND');
-      writeBlob(id, dataUrl); // 새 파일 저장 성공 후에만 덮어쓴다(원래 id 그대로 재사용 — 교체이지 신규 추가가 아님)
+      // 새 파일 저장이 성공한 뒤에만 기존 파일을 덮어쓴다(원래 id 그대로 재사용 — 교체이지 신규 추가가 아님).
+      if(result.dataUrl) writeBlob(id, result.dataUrl); else removeBlob(id); // 클라우드로 교체됐으면 예전 로컬 blob은 정리
       rec.originalFileName = file.name;
+      rec.storagePath = result.storagePath;
       rec.mimeType = file.type || '';
       rec.size = file.size || 0;
       rec.fileStored = true;
+      rec.localOnly = result.localOnly;
       rec.updatedAt = nowIso();
       saveDocs(list);
       return rec;
@@ -9640,6 +9719,20 @@ ${text}
     libBlobUrlCache[doc.id] = url;
     return url;
   }
+  // getDocUrl: 보기/다운로드가 실제로 쓰는 진입점(Promise). storagePath가 로컬 전용
+  // 표시(doc.localOnly)면 기존 로컬 blob 경로를 그대로 쓰고(기존 로컬 자료가 깨지지 않도록),
+  // 그렇지 않으면 Storage에서 매번 새 다운로드 URL을 요청한다(캐시하지 않음 — 보안규칙 상
+  // 로그인 상태가 바뀌면 URL도 즉시 최신이어야 한다).
+  function getDocUrl(doc){
+    if(doc.localOnly){
+      return Promise.resolve(getDocObjectUrl(doc));
+    }
+    const ST = window.SHIN2_STORAGE;
+    if(!ST || !ST.isSignedIn || !ST.isSignedIn()){
+      return Promise.reject(Object.assign(new Error('NOT_AUTHENTICATED'), { code:'NOT_AUTHENTICATED' }));
+    }
+    return ST.getFileURL(doc.storagePath);
+  }
   function canPreviewInline(doc){
     const m = (doc.mimeType || '').toLowerCase();
     return m.startsWith('image/') || m === 'application/pdf';
@@ -9666,7 +9759,17 @@ ${text}
   const libAllLabel = document.getElementById('libAllLabel');
   const libList = document.getElementById('libList');
 
-  if(libBanner) libBanner.textContent = D.BLOCKED_NOTICE;
+  function libCloudReady(){ const ST = window.SHIN2_STORAGE; return !!(ST && ST.isSignedIn && ST.isSignedIn()); }
+  function refreshLibBanner(){
+    if(!libBanner) return;
+    libBanner.textContent = libCloudReady()
+      ? '새 자료는 자동으로 클라우드(Firebase Storage)에 업로드됩니다. 업로드에 실패하면 재시도하거나 이 기기에만 저장할 수 있습니다.'
+      : D.BLOCKED_NOTICE;
+  }
+  refreshLibBanner();
+  // 로그인 시점(Firebase Auth 로그인 완료)에 배너 문구를 갱신한다 — 자동 마이그레이션이 아니라
+  // 단순 안내 문구 갱신이며, 이 시점에 어떤 파일도 자동 업로드하지 않는다(§ 수동 액션 원칙).
+  window.addEventListener('shin2-firebase-ready', refreshLibBanner);
 
   function renderCatTabs(){
     const cats = ['all'].concat(D.LIB_CATEGORIES);
@@ -9698,7 +9801,11 @@ ${text}
   }
 
   function renderRow(doc){
-    const hasBlob = doc.fileStored && !!D.getBlob(doc.id);
+    // 로컬 전용 자료는 실제 blob이 있어야 하고, 클라우드 자료는 storagePath가 local:이
+    // 아니면(=업로드가 실제로 성공해 기록된 경우) 파일이 있다고 본다(§ 고아 메타데이터 금지
+    // 로직이 이미 업로드 성공 후에만 fileStored:true를 쓰므로, 여기서는 다시 다운로드해보지
+    // 않고 메타데이터만으로 판단 — 실제 존재 여부는 보기/다운로드 클릭 시 확인된다).
+    const hasBlob = doc.fileStored && (doc.localOnly ? !!D.getBlob(doc.id) : true);
     return `<div class="lib-row" data-doc-id="${esc(doc.id)}">
       <button type="button" class="lib-row-fav${doc.favorite?' active':''}" data-fav="${esc(doc.id)}" title="즐겨찾기">${doc.favorite?'★':'☆'}</button>
       <div class="lib-row-main" data-open="${esc(doc.id)}">
@@ -9724,19 +9831,22 @@ ${text}
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const doc = D.findDoc(btn.getAttribute('data-view'));
-        const url = doc && getDocObjectUrl(doc);
-        if(url) window.open(url, '_blank', 'noopener');
+        if(!doc) return;
+        getDocUrl(doc).then(url=>{ if(url) window.open(url, '_blank', 'noopener'); })
+          .catch(()=> showToast(btn, '불러오기 실패'));
       });
     });
     container.querySelectorAll('[data-download]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const doc = D.findDoc(btn.getAttribute('data-download'));
-        const url = doc && getDocObjectUrl(doc);
-        if(!url) return;
-        const a = document.createElement('a');
-        a.href = url; a.download = doc.originalFileName || doc.title || 'file';
-        document.body.appendChild(a); a.click(); a.remove();
+        if(!doc) return;
+        getDocUrl(doc).then(url=>{
+          if(!url) return;
+          const a = document.createElement('a');
+          a.href = url; a.download = doc.originalFileName || doc.title || 'file';
+          document.body.appendChild(a); a.click(); a.remove();
+        }).catch(()=> showToast(btn, '다운로드 실패'));
       });
     });
     container.querySelectorAll('[data-copylink]').forEach(btn=>{
@@ -9851,12 +9961,16 @@ ${text}
     const progressBar = overlay.querySelector('#libProgressBar');
     const errBox = overlay.querySelector('#libUploadErr');
 
-    function trySave(){
+    // trySave(opts): opts.forceLocal===true면 사용자가 실패 후 명시적으로 "이 기기에만 저장"을
+    // 눌러 재시도하는 경우다 — 이 함수 자체는 절대 알아서 forceLocal을 켜지 않는다.
+    function trySave(opts){
+      opts = opts || {};
       const file = fileInput.files[0];
       const title = titleInput.value.trim();
       overlay.querySelector('#libFTitleErr').style.display = title ? 'none' : 'block';
       if(!file || !title) return;
       errBox.style.display = 'none';
+      errBox.innerHTML = '';
       progressWrap.style.display = 'block';
       progressBar.style.width = '0%';
       saveBtn.disabled = true;
@@ -9870,7 +9984,8 @@ ${text}
         tags: tagsToArr(overlay.querySelector('#libFTags').value),
         description: overlay.querySelector('#libFDesc').value.trim()
       };
-      D.addDoc(file, meta, (pct)=>{ progressBar.style.width = pct + '%'; }).then(()=>{
+      const wasCloudAttempt = !opts.forceLocal && libCloudReady();
+      D.addDoc(file, meta, (pct)=>{ progressBar.style.width = pct + '%'; }, opts).then(()=>{
         close();
         renderAll();
       }).catch(err=>{
@@ -9879,13 +9994,28 @@ ${text}
         const code = err && err.code;
         errBox.style.display = 'block';
         if(code === 'SIZE_LIMIT'){
-          errBox.textContent = '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 연결 전에는 저장할 수 없습니다. [다시 시도]';
-        } else {
-          errBox.textContent = '업로드에 실패했습니다. 입력한 내용은 그대로 남아 있습니다. [다시 시도]';
+          errBox.textContent = '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 로그인 후 다시 시도해주세요.';
+          return;
+        }
+        // 업로드/저장 실패는 절대 조용히 로컬로 대체되지 않는다 — 재시도 또는 사용자가 직접
+        // "이 기기에만 저장"을 눌러야만 로컬 폴백으로 진행된다(§ 안전 규칙).
+        errBox.textContent = wasCloudAttempt
+          ? '업로드에 실패했습니다. 입력한 내용은 그대로 남아 있습니다. '
+          : '저장에 실패했습니다. 입력한 내용은 그대로 남아 있습니다. ';
+        const retryBtn = document.createElement('button');
+        retryBtn.type = 'button'; retryBtn.className = 'co-text-action'; retryBtn.textContent = '[다시 시도]';
+        retryBtn.addEventListener('click', ()=> trySave(opts));
+        errBox.appendChild(retryBtn);
+        if(wasCloudAttempt){
+          const localBtn = document.createElement('button');
+          localBtn.type = 'button'; localBtn.className = 'co-text-action'; localBtn.style.marginLeft = '8px';
+          localBtn.textContent = '[이 기기에만 저장]';
+          localBtn.addEventListener('click', ()=> trySave({ forceLocal:true }));
+          errBox.appendChild(localBtn);
         }
       });
     }
-    saveBtn.addEventListener('click', trySave);
+    saveBtn.addEventListener('click', ()=> trySave());
   }
 
   function openDetail(id){
@@ -9958,23 +10088,47 @@ ${text}
     const eProgressWrap = overlay.querySelector('#libEProgressWrap');
     const eProgressBar = overlay.querySelector('#libEProgressBar');
     const eErrBox = overlay.querySelector('#libEUploadErr');
-    efFile.addEventListener('change', ()=>{
-      const f = efFile.files[0];
-      if(!f) return;
+    function tryReplace(f, opts){
+      opts = opts || {};
       eErrBox.style.display = 'none';
+      eErrBox.innerHTML = '';
       eProgressWrap.style.display = 'block';
       eProgressBar.style.width = '0%';
-      D.replaceFile(doc.id, f, (pct)=>{ eProgressBar.style.width = pct + '%'; }).then(()=>{
+      const wasCloudAttempt = !opts.forceLocal && libCloudReady();
+      D.replaceFile(doc.id, f, (pct)=>{ eProgressBar.style.width = pct + '%'; }, opts).then(()=>{
         close();
         renderAll();
       }).catch(err=>{
         const code = err && err.code;
         eErrBox.style.display = 'block';
-        eErrBox.textContent = (code === 'SIZE_LIMIT')
-          ? '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 기존 파일은 그대로 유지됩니다. [다시 시도]'
-          : '업로드에 실패했습니다. 기존 파일은 그대로 유지됩니다. [다시 시도]';
+        if(code === 'SIZE_LIMIT'){
+          eErrBox.textContent = '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 기존 파일은 그대로 유지됩니다. 클라우드 로그인 후 다시 시도해주세요.';
+          efFile.value = '';
+          return;
+        }
+        // 실패해도 기존 파일/메타데이터는 그대로 유지된다(§9) — 여기서도 조용히 로컬로
+        // 대체하지 않고, 재시도 또는 명시적 "이 기기에만 저장"만 다음 시도를 진행시킨다.
+        eErrBox.textContent = wasCloudAttempt
+          ? '업로드에 실패했습니다. 기존 파일은 그대로 유지됩니다. '
+          : '저장에 실패했습니다. 기존 파일은 그대로 유지됩니다. ';
+        const retryBtn = document.createElement('button');
+        retryBtn.type = 'button'; retryBtn.className = 'co-text-action'; retryBtn.textContent = '[다시 시도]';
+        retryBtn.addEventListener('click', ()=> tryReplace(f, opts));
+        eErrBox.appendChild(retryBtn);
+        if(wasCloudAttempt){
+          const localBtn = document.createElement('button');
+          localBtn.type = 'button'; localBtn.className = 'co-text-action'; localBtn.style.marginLeft = '8px';
+          localBtn.textContent = '[이 기기에만 저장]';
+          localBtn.addEventListener('click', ()=> tryReplace(f, { forceLocal:true }));
+          eErrBox.appendChild(localBtn);
+        }
         efFile.value = '';
       });
+    }
+    efFile.addEventListener('change', ()=>{
+      const f = efFile.files[0];
+      if(!f) return;
+      tryReplace(f);
     });
 
     // 삭제 — 네이티브 confirm() 대신 인라인 확인만 사용(§10, 기존 co-confirm-row 관례).

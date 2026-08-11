@@ -148,6 +148,12 @@
   .doc-local-note{ font-size:10.5px; color:#9A6B00; margin-top:4px; }
   .doc-actions{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
   .doc-empty{ font-size:12px; color:var(--text-muted); padding:6px 0; }
+  .doc-upload-status{ margin:6px 0; }
+  .doc-upload-progress{ height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
+  .doc-upload-bar{ height:100%; width:0%; background:var(--navy); transition:width .15s linear; }
+  .doc-upload-label{ font-size:11px; color:var(--text-muted); margin-top:4px; }
+  .doc-upload-err{ font-size:11.5px; color:#B91C1C; margin-top:4px; }
+  .doc-inline-err{ font-size:11px; color:#B91C1C; margin-left:6px; }
   .doc-rename-row{ display:flex; gap:6px; margin-top:6px; }
   .doc-rename-row input{ flex:1; padding:5px 8px; font-size:12px; border:1px solid var(--line); border-radius:5px; }
 
@@ -193,6 +199,10 @@
 </style>
 </head>
 <body>
+
+<!-- Firebase 설정 로드(v2/index.html과 동일한 패턴) — 없거나 값이 비어있으면 아래 Storage
+     초기화 스크립트가 조용히 건너뛰고 로컬 전용 모드로 남는다. -->
+<script src="../firebaseConfig.js" onerror="console.warn('firebaseConfig.js 없음 — 서류함이 로컬 전용 모드로 동작합니다')"></script>
 
 <div class="gate-screen" id="gateScreen">
   <div class="gate-brand">한솔 고객관리</div>
@@ -503,12 +513,112 @@ window.SHIN2_CRM_OCR = (function(){
       if(!ok){ showGateError('비밀번호가 올바르지 않습니다.'); return; }
       try{ sessionStorage.setItem(CRM_SESSION_KEY, '1'); }catch(e){}
       showApp();
+      // v2/index.html의 'shin2-app-unlocked'와 동일한 패턴 — 이 비밀번호로 Firebase 로그인을
+      // 시도한다(서류함 Storage 업로드가 로그인 사용자의 uid를 필요로 하므로). 비밀번호는 이
+      // 이벤트 한 번에만 실려 나가고 어디에도 저장되지 않는다.
+      window.dispatchEvent(new CustomEvent('shin2-crm-unlocked', { detail: { password: pw } }));
     } finally {
       gateEnterBtn.disabled = false;
     }
   }
   gateEnterBtn.addEventListener('click', handleGateEnter);
   gatePasswordInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') handleGateEnter(); });
+})();
+</script>
+
+<script type="module">
+/* ==========================================================================
+   Firebase Storage 연결(§ 고객서류함 Storage 연결 라운드, 신규) — v2/index.html의 Auth/
+   Storage 초기화 블록과 동일한 CDN 동적 import 패턴/동일한 계정 스킴(HANSOL2_FIXED_EMAIL)을
+   그대로 복제했다(독립 HTML 2개라 <script> import를 공유할 수 없음 — SHIN2_CRM_OCR와 같은
+   기존 복제 관례를 그대로 따름. 나중에 이 로직을 고칠 때는 v2/index.html의 §Firebase 초기화
+   블록과 이 블록을 함께 수정해야 한다).
+
+   CRM 페이지는 Firestore를 직접 쓰지 않는다(customerDocuments 메타데이터는 지금처럼
+   localStorage에만 쓰고, v2 탭이 열려 있고 이미 실시간 동기화 중이면 기존 'storage' 이벤트
+   전달자가 그 변경을 클라우드로 옮겨준다 — 이 라운드가 새로 만든 경로 아님). 이 블록은 오직
+   Auth(로그인 uid 확보용)와 Storage(파일 업로드/다운로드용)만 초기화한다.
+
+   getStorage(app)를 버킷 이름 없이 호출한다 — firebaseConfig.js의 cfg.storageBucket 값을
+   SDK가 그대로 쓴다(이 파일에서 버킷 이름을 직접 하드코딩하지 않음).
+   ========================================================================== */
+(function(){
+  'use strict';
+  const HANSOL2_FIXED_EMAIL = 'hansol2-owner@pour-dashboard.firebaseapp.com';
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
+    console.info('[CRM/Firebase] 설정이 없어 서류함이 localStorage 전용 모드로 동작합니다.');
+    return;
+  }
+  let pendingPassword = null;
+  let trySignInWithPassword = null;
+  window.addEventListener('shin2-crm-unlocked', (e) => {
+    const pw = e.detail && e.detail.password;
+    if(!pw) return;
+    if(trySignInWithPassword) trySignInWithPassword(pw);
+    else pendingPassword = pw;
+  });
+
+  (async () => {
+    try{
+      const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
+      const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } =
+        await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      const { getStorage, ref: storageRef, uploadBytesResumable, getDownloadURL } =
+        await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js');
+
+      const app = initializeApp(cfg, 'shin2crm');
+      const auth = getAuth(app);
+      const storage = getStorage(app);
+      let currentUid = null;
+
+      function uploadToStorage(file, path, onProgress){
+        return new Promise((resolve, reject) => {
+          if(!currentUid){
+            reject(Object.assign(new Error('NOT_AUTHENTICATED'), { code: 'NOT_AUTHENTICATED' }));
+            return;
+          }
+          let task;
+          try{ task = uploadBytesResumable(storageRef(storage, path), file); }
+          catch(e){ reject(Object.assign(e, { code: e.code || 'UPLOAD_FAILED' })); return; }
+          task.on('state_changed',
+            (snap) => { if(onProgress && snap.totalBytes) onProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)); },
+            (err) => { reject(Object.assign(err, { code: err.code || 'UPLOAD_FAILED' })); },
+            () => { resolve({ storagePath: path }); }
+          );
+        });
+      }
+      function getStorageFileURL(path){
+        return getDownloadURL(storageRef(storage, path));
+      }
+      window.SHIN2_STORAGE = {
+        uploadFile: uploadToStorage,
+        getFileURL: getStorageFileURL,
+        isSignedIn: () => !!currentUid,
+        getUid: () => currentUid
+      };
+
+      onAuthStateChanged(auth, (user) => {
+        currentUid = user ? user.uid : null;
+        window.dispatchEvent(new CustomEvent('shin2-crm-firebase-ready'));
+      });
+
+      trySignInWithPassword = (pw) => {
+        signInWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).catch((err) => {
+          if(err && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')){
+            createUserWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).catch((createErr) => {
+              console.warn('[CRM/Firebase] 로그인 계정 생성 실패 — 서류함이 localStorage 전용 모드로 계속 동작합니다.', createErr);
+            });
+          } else {
+            console.warn('[CRM/Firebase] 로그인 실패 — 서류함이 localStorage 전용 모드로 계속 동작합니다.', err);
+          }
+        });
+      };
+      if(pendingPassword){ trySignInWithPassword(pendingPassword); pendingPassword = null; }
+    }catch(e){
+      console.warn('[CRM/Firebase] Storage 초기화 실패(네트워크 차단 등) — 서류함이 localStorage 전용 모드로 계속 동작합니다.', e);
+    }
+  })();
 })();
 </script>
 
@@ -606,39 +716,66 @@ window.SHIN2_CRM_OCR = (function(){
     return loadDocuments().filter(d=> d.companyId === companyId && (!type || d.documentType === type))
       .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
   }
-  // saveDocumentFile: 실제 파일 바이트를 저장하는 유일한 진입점(§ 서류함 개편).
-  // 지금은 Firebase Storage 자격증명이 BLOCKED라서 로컬 전용 blob 저장소에만 쓴다.
-  // 나중에 Storage가 연결되면 이 함수 안에서 "로컬 저장" 대신(또는 추가로)
-  // Storage 업로드를 붙이면 되고, 호출부(addDocument)는 바뀔 필요가 없다.
-  function saveDocumentFile(id, dataUrl){
-    // TODO(Storage 연결 시): 여기서 uploadBytes(ref(storage, `users/{uid}/customers/{companyId}/...`), file)
-    // 를 호출해 storagePath를 실제 Storage 경로로 갱신하는 분기를 추가한다. 지금은 BLOCKED.
-    const blobs = readObj(BLOB_KEY);
-    blobs[id] = dataUrl;
-    writeObj(BLOB_KEY, blobs);
-  }
-  function addDocument(companyId, documentType, file, dataUrl, extracted){
-    const id = genId('doc');
-    const rec = {
-      id, companyId, documentType,
-      fileName: file.name, originalFileName: file.name, // originalFileName은 업로드 이후 절대 바꾸지 않는다 — fileName만 "이름변경"으로 바뀔 수 있다.
-      storagePath: 'local:' + id,
-      mimeType: file.type || '', size: file.size || 0, memo:'', createdAt: nowIso(), updatedAt: nowIso(),
-      localOnly: true // Storage BLOCKED 상태에서 만들어진 문서 — 이 기기에만 파일 바이트가 있다는 표시
-    };
-    if(extracted){
-      rec.extractedContactName = extracted.contactName && extracted.contactName.value || '';
-      rec.extractedPosition = extracted.position && extracted.position.value || '';
-      rec.extractedPhone = extracted.phone && extracted.phone.value || '';
-      rec.extractedMobile = '';
-      rec.extractedEmail = extracted.email && extracted.email.value || '';
-      rec.extractedCompanyName = extracted.name && extracted.name.value || '';
-      rec.rawOcrText = extracted.rawOcrText || '';
+  const DOC_MAX_LOCAL_BYTES = 2 * 1024 * 1024; // 2MB — 로컬 dataURL 폴백에만 적용되는 상한(localStorage 용량 한계 때문).
+  // 클라우드(Storage) 업로드 경로에는 이 상한을 적용하지 않는다 — resumable upload라 대용량
+  // 파일도 처리할 수 있고, 목적이 다른(브라우저 localStorage 용량 보호) 상한이기 때문이다.
+
+  // saveDocumentFile: 실제 파일 바이트를 저장하는 유일한 진입점(§ Storage 연결 라운드).
+  // window.SHIN2_STORAGE(로그인 상태)가 있으면 클라우드 업로드를 먼저 시도하고, 없거나
+  // opts.forceLocal이면 기존 로컬 전용 blob 저장소(dataURL)에 쓴다. 업로드/저장이 "성공"한
+  // 뒤에만 resolve되므로, 호출부(addDocument)는 실패한 파일의 메타데이터를 절대 만들지 않는다.
+  // 반환: Promise<{ localOnly, storagePath, dataUrl }> — dataUrl은 localOnly일 때만 채워진다.
+  function saveDocumentFile(id, companyId, file, onProgress, opts){
+    opts = opts || {};
+    const ST = window.SHIN2_STORAGE;
+    const useCloud = !opts.forceLocal && ST && ST.isSignedIn && ST.isSignedIn();
+    if(useCloud){
+      const path = `users/${ST.getUid()}/customers/${companyId}/documents/${id}/${file.name}`;
+      return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
     }
-    const list = loadDocuments(); list.push(rec); saveDocuments(list);
-    // 파일 저장은 메타데이터 저장과 별개 단계 — OCR 등 다른 처리가 실패해도 이미 저장된 메타데이터/파일은 그대로 남는다.
-    saveDocumentFile(id, dataUrl);
-    return rec;
+    // 로컬 전용 폴백 — Storage 미로그인이거나 사용자가 명시적으로 "이 기기에만 저장"을 선택한
+    // 경우에만 여기로 온다.
+    return new Promise((resolve, reject)=>{
+      if(file.size > DOC_MAX_LOCAL_BYTES){
+        reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
+      reader.onload = ()=>{ if(onProgress) onProgress(100); resolve({ localOnly:true, storagePath: 'local:' + id, dataUrl: reader.result }); };
+      reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
+      reader.readAsDataURL(file);
+    });
+  }
+  // addDocument: OCR 등 부가 처리와 완전히 독립적으로 "파일 저장(성공)→메타데이터 기록" 순서만
+  // 지킨다(§8 OCR/파일저장 분리는 그대로 유지 — 이 함수 자체가 OCR을 전혀 모른다).
+  function addDocument(companyId, documentType, file, onProgress, extracted, opts){
+    const id = genId('doc');
+    return saveDocumentFile(id, companyId, file, onProgress, opts).then(result=>{
+      if(result.dataUrl){
+        const blobs = readObj(BLOB_KEY);
+        blobs[id] = result.dataUrl;
+        writeObj(BLOB_KEY, blobs);
+      }
+      const rec = {
+        id, companyId, documentType,
+        fileName: file.name, originalFileName: file.name, // originalFileName은 업로드 이후 절대 바꾸지 않는다 — fileName만 "이름변경"으로 바뀔 수 있다.
+        storagePath: result.storagePath,
+        mimeType: file.type || '', size: file.size || 0, memo:'', createdAt: nowIso(), updatedAt: nowIso(),
+        localOnly: result.localOnly // true면 이 기기에만 파일 바이트가 있음, false면 Storage 업로드 완료
+      };
+      if(extracted){
+        rec.extractedContactName = extracted.contactName && extracted.contactName.value || '';
+        rec.extractedPosition = extracted.position && extracted.position.value || '';
+        rec.extractedPhone = extracted.phone && extracted.phone.value || '';
+        rec.extractedMobile = '';
+        rec.extractedEmail = extracted.email && extracted.email.value || '';
+        rec.extractedCompanyName = extracted.name && extracted.name.value || '';
+        rec.rawOcrText = extracted.rawOcrText || '';
+      }
+      const list = loadDocuments(); list.push(rec); saveDocuments(list);
+      return rec;
+    });
   }
   function updateDocumentExtracted(id, extracted){
     // OCR은 저장 이후의 부가 결과일 뿐이다(§8) — 이미 저장된 파일/메타데이터를 지우거나 바꾸지 않고 추출필드만 덧붙인다.
@@ -916,7 +1053,17 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['questionnaire','질문서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx,.txt'],
     ['logo','로고', 'image/*']
   ];
-  const LOCAL_ONLY_NOTICE = '이 파일은 현재 이 기기에만 저장되어 있습니다 (클라우드 파일 저장 연결 전)';
+  const LOCAL_ONLY_NOTICE = '이 파일은 현재 이 기기에만 저장되어 있습니다 (다른 기기에서는 목록만 보이고 파일은 없을 수 있습니다)';
+  function crmCloudReady(){ const ST = window.SHIN2_STORAGE; return !!(ST && ST.isSignedIn && ST.isSignedIn()); }
+  // 로그인 완료 시점에 안내 문구만 갱신한다(자동 업로드/마이그레이션 아님 — 단순 텍스트 갱신,
+  // §수동 액션 원칙 위반 아님). 카드 화면이 열려 있지 않으면 조용히 무시된다.
+  window.addEventListener('shin2-crm-firebase-ready', ()=>{
+    const note = document.getElementById('crmDocNote');
+    if(!note) return;
+    note.textContent = crmCloudReady()
+      ? '새 파일은 자동으로 클라우드(Firebase Storage)에 업로드됩니다. 업로드에 실패하면 재시도하거나 이 기기에만 저장할 수 있습니다. 메타데이터(파일명/종류/업로드일/메모)는 기존처럼 클라우드 동기화 대상에 포함됩니다.'
+      : ('클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다 — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.');
+  });
   // 문서 id → Blob object URL 캐시. dataURL을 그대로 window.open에 넘기면 최신 브라우저가
   // top-level 네비게이션을 막는 경우가 있어, 보기/다운로드는 항상 이 object URL을 쓴다.
   const docBlobUrlCache = {};
@@ -944,6 +1091,19 @@ window.SHIN2_CRM_APP_INIT = function(){
     docBlobUrlCache[doc.id] = url;
     return url;
   }
+  // getDocUrl: 보기/다운로드가 실제로 쓰는 진입점(Promise). 로컬 전용 파일은 기존 object URL
+  // 경로 그대로(§ 이미 있던 로컬 파일이 깨지지 않도록), 클라우드 파일은 Storage에서 매번 새
+  // 다운로드 URL을 요청한다(캐시하지 않음 — 보안규칙 상 로그인 상태 변화에 항상 최신이어야 함).
+  function getDocUrl(doc){
+    if(doc.localOnly){
+      return Promise.resolve(getDocObjectUrl(doc));
+    }
+    const ST = window.SHIN2_STORAGE;
+    if(!ST || !ST.isSignedIn || !ST.isSignedIn()){
+      return Promise.reject(Object.assign(new Error('NOT_AUTHENTICATED'), { code:'NOT_AUTHENTICATED' }));
+    }
+    return ST.getFileURL(doc.storagePath);
+  }
   function revokeDocObjectUrl(id){
     if(docBlobUrlCache[id]){ try{ URL.revokeObjectURL(docBlobUrlCache[id]); }catch(e){} delete docBlobUrlCache[id]; }
   }
@@ -952,19 +1112,13 @@ window.SHIN2_CRM_APP_INIT = function(){
     return m.startsWith('image/') || m === 'application/pdf';
   }
 
-  function fileToDataUrl(file){
-    return new Promise(res=>{
-      const reader = new FileReader();
-      reader.onload = ()=> res(reader.result);
-      reader.onerror = ()=> res('');
-      reader.readAsDataURL(file);
-    });
-  }
-
   function renderDocsSection(co){
     const wrap = document.getElementById('crmDocsSection');
+    const noteText = crmCloudReady()
+      ? '새 파일은 자동으로 클라우드(Firebase Storage)에 업로드됩니다. 업로드에 실패하면 재시도하거나 이 기기에만 저장할 수 있습니다. 메타데이터(파일명/종류/업로드일/메모)는 기존처럼 클라우드 동기화 대상에 포함됩니다.'
+      : '클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다 — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.';
     wrap.innerHTML = `
-      <div class="doc-blocked-note">실제 파일은 Firebase Storage 자격증명이 이 세션에 없어 연결이 BLOCKED 상태입니다 — ${esc(LOCAL_ONLY_NOTICE)}. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 어떤 경우에도 Firestore로 전송되지 않습니다.</div>
+      <div class="doc-blocked-note" id="crmDocNote">${esc(noteText)}</div>
       ${DOC_TYPES.map(([type,label])=> `
         <div class="doc-category" data-doc-cat="${type}">
           <div class="doc-cat-head">
@@ -972,6 +1126,7 @@ window.SHIN2_CRM_APP_INIT = function(){
             <button type="button" class="co-text-action primary doc-add-btn" data-doc-add="${type}">+ 파일 추가</button>
           </div>
           <input type="file" id="crmDocInput_${type}" style="display:none;" multiple />
+          <div id="crmUploadStatus_${type}" class="doc-upload-status" style="display:none;"></div>
           <div id="crmOcrReviewSlot_${type}"></div>
           <div class="doc-list" id="crmDocList_${type}"></div>
         </div>
@@ -1007,9 +1162,12 @@ window.SHIN2_CRM_APP_INIT = function(){
     const docs = D.documentsForCompany(co.id, type);
     if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">등록된 파일이 없습니다.</div>'; return; }
     listWrap.innerHTML = docs.map(doc=>{
-      const hasBlob = !!D.getBlob(doc.id);
+      // 로컬 전용 문서는 실제 blob이 있어야 하고, 클라우드 문서는 storagePath가 local:이
+      // 아니면(=업로드가 실제로 성공해 기록된 경우) 파일이 있다고 본다 — addDocument가 업로드
+      // 성공 후에만 메타데이터를 쓰므로 이 가정이 성립한다(§ 고아 메타데이터 금지).
+      const hasBlob = doc.localOnly ? !!D.getBlob(doc.id) : true;
       const isImg = (doc.mimeType||'').startsWith('image/');
-      const dataUrl = hasBlob ? D.getBlob(doc.id) : '';
+      const dataUrl = (doc.localOnly && hasBlob) ? D.getBlob(doc.id) : '';
       const displayName = doc.fileName || doc.originalFileName || '(이름 없음)';
       return `<div class="doc-item" data-doc-id="${esc(doc.id)}">
         ${isImg && dataUrl ? `<img class="doc-thumb" src="${dataUrl}" alt="${esc(displayName)}" />` : `<div class="doc-thumb-generic">FILE</div>`}
@@ -1031,18 +1189,21 @@ window.SHIN2_CRM_APP_INIT = function(){
     listWrap.querySelectorAll('[data-view]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const doc = docs.find(d=> d.id === btn.getAttribute('data-view'));
-        const url = getDocObjectUrl(doc);
-        if(url) window.open(url, '_blank', 'noopener');
+        if(!doc) return;
+        getDocUrl(doc).then(url=>{ if(url) window.open(url, '_blank', 'noopener'); })
+          .catch(()=>{ btn.insertAdjacentHTML('afterend', '<span class="doc-inline-err">불러오기 실패</span>'); setTimeout(()=>{ const s=btn.nextElementSibling; if(s && s.classList.contains('doc-inline-err')) s.remove(); }, 2000); });
       });
     });
     listWrap.querySelectorAll('[data-download]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const doc = docs.find(d=> d.id === btn.getAttribute('data-download'));
-        const url = getDocObjectUrl(doc);
-        if(!url) return;
-        const a = document.createElement('a');
-        a.href = url; a.download = doc.fileName || doc.originalFileName || 'file';
-        document.body.appendChild(a); a.click(); a.remove();
+        if(!doc) return;
+        getDocUrl(doc).then(url=>{
+          if(!url) return;
+          const a = document.createElement('a');
+          a.href = url; a.download = doc.fileName || doc.originalFileName || 'file';
+          document.body.appendChild(a); a.click(); a.remove();
+        }).catch(()=>{ btn.insertAdjacentHTML('afterend', '<span class="doc-inline-err">다운로드 실패</span>'); setTimeout(()=>{ const s=btn.nextElementSibling; if(s && s.classList.contains('doc-inline-err')) s.remove(); }, 2000); });
       });
     });
     listWrap.querySelectorAll('[data-rename]').forEach(btn=>{
@@ -1094,12 +1255,33 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   async function handleDocFiles(co, type, fileList){
     const files = Array.from(fileList || []);
+    const statusEl = document.getElementById('crmUploadStatus_' + type);
     for(const file of files){
-      const dataUrl = await fileToDataUrl(file);
-      // §8: 어떤 분류든 파일 저장이 먼저다 — OCR은 저장된 뒤에 벌어지는 부가 처리일 뿐,
-      // 저장의 전제조건이 아니다. OCR이 실패하거나 아예 안 돌아도 파일은 이미 저장되어 있다.
-      const rec = D.addDocument(co.id, type, file, dataUrl, null);
+      await uploadOneDoc(co, type, file, statusEl); // 순차 처리 — 여러 파일이어도 진행률 표시가 하나씩 명확하게 보이도록.
+    }
+  }
+
+  // uploadOneDoc: 파일 1개 저장(클라우드 우선 시도 → 실패 시 재시도/이 기기에만 저장 UI) +
+  // 저장이 "성공"한 뒤에만 OCR을 돌린다(§8 OCR/파일저장 완전 분리는 그대로 유지).
+  // opts.forceLocal===true는 사용자가 실패 후 명시적으로 "이 기기에만 저장"을 눌렀을 때만 켜진다.
+  function uploadOneDoc(co, type, file, statusEl, opts){
+    opts = opts || {};
+    const wasCloudAttempt = !opts.forceLocal && crmCloudReady();
+    if(statusEl){
+      statusEl.style.display = 'block';
+      statusEl.innerHTML = `<div class="doc-upload-progress"><div class="doc-upload-bar" style="width:0%"></div></div><div class="doc-upload-label">업로드 중 0%</div>`;
+    }
+    const bar = statusEl && statusEl.querySelector('.doc-upload-bar');
+    const label = statusEl && statusEl.querySelector('.doc-upload-label');
+    return D.addDocument(co.id, type, file, (pct)=>{
+      if(bar) bar.style.width = pct + '%';
+      if(label) label.textContent = '업로드 중 ' + pct + '%';
+    }, null, opts).then(async (rec)=>{
+      if(statusEl){ statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
       renderDocList(co, type);
+      // §8: 어떤 분류든 파일 저장이 먼저다 — OCR은 저장된 뒤에 벌어지는 부가 처리일 뿐, 저장의
+      // 전제조건이 아니다. OCR이 실패하거나 아예 안 돌아도 파일은 이미 저장되어 있다(이 시점에
+      // 이미 addDocument가 resolve됨 = 업로드/로컬저장이 끝났다는 뜻).
       if(type === 'businessCard' && file.type && file.type.startsWith('image/') && typeof Tesseract !== 'undefined'){
         cardState.ocrReview = { docId: rec.id, status:'recognizing' };
         renderOcrReviewSlot(co);
@@ -1115,7 +1297,33 @@ window.SHIN2_CRM_APP_INIT = function(){
         renderDocList(co, 'businessCard');
         renderOcrReviewSlot(co);
       }
-    }
+    }).catch(err=>{
+      const code = err && err.code;
+      if(!statusEl) return;
+      statusEl.style.display = 'block';
+      if(code === 'SIZE_LIMIT'){
+        statusEl.innerHTML = `<div class="doc-upload-err">이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 로그인 후 다시 시도해주세요.</div>`;
+        return;
+      }
+      // 업로드/저장 실패는 절대 조용히 로컬로 대체되지 않는다 — 재시도 또는 사용자가 직접
+      // "이 기기에만 저장"을 눌러야만 로컬 폴백으로 진행된다(§ 안전 규칙).
+      statusEl.innerHTML = '';
+      const msg = document.createElement('div');
+      msg.className = 'doc-upload-err';
+      msg.textContent = wasCloudAttempt ? '업로드에 실패했습니다. ' : '저장에 실패했습니다. ';
+      const retryBtn = document.createElement('button');
+      retryBtn.type = 'button'; retryBtn.className = 'co-text-action'; retryBtn.textContent = '[다시 시도]';
+      retryBtn.addEventListener('click', ()=> uploadOneDoc(co, type, file, statusEl, opts));
+      msg.appendChild(retryBtn);
+      if(wasCloudAttempt){
+        const localBtn = document.createElement('button');
+        localBtn.type = 'button'; localBtn.className = 'co-text-action'; localBtn.style.marginLeft = '8px';
+        localBtn.textContent = '[이 기기에만 저장]';
+        localBtn.addEventListener('click', ()=> uploadOneDoc(co, type, file, statusEl, { forceLocal:true }));
+        msg.appendChild(localBtn);
+      }
+      statusEl.appendChild(msg);
+    });
   }
 
   function renderOcrReviewSlot(co){
