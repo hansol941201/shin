@@ -196,6 +196,99 @@
   .memo-item-actions{ display:flex; gap:10px; margin-top:5px; }
   .memo-form textarea{ width:100%; min-height:56px; resize:vertical; padding:8px 10px; font-size:13px; border:1px solid var(--line); border-radius:6px; outline:none; }
   .memo-form-actions{ display:flex; justify-content:flex-end; gap:6px; margin-top:6px; }
+
+  /* ---------- 검색어 강조(공용) — v2 .kb-hl과 동일한 값을 그대로 복제 ---------- */
+  .kb-hl{ background:#FEF6B2; padding:0 1px; border-radius:2px; }
+
+  /* ---------- 고객 차트 팝업(§ 압축 재편: 긴 세로 스크롤 페이지가 아니라 한 장짜리
+       콤팩트 카드) — 배경 목록은 그대로 살려두고 위에 오버레이만 띄운다. 내용 크기는
+       콘텐츠에 맞춰 자연스럽게 늘어나되, 화면 높이를 넘어가면 패널 내부에서만 스크롤한다. ---------- */
+  body.chart-lock{ overflow:hidden; }
+  .chart-overlay{
+    position:fixed; inset:0; z-index:200; background:rgba(17,24,39,0.5);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:5vh 16px; overflow-y:auto;
+  }
+  .chart-panel{
+    width:100%; max-width:920px; min-width:0;
+    background:var(--surface); border-radius:14px; box-shadow:0 24px 60px rgba(17,24,39,0.28);
+    max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .chart-header{
+    flex:none; padding:16px 22px 14px; border-bottom:1px solid var(--line);
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  }
+  .chart-header-main{ min-width:0; flex:1; }
+  .chart-header-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .chart-co-name{ font-size:18px; font-weight:700; color:var(--text); }
+  .chart-badge{ font-size:11px; font-weight:600; color:var(--navy); background:#EEF1F7; border-radius:5px; padding:3px 8px; }
+  .chart-badge.empty{ color:var(--text-muted); background:var(--bg); }
+  .chart-header-sub{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; margin-top:6px; font-size:12.5px; color:var(--text); }
+  .chart-header-sub .muted{ color:var(--text-muted); }
+  .chart-header-actions{ flex:none; display:flex; align-items:center; gap:8px; }
+  .chart-close-btn{
+    width:28px; height:28px; border:none; background:transparent; color:var(--text-muted);
+    font-size:20px; line-height:1; cursor:pointer; border-radius:6px;
+  }
+  .chart-close-btn:hover{ background:#F0F1F4; color:var(--text); }
+
+  .chart-body{ flex:1 1 auto; overflow-y:auto; padding:16px 22px 22px; }
+  .chart-hr{ border-top:1px solid var(--line); margin:14px 0; }
+  .chart-section-title{ font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; }
+  .chart-section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px; }
+  .chart-section-head .chart-section-title{ margin-bottom:0; }
+  .chart-empty{ font-size:11.5px; color:#9CA3AF; }
+
+  .chart-strip{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .chart-strip-label{ font-size:10.5px; color:var(--text-muted); margin-bottom:3px; }
+  .chart-strip-value{ font-size:13px; color:var(--text); line-height:1.4; word-break:break-word; }
+  .chart-strip-value.muted{ color:#9CA3AF; }
+  .chart-strip-sub{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .chart-2col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+
+  .chart-important-inline{ margin-bottom:10px; font-size:12.5px; }
+  .chart-important-edit{ display:flex; gap:8px; margin-bottom:10px; }
+  .chart-important-edit input{ flex:1; padding:6px 8px; font-size:12.5px; border:1px solid var(--line); border-radius:6px; outline:none; }
+
+  .chart-bullet-list{ display:flex; flex-direction:column; gap:3px; }
+  .chart-bullet-item{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:12.5px; color:var(--text); }
+  .chart-bullet-item span{ min-width:0; word-break:break-word; }
+  .chart-tag-del{ flex:none; border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); }
+  .chart-tag-del:hover{ color:#B91C1C; }
+  .chart-suggest-box{
+    margin-top:8px; padding:7px 10px; background:#F5F7FB; border:1px solid var(--line); border-radius:6px;
+    font-size:11.5px; color:var(--text); display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  }
+  .chart-suggest-actions{ display:flex; gap:8px; flex:none; }
+  .chart-add-inline{ display:flex; gap:8px; margin-top:8px; }
+  .chart-add-inline input{ flex:1; padding:6px 8px; font-size:12.5px; border:1px solid var(--line); border-radius:6px; outline:none; }
+
+  .chart-recent-item{ display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12px; }
+  .chart-recent-date{ flex:none; color:var(--text-muted); }
+  .chart-recent-cat{ flex:none; color:var(--navy); font-weight:600; }
+  .chart-recent-text{ flex:1; min-width:0; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .chart-cal-item{ display:flex; gap:8px; padding:3px 0; font-size:12px; color:var(--text); }
+  .chart-cal-date{ flex:none; color:var(--text-muted); }
+
+  .chart-doc-line{ font-size:12.5px; color:var(--text); }
+
+  .chart-expand{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); }
+  .chart-subtoggle-row{ margin-top:10px; }
+
+  .chart-timeline-group{ margin-bottom:10px; }
+  .chart-timeline-date{ font-size:11.5px; font-weight:700; color:var(--text-muted); margin-bottom:4px; }
+  .chart-timeline-row{ display:flex; gap:8px; align-items:baseline; padding:2px 0; font-size:12px; }
+  .chart-timeline-type{ flex:none; color:var(--navy); font-weight:600; min-width:32px; }
+  .chart-timeline-text{ flex:1; min-width:0; color:var(--text); word-break:break-word; }
+  .chart-timeline-time{ flex:none; color:var(--text-muted); font-size:11px; }
+
+  @media (max-width: 640px){
+    .chart-2col, .chart-strip{ grid-template-columns:1fr; gap:12px; }
+    .chart-overlay{ padding:0; }
+    .chart-panel{ max-height:100vh; border-radius:0; }
+  }
 </style>
 </head>
 <body>
@@ -1068,75 +1161,67 @@ window.SHIN2_CRM_APP_INIT = function(){
           <div class="chart-body" id="chartBody">
             <div class="chart-strip" id="chartStrip"></div>
 
+            <div class="chart-hr"></div>
+            <div id="chartImportant"></div>
             <div class="chart-2col">
               <div>
-                <div class="chart-section-title" style="margin-bottom:6px;">고객 니즈</div>
+                <div class="chart-section-title">고객 니즈</div>
                 <div id="chartNeeds"></div>
               </div>
               <div>
-                <div class="chart-section-title" style="margin-bottom:6px;">특이사항</div>
+                <div class="chart-section-title">특이사항</div>
                 <div id="chartSpecial"></div>
               </div>
             </div>
 
-            <div class="chart-section">
-              <div class="chart-section-head"><div class="chart-section-title">중요 표시</div></div>
-              <div id="chartImportant"></div>
-            </div>
-
-            <div class="chart-section chart-2col">
+            <div class="chart-hr"></div>
+            <div class="chart-2col">
               <div>
-                <div class="chart-section-head"><div class="chart-section-title">최근 활동</div></div>
+                <div class="chart-section-head">
+                  <div class="chart-section-title">최근 활동</div>
+                  <button type="button" class="co-text-action" id="chartHistoryToggleBtn">전체 이력 보기</button>
+                </div>
                 <div id="chartRecentActs"></div>
               </div>
               <div>
-                <div class="chart-section-head">
-                  <div class="chart-section-title">업체정보</div>
-                  <button type="button" class="chart-info-toggle-btn" id="chartInfoToggleBtn">업체정보 펼치기</button>
-                </div>
-                <div id="crmBasicInfo" style="display:none;"></div>
-              </div>
-            </div>
-
-            <div class="chart-section chart-2col">
-              <div>
-                <div class="chart-section-head">
-                  <div class="chart-section-title">서류</div>
-                  <button type="button" class="co-text-action" id="chartDocsToggleBtn">서류 보기</button>
-                </div>
-                <div id="chartDocCounts"></div>
-              </div>
-              <div>
-                <div class="chart-section-head"><div class="chart-section-title">예정 일정</div></div>
+                <div class="chart-section-title">예정 일정</div>
                 <div id="chartCalendar"></div>
               </div>
             </div>
-
-            <div class="chart-section" id="chartDocsFullWrap" style="display:none;">
-              <div class="chart-section-head"><div class="chart-section-title">서류함</div></div>
-              <div id="crmDocsSection"></div>
-            </div>
-
-            <div class="chart-section">
-              <div class="chart-section-head"><div class="chart-section-title">자료 이력(자료 요청/발송)</div></div>
-              <div id="chartDocHistory" class="chart-empty">아직 연결된 자료 발송 이력이 없습니다. (자료실 문서에 업체별 발송 기록을 연결하는 기능이 아직 없어 정직하게 빈 상태로 표시합니다)</div>
-            </div>
-
-            <div class="chart-section">
-              <div class="chart-section-head"><div class="chart-section-title">전체 타임라인</div></div>
+            <div id="chartHistoryWrap" class="chart-expand" style="display:none;">
+              <div class="chart-section-title">전체 이력</div>
               <div id="chartTimeline"></div>
-            </div>
-
-            <div class="chart-section">
-              <div class="chart-section-head">
-                <div class="chart-section-title">활동 기록 관리</div>
-                <button type="button" class="co-text-action" id="chartActToggleBtn">펼치기</button>
+              <div class="chart-subtoggle-row">
+                <button type="button" class="co-text-action" id="chartActToggleBtn">활동 기록 직접 관리</button>
               </div>
               <div id="crmActivitySection" style="display:none;"></div>
             </div>
 
-            <div class="chart-section">
-              <div class="chart-section-head"><div class="chart-section-title">메모</div></div>
+            <div class="chart-hr"></div>
+            <div class="chart-2col">
+              <div>
+                <div class="chart-section-head">
+                  <div class="chart-section-title">서류</div>
+                  <button type="button" class="co-text-action" id="chartDocsToggleBtn">서류함 열기</button>
+                </div>
+                <div id="chartDocCounts"></div>
+              </div>
+              <div>
+                <div class="chart-section-head">
+                  <div class="chart-section-title">업체정보</div>
+                  <button type="button" class="co-text-action" id="chartInfoToggleBtn">업체정보 보기</button>
+                </div>
+              </div>
+            </div>
+            <div id="crmBasicInfo" class="chart-expand" style="display:none;"></div>
+            <div id="chartDocsFullWrap" class="chart-expand" style="display:none;">
+              <div class="chart-section-title">서류함</div>
+              <div id="crmDocsSection"></div>
+            </div>
+
+            <div class="chart-hr"></div>
+            <div>
+              <div class="chart-section-title">메모</div>
               <div id="crmMemoSection"></div>
             </div>
           </div>
@@ -1146,9 +1231,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     document.body.classList.add('chart-lock');
     renderChartHeader(co);
     renderTopStrip(co);
+    renderImportantSection(co);
     renderNeedsSection(co);
     renderSpecialSection(co);
-    renderImportantSection(co);
     renderRecentActivities(co);
     if(cardState.chartEditing){ renderBasicInfoForm(co); document.getElementById('crmBasicInfo').style.display = 'block'; document.getElementById('chartInfoToggleBtn').textContent = '업체정보 접기'; }
     else { renderBasicInfoView(co); }
@@ -1163,20 +1248,25 @@ window.SHIN2_CRM_APP_INIT = function(){
       const el = document.getElementById('crmBasicInfo');
       const showing = el.style.display !== 'none';
       el.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartInfoToggleBtn').textContent = showing ? '업체정보 펼치기' : '업체정보 접기';
+      document.getElementById('chartInfoToggleBtn').textContent = showing ? '업체정보 보기' : '업체정보 접기';
     });
     document.getElementById('chartDocsToggleBtn').addEventListener('click', ()=>{
       const wrap = document.getElementById('chartDocsFullWrap');
       const showing = wrap.style.display !== 'none';
       wrap.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartDocsToggleBtn').textContent = showing ? '서류 보기' : '닫기';
-      if(!showing) wrap.scrollIntoView({ behavior:'smooth', block:'start' });
+      document.getElementById('chartDocsToggleBtn').textContent = showing ? '서류함 열기' : '서류함 닫기';
+    });
+    document.getElementById('chartHistoryToggleBtn').addEventListener('click', ()=>{
+      const wrap = document.getElementById('chartHistoryWrap');
+      const showing = wrap.style.display !== 'none';
+      wrap.style.display = showing ? 'none' : 'block';
+      document.getElementById('chartHistoryToggleBtn').textContent = showing ? '전체 이력 보기' : '전체 이력 닫기';
     });
     document.getElementById('chartActToggleBtn').addEventListener('click', ()=>{
       const wrap = document.getElementById('crmActivitySection');
       const showing = wrap.style.display !== 'none';
       wrap.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartActToggleBtn').textContent = showing ? '펼치기' : '접기';
+      document.getElementById('chartActToggleBtn').textContent = showing ? '활동 기록 직접 관리' : '접기';
     });
   }
 
@@ -1186,6 +1276,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const editing = cardState.chartEditing;
     const contact = co.contactName || co.repName || '';
     const position = co.position || '';
+    const phoneRow = (key, label)=> co[key] ? `<span>${label} ${esc(co[key])} <button type="button" class="co-field-copy-btn" data-phone-copy="${key}">복사</button></span>` : '';
     wrap.innerHTML = `
       <div class="chart-header-main">
         <div class="chart-header-title-row">
@@ -1198,8 +1289,9 @@ window.SHIN2_CRM_APP_INIT = function(){
             : `<span class="chart-badge${stage?'':' empty'}">${esc(stage || '협약상태 미설정')}</span>`}
         </div>
         <div class="chart-header-sub">
-          ${contact ? `<span><b>${esc(contact)}</b>${position ? ' · ' + esc(position) : ''}</span>` : `<span class="chart-strip-value muted">담당자 미등록</span>`}
-          ${co.mobile ? `<span>${esc(co.mobile)} <button type="button" class="co-field-copy-btn" id="chartMobileCopyBtn" style="padding-left:4px;">복사</button></span>` : ''}
+          ${contact ? `<span><b>${esc(contact)}</b>${position ? ' · ' + esc(position) : ''}</span>` : `<span class="muted">담당자 미등록</span>`}
+          ${phoneRow('phone','전화')}
+          ${phoneRow('mobile','휴대폰')}
         </div>
       </div>
       <div class="chart-header-actions">
@@ -1210,7 +1302,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     document.getElementById('crmCopyAllBtn').addEventListener('click', (e)=> copyText(buildFullInfoText(co), e.currentTarget));
     document.getElementById('chartCloseBtn').addEventListener('click', closeChart);
-    if(co.mobile){ document.getElementById('chartMobileCopyBtn').addEventListener('click', (e)=> copyText(co.mobile, e.currentTarget)); }
+    wrap.querySelectorAll('[data-phone-copy]').forEach(btn=>{
+      btn.addEventListener('click', (e)=> copyText(co[btn.getAttribute('data-phone-copy')] || '', e.currentTarget));
+    });
     document.getElementById('chartEditBtn').addEventListener('click', ()=>{
       cardState.chartEditing = !cardState.chartEditing;
       refreshChart();
@@ -1233,11 +1327,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     const nextText = (pendingActs[0] && (pendingActs[0].activityText || pendingActs[0].originalText)) || (pendingTasks[0] && pendingTasks[0].title) || '';
     wrap.innerHTML = `
       <div class="chart-strip-block"><div class="chart-strip-label">현재 상태</div>
-        <div class="chart-strip-value${stage ? '' : ' muted'}">${esc(stage || '미설정')}</div></div>
+        <div class="chart-strip-value${stage ? '' : ' muted'}">${esc(stage || '—')}</div></div>
       <div class="chart-strip-block"><div class="chart-strip-label">최근 요청</div>
-        ${last ? `<div class="chart-strip-value">${esc(last.activityText || last.originalText)}</div><div class="chart-strip-sub">${fmtDate(last.createdAt)} ${fmtTime(last.createdAt)}</div>` : `<div class="chart-strip-value muted">최근 활동 없음</div>`}</div>
+        ${last ? `<div class="chart-strip-value">${esc(last.activityText || last.originalText)}</div><div class="chart-strip-sub">${fmtDate(last.createdAt)} ${fmtTime(last.createdAt)}</div>` : `<div class="chart-strip-value muted">—</div>`}</div>
       <div class="chart-strip-block"><div class="chart-strip-label">다음 할 일</div>
-        ${todoCount ? `<div class="chart-strip-value">${esc(nextText)}</div><div class="chart-strip-sub">${todoCount}건 처리 대기</div>` : `<div class="chart-strip-value muted">처리할 업무 없음</div>`}</div>
+        ${todoCount ? `<div class="chart-strip-value">${esc(nextText)}</div><div class="chart-strip-sub">${todoCount}건 처리 대기</div>` : `<div class="chart-strip-value muted">—</div>`}</div>
     `;
   }
 
@@ -1247,8 +1341,8 @@ window.SHIN2_CRM_APP_INIT = function(){
     const suggestion = D.suggestNeedFor(co.id);
     const editing = cardState.chartEditing;
     wrap.innerHTML = `
-      <div class="chart-tag-list">
-        ${needs.length ? needs.map(n=> `<div class="chart-tag-item"><span>${esc(n.text)}</span>${editing ? `<button type="button" class="chart-tag-del" data-need-del="${esc(n.id)}">삭제</button>` : ''}</div>`).join('') : '<div class="chart-empty">등록된 니즈가 없습니다.</div>'}
+      <div class="chart-bullet-list">
+        ${needs.length ? needs.map(n=> `<div class="chart-bullet-item"><span>– ${esc(n.text)}</span>${editing ? `<button type="button" class="chart-tag-del" data-need-del="${esc(n.id)}">삭제</button>` : ''}</div>`).join('') : '<div class="chart-empty">—</div>'}
       </div>
       ${suggestion ? `<div class="chart-suggest-box"><span>반복 언급 감지: "${esc(suggestion.key)}" — 니즈로 등록할까요?</span>
         <span class="chart-suggest-actions">
@@ -1287,8 +1381,8 @@ window.SHIN2_CRM_APP_INIT = function(){
     const notes = co.specialNotes || [];
     const editing = cardState.chartEditing;
     wrap.innerHTML = `
-      <div class="chart-tag-list">
-        ${notes.length ? notes.map(n=> `<div class="chart-tag-item"><span>${esc(n.text)}</span>${editing ? `<button type="button" class="chart-tag-del" data-note-del="${esc(n.id)}">삭제</button>` : ''}</div>`).join('') : '<div class="chart-empty">등록된 특이사항이 없습니다.</div>'}
+      <div class="chart-bullet-list">
+        ${notes.length ? notes.map(n=> `<div class="chart-bullet-item"><span>– ${esc(n.text)}</span>${editing ? `<button type="button" class="chart-tag-del" data-note-del="${esc(n.id)}">삭제</button>` : ''}</div>`).join('') : '<div class="chart-empty">—</div>'}
       </div>
       ${editing ? `<div class="chart-add-inline"><input type="text" id="chartNoteInput" placeholder="특이사항 직접 추가" /><button type="button" class="co-text-action primary" id="chartNoteAddBtn">추가</button></div>` : ''}
     `;
@@ -1311,8 +1405,8 @@ window.SHIN2_CRM_APP_INIT = function(){
     const wrap = document.getElementById('chartImportant');
     const editing = cardState.chartEditing;
     if(editing){
-      wrap.innerHTML = `<div class="co-form-field"><textarea id="chartImportantInput" placeholder="이 업체와 일할 때 꼭 알아야 할 내용">${esc(co.important || '')}</textarea></div>
-        <button type="button" class="co-text-action primary" id="chartImportantSaveBtn">저장</button>`;
+      wrap.innerHTML = `<div class="chart-important-edit"><input type="text" id="chartImportantInput" placeholder="이 업체와 일할 때 꼭 알아야 할 내용" value="${esc(co.important || '')}" />
+        <button type="button" class="co-text-action primary" id="chartImportantSaveBtn">저장</button></div>`;
       document.getElementById('chartImportantSaveBtn').addEventListener('click', ()=>{
         const val = document.getElementById('chartImportantInput').value.trim();
         D.setImportant(co.id, val);
@@ -1320,29 +1414,27 @@ window.SHIN2_CRM_APP_INIT = function(){
       });
     } else {
       const text = co.important || '';
-      wrap.innerHTML = text
-        ? `<div class="chart-important-box filled"><mark class="kb-hl">${esc(text)}</mark></div>`
-        : `<div class="chart-empty">등록된 중요 표시가 없습니다.</div>`;
+      wrap.innerHTML = text ? `<div class="chart-important-inline"><mark class="kb-hl">${esc(text)}</mark></div>` : '';
     }
   }
 
   function renderRecentActivities(co){
     const wrap = document.getElementById('chartRecentActs');
-    const acts = D.activitiesForCompany(co.id).slice(0, 5);
-    wrap.innerHTML = acts.length ? acts.map(a=> `<div class="chart-recent-item"><div class="chart-recent-meta">${fmtDate(a.createdAt)} ${fmtTime(a.createdAt)} · ${esc(a.category)}${(a.status || 'completed') === 'pending' ? ' · 미처리' : ''}</div><div>${esc(a.activityText || a.originalText)}</div></div>`).join('') : '<div class="chart-empty">기록된 활동이 없습니다.</div>';
+    const acts = D.activitiesForCompany(co.id).slice(0, 3);
+    wrap.innerHTML = acts.length ? acts.map(a=> `<div class="chart-recent-item"><span class="chart-recent-date">${fmtDate(a.createdAt)}</span><span class="chart-recent-cat">${esc(a.category)}</span><span class="chart-recent-text">${esc(a.activityText || a.originalText)}${(a.status || 'completed') === 'pending' ? ' (미처리)' : ''}</span></div>`).join('') : '<div class="chart-empty">—</div>';
   }
 
   function renderDocCounts(co){
     const wrap = document.getElementById('chartDocCounts');
     if(!wrap) return;
-    const counts = DOC_TYPES.map(([type,label])=> ({ label, n: D.documentsForCompany(co.id, type).length }));
-    wrap.innerHTML = `<div class="chart-doc-counts">${counts.map(c=> `<span>${esc(c.label)} <b>${c.n}</b></span>`).join('')}</div>`;
+    const counts = DOC_TYPES.map(([type,label])=> `${label} ${D.documentsForCompany(co.id, type).length}`);
+    wrap.innerHTML = `<div class="chart-doc-line">${esc(counts.join(' · '))}</div>`;
   }
 
   function renderCalendarSection(co){
     const wrap = document.getElementById('chartCalendar');
-    const events = D.upcomingCalendarEventsForCompany(co.id).slice(0, 8);
-    wrap.innerHTML = events.length ? events.map(ev=> `<div class="chart-cal-item"><span class="chart-cal-date">${esc(ev.date)}${ev.time ? ' ' + esc(ev.time) : ''}</span>${ev.isImportant ? `<mark class="kb-hl">${esc(ev.title)}</mark>` : esc(ev.title)}</div>`).join('') : '<div class="chart-empty">예정된 일정이 없습니다.</div>';
+    const events = D.upcomingCalendarEventsForCompany(co.id).slice(0, 3);
+    wrap.innerHTML = events.length ? events.map(ev=> `<div class="chart-cal-item"><span class="chart-cal-date">${esc(ev.date)}${ev.time ? ' ' + esc(ev.time) : ''}</span>${ev.isImportant ? `<mark class="kb-hl">${esc(ev.title)}</mark>` : esc(ev.title)}</div>`).join('') : '<div class="chart-empty">—</div>';
   }
 
   // ---- 전체 타임라인: 저장된 데이터를 새로 만들지 않고 기존 배열들을 매 렌더링마다
@@ -1366,7 +1458,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const wrap = document.getElementById('chartTimeline');
     if(!wrap) return;
     const entries = buildTimelineEntries(co);
-    if(!entries.length){ wrap.innerHTML = '<div class="chart-empty">표시할 기록이 없습니다.</div>'; return; }
+    if(!entries.length){ wrap.innerHTML = '<div class="chart-empty">—</div>'; return; }
     const groups = [];
     entries.forEach(e=>{
       const key = e.ts ? fmtDate(new Date(e.ts).toISOString()) : '날짜 미상';
@@ -1398,7 +1490,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     wrap.innerHTML = CO_INFO_LABELS.map(([k,l])=> row(k,l)).join('') +
       (co.memo ? `<div class="co-field"><div class="co-field-label">기본메모</div><div class="co-field-value" style="white-space:pre-wrap;">${esc(co.memo)}</div></div>` : '');
     if(!CO_INFO_LABELS.some(([k])=> co[k]) && !co.memo){
-      wrap.innerHTML = '<div class="chart-empty">등록된 업체정보가 없습니다.</div>';
+      wrap.innerHTML = '<div class="chart-empty">—</div>';
       return;
     }
     wrap.querySelectorAll('[data-copy]').forEach(btn=>{
@@ -1547,7 +1639,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const listWrap = document.getElementById('crmDocList_' + type);
     if(!listWrap) return;
     const docs = D.documentsForCompany(co.id, type);
-    if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">등록된 파일이 없습니다.</div>'; return; }
+    if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">—</div>'; return; }
     listWrap.innerHTML = docs.map(doc=>{
       // 로컬 전용 문서는 실제 blob이 있어야 하고, 클라우드 문서는 storagePath가 local:이
       // 아니면(=업로드가 실제로 성공해 기록된 경우) 파일이 있다고 본다 — addDocument가 업로드
@@ -1787,7 +1879,7 @@ window.SHIN2_CRM_APP_INIT = function(){
               <button type="button" class="co-text-action danger" data-act-del="${esc(a.id)}">삭제</button>
             </span>
           </div>`).join('')}
-        </div>`).join('') : '<div class="doc-empty">기록된 활동이 없습니다.</div>'}</div>
+        </div>`).join('') : '<div class="doc-empty">—</div>'}</div>
     `;
     document.getElementById('crmActAddBtn').addEventListener('click', ()=>{
       const input = document.getElementById('crmActInput');
@@ -1847,7 +1939,7 @@ window.SHIN2_CRM_APP_INIT = function(){
             <div class="memo-meta">${fmtDate(new Date(m.createdAt).toISOString())} ${fmtTime(new Date(m.createdAt).toISOString())}</div>
             <div class="memo-text">${esc(m.text)}</div>
             <div class="memo-item-actions"><button type="button" class="co-text-action danger" data-memo-del="${esc(m.id)}">삭제</button></div>
-          </div>`).join('') : '<div class="memo-empty">등록된 메모가 없습니다</div>'}
+          </div>`).join('') : '<div class="memo-empty">—</div>'}
       `;
       document.getElementById('crmMemoAddBtn').addEventListener('click', ()=>{ mode = mode==='add' ? 'list' : 'add'; render(); if(mode==='add') document.getElementById('crmMemoInput').focus(); });
       const cancelBtn = document.getElementById('crmMemoCancel');
