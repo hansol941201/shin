@@ -1586,6 +1586,10 @@
           window.__shin2CloudSync = window.__shin2CloudSync || {};
           window.__shin2CloudSync.push = noopPush; // 동기화 시작 전까지는 어떤 push도 클라우드에 쓰지 않는다
           window.__shin2CloudSync.ready = false;
+          // [AI 문구정리 서버 이전용] 이미 로그인된 이 Firebase Auth 사용자의 ID 토큰을
+          // 다른 스크립트 블록(AI 문구정리)이 재사용할 수 있도록 최소 함수만 노출한다.
+          // 여기서 auth/user 객체 자체를 통째로 노출하지 않고 getIdToken()만 노출한다.
+          window.__shin2CloudSync.getIdToken = () => user.getIdToken();
           window.__shin2CloudSync.startInitialSync = startInitialSync;
           window.dispatchEvent(new CustomEvent('shin2-firebase-ready'));
           // 이 기기에서 예전에 이미 [클라우드 동기화 시작] 버튼을 눌러 최초 동기화를 마친 적이
@@ -3792,7 +3796,6 @@
   // SHIN(기존)과 동일한 localStorage 키를 그대로 재사용한다(같은 origin이므로 이미 공유됨).
   // 이 키 외에는 SHIN 2 코드가 어떤 기존 localStorage 키도 읽거나 쓰지 않는다.
   const OPENAI_KEY_STORAGE = 'work-guide-openai-key';
-  const POUR_PREFIX = '[POUR공법]';
 
   function getApiKey(){
     return localStorage.getItem(OPENAI_KEY_STORAGE) || '';
@@ -3839,67 +3842,16 @@
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
-  const PROTECTED_FIELDS = '업체명, 아파트명, 전화번호, 담당자 이름, 직급, 날짜, 시간, 금액, 공종, 공법명, 특허번호, 주소, 면적, 요청사항, 회신 여부, 일정';
-
-  const AI_RULES = `절대 규칙:
-1. 입력에 있는 사실은 절대 삭제하지 마.
-2. 입력에 없는 사실을 새로 지어내지 마.
-3. 숫자, 날짜, 전화번호, 회사명, 아파트/건물명, 사람 이름은 절대 바꾸지 마.
-4. 모르는 정보를 추측해서 채우지 마.
-5. 뒤섞인 입력은 읽기 좋은 순서로 재배열해.
-6. 진짜 중복된 표현만 자연스럽게 정리해.
-7. 오타, 띄어쓰기, 맞춤법을 고쳐.
-8. 아래 항목처럼 보이는 값이 입력에 있으면 절대 빠뜨리지 말고 그대로 반영해: ${PROTECTED_FIELDS}.
-문체(어투)만 요청된 용도에 맞게 바꾸고, 내용(사실)은 사용자가 적은 그대로 유지해.`;
-
-  function buildPrompt(type, text){
-    if(type === 'kakao'){
-      return `아래는 업무 중 편하게 적은 메모입니다. 이 메모를 카카오톡으로 보낼 업무 메시지로 정리해줘.
-- 캐주얼하지만 예의 바른 톤으로, 짧고 자연스럽게, 모바일에서 읽기 편하도록 필요하면 줄바꿈해줘.
-- 메모 내용상 고객/거래처에게 보내는 건지 내부 동료에게 보내는 건지 유추할 수 있으면 그에 맞게, 애매하면 무난하고 정중한 비즈니스 톤으로 작성해.
-- 입력에 없는 직함/호칭을 새로 만들어내지 마.
-
-${AI_RULES}
-
-메모:
-"""
-${text}
-"""
-
-다른 설명 없이 정리된 메시지 문구만 출력해.`;
-    }
-    if(type === 'mail'){
-      return `아래는 업무 중 편하게 적은 메모입니다. 이 메모를 바탕으로 업무 이메일의 제목과 본문을 작성해줘.
-- 제목은 핵심 업무 내용을 간결하게 요약해.
-- 본문은 "안녕하세요."로 시작하고, 메모 내용을 자연스러운 이메일 문장으로 풀어 쓰고, "확인 부탁드립니다." "감사합니다." 등으로 자연스럽게 마무리해도 좋아(형식은 유연하게).
-- 반드시 아래 형식 그대로 출력해(다른 설명 금지):
-제목: (제목 내용)
-본문:
-(본문 내용)
-
-${AI_RULES}
-
-메모:
-"""
-${text}
-"""`;
-    }
-    // report (보고용, 기본값)
-    return `아래는 업무 중 편하게 적은 메모입니다. 이 메모를 사내 업무보고용 문구로 정리해줘.
-- 모든 사실을 보존하면서 읽기 좋은 순서로 재배열해.
-- 중복 표현은 제거하고, 오타/맞춤법을 고치고, 불필요한 군더더기는 빼줘.
-- 사내 메신저에 바로 붙여넣을 수 있는 정중하고 간결한 보고체 문장으로 작성해.
-
-${AI_RULES}
-
-메모:
-"""
-${text}
-"""
-
-다른 설명 없이 정리된 보고 문구만 출력해.`;
-  }
-
+  // [서버 이전] 프롬프트 구성 규칙(AI_RULES/PROTECTED_FIELDS)과 모드별 buildPrompt() 로직은
+  // functions/index.js의 aiRewrite 함수로 그대로 옮겼다(문구 1자도 다르지 않게 포팅 —
+  // 커밋 로그 참고). "AI 문구정리"는 더 이상 이 파일에서 프롬프트를 만들지 않고, 아래
+  // callAiRewriteServer()로 서버에 { mode, text }만 보낸다. parseMailResult/applyPourPrefix도
+  // 같은 이유로 서버에서 수행하고, 서버가 이미 분리·정리된 { subject, body }를 돌려준다.
+  //
+  // "빠른 지식 추가"(qaBuildPrompt/qaDoAnalyze, 아래 window.SHIN2_AI.callOpenAI 소비처)는
+  // 이번 라운드 범위 밖이라 손대지 않았다 — 여전히 localStorage의 'work-guide-openai-key'를
+  // 직접 읽어 브라우저에서 OpenAI로 바로 호출한다. 즉 "브라우저에 키가 전혀 남지 않는다"는
+  // AI 문구정리 경로에만 해당하며, 빠른 지식 추가는 아직 아니다(보고서에 명시).
   async function callOpenAI(apiKey, prompt){
     let res;
     try{
@@ -3959,26 +3911,67 @@ ${text}
     return content.trim();
   }
 
-  // 메일용 결과 파싱: "제목: ...\n본문:\n..." 형식을 분리한다.
-  function parseMailResult(raw){
-    const m = raw.match(/제목\s*[:：]\s*([^\n]*)\n+본문\s*[:：]\s*([\s\S]*)/);
-    let subject, body;
-    if(m){
-      subject = m[1].trim();
-      body = m[2].trim();
-    } else {
-      const lines = raw.split('\n');
-      subject = (lines[0] || '').trim();
-      body = lines.slice(1).join('\n').trim();
+  // [서버 이전] parseMailResult()/applyPourPrefix()([POUR공법] 접두사 1회만 부착)도
+  // functions/index.js로 그대로 옮겼다 — 서버가 이미 { subject, body }로 분리하고 접두사까지
+  // 붙여서 돌려주므로 클라이언트는 더 이상 원문(raw)을 직접 파싱하지 않는다.
+
+  // AI 문구정리 전용 서버 함수 호출. Firebase Auth ID 토큰만 실어 보내고, OpenAI 키는
+  // 이 파일 어디에도 없다 — 서버(functions/index.js)가 Secret Manager에서 읽어 사용한다.
+  const AI_FUNCTION_URL = 'https://us-central1-pour-dashboard.cloudfunctions.net/aiRewrite';
+
+  async function getFirebaseIdToken(){
+    // 위쪽 Firebase 초기화 블록(§1401 부근)이 로그인 성공 시 window.__shin2CloudSync.getIdToken을
+    // 노출해둔다. 아직 로그인 전이거나(사이트 잠금 미해제) Firebase 초기화가 실패했다면 null.
+    if(window.__shin2CloudSync && typeof window.__shin2CloudSync.getIdToken === 'function'){
+      try{ return await window.__shin2CloudSync.getIdToken(); }
+      catch(e){ return null; }
     }
-    return { subject, body };
+    return null;
   }
 
-  // [POUR공법] 접두사를 정확히 1회만 붙인다(이미 붙어있으면 중복 방지).
-  function applyPourPrefix(subject){
-    const s = (subject || '').trim();
-    if(s.indexOf(POUR_PREFIX) === 0) return s;
-    return POUR_PREFIX + ' ' + s;
+  async function callAiRewriteServer(mode, text){
+    const idToken = await getFirebaseIdToken();
+    if(!idToken){
+      const e = new Error('AI request: not authenticated (no Firebase ID token)');
+      e.kind = 'auth-required';
+      throw e;
+    }
+    let res;
+    try{
+      res = await fetch(AI_FUNCTION_URL, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer ' + idToken
+        },
+        body: JSON.stringify({ mode, text })
+      });
+    } catch(networkErr){
+      // fetch() 자체가 reject된 경우: 네트워크 단절, 또는 함수가 아직 배포되지 않아
+      // 도메인이 존재하지 않는 경우(CORS/DNS) 등 — 이전 직접 호출 때와 동일한 'network' 분류.
+      const e = new Error('AI request network/CORS failure: ' + (networkErr && networkErr.message));
+      e.kind = 'network';
+      e.original = networkErr;
+      throw e;
+    }
+    let body = null;
+    try{ body = await res.json(); }
+    catch(parseErr){
+      const e = new Error('AI request invalid JSON response: ' + (parseErr && parseErr.message));
+      e.kind = 'parse';
+      throw e;
+    }
+    if(!res.ok || (body && body.error)){
+      const info = (body && body.error) || {};
+      const e = new Error('AI request failed: ' + res.status + ' ' + (info.message || ''));
+      e.kind = info.kind || 'http';
+      e.status = res.status;
+      e.detail = info.message || '';
+      e.errType = info.errType || '';
+      e.errCode = info.errCode || '';
+      throw e;
+    }
+    return body; // { text } 또는 { subject, body } — 서버가 이미 [POUR공법] 접두사까지 적용
   }
 
   const state = { type:'report', loading:false, error:'', result:null };
@@ -4086,40 +4079,33 @@ ${text}
     if(state.loading) return;
     const text = inputEl.value.trim();
     if(!text) return;
-    const apiKey = getApiKey();
-    if(!apiKey){
-      console.error('[SHIN2/AI] API key missing');
-      setError('OpenAI API 키가 등록되어 있지 않습니다. 키를 등록해주세요.');
-      promptForApiKey((key)=> doRun(key, text));
-      return;
-    }
-    doRun(apiKey, text);
+    // [서버 이전] 더 이상 로컬 OpenAI 키 유무를 먼저 확인하지 않는다 — 인증은 Firebase
+    // ID 토큰으로 서버가 판단한다(콜백 안에서 'auth-required'로 처리). 입력값은 실패해도
+    // textarea에 그대로 남아있다(아래 catch는 inputEl.value를 절대 지우지 않음).
+    doRun(text);
   }
 
-  async function doRun(apiKey, text){
+  async function doRun(text){
     setError('');
     setLoading(true);
     const type = state.type;
-    const prompt = buildPrompt(type, text);
-    if(!apiKey){
-      console.error('[SHIN2/AI] API key missing');
-      setError('OpenAI API 키가 등록되어 있지 않습니다. 키를 등록해주세요.');
-      setLoading(false);
-      return;
-    }
     try{
-      const raw = await callOpenAI(apiKey, prompt);
+      const data = await callAiRewriteServer(type, text);
       if(type === 'mail'){
-        const { subject, body } = parseMailResult(raw);
-        state.result = { type:'mail', subject: applyPourPrefix(subject), body };
+        state.result = { type:'mail', subject: data.subject, body: data.body };
       } else {
-        state.result = { type, text: raw };
+        state.result = { type, text: data.text };
       }
       renderResult();
     } catch(err){
       // 화면에는 간단한 한국어 메시지만, 콘솔에는 실제 원인을 그대로 남긴다(개발/진단용).
       console.error('[SHIN2/AI] request failed:', err);
-      if(err && err.kind === 'http' && err.status === 401){
+      if(err && err.kind === 'auth-required'){
+        // 이전 "OpenAI API 키가 등록되어 있지 않습니다"에 대응하는 새 상태 — 이제 필요한 건
+        // OpenAI 키가 아니라 로그인(사이트 잠금 해제)이다. 기존 6종 분기는 모두 그대로 둔다.
+        console.error('[SHIN2/AI] Firebase 로그인 필요 — ID 토큰 없음');
+        setError('로그인이 필요합니다. 사이트 잠금을 해제한 뒤 다시 시도해주세요.');
+      } else if(err && err.kind === 'http' && err.status === 401){
         console.error('[SHIN2/AI] 401 Unauthorized — API 키가 잘못되었거나 만료됨');
         setError('API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해주세요.');
       } else if(err && err.kind === 'http' && err.status === 429 && (err.errCode === 'insufficient_quota' || err.errType === 'insufficient_quota')){
@@ -4132,7 +4118,7 @@ ${text}
         console.error('[SHIN2/AI] HTTP', err.status, err.detail);
         setError(`문구 정리에 실패했습니다. (오류 코드 ${err.status})`);
       } else if(err && err.kind === 'network'){
-        console.error('[SHIN2/AI] 네트워크/CORS로 요청 자체가 차단됨 — 브라우저가 응답을 받지 못했습니다.', err.original);
+        console.error('[SHIN2/AI] 네트워크/CORS로 요청 자체가 차단됨 — 브라우저가 응답을 받지 못했습니다(함수가 아직 배포되지 않았을 수 있습니다).', err.original);
         setError('AI 서버에 연결할 수 없습니다. 네트워크 또는 브라우저 보안 정책(CORS) 문제일 수 있습니다.');
       } else {
         setError('문구 정리에 실패했습니다. 다시 시도해주세요.');

@@ -1,0 +1,16 @@
+{
+  "name": "shin2-functions",
+  "description": "한솔2(v2/index.html) 'AI 문구정리' 전용 서버 함수 — OpenAI 키를 브라우저 대신 여기서만 사용한다.",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "lint": "node --check index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.1.0"
+  }
+}

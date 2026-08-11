@@ -1,0 +1,8 @@
+# firebase-tools가 로컬 배포/에뮬레이션 시 만드는 파일들 — 저장소에 포함하지 않는다.
+node_modules/
+.env
+.env.*
+!.env.example
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
