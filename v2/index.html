@@ -637,6 +637,15 @@
   .co-doc-icon.is-held{ color:var(--navy); }
   .co-doc-icon.is-missing{ color:#B08A8A; }
 
+  /* ---------- 협력사 여부 표시(§파트너 대시보드 연동 준비, 신규) ---------- */
+  /* partnerStatus: 'partner'(파란 ○) / 'nonPartner'(빨간 ×) / 'unknown'(표시 없음, §6). */
+  .co-partner-glyph{ font-weight:700; margin-right:3px; }
+  .co-partner-glyph.is-partner{ color:#2563EB; }
+  .co-partner-glyph.is-nonpartner{ color:#DC2626; }
+  .co-partner-radio-row{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .co-partner-radio-row label{ display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--text); cursor:pointer; }
+  .co-partner-radio-row input[type="radio"]{ cursor:pointer; }
+
   /* ---------- 업체 서류 체크현황(§업체 서류) ---------- */
   .co-summary-line{ font-size:12px; color:var(--text-muted); margin:6px 0 10px; }
   .co-filter-row{ display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
@@ -2105,6 +2114,14 @@
         <div class="search-box kb-search-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input type="text" id="coSearchInput" placeholder="업체명 / 담당자 / 전화번호 검색" />
+        </div>
+        <div class="co-filter-row" id="coPartnerFilterRow">
+          <div class="co-status-filters" id="coPartnerFilters">
+            <button type="button" class="co-filter-btn active" data-partner-filter="all">전체</button>
+            <button type="button" class="co-filter-btn" data-partner-filter="partner">협력사</button>
+            <button type="button" class="co-filter-btn" data-partner-filter="nonPartner">비협력사</button>
+            <button type="button" class="co-filter-btn" data-partner-filter="unknown">미설정</button>
+          </div>
         </div>
         <div class="co-filter-row">
           <div class="co-status-filters" id="coStatusFilters">
@@ -5698,6 +5715,16 @@
     const missing = KB_DOC_FIELD_DEFS.filter(f=> !s[f.key]).map(f=> f.label);
     return `서류 ${count}/4 · 미보유: ${missing.join(' · ')}`;
   }
+  // 협력사 여부 표시(§파트너 대시보드 연동 준비, 신규) — 업체관리 화면(coPartnerGlyphHtml)과
+  // 동일한 규칙: partner→파란 ○ / nonPartner→빨간 × / unknown(필드 없음 포함)→표시 없음.
+  // 이 검색 카드 모듈은 업체관리 IIFE와 별개라 같은 규칙을 여기서도 그대로 재구현만 한다(값은
+  // co.partnerStatus를 그대로 읽기만 하고 절대 쓰지 않는다).
+  function kbPartnerGlyphHtml(co){
+    const st = co && co.partnerStatus;
+    if(st === 'partner') return '<span class="co-partner-glyph is-partner" title="협력사">○</span>';
+    if(st === 'nonPartner') return '<span class="co-partner-glyph is-nonpartner" title="비협력사">×</span>';
+    return '';
+  }
   function kbRenderCompanyCard(co, isTop, q){
     const lines = [];
     if(co.repName) lines.push(`대표: ${kbEscapeHtml(co.repName)}`);
@@ -5726,7 +5753,7 @@
     }
     return `<div class="kb-result-card${isTop?' top':''}" data-co-id="${kbEscapeAttr(co.id)}">
       <div class="kb-result-cat">업체</div>
-      <div class="kb-result-title">${kbHighlight(co.name, q)}</div>
+      <div class="kb-result-title">${kbPartnerGlyphHtml(co)}${kbHighlight(co.name, q)}</div>
       <div class="kb-plain-content">${lines.join('<br>')}</div>
       ${callsHtml}
     </div>`;
@@ -7345,7 +7372,7 @@ ${text}
   }
   function coEscapeAttr(str){ return coEscapeHtml(str); }
 
-  const CO_EMPTY_FORM = { name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'' };
+  const CO_EMPTY_FORM = { name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'', partnerStatus:'unknown' };
 
   const coState = {
     records: [],
@@ -7360,7 +7387,8 @@ ${text}
     showSavedToast: false, // 수정 저장 직후 상세화면 상단에 "저장됨"을 잠깐 표시(alert 대신, §8)
     docFilterStatus: 'all',   // 'all' | 'incomplete' | 'complete' — 서류 체크현황 필터(신규)
     docFilterMissing: '',     // '' | 'logo' | 'businessCard' | 'businessRegistration' | 'questionnaireReply'
-    docSort: 'default'        // 'default' | 'name' | 'missing'
+    docSort: 'default',       // 'default' | 'name' | 'missing'
+    partnerFilter: 'all'      // 'all' | 'partner' | 'nonPartner' | 'unknown' — 협력사 여부 필터(§파트너 대시보드 연동 준비, 신규)
   };
 
   function coRefresh(){ coState.records = coReadAll(); }
@@ -7391,6 +7419,25 @@ ${text}
   function coDocMissingFields(rec){
     const s = coDocStatus(rec);
     return DOC_FIELD_DEFS.filter(f=> !s[f.key]);
+  }
+
+  // ---------- 협력사 여부(§파트너 대시보드 연동 준비, 신규) ----------
+  // partnerStatus: 'partner' | 'nonPartner' | 'unknown'. 레거시 업체(필드 자체가 없는 레코드)는
+  // 절대 일괄 마이그레이션하지 않고, 읽는 시점에만 'unknown'으로 기본값을 채워서 반환한다
+  // (documentsStatus의 coDocStatus()와 동일한 읽기-시점 기본값 관례를 그대로 따른다 — §8871 위).
+  // 이 함수는 원본 rec 객체를 절대 변형하지 않는다.
+  function coPartnerStatus(rec){
+    const v = rec && rec.partnerStatus;
+    return (v === 'partner' || v === 'nonPartner') ? v : 'unknown';
+  }
+  // 목록/검색 등 "업체명이 짧게 표시되는 곳"에서만 이름 앞에 붙이는 작은 상태 기호.
+  // partner → 파란 ○ / nonPartner → 빨간 × / unknown → 아무 것도 표시하지 않음(§6: unknown은
+  // 흔한 기본 상태이므로 "분류된 것"처럼 보이지 않도록 일부러 아무 기호도 넣지 않는다).
+  function coPartnerGlyphHtml(rec){
+    const st = coPartnerStatus(rec);
+    if(st === 'partner') return '<span class="co-partner-glyph is-partner" title="협력사">○</span>';
+    if(st === 'nonPartner') return '<span class="co-partner-glyph is-nonpartner" title="비협력사">×</span>';
+    return '';
   }
   // 체크박스 클릭 시 즉시 저장(별도 저장 버튼/수정모드 불필요, §12/§15). 토글되는 업체 레코드에만
   // documentsStatus를 실제로 써넣는다 — 다른 업체는 절대 건드리지 않는다.
@@ -7767,6 +7814,7 @@ ${text}
       }
       if(coState.docFilterStatus === 'incomplete' && coDocCompletedCount(r) === 4) return false;
       if(coState.docFilterStatus === 'complete' && coDocCompletedCount(r) !== 4) return false;
+      if(coState.partnerFilter !== 'all' && coPartnerStatus(r) !== coState.partnerFilter) return false;
       if(coState.docFilterMissing){
         const s = coDocStatus(r);
         if(s[coState.docFilterMissing]) return false; // 해당 자료를 이미 보유한 업체는 제외
@@ -7814,7 +7862,7 @@ ${text}
     }
     coListEl.innerHTML = items.map(r=> `
       <div class="co-row${r.id===coState.selectedId ? ' active' : ''}" data-id="${coEscapeAttr(r.id)}">
-        <div class="co-col-name">${coEscapeHtml(r.name)}</div>
+        <div class="co-col-name">${coPartnerGlyphHtml(r)}${coEscapeHtml(r.name)}</div>
         <div class="co-col-contact">${coEscapeHtml(r.contactName || r.repName || '-')}</div>
         <div class="co-col-phone">${coEscapeHtml(r.phone || '-')}</div>
         ${coDocColHtml(r)}
@@ -8029,7 +8077,7 @@ ${text}
   function coOpenEditForm(rec){
     coState.mode = 'edit';
     coState.selectedId = rec.id;
-    coState.formValues = Object.assign({}, CO_EMPTY_FORM, rec);
+    coState.formValues = Object.assign({}, CO_EMPTY_FORM, rec, { partnerStatus: coPartnerStatus(rec) });
     coState.ocr = coFreshOcrState();
     coState.dupConfirmed = false;
     coState.onSaved = null;
@@ -8183,6 +8231,14 @@ ${text}
       ${conflictHtml('address')}
       <div class="co-form-field"><label>홈페이지</label><input type="text" id="coFWebsite" value="${coEscapeAttr(vals.website)}" placeholder="https://" /></div>
       <div class="co-form-field"><label>기본메모</label><textarea id="coFMemo">${coEscapeHtml(vals.memo)}</textarea></div>
+      <div class="co-form-field">
+        <label>협력사 여부</label>
+        <div class="co-partner-radio-row" id="coPartnerStatusRow">
+          <label><input type="radio" name="coPartnerStatusRadio" value="partner" ${vals.partnerStatus==='partner'?'checked':''}/> 우리 협력사</label>
+          <label><input type="radio" name="coPartnerStatusRadio" value="nonPartner" ${vals.partnerStatus==='nonPartner'?'checked':''}/> 비협력사</label>
+          <label><input type="radio" name="coPartnerStatusRadio" value="unknown" ${(vals.partnerStatus!=='partner' && vals.partnerStatus!=='nonPartner')?'checked':''}/> 미설정</label>
+        </div>
+      </div>
       <div id="coDupWarning"></div>
       <div class="co-form-actions">
         <button type="button" class="co-text-action" id="coFormCancel">취소</button>
@@ -8196,6 +8252,11 @@ ${text}
     });
     const memoEl = document.getElementById('coFMemo');
     if(memoEl) memoEl.addEventListener('input', ()=>{ coState.formValues.memo = memoEl.value; coState.formDirty = true; });
+    document.querySelectorAll('input[name="coPartnerStatusRadio"]').forEach(radio=>{
+      radio.addEventListener('change', ()=>{
+        if(radio.checked){ coState.formValues.partnerStatus = radio.value; coState.formDirty = true; }
+      });
+    });
 
     coDetailCol.querySelectorAll('[data-conflict-field]').forEach(box=>{
       const field = box.getAttribute('data-conflict-field');
@@ -8285,7 +8346,8 @@ ${text}
       bizRegNo: document.getElementById('coFBiz').value.trim(),
       address: document.getElementById('coFAddr').value.trim(),
       website: document.getElementById('coFWebsite').value.trim(),
-      memo: document.getElementById('coFMemo').value.trim()
+      memo: document.getElementById('coFMemo').value.trim(),
+      partnerStatus: (document.querySelector('input[name="coPartnerStatusRadio"]:checked') || {}).value || 'unknown'
     };
 
     if(!coState.dupConfirmed){
@@ -8371,6 +8433,15 @@ ${text}
     btn.addEventListener('click', ()=>{
       coState.docFilterStatus = btn.getAttribute('data-doc-filter');
       coStatusFilterButtons.forEach(b=> b.classList.toggle('active', b === btn));
+      coRenderList();
+    });
+  });
+  // 협력사 여부 필터 탭(§6, 신규) — 위 서류 필터와 동일한 co-filter-btn 관례를 재사용한다.
+  const coPartnerFilterButtons = document.querySelectorAll('#coPartnerFilters .co-filter-btn');
+  coPartnerFilterButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      coState.partnerFilter = btn.getAttribute('data-partner-filter');
+      coPartnerFilterButtons.forEach(b=> b.classList.toggle('active', b === btn));
       coRenderList();
     });
   });

@@ -223,6 +223,10 @@
   .chart-header-main{ min-width:0; flex:1; }
   .chart-header-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .chart-co-name{ font-size:18px; font-weight:700; color:var(--text); }
+  /* 협력사 여부 표시(§파트너 대시보드 연동 준비, 신규) — v2/index.html 업체관리와 동일한 규칙. */
+  .co-partner-glyph{ font-weight:700; margin-right:3px; }
+  .co-partner-glyph.is-partner{ color:#2563EB; }
+  .co-partner-glyph.is-nonpartner{ color:#DC2626; }
   .chart-badge{ font-size:11px; font-weight:600; color:var(--navy); background:#EEF1F7; border-radius:5px; padding:3px 8px; }
   .chart-badge.empty{ color:var(--text-muted); background:var(--bg); }
   .chart-header-sub{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; margin-top:6px; font-size:12.5px; color:var(--text); }
@@ -1060,6 +1064,16 @@ window.SHIN2_CRM_APP_INIT = function(){
     const p = n=> String(n).padStart(2,'0');
     return p(d.getHours()) + ':' + p(d.getMinutes());
   }
+  // 협력사 여부 표시(§파트너 대시보드 연동 준비, 신규) — dealStage(협약 진행 단계)와는 다른
+  // 별개 개념이다. v2/index.html 업체관리와 동일한 규칙(값은 shin2-companies-staging의
+  // co.partnerStatus를 그대로 읽기만 하고, CRM 쪽에 별도로 복제 저장하지 않는다):
+  // partner→파란 ○ / nonPartner→빨간 × / unknown(필드 없음 포함, 레거시 업체)→표시 없음.
+  function partnerGlyphHtml(co){
+    const st = co && co.partnerStatus;
+    if(st === 'partner') return '<span class="co-partner-glyph is-partner" title="협력사">○</span>';
+    if(st === 'nonPartner') return '<span class="co-partner-glyph is-nonpartner" title="비협력사">×</span>';
+    return '';
+  }
   function copyText(text, btn){
     if(!navigator.clipboard || !text) return;
     navigator.clipboard.writeText(text).then(()=>{
@@ -1112,7 +1126,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
     listEl.innerHTML = rows.map(r=> `
       <div class="co-row" data-id="${esc(r.co.id)}">
-        <div class="col-name">${esc(r.co.name)}</div>
+        <div class="col-name">${partnerGlyphHtml(r.co)}${esc(r.co.name)}</div>
         <div class="col-contact">${esc(r.co.contactName || r.co.repName || '-')}</div>
         <div class="col-recent">${r.summary ? esc(r.summary.activityText || r.summary.originalText) : '-'}</div>
         <div class="col-date">${r.summary ? fmtDate(r.summary.createdAt) : '-'}</div>
@@ -1288,7 +1302,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     wrap.innerHTML = `
       <div class="chart-header-main">
         <div class="chart-header-title-row">
-          <span class="chart-co-name">${esc(co.name)}</span>
+          <span class="chart-co-name">${partnerGlyphHtml(co)}${esc(co.name)}</span>
           ${editing
             ? `<select id="chartDealStageSel" style="font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;">
                 <option value="">협약상태 미설정</option>
