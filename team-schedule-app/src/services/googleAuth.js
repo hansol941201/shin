@@ -9,8 +9,40 @@
 // 캘린더를 삭제/공유설정 변경하는 등 더 넓은 권한(https://www.googleapis.com/auth/calendar)은
 // 요청하지 않는다.
 
-const CLIENT_ID = typeof import.meta !== 'undefined' ? import.meta.env.VITE_GOOGLE_CLIENT_ID : undefined;
+// .env.local 값은 그대로 신뢰하지 않는다. 복사/붙여넣기 과정에서 앞뒤
+// 공백이나 따옴표가 섞여 들어오면 Google 서버가 "invalid_client / Client
+// missing a project id"처럼 원인을 알기 어려운 오류를 돌려주므로, 여기서
+// 한 번 정리(trim, 따옴표 제거)하고 형식(.apps.googleusercontent.com로
+// 끝나는지)까지 검증한다.
+function sanitizeClientId(raw) {
+  if (!raw) return '';
+  let v = String(raw).trim();
+  if (v.length >= 2) {
+    const first = v[0];
+    const last = v[v.length - 1];
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      v = v.slice(1, -1).trim();
+    }
+  }
+  return v;
+}
+
+const CLIENT_ID_SUFFIX = '.apps.googleusercontent.com';
+const RAW_CLIENT_ID = typeof import.meta !== 'undefined' ? import.meta.env.VITE_GOOGLE_CLIENT_ID : undefined;
+const CLIENT_ID = sanitizeClientId(RAW_CLIENT_ID);
+
 export const GOOGLE_CONFIGURED = Boolean(CLIENT_ID);
+// 형식까지 정상인지(끝이 .apps.googleusercontent.com이고 충분히 긴 값인지).
+// 이메일 주소나 client secret을 잘못 넣은 경우도 대부분 여기서 걸러진다.
+export const GOOGLE_CLIENT_ID_VALID =
+  GOOGLE_CONFIGURED && CLIENT_ID.endsWith(CLIENT_ID_SUFFIX) && CLIENT_ID.length > CLIENT_ID_SUFFIX.length + 5;
+
+// 화면에는 전체 값을 절대 보여주지 않고, 마지막 일부만 마스킹해서 노출한다.
+export function maskedClientId() {
+  if (!CLIENT_ID) return '';
+  if (CLIENT_ID.length <= 10) return '••••';
+  return `••••${CLIENT_ID.slice(-10)}`;
+}
 
 export const GOOGLE_SCOPES =
   'openid email profile ' +
@@ -80,6 +112,12 @@ function getTokenClient() {
 export async function requestAccessToken({ prompt = 'consent' } = {}) {
   if (!GOOGLE_CONFIGURED) {
     throw new Error('VITE_GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.');
+  }
+  if (!GOOGLE_CLIENT_ID_VALID) {
+    throw new Error(
+      'Google Client ID 형식이 올바르지 않습니다. ".apps.googleusercontent.com"으로 ' +
+      '끝나는 값인지 확인해주세요. (구글연동설정.bat을 다시 실행해 값을 다시 입력하면 됩니다)'
+    );
   }
   await loadGisScript();
   const client = getTokenClient();

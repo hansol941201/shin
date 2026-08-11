@@ -563,6 +563,12 @@ button, select, input, textarea {
   font-weight: 500;
 }
 .google-btn-disabled:hover { background: #fff; color: var(--text-faint); }
+.google-btn-warn {
+  color: var(--pending-text);
+  background: var(--pending-bg);
+  border-color: var(--pending-border);
+}
+.google-btn-warn:hover { background: var(--pending-bg); color: var(--pending-text); }
 .google-btn-connected { padding: 3px 10px; }
 .google-dot {
   width: 7px; height: 7px; border-radius: 50%;

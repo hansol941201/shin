@@ -10,6 +10,8 @@ function SettingsPopover({ anchor, onClose }) {
     settings,
     updateSettings,
     googleConfigured,
+    googleClientIdValid,
+    googleClientIdMasked,
     googleSignedIn,
     calendars,
     calendarsLoading,
@@ -73,7 +75,17 @@ function SettingsPopover({ anchor, onClose }) {
       {!googleConfigured && (
         <div className="pv-hint">Google 연동이 설정되지 않았습니다. (README 참고)</div>
       )}
-      {googleConfigured && !googleSignedIn && (
+      {googleConfigured && !googleClientIdValid && (
+        <div className="pv-error">
+          Client ID 형식이 올바르지 않습니다({googleClientIdMasked || '값 없음'}).<br />
+          &quot;.apps.googleusercontent.com&quot;으로 끝나야 합니다. 구글연동설정.bat을
+          다시 실행해 값을 다시 입력해주세요.
+        </div>
+      )}
+      {googleConfigured && googleClientIdValid && (
+        <div className="pv-hint">설정된 Client ID: {googleClientIdMasked}</div>
+      )}
+      {googleConfigured && googleClientIdValid && !googleSignedIn && (
         <div className="pv-hint">Google 캘린더를 먼저 연결해주세요.</div>
       )}
       {googleConfigured && googleSignedIn && (

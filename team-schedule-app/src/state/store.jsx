@@ -6,6 +6,8 @@ import { loadPersistedEvents, persistEvents } from '../services/firebase.js';
 import * as googleCalendarApi from '../services/googleCalendar.js';
 import {
   GOOGLE_CONFIGURED,
+  GOOGLE_CLIENT_ID_VALID,
+  maskedClientId,
   requestAccessToken,
   revokeAccessToken,
   fetchUserInfo,
@@ -21,6 +23,28 @@ import {
 } from '../services/localSettings.js';
 
 const AppContext = createContext(null);
+
+// Google 로그인 실패 원인을 콘솔이 아니라 화면에 한글로 보여주기 위한 매핑.
+// requestAccessToken()이 던지는 일반 Error(형식 오류 등)와, GIS 콜백이
+// 넘겨주는 { error, error_description } 형태를 모두 처리한다.
+function describeGoogleAuthError(err) {
+  if (err instanceof Error && err.message) return err.message;
+  const code = err?.error || err?.type;
+  if (code === 'popup_closed_by_user' || code === 'popup_closed') {
+    return '로그인 창을 닫아서 연결이 취소되었습니다.';
+  }
+  if (code === 'access_denied') {
+    return '권한 요청을 거부했습니다. 다시 연결하려면 모든 권한에 동의해주세요.';
+  }
+  if (code === 'invalid_client') {
+    return (
+      'Google Client ID가 올바르지 않습니다("invalid_client"). ' +
+      '구글연동설정.bat으로 Client ID를 다시 확인/입력해주세요.'
+    );
+  }
+  if (err?.error_description) return err.error_description;
+  return 'Google 로그인에 실패했거나 취소되었습니다.';
+}
 
 function eventsReducer(events, action) {
   switch (action.type) {
@@ -193,7 +217,7 @@ export function AppProvider({ children }) {
       setGoogleSignedIn(true);
       await loadCalendars(session.accessToken);
     } catch (err) {
-      setGoogleAuthError('Google 로그인에 실패했거나 취소되었습니다.');
+      setGoogleAuthError(describeGoogleAuthError(err));
     } finally {
       setGoogleAuthLoading(false);
     }
@@ -424,6 +448,8 @@ export function AppProvider({ children }) {
       cancelReschedule,
       // Google 연동
       googleConfigured: GOOGLE_CONFIGURED,
+      googleClientIdValid: GOOGLE_CLIENT_ID_VALID,
+      googleClientIdMasked: maskedClientId(),
       googleActive,
       googleSignedIn,
       googleUserEmail,
