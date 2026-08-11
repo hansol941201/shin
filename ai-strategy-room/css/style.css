@@ -166,6 +166,38 @@ body{
 .report-card h3:first-child{margin-top:0;}
 .report-card p{font-size:14px;line-height:1.85;color:var(--text-dark);margin:0 0 14px;}
 
+/* ---------- [우리 팀 실행 방향] ---------- */
+.action-plan{
+  background:#f4f8ff;border:1px solid #c9dcfa;border-radius:12px;
+  padding:22px 24px 8px;margin:0 0 28px;
+}
+.action-plan-badge{
+  display:inline-block;background:var(--navy);color:#fff;font-size:12px;font-weight:700;
+  letter-spacing:.02em;padding:4px 10px;border-radius:6px;margin-bottom:12px;
+}
+.action-plan-conclusion{
+  font-size:16px;font-weight:700;line-height:1.6;color:var(--navy-dark);
+  margin:0 0 16px;
+}
+.action-plan-card{
+  background:#fff;border:1px solid var(--card-border);border-radius:10px;
+  padding:14px 16px;margin-bottom:14px;
+}
+.action-plan-card h4{margin:0 0 8px;font-size:13.5px;color:var(--navy);}
+.action-plan-list{margin:0;padding-left:18px;font-size:13.5px;line-height:1.75;color:var(--text-dark);}
+.action-plan-list li{margin-bottom:4px;}
+.action-plan-checklist{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.9;color:var(--text-dark);}
+.action-plan-checklist li{display:flex;gap:8px;align-items:flex-start;}
+.action-plan-checklist .chk{color:var(--navy);font-weight:700;flex:0 0 auto;}
+.action-plan-card--warn{border-color:#fdba74;background:#fff7ed;}
+.action-plan-card--warn h4{color:#9a5b13;}
+.action-plan-table-wrap{overflow-x:auto;}
+.action-plan-table{width:100%;border-collapse:collapse;font-size:13px;}
+.action-plan-table th,.action-plan-table td{
+  border:1px solid var(--card-border);padding:7px 10px;text-align:left;vertical-align:top;
+}
+.action-plan-table th{background:var(--hover-soft);color:var(--navy);font-weight:700;}
+
 /* ---------- 보고서 보완 요청 ---------- */
 .refine-box{
   margin-top:18px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;

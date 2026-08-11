@@ -397,7 +397,7 @@ function updateStep(roundId, status) {
 
 /* ---------- 결과 화면 렌더 ---------- */
 function renderReport(reportText, log, warning, mode, transport) {
-  els.reportCard.innerHTML = ReportBuilder.renderToHtml(reportText);
+  els.reportCard.innerHTML = ReportBuilder.renderFullReport(reportText);
   currentLog = log || [];
   renderLog(currentLog);
 

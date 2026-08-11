@@ -217,30 +217,91 @@ const QualityGuardrails = {
   },
 
   /* ================================================================
-   * 최종 보고서 (4차 통과 시 본문 또는 5차/보완 결과 공통 검증)
+   * [우리 팀 실행 방향] 섹션 검증 — 8개 하위 항목이 모두 있는지, 표/체크리스트
+   * 형식을 실제로 지켰는지까지 확인한다. 필수 항목 누락은 확실한 실패,
+   * 형식(표/체크박스) 미준수나 근거 없는 목표 수치는 애매함 신호로만 쓴다.
    * ================================================================ */
-  report(text, hasAttachment) {
-    const t = String(text || '');
+  _actionPlan(actionPlanText, hasAttachment) {
+    const ap = String(actionPlanText || '');
     const failures = [];
     const ambiguousConcerns = [];
 
-    const headingCount = this._countMatches(t, /^##\s+.+$/gm);
-    if (headingCount < 3) {
-      failures.push(`보고서 구조(## 소제목)가 ${headingCount}개뿐입니다 — 논리적 흐름을 담은 소제목이 최소 3개 이상 필요합니다.`);
+    const requiredSubs = [
+      { re: /결론\s*한\s*줄/, label: '1. 결론 한 줄' },
+      { re: /준비해야\s*할\s*것|준비물/, label: '2. 우리가 준비해야 할 것' },
+      { re: /실행\s*순서/, label: '3. 실행 순서' },
+      { re: /역할\s*분담/, label: '4. 역할 분담' },
+      { re: /지금\s*당장\s*할\s*일/, label: '5. 지금 당장 할 일' },
+      { re: /준비\s*완료\s*기준/, label: '6. 준비 완료 기준' },
+      { re: /하지\s*말아야\s*할\s*것/, label: '7. 하지 말아야 할 것' },
+      { re: /효과\s*확인\s*방법/, label: '8. 효과 확인 방법' }
+    ];
+    const missingSubs = requiredSubs.filter((r) => !r.re.test(ap)).map((r) => r.label);
+    if (missingSubs.length) {
+      failures.push(`[우리 팀 실행 방향]에 다음 항목이 없습니다: ${missingSubs.join(', ')}`);
+      return this._fail(failures);
     }
 
-    if (/\*\*\[.+?\]\*\*/.test(t)) {
+    if (!/\|/.test(ap)) {
+      ambiguousConcerns.push('[역할 분담]이 표(| 담당 | 해야 할 일 | 필요한 자료 | 완료 기준 |) 형태로 작성됐는지 애매합니다.');
+    }
+    if (!/[□☐]/.test(ap)) {
+      ambiguousConcerns.push('[지금 당장 할 일]/[준비 완료 기준]이 체크리스트(□) 형태로 작성됐는지 애매합니다.');
+    }
+    if (!hasAttachment) {
+      const fabricated = this._findFabricatedNumbers(ap);
+      if (fabricated.length) {
+        ambiguousConcerns.push(`[효과 확인 방법]에 근거 없는 목표 수치로 보이는 표현이 있습니다(${fabricated.slice(0, 3).join(', ')}).`);
+      }
+    }
+
+    return this._pass(ambiguousConcerns);
+  },
+
+  /* ================================================================
+   * 최종 보고서 (4차 통과 시 본문 또는 5차/보완 결과 공통 검증)
+   * 이제 보고서는 [우리 팀 실행 방향](팀이 바로 움직일 수 있는 요약) +
+   * 상세 분석 보고서 두 부분으로 구성된다. ReportBuilder.splitActionPlan으로
+   * 앞부분을 분리해 별도로 검증하고, 상세 보고서 검증(소제목 개수 등)은
+   * 그 나머지 부분 기준으로 그대로 적용한다.
+   * ================================================================ */
+  report(text, hasAttachment) {
+    const whole = String(text || '');
+    const canSplit = typeof ReportBuilder !== 'undefined' && typeof ReportBuilder.splitActionPlan === 'function';
+    const split = canSplit ? ReportBuilder.splitActionPlan(whole) : { actionPlan: null, rest: whole };
+
+    const failures = [];
+    const ambiguousConcerns = [];
+
+    if (!split.actionPlan) {
+      failures.push('[우리 팀 실행 방향] 섹션이 없습니다 — 보고서 맨 위에 고정된 제목으로 이 섹션을 반드시 포함해야 합니다.');
+    } else {
+      const apResult = this._actionPlan(split.actionPlan, hasAttachment);
+      if (!apResult.ok) {
+        failures.push(...apResult.failures);
+      } else {
+        ambiguousConcerns.push(...apResult.ambiguousConcerns);
+      }
+    }
+
+    const detailText = split.actionPlan ? split.rest : whole;
+    const headingCount = this._countMatches(detailText, /^##\s+.+$/gm);
+    if (headingCount < 3) {
+      failures.push(`상세 보고서 구조(## 소제목)가 ${headingCount}개뿐입니다 — 논리적 흐름을 담은 소제목이 최소 3개 이상 필요합니다.`);
+    }
+
+    if (/\*\*\[.+?\]\*\*/.test(detailText)) {
       failures.push('전문가 이름을 소제목처럼 그대로 나열한 회의록 형태로 보입니다 — 한 사람이 자연스럽게 쓴 보고서처럼 통합되어야 합니다.');
     }
 
     if (failures.length) return this._fail(failures);
 
-    if (!/(담당|주체|절차|단계|순서|일정|기한)/.test(t)) {
+    if (!/(담당|주체|절차|단계|순서|일정|기한)/.test(detailText)) {
       ambiguousConcerns.push('실행 방법이 실제로 구체적인지(담당 주체/절차/일정 등) 키워드만으로 판별하기 어렵습니다.');
     }
 
     if (!hasAttachment) {
-      const fabricated = this._findFabricatedNumbers(t);
+      const fabricated = this._findFabricatedNumbers(detailText);
       if (fabricated.length) {
         ambiguousConcerns.push(`근거 없는 수치로 보이는 표현이 있습니다(${fabricated.slice(0, 3).join(', ')}) — 실제 근거가 있는 계산인지 애매합니다.`);
       }

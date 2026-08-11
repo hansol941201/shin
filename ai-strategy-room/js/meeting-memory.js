@@ -137,6 +137,26 @@ const MeetingMemory = {
    */
   extractSummary(report) {
     const t = String(report || '');
+
+    // [우리 팀 실행 방향] 섹션이 있으면(현재 버전 보고서) 거기서 바로 뽑는다 —
+    // 이미 "결론 한 줄"/"지금 당장 할 일"/"하지 말아야 할 것"으로 정리되어
+    // 있으므로 과거 회의 배너 미리보기용으로 훨씬 정확하다.
+    const apMatch = t.match(/^##\s*우리\s*팀\s*실행\s*방향\s*$/m);
+    if (apMatch) {
+      const apText = t.slice(apMatch.index);
+      const conclusion = this._extractActionPlanSub(apText, /결론\s*한\s*줄/);
+      const today = this._extractActionPlanSub(apText, /지금\s*당장\s*할\s*일/);
+      const order = this._extractActionPlanSub(apText, /실행\s*순서/);
+      const dontDo = this._extractActionPlanSub(apText, /하지\s*말아야\s*할\s*것/);
+
+      const conclusionSummary = this._preview(conclusion || apText, 220);
+      const keyActions = this._preview(today || order || '', 260);
+      const keyRisks = this._preview(dontDo || '', 200) || this._findRiskSentence(t);
+
+      return { conclusionSummary, keyActions, keyRisks };
+    }
+
+    // 과거 형식(실행 방향 섹션이 없는) 보고서 호환용 — 기존 방식 그대로 유지
     const sections = this._splitSections(t);
 
     const actionSection = sections.find((s) => /실행|방법|절차|전략|계획/.test(s.heading));
@@ -152,6 +172,23 @@ const MeetingMemory = {
     const conclusionSummary = this._preview(firstSection ? firstSection.body : t, 220);
 
     return { conclusionSummary, keyActions, keyRisks };
+  },
+
+  /** [우리 팀 실행 방향] 블록 안에서 "### N. 제목"에 해당하는 본문만 뽑는다 */
+  _extractActionPlanSub(actionPlanText, titleRe) {
+    const lines = String(actionPlanText || '').split('\n');
+    let capturing = false;
+    let body = [];
+    for (const line of lines) {
+      const m = line.match(/^###\s+(.+)$/);
+      if (m) {
+        if (capturing) break; // 다음 하위 제목을 만나면 종료
+        if (titleRe.test(m[1])) capturing = true;
+        continue;
+      }
+      if (capturing) body.push(line);
+    }
+    return body.join('\n').trim();
   },
 
   _splitSections(text) {
