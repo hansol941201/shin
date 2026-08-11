@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../state/store.jsx';
-import { addDays, dateKey, getWeekStart, isSameDay, startOfDay } from '../utils/time.js';
+import { addDays, dateKey, getWeekStart, isSameDay, startOfDay, computeFreeBlocks, formatHM } from '../utils/time.js';
 import { busyIntervalsForDay } from '../utils/eventHelpers.js';
 import RequestPopover from './RequestPopover.jsx';
 import PersonalEventPopover from './PersonalEventPopover.jsx';
@@ -38,11 +38,32 @@ function hasOverlap(busyIntervals, startMin, endMin) {
   return busyIntervals.some((b) => b.start < endMin && startMin < b.end);
 }
 
-// 월간 화면이 유일한 화면이다. 노란 "빈 시간" 박스/"+ 일정 배정" 문구는
-// 쓰지 않고, 날짜 칸의 빈 공간 자체가 클릭 가능한 "일정 추가" 버튼 역할을
-// 한다(호버 시에만 아주 작은 + 힌트를 보여줌). 이미 일정이 있는 칸도 빈
-// 공간을 클릭하면 새 일정을 추가할 수 있다. 기존 일정 칩 클릭은
-// stopPropagation으로 셀 클릭과 분리해 상세/수정 팝오버로만 이어진다.
+// 팀장 Google 일정(teamBusy)만 기준으로 "N시 이후 가능" 같은 짧은 요약을
+// 만든다. 한솔 개인 일정/요청은 팀장님의 실제 가능 여부와 무관하므로 절대
+// 섞지 않는다(요구사항: 가능 시간 계산은 항상 Google 캘린더 기준).
+function freeTimeLabel(teamBusy, settings) {
+  const free = computeFreeBlocks(teamBusy, settings);
+  if (free.length === 0) return null;
+  const workTotal = (settings.workEndMin - settings.workStartMin) - (settings.lunchEndMin - settings.lunchStartMin);
+  const freeTotal = free.reduce((sum, f) => sum + (f.end - f.start), 0);
+  if (freeTotal >= workTotal) return '종일 가능';
+  // 근무 종료 시각까지 이어지는 빈 시간이 있으면 "N시 이후 가능"
+  const trailing = free.find((f) => f.end >= settings.workEndMin);
+  if (trailing) {
+    return trailing.start % 60 === 0
+      ? `${Math.floor(trailing.start / 60)}시 이후 가능`
+      : `${formatHM(trailing.start)} 이후 가능`;
+  }
+  // 근무 시작 시각부터 이어지는 빈 시간만 있으면(오후에 일정이 있는 경우) "오전 가능"
+  if (free.some((f) => f.start <= settings.workStartMin)) return '오전 가능';
+  return null;
+}
+
+// 월간 화면이 유일한 화면이다. 날짜 칸의 빈 흰 공간을 클릭해도 아무 동작이
+// 없다 — 일정 추가는 반드시 각 칸의 `+` 버튼을 눌러야만 시작된다(예전에는
+// 빈 공간 전체가 클릭 가능한 "일정 추가" 버튼이었지만, 실수로 눌리는 것을
+// 막기 위해 명시적인 + 버튼 방식으로 바꿨다). 일정 카드 클릭은 + 버튼과는
+// 완전히 분리된 별도 요소라 상세/수정 팝오버로만 이어진다.
 // 시작/종료 시간은 30분 단위 선택지가 아니라 자유 입력(<input type="time">)
 // 이며, 근무시간(09~18시) 범위 밖이어도 그대로 등록/수정할 수 있다.
 export default function MonthView() {
@@ -79,7 +100,9 @@ export default function MonthView() {
     return events.filter((e) => visibleByRole(e) && isSameDay(new Date(e.start), d));
   }
 
-  function handleCellClick(d) {
+  // `+` 버튼을 눌렀을 때만 호출된다(빈 칸 클릭으로는 절대 호출되지 않음).
+  function handleAddClick(d, e) {
+    e.stopPropagation();
     setDetailPopover(null);
     const base = {
       day: d,
@@ -153,13 +176,28 @@ export default function MonthView() {
         {cells.map((d) => {
           const inMonth = d.getMonth() === monthAnchor.getMonth();
           const evts = dayEvents(d);
+          // 가능 시간 요약은 팀장 Google 일정만 기준으로 계산하고(한솔
+          // 개인/요청 일정 절대 섞지 않음), 너무 복잡해지지 않도록 한솔
+          // 화면에서만 보여준다.
+          const label = role === 'coordinator'
+            ? freeTimeLabel(busyIntervalsForDay(events.filter((e) => e.source === 'google'), d), settings)
+            : null;
           return (
             <div
               key={dateKey(d)}
               className={`month-cell${inMonth ? '' : ' month-cell-out'}${isSameDay(d, today) ? ' month-cell-today' : ''}`}
-              onClick={() => handleCellClick(d)}
             >
-              <div className="month-cell-date">{d.getDate()}</div>
+              <div className="month-cell-head">
+                <span className="month-cell-date">{d.getDate()}</span>
+                <button
+                  className="month-cell-add-btn"
+                  onClick={(e) => handleAddClick(d, e)}
+                  aria-label="일정 추가"
+                  title="일정 추가"
+                >
+                  +
+                </button>
+              </div>
               {evts.length > 0 && (
                 <div className="month-cell-events">
                   {evts.slice(0, 3).map((e) => (
@@ -178,7 +216,7 @@ export default function MonthView() {
                   {evts.length > 3 && <div className="month-more">+{evts.length - 3}</div>}
                 </div>
               )}
-              <span className="month-cell-plus-hint">+</span>
+              {label && <div className="month-cell-free">{label}</div>}
             </div>
           );
         })}

@@ -854,35 +854,48 @@ button, select, input, textarea {
   min-height: 0;
   overflow: hidden;
   background: #fff;
-  cursor: pointer;
+  /* 빈 공간 클릭은 이제 아무 동작이 없다 — 클릭 가능한 버튼처럼 보이지
+     않도록 기본 커서를 유지한다(일정 추가는 반드시 + 버튼으로만). */
+  cursor: default;
 }
 .month-cell-out { color: var(--text-faint); }
 .month-cell-out .month-cell-date { color: var(--text-faint); }
 .month-cell-today { background: var(--today-bg); }
-.month-cell-date { font-size: 14px; font-weight: 700; }
-.month-cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; flex: 0 0 auto; }
 
-/* 빈 공간 클릭 = 일정 추가. 평소엔 아무 표시도 없는 깨끗한 흰 칸으로 두고,
-   마우스를 올렸을 때만 우측 하단에 아주 작은 +를 살짝 보여준다. */
-.month-cell-plus-hint {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+.month-cell-head {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.month-cell-date { font-size: 14px; font-weight: 700; }
+
+/* 항상 보이는 작은 + 버튼 — 이 버튼을 눌렀을 때만 일정 추가가 시작된다. */
+.month-cell-add-btn {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-faint);
   font-size: 12px;
   line-height: 1;
-  color: var(--text-faint);
-  background: var(--navy-soft);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .12s;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
 }
-.month-cell:hover .month-cell-plus-hint { opacity: 1; }
+.month-cell-add-btn:hover { background: var(--navy-soft); color: var(--navy); border-color: var(--navy-soft); }
+
+.month-cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; flex: 0 0 auto; }
+
+/* 팀장 Google 일정을 분석한 "N시 이후 가능" 요약. 박스/배경색 없이 아주
+   작은 회색 텍스트로만 표시한다(한솔 화면에서만 노출). */
+.month-cell-free {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: auto;
+  padding-top: 2px;
+}
 
 .month-event-chip {
   display: flex;
