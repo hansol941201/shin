@@ -13,11 +13,12 @@ function chipClass(e) {
   return 'dot-confirmed';
 }
 
-// 분홍 칩 중에서도 상태를 아주 작은 글자로 구분해준다(승인대기는 배지 없음).
+// 분홍 칩 중에서도 상태를 아주 작은 글자로 구분해준다.
 function chipBadge(e) {
   if (e.source !== 'platform') return null;
   if (e.status === 'confirmed') return '확정';
   if (e.status === 'reschedule_requested') return '시간변경';
+  if (e.status === 'pending') return '승인대기';
   return null;
 }
 
@@ -47,17 +48,16 @@ export default function MonthView() {
   const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
 
   // 우측 상단 [팀장 | 한솔] 필터에 따라 보여줄 일정을 나눈다.
-  // - 팀장: 실제로 팀장님 캘린더에 잡혀 있는 확정 일정만(Google 기본 일정 +
-  //   한솔 요청이 수락되어 확정된 일정). 승인대기/시간변경/거절은 숨긴다.
+  // - 팀장: 팀장님의 실제 일정(Google 기본 일정) + 팀장님이 확인/처리해야
+  //   하는 한솔의 모든 요청(승인대기/시간변경/수락 완료)까지 전부 보여준다
+  //   — 승인대기를 캘린더에서 숨기면 놓치기 쉬우므로 반드시 표시한다.
   // - 한솔: 한솔이 팀장님께 요청한 일정만(승인대기/시간변경/수락 완료). 팀장이
   //   Google에 직접 등록한 일반 일정은 숨긴다.
   // source/requester는 store.jsx가 명시적으로 채워 넣는 값이라 여기서는
   // 그 값만 그대로 사용한다(ID/상태 추측 금지).
   function visibleByRole(e) {
     if (e.status === 'rejected') return false;
-    if (role === 'manager') {
-      return e.status === 'confirmed';
-    }
+    if (role === 'manager') return true;
     return e.source === 'platform';
   }
 
