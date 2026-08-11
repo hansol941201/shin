@@ -50,7 +50,18 @@ rem 항상 5173으로 고정한다(다른 포트로 자동 전환하지 않음).
 set "APP_PORT=5173"
 
 where curl >nul 2>nul
-if not errorlevel 1 (
+set "HAS_CURL=1"
+if errorlevel 1 set "HAS_CURL=0"
+
+set "BLOCK_PID="
+for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
+    if not defined BLOCK_PID set "BLOCK_PID=%%A"
+)
+
+if not defined BLOCK_PID goto port_is_free
+
+rem 1) 이미 우리 서버가 5173에서 정상 응답 중이면 그대로 재사용
+if "%HAS_CURL%"=="1" (
     curl --max-time 2 --silent --output NUL --fail "http://localhost:%APP_PORT%/" >nul 2>nul
     if not errorlevel 1 (
         echo [확인] 이미 5173에서 팀장 일정 서버가 실행 중입니다. 새로 켜지 않고 그 주소를 엽니다.
@@ -62,20 +73,35 @@ if not errorlevel 1 (
     )
 )
 
-netstat -ano | findstr /r /c:":%APP_PORT% .*LISTENING" >nul 2>nul
+rem 2) 응답은 없지만 team-schedule-app 프로젝트 소속 프로세스라면 멈춰버린
+rem    우리 서버로 보고 정리한 뒤 이어서 새로 시작한다.
+set "BLOCK_CMDLINE="
+for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=%BLOCK_PID%' -ErrorAction SilentlyContinue).CommandLine"`) do set "BLOCK_CMDLINE=%%L"
+
+echo %BLOCK_CMDLINE% | findstr /i /c:"team-schedule-app" >nul
 if not errorlevel 1 (
-    set "BLOCK_PID="
-    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
-        if not defined BLOCK_PID set "BLOCK_PID=%%A"
-    )
-    echo [오류] 5173 포트를 이미 다른 프로그램이 사용하고 있습니다. ^(PID %BLOCK_PID%^)
-    echo         Google 로그인이 깨지지 않도록 다른 포트로 자동 전환하지 않습니다.
-    echo         작업 관리자에서 해당 프로그램을 종료한 뒤 다시 실행해주세요.
-    echo.
-    pause
-    exit /b 1
+    echo [정리] 응답 없는 이전 팀장 일정 서버^(PID %BLOCK_PID%^)를 종료하고 새로 시작합니다.
+    taskkill /PID %BLOCK_PID% /F >nul 2>nul
+    del "%~dp0.server.lock" >nul 2>nul
+    timeout /t 1 /nobreak >nul
+    goto port_is_free
 )
 
+rem 3) 우리 프로젝트와 무관한 다른 프로그램 -> 중단, 이름/PID 안내
+set "BLOCK_NAME="
+for /f "usebackq delims=" %%N in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Process -Id %BLOCK_PID% -ErrorAction SilentlyContinue).ProcessName"`) do set "BLOCK_NAME=%%N"
+if not defined BLOCK_NAME set "BLOCK_NAME=알 수 없는 프로세스"
+
+echo [오류] 5173 포트를 다른 프로그램이 사용 중입니다.
+echo         프로세스: %BLOCK_NAME% ^(PID %BLOCK_PID%^)
+echo         Google 로그인이 깨지지 않도록 다른 포트로 자동 전환하지 않으며,
+echo         팀장 일정과 무관한 프로그램이라 임의로 종료하지도 않습니다.
+echo         위 프로그램을 직접 종료한 뒤 다시 실행해주세요.
+echo.
+pause
+exit /b 1
+
+:port_is_free
 echo [포트] %APP_PORT% 번 포트를 사용합니다.
 echo %APP_PORT%> "%~dp0.last_port"
 

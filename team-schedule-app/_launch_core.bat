@@ -11,9 +11,16 @@ cd /d "%~dp0"
 set "LOCK=%~dp0.server.lock"
 set "STATUS=%~dp0.launch_status"
 set "LOG=%~dp0.server.log"
+set "LAUNCHLOCK=%~dp0.launching.lock"
 
-> "%STATUS%" echo OK
+call :main
+set "MAIN_RC=%errorlevel%"
 
+rem 실행 도중 상태와 무관하게 "실행 중" 표시 락은 항상 정리한다.
+del "%LAUNCHLOCK%" >nul 2>nul
+exit /b %MAIN_RC%
+
+:main
 where node >nul 2>nul
 if errorlevel 1 (
     > "%STATUS%" echo ERROR
@@ -32,25 +39,32 @@ where curl >nul 2>nul
 set "HAS_CURL=1"
 if errorlevel 1 set "HAS_CURL=0"
 
-rem ---------- 이미 실행 중인 서버가 있으면 그대로 재사용 ----------
-set "REUSE=0"
-set "OLD_PORT="
-if exist "%LOCK%" (
-    for /f "usebackq tokens=1,2 delims==" %%K in ("%LOCK%") do (
-        if /i "%%K"=="PORT" set "OLD_PORT=%%L"
-    )
-    if defined OLD_PORT (
-        if "!HAS_CURL!"=="1" (
-            curl --max-time 2 --silent --output NUL --fail "http://localhost:!OLD_PORT!/" >nul 2>nul
-            if not errorlevel 1 set "REUSE=1"
-        )
-    )
+rem ---------- 중복 실행 방지: 다른 실행이 막 시작됐다면 잠깐 양보 ----------
+if exist "%LAUNCHLOCK%" (
+    timeout /t 3 /nobreak >nul
 )
+type nul > "%LAUNCHLOCK%"
 
-if "!REUSE!"=="1" (
-    start "" "http://localhost:!OLD_PORT!/"
+rem ---------- 5173 포트 상태 판별 ----------
+rem PORT_STATE: FREE(비어있음) / REUSE(우리 서버가 이미 응답 중) /
+rem             KILLED_STALE(우리 프로젝트의 오래된 프로세스, 정리하고 새로 시작) /
+rem             BLOCKED_OTHER(전혀 다른 프로그램, 중단)
+call :port_guard
+
+if "!PORT_STATE!"=="REUSE" (
+    start "" "http://localhost:5173/"
     > "%STATUS%" echo OK
     exit /b 0
+)
+
+if "!PORT_STATE!"=="BLOCKED_OTHER" (
+    > "%STATUS%" echo ERROR
+    >> "%STATUS%" echo 5173 포트를 다른 프로그램이 사용 중입니다.
+    >> "%STATUS%" echo 프로세스: !BLOCK_NAME! ^(PID !BLOCK_PID!^)
+    >> "%STATUS%" echo Google 로그인이 깨지지 않도록 다른 포트로 자동 전환하지 않으며,
+    >> "%STATUS%" echo 팀장 일정과 무관한 프로그램이라 임의로 종료하지도 않습니다.
+    >> "%STATUS%" echo 위 프로그램을 직접 종료한 뒤 다시 실행해주세요.
+    exit /b 1
 )
 
 rem ---------- 패키지 설치(없을 때만) ----------
@@ -63,27 +77,6 @@ if not exist "%~dp0node_modules" (
         >> "%STATUS%" echo 자세한 내용: team-schedule-app\.server.log 파일을 확인해주세요.
         exit /b 1
     )
-)
-
-rem ---------- 포트는 항상 5173으로 고정 ----------
-rem Google OAuth의 "승인된 자바스크립트 원본"이 포트까지 포함해 등록되어
-rem 있으므로, 다른 포트로 자동으로 넘어가면 로그인이 깨진다. 그래서
-rem 5173이 이미 우리 서버가 아닌 다른 프로그램에 의해 사용 중이면
-rem 다른 포트를 시도하지 않고 여기서 바로 멈춘다(위의 재사용 검사에서
-rem 이미 "우리 서버가 5173에서 응답 중"인 경우는 걸러지고 반환됐다).
-set "APP_PORT=5173"
-netstat -ano | findstr /r /c:":%APP_PORT% .*LISTENING" >nul 2>nul
-if not errorlevel 1 (
-    set "BLOCK_PID="
-    for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":%APP_PORT% .*LISTENING"') do (
-        if not defined BLOCK_PID set "BLOCK_PID=%%A"
-    )
-    > "%STATUS%" echo ERROR
-    >> "%STATUS%" echo 5173 포트를 이미 다른 프로그램이 사용하고 있어 팀장 일정 서버를 시작할 수 없습니다.
-    >> "%STATUS%" echo ^(사용 중인 프로세스 PID: !BLOCK_PID!^)
-    >> "%STATUS%" echo Google 로그인이 깨지지 않도록 다른 포트로 자동 전환하지 않습니다.
-    >> "%STATUS%" echo 작업 관리자에서 해당 프로그램을 종료한 뒤 다시 실행해주세요.
-    exit /b 1
 )
 
 rem ---------- 완전히 분리된 숨김 프로세스로 서버 시작 ----------
@@ -99,14 +92,14 @@ if not defined SERVER_PID (
     exit /b 1
 )
 
-> "%LOCK%" echo PORT=%APP_PORT%
+> "%LOCK%" echo PORT=5173
 >> "%LOCK%" echo PID=%SERVER_PID%
 
 rem ---------- 서버가 준비될 때까지 대기 후 브라우저 자동 실행 ----------
 set /a TRIES=0
 :wait_loop
 if "%HAS_CURL%"=="1" (
-    curl --max-time 2 --silent --output NUL --fail "http://localhost:%APP_PORT%/" >nul 2>nul
+    curl --max-time 2 --silent --output NUL --fail "http://localhost:5173/" >nul 2>nul
     if not errorlevel 1 goto ready
 ) else (
     if !TRIES! GEQ 5 goto ready
@@ -117,7 +110,7 @@ timeout /t 1 /nobreak >nul
 goto wait_loop
 
 :ready
-start "" "http://localhost:%APP_PORT%/"
+start "" "http://localhost:5173/"
 > "%STATUS%" echo OK
 exit /b 0
 
@@ -126,3 +119,45 @@ exit /b 0
 >> "%STATUS%" echo 서버가 60초 안에 준비되지 않았습니다.
 >> "%STATUS%" echo team-schedule-app\.server.log 파일에서 원인을 확인해주세요.
 exit /b 1
+
+rem ============================================================
+rem  :port_guard — 5173 포트를 누가 쓰고 있는지 판별해 PORT_STATE로 반환
+rem ============================================================
+:port_guard
+set "PORT_STATE=FREE"
+set "BLOCK_PID="
+set "BLOCK_NAME="
+set "BLOCK_CMDLINE="
+
+for /f "tokens=5" %%A in ('netstat -ano ^| findstr /r /c:":5173 .*LISTENING"') do (
+    if not defined BLOCK_PID set "BLOCK_PID=%%A"
+)
+if not defined BLOCK_PID exit /b 0
+
+rem 1) 이미 우리 서버가 5173에서 정상 응답 중이면 그대로 재사용
+if "!HAS_CURL!"=="1" (
+    curl --max-time 2 --silent --output NUL --fail "http://localhost:5173/" >nul 2>nul
+    if not errorlevel 1 (
+        set "PORT_STATE=REUSE"
+        exit /b 0
+    )
+)
+
+rem 2) 응답은 없지만 그 프로세스가 team-schedule-app 프로젝트 소속인지
+rem    명령줄(실행 경로)로 확인 -> 맞으면 멈춰버린 우리 서버로 간주하고 정리
+for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=!BLOCK_PID!' -ErrorAction SilentlyContinue).CommandLine"`) do set "BLOCK_CMDLINE=%%L"
+
+echo !BLOCK_CMDLINE! | findstr /i /c:"team-schedule-app" >nul
+if not errorlevel 1 (
+    taskkill /PID !BLOCK_PID! /F >nul 2>nul
+    timeout /t 1 /nobreak >nul
+    del "%LOCK%" >nul 2>nul
+    set "PORT_STATE=KILLED_STALE"
+    exit /b 0
+)
+
+rem 3) 우리 프로젝트와 무관한 다른 프로그램 -> 이름을 확인해 보고만 하고 중단
+for /f "usebackq delims=" %%N in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Process -Id !BLOCK_PID! -ErrorAction SilentlyContinue).ProcessName"`) do set "BLOCK_NAME=%%N"
+if not defined BLOCK_NAME set "BLOCK_NAME=알 수 없는 프로세스"
+set "PORT_STATE=BLOCKED_OTHER"
+exit /b 0

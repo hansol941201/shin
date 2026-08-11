@@ -8,3 +8,4 @@ dist/
 .server.log
 .launch_status
 .install_status
+.launching.lock

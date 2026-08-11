@@ -29,6 +29,7 @@ for %%P in (5173 5174 5175 5176 5177 5178 5179 5180 5181 5182 5183 5184) do (
 rem 바탕화면 아이콘의 "이미 실행 중이면 재사용" 판단이 꼬이지 않도록 정리
 del "%~dp0.server.lock" >nul 2>nul
 del "%~dp0.last_port" >nul 2>nul
+del "%~dp0.launching.lock" >nul 2>nul
 
 echo.
 if "!FOUND!"=="0" (
