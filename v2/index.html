@@ -577,7 +577,11 @@
   .lib-bulk-result-row{ display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); font-size:12.5px; }
   .lib-bulk-result-row:last-child{ border-bottom:none; }
   .lib-bulk-result-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
-  .lib-bulk-result-err{ font-size:11px; color:#B91C1C; }
+  .lib-bulk-result-err{ font-size:11px; color:#B91C1C; flex:1 1 auto; min-width:0; }
+  .lib-bulk-result-err.ok{ color:var(--text-muted); }
+  .lib-bulk-result-err.pending{ color:var(--text-muted); }
+  .lib-bulk-result-row{ flex-wrap:wrap; }
+  .lib-bulk-result-row [data-retry]{ flex:0 0 auto; }
   .lib-recent-label{ font-size:12px; font-weight:600; color:var(--text-muted); margin:16px 0 6px; }
   .lib-row{ display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
   .lib-row:hover{ background:#F0F1F4; }
@@ -9891,27 +9895,77 @@ ${text}
   const LIB_CATEGORIES = ['시방서','단가표','실적자료','공법소개서','회사소개서','카탈로그','협약자료','공고문양식','교육자료','기타'];
   const LIB_ACCEPT = '.pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.jpg,.jpeg,.png,.webp,.zip';
 
+  // categorizeLibError: 실제로 던져진 에러(err.code/err.message)를 사람이 읽을 수 있는
+  // 카테고리+구체적 사유 문구로 정직하게 매핑한다. 추측이 아니라 위 saveLibraryFile/addDoc/
+  // replaceFile/uploadToStorage가 실제로 던지는 code 값만 기준으로 분기한다 — 없는 code를
+  // 지어내지 않고, 매칭되지 않으면 "기타"로 원본 메시지를 그대로 보여준다.
+  function categorizeLibError(err){
+    const code = (err && err.code) || '';
+    const msg = (err && err.message) || String(err || '');
+    if(code === 'SIZE_LIMIT'){
+      return { category:'파일 크기 제한', reason:'이 기기 임시 저장 한도(2MB)를 초과했습니다. 클라우드 로그인 후 다시 시도하면 용량 제한 없이 업로드됩니다.' };
+    }
+    if(code === 'LOCAL_STORAGE_QUOTA_EXCEEDED'){
+      return { category:'기타', reason:'이 브라우저의 저장 공간이 가득 차 파일을 저장하지 못했습니다(다른 자료를 정리하거나 클라우드 로그인 후 다시 시도해주세요).' };
+    }
+    if(code === 'NOT_AUTHENTICATED'){
+      return { category:'인증 오류', reason:'클라우드 로그인이 확인되지 않았습니다. 사이트 잠금을 해제해 로그인한 뒤 다시 시도해주세요.' };
+    }
+    if(code === 'READ_FAILED'){
+      return { category:'기타', reason:'파일을 읽는 중 오류가 발생했습니다(' + (msg || '알 수 없는 오류') + ').' };
+    }
+    if(code === 'NOT_FOUND'){
+      return { category:'기타', reason:'대상 자료를 찾을 수 없습니다(이미 삭제되었을 수 있습니다).' };
+    }
+    if(/^storage\//.test(code)){
+      if(/network|timeout|unavailable/i.test(code)){
+        return { category:'네트워크 오류', reason:'Firebase Storage 네트워크 오류: ' + code };
+      }
+      if(/unauthorized|unauthenticated/i.test(code)){
+        return { category:'인증 오류', reason:'Firebase Storage 인증 오류: ' + code };
+      }
+      return { category:'Storage 오류', reason:'Firebase Storage 업로드 오류: ' + code };
+    }
+    if(/network|fetch|Failed to fetch|ERR_/i.test(msg) || /network/i.test(code)){
+      return { category:'네트워크 오류', reason:'네트워크 오류로 업로드하지 못했습니다: ' + (msg || code) };
+    }
+    return { category:'기타', reason:(msg || code || '알 수 없는 오류') };
+  }
+
   function readArr(key){ try{ const raw = localStorage.getItem(key); const a = raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-  function writeArr(key, arr){ try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('[자료실] 저장 실패', key, e); } }
+  // [버그 수정 — 폴더 일괄등록 "일부만 등록됨" 라운드] writeArr/writeObj는 localStorage 용량
+  // 초과(QuotaExceededError) 시 예외를 그냥 console.error로만 삼키고 성공한 것처럼 undefined를
+  // 반환했다 — 그 결과 addDoc()/replaceFile()이 "저장 성공"으로 착각하고 fileStored:true 메타
+  // 데이터를 그대로 기록해, 실제로는 파일 바이트가 하나도 저장되지 않은 "가짜 성공" 레코드가
+  // 생겼다(성공 카운트에는 포함되지만 나중에 다운로드하면 CASE C로 떨어지는 유령 레코드). 이제
+  // 실제 저장 성공 여부를 boolean으로 반환해 호출부가 진짜로 실패를 알 수 있게 한다.
+  function writeArr(key, arr){ try{ localStorage.setItem(key, JSON.stringify(arr)); return true; }catch(e){ console.error('[자료실] 저장 실패', key, e); return false; } }
   function readObj(key){ try{ const raw = localStorage.getItem(key); const o = raw?JSON.parse(raw):{}; return (o && typeof o==='object')?o:{}; }catch(e){ return {}; } }
-  function writeObj(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){ console.error('[자료실] 저장 실패(용량 초과 가능)', key, e); } }
+  function writeObj(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); return true; }catch(e){ console.error('[자료실] 저장 실패(용량 초과 가능)', key, e); return false; } }
   function genId(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
   function nowIso(){ return new Date().toISOString(); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function norm(s){ return (s == null ? '' : String(s)).trim().toLowerCase(); }
 
   function loadDocs(){ return readArr(LIB_KEY); }
+  // saveDocs: 이제 실제 localStorage 저장 성공 여부를 boolean으로 반환한다(위 writeArr 수정과
+  // 짝) — 호출부(addDoc/replaceFile)가 이 값을 반드시 확인해 실패 시 메타데이터를 "성공"으로
+  // 취급하지 않도록 한다.
   function saveDocs(list){
-    writeArr(LIB_KEY, list);
+    const ok = writeArr(LIB_KEY, list);
     // [Storage 연결 라운드에서 추가] 다른 기존 모듈(companies/tasks/memos 등)과 완전히 동일한
     // 패턴 — 새 동기화 메커니즘을 만들지 않고, 이미 있는 push 함수를 그대로 호출한다. 로그인
     // 전/[클라우드 동기화 시작] 버튼을 아직 누르지 않은 상태에서는 noopPush라 아무 일도 하지
-    // 않고, 값이 비어있으면 pushToCloud 내부의 isEmptyVal 가드가 막는다(§15).
-    if(window.__shin2CloudSync) window.__shin2CloudSync.push('library', list);
+    // 않고, 값이 비어있으면 pushToCloud 내부의 isEmptyVal 가드가 막는다(§15). 로컬 저장 자체가
+    // 실패했으면(ok===false) 클라우드로도 절대 밀어보내지 않는다 — 로컬에 없는 상태를 클라우드에
+    // 전파하지 않기 위함.
+    if(ok && window.__shin2CloudSync) window.__shin2CloudSync.push('library', list);
+    return ok;
   }
   function findDoc(id){ return loadDocs().find(d=> d.id === id) || null; }
   function getBlob(id){ const blobs = readObj(LIB_BLOB_KEY); return blobs[id] || ''; }
-  function writeBlob(id, dataUrl){ const blobs = readObj(LIB_BLOB_KEY); blobs[id] = dataUrl; writeObj(LIB_BLOB_KEY, blobs); }
+  // writeBlob: 실제 저장 성공 여부를 boolean으로 반환한다(§ 위 버그 수정과 짝).
+  function writeBlob(id, dataUrl){ const blobs = readObj(LIB_BLOB_KEY); blobs[id] = dataUrl; return writeObj(LIB_BLOB_KEY, blobs); }
   function removeBlob(id){ const blobs = readObj(LIB_BLOB_KEY); delete blobs[id]; writeObj(LIB_BLOB_KEY, blobs); }
 
   // saveLibraryFile: 실제 파일 바이트를 저장하는 유일한 진입점.
@@ -9952,7 +10006,17 @@ ${text}
   function addDoc(file, meta, onProgress, opts){
     const id = genId('lib');
     return saveLibraryFile(id, file, onProgress, opts).then(result=>{
-      if(result.dataUrl) writeBlob(id, result.dataUrl); // 클라우드 업로드 성공 시에는 로컬 blob을 만들지 않는다.
+      // [버그 수정] result.dataUrl이 있을 때(로컬 폴백) writeBlob()의 실제 성공 여부를 반드시
+      // 확인한다 — localStorage 용량 초과로 파일 바이트 저장이 실패했는데도 메타데이터만
+      // "성공"으로 기록하면, 목록에는 보이지만 실제로는 파일이 어디에도 없는 유령 레코드가
+      // 생긴다(§ 고아 메타데이터 금지 위반). 이 경우 메타데이터를 아예 쓰지 않고 명확한 에러로
+      // reject한다 — 호출부(폴더 일괄등록 결과 화면 등)가 "실패"로 정직하게 표시하도록.
+      if(result.dataUrl){
+        const blobOk = writeBlob(id, result.dataUrl);
+        if(!blobOk){
+          throw Object.assign(new Error('LOCAL_STORAGE_QUOTA_EXCEEDED'), { code:'LOCAL_STORAGE_QUOTA_EXCEEDED' });
+        }
+      }
       const now = nowIso();
       const rec = {
         id,
@@ -9974,7 +10038,16 @@ ${text}
       };
       // 업로드(또는 로컬 저장)가 "성공"한 뒤에만 메타데이터를 쓴다 — 실패한 파일의 메타데이터는
       // 절대 만들지 않는다(§ 고아 메타데이터 금지, 위 saveLibraryFile의 reject가 여기 도달을 막음).
-      const list = loadDocs(); list.push(rec); saveDocs(list);
+      const list = loadDocs(); list.push(rec);
+      const metaOk = saveDocs(list);
+      if(!metaOk){
+        // [버그 수정] 메타데이터 배열 저장도 localStorage 용량 초과로 실패할 수 있다 — 이때는
+        // 방금 쓴 blob(있다면)을 롤백해 "파일은 있는데 메타데이터는 없는" 고아 blob도 남기지
+        // 않는다. 메타데이터가 없으면 목록에 아예 나타나지 않으므로 이 blob은 어차피 죽은
+        // 데이터라 정리한다.
+        if(result.dataUrl) removeBlob(id);
+        throw Object.assign(new Error('LOCAL_STORAGE_QUOTA_EXCEEDED'), { code:'LOCAL_STORAGE_QUOTA_EXCEEDED' });
+      }
       return rec;
     });
   }
@@ -9999,8 +10072,19 @@ ${text}
       const list = loadDocs();
       const rec = list.find(d=> d.id === id);
       if(!rec) throw new Error('NOT_FOUND');
+      // [버그 수정] 새 blob을 쓰기 전에 기존 blob을 기억해둔다 — 아래에서 blob/메타데이터 쓰기가
+      // 용량 초과로 실패하면 이 값으로 되돌려 "메타데이터는 옛 파일을 가리키는데 blob은 이미
+      // 새 내용으로 덮였다" 같은 불일치 상태를 남기지 않는다.
+      const oldDataUrl = D.getBlob(id);
       // 새 파일 저장이 성공한 뒤에만 기존 파일을 덮어쓴다(원래 id 그대로 재사용 — 교체이지 신규 추가가 아님).
-      if(result.dataUrl) writeBlob(id, result.dataUrl); else removeBlob(id); // 클라우드로 교체됐으면 예전 로컬 blob은 정리
+      if(result.dataUrl){
+        const blobOk = writeBlob(id, result.dataUrl);
+        if(!blobOk){
+          throw Object.assign(new Error('LOCAL_STORAGE_QUOTA_EXCEEDED'), { code:'LOCAL_STORAGE_QUOTA_EXCEEDED' });
+        }
+      } else {
+        removeBlob(id); // 클라우드로 교체됐으면 예전 로컬 blob은 정리
+      }
       rec.originalFileName = file.name;
       rec.storagePath = result.storagePath;
       rec.mimeType = file.type || '';
@@ -10008,7 +10092,12 @@ ${text}
       rec.fileStored = true;
       rec.localOnly = result.localOnly;
       rec.updatedAt = nowIso();
-      saveDocs(list);
+      const metaOk = saveDocs(list);
+      if(!metaOk){
+        // 메타데이터 갱신이 실패했으면 방금 덮어쓴 blob도 원래대로 되돌린다(불일치 방지).
+        if(result.dataUrl){ if(oldDataUrl) writeBlob(id, oldDataUrl); else removeBlob(id); }
+        throw Object.assign(new Error('LOCAL_STORAGE_QUOTA_EXCEEDED'), { code:'LOCAL_STORAGE_QUOTA_EXCEEDED' });
+      }
       return rec;
     });
   }
@@ -10376,16 +10465,15 @@ ${text}
         saveBtn.disabled = false;
         saveBtn.textContent = '저장';
         const code = err && err.code;
+        const cat = categorizeLibError(err);
         errBox.style.display = 'block';
         if(code === 'SIZE_LIMIT'){
-          errBox.textContent = '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 로그인 후 다시 시도해주세요.';
+          errBox.textContent = '[' + cat.category + '] ' + cat.reason;
           return;
         }
         // 업로드/저장 실패는 절대 조용히 로컬로 대체되지 않는다 — 재시도 또는 사용자가 직접
         // "이 기기에만 저장"을 눌러야만 로컬 폴백으로 진행된다(§ 안전 규칙).
-        errBox.textContent = wasCloudAttempt
-          ? '업로드에 실패했습니다. 입력한 내용은 그대로 남아 있습니다. '
-          : '저장에 실패했습니다. 입력한 내용은 그대로 남아 있습니다. ';
+        errBox.textContent = '[' + cat.category + '] ' + cat.reason + ' ';
         const retryBtn = document.createElement('button');
         retryBtn.type = 'button'; retryBtn.className = 'co-text-action'; retryBtn.textContent = '[다시 시도]';
         retryBtn.addEventListener('click', ()=> trySave(opts));
@@ -10609,81 +10697,120 @@ ${text}
 
   // runBulkUpload: 체크된 파일들을 제한된 병렬(3개)로 기존 D.addDoc()에 그대로 위임해 업로드한다
   // (§8). 개별 실패가 나머지 파일 처리를 막지 않고, 이미 성공한 파일을 되돌리지 않는다(§8, §9).
+  // [UI 개선 라운드] 파일별 상태(대기/업로드 중/완료/실패+구체적 사유)를 배치 진행 중에도
+  // 실시간으로 보여준다 — 끝날 때까지 카운트만 보이던 이전 방식과 달리, 어느 파일이 지금
+  // 어떤 상태인지 사용자가 중간에도 알 수 있다. state.status: 'pending'|'uploading'|'ok'|'fail'.
   function runBulkUpload(overlay, checkedItems, commonMeta){
     const modal = overlay.querySelector('.kb-modal');
-    modal.innerHTML = `
-      <div class="kb-modal-title">폴더 일괄 등록 — 등록 중...</div>
-      <div class="lib-bulk-summary" id="libBulkProgressLabel">0 / ${checkedItems.length} 처리됨</div>
-    `;
+    const state = checkedItems.map(it=> ({ it, status:'pending', errInfo:null }));
 
-    const tasks = checkedItems.map(it=> ()=> D.addDoc(it.file, {
-      title: (it.title || '').trim() || it.file.name,
-      category: commonMeta.category,
-      workType: commonMeta.workType
-    }, null, {}));
+    function statusLabel(s){
+      if(s.status==='pending') return '대기';
+      if(s.status==='uploading') return '업로드 중';
+      if(s.status==='ok') return '업로드 완료';
+      return '업로드 실패' + (s.errInfo ? ` (${s.errInfo.category}: ${s.errInfo.reason})` : '');
+    }
+    function statusRowsHtml(){
+      return state.map((s,i)=> `<div class="lib-bulk-result-row" data-status-idx="${i}">
+        <span class="lib-bulk-status ${s.status==='ok'?'ok':s.status==='fail'?'fail':''}">${s.status==='ok'?'✓':s.status==='fail'?'✕':'…'}</span>
+        <span class="lib-bulk-result-name" title="${esc(s.it.file.name)}">${esc(s.it.file.name)}</span>
+        <span class="lib-bulk-result-err ${s.status==='ok'?'ok':(s.status==='pending'||s.status==='uploading')?'pending':''}">${esc(statusLabel(s))}</span>
+      </div>`).join('');
+    }
+    function renderProgress(){
+      const doneCount = state.filter(s=> s.status==='ok' || s.status==='fail').length;
+      modal.innerHTML = `
+        <div class="kb-modal-title">폴더 일괄 등록 — 등록 중...</div>
+        <div class="lib-bulk-summary">${doneCount} / ${state.length} 처리됨</div>
+        <div class="lib-bulk-result-list">${statusRowsHtml()}</div>
+      `;
+    }
+    renderProgress();
 
-    let processed = 0;
-    const progressLabel = modal.querySelector('#libBulkProgressLabel');
-    libRunLimited(tasks, 3, ()=>{
-      processed++;
-      if(progressLabel) progressLabel.textContent = `${processed} / ${checkedItems.length} 처리됨`;
-    }).then(results=>{
-      renderBulkResult(overlay, checkedItems, results, commonMeta);
+    const tasks = state.map(s=> ()=>{
+      s.status = 'uploading';
+      renderProgress();
+      return D.addDoc(s.it.file, {
+        title: (s.it.title || '').trim() || s.it.file.name,
+        category: commonMeta.category,
+        workType: commonMeta.workType
+      }, null, {});
+    });
+
+    libRunLimited(tasks, 3, (i, r)=>{
+      state[i].status = r.ok ? 'ok' : 'fail';
+      state[i].errInfo = r.ok ? null : categorizeLibError(r.error);
+      renderProgress();
+    }).then(()=>{
+      renderBulkResult(overlay, state, commonMeta);
       renderAll();
     });
   }
 
-  function renderBulkResult(overlay, checkedItems, results, commonMeta){
+  function renderBulkResult(overlay, state, commonMeta){
     const modal = overlay.querySelector('.kb-modal');
-    const successCount = results.filter(r=> r.ok).length;
-    const failCount = results.length - successCount;
-    const failRowsHtml = results.map((r, i)=>{
-      if(r.ok) return '';
-      const it = checkedItems[i];
-      return `<div class="lib-bulk-result-row" data-fail-idx="${i}">
+    function successCount(){ return state.filter(s=> s.status==='ok').length; }
+    function failedList(){ return state.filter(s=> s.status==='fail'); }
+
+    function rowHtml(s, i){
+      if(s.status==='ok') return `<div class="lib-bulk-result-row" data-status-idx="${i}">
+        <span class="lib-bulk-status ok">✓</span>
+        <span class="lib-bulk-result-name" title="${esc(s.it.file.name)}">${esc(s.it.file.name)}</span>
+        <span class="lib-bulk-result-err ok">업로드 완료</span>
+      </div>`;
+      return `<div class="lib-bulk-result-row" data-status-idx="${i}">
         <span class="lib-bulk-status fail">✕</span>
-        <span class="lib-bulk-result-name">${esc(it.file.name)}</span>
-        <span class="lib-bulk-result-err">${esc((r.error && (r.error.code || r.error.message)) || '실패')}</span>
+        <span class="lib-bulk-result-name" title="${esc(s.it.file.name)}">${esc(s.it.file.name)}</span>
+        <span class="lib-bulk-result-err">[${esc(s.errInfo.category)}] ${esc(s.errInfo.reason)}</span>
         <button type="button" class="co-text-action" data-retry="${i}">[다시 업로드]</button>
       </div>`;
-    }).join('');
-    modal.innerHTML = `
-      <div class="kb-modal-title">폴더 일괄 등록 — 결과</div>
-      <div class="lib-bulk-summary">성공 ${successCount} / 실패 ${failCount}</div>
-      <div class="lib-bulk-result-list" id="libBulkResultList">${failRowsHtml || ''}</div>
-      <div class="kb-form-actions">
-        <div></div>
-        <div class="kb-form-actions-right">
-          <button type="button" class="ai-run-btn" id="libBulkDone">완료</button>
+    }
+    function renderList(){
+      const fc = failedList().length;
+      modal.innerHTML = `
+        <div class="kb-modal-title">폴더 일괄 등록 — 결과</div>
+        <div class="lib-bulk-summary" id="libBulkResultSummary">성공 ${successCount()} / 실패 ${fc}</div>
+        <div class="lib-bulk-result-list" id="libBulkResultList">${state.map(rowHtml).join('')}</div>
+        <div class="kb-form-actions">
+          <div>${fc>0 ? `<button type="button" class="kb-text-action" id="libBulkRetryAllBtn">[실패 ${fc}개 다시 업로드]</button>` : ''}</div>
+          <div class="kb-form-actions-right">
+            <button type="button" class="ai-run-btn" id="libBulkDone">완료</button>
+          </div>
         </div>
-      </div>
-    `;
-    modal.querySelector('#libBulkDone').addEventListener('click', ()=> overlay.remove());
-    modal.querySelectorAll('[data-retry]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const i = Number(btn.getAttribute('data-retry'));
-        const it = checkedItems[i];
-        btn.disabled = true;
-        btn.textContent = '재시도 중...';
-        // 이 파일 하나만 다시 시도한다 — 이미 성공한 다른 파일들은 절대 재실행하지 않는다(§9).
-        D.addDoc(it.file, {
-          title: (it.title || '').trim() || it.file.name,
+      `;
+      modal.querySelector('#libBulkDone').addEventListener('click', ()=> overlay.remove());
+      const retryAllBtn = modal.querySelector('#libBulkRetryAllBtn');
+      if(retryAllBtn) retryAllBtn.addEventListener('click', ()=> retryOne(null, retryAllBtn));
+      modal.querySelectorAll('[data-retry]').forEach(btn=>{
+        btn.addEventListener('click', ()=> retryOne(Number(btn.getAttribute('data-retry')), btn));
+      });
+    }
+
+    // retryOne(i, btn): i===null이면 현재 실패 상태인 항목 전체를 재시도한다 — 이미 성공(ok)한
+    // 항목은 절대 다시 건드리지 않는다(§9, 중복 방지). i가 지정되면 그 파일 하나만 재시도한다.
+    function retryOne(i, btn){
+      const targets = (i===null) ? state.map((s,idx)=> idx).filter(idx=> state[idx].status==='fail') : [i];
+      if(!targets.length) return;
+      btn.disabled = true;
+      btn.textContent = '재시도 중...';
+      Promise.all(targets.map(idx=>{
+        const s = state[idx];
+        return D.addDoc(s.it.file, {
+          title: (s.it.title || '').trim() || s.it.file.name,
           category: commonMeta.category,
           workType: commonMeta.workType
         }, null, {}).then(()=>{
-          results[i] = { ok:true };
-          const row = modal.querySelector(`[data-fail-idx="${i}"]`);
-          if(row) row.remove();
-          const remainingFail = results.filter(r=> !r.ok).length;
-          const successNow = results.filter(r=> r.ok).length;
-          modal.querySelector('.lib-bulk-summary').textContent = `성공 ${successNow} / 실패 ${remainingFail}`;
-          renderAll();
-        }).catch(()=>{
-          btn.disabled = false;
-          btn.textContent = '[다시 업로드]';
+          s.status = 'ok'; s.errInfo = null;
+        }).catch(err=>{
+          s.status = 'fail'; s.errInfo = categorizeLibError(err);
         });
+      })).then(()=>{
+        renderList();
+        renderAll();
       });
-    });
+    }
+
+    renderList();
   }
 
   const libBulkAddBtn = document.getElementById('libBulkAddBtn');
@@ -10782,17 +10909,16 @@ ${text}
         renderAll();
       }).catch(err=>{
         const code = err && err.code;
+        const cat = categorizeLibError(err);
         eErrBox.style.display = 'block';
         if(code === 'SIZE_LIMIT'){
-          eErrBox.textContent = '이 파일은 로컬 저장 한도(2MB)를 초과합니다. 기존 파일은 그대로 유지됩니다. 클라우드 로그인 후 다시 시도해주세요.';
+          eErrBox.textContent = '[' + cat.category + '] ' + cat.reason + ' 기존 파일은 그대로 유지됩니다.';
           efFile.value = '';
           return;
         }
         // 실패해도 기존 파일/메타데이터는 그대로 유지된다(§9) — 여기서도 조용히 로컬로
         // 대체하지 않고, 재시도 또는 명시적 "이 기기에만 저장"만 다음 시도를 진행시킨다.
-        eErrBox.textContent = wasCloudAttempt
-          ? '업로드에 실패했습니다. 기존 파일은 그대로 유지됩니다. '
-          : '저장에 실패했습니다. 기존 파일은 그대로 유지됩니다. ';
+        eErrBox.textContent = '[' + cat.category + '] ' + cat.reason + ' 기존 파일은 그대로 유지됩니다. ';
         const retryBtn = document.createElement('button');
         retryBtn.type = 'button'; retryBtn.className = 'co-text-action'; retryBtn.textContent = '[다시 시도]';
         retryBtn.addEventListener('click', ()=> tryReplace(f, opts));
