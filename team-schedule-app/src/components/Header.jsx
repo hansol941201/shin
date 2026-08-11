@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useApp } from '../state/store.jsx';
 import { formatMonthLabel } from '../utils/time.js';
 import Legend from './Legend.jsx';
+import SummaryCards from './SummaryCards.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
 
@@ -246,6 +247,8 @@ export default function Header() {
 
         {settingsAnchor && <SettingsPopover anchor={settingsAnchor} onClose={() => setSettingsAnchor(null)} />}
       </header>
+
+      <SummaryCards />
 
       {bannerMessage && (
         <div className="google-error-banner">{bannerMessage}</div>

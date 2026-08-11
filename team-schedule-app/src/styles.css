@@ -169,6 +169,36 @@ button, select, input, textarea {
 .legend-pending { background: var(--own-bg); border: 1px solid var(--own-border); }
 .legend-woodpecker { width: 16px; height: 16px; object-fit: contain; }
 
+/* ---------- 상단 요약 카드: 팀장/한솔 필터에 따라 숫자가 바뀐다 ---------- */
+.summary-bar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.summary-card-icon { width: 18px; height: 18px; object-fit: contain; }
+.summary-card-label { font-size: 12.5px; }
+.summary-card-num { font-size: 15px; font-weight: 800; }
+.summary-card-confirmed {
+  background: var(--confirmed-bg);
+  color: var(--navy);
+  border-left: 3px solid var(--confirmed-border);
+}
+.summary-card-pending {
+  background: var(--own-bg);
+  color: var(--own-text);
+  border: 1px solid var(--own-border);
+}
+
 /* ---------- Main area ---------- */
 .main-area {
   flex: 1 1 auto;
