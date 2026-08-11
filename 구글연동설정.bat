@@ -140,11 +140,11 @@ del "%TARGET_DIR%\.launching.lock" >nul 2>nul
 timeout /t 1 /nobreak >nul
 echo.
 
-echo 아래 폴더에서 새 서버를 이 창에 직접 띄웁니다
-echo ^(숨겨진 창이 아니라 바로 이 창에 Vite 로그가 그대로 표시됩니다^):
+echo 아래 폴더에서 최신 코드를 빌드한 뒤 이 창에 직접 서버를 띄웁니다
+echo ^(숨겨진 창이 아니라 바로 이 창에 로그가 그대로 표시됩니다^):
 echo   %TARGET_DIR%
 echo.
-echo 잠시 후 브라우저가 자동으로 열립니다. 열리면 ⚙^(설정^) 클릭 후
+echo 잠시 후 앱 창이 자동으로 열립니다. 열리면 ⚙^(설정^) 클릭 후
 echo "개발자 진단"에서 아래가 모두 "예"로 보이는지 확인해주세요:
 echo   - 환경변수 로드됨
 echo   - Client ID 형식 정상
@@ -156,17 +156,26 @@ echo ============================================
 echo.
 
 if exist "%TARGET_DIR%\_wait_and_open.bat" (
-    start "팀장 일정 조율 캘린더 - 브라우저 대기" /min "%TARGET_DIR%\_wait_and_open.bat" 5173
+    start "팀장 일정 조율 캘린더 - 앱 창 대기" /min "%TARGET_DIR%\_wait_and_open.bat" 5173
 )
 
 cd /d "%TARGET_DIR%"
-call npm run dev -- --port 5173 --strictPort
+echo [빌드] production build를 만드는 중입니다...
+call npm run build
+if errorlevel 1 (
+    cd /d "%SELF_DIR%"
+    echo.
+    echo [오류] 빌드^(npm run build^) 중 오류가 발생했습니다. 위 메시지를 확인해주세요.
+    exit /b 1
+)
+echo [실행] 정적 서버^(vite preview^)를 시작합니다...
+call npm run preview -- --port 5173 --strictPort
 set "DEV_EXIT=%errorlevel%"
 cd /d "%SELF_DIR%"
 
 echo.
 if not "%DEV_EXIT%"=="0" (
-    echo [오류] 개발 서버 실행 중 오류가 발생했습니다^(종료 코드: %DEV_EXIT%^).
+    echo [오류] 서버 실행 중 오류가 발생했습니다^(종료 코드: %DEV_EXIT%^).
     echo        위쪽의 오류 메시지를 확인해주세요.
     exit /b 1
 )

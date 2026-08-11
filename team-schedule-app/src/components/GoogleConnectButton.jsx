@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useApp } from '../state/store.jsx';
 import PopoverShell from './PopoverShell.jsx';
+import { hasEverConnectedGoogle } from '../services/googleAuth.js';
 
 // 상단 헤더에 항상 보이는 Google 연결 상태 버튼.
 // 상태(미설정/형식오류/미로그인/로그인됨)와 무관하게 절대 사라지지 않으며,
@@ -13,6 +14,7 @@ export default function GoogleConnectButton() {
     googleSignedIn,
     googleUserEmail,
     googleAuthLoading,
+    googleRestoring,
     signInGoogle,
     signOutGoogle,
   } = useApp();
@@ -34,7 +36,12 @@ export default function GoogleConnectButton() {
     signInGoogle();
   }
 
-  let label = 'Google 캘린더 연결';
+  // 이전에 한 번이라도 연결에 성공했던 사용자면 "다시 연결"로, 완전히
+  // 처음이면 "연결"로 문구를 구분한다(요구된 UX: 정상 연결 상태에서는
+  // 버튼을 작게, 끊겼을 때만 "다시 연결"로 안내).
+  const isReconnect = hasEverConnectedGoogle();
+
+  let label = isReconnect ? 'Google 다시 연결' : 'Google 캘린더 연결';
   let extraClass = '';
   if (!googleConfigured) {
     label = 'Google 미설정';
@@ -45,6 +52,9 @@ export default function GoogleConnectButton() {
   } else if (googleSignedIn) {
     label = 'Google 연결됨';
     extraClass = 'google-btn-connected';
+  } else if (googleRestoring) {
+    label = '연결 확인 중…';
+    extraClass = 'google-btn-disabled';
   } else if (googleAuthLoading) {
     label = '연결 중…';
   }
@@ -56,7 +66,7 @@ export default function GoogleConnectButton() {
         type="button"
         className={`google-btn ${extraClass}`}
         onClick={handleClick}
-        disabled={googleAuthLoading}
+        disabled={googleAuthLoading || googleRestoring}
         title={
           !googleConfigured
             ? 'Google 연동이 설정되지 않았습니다. 클릭해서 설정 방법을 확인하세요.'
@@ -64,6 +74,8 @@ export default function GoogleConnectButton() {
             ? 'Client ID 형식이 올바르지 않습니다. 클릭해서 자세히 보기.'
             : googleSignedIn
             ? '클릭하면 연결이 해제됩니다'
+            : googleRestoring
+            ? '이전 연결 정보를 확인하는 중입니다…'
             : 'Google 캘린더에 연결합니다'
         }
       >

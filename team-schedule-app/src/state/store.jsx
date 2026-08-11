@@ -14,6 +14,9 @@ import {
   saveSession,
   loadSession,
   clearSession,
+  hasEverConnectedGoogle,
+  markEverConnectedGoogle,
+  clearEverConnectedGoogle,
 } from '../services/googleAuth.js';
 import {
   getDemoModeFlag,
@@ -199,6 +202,10 @@ export function AppProvider({ children }) {
   const [googleEvents, setGoogleEvents] = useState([]);
   const [googleEventsLoading, setGoogleEventsLoading] = useState(false);
   const [googleEventsError, setGoogleEventsError] = useState('');
+  // 앱을 새로 열었을 때 "이전에 연결한 적이 있는데 조용히 재연결을 시도
+  // 중"인지 표시하기 위한 상태. 이 동안은 "Google 캘린더 연결" 버튼을
+  // 성급하게 노출하지 않는다(잠깐 껐다 켰다 하는 것처럼 보이는 걸 방지).
+  const [googleRestoring, setGoogleRestoring] = useState(hasEverConnectedGoogle());
 
   const googleActive = GOOGLE_CONFIGURED && googleSignedIn && Boolean(managerCalendarId) && Boolean(accessToken);
 
@@ -216,14 +223,60 @@ export function AppProvider({ children }) {
     setCalendars(res.calendars);
   }, []);
 
-  // 탭을 새로고침해도(같은 세션 안에서는) 다시 로그인하지 않도록 세션 복원 시도
+  // 앱을 껐다가 다시 켜도(데스크톱 앱 창을 새로 열어도) 매번 "Google 캘린더
+  // 연결"을 다시 누를 필요가 없도록 세션 복원을 시도한다.
+  // 1) 아직 유효한 토큰이 로컬에 남아있으면 그대로 복원.
+  // 2) 토큰은 만료됐지만 예전에 최소 한 번 연결에 성공한 적이 있다면,
+  //    사용자 상호작용 없이 조용히 재획득(prompt: '')을 시도한다. 이미 이
+  //    브라우저에 Google 로그인이 되어 있고 이 앱에 동의한 이력이 있으면
+  //    보통 팝업 없이 성공한다(Google 권장 방식).
+  // 3) 그마저 실패하면(=Google 세션 자체가 끊겼거나 동의가 철회됨) 조용히
+  //    포기하고 "Google 캘린더 연결" 버튼을 그대로 보여준다 — 오류 팝업을
+  //    띄우지 않는다.
   useEffect(() => {
     const session = loadSession();
-    if (!session) return;
-    setAccessToken(session.accessToken);
-    setGoogleUserEmail(session.email || '');
-    setGoogleSignedIn(true);
-    loadCalendars(session.accessToken);
+    if (session) {
+      setAccessToken(session.accessToken);
+      setGoogleUserEmail(session.email || '');
+      setGoogleSignedIn(true);
+      setGoogleRestoring(false);
+      loadCalendars(session.accessToken);
+      return;
+    }
+
+    if (!hasEverConnectedGoogle() || !GOOGLE_CONFIGURED || !GOOGLE_CLIENT_ID_VALID) {
+      setGoogleRestoring(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        // 조용한 재연결 시도는 화면을 무한정 "연결 확인 중…"으로 막아두면
+        // 안 되므로 짧게 시간 제한을 둔다(정상적으로 성공/실패하면 보통
+        // 1~2초 안에 끝나고, 네트워크 상태에 따라 오래 걸리는 경우에도
+        // 사용자가 금방 직접 버튼을 누를 수 있게 한다).
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('silent-reauth-timeout')), 6000));
+        const response = await Promise.race([requestAccessToken({ prompt: '' }), timeout]);
+        if (cancelled) return;
+        const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
+        const info = await fetchUserInfo(response.access_token);
+        if (cancelled) return;
+        const newSession = { accessToken: response.access_token, expiresAt, email: info?.email || '' };
+        saveSession(newSession);
+        setAccessToken(newSession.accessToken);
+        setGoogleUserEmail(newSession.email);
+        setGoogleSignedIn(true);
+        await loadCalendars(newSession.accessToken);
+      } catch {
+        // 조용히 실패 처리: 사용자가 직접 "Google 캘린더 연결"을 누르게 둔다.
+      } finally {
+        if (!cancelled) setGoogleRestoring(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -236,6 +289,7 @@ export function AppProvider({ children }) {
       const info = await fetchUserInfo(response.access_token);
       const session = { accessToken: response.access_token, expiresAt, email: info?.email || '' };
       saveSession(session);
+      markEverConnectedGoogle();
       setAccessToken(session.accessToken);
       setGoogleUserEmail(session.email);
       setGoogleSignedIn(true);
@@ -247,9 +301,13 @@ export function AppProvider({ children }) {
     }
   }, [loadCalendars]);
 
+  // 사용자가 명시적으로 연결을 끊는 경우에만 "다음에 앱을 열 때도 조용히
+  // 재연결을 시도"하는 표시(everConnected)까지 지운다. 그래야 로그아웃한
+  // 뒤 앱을 다시 열었을 때 또 자동으로 연결되는 이상한 상황을 피한다.
   const signOutGoogle = useCallback(async () => {
     await revokeAccessToken(accessToken);
     clearSession();
+    clearEverConnectedGoogle();
     setAccessToken(null);
     setGoogleUserEmail('');
     setGoogleSignedIn(false);
@@ -607,6 +665,7 @@ export function AppProvider({ children }) {
       googleUserEmail,
       googleAuthLoading,
       googleAuthError,
+      googleRestoring,
       signInGoogle,
       signOutGoogle,
       calendars,
@@ -643,6 +702,7 @@ export function AppProvider({ children }) {
       googleUserEmail,
       googleAuthLoading,
       googleAuthError,
+      googleRestoring,
       signInGoogle,
       signOutGoogle,
       calendars,

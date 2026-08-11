@@ -95,7 +95,7 @@ if "%SAME_FOLDER%"=="1" (
         if not errorlevel 1 (
             echo [확인] 이미 5173에서 팀장 일정 서버가 실행 중입니다. 새로 켜지 않고 그 주소를 엽니다.
             echo %APP_PORT%> "%~dp0.last_port"
-            start "" "http://localhost:%APP_PORT%/"
+            call :open_app_window
             echo.
             pause
             exit /b 0
@@ -140,20 +140,59 @@ echo %APP_PORT%> "%~dp0.last_port"
 start "팀장 일정 조율 캘린더 - 브라우저 대기" /min "%~dp0_wait_and_open.bat" %APP_PORT%
 
 echo.
-echo [실행] 개발 서버를 시작합니다. 잠시 후 브라우저가 자동으로 열립니다.
+echo [빌드] 최신 코드를 production build로 만드는 중입니다...
+call npm run build
+if errorlevel 1 (
+    echo.
+    echo [오류] 빌드^(npm run build^) 중 오류가 발생했습니다. 위 메시지를 확인해주세요.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo.
+echo [실행] 정적 서버를 시작합니다^(개발 서버가 아닌 production build를 그대로 서빙^).
+echo         잠시 후 앱 창이 자동으로 열립니다.
 echo         주소: http://localhost:%APP_PORT%/
 echo         종료하려면 이 창을 닫거나 종료.bat 을 실행하세요.
 echo.
 
-call npm run dev -- --port %APP_PORT% --strictPort
+call npm run preview -- --port %APP_PORT% --strictPort
 set "DEV_EXIT=%errorlevel%"
 
 echo.
 if not "%DEV_EXIT%"=="0" (
-    echo [오류] 개발 서버 실행 중 오류가 발생했습니다. ^(종료 코드: %DEV_EXIT%^)
+    echo [오류] 서버 실행 중 오류가 발생했습니다. ^(종료 코드: %DEV_EXIT%^)
     echo         위쪽의 오류 메시지를 확인해주세요.
 ) else (
     echo 서버가 종료되었습니다.
 )
 echo.
 pause
+exit /b 0
+
+rem ============================================================
+rem  :open_app_window — 일반 브라우저 탭이 아니라 주소창/탭바가 없는
+rem  "프로그램 창"처럼 보이도록 Edge를 --app 모드로 연다.
+rem ============================================================
+:open_app_window
+set "EDGE_EXE="
+if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+if not defined EDGE_EXE if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+if not defined EDGE_EXE if exist "%LocalAppData%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%LocalAppData%\Microsoft\Edge\Application\msedge.exe"
+if defined EDGE_EXE (
+    start "" "%EDGE_EXE%" --app=http://localhost:%APP_PORT%/ --window-size=1360,860
+    exit /b 0
+)
+where msedge >nul 2>nul
+if not errorlevel 1 (
+    start "" msedge --app=http://localhost:%APP_PORT%/ --window-size=1360,860
+    exit /b 0
+)
+where chrome >nul 2>nul
+if not errorlevel 1 (
+    start "" chrome --app=http://localhost:%APP_PORT%/ --window-size=1360,860
+    exit /b 0
+)
+start "" "http://localhost:%APP_PORT%/"
+exit /b 0

@@ -154,12 +154,20 @@ export async function fetchUserInfo(accessToken) {
   return res.json();
 }
 
-// ---- 세션(액세스 토큰) 임시 저장: sessionStorage만 사용(탭 닫으면 사라짐) ----
-// refresh token은 순수 프론트엔드 토큰 클라이언트 방식에서 발급되지 않으므로
-// 만료되면 사용자가 다시 "Google 캘린더 연결"을 눌러야 한다(문서화됨).
+// ---- 세션(액세스 토큰) 저장 ----
+// localStorage를 사용해 앱을 완전히 껐다가 다시 켜도(데스크톱 앱 창을 새로
+// 열어도) 이전 로그인 정보가 남아있게 한다. 액세스 토큰 자체는 Google이
+// 발급한 짧은 수명(보통 1시간)의 토큰이라 그대로 저장해도 유출 시 위험이
+// 제한적이며, 순수 프론트엔드 토큰 클라이언트 방식에는애초에 refresh
+// token이 발급되지 않는다. 만료된 토큰은 loadSession()에서 자동으로
+// 무효 처리되고, 대신 EVER_CONNECTED_KEY를 별도로 남겨 "이전에 최소 한 번
+// 연결에 성공한 사용자"인지를 기억한다 — 이 값이 있으면 앱 실행 시 사용자
+// 상호작용 없이 조용히 토큰 재획득(prompt: '')을 시도하고, 그마저 실패할
+// 때만(=Google 세션 자체가 끊긴 경우) "Google 캘린더 연결" 버튼을 다시
+// 누르게 한다(Google Identity Services 권장 방식).
 export function saveSession(session) {
   try {
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } catch {
     /* noop */
   }
@@ -167,7 +175,7 @@ export function saveSession(session) {
 
 export function loadSession() {
   try {
-    const raw = window.sessionStorage.getItem(SESSION_KEY);
+    const raw = window.localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw);
     if (!session?.accessToken || !session?.expiresAt) return null;
@@ -180,7 +188,33 @@ export function loadSession() {
 
 export function clearSession() {
   try {
-    window.sessionStorage.removeItem(SESSION_KEY);
+    window.localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
+const EVER_CONNECTED_KEY = 'team-schedule-app:googleEverConnected';
+
+export function hasEverConnectedGoogle() {
+  try {
+    return window.localStorage.getItem(EVER_CONNECTED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markEverConnectedGoogle() {
+  try {
+    window.localStorage.setItem(EVER_CONNECTED_KEY, '1');
+  } catch {
+    /* noop */
+  }
+}
+
+export function clearEverConnectedGoogle() {
+  try {
+    window.localStorage.removeItem(EVER_CONNECTED_KEY);
   } catch {
     /* noop */
   }

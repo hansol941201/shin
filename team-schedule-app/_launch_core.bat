@@ -52,7 +52,7 @@ rem             BLOCKED_OTHER(전혀 다른 프로그램, 중단)
 call :port_guard
 
 if "!PORT_STATE!"=="REUSE" (
-    start "" "http://localhost:5173/"
+    call :open_app_window
     > "%STATUS%" echo OK
     exit /b 0
 )
@@ -110,20 +110,50 @@ if "%HAS_CURL%"=="1" (
     if !TRIES! GEQ 5 goto ready
 )
 set /a TRIES+=1
-if !TRIES! GEQ 60 goto timeout_err
+rem production build 시간까지 포함해야 하므로 넉넉하게 90초까지 기다린다.
+if !TRIES! GEQ 90 goto timeout_err
 timeout /t 1 /nobreak >nul
 goto wait_loop
 
 :ready
-start "" "http://localhost:5173/"
+call :open_app_window
 > "%STATUS%" echo OK
 exit /b 0
 
 :timeout_err
 > "%STATUS%" echo ERROR
->> "%STATUS%" echo 서버가 60초 안에 준비되지 않았습니다.
+>> "%STATUS%" echo 서버가 90초 안에 준비되지 않았습니다.
 >> "%STATUS%" echo team-schedule-app\.server.log 파일에서 원인을 확인해주세요.
 exit /b 1
+
+rem ============================================================
+rem  :open_app_window — 일반 브라우저 탭이 아니라 주소창/탭바가 없는
+rem  "프로그램 창"처럼 보이도록 Edge를 --app 모드로 연다. Edge를 못 찾으면
+rem  Chrome을 시도하고, 그마저 없으면 기본 브라우저 탭으로라도 연다
+rem  (앱 창 모드는 아니지만 최소한 화면은 뜨게 함).
+rem ============================================================
+:open_app_window
+set "EDGE_EXE="
+if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+if not defined EDGE_EXE if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+if not defined EDGE_EXE if exist "%LocalAppData%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%LocalAppData%\Microsoft\Edge\Application\msedge.exe"
+if defined EDGE_EXE (
+    start "" "%EDGE_EXE%" --app=http://localhost:5173/ --window-size=1360,860
+    exit /b 0
+)
+where msedge >nul 2>nul
+if not errorlevel 1 (
+    start "" msedge --app=http://localhost:5173/ --window-size=1360,860
+    exit /b 0
+)
+where chrome >nul 2>nul
+if not errorlevel 1 (
+    start "" chrome --app=http://localhost:5173/ --window-size=1360,860
+    exit /b 0
+)
+rem Edge/Chrome을 찾지 못한 경우: 앱 창 모드는 아니지만 기본 브라우저 탭으로라도 연다.
+start "" "http://localhost:5173/"
+exit /b 0
 
 rem ============================================================
 rem  :port_guard — 5173 포트를 누가 쓰고 있는지 판별해 PORT_STATE로 반환
