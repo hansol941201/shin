@@ -9870,7 +9870,6 @@ ${text}
     }
 
     popBody.innerHTML = '' +
-      tabsRowHtml() +
       sourceTabsRowHtml() +
       '<div class="cal-grid-head">' +
         '<div class="cal-grid-nav">' +
@@ -9884,7 +9883,6 @@ ${text}
       '<div class="cal-grid">' + cellsHtml + '</div>' +
       dateEventsHtml;
 
-    bindTabsRow();
     bindSourceTabsRow();
     document.getElementById('calGridPrev').addEventListener('click', function(){
       state.gridRef = new Date(y, m - 1, 1);
