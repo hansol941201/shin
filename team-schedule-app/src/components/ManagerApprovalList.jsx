@@ -118,6 +118,36 @@ function ResponseCard({ event }) {
   );
 }
 
+// 코디네이터가 자신이 올린 승인대기 요청을 취소할 수 있는 카드.
+// 아직 Google Calendar에 생성된 적 없는 요청이므로 로컬에서만 제거한다.
+function OwnPendingCard({ event }) {
+  const { cancelOwnRequest } = useApp();
+  const [confirming, setConfirming] = useState(false);
+  const start = new Date(event.start);
+  const end = new Date(event.end);
+  const sMin = start.getHours() * 60 + start.getMinutes();
+  const eMin = end.getHours() * 60 + end.getMinutes();
+
+  return (
+    <div className="approval-card">
+      <div className="approval-card-title">{event.title}</div>
+      <div className="approval-card-meta approval-card-time">{formatHM(sMin)} ~ {formatHM(eMin)}</div>
+      <div className="approval-pending-note">승인대기 · 팀장님 확인 중</div>
+      {!confirming ? (
+        <div className="approval-actions">
+          <button className="pv-btn pv-btn-danger" onClick={() => setConfirming(true)}>요청 취소</button>
+        </div>
+      ) : (
+        <div className="approval-actions">
+          <span className="pv-hint">이 요청을 취소하시겠습니까?</span>
+          <button className="pv-btn pv-btn-danger" onClick={() => cancelOwnRequest(event.id)}>취소</button>
+          <button className="pv-btn" onClick={() => setConfirming(false)}>아니오</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 모바일 최적화된 승인함: 팀장은 대기중 요청을, 코디네이터는 시간변경 응답이 필요한 건을 본다.
 export default function ManagerApprovalList() {
   const { events, role } = useApp();
@@ -147,19 +177,7 @@ export default function ManagerApprovalList() {
         <div className="approval-empty">진행 중인 요청이 없습니다.</div>
       )}
       {rescheduling.map((e) => <ResponseCard key={e.id} event={e} />)}
-      {pending.map((e) => {
-        const start = new Date(e.start);
-        const end = new Date(e.end);
-        const sMin = start.getHours() * 60 + start.getMinutes();
-        const eMin = end.getHours() * 60 + end.getMinutes();
-        return (
-          <div className="approval-card" key={e.id}>
-            <div className="approval-card-title">{e.title}</div>
-            <div className="approval-card-meta approval-card-time">{formatHM(sMin)} ~ {formatHM(eMin)}</div>
-            <div className="approval-pending-note">승인대기 · 팀장님 확인 중</div>
-          </div>
-        );
-      })}
+      {pending.map((e) => <OwnPendingCard key={e.id} event={e} />)}
     </div>
   );
 }

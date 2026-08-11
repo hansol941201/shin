@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import PopoverShell from './PopoverShell.jsx';
-import { formatHM } from '../utils/time.js';
+import { formatHM, dateKey } from '../utils/time.js';
 import { useApp } from '../state/store.jsx';
 
 const STATUS_LABEL = {
@@ -18,12 +18,30 @@ function slotOptions(minMin, maxMin, step = 30) {
 
 // 일정 블록(확정/승인대기/시간변경) 클릭 시 뜨는 상세/액션 팝오버
 export default function EventDetailPopover({ event, anchor, onClose, dayWorkStart, dayWorkEnd }) {
-  const { role, acceptRequest, rejectRequest, proposeReschedule, acceptReschedule, cancelReschedule } = useApp();
-  const [mode, setMode] = useState('view'); // 'view' | 'reschedule-form'
+  const {
+    role,
+    acceptRequest,
+    rejectRequest,
+    proposeReschedule,
+    acceptReschedule,
+    cancelReschedule,
+    cancelOwnRequest,
+    updateEvent,
+    deleteEventAction,
+  } = useApp();
+  const [mode, setMode] = useState('view'); // 'view' | 'reschedule-form' | 'edit-form' | 'delete-confirm'
   const [newStart, setNewStart] = useState(null);
   const [newEnd, setNewEnd] = useState(null);
   const [actionError, setActionError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // 수정 폼 필드
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editStart, setEditStart] = useState(0);
+  const [editEnd, setEditEnd] = useState(0);
+  const [editLocation, setEditLocation] = useState('');
+  const [editMemo, setEditMemo] = useState('');
 
   const start = new Date(event.start);
   const end = new Date(event.end);
@@ -38,10 +56,17 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
     return slotOptions(base + 30, dayWorkEnd);
   }, [newStart, dayWorkStart, dayWorkEnd]);
 
+  const editStartOptions = useMemo(() => slotOptions(dayWorkStart, dayWorkEnd - 30), [dayWorkStart, dayWorkEnd]);
+  const editEndOptions = useMemo(() => {
+    const base = editStart ?? dayWorkStart;
+    return slotOptions(base + 30, dayWorkEnd);
+  }, [editStart, dayWorkStart, dayWorkEnd]);
+
   function beginReschedule() {
     const sm = start.getHours() * 60 + start.getMinutes();
     setNewStart(sm);
     setNewEnd(Math.min(sm + (end - start) / 60000, dayWorkEnd));
+    setActionError('');
     setMode('reschedule-form');
   }
 
@@ -55,8 +80,66 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
     onClose();
   }
 
+  function beginEdit() {
+    setEditTitle(event.title);
+    setEditDate(dateKey(start));
+    setEditStart(start.getHours() * 60 + start.getMinutes());
+    setEditEnd(end.getHours() * 60 + end.getMinutes());
+    setEditLocation(event.location || '');
+    setEditMemo(event.memo || '');
+    setActionError('');
+    setMode('edit-form');
+  }
+
+  async function submitEdit() {
+    if (editEnd <= editStart) {
+      setActionError('시작 시간이 종료 시간보다 빨라야 합니다.');
+      return;
+    }
+    if (!editTitle.trim()) {
+      setActionError('일정명을 입력해주세요.');
+      return;
+    }
+    const dayBase = new Date(`${editDate}T00:00:00`);
+    const nextStart = new Date(dayBase.getTime() + editStart * 60000).toISOString();
+    const nextEnd = new Date(dayBase.getTime() + editEnd * 60000).toISOString();
+
+    setActionError('');
+    setSubmitting(true);
+    const res = await updateEvent(event.id, {
+      title: editTitle.trim(),
+      start: nextStart,
+      end: nextEnd,
+      location: editLocation.trim(),
+      memo: editMemo.trim(),
+    });
+    setSubmitting(false);
+    if (res?.error) {
+      setActionError(res.error);
+      return;
+    }
+    onClose();
+  }
+
+  async function confirmDelete() {
+    setActionError('');
+    setSubmitting(true);
+    const res = await deleteEventAction(event.id);
+    setSubmitting(false);
+    if (res?.error) {
+      setActionError(res.error);
+      return;
+    }
+    onClose();
+  }
+
   const isManager = role === 'manager';
   const isCoordinator = role === 'coordinator';
+  // 확정 일정 수정/삭제는 양쪽 역할 모두 가능(이 앱은 팀 전체가 공유하는
+  // 하나의 캘린더를 다루므로 개인별 소유권 개념이 없다). 승인대기 요청의
+  // 수정/취소는 요청을 올린 쪽(코디네이터)만 가능하다.
+  const canEditConfirmed = event.status === 'confirmed';
+  const canEditPending = event.status === 'pending' && isCoordinator;
 
   async function handleAccept() {
     setActionError('');
@@ -130,6 +213,18 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
               <div className="pv-hint">코디네이터 응답 대기 중</div>
             )}
           </div>
+
+          {(canEditConfirmed || canEditPending) && (
+            <div className="pv-actions pv-actions-editrow">
+              <button className="pv-btn" onClick={beginEdit} disabled={submitting}>수정</button>
+              {canEditConfirmed && (
+                <button className="pv-btn pv-btn-danger-outline" onClick={() => setMode('delete-confirm')} disabled={submitting}>삭제</button>
+              )}
+              {canEditPending && (
+                <button className="pv-btn pv-btn-danger-outline" onClick={() => setMode('delete-confirm')} disabled={submitting}>요청 취소</button>
+              )}
+            </div>
+          )}
         </>
       )}
 
@@ -153,6 +248,99 @@ export default function EventDetailPopover({ event, anchor, onClose, dayWorkStar
           <div className="pv-actions">
             <button className="pv-btn pv-btn-primary" onClick={submitReschedule}>제안 보내기</button>
             <button className="pv-btn" onClick={() => setMode('view')}>취소</button>
+          </div>
+        </>
+      )}
+
+      {mode === 'edit-form' && (
+        <>
+          <div className="pv-title">일정 수정</div>
+          <div className="pv-edit-form">
+            <label className="pv-edit-label">
+              일정명
+              <input
+                className="pv-edit-input"
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+            </label>
+            <label className="pv-edit-label">
+              날짜
+              <input
+                className="pv-edit-input"
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+              />
+            </label>
+            <div className="pv-row pv-row-time">
+              <select value={editStart} onChange={(e) => setEditStart(Number(e.target.value))}>
+                {editStartOptions.map((m) => (
+                  <option key={m} value={m}>{formatHM(m)}</option>
+                ))}
+              </select>
+              <span className="pv-tilde">~</span>
+              <select value={editEnd} onChange={(e) => setEditEnd(Number(e.target.value))}>
+                {editEndOptions.map((m) => (
+                  <option key={m} value={m}>{formatHM(m)}</option>
+                ))}
+              </select>
+            </div>
+            <label className="pv-edit-label">
+              장소
+              <input
+                className="pv-edit-input"
+                type="text"
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+              />
+            </label>
+            <label className="pv-edit-label">
+              메모
+              <textarea
+                className="pv-edit-textarea"
+                value={editMemo}
+                onChange={(e) => setEditMemo(e.target.value)}
+              />
+            </label>
+          </div>
+          {actionError && <div className="pv-error">{actionError}</div>}
+          <div className="pv-actions">
+            <button className="pv-btn pv-btn-primary" onClick={submitEdit} disabled={submitting}>
+              {submitting ? '저장 중…' : '저장'}
+            </button>
+            <button className="pv-btn" onClick={() => setMode('view')} disabled={submitting}>취소</button>
+          </div>
+        </>
+      )}
+
+      {mode === 'delete-confirm' && (
+        <>
+          <div className="pv-title">{event.title}</div>
+          <div className="pv-meta">{dateLabel} · {timeLabel}</div>
+          <div className="pv-confirm-text">
+            {event.status === 'pending'
+              ? '이 요청을 취소하시겠습니까?'
+              : '이 일정을 삭제하시겠습니까?'}
+          </div>
+          {actionError && <div className="pv-error">{actionError}</div>}
+          <div className="pv-actions">
+            <button className="pv-btn" onClick={() => setMode('view')} disabled={submitting}>취소</button>
+            <button
+              className="pv-btn pv-btn-danger"
+              disabled={submitting}
+              onClick={() => {
+                if (event.status === 'pending') {
+                  cancelOwnRequest(event.id);
+                  onClose();
+                } else {
+                  confirmDelete();
+                }
+              }}
+            >
+              {submitting ? '처리 중…' : (event.status === 'pending' ? '요청 취소' : '삭제')}
+            </button>
           </div>
         </>
       )}

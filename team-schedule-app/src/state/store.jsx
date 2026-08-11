@@ -108,12 +108,36 @@ function eventsReducer(events, action) {
           : e
       );
     }
+    case 'EDIT_LOCAL_EVENT': {
+      return events.map((e) =>
+        e.id === action.id ? { ...e, ...action.patch, updatedAt: new Date().toISOString() } : e
+      );
+    }
+    case 'DELETE_LOCAL_EVENT': {
+      return events.filter((e) => e.id !== action.id);
+    }
     case 'REPLACE_ALL': {
       return action.events;
     }
     default:
       return events;
   }
+}
+
+// 수정/삭제 전 "겹치는 일정이 있는지" 로컬에서 먼저 확인할 때 막힌 시간으로
+// 취급할 상태(빈 시간 계산 로직과 동일한 기준).
+const BUSY_STATUSES = new Set(['confirmed', 'pending', 'reschedule_requested']);
+
+function hasLocalOverlap(events, excludeId, startISO, endISO) {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  return events.some((e) => {
+    if (e.id === excludeId) return false;
+    if (!BUSY_STATUSES.has(e.status)) return false;
+    const eStart = new Date(e.start);
+    const eEnd = new Date(e.end);
+    return eStart < end && start < eEnd;
+  });
 }
 
 export function AppProvider({ children }) {
@@ -424,6 +448,131 @@ export function AppProvider({ children }) {
     dispatchAndPersist({ type: 'CANCEL_RESCHEDULE', id });
   }, [dispatchAndPersist]);
 
+  // 요청자가 승인대기 요청 자체를 취소(수락되기 전). 아직 Google Calendar에
+  // 생성된 적이 없으므로 Google API는 호출하지 않고 로컬에서만 제거한다.
+  const cancelOwnRequest = useCallback((id) => {
+    dispatchAndPersist({ type: 'DELETE_LOCAL_EVENT', id });
+  }, [dispatchAndPersist]);
+
+  // 일정 수정(제목/날짜/시간/장소/메모). 상태에 따라 처리 방식이 다르다:
+  // - pending(승인대기): 아직 Google에 없으므로 로컬만 수정.
+  // - confirmed + 실제 Google 연동 이벤트: Google에서 겹침 재확인 후
+  //   events.patch로 실제 캘린더도 함께 수정. 실패 시 화면은 그대로 두고
+  //   오류만 보여준다(로컬 상태를 먼저 바꾸지 않음).
+  // - confirmed + 데모/로컬 전용: 로컬만 수정.
+  const updateEvent = useCallback(
+    async (id, patch) => {
+      const target = events.find((e) => e.id === id);
+      if (!target) return { error: '일정을 찾을 수 없습니다.' };
+
+      const nextStart = patch.start ?? target.start;
+      const nextEnd = patch.end ?? target.end;
+      if (new Date(nextStart) >= new Date(nextEnd)) {
+        return { error: '시작 시간이 종료 시간보다 빨라야 합니다.' };
+      }
+
+      if (target.status === 'pending') {
+        if (hasLocalOverlap(events, id, nextStart, nextEnd)) {
+          return { error: '해당 시간에 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
+        }
+        dispatchAndPersist({ type: 'EDIT_LOCAL_EVENT', id, patch });
+        return { ok: true };
+      }
+
+      if (target.status !== 'confirmed') {
+        return { error: '지금 상태에서는 수정할 수 없습니다.' };
+      }
+
+      const isGoogleBacked =
+        googleActive && target.googleCalendarEventId && !String(target.googleCalendarEventId).startsWith('demo_');
+
+      if (!isGoogleBacked) {
+        if (hasLocalOverlap(events, id, nextStart, nextEnd)) {
+          return { error: '해당 시간에 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
+        }
+        dispatchAndPersist({ type: 'EDIT_LOCAL_EVENT', id, patch });
+        return { ok: true };
+      }
+
+      const calendarId = target.calendarId || managerCalendarId;
+      const conflict = await googleCalendarApi.hasConflict({
+        accessToken,
+        calendarId,
+        startISO: nextStart,
+        endISO: nextEnd,
+        excludeEventId: target.googleCalendarEventId,
+      });
+      if (!conflict.ok) {
+        if (conflict.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: conflict.message };
+      }
+      if (conflict.conflict) {
+        return { error: '해당 시간에 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
+      }
+
+      const patched = await googleCalendarApi.patchEvent({
+        accessToken,
+        calendarId,
+        eventId: target.googleCalendarEventId,
+        title: patch.title,
+        location: patch.location,
+        description: patch.memo,
+        startISO: patch.start,
+        endISO: patch.end,
+      });
+      if (!patched.ok) {
+        if (patched.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: patched.message };
+      }
+
+      await fetchGoogleEvents();
+      return { ok: true };
+    },
+    [events, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+  );
+
+  // 일정 삭제. pending/reschedule_requested는 아직 Google에 없으므로 로컬만
+  // 제거. confirmed + 실제 Google 이벤트는 events.delete로 실제 캘린더에서도
+  // 삭제한 뒤에만 화면에서 제거한다(실패 시 그대로 둠).
+  const deleteEventAction = useCallback(
+    async (id) => {
+      const target = events.find((e) => e.id === id);
+      if (!target) return { error: '일정을 찾을 수 없습니다.' };
+
+      if (target.status === 'pending' || target.status === 'reschedule_requested') {
+        dispatchAndPersist({ type: 'DELETE_LOCAL_EVENT', id });
+        return { ok: true };
+      }
+
+      if (target.status !== 'confirmed') {
+        return { error: '지금 상태에서는 삭제할 수 없습니다.' };
+      }
+
+      const isGoogleBacked =
+        googleActive && target.googleCalendarEventId && !String(target.googleCalendarEventId).startsWith('demo_');
+
+      if (!isGoogleBacked) {
+        dispatchAndPersist({ type: 'DELETE_LOCAL_EVENT', id });
+        return { ok: true };
+      }
+
+      const calendarId = target.calendarId || managerCalendarId;
+      const deleted = await googleCalendarApi.deleteEvent({
+        accessToken,
+        calendarId,
+        eventId: target.googleCalendarEventId,
+      });
+      if (!deleted.ok) {
+        if (deleted.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: deleted.message };
+      }
+
+      await fetchGoogleEvents();
+      return { ok: true };
+    },
+    [events, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+  );
+
   const updateSettings = useCallback((patch) => {
     setSettings((s) => ({ ...s, ...patch }));
   }, []);
@@ -446,6 +595,9 @@ export function AppProvider({ children }) {
       proposeReschedule,
       acceptReschedule,
       cancelReschedule,
+      cancelOwnRequest,
+      updateEvent,
+      deleteEventAction,
       // Google 연동
       googleConfigured: GOOGLE_CONFIGURED,
       googleClientIdValid: GOOGLE_CLIENT_ID_VALID,
@@ -483,6 +635,9 @@ export function AppProvider({ children }) {
       proposeReschedule,
       acceptReschedule,
       cancelReschedule,
+      cancelOwnRequest,
+      updateEvent,
+      deleteEventAction,
       googleActive,
       googleSignedIn,
       googleUserEmail,

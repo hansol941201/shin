@@ -144,7 +144,8 @@ export async function fetchEvents({ accessToken, calendarId, timeMinISO, timeMax
 }
 
 // ---------- 특정 시간대에 이미 다른 일정이 있는지 재확인(중복 방지) ----------
-export async function hasConflict({ accessToken, calendarId, startISO, endISO }) {
+// excludeEventId: 일정 "수정" 시 자기 자신은 겹침 대상에서 제외하기 위해 사용.
+export async function hasConflict({ accessToken, calendarId, startISO, endISO, excludeEventId }) {
   try {
     const params = new URLSearchParams({
       timeMin: startISO,
@@ -162,7 +163,9 @@ export async function hasConflict({ accessToken, calendarId, startISO, endISO })
       return { ok: false, ...err };
     }
     const data = await res.json();
-    const active = (data.items || []).filter((e) => e.status !== 'cancelled');
+    const active = (data.items || []).filter(
+      (e) => e.status !== 'cancelled' && (!excludeEventId || e.id !== excludeEventId)
+    );
     return { ok: true, conflict: active.length > 0 };
   } catch (e) {
     return { ok: false, code: 'NETWORK', message: '일정 중복 확인 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' };
@@ -192,5 +195,49 @@ export async function createEvent({ accessToken, calendarId, title, location, de
     return { ok: true, googleEventId: created.id };
   } catch (e) {
     return { ok: false, code: 'NETWORK', message: '일정 생성 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' };
+  }
+}
+
+// ---------- 확정 일정 수정 (events.patch) ----------
+// title/location/description/startISO/endISO 중 넘어온 필드만 바꾼다(부분 수정).
+export async function patchEvent({ accessToken, calendarId, eventId, title, location, description, startISO, endISO }) {
+  try {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
+    const body = {};
+    if (title !== undefined) body.summary = title;
+    if (location !== undefined) body.location = location;
+    if (description !== undefined) body.description = description;
+    if (startISO !== undefined) body.start = { dateTime: startISO, timeZone };
+    if (endISO !== undefined) body.end = { dateTime: endISO, timeZone };
+
+    const res = await fetch(
+      `${API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      { method: 'PATCH', headers: authHeaders(accessToken), body: JSON.stringify(body) }
+    );
+    if (!res.ok) {
+      const err = await parseErrorMessage(res);
+      return { ok: false, ...err };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, code: 'NETWORK', message: '일정 수정 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' };
+  }
+}
+
+// ---------- 확정 일정 삭제 (events.delete) ----------
+export async function deleteEvent({ accessToken, calendarId, eventId }) {
+  try {
+    const res = await fetch(
+      `${API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      { method: 'DELETE', headers: authHeaders(accessToken) }
+    );
+    // 204: 정상 삭제. 410(Gone): 이미 삭제된 상태 -> 목표 달성으로 간주.
+    if (!res.ok && res.status !== 410) {
+      const err = await parseErrorMessage(res);
+      return { ok: false, ...err };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, code: 'NETWORK', message: '일정 삭제 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' };
   }
 }
