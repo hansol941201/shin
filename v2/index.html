@@ -1220,6 +1220,17 @@
   }
   .cal-fab:hover{ background:#F0F1F4; color:var(--navy); }
   .cal-fab.active{ background:#EEF1F8; color:var(--navy); }
+  /* 전사 품질(QA) 관리 사이트 바로가기 — 캘린더 아이콘과 동일한 스타일의 원형 버튼을
+     바로 위(38+10px 간격)에 둔다. 새 탭으로 여는 링크일 뿐 팝오버/데이터는 없다. */
+  .qa-fab{
+    position:fixed; right:18px; bottom:66px; z-index:65;
+    width:38px; height:38px; padding:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:50%;
+    background:var(--surface); color:var(--text-muted); cursor:pointer;
+    text-decoration:none;
+  }
+  .qa-fab:hover{ background:#F0F1F4; color:var(--navy); }
   .cal-fab-badge{
     position:absolute; top:-3px; right:-3px;
     min-width:14px; height:14px; padding:0 3px;
@@ -1908,6 +1919,11 @@
   <!-- 일정관리(캘린더) — 화면 어디서나 보이도록 다른 뷰(homeView/companiesView/knowledgeView)와
        같은 레벨의 형제 요소로 둔다(§1: 뷰 전환은 display:none/block 토글일 뿐이라, 이 블록은
        그 토글 대상이 아니므로 라우트가 바뀌어도 사라지거나 다시 마운트되지 않는다). -->
+  <!-- 전사 품질(QA) 관리 사이트 바로가기 — 클릭 시 새 탭으로 이동만 하며, 이 페이지의
+       데이터/로직에는 관여하지 않는다(팀장 일정 ↗ 버튼과 동일한 성격의 외부 링크). -->
+  <a class="qa-fab" id="qaFabBtn" href="https://raw.githack.com/hansol941201/shin/claude/company-wide-qa-management-3fhec9/qa/index.html" target="_blank" rel="noopener" title="품질관리(QA)" aria-label="품질관리(QA)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.4"/><path d="M12 17.2v.1"/></svg>
+  </a>
   <button type="button" class="cal-fab" id="calFabBtn" title="일정관리" aria-label="일정관리">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
     <span class="cal-fab-badge" id="calFabBadge" style="display:none;"></span>
