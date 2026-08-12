@@ -60,24 +60,17 @@
   .qna-add-btn:hover{background:var(--qna-navy-dark);}
 
   .qna-list{border-top:1px solid var(--qna-border);}
-  .qna-item{border-bottom:1px solid var(--qna-border);}
-  .qna-item-head{
-    display:flex;align-items:flex-start;gap:12px;padding:18px 4px;cursor:pointer;
-  }
-  .qna-item-head:hover .qna-q-text{color:var(--qna-navy);}
-  .qna-chevron{flex:none;width:18px;color:var(--qna-text-faint);font-size:13px;margin-top:3px;transition:transform .15s;}
-  .qna-item.open .qna-chevron{transform:rotate(90deg);color:var(--qna-navy);}
+  .qna-item{padding:20px 4px;border-bottom:1px solid var(--qna-border);}
+  .qna-item-top{display:flex;align-items:flex-start;gap:12px;}
   .qna-q-main{flex:1;min-width:0;}
   .qna-q-text{font-size:17px;font-weight:700;line-height:1.5;color:var(--qna-text);}
-  .qna-badge{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:var(--qna-star);}
+  .qna-badge{display:inline-block;margin-left:8px;font-size:12px;font-weight:700;color:var(--qna-star);}
   .qna-part-tag{
     flex:none;font-size:11.5px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);
     padding:3px 10px;border-radius:999px;margin-top:2px;white-space:nowrap;
   }
-  .qna-item-body{display:none;padding:0 4px 22px 30px;}
-  .qna-item.open .qna-item-body{display:block;}
-  .qna-a-text{font-size:15.5px;line-height:1.75;color:var(--qna-text);white-space:pre-wrap;margin:0 0 14px;}
-  .qna-a-empty{font-size:14px;color:var(--qna-text-faint);margin:0 0 14px;}
+  .qna-a-text{font-size:15.5px;line-height:1.75;color:var(--qna-text-gray);white-space:pre-wrap;margin:8px 0 12px;}
+  .qna-a-empty{font-size:14px;color:var(--qna-text-faint);margin:8px 0 12px;}
   .qna-item-actions{display:flex;gap:8px;flex-wrap:wrap;}
   .qna-mini-btn{
     background:#fff;border:1px solid var(--qna-border);border-radius:6px;padding:6px 12px;
@@ -126,7 +119,6 @@
   @media (max-width:640px){
     .qna-app{padding:24px 14px 60px;}
     .qna-tabs{grid-template-columns:1fr;}
-    .qna-item-body{padding-left:4px;}
   }
 </style>
 </head>
@@ -234,7 +226,7 @@ function qnaPartLabel(key){
 const QNA_FREQUENT_THRESHOLD = 3;
 // 새 질문 등록 시 이 값 이상 유사하면 "기존 질문과 유사합니다" 확인창을 띄운다.
 // 애매한 경우는 절대 자동으로 합치지 않고, 확실히 비슷할 때만 물어본다.
-const QNA_SIMILAR_THRESHOLD = 0.42;
+const QNA_SIMILAR_THRESHOLD = 0.55;
 
 // 서강건설 1차 미팅에서 실제 나온 질문 — 처음 접속했을 때만 예시로 보이는 초기 자료.
 function qnaBuildSeedQuestions(){
@@ -337,7 +329,9 @@ function qnaQuestionSimilarity(a, b){
   if(!ga.size || !gb.size) return 0;
   let overlap = 0;
   ga.forEach(g => { if(gb.has(g)) overlap++; });
-  return overlap / Math.min(ga.size, gb.size);
+  // Dice 계수(2*교집합/전체합) 사용 — "~있나요?" 같은 흔한 어미만 겹쳐도 유사하다고
+  // 오판하지 않도록, 길이가 크게 다른 두 질문은 자동으로 점수가 낮아지게 한다.
+  return (2 * overlap) / (ga.size + gb.size);
 }
 // 같은 파트 안에서 가장 비슷한 기존 질문 1건을 찾는다(임계값 미만이면 null → 새 질문으로 등록).
 function qnaFindMostSimilar(question, part, excludeId){
@@ -366,10 +360,9 @@ function qnaSortCompare(a, b){
   return (a.order||0) - (b.order||0);
 }
 
-// 탐색 위치(현재 탭/검색어/펼친 질문)는 데이터가 아니므로 localStorage에 저장하지 않는다.
+// 탐색 위치(현재 탭/검색어)는 데이터가 아니므로 localStorage에 저장하지 않는다.
 let qnaActiveTab = 'first_meeting';
 let qnaSearchQuery = '';
-let qnaOpenId = null;
 
 function qnaRenderTabs(){
   document.getElementById('qnaTabs').innerHTML = QNA_PARTS.map(p => `
@@ -412,25 +405,20 @@ function qnaRenderBadge(item){
   return '';
 }
 function qnaRenderItem(item, showPartTag){
-  const open = qnaOpenId === item.id;
   return `
-    <div class="qna-item ${open?'open':''}" data-id="${item.id}">
-      <div class="qna-item-head" data-action="toggle" data-id="${item.id}">
-        <span class="qna-chevron">▶</span>
-        <span class="qna-q-main">
-          <span class="qna-q-text">Q. ${qnaEscapeHtml(item.question)}</span><br/>
-          ${qnaRenderBadge(item)}
-        </span>
+    <div class="qna-item" data-id="${item.id}">
+      <div class="qna-item-top">
+        <div class="qna-q-main">
+          <span class="qna-q-text">Q. ${qnaEscapeHtml(item.question)}</span>${qnaRenderBadge(item)}
+          ${item.answer ? `<p class="qna-a-text">${qnaEscapeHtml(item.answer)}</p>` : `<p class="qna-a-empty">등록된 답변이 없습니다.</p>`}
+        </div>
         ${showPartTag ? `<span class="qna-part-tag">${qnaEscapeHtml(qnaPartLabel(item.part))}</span>` : ''}
       </div>
-      <div class="qna-item-body">
-        ${item.answer ? `<p class="qna-a-text">A. ${qnaEscapeHtml(item.answer)}</p>` : `<p class="qna-a-empty">등록된 답변이 없습니다.</p>`}
-        <div class="qna-item-actions">
-          <button type="button" class="qna-mini-btn" data-action="edit" data-id="${item.id}">수정</button>
-          <button type="button" class="qna-mini-btn danger" data-action="delete" data-id="${item.id}">삭제</button>
-          <button type="button" class="qna-mini-btn" data-action="move-up" data-id="${item.id}">위로</button>
-          <button type="button" class="qna-mini-btn" data-action="move-down" data-id="${item.id}">아래로</button>
-        </div>
+      <div class="qna-item-actions">
+        <button type="button" class="qna-mini-btn" data-action="edit" data-id="${item.id}">수정</button>
+        <button type="button" class="qna-mini-btn danger" data-action="delete" data-id="${item.id}">삭제</button>
+        <button type="button" class="qna-mini-btn" data-action="move-up" data-id="${item.id}">위로</button>
+        <button type="button" class="qna-mini-btn" data-action="move-down" data-id="${item.id}">아래로</button>
       </div>
     </div>
   `;
@@ -543,7 +531,6 @@ document.getElementById('qnaTabs').addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-action="tab"]');
   if(!btn) return;
   qnaActiveTab = btn.dataset.part;
-  qnaOpenId = null;
   qnaSearchQuery = '';
   document.getElementById('qnaSearchInput').value = '';
   qnaRenderAll();
@@ -557,11 +544,6 @@ qnaMainEl.addEventListener('click', (e)=>{
   if(action === 'add-open'){
     qnaOpenQuestionModal(null);
   }
-  else if(action === 'toggle'){
-    const id = btn.dataset.id;
-    qnaOpenId = (qnaOpenId === id) ? null : id;
-    qnaUpdateListUI();
-  }
   else if(action === 'edit'){
     qnaOpenQuestionModal(btn.dataset.id);
   }
@@ -570,7 +552,6 @@ qnaMainEl.addEventListener('click', (e)=>{
     if(!item) return;
     if(confirm('이 질문을 삭제하시겠습니까?')){
       qnaState.questions = qnaState.questions.filter(q=>q.id!==item.id);
-      if(qnaOpenId === item.id) qnaOpenId = null;
       qnaSaveState(); qnaRenderAll();
     }
   }
