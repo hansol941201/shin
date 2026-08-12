@@ -790,6 +790,110 @@
     .search-results{left:0;right:0;width:auto;max-width:none;}
     .note-panel{width:100%;max-width:100%;}
   }
+
+  /* ---------- Q&A: 전사 공용 Q&A 관리 ---------- */
+  .qa-wrap{max-width:1180px;}
+  .qa-head{margin-bottom:18px;}
+  .qa-head h1{font-size:26px;margin:0 0 4px;}
+  .qa-head p{margin:0;color:var(--text-gray);font-size:13px;}
+  .qa-tabs{display:flex;gap:0;border-bottom:1px solid var(--card-border);margin-bottom:18px;}
+  .qa-tab{
+    background:none;border:none;border-bottom:2px solid transparent;padding:10px 4px;margin-right:26px;
+    font-size:15px;font-weight:700;color:var(--text-gray);cursor:pointer;
+  }
+  .qa-tab:hover{color:var(--accent-dark);}
+  .qa-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .qa-search-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
+  .qa-search-input{
+    flex:1;height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:15px;font-family:inherit;background:var(--bg);color:var(--text-dark);
+  }
+  .qa-search-input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--hover-blue-soft);}
+  .qa-scope-toggle{display:flex;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;flex:none;}
+  .qa-scope-btn{background:#fff;border:none;padding:0 14px;height:44px;font-size:12.5px;font-weight:700;color:var(--text-gray);cursor:pointer;}
+  .qa-scope-btn + .qa-scope-btn{border-left:1px solid var(--card-border);}
+  .qa-scope-btn.active{background:var(--accent);color:#fff;}
+  .qa-add-btn{
+    flex:none;height:44px;padding:0 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;
+    font-weight:700;font-size:13.5px;cursor:pointer;
+  }
+  .qa-add-btn:hover{background:var(--accent-dark);}
+  .qa-stats-row{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;margin-bottom:16px;padding:12px 16px;background:var(--bg);border:1px solid var(--card-border);border-radius:8px;}
+  .qa-stat{font-size:13px;color:var(--text-gray);}
+  .qa-stat b{color:var(--text-dark);font-size:14px;}
+  .qa-stat.warn b{color:var(--status-warning);}
+  .qa-unanswered-toggle{margin-left:auto;background:#fff;border:1px solid var(--card-border);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--text-gray);cursor:pointer;}
+  .qa-unanswered-toggle.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .qa-cat-manage-btn{background:none;border:1px solid var(--card-border);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--text-gray);cursor:pointer;}
+  .qa-cat-manage-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .qa-freq{margin-bottom:16px;}
+  .qa-freq-title{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
+  .qa-freq-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .qa-freq-item{font-size:12.5px;color:var(--text-dark);background:var(--card-bg);border:1px solid var(--card-border);border-radius:999px;padding:5px 12px;}
+  .qa-freq-item b{color:var(--accent-dark);}
+  .qa-table-wrap{border:1px solid var(--card-border);border-radius:10px;overflow:hidden;overflow-x:auto;}
+  table.qa-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.qa-table th{
+    text-align:left;background:var(--bg);color:var(--text-gray);font-size:11.5px;font-weight:700;
+    padding:10px 14px;border-bottom:1px solid var(--card-border);white-space:nowrap;
+  }
+  table.qa-table td{padding:12px 14px;border-bottom:1px solid var(--card-border);vertical-align:top;color:var(--text-dark);}
+  table.qa-table tr:last-child td{border-bottom:none;}
+  table.qa-table tbody tr.qa-row{cursor:pointer;}
+  table.qa-table tbody tr.qa-row:hover{background:var(--hover-blue-soft);}
+  table.qa-table tbody tr.qa-row.expanded{background:var(--hover-blue-soft);}
+  .qa-cat-pill{display:inline-block;background:var(--navy-soft);color:var(--accent-dark);font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .qa-q-summary{font-weight:600;}
+  .qa-similar-tag{display:block;margin-top:4px;font-size:11px;color:var(--hover-blue);}
+  .qa-status{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .qa-status.unanswered{background:#fdecec;color:var(--danger);}
+  .qa-status.answered{background:#eafaf0;color:var(--status-success);}
+  .qa-official{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--accent-dark);}
+  .qa-stage-tag{font-size:11px;color:var(--text-gray);}
+  .qa-empty{padding:60px 0;text-align:center;color:var(--text-gray);font-size:14px;}
+  .qa-detail-row td{background:#fbfcfe;padding:0;}
+  .qa-detail{padding:18px 22px 22px;border-top:1px dashed var(--card-border);}
+  .qa-detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 24px;margin-bottom:16px;}
+  .qa-detail-item{min-width:0;}
+  .qa-detail-item.wide{grid-column:1 / -1;}
+  .qa-detail-label{font-size:11px;font-weight:700;color:var(--text-gray);margin-bottom:4px;letter-spacing:.02em;}
+  .qa-detail-val{font-size:13.5px;color:var(--text-dark);white-space:pre-wrap;line-height:1.6;}
+  .qa-detail-actions{display:flex;gap:8px;margin-bottom:14px;}
+  .qa-answer-box{border-top:1px solid var(--card-border);padding-top:14px;margin-top:4px;}
+  .qa-answer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
+  .qa-answer-head-label{font-size:12px;font-weight:700;color:var(--text-gray);}
+  .qa-official-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-gray);cursor:pointer;}
+  .qa-official-toggle input{accent-color:var(--accent);}
+  .qa-answer-textarea, .qa-memo-textarea{
+    width:100%;min-height:90px;padding:10px 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:13.5px;font-family:inherit;line-height:1.6;resize:vertical;color:var(--text-dark);
+  }
+  .qa-answer-textarea:focus, .qa-memo-textarea:focus{outline:none;border-color:var(--accent);}
+  .qa-memo-box{margin-top:14px;}
+  .qa-memo-label{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
+  .qa-answer-save-row{display:flex;justify-content:flex-end;margin-top:8px;}
+  .qa-similar-list{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .qa-similar-list-title{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
+  .qa-similar-list-item{font-size:12.5px;color:var(--text-dark);padding:6px 0;border-bottom:1px solid var(--card-border);}
+  .qa-similar-list-item:last-child{border-bottom:none;}
+  .qa-similar-list-item span{color:var(--text-gray);}
+  .qa-cat-modal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .qa-cat-modal-row input{
+    flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--card-border);font-size:13px;font-family:inherit;
+  }
+  .qa-cat-modal-row input:focus{outline:none;border-color:var(--accent);}
+  .qa-cat-modal-count{font-size:11px;color:var(--text-light-gray);flex:none;width:44px;text-align:right;}
+
+  /* Q&A 등록/수정 모달: 항목이 많아 기본 모달보다 넓게 */
+  .modal.modal-wide{max-width:640px;}
+  .modal .field select{
+    width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:14px;font-family:inherit;background:#fff;color:var(--text-dark);
+  }
+  .modal .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .modal .field-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dark);}
+  .modal .field-check input{accent-color:var(--accent);}
+  .modal .field-hint{font-size:11px;color:var(--text-light-gray);margin-top:4px;}
 </style>
 </head>
 <body>
@@ -855,6 +959,7 @@
     <div class="sidebar-footer">
       <div class="sidebar-group-label">업무도구</div>
       <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체관리</button>
+      <button type="button" class="sidebar-footer-link" id="qaFooterLink">Q&amp;A</button>
       <button type="button" class="sidebar-footer-link" id="perfSearchLink" disabled title="아직 연결된 기존 기능이 없습니다 (미연결)">실적검색</button>
       <button type="button" class="sidebar-footer-link" id="materialsFooterLink">자료실</button>
       <button type="button" class="sidebar-footer-link" id="manualFooterLink">업무매뉴얼</button>
@@ -908,7 +1013,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets', 'qaQuestions', 'qaCategories'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -976,6 +1081,52 @@ const STORAGE_KEY = 'work-guide-state-v1';
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
+/* ---------- Q&A: 전사 공용 Q&A 관리(업체별 화면이 아닌 전역 컬렉션)용 기본 데이터 ---------- */
+const DEFAULT_QA_CATEGORIES = ['조달','가격 / 단가','수익 / 마진','공법','자재','특허','영업지원','실행공사','계약 / 대금','시공','하자','보증','타 공법 / 경쟁사','기타'];
+// 서강건설 1차 미팅에서 실제 나온 질문 — 2차 미팅이 아니라 1차 미팅 Q&A 초기 데이터로 등록한다.
+function buildSeedQaQuestions(){
+  const now = new Date().toISOString();
+  const mk = (category, questionSummary, lines, questionContext, companyName) => ({
+    id: uid(), stage:'first', category, questionSummary,
+    questionOriginal: lines.join('\n'), questionContext: questionContext || '',
+    answer:'', answerStatus:'unanswered', officialAnswer:false,
+    companyName, companyId:'', siteName:'', questioner:'', meetingDate:'',
+    memo:'', createdAt: now, updatedAt: now
+  });
+  return [
+    mk('조달', '아스팔트슁글 조달 가능 여부', [
+      'POUR 제품이나 공법은 조달 등록이 되어 있나요?',
+      '아스팔트슁글도 조달을 통해 진행할 수 있나요?',
+      '현재 조달 등록이 되어 있지 않은 제품은 향후 등록 계획이 있나요?'
+    ], '과거 POUR 아스팔트슁글을 사용하고 싶었으나 조달 등록 문제로 진행하지 못한 경험이 있음.', '(주)서강건설'),
+    mk('가격 / 단가', '현장별 가격·단가 조정 가능 여부', [
+      '아파트 입찰에서 단가 경쟁이 발생하면 현장 상황에 따라 가격 조정이 가능한가요?',
+      '견적 경쟁 시 본사에서 가격 협의나 지원이 가능한가요?'
+    ], '', '(주)서강건설'),
+    mk('수익 / 마진', 'POUR 협력사의 평균 마진·수익', [
+      'POUR공법 실제 공사 시 시공사가 가져가는 평균 마진은 어느 정도인가요?',
+      '공종별로 마진율이 다른가요?',
+      '일반 공사 대비 POUR 협력사의 수익적인 장점은 무엇인가요?'
+    ], '', '(주)서강건설'),
+    mk('실행공사', '실행공사 진행 시 대금·계약 구조', [
+      '현장 수주 후 실행공사를 진행할 때 POUR에서 대금 관련 지원을 해주나요?',
+      '이 경우 하도급 계약 형태가 되는 건가요?',
+      '계약이나 대금 지급 구조상 법적인 문제는 없나요?',
+      '발주처·시공사·POUR의 실제 계약 관계는 어떻게 구성되나요?'
+    ], '', '(주)서강건설'),
+    mk('영업지원', '아파트 영업 진입 지원 방법', [
+      '관공사 위주 업체도 민간 아파트시장 진입 지원을 받을 수 있나요?',
+      '처음 아파트 영업을 시작할 때 어떤 지원을 받을 수 있나요?',
+      '특허나 공법 스펙을 활용한 입찰 방법도 안내받을 수 있나요?',
+      '아직 예정 현장이 없어도 협약 후 영업을 시작할 수 있나요?'
+    ], '', '(주)서강건설'),
+    mk('타 공법 / 경쟁사', '타 공법(다모아 등) 병행 가능 여부', [
+      '다모아(루프마스터) 공법과 POUR공법을 병행할 수 있나요?',
+      '유사 공법을 같이 사용할 경우 제한사항이 있나요?'
+    ], '', '(주)서강건설')
+  ];
+}
+
 const DEFAULT_STATE = {
   brand: { title: 'MY WORK' },
   guides: [
@@ -1034,6 +1185,9 @@ const DEFAULT_STATE = {
   // 이후에는 사용자가 [질문 편집]/[편집]으로 직접 관리한다(자동 생성이 다시 덮어쓰지 않는다).
   phoneQuestionSets:{},
   phoneProcedureSets:{},
+  // 전사 공용 Q&A 데이터베이스. 업체별로 나누지 않고 전역 컬렉션에 계속 누적한다(companyName/companyId는 출처 추적용).
+  qaCategories: DEFAULT_QA_CATEGORIES.slice(),
+  qaQuestions: buildSeedQaQuestions(),
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
@@ -1059,13 +1213,17 @@ function loadState(){
       if(!Array.isArray(parsed.callLogs)) parsed.callLogs = [];
       if(!parsed.phoneQuestionSets || typeof parsed.phoneQuestionSets !== 'object') parsed.phoneQuestionSets = {};
       if(!parsed.phoneProcedureSets || typeof parsed.phoneProcedureSets !== 'object') parsed.phoneProcedureSets = {};
+      // 전사 공용 Q&A 관리 (업체별 화면이 아닌 전역 컬렉션). 처음 업데이트되는 사용자에게만
+      // 서강건설 1차 미팅 초기 데이터를 1회 시드하고, 이후에는 사용자가 지우거나 바꿔도 다시 채우지 않는다.
+      if(!Array.isArray(parsed.qaCategories)) parsed.qaCategories = DEFAULT_QA_CATEGORIES.slice();
+      if(!Array.isArray(parsed.qaQuestions)) parsed.qaQuestions = buildSeedQaQuestions();
       return parsed;
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 /* 컬렉션 이름 ↔ state 필드 매핑 (Firestore 실시간 동기화용) */
-const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
+const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets', 'qaQuestions', 'qaCategories'];
 function getCloudSlice(key){
   if(key === 'companies') return state.companies;
   if(key === 'workflow') return state.guides;
@@ -1081,6 +1239,8 @@ function getCloudSlice(key){
   if(key === 'callLogs') return state.callLogs;
   if(key === 'phoneQuestionSets') return state.phoneQuestionSets;
   if(key === 'phoneProcedureSets') return state.phoneProcedureSets;
+  if(key === 'qaQuestions') return state.qaQuestions;
+  if(key === 'qaCategories') return state.qaCategories;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -1102,6 +1262,8 @@ function applyCloudSlice(key, data){
   else if(key === 'callLogs') state.callLogs = data;
   else if(key === 'phoneQuestionSets') state.phoneQuestionSets = data;
   else if(key === 'phoneProcedureSets') state.phoneProcedureSets = data;
+  else if(key === 'qaQuestions') state.qaQuestions = data;
+  else if(key === 'qaCategories') state.qaCategories = data;
 }
 
 function saveState(){
@@ -1212,7 +1374,10 @@ function openModal({title, fields, onSubmit, submitLabel}){
   const firstInput = modal.querySelector('input,textarea');
   if(firstInput) firstInput.focus();
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modal').classList.remove('modal-wide'); // Q&A 모달 등 넓은 모달을 쓰고 난 뒤 원래 크기로 복원
+}
 document.getElementById('modalOverlay').addEventListener('click', (e)=>{
   if(e.target.id === 'modalOverlay') closeModal();
 });
@@ -1453,6 +1618,7 @@ function renderSidebar(){
   document.getElementById('companiesFooterLink').classList.toggle('active', state.currentView.type === 'companies');
   document.getElementById('todayFooterLink').classList.toggle('active', state.currentView.type === 'today');
   document.getElementById('materialsFooterLink').classList.toggle('active', state.currentView.type === 'materials');
+  document.getElementById('qaFooterLink').classList.toggle('active', state.currentView.type === 'qa');
 }
 document.getElementById('guideNavToggle').addEventListener('click', ()=>{
   guideNavExpanded = !guideNavExpanded;
@@ -1477,6 +1643,10 @@ document.getElementById('todayFooterLink').addEventListener('click', ()=>{
 });
 document.getElementById('materialsFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'materials'};
+  saveState(); render();
+});
+document.getElementById('qaFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'qa'};
   saveState(); render();
 });
 document.getElementById('manualFooterLink').addEventListener('click', ()=>{
@@ -1582,6 +1752,8 @@ function renderContent(){
     el.innerHTML = renderTodayView();
   } else if(state.currentView.type === 'materials'){
     el.innerHTML = renderMaterialsToolView();
+  } else if(state.currentView.type === 'qa'){
+    el.innerHTML = renderQaView();
   } else if(state.currentView.type === 'home'){
     el.innerHTML = renderHomeView();
   } else {
@@ -2180,6 +2352,12 @@ contentEl.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'companySearchInput'){
     companySearchQuery = e.target.value;
     updateCompanySearchUI();
+    return;
+  }
+  // Q&A 검색: 전체 render() 대신 목록 영역만 다시 그려 검색창 포커스를 유지한다
+  if(e.target && e.target.id === 'qaSearchInput'){
+    qaSearchQuery = e.target.value;
+    updateQaListUI();
     return;
   }
   // 전화 비서: 통화 메모(자유 입력)는 render()로 다시 그리지 않고 값만 세션에 반영 + 임시 저장 (입력 중 포커스 유지)
@@ -4489,6 +4667,550 @@ contentEl.addEventListener('click', (e)=>{
     const apiKey = getOpenAIKey();
     if(!apiKey){ promptForOpenAIKey((key)=>polishDailySummary(key)); return; }
     polishDailySummary(apiKey);
+  }
+});
+
+/* ============================================================
+   Q&A: 전사 공용 Q&A 관리
+   업체별로 화면을 나누지 않고, 하나의 전역 컬렉션(state.qaQuestions)에
+   1차 미팅 / 2차 미팅 / PT 질문을 계속 누적한다. companyName/companyId는
+   질문 출처 추적용으로만 쓰고, 업체별로 목록을 분리해서 보여주지 않는다.
+   기존 질문서/1차미팅/2차미팅/MOU/고객관리카드/업체 칸반보드/일정 등과는
+   완전히 분리된 별도의 공용 지식 데이터베이스다.
+   ============================================================ */
+const QA_STAGES = [
+  {key:'first', label:'1차 미팅 Q&A'},
+  {key:'second', label:'2차 미팅 Q&A'},
+  {key:'pt', label:'PT Q&A'}
+];
+const QA_QUESTIONER_OPTIONS = ['회장','동대표','관리소장','관리사무소','입주민','기타'];
+
+// 탐색 위치(현재 탭/검색어/필터)는 데이터가 아니므로 다른 도구들과 동일하게 localStorage에 저장하지 않는다.
+let qaActiveTab = 'first';
+let qaSearchQuery = '';
+let qaSearchScope = 'all'; // 'all' | 'tab'
+let qaUnansweredOnly = false;
+let qaExpandedId = null;
+
+function qaStageLabel(key){
+  const s = QA_STAGES.find(s=>s.key===key);
+  return s ? s.label : key;
+}
+function qaFormatDate(value){
+  if(!value) return '';
+  const d = new Date(value);
+  if(isNaN(d.getTime())) return '';
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yy}.${mm}.${dd}`;
+}
+
+function qaMatchesQuery(item, q){
+  const hay = [
+    item.category, item.questionSummary, item.questionOriginal, item.questionContext,
+    item.answer, item.memo, item.companyName, item.siteName, item.questioner
+  ].filter(Boolean).join('\n').toLowerCase();
+  return hay.includes(q);
+}
+// 검색/탭/미답변 필터를 적용한 목록 (등록일 최신순). 검색 범위가 '전체'이고 검색어가 있으면
+// 1차/2차/PT를 모두 합쳐서 보여주고, 그 외에는 현재 탭 안에서만 보여준다.
+function qaVisibleList(){
+  const q = qaSearchQuery.trim().toLowerCase();
+  const searchAll = !!q && qaSearchScope === 'all';
+  let list = state.qaQuestions.filter(item => searchAll ? true : item.stage === qaActiveTab);
+  if(q) list = list.filter(item => qaMatchesQuery(item, q));
+  if(qaUnansweredOnly) list = list.filter(item => item.answerStatus !== 'answered');
+  return list.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+}
+function qaTabStats(stage){
+  const list = state.qaQuestions.filter(item => item.stage === stage);
+  return { total: list.length, unanswered: list.filter(item => item.answerStatus !== 'answered').length };
+}
+// 자주 나온 질문: 현재 탭 안에서 카테고리별 건수 상위 5개 — 고객들이 실제로 가장 궁금해하는 것을 한눈에 보여준다.
+function qaTopCategories(stage){
+  const counts = {};
+  state.qaQuestions.filter(item => item.stage === stage).forEach(item => {
+    const key = item.category || '기타';
+    counts[key] = (counts[key]||0) + 1;
+  });
+  return Object.keys(counts).map(k => ({ category:k, count:counts[k] }))
+    .sort((a,b) => b.count - a.count).slice(0,5);
+}
+// 유사 질문(간단 버전): 원본 질문은 절대 자동으로 합치거나 지우지 않는다. 같은 미팅 유형·같은 카테고리
+// 안에서 질문 요약/실제 질문의 단어 겹침 비율이 높으면 "참고용"으로만 묶어서 보여준다.
+function qaTokenize(text){
+  return (text||'').toLowerCase().replace(/[?!.,()·~"'“”]/g,' ').split(/\s+/).filter(w => w.length >= 2);
+}
+function qaSimilarityScore(a, b){
+  const wa = new Set(qaTokenize(a.questionSummary + ' ' + a.questionOriginal));
+  const wb = new Set(qaTokenize(b.questionSummary + ' ' + b.questionOriginal));
+  if(!wa.size || !wb.size) return 0;
+  let overlap = 0;
+  wa.forEach(w => { if(wb.has(w)) overlap++; });
+  return overlap / Math.min(wa.size, wb.size);
+}
+function qaFindSimilar(item){
+  return state.qaQuestions.filter(other => (
+    other.id !== item.id && other.stage === item.stage && other.category === item.category &&
+    qaSimilarityScore(item, other) >= 0.45
+  ));
+}
+
+function renderQaView(){
+  const stats = qaTabStats(qaActiveTab);
+  const freq = qaTopCategories(qaActiveTab);
+  const list = qaVisibleList();
+  const showStageCol = qaSearchScope === 'all' && !!qaSearchQuery.trim();
+  return `
+    <div class="qa-wrap">
+      <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+      <div class="qa-head">
+        <h1>Q&amp;A</h1>
+        <p>시공사·고객 미팅에서 나온 질문을 한곳에 모아두는 전사 공용 Q&amp;A 자료실입니다. 업체별로 나누지 않고 하나의 목록에 계속 누적됩니다.</p>
+      </div>
+      <div class="qa-tabs">
+        ${QA_STAGES.map(s => `
+          <button type="button" class="qa-tab ${qaActiveTab===s.key?'active':''}" data-action="qa-tab" data-stage="${s.key}">${escapeHtml(s.label)}</button>
+        `).join('')}
+      </div>
+      <div class="qa-search-row">
+        <input type="text" id="qaSearchInput" class="qa-search-input" placeholder="궁금한 질문을 검색하세요 (예: 조달, 마진, 하자, 아스팔트슁글)" autocomplete="off" value="${escapeHtml(qaSearchQuery)}" />
+        <div class="qa-scope-toggle">
+          <button type="button" class="qa-scope-btn ${qaSearchScope==='all'?'active':''}" data-action="qa-scope" data-scope="all">전체</button>
+          <button type="button" class="qa-scope-btn ${qaSearchScope==='tab'?'active':''}" data-action="qa-scope" data-scope="tab">현재 탭</button>
+        </div>
+        <button type="button" class="qa-add-btn" data-action="qa-add-open">+ 질문 추가</button>
+      </div>
+      <div class="qa-stats-row">
+        <span class="qa-stat">전체 질문 <b>${stats.total}</b></span>
+        <span class="qa-stat warn">미답변 <b>${stats.unanswered}</b></span>
+        <button type="button" class="qa-cat-manage-btn" data-action="qa-category-manage">카테고리 관리</button>
+        <button type="button" class="qa-unanswered-toggle ${qaUnansweredOnly?'active':''}" data-action="qa-toggle-unanswered">미답변만 보기</button>
+      </div>
+      ${freq.length ? `
+        <div class="qa-freq">
+          <div class="qa-freq-title">자주 나온 질문 · ${escapeHtml(qaStageLabel(qaActiveTab))}</div>
+          <div class="qa-freq-list">
+            ${freq.map((f,i) => `<span class="qa-freq-item">${i+1}. ${escapeHtml(f.category)} <b>${f.count}건</b></span>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+      <div id="qaListArea">${renderQaListArea(list, showStageCol)}</div>
+    </div>
+  `;
+}
+
+function renderQaListArea(list, showStageCol){
+  if(!list.length){
+    return `<div class="qa-table-wrap"><div class="qa-empty">${qaSearchQuery.trim() ? '검색 결과가 없습니다.' : '등록된 질문이 없습니다. 오른쪽 위 [+ 질문 추가]로 첫 질문을 등록해보세요.'}</div></div>`;
+  }
+  const isPt = !showStageCol && qaActiveTab === 'pt';
+  return `
+    <div class="qa-table-wrap">
+      <table class="qa-table">
+        <thead>
+          <tr>
+            <th style="width:130px;">구분</th>
+            <th>질문</th>
+            ${showStageCol ? '<th style="width:90px;">출처</th>' : ''}
+            <th style="width:96px;">답변 상태</th>
+            <th style="width:170px;">${isPt ? '현장 / 질문자' : '업체'}</th>
+            <th style="width:76px;">등록일</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(item => renderQaRow(item, showStageCol)).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function renderQaRow(item, showStageCol){
+  const similar = qaFindSimilar(item);
+  const isPt = item.stage === 'pt';
+  const companyCell = isPt
+    ? ([item.siteName, item.questioner].filter(Boolean).join(' · ') || item.companyName || '')
+    : (item.companyName || '');
+  const rows = [`
+    <tr class="qa-row ${qaExpandedId===item.id?'expanded':''}" data-action="qa-row-toggle" data-id="${item.id}">
+      <td><span class="qa-cat-pill">${escapeHtml(item.category||'기타')}</span></td>
+      <td>
+        <div class="qa-q-summary">${escapeHtml(item.questionSummary || '(요약 없음)')}</div>
+        ${similar.length ? `<span class="qa-similar-tag">유사 질문 ${similar.length}건</span>` : ''}
+      </td>
+      ${showStageCol ? `<td><span class="qa-stage-tag">${escapeHtml(qaStageLabel(item.stage))}</span></td>` : ''}
+      <td>
+        <span class="qa-status ${item.answerStatus==='answered'?'answered':'unanswered'}">${item.answerStatus==='answered'?'답변완료':'미답변'}</span>
+        ${item.officialAnswer ? '<span class="qa-official">★ 공식답변</span>' : ''}
+      </td>
+      <td>${escapeHtml(companyCell || '-')}</td>
+      <td>${qaFormatDate(item.createdAt)}</td>
+    </tr>
+  `];
+  if(qaExpandedId === item.id){
+    rows.push(`
+      <tr class="qa-detail-row">
+        <td colspan="${showStageCol?6:5}">${renderQaDetail(item, similar)}</td>
+      </tr>
+    `);
+  }
+  return rows.join('');
+}
+function renderQaDetail(item, similar){
+  const isPt = item.stage === 'pt';
+  return `
+    <div class="qa-detail">
+      <div class="qa-detail-grid">
+        <div class="qa-detail-item">
+          <div class="qa-detail-label">구분</div>
+          <div class="qa-detail-val">${escapeHtml(item.category || '기타')}</div>
+        </div>
+        <div class="qa-detail-item">
+          <div class="qa-detail-label">질문 업체${isPt ? ' / 시공사' : ''}</div>
+          <div class="qa-detail-val">${escapeHtml(item.companyName || '-')}</div>
+        </div>
+        <div class="qa-detail-item wide">
+          <div class="qa-detail-label">질문 요약</div>
+          <div class="qa-detail-val">${escapeHtml(item.questionSummary || '-')}</div>
+        </div>
+        <div class="qa-detail-item wide">
+          <div class="qa-detail-label">실제 질문</div>
+          <div class="qa-detail-val">${escapeHtml(item.questionOriginal || '-')}</div>
+        </div>
+        ${item.questionContext ? `
+          <div class="qa-detail-item wide">
+            <div class="qa-detail-label">질문 배경</div>
+            <div class="qa-detail-val">${escapeHtml(item.questionContext)}</div>
+          </div>
+        ` : ''}
+        ${isPt ? `
+          <div class="qa-detail-item">
+            <div class="qa-detail-label">현장명</div>
+            <div class="qa-detail-val">${escapeHtml(item.siteName || '-')}</div>
+          </div>
+          <div class="qa-detail-item">
+            <div class="qa-detail-label">질문자</div>
+            <div class="qa-detail-val">${escapeHtml(item.questioner || '-')}</div>
+          </div>
+          <div class="qa-detail-item">
+            <div class="qa-detail-label">PT 일자</div>
+            <div class="qa-detail-val">${item.meetingDate ? qaFormatDate(item.meetingDate) : '-'}</div>
+          </div>
+          <div class="qa-detail-item">
+            <div class="qa-detail-label">추가 확인 필요</div>
+            <div class="qa-detail-val">${item.followUpNeeded ? '예' : '아니오'}</div>
+          </div>
+        ` : ''}
+      </div>
+      <div class="qa-detail-actions">
+        <button type="button" class="btn btn-ghost" data-action="qa-edit" data-id="${item.id}">수정</button>
+        <button type="button" class="btn btn-ghost" data-action="qa-delete" data-id="${item.id}">삭제</button>
+      </div>
+      <div class="qa-answer-box">
+        <div class="qa-answer-head">
+          <span class="qa-answer-head-label">답변</span>
+          <label class="qa-official-toggle">
+            <input type="checkbox" data-action="qa-official-toggle" data-id="${item.id}" ${item.officialAnswer?'checked':''} />
+            공식답변으로 지정
+          </label>
+        </div>
+        <textarea class="qa-answer-textarea" id="qaAnswerInput-${item.id}" placeholder="답변을 입력하고 저장하면 자동으로 답변완료 상태가 됩니다.">${escapeHtml(item.answer || '')}</textarea>
+        <div class="qa-answer-save-row">
+          <button type="button" class="btn btn-primary" data-action="qa-answer-save" data-id="${item.id}">답변 저장</button>
+        </div>
+      </div>
+      <div class="qa-memo-box">
+        <div class="qa-memo-label">메모</div>
+        <textarea class="qa-memo-textarea" id="qaMemoInput-${item.id}" placeholder="추가 메모">${escapeHtml(item.memo || '')}</textarea>
+        <div class="qa-answer-save-row">
+          <button type="button" class="btn btn-ghost" data-action="qa-memo-save" data-id="${item.id}">메모 저장</button>
+        </div>
+      </div>
+      ${similar.length ? `
+        <div class="qa-similar-list">
+          <div class="qa-similar-list-title">유사 질문 ${similar.length}건 — 다른 업체·현장에서 나온 비슷한 질문</div>
+          ${similar.map(s => `
+            <div class="qa-similar-list-item">${escapeHtml(s.questionSummary || (s.questionOriginal||'').slice(0,40))} <span>· ${escapeHtml(s.companyName || s.siteName || '-')} · ${qaFormatDate(s.createdAt)}</span></div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+function updateQaListUI(){
+  const area = document.getElementById('qaListArea');
+  if(!area) return;
+  const list = qaVisibleList();
+  const showStageCol = qaSearchScope === 'all' && !!qaSearchQuery.trim();
+  area.innerHTML = renderQaListArea(list, showStageCol);
+}
+
+/* ---------- Q&A: 질문 등록/수정 모달 ---------- */
+function openQaQuestionModal(stage, editId){
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('modalOverlay');
+  const existing = editId ? state.qaQuestions.find(q=>q.id===editId) : null;
+  const isPt = stage === 'pt';
+  const catOptions = state.qaCategories.map(c => `<option value="${escapeHtml(c)}" ${existing && existing.category===c ? 'selected':''}>${escapeHtml(c)}</option>`).join('');
+  const questionerOptions = QA_QUESTIONER_OPTIONS.map(q => `<option value="${escapeHtml(q)}" ${existing && existing.questioner===q ? 'selected':''}>${escapeHtml(q)}</option>`).join('');
+
+  modal.classList.add('modal-wide');
+  modal.innerHTML = `
+    <h2>${existing ? '질문 수정' : '질문 추가'} · ${escapeHtml(qaStageLabel(stage))}</h2>
+    <form id="qaModalForm">
+      <div class="field-row">
+        <div class="field">
+          <label>구분 (카테고리)</label>
+          <select name="category">${catOptions}</select>
+        </div>
+        <div class="field">
+          <label>질문 업체명${isPt ? ' (시공사)' : ''}</label>
+          <input type="text" name="companyName" placeholder="예: (주)서강건설" value="${escapeHtml(existing?.companyName || '')}" />
+        </div>
+      </div>
+      <div class="field">
+        <label>질문 요약</label>
+        <input type="text" name="questionSummary" placeholder="예: 아스팔트슁글 조달 가능 여부" value="${escapeHtml(existing?.questionSummary || '')}" />
+      </div>
+      <div class="field">
+        <label>실제 질문 (한 줄에 하나씩 입력)</label>
+        <textarea name="questionOriginal" placeholder="예: 아스팔트슁글도 조달을 통해 진행할 수 있나요?">${escapeHtml(existing?.questionOriginal || '')}</textarea>
+      </div>
+      <div class="field">
+        <label>질문 배경 (선택)</label>
+        <textarea name="questionContext" placeholder="이 질문이 나온 배경/상황">${escapeHtml(existing?.questionContext || '')}</textarea>
+      </div>
+      ${isPt ? `
+        <div class="field-row">
+          <div class="field">
+            <label>현장명</label>
+            <input type="text" name="siteName" placeholder="예: OO아파트" value="${escapeHtml(existing?.siteName || '')}" />
+          </div>
+          <div class="field">
+            <label>질문자</label>
+            <select name="questioner">
+              <option value="">선택 안 함</option>
+              ${questionerOptions}
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>PT 일자</label>
+            <input type="date" name="meetingDate" value="${escapeHtml(existing?.meetingDate || '')}" />
+          </div>
+          <div class="field">
+            <label class="field-check" style="margin-top:30px;">
+              <input type="checkbox" name="followUpNeeded" ${existing?.followUpNeeded ? 'checked':''} />
+              추가 확인 필요
+            </label>
+          </div>
+        </div>
+      ` : ''}
+      <div class="field">
+        <label>답변 (선택 — 입력해서 저장하면 답변완료로 등록됩니다)</label>
+        <textarea name="answer" placeholder="답변 내용">${escapeHtml(existing?.answer || '')}</textarea>
+      </div>
+      <div class="field">
+        <label>메모 (선택)</label>
+        <textarea name="memo" placeholder="추가 메모">${escapeHtml(existing?.memo || '')}</textarea>
+        <div class="field-hint">카테고리를 새로 추가하거나 정리하려면 목록 화면의 [카테고리 관리]를 이용하세요.</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="qaModalCancel">취소</button>
+        <button type="submit" class="btn btn-primary">${existing ? '저장' : '등록'}</button>
+      </div>
+    </form>
+  `;
+  overlay.classList.add('open');
+  modal.querySelector('#qaModalCancel').onclick = closeModal;
+  modal.querySelector('#qaModalForm').onsubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const summary = f.questionSummary.value.trim();
+    const original = f.questionOriginal.value.trim();
+    if(!summary || !original){ showToast('질문 요약과 실제 질문을 입력해주세요'); return; }
+    const answer = f.answer.value.trim();
+    const now = new Date().toISOString();
+    if(existing){
+      existing.category = f.category.value;
+      existing.companyName = f.companyName.value.trim();
+      existing.questionSummary = summary;
+      existing.questionOriginal = original;
+      existing.questionContext = f.questionContext.value.trim();
+      existing.answer = answer;
+      existing.answerStatus = answer ? 'answered' : 'unanswered';
+      existing.memo = f.memo.value.trim();
+      if(isPt){
+        existing.siteName = f.siteName.value.trim();
+        existing.questioner = f.questioner.value;
+        existing.meetingDate = f.meetingDate.value;
+        existing.followUpNeeded = f.followUpNeeded.checked;
+      }
+      existing.updatedAt = now;
+    } else {
+      state.qaQuestions.push({
+        id: uid(), stage, category: f.category.value,
+        questionSummary: summary, questionOriginal: original,
+        questionContext: f.questionContext.value.trim(),
+        answer, answerStatus: answer ? 'answered' : 'unanswered', officialAnswer:false,
+        companyName: f.companyName.value.trim(), companyId:'',
+        siteName: isPt ? f.siteName.value.trim() : '',
+        questioner: isPt ? f.questioner.value : '',
+        meetingDate: isPt ? f.meetingDate.value : '',
+        followUpNeeded: isPt ? f.followUpNeeded.checked : false,
+        memo: f.memo.value.trim(), createdAt: now, updatedAt: now
+      });
+    }
+    saveState(); closeModal(); render();
+    showToast(existing ? '질문이 수정되었습니다' : '질문이 등록되었습니다');
+  };
+  const firstField = modal.querySelector('select, input, textarea');
+  if(firstField) firstField.focus();
+}
+
+/* ---------- Q&A: 카테고리 관리 모달 ---------- */
+function openQaCategoryModal(){
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('modalOverlay');
+  modal.classList.add('modal-wide');
+  overlay.classList.add('open');
+  renderQaCategoryModalBody();
+
+  function renderQaCategoryModalBody(){
+    const counts = {};
+    state.qaQuestions.forEach(q => { counts[q.category] = (counts[q.category]||0) + 1; });
+    modal.innerHTML = `
+      <h2>카테고리 관리</h2>
+      <div id="qaCatList">
+        ${state.qaCategories.map((c,i) => `
+          <div class="qa-cat-modal-row">
+            <input type="text" value="${escapeHtml(c)}" data-cat-rename="${i}" />
+            <span class="qa-cat-modal-count">${counts[c] || 0}건</span>
+            <button type="button" class="icon-btn danger" data-cat-delete="${i}" title="삭제">🗑</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="inline-form">
+        <input type="text" id="qaCatNewInput" placeholder="새 카테고리 이름" />
+        <button type="button" id="qaCatAddBtn">추가</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="qaCatCloseBtn">닫기</button>
+      </div>
+    `;
+    modal.querySelector('#qaCatCloseBtn').onclick = closeModal;
+    modal.querySelector('#qaCatAddBtn').onclick = () => {
+      const input = modal.querySelector('#qaCatNewInput');
+      const name = input.value.trim();
+      if(!name) return;
+      if(state.qaCategories.includes(name)){ showToast('이미 있는 카테고리입니다'); return; }
+      state.qaCategories.push(name);
+      saveState(); renderQaCategoryModalBody(); render();
+    };
+    modal.querySelectorAll('[data-cat-rename]').forEach(input => {
+      input.onchange = () => {
+        const idx = Number(input.dataset.catRename);
+        const oldName = state.qaCategories[idx];
+        const newName = input.value.trim();
+        if(!newName){ input.value = oldName; return; }
+        if(newName === oldName) return;
+        if(state.qaCategories.includes(newName)){ showToast('이미 있는 카테고리입니다'); input.value = oldName; return; }
+        state.qaCategories[idx] = newName;
+        // 이 카테고리를 쓰던 질문들도 함께 이름을 바꿔줘서 기존 질문의 분류가 끊기지 않게 한다
+        state.qaQuestions.forEach(q => { if(q.category === oldName) q.category = newName; });
+        saveState(); renderQaCategoryModalBody(); render();
+      };
+    });
+    modal.querySelectorAll('[data-cat-delete]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = Number(btn.dataset.catDelete);
+        const name = state.qaCategories[idx];
+        const used = state.qaQuestions.filter(q => q.category === name).length;
+        const msg = used
+          ? `"${name}" 카테고리를 삭제하시겠습니까?\n이 카테고리로 등록된 질문 ${used}건은 "기타"로 이동합니다.`
+          : `"${name}" 카테고리를 삭제하시겠습니까?`;
+        if(!confirm(msg)) return;
+        state.qaCategories = state.qaCategories.filter((c,i) => i !== idx);
+        if(!state.qaCategories.includes('기타')) state.qaCategories.push('기타');
+        state.qaQuestions.forEach(q => { if(q.category === name) q.category = '기타'; });
+        saveState(); renderQaCategoryModalBody(); render();
+      };
+    });
+  }
+}
+
+/* ---------- Q&A: 목록 화면 이벤트(delegated) ---------- */
+contentEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action^="qa-"]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+
+  if(action === 'qa-tab'){
+    qaActiveTab = btn.dataset.stage;
+    qaExpandedId = null;
+    render();
+  }
+  else if(action === 'qa-scope'){
+    qaSearchScope = btn.dataset.scope;
+    render();
+  }
+  else if(action === 'qa-add-open'){
+    openQaQuestionModal(qaActiveTab, null);
+  }
+  else if(action === 'qa-toggle-unanswered'){
+    qaUnansweredOnly = !qaUnansweredOnly;
+    render();
+  }
+  else if(action === 'qa-category-manage'){
+    openQaCategoryModal();
+  }
+  else if(action === 'qa-row-toggle'){
+    const id = btn.dataset.id;
+    qaExpandedId = (qaExpandedId === id) ? null : id;
+    updateQaListUI();
+  }
+  else if(action === 'qa-edit'){
+    const item = state.qaQuestions.find(q=>q.id===btn.dataset.id);
+    if(item) openQaQuestionModal(item.stage, item.id);
+  }
+  else if(action === 'qa-delete'){
+    const item = state.qaQuestions.find(q=>q.id===btn.dataset.id);
+    if(!item) return;
+    if(confirm('이 질문을 삭제하시겠습니까? 등록된 답변/메모도 함께 삭제됩니다.')){
+      state.qaQuestions = state.qaQuestions.filter(q=>q.id!==item.id);
+      if(qaExpandedId === item.id) qaExpandedId = null;
+      saveState(); render();
+    }
+  }
+  else if(action === 'qa-official-toggle'){
+    const item = state.qaQuestions.find(q=>q.id===btn.dataset.id);
+    if(!item) return;
+    item.officialAnswer = !item.officialAnswer;
+    item.updatedAt = new Date().toISOString();
+    saveState(); render();
+  }
+  else if(action === 'qa-answer-save'){
+    const id = btn.dataset.id;
+    const item = state.qaQuestions.find(q=>q.id===id);
+    const ta = document.getElementById(`qaAnswerInput-${id}`);
+    if(!item || !ta) return;
+    item.answer = ta.value;
+    item.answerStatus = ta.value.trim() ? 'answered' : 'unanswered';
+    item.updatedAt = new Date().toISOString();
+    saveState(); render();
+    showToast('답변이 저장되었습니다');
+  }
+  else if(action === 'qa-memo-save'){
+    const id = btn.dataset.id;
+    const item = state.qaQuestions.find(q=>q.id===id);
+    const ta = document.getElementById(`qaMemoInput-${id}`);
+    if(!item || !ta) return;
+    item.memo = ta.value;
+    item.updatedAt = new Date().toISOString();
+    saveState(); render();
+    showToast('메모가 저장되었습니다');
   }
 });
 
