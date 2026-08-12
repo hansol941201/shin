@@ -210,7 +210,7 @@
    유사 질문이 반복되면 빈도(frequencyCount)를 누적하고, 사용자가 직접
    지정한 중요 질문(isImportant)과 함께 목록 상단에 우선 노출한다.
    ============================================================ */
-const QNA_STORAGE_KEY = 'qna-site-state-v3';
+const QNA_STORAGE_KEY = 'qna-site-state-v4';
 function qnaUid(){ return 'q' + Math.random().toString(36).slice(2,10); }
 
 const QNA_PARTS = [
@@ -238,22 +238,23 @@ function qnaBuildSeedQuestions(){
     frequencyCount: 1, isImportant: false, lastAskedAt: now
   });
   return [
+    // (주)서강건설 1차 미팅 질문 — 첨부해주신 원본 문서(1차질문.hwpx) 문구 그대로 반영
     mk('first_meeting', 'POUR 제품이나 공법은 조달 등록이 되어 있나요?', ''),
     mk('first_meeting', '아스팔트슁글도 조달을 통해 진행할 수 있나요?', ''),
     mk('first_meeting', '현재 조달 등록이 되어 있지 않은 제품은 향후 등록 계획이 있나요?', ''),
-    mk('first_meeting', '아파트 입찰에서 단가 경쟁이 발생하면 현장 상황에 따라 가격 조정이 가능한가요?', ''),
-    mk('first_meeting', '견적 경쟁 시 본사에서 가격 협의나 지원이 가능한가요?', ''),
-    mk('first_meeting', 'POUR공법 실제 공사 시 시공사가 가져가는 평균 마진은 어느 정도인가요?', ''),
-    mk('first_meeting', '공종별로 마진율이 다른가요?', ''),
-    mk('first_meeting', '일반 공사 대비 POUR 협력사의 수익적인 장점은 무엇인가요?', ''),
-    mk('first_meeting', '현장 수주 후 실행공사를 진행할 때 POUR에서 대금 관련 지원을 해주나요?', ''),
-    mk('first_meeting', '이 경우 하도급 계약 형태가 되는 건가요?', ''),
-    mk('first_meeting', '계약이나 대금 지급 구조상 법적인 문제는 없나요?', ''),
-    mk('first_meeting', '발주처·시공사·POUR의 실제 계약 관계는 어떻게 구성되나요?', ''),
-    mk('first_meeting', '관공사 위주 업체도 민간 아파트시장 진입 지원을 받을 수 있나요?', ''),
-    mk('first_meeting', '처음 아파트 영업을 시작할 때 어떤 지원을 받을 수 있나요?', ''),
-    mk('first_meeting', '특허나 공법 스펙을 활용한 입찰 방법도 안내받을 수 있나요?', ''),
-    mk('first_meeting', '아직 예정 현장이 없어도 협약 후 영업을 시작할 수 있나요?', ''),
+    mk('first_meeting', '아파트 입찰에서는 결국 단가 경쟁이 발생하는데, 현장 상황에 따라 단가 조정이 가능한가요?', ''),
+    mk('first_meeting', '견적 경쟁이 붙었을 때 본사에서 어느 정도까지 가격 협의나 지원이 가능한가요?', ''),
+    mk('first_meeting', 'POUR공법으로 실제 공사를 진행하면 시공사가 가져갈 수 있는 평균적인 마진은 어느 정도인가요?', ''),
+    mk('first_meeting', '공종별로 예상 마진율이 다른가요?', ''),
+    mk('first_meeting', '일반 공사와 비교했을 때 POUR 협력사가 얻을 수 있는 수익적인 장점은 무엇인가요?', ''),
+    mk('first_meeting', '현장 수주 후 실행공사를 진행할 때 POUR 측에서 대금 관련 부분까지 지원하는 경우가 있나요?', ''),
+    mk('first_meeting', '그렇게 진행하면 실질적으로 하도급 계약 형태가 되는 건가요?', ''),
+    mk('first_meeting', '계약이나 대금 지급 구조상 법적으로 문제가 될 수 있는 부분은 없나요?', ''),
+    mk('first_meeting', '실제 계약 관계는 발주처·시공사·POUR 중 어떻게 구성되나요?', ''),
+    mk('first_meeting', '현재 관공사 위주로 해왔는데, 아파트 민간시장에 처음 진입하는 업체도 지원받을 수 있나요?', ''),
+    mk('first_meeting', '처음 아파트 영업을 시작할 때 POUR에서 어떤 자료나 지원을 받을 수 있나요?', ''),
+    mk('first_meeting', '특허나 공법 스펙을 활용해서 아파트 입찰에 들어가는 방법도 안내해 주나요?', ''),
+    mk('first_meeting', '아직 예정된 현장이 없는 상태에서도 협약 후 영업을 시작할 수 있나요?', ''),
     mk('first_meeting', '다모아(루프마스터) 공법과 POUR공법을 병행할 수 있나요?', ''),
     mk('first_meeting', '유사 공법을 같이 사용할 경우 제한사항이 있나요?', '')
   ];
