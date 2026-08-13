@@ -170,6 +170,19 @@ export function AppProvider({ children }) {
   const [cursorDate, setCursorDate] = useState(() => new Date());
   const currentWeekStart = useMemo(() => getWeekStart(cursorDate), [cursorDate]);
 
+  // 상단 검색창에서 결과를 클릭했을 때 "그 일정이 있는 달로 이동 + 상세
+  // 팝오버 열기"를 하기 위한 상태. 검색 시점에 이미 찾아낸 event 객체를
+  // 그대로 들고 있다가 MonthView가 화면에 그 상세를 띄운 뒤 비운다(같은
+  // id를 다시 조회하지 않으므로 월 이동에 따른 재조회 타이밍 문제가 없음).
+  const [focusedEvent, setFocusedEvent] = useState(null);
+  const focusEvent = useCallback((event) => {
+    if (!event) return;
+    const start = new Date(event.start);
+    setCursorDate(new Date(start.getFullYear(), start.getMonth(), 1));
+    setFocusedEvent(event);
+  }, []);
+  const clearFocusedEvent = useCallback(() => setFocusedEvent(null), []);
+
   // ---------------------------------------------------------------------
   // 로컬(플랫폼) 일정: 승인대기/시간변경/거절, 그리고 데모 모드일 때만 쓰는
   // 샘플 확정 일정. 실제 Google 연동이 켜져 있으면 "확정" 일정은 Google
@@ -899,6 +912,10 @@ export function AppProvider({ children }) {
       cancelOwnRequest,
       updateEvent,
       deleteEventAction,
+      // 상단 검색창 → 일정 클릭 시 이동
+      focusedEvent,
+      focusEvent,
+      clearFocusedEvent,
       // Google 연동
       googleConfigured: GOOGLE_CONFIGURED,
       googleClientIdValid: GOOGLE_CLIENT_ID_VALID,
@@ -952,6 +969,9 @@ export function AppProvider({ children }) {
       cancelOwnRequest,
       updateEvent,
       deleteEventAction,
+      focusedEvent,
+      focusEvent,
+      clearFocusedEvent,
       googleActive,
       googleSignedIn,
       googleUserEmail,

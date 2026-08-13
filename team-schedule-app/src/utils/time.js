@@ -60,11 +60,11 @@ export function addMinutes(date, n) {
 }
 
 // 해당 날짜가 속한 주의 월요일을 반환
+// 한 주의 시작을 일요일로 둔다(일월화수목금토 순서 — 달력 표시 요구사항).
 export function getWeekStart(date) {
   const d = startOfDay(date);
   const day = d.getDay(); // 0=일 ... 6=토
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  return addDays(d, diffToMonday);
+  return addDays(d, -day);
 }
 
 export function getWeekdays(weekStart) {

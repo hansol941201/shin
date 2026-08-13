@@ -1,12 +1,104 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useApp } from '../state/store.jsx';
-import { formatMonthLabel } from '../utils/time.js';
+import { formatMonthLabel, formatHM } from '../utils/time.js';
 import Legend from './Legend.jsx';
 import SummaryCards from './SummaryCards.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
 import { REMINDER_MINUTE_OPTIONS } from '../services/localSettings.js';
 import netformLogo from '../assets/netform-logo.png';
+
+// MonthView의 visibleByRole과 동일한 규칙 — 한솔 개인 일정은 팀장 화면에서
+// 검색 결과에도 나오지 않게 한다(달력에서도 안 보이는 일정을 검색으로
+// 찾을 수 있으면 화면 필터링과 어긋난다).
+function visibleByRole(e, role) {
+  if (e.source === 'hansol_personal') return role === 'coordinator';
+  return true;
+}
+
+const SEARCH_TYPE_LABEL = {
+  google: '팀장 일정',
+  hansol_personal: '내 일정',
+  shared_team_calendar: '공유 일정',
+};
+
+function searchTypeLabel(e) {
+  if (SEARCH_TYPE_LABEL[e.source]) return SEARCH_TYPE_LABEL[e.source];
+  // platform: 상태에 따라 확정/승인대기 등으로 구분해 보여준다.
+  if (e.status === 'pending') return '승인대기';
+  if (e.status === 'reschedule_requested') return '시간변경 요청';
+  if (e.status === 'rejected') return '거절';
+  return '내 요청';
+}
+
+const MAX_SEARCH_RESULTS = 8;
+
+// 상단 일정 검색창. 제목/장소/메모에 포함된 단어로 찾고, 결과를 누르면
+// 그 일정이 있는 달로 이동해 곧바로 상세 팝오버를 연다(store의 focusEvent
+// 참고). 현재 로드되어 있는 events 안에서만 찾으므로, Google 일정은 아직
+// 한 번도 불러오지 않은 먼 과거/미래 달까지는 찾지 못할 수 있다.
+function SearchBox() {
+  const { events, role, focusEvent } = useApp();
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef(null);
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return events
+      .filter((e) => visibleByRole(e, role))
+      .filter((e) => {
+        const haystack = `${e.title || ''} ${e.location || ''} ${e.memo || ''}`.toLowerCase();
+        return haystack.includes(q);
+      })
+      .sort((a, b) => new Date(a.start) - new Date(b.start))
+      .slice(0, MAX_SEARCH_RESULTS);
+  }, [events, role, query]);
+
+  function pick(e) {
+    focusEvent(e);
+    setQuery('');
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  return (
+    <div className="topbar-search-wrap">
+      <input
+        ref={inputRef}
+        className="topbar-search-input"
+        type="text"
+        placeholder="일정 검색 (제목·장소·메모)"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {open && query.trim() && (
+        <div className="topbar-search-dropdown">
+          {results.length === 0 && <div className="topbar-search-empty">검색 결과가 없습니다.</div>}
+          {results.map((e) => {
+            const s = new Date(e.start);
+            return (
+              <button
+                key={e.id}
+                className="topbar-search-item"
+                onMouseDown={(ev) => { ev.preventDefault(); pick(e); }}
+              >
+                <span className="topbar-search-date">
+                  {s.getMonth() + 1}/{s.getDate()} {e.allDay ? '종일' : formatHM(s.getHours() * 60 + s.getMinutes())}
+                </span>
+                <span className="topbar-search-title">{e.title}</span>
+                <span className="topbar-search-type">{searchTypeLabel(e)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SettingsPopover({ anchor, onClose }) {
   const {
@@ -274,6 +366,7 @@ export default function Header() {
       <header className="topbar">
         <div className="topbar-left">
           <img className="topbar-logo" src={netformLogo} alt="NETFORM" />
+          <SearchBox />
         </div>
 
         <div className="topbar-center">

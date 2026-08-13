@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../state/store.jsx';
 import { addDays, dateKey, getWeekStart, isSameDay, startOfDay, computeFreeBlocks, formatHM } from '../utils/time.js';
 import { busyIntervalsForDay } from '../utils/eventHelpers.js';
@@ -82,13 +82,37 @@ function freeTimeLabel(teamBusy, settings) {
 // 시작/종료 시간은 30분 단위 선택지가 아니라 자유 입력(<input type="time">)
 // 이며, 근무시간(09~18시) 범위 밖이어도 그대로 등록/수정할 수 있다.
 export default function MonthView() {
-  const { cursorDate, events, settings, addRequest, addAndConfirmRequest, addPersonalEvent, role } = useApp();
+  const {
+    cursorDate,
+    events,
+    settings,
+    addRequest,
+    addAndConfirmRequest,
+    addPersonalEvent,
+    role,
+    focusedEvent,
+    clearFocusedEvent,
+  } = useApp();
   const today = startOfDay(new Date());
 
   // createPopover: {day, startMin, endMin, x, y, kind}
   // kind: null(한솔 화면에서 아직 "요청/개인 일정" 선택 전) | 'request' | 'personal'
   const [createPopover, setCreatePopover] = useState(null);
   const [detailPopover, setDetailPopover] = useState(null); // {event, x, y}
+
+  // 상단 검색창에서 결과를 클릭하면 store가 cursorDate를 그 일정의 달로
+  // 옮기고 focusedEvent를 채운다 — 여기서는 그 달 화면이 뜬 뒤 곧바로
+  // 상세 팝오버를 열어주기만 하고, 다시 검색하지 못하도록 바로 비운다.
+  useEffect(() => {
+    if (!focusedEvent) return;
+    setCreatePopover(null);
+    setDetailPopover({
+      event: focusedEvent,
+      x: window.innerWidth / 2 - 140,
+      y: window.innerHeight / 3,
+    });
+    clearFocusedEvent();
+  }, [focusedEvent, clearFocusedEvent]);
 
   // cursorDate가 속한 달을 기준으로 월 전체 그리드(항상 6주) 구성
   const monthAnchor = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1);
@@ -195,7 +219,7 @@ export default function MonthView() {
   return (
     <div className="month-wrap">
       <div className="month-grid month-grid-head">
-        {['월', '화', '수', '목', '금', '토', '일'].map((w) => (
+        {['일', '월', '화', '수', '목', '금', '토'].map((w) => (
           <div key={w} className="month-head-cell">{w}</div>
         ))}
       </div>
