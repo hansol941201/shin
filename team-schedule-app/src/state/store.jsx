@@ -28,6 +28,8 @@ import {
   setReminderMode as persistReminderMode,
   getReminderMinutes,
   setReminderMinutes as persistReminderMinutes,
+  getAccompanyIds,
+  setAccompanyIds as persistAccompanyIds,
 } from '../services/localSettings.js';
 
 const AppContext = createContext(null);
@@ -247,6 +249,38 @@ export function AppProvider({ children }) {
     persistReminderMinutes(minutes);
   }, []);
 
+  // ---------------------------------------------------------------------
+  // 한솔 동행: 원본 팀장 일정(Google, 또는 향후 공유 일정)을 복제하지 않고
+  // "이 일정에 한솔이 같이 간다"는 식별자 목록만 이 앱 저장소에 따로
+  // 저장한다. Google 일정이면 googleEventId를, 공유 일정이면 그 일정의
+  // id를 키로 쓴다 — 두 경우 다 events 병합 시점에 태그만 붙이므로 팀장이
+  // Google에서 시간/제목/장소를 바꾸면 다음 조회 때 자동으로 최신값이
+  // 반영되고, 원본을 삭제하면 태그가 붙을 대상 자체가 없어져 화면에서도
+  // 자동으로 사라진다(고아 데이터가 눈에 보이는 일이 없음).
+  const [accompanyIds, setAccompanyIdsState] = useState(() => new Set(getAccompanyIds()));
+
+  const accompanyKeyOf = useCallback((event) => {
+    if (!event) return null;
+    if (event.source === 'google') return event.googleEventId || null;
+    if (event.source === 'shared_team_calendar') return event.id || null;
+    return null;
+  }, []);
+
+  const toggleAccompany = useCallback(
+    (event) => {
+      const key = accompanyKeyOf(event);
+      if (!key) return;
+      setAccompanyIdsState((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        persistAccompanyIds([...next]);
+        return next;
+      });
+    },
+    [accompanyKeyOf]
+  );
+
   const [googleEvents, setGoogleEvents] = useState([]);
   const [googleEventsLoading, setGoogleEventsLoading] = useState(false);
   const [googleEventsError, setGoogleEventsError] = useState('');
@@ -455,7 +489,17 @@ export function AppProvider({ children }) {
         return a === b || a.includes(b) || b.includes(a);
       });
     };
-    const sharedVisible = sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents));
+    // "한솔 동행" 태그는 원본을 복제하지 않고 화면에 표시할 때만 붙인다 —
+    // Google/공유 쪽에서 매번 새로 조회한 최신 데이터에 매번 다시 태그를
+    // 씌우는 방식이라, 팀장이 시간/제목/장소를 바꾸면 자동으로 최신값에
+    // 태그가 붙고, 원본이 삭제되면 태그를 붙일 대상 자체가 사라진다.
+    const tagAccompany = (list) =>
+      list.map((e) => {
+        const key = accompanyKeyOf(e);
+        return key && accompanyIds.has(key) ? { ...e, hansolAccompany: true } : e;
+      });
+
+    const sharedVisible = tagAccompany(sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents)));
 
     if (!googleActive) return [...localEvents, ...sharedVisible];
     const hansolConfirmedGoogleIds = new Set(
@@ -463,15 +507,15 @@ export function AppProvider({ children }) {
         .filter((e) => e.source === 'platform' && e.status === 'confirmed' && e.googleCalendarEventId)
         .map((e) => e.googleCalendarEventId)
     );
-    const googleVisible = googleEvents.filter(
-      (g) => !(g.googleEventId && hansolConfirmedGoogleIds.has(g.googleEventId))
+    const googleVisible = tagAccompany(
+      googleEvents.filter((g) => !(g.googleEventId && hansolConfirmedGoogleIds.has(g.googleEventId)))
     );
     // 거절된 요청도 이제 한솔 화면에 빨간색으로 계속 보여줘야 하므로 더 이상
     // status로 걸러내지 않는다(취소된 승인대기 요청은 DELETE_LOCAL_EVENT로
     // 배열에서 아예 제거되므로 여기 남아있는 rejected는 전부 "팀장이 실제로
     // 거절 처리한" 요청뿐이다).
     return [...googleVisible, ...localEvents, ...sharedVisible];
-  }, [googleActive, googleEvents, localEvents, sharedEvents]);
+  }, [googleActive, googleEvents, localEvents, sharedEvents, accompanyIds, accompanyKeyOf]);
 
   const addRequest = useCallback((draft) => {
     const now = new Date().toISOString();
@@ -814,6 +858,8 @@ export function AppProvider({ children }) {
       // 공유 일정(다른 팀 Firebase, 읽기 전용) 연동 상태 — 설정 화면 진단용
       sharedStatus,
       sharedEventCount: sharedEvents.length,
+      // 한솔 동행 표시(원본 팀장 일정 복제 없이 id만 태그)
+      toggleAccompany,
       // 데모 모드(개발용)
       demoMode,
       setDemoMode,
@@ -858,6 +904,7 @@ export function AppProvider({ children }) {
       setReminderMinutes,
       sharedStatus,
       sharedEvents,
+      toggleAccompany,
       demoMode,
       setDemoMode,
     ]

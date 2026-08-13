@@ -26,7 +26,10 @@ function chipClass(e) {
 
 // 상태별 짧은 배지. 승인대기는 문구 대신 체크 표시(✓)로 짧게 표시한다.
 // 개인 일정은 색만으로 이미 구분되므로 배지를 따로 붙이지 않는다.
+// 한솔 동행이 켜진 일정(주로 팀장 Google 일정)은 출처와 무관하게 "동행"
+// 배지를 최우선으로 보여준다.
 function chipBadge(e) {
+  if (e.hansolAccompany) return '동행';
   if (e.source !== 'platform') return null;
   if (e.status === 'confirmed') return '확정';
   if (e.status === 'reschedule_requested') return '시간변경 요청';

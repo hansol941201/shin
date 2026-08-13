@@ -19,8 +19,9 @@ function rejectionLabel(e) {
 // 일정 블록(확정/승인대기/시간변경) 클릭 시 뜨는 상세/액션 팝오버.
 // 시작/종료 시간은 30분 단위 선택지가 아니라 <input type="time">으로 자유롭게
 // 입력한다(RequestPopover와 동일한 패턴 — 근무시간 범위에 갇히지 않음).
-export default function EventDetailPopover({ event, anchor, onClose }) {
+export default function EventDetailPopover({ event: eventProp, anchor, onClose }) {
   const {
+    events,
     role,
     acceptRequest,
     rejectRequest,
@@ -30,7 +31,14 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
     cancelOwnRequest,
     updateEvent,
     deleteEventAction,
+    toggleAccompany,
   } = useApp();
+  // 팝오버를 연 시점의 event는 클릭 당시 스냅샷이라, 그 상태로 열어둔 채
+  // 동행 토글처럼 store 값만 바뀌는 조작을 하면 화면에 바로 반영되지
+  // 않는다. 같은 id의 최신 버전이 events 배열에 있으면 그걸 우선 써서
+  // 팝오버가 열려 있는 동안에도 즉시 최신 상태(동행 ON/OFF, 시간 변경 등)를
+  // 보여준다 — 원본이 삭제된 경우에만 스냅샷을 그대로 쓴다.
+  const event = events.find((e) => e.id === eventProp.id) || eventProp;
   // 'view' | 'reschedule-form' | 'edit-form' | 'delete-confirm' | 'reject-reason'
   const [mode, setMode] = useState('view');
   const [newStart, setNewStart] = useState(null);
@@ -239,6 +247,29 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
           <div className="pv-meta">{timeLabel}</div>
           {event.location && <div className="pv-meta">📍 {event.location}</div>}
           {event.memo && <div className="pv-memo">{event.memo}</div>}
+
+          {event.hansolAccompany && (
+            <div className="pv-accompany-note">👥 팀장님 동행 일정 — 한솔이 같이 참석합니다.</div>
+          )}
+
+          {/* 한솔 동행: 원본 Google 일정을 복제하지 않고 id만 이 앱에
+              따로 저장해 태그로만 붙인다(요구사항). 팀장 일정에서만
+              켜고 끌 수 있다. */}
+          {event.source === 'google' && (
+            <div className="pv-accompany-row">
+              <span className="pv-accompany-label">한솔 동행</span>
+              <button
+                type="button"
+                className={`pv-toggle${event.hansolAccompany ? ' pv-toggle-on' : ''}`}
+                onClick={() => toggleAccompany(event)}
+                aria-pressed={Boolean(event.hansolAccompany)}
+                aria-label="한솔 동행 전환"
+              >
+                <span className="pv-toggle-knob" />
+              </button>
+              <span className="pv-accompany-state">{event.hansolAccompany ? 'ON' : 'OFF'}</span>
+            </div>
+          )}
 
           {event.status === 'reschedule_requested' && (
             <div className="pv-reschedule-box">

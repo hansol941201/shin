@@ -133,6 +133,10 @@ export default function SummaryCards() {
   const rescheduleItems = hansolRequestEvents.filter((e) => e.status === 'reschedule_requested');
   const rejectedItems = hansolRequestEvents.filter((e) => e.status === 'rejected');
   const personalItems = monthEvents.filter((e) => e.source === 'hansol_personal');
+  // 한솔 동행이 켜진 일정 — 원본을 복제한 게 아니라 이미 위 목록(주로
+  // 팀장 일정)에 포함된 항목에 태그만 붙은 것이므로 별도 집계로 다시
+  // 뽑아서 카운트만 보여준다(달력 개수에는 중복으로 더해지지 않음).
+  const accompanyItems = monthEvents.filter((e) => e.hansolAccompany);
 
   return (
     <div className="summary-bar">
@@ -172,6 +176,14 @@ export default function SummaryCards() {
           onClick={(e) => openList(e, '거절', rejectedItems)}
         >
           거절 {rejectedItems.length}
+        </button>
+      )}
+      {accompanyItems.length > 0 && (
+        <button
+          className="summary-card-mini"
+          onClick={(e) => openList(e, '동행 일정', accompanyItems)}
+        >
+          동행 일정 {accompanyItems.length}
         </button>
       )}
       {listAndDetailPopovers}
