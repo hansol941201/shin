@@ -19,6 +19,11 @@ function chipClass(e) {
   if (e.source === 'hansol_personal') return 'dot-personal';
   if (e.source === 'shared_team_calendar') return 'dot-shared';
   if (e.source !== 'platform') return 'dot-confirmed';
+  // 한솔이 올린 요청도 확정되고 나면(팀장 수락 또는 "바로 확정") 팀장님이
+  // 직접 올린 Google 일정과 똑같이 파란색으로 보이게 한다 — 승인대기일
+  // 때만 분홍색으로 구분하고, 확정된 뒤에는 출처를 굳이 색으로 나누지
+  // 않는다(딱따구리 아이콘으로는 여전히 한솔이 올린 요청임을 알 수 있음).
+  if (e.status === 'confirmed') return 'dot-confirmed';
   if (e.status === 'reschedule_requested') return 'dot-reschedule';
   if (e.status === 'rejected') return 'dot-rejected';
   return 'dot-pending';
