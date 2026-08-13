@@ -538,6 +538,74 @@ export function AppProvider({ children }) {
     return event;
   }, [dispatchAndPersist]);
 
+  // "무조건 승인대기"가 아니라, 한솔이 직접 바로 확정할 수 있게 하는
+  // 흐름 — 승인 절차(pending → 팀장 수락)를 건너뛰고 acceptRequest와
+  // 동일한 검증/Google 등록을 거쳐 곧바로 confirmed 상태로 등록한다.
+  // addRequest로 만든 뒤 곧바로 acceptRequest(id)를 부르는 방식은 쓰지
+  // 않는다 — dispatch 직후 localEvents state가 아직 갱신되지 않아
+  // acceptRequest가 방금 만든 요청을 못 찾는 타이밍 문제가 생기므로,
+  // draft를 그대로 받아 한 번에 처리한다.
+  const addAndConfirmRequest = useCallback(
+    async (draft) => {
+      const now = new Date().toISOString();
+      const base = {
+        id: makeId('req'),
+        title: draft.title,
+        start: draft.start,
+        end: draft.end,
+        location: draft.location || '',
+        memo: draft.memo || '',
+        requester: '한솔',
+        manager: '팀장',
+        googleCalendarEventId: null,
+        createdAt: now,
+        updatedAt: now,
+        source: 'platform',
+      };
+
+      if (!googleActive) {
+        const event = { ...base, status: 'confirmed', googleCalendarEventId: `demo_${base.id}` };
+        dispatchAndPersist({ type: 'ADD_REQUEST', event });
+        return { ok: true, event };
+      }
+
+      const conflict = await googleCalendarApi.hasConflict({
+        accessToken,
+        calendarId: managerCalendarId,
+        startISO: draft.start,
+        endISO: draft.end,
+      });
+      if (!conflict.ok) {
+        if (conflict.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: conflict.message };
+      }
+      if (conflict.conflict) {
+        return { error: '해당 시간에 이미 다른 일정이 등록되어 있습니다.\n다른 시간을 선택해주세요.' };
+      }
+
+      const created = await googleCalendarApi.createEvent({
+        accessToken,
+        calendarId: managerCalendarId,
+        title: draft.title,
+        location: draft.location,
+        description: draft.memo,
+        startISO: draft.start,
+        endISO: draft.end,
+        reminders: googleCalendarApi.buildReminders(reminderMode, reminderMinutes),
+      });
+      if (!created.ok) {
+        if (created.code === 'UNAUTHORIZED') signOutGoogle();
+        return { error: `Google Calendar 일정 등록에 실패했습니다.\n${created.message}` };
+      }
+
+      const event = { ...base, status: 'confirmed', googleCalendarEventId: created.googleEventId };
+      dispatchAndPersist({ type: 'ADD_REQUEST', event });
+      fetchGoogleEvents();
+      return { ok: true, event };
+    },
+    [googleActive, accessToken, managerCalendarId, reminderMode, reminderMinutes, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+  );
+
   // 한솔 개인 일정: 팀장님 승인 절차가 없다 — 저장 즉시 confirmed로 만들고
   // googleCalendarEventId는 절대 채우지 않는다(=Google Calendar API 호출
   // 없이 앱 내부 데이터로만 관리, updateEvent/deleteEventAction도 이
@@ -821,6 +889,7 @@ export function AppProvider({ children }) {
       setCursorDate,
       events,
       addRequest,
+      addAndConfirmRequest,
       addPersonalEvent,
       acceptRequest,
       rejectRequest,
@@ -873,6 +942,7 @@ export function AppProvider({ children }) {
       cursorDate,
       events,
       addRequest,
+      addAndConfirmRequest,
       addPersonalEvent,
       acceptRequest,
       rejectRequest,

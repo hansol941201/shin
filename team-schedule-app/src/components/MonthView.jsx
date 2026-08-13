@@ -73,7 +73,7 @@ function freeTimeLabel(teamBusy, settings) {
 // 시작/종료 시간은 30분 단위 선택지가 아니라 자유 입력(<input type="time">)
 // 이며, 근무시간(09~18시) 범위 밖이어도 그대로 등록/수정할 수 있다.
 export default function MonthView() {
-  const { cursorDate, events, settings, addRequest, addPersonalEvent, role } = useApp();
+  const { cursorDate, events, settings, addRequest, addAndConfirmRequest, addPersonalEvent, role } = useApp();
   const today = startOfDay(new Date());
 
   // createPopover: {day, startMin, endMin, x, y, kind}
@@ -155,7 +155,19 @@ export default function MonthView() {
     const base = startOfDay(day);
     const start = new Date(base.getTime() + payload.startMin * 60000).toISOString();
     const end = new Date(base.getTime() + payload.endMin * 60000).toISOString();
-    addRequest({ title: payload.title, location: payload.location, memo: payload.memo, start, end });
+    const draft = { title: payload.title, location: payload.location, memo: payload.memo, start, end };
+
+    // "승인 없이 바로 확정" 체크 시 팀장님 승인대기를 거치지 않고 곧바로
+    // confirmed로 등록한다(Google 연동 중이면 실제 Google Calendar에도
+    // 바로 생성 — acceptRequest와 동일한 검증/등록 경로).
+    if (payload.confirmNow) {
+      const result = await addAndConfirmRequest(draft);
+      if (result?.error) return { error: result.error };
+      setCreatePopover(null);
+      return { ok: true };
+    }
+
+    addRequest(draft);
     setCreatePopover(null);
     return { ok: true };
   }

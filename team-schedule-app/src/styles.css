@@ -577,6 +577,21 @@ button, select, input, textarea {
 .pv-submit:disabled { opacity: .6; cursor: default; }
 .pv-submit-personal { background: var(--personal-border); color: #3f3220; }
 .pv-submit-personal:hover { filter: brightness(0.95); }
+/* "승인 없이 바로 확정"을 체크하면 버튼 색을 확정 일정 색(남색)으로
+   바꿔, 승인대기가 아니라 곧바로 확정된다는 것을 시각적으로 구분한다. */
+.pv-submit-confirm-now { background: var(--confirmed-border); }
+.pv-submit-confirm-now:hover { background: var(--navy-dark); }
+
+.pv-confirm-now-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.pv-confirm-now-row input { cursor: pointer; }
 
 .pv-warning {
   color: var(--pending-text);
