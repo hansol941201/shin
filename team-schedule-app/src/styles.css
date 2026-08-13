@@ -39,10 +39,11 @@
   --personal-border: #d9a92c;
   --personal-text: #3f3f3f;
 
-  /* 공유 일정(다른 팀 Firebase, 읽기 전용) 전용 색: 연한 보라 */
-  --shared-bg: #f1ecfb;
-  --shared-border: #b8a0e0;
-  --shared-text: #6b4fa0;
+  /* 공유 일정(다른 영업팀 Firebase, 읽기 전용) 전용 색: 연한 회색
+     (너무 어둡거나 탁하지 않게 — 배경은 아주 연하게, 글씨만 진하게) */
+  --shared-bg: #f5f5f6;
+  --shared-border: #d4d4d8;
+  --shared-text: #333333;
 
   --today-bg: #eef4fb;
   --lunch-bg: #f4f5f6;
