@@ -283,6 +283,23 @@
   .chart-add-inline{ display:flex; gap:8px; margin-top:8px; }
   .chart-add-inline input{ flex:1; padding:6px 8px; font-size:12.5px; border:1px solid var(--line); border-radius:6px; outline:none; }
 
+  /* ---- 고객 니즈/영업 핵심정보(§ 고객 니즈/영업 핵심정보 구조 개선 라운드) ---- */
+  .chart-evidence-line{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .chart-needs3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+  .chart-needs3-block{ background:#F7F8FA; border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .chart-needs3-label{ font-size:10.5px; font-weight:700; color:var(--text-muted); margin-bottom:4px; }
+  .chart-needs3-value{ font-size:12.5px; color:var(--text); line-height:1.4; word-break:break-word; }
+  .chart-needs3-value.muted{ color:#9CA3AF; }
+  .chart-needs3-input{ width:100%; padding:5px 7px; font-size:12.5px; border:1px solid var(--line); border-radius:6px; outline:none; box-sizing:border-box; }
+  .chart-tag-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chart-tag-chip{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--navy); background:#EEF1F7; border-radius:5px; padding:3px 8px; }
+  .chart-tag-chip-del{ border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); line-height:1; padding:0; }
+  .chart-tag-chip-del:hover{ color:#B91C1C; }
+  @media (max-width:640px){ .chart-needs3{ grid-template-columns:1fr; } }
+  #chartWhyPour:not(:empty), #chartCoreNeeds:not(:empty), #chartKeyFactors:not(:empty),
+  #chartQuestions:not(:empty), #chartMeetingChecklist:not(:empty), #chartSalesTendency:not(:empty),
+  #chartNextActions:not(:empty){ margin-bottom:14px; }
+
   .chart-recent-item{ display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12px; }
   .chart-recent-date{ flex:none; color:var(--text-muted); }
   .chart-recent-cat{ flex:none; color:var(--navy); font-weight:600; }
@@ -1030,13 +1047,84 @@ window.SHIN2_CRM_OCR = (function(){
     return best;
   }
 
+  // ---- 고객 이해용 요약정보(§ 고객 니즈/영업 핵심정보 구조 개선 라운드) — 전부 companies
+  // 레코드에 추가형 필드로만 얹는다(기존 필드/저장 위치는 절대 건드리지 않음). 값은 전부
+  // 사용자가 직접 입력한 텍스트일 뿐 AI가 자동 생성하지 않는다 — "근거 없는 평가/추측 금지"
+  // 원칙을 코드가 아니라 "입력 자체를 사람이 한다"는 방식으로 지킨다. 각 항목은 evidence(근거,
+  // 선택)를 함께 저장할 수 있어 화면에서 [근거 보기]로만 노출한다(§13).
+  function addWhyPour(companyId, text, evidence){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.whyPour || []).slice();
+    list.push({ id: genId('wp'), text, evidence: evidence || '', createdAt: nowIso() });
+    return updateCompany(companyId, { whyPour: list });
+  }
+  function removeWhyPour(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { whyPour: (co.whyPour||[]).filter(x=> x.id !== itemId) });
+  }
+  // coreNeeds: {expand,tech,profit} 세 칸 — 항목별로 비어있으면 화면에서 "미확인"으로 취급(§5).
+  function setCoreNeed(companyId, key, text){
+    const co = findCompany(companyId); if(!co) return null;
+    const coreNeeds = Object.assign({}, co.coreNeeds, { [key]: text });
+    return updateCompany(companyId, { coreNeeds });
+  }
+  function addKeyFactor(companyId, text){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.keyFactors || []).slice();
+    list.push({ id: genId('kf'), text, createdAt: nowIso() });
+    return updateCompany(companyId, { keyFactors: list });
+  }
+  function removeKeyFactor(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { keyFactors: (co.keyFactors||[]).filter(x=> x.id !== itemId) });
+  }
+  // customerQuestions: 고객이 실제로 한 질문 원문(§8 — meetingChecklist와 역할 분리).
+  function addCustomerQuestion(companyId, text, evidence){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.customerQuestions || []).slice();
+    list.push({ id: genId('cq'), text, evidence: evidence || '', createdAt: nowIso() });
+    return updateCompany(companyId, { customerQuestions: list });
+  }
+  function removeCustomerQuestion(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { customerQuestions: (co.customerQuestions||[]).filter(x=> x.id !== itemId) });
+  }
+  // meetingChecklist: 다음 미팅에서 우리가 답변/확인해야 할 것(§8 — customerQuestions와 역할 분리).
+  function addMeetingChecklistItem(companyId, text, evidence){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.meetingChecklist || []).slice();
+    list.push({ id: genId('mc'), text, evidence: evidence || '', createdAt: nowIso() });
+    return updateCompany(companyId, { meetingChecklist: list });
+  }
+  function removeMeetingChecklistItem(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { meetingChecklist: (co.meetingChecklist||[]).filter(x=> x.id !== itemId) });
+  }
+  // salesTendency: 근거가 명확할 때만 한 줄로 기록(§9 — AI가 성격을 판단하지 않음, 사람이 직접 입력).
+  function setSalesTendency(companyId, text, evidence){
+    return updateCompany(companyId, { salesTendency: { text: text || '', evidence: evidence || '' } });
+  }
+  function addNextAction(companyId, text){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.nextActions || []).slice();
+    list.push({ id: genId('na'), text, createdAt: nowIso() });
+    return updateCompany(companyId, { nextActions: list });
+  }
+  function removeNextAction(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { nextActions: (co.nextActions||[]).filter(x=> x.id !== itemId) });
+  }
+
   window.SHIN2_CRM_DATA = {
     loadCompanies, findCompany, addCompany, updateCompany,
     loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
     loadDocuments, documentsForCompany, addDocument, updateDocumentExtracted, getBlob, renameDocument, setDocumentMemo, deleteDocument,
     memosFor, addMemo, updateMemo, deleteMemo,
     pendingActivitiesForCompany, tasksForCompany, calendarEventsForCompany, upcomingCalendarEventsForCompany,
-    DEAL_STAGES, setDealStage, addNeed, removeNeed, dismissNeedSuggestion, addSpecialNote, removeSpecialNote, setImportant, suggestNeedFor
+    DEAL_STAGES, setDealStage, addNeed, removeNeed, dismissNeedSuggestion, addSpecialNote, removeSpecialNote, setImportant, suggestNeedFor,
+    addWhyPour, removeWhyPour, setCoreNeed, addKeyFactor, removeKeyFactor,
+    addCustomerQuestion, removeCustomerQuestion, addMeetingChecklistItem, removeMeetingChecklistItem,
+    setSalesTendency, addNextAction, removeNextAction
   };
 })();
 </script>
@@ -1141,6 +1229,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const co = D.findCompany(id);
     if(!co){ return; }
     currentCompanyId = id;
+    cardState.evidenceOpen = {}; // 업체를 새로 열 때만 근거 펼침 상태 초기화 — 같은 업체 재렌더링(수정 등) 중에는 유지
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -1169,7 +1258,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   ];
   // 업체정보(펼치기) 패널에는 헤더에 이미 노출되는 업체명/담당자/직책은 다시 넣지 않는다.
   const CO_INFO_LABELS = CO_FIELD_LABELS.filter(([k])=> !['name','contactName','position'].includes(k));
-  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null };
+  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {} };
   // 다른 탭(v2 또는 CRM 다른 탭)에서 shin2-companies-staging이 바뀌었을 때 지금 이 탭이
   // 편집 폼을 띄워둔 상태라면 storage 이벤트로 인한 재렌더링이 사용자의 입력 중인 내용을
   // 덮어쓰지 않도록 막는 플래그(§ crm 신규등록 폼).
@@ -1193,6 +1282,15 @@ window.SHIN2_CRM_APP_INIT = function(){
           <div class="chart-body" id="chartBody">
             <div class="chart-brief" id="chartBrief"></div>
 
+            <div id="chartWhyPour"></div>
+            <div id="chartCoreNeeds"></div>
+            <div id="chartKeyFactors"></div>
+            <div id="chartQuestions"></div>
+            <div id="chartMeetingChecklist"></div>
+            <div id="chartSalesTendency"></div>
+            <div id="chartNextActions"></div>
+
+            <div class="chart-hr"></div>
             <div class="chart-strip chart-strip-emphasis" id="chartStrip"></div>
 
             <div class="chart-hr"></div>
@@ -1253,6 +1351,13 @@ window.SHIN2_CRM_APP_INIT = function(){
     document.body.classList.add('chart-lock');
     renderChartHeader(co);
     renderChartBrief(co);
+    renderWhyPourSection(co);
+    renderCoreNeedsSection(co);
+    renderKeyFactorsSection(co);
+    renderQuestionsSection(co);
+    renderMeetingChecklistSection(co);
+    renderSalesTendencySection(co);
+    renderNextActionsSection(co);
     renderTopStrip(co);
     renderImportantSection(co);
     renderNeedsSpecialSection(co);
@@ -1407,6 +1512,189 @@ window.SHIN2_CRM_APP_INIT = function(){
   function renderChartBrief(co){
     const wrap = document.getElementById('chartBrief');
     wrap.innerHTML = `<div class="chart-brief-label">이 업체 한눈에 보기</div><div>${esc(buildChartBrief(co))}</div>`;
+  }
+
+  // ---- 고객 니즈/영업 핵심정보(§ 고객 니즈/영업 핵심정보 구조 개선 라운드) ------------------
+  // 아래 섹션들은 전부 "사람이 직접 입력한 사실"만 저장하는 목록형/짧은 텍스트형 필드다.
+  // AI가 추측해서 채우지 않는다 — 값이 없으면 항상 "—"(section 전체가 비었으면 숨김)로만
+  // 표시한다. evidence(근거)가 있는 항목은 기본적으로 숨겨두고 [근거 보기]를 눌렀을 때만
+  // 노출한다(§13) — cardState.evidenceOpen[sectionKey]로 섹션 단위 펼침 상태를 기억한다.
+  //
+  // renderEditableTextList: whyPour/keyFactors/customerQuestions/meetingChecklist/nextActions
+  // 다섯 섹션이 전부 "목록 + (편집모드일 때만) 추가/삭제"라는 동일한 모양이라 공통 렌더러로
+  // 묶는다 — 서로 다른 것은 필드 키(cfg.key)와 데이터 함수(cfg.addFn/removeFn)뿐이다.
+  function renderEditableTextList(co, cfg){
+    const wrap = document.getElementById(cfg.wrapId);
+    if(!wrap) return;
+    const editing = cardState.chartEditing;
+    const items = co[cfg.key] || [];
+    if(!editing && !items.length){
+      if(cfg.hideWhenEmpty){ wrap.innerHTML = ''; return; }
+      wrap.innerHTML = `<div class="chart-combined-empty"><div class="chart-section-title">${esc(cfg.title)}</div><div class="chart-empty">—</div></div>`;
+      return;
+    }
+    const hasEvidence = items.some(it=> it.evidence);
+    const evOpen = !!cardState.evidenceOpen[cfg.wrapId];
+    const itemHtml = (it)=>{
+      const text = cfg.quote ? `"${esc(it.text)}"` : esc(it.text);
+      const evLine = (it.evidence && evOpen) ? `<div class="chart-evidence-line">근거: ${esc(it.evidence)}</div>` : '';
+      return `<div class="chart-bullet-item"><span>${cfg.bullet !== false ? '– ' : ''}${text}${evLine}</span>${editing ? `<button type="button" class="chart-tag-del" data-del="${esc(it.id)}">삭제</button>` : ''}</div>`;
+    };
+    const tagHtml = (it)=> `<span class="chart-tag-chip">${esc(it.text)}${editing ? `<button type="button" class="chart-tag-chip-del" data-del="${esc(it.id)}" title="삭제">×</button>` : ''}</span>`;
+    wrap.innerHTML = `
+      <div class="chart-section-head">
+        <div class="chart-section-title">${esc(cfg.title)}</div>
+        ${hasEvidence ? `<button type="button" class="co-text-action" id="${cfg.wrapId}EvBtn">${evOpen ? '근거 숨기기' : '근거 보기'}</button>` : ''}
+      </div>
+      ${cfg.asTags
+        ? `<div class="chart-tag-row">${items.length ? items.map(tagHtml).join('') : '<span class="chart-empty">—</span>'}</div>`
+        : `<div class="chart-bullet-list">${items.length ? items.map(itemHtml).join('') : '<div class="chart-empty">—</div>'}</div>`}
+      ${editing ? `<div class="chart-add-inline">
+          <input type="text" id="${cfg.wrapId}Input" placeholder="${esc(cfg.placeholder || '내용 추가')}" />
+          ${cfg.withEvidence ? `<input type="text" id="${cfg.wrapId}EvInput" placeholder="근거(선택, 실제 발언/기록)" />` : ''}
+          <button type="button" class="co-text-action primary" id="${cfg.wrapId}AddBtn">추가</button>
+        </div>` : ''}
+    `;
+    wrap.querySelectorAll('[data-del]').forEach(btn=> btn.addEventListener('click', ()=>{
+      cfg.removeFn(co.id, btn.getAttribute('data-del'));
+      cfg.renderSelf(D.findCompany(co.id));
+    }));
+    if(hasEvidence){
+      document.getElementById(cfg.wrapId + 'EvBtn').addEventListener('click', ()=>{
+        cardState.evidenceOpen[cfg.wrapId] = !evOpen;
+        cfg.renderSelf(D.findCompany(co.id));
+      });
+    }
+    if(editing){
+      const doAdd = ()=>{
+        const input = document.getElementById(cfg.wrapId + 'Input');
+        const text = input.value.trim();
+        if(!text) return;
+        const evInput = cfg.withEvidence ? document.getElementById(cfg.wrapId + 'EvInput') : null;
+        cfg.addFn(co.id, text, evInput ? evInput.value.trim() : undefined);
+        cfg.renderSelf(D.findCompany(co.id));
+      };
+      document.getElementById(cfg.wrapId + 'AddBtn').addEventListener('click', doAdd);
+      document.getElementById(cfg.wrapId + 'Input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
+    }
+  }
+
+  // ---- 왜 POUR인가(§4) ----
+  function renderWhyPourSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartWhyPour', key: 'whyPour', title: '왜 POUR인가',
+      addFn: D.addWhyPour, removeFn: D.removeWhyPour, renderSelf: renderWhyPourSection,
+      placeholder: '왜 POUR인가 (실제 확인된 내용만)', withEvidence: true, hideWhenEmpty: true
+    });
+  }
+
+  // ---- 핵심 니즈 3분할(§5) — 사업 확대 / 제품·기술 / 수익·실행. 항목별로 비어있으면
+  // "미확인"으로만 표시하고, 세 칸 모두 비어있으면(편집모드가 아닐 때) 섹션 전체를 숨긴다. ----
+  const CORE_NEED_FIELDS = [['expand','사업 확대'], ['tech','제품·기술'], ['profit','수익·실행']];
+  function renderCoreNeedsSection(co){
+    const wrap = document.getElementById('chartCoreNeeds');
+    if(!wrap) return;
+    const editing = cardState.chartEditing;
+    const coreNeeds = co.coreNeeds || {};
+    const anyFilled = CORE_NEED_FIELDS.some(([k])=> coreNeeds[k]);
+    if(!editing && !anyFilled){ wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `
+      <div class="chart-section-title">핵심 니즈</div>
+      <div class="chart-needs3">
+        ${CORE_NEED_FIELDS.map(([key,label])=> `
+          <div class="chart-needs3-block">
+            <div class="chart-needs3-label">${esc(label)}</div>
+            ${editing
+              ? `<input type="text" class="chart-needs3-input" data-need-key="${key}" value="${esc(coreNeeds[key] || '')}" placeholder="미확인" />`
+              : `<div class="chart-needs3-value${coreNeeds[key] ? '' : ' muted'}">${esc(coreNeeds[key] || '미확인')}</div>`}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    if(editing){
+      wrap.querySelectorAll('[data-need-key]').forEach(input=>{
+        input.addEventListener('change', ()=> D.setCoreNeed(co.id, input.getAttribute('data-need-key'), input.value.trim()));
+      });
+    }
+  }
+
+  // ---- 중요 판단요소(§6) — 짧은 태그 형태 ----
+  function renderKeyFactorsSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartKeyFactors', key: 'keyFactors', title: '중요 판단요소',
+      addFn: (id,text)=> D.addKeyFactor(id,text), removeFn: D.removeKeyFactor, renderSelf: renderKeyFactorsSection,
+      placeholder: '판단요소 (예: 조달등록)', asTags: true, hideWhenEmpty: true
+    });
+  }
+
+  // ---- 고객 주요 질문(§7/§8) — 고객이 실제로 한 질문의 원문 기록 ----
+  function renderQuestionsSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartQuestions', key: 'customerQuestions', title: '고객 주요 질문',
+      addFn: D.addCustomerQuestion, removeFn: D.removeCustomerQuestion, renderSelf: renderQuestionsSection,
+      placeholder: '고객이 실제로 한 질문', withEvidence: true, quote: true, hideWhenEmpty: true
+    });
+  }
+
+  // ---- 다음 미팅 핵심 확인사항(§7/§8) — 고객 질문 중 아직 답변/확인이 필요한 것 ----
+  function renderMeetingChecklistSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartMeetingChecklist', key: 'meetingChecklist', title: '다음 미팅 핵심 확인사항',
+      addFn: D.addMeetingChecklistItem, removeFn: D.removeMeetingChecklistItem, renderSelf: renderMeetingChecklistSection,
+      placeholder: '다음 미팅에서 확인/답변할 내용', withEvidence: true, hideWhenEmpty: true
+    });
+  }
+
+  // ---- 영업 성향(§9) — 근거가 명확할 때만 한 줄로 기록. AI가 성격을 판단하지 않고 사람이
+  // 직접 입력한다(입력창 자체가 "근거" 칸을 필수로 받도록 안내만 한다 — 강제 검증은 하지 않음). ----
+  function renderSalesTendencySection(co){
+    const wrap = document.getElementById('chartSalesTendency');
+    if(!wrap) return;
+    const editing = cardState.chartEditing;
+    const st = co.salesTendency || {};
+    if(!editing && !st.text){ wrap.innerHTML = ''; return; }
+    const evOpen = !!cardState.evidenceOpen.chartSalesTendency;
+    if(editing){
+      wrap.innerHTML = `
+        <div class="chart-section-title">영업 성향</div>
+        <div class="chart-important-edit" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <input type="text" id="chartTendencyText" value="${esc(st.text || '')}" placeholder="실제 발언/행동에서 명확히 확인되는 경우에만 입력" />
+          <input type="text" id="chartTendencyEvidence" value="${esc(st.evidence || '')}" placeholder="근거(실제 기록/발언)" />
+          <button type="button" class="co-text-action primary" id="chartTendencySaveBtn" style="align-self:flex-start;">저장</button>
+        </div>
+      `;
+      document.getElementById('chartTendencySaveBtn').addEventListener('click', ()=>{
+        const text = document.getElementById('chartTendencyText').value.trim();
+        const evidence = document.getElementById('chartTendencyEvidence').value.trim();
+        D.setSalesTendency(co.id, text, evidence);
+        renderSalesTendencySection(D.findCompany(co.id));
+      });
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="chart-section-head">
+        <div class="chart-section-title">영업 성향</div>
+        ${st.evidence ? `<button type="button" class="co-text-action" id="chartTendencyEvBtn">${evOpen ? '근거 숨기기' : '근거 보기'}</button>` : ''}
+      </div>
+      <div>${esc(st.text)}</div>
+      ${(st.evidence && evOpen) ? `<div class="chart-evidence-line">근거: ${esc(st.evidence)}</div>` : ''}
+    `;
+    if(st.evidence){
+      document.getElementById('chartTendencyEvBtn').addEventListener('click', ()=>{
+        cardState.evidenceOpen.chartSalesTendency = !evOpen;
+        renderSalesTendencySection(D.findCompany(co.id));
+      });
+    }
+  }
+
+  // ---- 다음 액션(§10) — 고객 니즈/질문을 바탕으로 우리가 할 일(고객 질문의 단순 복사가
+  // 아니라 우리 쪽 행동으로 직접 입력한다) ----
+  function renderNextActionsSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartNextActions', key: 'nextActions', title: '다음 액션',
+      addFn: (id,text)=> D.addNextAction(id,text), removeFn: D.removeNextAction, renderSelf: renderNextActionsSection,
+      placeholder: '우리가 다음에 해야 할 행동', hideWhenEmpty: true
+    });
   }
 
   // ---- 고객 니즈 / 특이사항 — 둘 다 비어 있고(편집모드가 아니고, 등록 제안도 없을 때) 한
