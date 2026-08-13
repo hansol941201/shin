@@ -57,6 +57,34 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
     ? '종일'
     : `${formatHM(start.getHours() * 60 + start.getMinutes())} ~ ${formatHM(end.getHours() * 60 + end.getMinutes())}`;
 
+  // 다른 팀 Firebase에서 가져온 공유 일정은 완전히 읽기 전용이다 —
+  // 수정/삭제/수락/거절 등 어떤 액션 버튼도 두지 않고 정보만 보여준다.
+  if (event.source === 'shared_team_calendar') {
+    return (
+      <PopoverShell anchor={anchor} onClose={onClose} width={296}>
+        <div className="pv-head">
+          <span className="pv-status-badge pv-status-shared">공유 일정</span>
+          <button className="pv-close" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        <div className="pv-title">{event.title}</div>
+        <div className="pv-meta">{dateLabel}</div>
+        <div className="pv-meta">
+          {timeLabel}
+          {event.approximateTime && <span className="pv-hint-inline"> (종료시간은 추정값)</span>}
+        </div>
+        {event.location && <div className="pv-meta">📍 {event.location}</div>}
+        {event.assignee && <div className="pv-meta">담당자: {event.assignee}</div>}
+        {event.attendees?.length > 0 && (
+          <div className="pv-meta">참석자: {event.attendees.join(', ')}</div>
+        )}
+        {event.memo && <div className="pv-memo">{event.memo}</div>}
+        <div className="pv-hint" style={{ marginTop: 8 }}>
+          다른 팀 프로그램에서 가져온 읽기 전용 일정입니다. 수정·삭제는 원본 프로그램에서만 가능합니다.
+        </div>
+      </PopoverShell>
+    );
+  }
+
   function beginReschedule() {
     const sm = start.getHours() * 60 + start.getMinutes();
     const em = end.getHours() * 60 + end.getMinutes();

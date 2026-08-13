@@ -27,6 +27,8 @@ function SettingsPopover({ anchor, onClose }) {
     setReminderMode,
     reminderMinutes,
     setReminderMinutes,
+    sharedStatus,
+    sharedEventCount,
   } = useApp();
   const [workStart, setWorkStart] = useState(Math.floor(settings.workStartMin / 60));
   const [workEnd, setWorkEnd] = useState(Math.floor(settings.workEndMin / 60));
@@ -160,6 +162,26 @@ function SettingsPopover({ anchor, onClose }) {
         <span>샘플 데이터 사용 (개발용)</span>
       </label>
       {googleActive && <div className="pv-hint">Google 연동 중에는 사용되지 않습니다.</div>}
+
+      <hr className="settings-sep" />
+
+      <div className="settings-block-title">공유 일정(다른 팀) 연동</div>
+      <div className="settings-diag">
+        <div className="settings-diag-row">
+          <span>연결 상태</span>
+          <b className={sharedStatus?.ok ? 'diag-ok' : sharedStatus?.ok === false ? 'diag-bad' : ''}>
+            {sharedStatus?.ok === true ? '정상' : sharedStatus?.ok === false ? '실패' : '확인 중…'}
+          </b>
+        </div>
+        <div className="settings-diag-row">
+          <span>가져온 일정 수</span>
+          <b>{sharedEventCount}건</b>
+        </div>
+      </div>
+      {sharedStatus?.ok === false && sharedStatus?.message && (
+        <div className="pv-error">{sharedStatus.message}</div>
+      )}
+      <div className="pv-hint">읽기 전용입니다 — 이 화면에서 다른 팀 일정을 수정/삭제할 수 없습니다.</div>
 
       <hr className="settings-sep" />
 

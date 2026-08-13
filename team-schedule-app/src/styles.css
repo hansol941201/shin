@@ -39,6 +39,11 @@
   --personal-border: #d9a92c;
   --personal-text: #3f3f3f;
 
+  /* 공유 일정(다른 팀 Firebase, 읽기 전용) 전용 색: 연한 보라 */
+  --shared-bg: #f1ecfb;
+  --shared-border: #b8a0e0;
+  --shared-text: #6b4fa0;
+
   --today-bg: #eef4fb;
   --lunch-bg: #f4f5f6;
 
@@ -628,6 +633,8 @@ button, select, input, textarea {
 .pv-status-reschedule_requested { background: var(--pending-bg); color: var(--pending-text); border: 1px solid var(--pending-border); }
 .pv-status-rejected { background: var(--reject-bg); color: var(--reject-text); border: 1px solid var(--reject-border); }
 .pv-status-personal { background: var(--personal-bg); color: var(--personal-text); border: 1px solid var(--personal-border); }
+.pv-status-shared { background: var(--shared-bg); color: var(--shared-text); border: 1px solid var(--shared-border); }
+.pv-hint-inline { color: var(--text-faint); }
 
 .pv-reschedule-box {
   margin-top: 8px;
@@ -936,6 +943,20 @@ button, select, input, textarea {
   background: var(--personal-bg);
   color: var(--personal-text);
   border-left: 3px solid var(--personal-border);
+}
+.month-event-chip.dot-shared {
+  background: var(--shared-bg);
+  color: var(--shared-text);
+  border: 1px solid var(--shared-border);
+}
+.month-chip-source-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--shared-text);
+  background: #fff;
+  border-radius: 3px;
+  padding: 0 3px;
+  flex: 0 0 auto;
 }
 .month-chip-icon {
   width: 18px;

@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, getWeekStart, addDays } from '../utils/time.js';
 import { makeId } from '../utils/id.js';
 import { loadPersistedEvents, persistEvents } from '../services/firebase.js';
 import * as googleCalendarApi from '../services/googleCalendar.js';
+import { subscribeLegacySchedules } from '../services/legacyScheduleAdapter.js';
 import {
   GOOGLE_CONFIGURED,
   GOOGLE_CLIENT_ID_VALID,
@@ -187,6 +188,22 @@ export function AppProvider({ children }) {
   useEffect(() => {
     persistEvents(localEvents);
   }, [localEvents]);
+
+  // ---------------------------------------------------------------------
+  // 공유 일정(다른 팀 Firebase, 읽기 전용): Google 연동 여부와 무관하게
+  // 앱이 열리는 즉시 항상 구독을 시작한다 — 완전히 별도의 실시간 소스다.
+  // 이 앱은 이 데이터를 절대 쓰지/지우지 않는다(subscribeLegacySchedules
+  // 내부도 onValue만 사용, set/update/remove 없음).
+  // ---------------------------------------------------------------------
+  const [sharedEvents, setSharedEvents] = useState([]);
+  const [sharedStatus, setSharedStatus] = useState({ ok: null, message: '연결 확인 중…' });
+
+  useEffect(() => {
+    const unsubscribe = subscribeLegacySchedules(setSharedEvents, setSharedStatus);
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const setDemoMode = useCallback(
     (next) => {
@@ -415,7 +432,32 @@ export function AppProvider({ children }) {
   // 일정이 두 번 표시되지 않도록, 그 일정에 대응하는 Google 쪽 사본은
   // 목록에서 제외한다.
   const events = useMemo(() => {
-    if (!googleActive) return localEvents;
+    // 공유 일정(다른 팀 Firebase)이 Google Calendar에도 같은 내용으로
+    // 이미 등록돼 있으면 화면에 두 번 보이지 않도록 걸러낸다(요구사항:
+    // 원본 데이터는 그대로 두고 표시만 한 번). 판단 기준: 같은 날짜 +
+    // 시작 시각이 5분 이내로 같음 + 제목이 (공백 무시) 서로 같거나 한쪽을
+    // 포함 — 확실하지 않으면 중복으로 보지 않는다(요구사항).
+    const isDuplicateOfGoogle = (shared, googleList) => {
+      const sStart = new Date(shared.start);
+      return googleList.some((g) => {
+        const gStart = new Date(g.start);
+        if (
+          gStart.getFullYear() !== sStart.getFullYear() ||
+          gStart.getMonth() !== sStart.getMonth() ||
+          gStart.getDate() !== sStart.getDate()
+        ) {
+          return false;
+        }
+        if (Math.abs(gStart.getTime() - sStart.getTime()) > 5 * 60000) return false;
+        const a = (g.title || '').replace(/\s+/g, '').toLowerCase();
+        const b = (shared.title || '').replace(/\s+/g, '').toLowerCase();
+        if (!a || !b) return false;
+        return a === b || a.includes(b) || b.includes(a);
+      });
+    };
+    const sharedVisible = sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents));
+
+    if (!googleActive) return [...localEvents, ...sharedVisible];
     const hansolConfirmedGoogleIds = new Set(
       localEvents
         .filter((e) => e.source === 'platform' && e.status === 'confirmed' && e.googleCalendarEventId)
@@ -428,8 +470,8 @@ export function AppProvider({ children }) {
     // status로 걸러내지 않는다(취소된 승인대기 요청은 DELETE_LOCAL_EVENT로
     // 배열에서 아예 제거되므로 여기 남아있는 rejected는 전부 "팀장이 실제로
     // 거절 처리한" 요청뿐이다).
-    return [...googleVisible, ...localEvents];
-  }, [googleActive, googleEvents, localEvents]);
+    return [...googleVisible, ...localEvents, ...sharedVisible];
+  }, [googleActive, googleEvents, localEvents, sharedEvents]);
 
   const addRequest = useCallback((draft) => {
     const now = new Date().toISOString();
@@ -769,6 +811,9 @@ export function AppProvider({ children }) {
       setReminderMode,
       reminderMinutes,
       setReminderMinutes,
+      // 공유 일정(다른 팀 Firebase, 읽기 전용) 연동 상태 — 설정 화면 진단용
+      sharedStatus,
+      sharedEventCount: sharedEvents.length,
       // 데모 모드(개발용)
       demoMode,
       setDemoMode,
@@ -811,6 +856,8 @@ export function AppProvider({ children }) {
       setReminderMode,
       reminderMinutes,
       setReminderMinutes,
+      sharedStatus,
+      sharedEvents,
       demoMode,
       setDemoMode,
     ]

@@ -8,13 +8,16 @@ import CreateKindPopover from './CreateKindPopover.jsx';
 import EventDetailPopover from './EventDetailPopover.jsx';
 import woodpeckerIcon from '../assets/woodpecker.png';
 
-// 세 가지 출처가 색으로 한눈에 구분된다:
+// 네 가지 출처가 색으로 한눈에 구분된다:
 // - source==='google' (팀장 Google 기본 일정): 기존 파란 계열
+// - source==='shared_team_calendar' (다른 팀 Firebase에서 가져온 팀장님
+//   관련 일정, 읽기 전용): 연한 보라 계열
 // - source==='platform' (한솔 → 팀장 요청): 승인대기/확정=분홍, 시간변경
 //   요청=주황, 거절=빨강 — 상태에 따라 처리 결과가 바로 보인다.
 // - source==='hansol_personal' (한솔 개인 일정, 승인 절차 없음): 노란 계열
 function chipClass(e) {
   if (e.source === 'hansol_personal') return 'dot-personal';
+  if (e.source === 'shared_team_calendar') return 'dot-shared';
   if (e.source !== 'platform') return 'dot-confirmed';
   if (e.status === 'reschedule_requested') return 'dot-reschedule';
   if (e.status === 'rejected') return 'dot-rejected';
@@ -38,9 +41,9 @@ function hasOverlap(busyIntervals, startMin, endMin) {
   return busyIntervals.some((b) => b.start < endMin && startMin < b.end);
 }
 
-// 팀장 Google 일정(teamBusy)만 기준으로 "N시 이후 가능" 같은 짧은 요약을
-// 만든다. 한솔 개인 일정/요청은 팀장님의 실제 가능 여부와 무관하므로 절대
-// 섞지 않는다(요구사항: 가능 시간 계산은 항상 Google 캘린더 기준).
+// 팀장 Google 일정 + 공유 일정(다른 팀 Firebase, 휴가/반차 포함)만 기준으로
+// "N시 이후 가능" 같은 짧은 요약을 만든다. 한솔 개인 일정/요청은 팀장님의
+// 실제 가능 여부와 무관하므로 절대 섞지 않는다.
 function freeTimeLabel(teamBusy, settings) {
   const free = computeFreeBlocks(teamBusy, settings);
   if (free.length === 0) return null;
@@ -176,11 +179,17 @@ export default function MonthView() {
         {cells.map((d) => {
           const inMonth = d.getMonth() === monthAnchor.getMonth();
           const evts = dayEvents(d);
-          // 가능 시간 요약은 팀장 Google 일정만 기준으로 계산하고(한솔
-          // 개인/요청 일정 절대 섞지 않음), 너무 복잡해지지 않도록 한솔
-          // 화면에서만 보여준다.
+          // 가능 시간 요약은 팀장 Google 일정 + 공유 일정(휴가/반차 포함)만
+          // 기준으로 계산하고(한솔 개인/요청 일정 절대 섞지 않음), 너무
+          // 복잡해지지 않도록 한솔 화면에서만 보여준다.
           const label = role === 'coordinator'
-            ? freeTimeLabel(busyIntervalsForDay(events.filter((e) => e.source === 'google'), d), settings)
+            ? freeTimeLabel(
+                busyIntervalsForDay(
+                  events.filter((e) => e.source === 'google' || e.source === 'shared_team_calendar'),
+                  d
+                ),
+                settings
+              )
             : null;
           return (
             <div
@@ -208,6 +217,9 @@ export default function MonthView() {
                     >
                       {e.source === 'platform' && (
                         <img className="month-chip-icon" src={woodpeckerIcon} alt="한솔 요청" />
+                      )}
+                      {e.source === 'shared_team_calendar' && (
+                        <span className="month-chip-source-tag">공유</span>
                       )}
                       <span className="month-chip-title">{e.title}</span>
                       {chipBadge(e) && <span className="month-chip-badge">{chipBadge(e)}</span>}
