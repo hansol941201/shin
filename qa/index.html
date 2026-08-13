@@ -140,8 +140,7 @@
   .qna-ai-section-title{
     display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px;margin-bottom:8px;
   }
-  .qna-ai-section-title.cat-repeat{background:var(--qna-navy);color:#fff;}
-  .qna-ai-section-title.cat-prepare{background:var(--qna-blue-soft);color:var(--qna-navy);}
+  .qna-ai-section-title.cat-prepare{background:var(--qna-navy);color:#fff;}
   .qna-ai-section-title.cat-idea{background:#fff;color:var(--qna-navy);border:1px solid var(--qna-navy);}
   .qna-ai-item{padding:8px 0;border-top:1px solid var(--qna-border);}
   .qna-ai-item:first-of-type{border-top:none;padding-top:0;}
@@ -212,8 +211,8 @@
     <div class="qna-content-main">
       <div id="qnaMain"></div>
     </div>
-    <!-- AI 업무 제안: 현재 탭에 쌓인 질문 전체를 분석해 반복 요청/준비하면 좋은 것/새로운
-         아이디어 3가지로 보여주는 보조 패널. 질문 목록의 구조·기능에는 관여하지 않는다. -->
+    <!-- AI 업무 제안: 현재 탭에 쌓인 질문 전체를 분석해 준비하면 좋은 것/새로운 아이디어
+         2가지로 보여주는 보조 패널. 질문 목록의 구조·기능에는 관여하지 않는다. -->
     <aside class="qna-reco-panel">
       <details class="qna-reco-details" open>
         <summary class="qna-reco-summary">AI 업무 제안</summary>
@@ -617,10 +616,9 @@ function qnaRenderItem(item, showPartTag){
 }
 /* ============================================================
    오른쪽 패널: "AI 업무 제안"
-   현재 탭(1차/2차/PT)에 누적된 질문 전체를 분석해서 세 가지를 보여준다.
-   ① 반복 요청 — 여러 질문에서 실제로 반복된 주제(근거: category + 병합
-      빈도 데이터). ② 준비하면 좋은 것 — 지금까지의 질문에서 확인되는
-      관심사·요구사항을 근거로 미리 만들어두면 좋을 자료. ③ 새로운
+   현재 탭(1차/2차/PT)에 누적된 질문 전체를 분석해서 두 가지를 보여준다.
+   ① 준비하면 좋은 것 — 지금까지의 질문에서 확인되는
+      관심사·요구사항을 근거로 미리 만들어두면 좋을 자료. ② 새로운
       아이디어 — 이미 하고 있는 일(영업지원 동행, PT·공법설명회 지원,
       CAD·물량산출, 실행견적·자재견적 제공, 전문 시공팀·직영 시공 교육,
       공사 진행관리·준공자료·하자대응·현장 품질관리, AI·드론 진단,
@@ -677,13 +675,6 @@ const QNA_RECO_RULES = [
   { categories:[], keywords:['샘플','카탈로그','재질','제품','자재','슁글','우레탄','방수','기와'],
     actions:['ready-brief-doc','proposal-custom','pre-construction-checklist'] },
 ];
-// 카테고리(내부 관리용 분류값)를 "반복 요청" 문구에 쓰는 자연스러운 한글 표현으로 바꾼다.
-const QNA_CATEGORY_LABELS = {
-  '조달 관련':'조달', '관급공사 적용 관련':'관급공사 적용', '가격 / 단가':'단가',
-  '수익 / 마진':'마진', '실행공사 / 계약 구조':'실행공사·계약', '민간 아파트 영업 지원':'영업 지원',
-  '타 공법 병행':'타 공법 비교',
-};
-
 // 지금 탭에 쌓인 질문 전체에서, 어떤 실행 항목이 몇 건의 질문과 관련 있는지 센다.
 function qnaAiMatchCounts(questions){
   const counts = new Map();
@@ -704,23 +695,6 @@ function qnaAiPickTop(catalog, counts, limit){
     .sort((a, b) => b.count - a.count || ids.indexOf(a.id) - ids.indexOf(b.id))
     .slice(0, limit);
 }
-// ① 반복 요청 — 같은 카테고리(주제)의 질문이 여러 건, 또는 병합된 표현(aliases)까지 포함해
-// 여러 차례 반복해서 들어온 경우만 근거로 삼는다. 데이터가 없으면 지어내지 않고 빈 상태로 둔다.
-function qnaAiRepeatedTopics(questions){
-  const byCategory = new Map();
-  questions.forEach(q => {
-    if(!q.category) return;
-    const cur = byCategory.get(q.category) || { count:0, mentions:0 };
-    cur.count += 1;
-    cur.mentions += (q.frequencyCount || 1);
-    byCategory.set(q.category, cur);
-  });
-  return Array.from(byCategory.entries())
-    .filter(([, info]) => info.count >= 2 || info.mentions >= 2) // 최소 2건 이상 근거가 있을 때만
-    .sort((a, b) => b[1].mentions - a[1].mentions)
-    .slice(0, 3)
-    .map(([category, info]) => ({ category, ...info }));
-}
 function qnaRenderRecoPanel(){
   const body = document.getElementById('qnaRecoBody');
   if(!body) return;
@@ -729,7 +703,6 @@ function qnaRenderRecoPanel(){
     body.innerHTML = `<p class="qna-ai-empty">질문이 등록되면 제안이 표시됩니다.</p>`;
     return;
   }
-  const repeated = qnaAiRepeatedTopics(questions);
   const counts = qnaAiMatchCounts(questions);
   const prepared = qnaAiPickTop(QNA_PREPARE_ACTIONS, counts, 3);
   const ideas = qnaAiPickTop(QNA_IDEA_ACTIONS, counts, 3);
@@ -741,24 +714,10 @@ function qnaRenderRecoPanel(){
       <div class="qna-ai-item-reason">${qnaEscapeHtml(reason)}</div>
     </div>
   `;
-  const repeatedHtml = repeated.length
-    ? repeated.map(r => {
-        const label = QNA_CATEGORY_LABELS[r.category] || r.category;
-        return renderItem(
-          `${label} 질문 반복`,
-          `동일 주제 질문이 ${r.count}건, 표현을 합치면 총 ${r.mentions}회 등록되었습니다.`,
-          '여러 미팅에서 반복된 주제라 정리해두면 다음 대응이 빨라집니다.'
-        );
-      }).join('')
-    : `<p class="qna-ai-empty">아직 반복해서 확인된 요청이 없습니다.</p>`;
   const preparedHtml = prepared.map(it => renderItem(it.title, it.content, it.reason)).join('');
   const ideasHtml = ideas.map(it => renderItem(it.title, it.content, it.reason)).join('');
 
   body.innerHTML = `
-    <div class="qna-ai-section">
-      <div class="qna-ai-section-title cat-repeat">반복 요청</div>
-      ${repeatedHtml}
-    </div>
     <div class="qna-ai-section">
       <div class="qna-ai-section-title cat-prepare">준비하면 좋은 것</div>
       ${preparedHtml}
