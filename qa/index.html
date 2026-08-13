@@ -117,19 +117,19 @@
 
   .qna-empty-state{padding:44px 10px;text-align:center;color:var(--qna-text-gray);font-size:12.5px;}
 
-  /* 오른쪽 추천 패널: "시공사에게 제공하면 좋은 것" — 본문(질문 목록)은 그대로 두고 옆에만
-     붙는 보조 패널이라, 목록 컬럼 자체의 폭은 기존과 동일하게 유지한다. */
+  /* 오른쪽 추천 패널: "질문 기반 실행 추천" — 본문(질문 목록)은 그대로 두고 옆에만 붙는 보조
+     패널이라, 목록 컬럼 자체의 폭은 기존과 동일하게 유지한다. */
   .qna-content-row{display:flex;align-items:flex-start;gap:24px;}
   .qna-content-main{flex:1;min-width:0;max-width:980px;}
   .qna-reco-panel{
-    flex:0 0 300px;width:300px;position:sticky;top:24px;
-    background:var(--qna-card-bg);border:1px solid var(--qna-navy);border-radius:10px;overflow:hidden;
+    flex:0 0 300px;width:300px;position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;
+    background:var(--qna-card-bg);border:1px solid var(--qna-navy);border-radius:10px;
   }
   .qna-reco-details summary{list-style:none;cursor:pointer;}
   .qna-reco-details summary::-webkit-details-marker{display:none;}
   .qna-reco-summary{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:12px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--qna-navy);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:1;
+    padding:12px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--qna-navy);border-radius:9px 9px 0 0;
   }
   .qna-reco-summary::after{content:'▾';font-size:11px;flex:none;transition:transform .15s;}
   .qna-reco-details[open] .qna-reco-summary::after{transform:rotate(180deg);}
@@ -137,21 +137,34 @@
   .qna-reco-context{font-size:11px;color:var(--qna-text-faint);margin:0 0 10px;line-height:1.5;}
   .qna-reco-context span{color:var(--qna-text-gray);font-weight:600;}
   .qna-reco-empty{font-size:12px;color:var(--qna-text-faint);margin:0;}
-  .qna-reco-item{padding:9px 0;border-top:1px solid var(--qna-border);}
+  .qna-reco-item{padding:10px 0;border-top:1px solid var(--qna-border);}
   .qna-reco-item:first-of-type{border-top:none;padding-top:0;}
+  .qna-reco-item.is-done{opacity:.6;}
+  .qna-reco-item.is-excluded{opacity:.45;}
+  .qna-reco-item-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;}
   .qna-reco-priority{
     display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;
-    margin-right:4px;color:var(--qna-navy);background:var(--qna-navy-soft);
+    color:var(--qna-navy);background:var(--qna-navy-soft);
   }
   .qna-reco-priority.required{background:var(--qna-navy);color:#fff;}
   .qna-reco-priority.frequent{background:var(--qna-blue-soft);color:var(--qna-navy);}
   .qna-reco-label{font-size:12.5px;font-weight:700;color:var(--qna-text);}
+  .qna-reco-state{font-size:10px;font-weight:700;color:var(--qna-text-faint);margin-left:auto;}
   .qna-reco-reason{font-size:11px;color:var(--qna-text-gray);margin:3px 0 0;line-height:1.5;}
+  .qna-reco-actions{display:flex;gap:10px;margin-top:6px;}
+  .qna-reco-btn{
+    background:none;border:none;padding:0;margin:0;font-size:11px;font-weight:700;
+    color:var(--qna-navy);cursor:pointer;font-family:inherit;
+  }
+  .qna-reco-btn:hover{text-decoration:underline;}
+  .qna-reco-btn.muted{color:var(--qna-text-faint);}
+  .qna-reco-btn.muted:hover{color:#c0392b;}
 
   @media (max-width:960px){
     .qna-content-row{flex-direction:column;}
     .qna-content-main{max-width:none;}
-    .qna-reco-panel{width:100%;flex:none;position:static;}
+    .qna-reco-panel{width:100%;flex:none;position:static;max-height:none;}
+    .qna-reco-summary{position:static;}
   }
 
   .qna-btn{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
@@ -210,11 +223,11 @@
     <div class="qna-content-main">
       <div id="qnaMain"></div>
     </div>
-    <!-- 시공사에게 제공하면 좋은 것: 현재 보고 있는 질문의 내용·카테고리를 분석해 관련 자료를
-         3~5개 추천하는 보조 패널. 질문 목록의 구조·기능에는 관여하지 않는다. -->
+    <!-- 질문 기반 실행 추천: 현재 질문의 내용·카테고리를 분석해 우리 회사가 추가로 실행/제공할
+         수 있는 일을 3~5개 추천하는 보조 패널. 질문 목록의 구조·기능에는 관여하지 않는다. -->
     <aside class="qna-reco-panel">
       <details class="qna-reco-details" open>
-        <summary class="qna-reco-summary">시공사에게 제공하면 좋은 것</summary>
+        <summary class="qna-reco-summary">질문 기반 실행 추천</summary>
         <div class="qna-reco-body" id="qnaRecoBody"></div>
       </details>
     </aside>
@@ -364,7 +377,7 @@ function qnaBuildSeedQuestions(){
       id: qnaUid(), part, question, answer: answer || '', category: category || '',
       createdAt: now, updatedAt: now, order: order++,
       frequencyCount, isImportant: false, frequent: frequencyCount >= QNA_FREQUENT_THRESHOLD,
-      aliases: aliases || [], lastAskedAt: now
+      aliases: aliases || [], lastAskedAt: now, actionStates: {}
     };
   };
   return [
@@ -408,6 +421,7 @@ function qnaLoadState(){
         if(typeof q.category !== 'string') q.category = ''; // 화면에는 쓰지 않는 내부 관리용 값
         if(!Array.isArray(q.aliases)) q.aliases = []; // 병합된 과거 질문 원문(표현이 달랐던 문구들)
         if(typeof q.frequent !== 'boolean') q.frequent = q.frequencyCount >= QNA_FREQUENT_THRESHOLD;
+        if(!q.actionStates || typeof q.actionStates !== 'object') q.actionStates = {}; // 질문별 실행 추천 완료/제외 상태
       });
       return parsed;
     }
@@ -617,74 +631,89 @@ function qnaRenderItem(item, showPartTag){
   `;
 }
 /* ============================================================
-   오른쪽 추천 패널: "시공사에게 제공하면 좋은 것"
-   현재 기준이 되는 질문의 내용·카테고리를 분석해, 관련 자료·지원 항목을
-   3~5개 추천한다. 질문 목록의 구조/데이터/기능에는 전혀 관여하지 않고
-   순수하게 보조 정보만 계산해서 보여준다.
+   오른쪽 추천 패널: "질문 기반 실행 추천"
+   이미 보유한 자료(제안서/시방서/공고문 예시/기존 PT 자료)를 반복해서
+   추천하지 않고, 질문 내용 + 카테고리를 함께 분석해 우리 회사가 실제로
+   추가 실행/제공할 수 있는 일을 3~5개 추천한다. 질문 목록의 구조/데이터/
+   기능(검색, 답변 보기/닫기, 1차·2차·PT 등)에는 전혀 관여하지 않는다.
    ============================================================ */
-// 카테고리는 seed 데이터의 category 값(내부 관리용, 화면 미표시)과 매칭된다 — 정확히 일치하면
-// "필수"로 판단하는 강한 신호가 되고, keywords는 질문 문구 안에 등장하면 약한 신호(가점)가 된다.
-const QNA_RECO_CATALOG = [
-  { id:'spec', label:'시방서', categories:['실행공사 / 계약 구조'], keywords:['시방서','설계 기준','시공 기준','기준'],
-    reason:'설계 및 시공 기준을 확인해야 하는 질문입니다.' },
-  { id:'method-material', label:'공법·자재 설명자료', categories:['타 공법 병행'], keywords:['공법','자재','제품','재질','슁글','우레탄','방수','기와','다모아','루프마스터'],
-    reason:'공법·자재의 특성을 구체적으로 설명할 자료가 필요한 질문입니다.' },
-  { id:'unit-price', label:'일위대가·단가표', categories:['가격 / 단가','수익 / 마진'], keywords:['단가','가격','견적','마진','비용'],
-    reason:'가격·단가·마진 산정 근거 자료가 필요한 질문입니다.' },
-  { id:'performance', label:'실적자료', categories:[], keywords:['실적','사례','적용 사례','시공 사례'],
-    reason:'동일 공법의 실제 적용 사례 확인이 필요합니다.' },
-  { id:'patent-test', label:'특허·시험성적서', categories:['민간 아파트 영업 지원'], keywords:['특허','시험성적','인증','스펙'],
-    reason:'특허·성능 근거 자료 제시가 필요한 질문입니다.' },
-  { id:'mou-process', label:'협약·공법 사용 절차', categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급'],
-    reason:'협약 체결 및 공법 사용 절차 안내가 필요한 질문입니다.' },
-  { id:'procurement', label:'조달·관급 적용자료', categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사'],
-    reason:'조달·관급공사 적용 근거 자료가 필요한 질문입니다.' },
-  { id:'site-pt', label:'현장 PT·설명회', categories:['민간 아파트 영업 지원'], keywords:['pt','설명회','발표','주민','입주민','안내'],
-    reason:'공법 설명과 관계자 협의가 필요한 질문입니다.' },
-  { id:'sample-catalog', label:'샘플·카탈로그', categories:[], keywords:['샘플','카탈로그','견본'],
-    reason:'실물 확인을 위한 샘플·카탈로그 제공이 필요한 질문입니다.' },
-  { id:'cad-bom', label:'CAD·내역서 산출', categories:['실행공사 / 계약 구조'], keywords:['도면','cad','내역서','산출','수량','대금'],
-    reason:'설계 반영을 위한 도면·내역 산출 자료가 필요한 질문입니다.' },
-  { id:'drone', label:'드론 진단', categories:[], keywords:['드론','진단','점검'],
-    reason:'현장 상태 진단 자료가 필요한 질문입니다.' },
-  { id:'similar-case', label:'유사 현장 사례', categories:['타 공법 병행'], keywords:['유사','병행','타 공법','경쟁사'],
-    reason:'유사 공법·현장과의 비교 자료가 필요한 질문입니다.' },
-  { id:'bid-support', label:'입찰·공고 지원', categories:['민간 아파트 영업 지원'], keywords:['입찰','공고','낙찰','영업'],
-    reason:'입찰 참여 및 공고 대응 지원이 필요한 질문입니다.' },
+// 실행 후보 카탈로그. "제안서/시방서를 그냥 준비하세요" 같은 보유 자료 재추천은 넣지 않고,
+// 넣더라도 '현장에 맞춘 수정/맞춤 제작'처럼 실제로 손이 가는 작업으로만 표현한다.
+const QNA_RECO_ACTIONS = {
+  'cost-estimate': { label:'현장 물량·공사비 간이 산출', reason:'도면이나 현장 규모를 기준으로 예상 비용을 제시할 수 있습니다.' },
+  'cost-compare': { label:'경쟁 공법 대비 비용 비교표', reason:'기존 공법과의 비용 차이를 빠르게 설명할 수 있습니다.' },
+  'unit-price-basis': { label:'일위대가 및 단가 근거 정리', reason:'시공사가 내부 보고에 사용할 근거 자료가 필요합니다.' },
+  'site-fit-review': { label:'현장 조건 적합성 검토', reason:'도면·사진·현장 정보를 확인해 적용 가능 여부를 판단해야 합니다.' },
+  'site-marking': { label:'현장 사진·도면에 적용 위치 표시', reason:'실제 적용 구간을 표시하면 시공사가 이해하기 쉬워집니다.' },
+  'site-visit': { label:'현장 방문 및 기술 미팅', reason:'문답만으로 판단하기 어려운 조건을 직접 확인할 수 있습니다.' },
+  'similar-case-pick': { label:'가장 유사한 현장 적용 사례 선별', reason:'전체 실적이 아니라 질문·조건이 비슷한 사례가 필요합니다.' },
+  'cert-select': { label:'시험성적서·특허·인증자료 선별 제공', reason:'질문과 직접 관련된 증빙만 골라서 제공해야 합니다.' },
+  'quality-defect-plan': { label:'품질관리·하자 대응안 제공', reason:'시공 이후 관리 방법까지 제시하면 신뢰도를 높일 수 있습니다.' },
+  'bid-doc-check': { label:'공고문 요구사항 체크', reason:'참여 조건과 제출자료 누락 여부를 먼저 확인해야 합니다.' },
+  'design-wording': { label:'설계 반영 문구·발주용 문안 작성', reason:'발주처가 바로 사용할 수 있는 문안으로 정리할 수 있습니다.' },
+  'procurement-review': { label:'조달·관급 적용 가능성 검토', reason:'등록 요건과 적용 절차를 확인할 필요가 있습니다.' },
+  'mou-process-guide': { label:'공법 사용협약 및 적용 절차 안내', reason:'협약 체결부터 실제 적용까지의 절차를 안내해야 합니다.' },
+  'followup-plan': { label:'발주처·설계사·시공사별 후속 대응안', reason:'관계자별로 다음에 무엇을 확인·전달할지 정리가 필요합니다.' },
+  'site-pt': { label:'담당자 대상 맞춤 PT·설명회', reason:'공법 설명과 관계자 협의가 필요한 질문입니다.' },
+  'proposal-custom': { label:'질문 현장에 맞춘 제안서·시방서 수정', reason:'기존 자료를 그대로 쓰기보다 이 현장에 맞춰 보완이 필요합니다.' },
+  'drone-diagnosis': { label:'드론 촬영·현장 진단', reason:'현장 상태를 직접 진단할 자료가 필요한 질문입니다.' },
+  'sample-catalog-send': { label:'샘플·카탈로그 발송', reason:'실물 확인을 원하는 질문에는 샘플 제공이 효과적입니다.' },
+  'cad-detail': { label:'CAD 상세도 또는 시공 상세도 제공', reason:'설계 반영을 위한 상세 도면이 필요한 질문입니다.' },
+  'pre-construction-checklist': { label:'시공 전 체크리스트 제공', reason:'시공 착수 전 확인할 사항을 미리 정리해두면 좋습니다.' },
+  'contact-register': { label:'담당자·완료 목표일·다음 연락일 등록', reason:'후속 대응이 늦어지지 않도록 담당자와 일정을 남겨둘 필요가 있습니다.' },
+};
+// 규칙 그룹: 질문 문구 키워드 또는 카테고리가 매칭되면, 정해진 3개 실행 항목을 [필수]→[자주 요청]→
+// [추천] 순서로 제안한다. 여러 그룹이 동시에 매칭되면 항목을 합치고(중복 시 더 높은 우선순위 유지),
+// 우선순위 → 사내 활용 빈도(완료 처리된 횟수) 순으로 정렬해 최종 3~5개만 남긴다.
+const QNA_RECO_RULES = [
+  { id:'cost', categories:['가격 / 단가','수익 / 마진'], keywords:['단가','예산','금액','가격','견적','비용','마진'],
+    actions:[['cost-estimate','필수'], ['cost-compare','자주 요청'], ['unit-price-basis','추천']] },
+  { id:'applicability', categories:['타 공법 병행'], keywords:['적용 가능','현장 조건','시공 방법','적용할 수','병행'],
+    actions:[['site-fit-review','필수'], ['site-marking','자주 요청'], ['site-visit','추천']] },
+  { id:'trust', categories:[], keywords:['실적','신뢰','품질','하자','사례'],
+    actions:[['similar-case-pick','필수'], ['cert-select','자주 요청'], ['quality-defect-plan','추천']] },
+  { id:'bid', categories:['민간 아파트 영업 지원'], keywords:['입찰','공고','발주','관급','조달'],
+    actions:[['bid-doc-check','필수'], ['design-wording','자주 요청'], ['procurement-review','추천']] },
+  { id:'procurement', categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사','등록'],
+    actions:[['procurement-review','필수'], ['bid-doc-check','자주 요청'], ['design-wording','추천']] },
+  { id:'contract', categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금'],
+    actions:[['mou-process-guide','필수'], ['followup-plan','자주 요청'], ['contact-register','추천']] },
+  { id:'sales-pt', categories:['민간 아파트 영업 지원'], keywords:['pt','설명회','발표','주민','입주민','영업','자료'],
+    actions:[['site-pt','필수'], ['proposal-custom','자주 요청'], ['drone-diagnosis','추천']] },
+  { id:'material', categories:[], keywords:['샘플','카탈로그','재질','제품','자재','슁글','우레탄','방수','기와'],
+    actions:[['sample-catalog-send','필수'], ['cad-detail','자주 요청'], ['pre-construction-checklist','추천']] },
 ];
-// 매칭되는 항목이 3개 미만일 때 채워 넣는 범용 기본 추천(항상 존재해 3~5개를 보장한다).
-const QNA_RECO_FALLBACK_IDS = ['method-material', 'spec', 'performance'];
+const QNA_RECO_TIER_ORDER = { '필수':0, '자주 요청':1, '추천':2 };
+// 매칭되는 규칙이 하나도 없을 때 쓰는 기본 3건(전부 '추천' 등급) — 항상 최소 3개를 보장한다.
+const QNA_RECO_FALLBACK = [['site-visit','추천'], ['similar-case-pick','추천'], ['contact-register','추천']];
 
-function qnaRecoScore(item, q){
-  let score = 0;
-  if(item.categories && item.categories.includes(q.category)) score += 3; // 카테고리 정확히 일치 → 강한 신호
-  const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
-  item.keywords.forEach(k => { if(haystack.includes(k.toLowerCase())) score += 1; });
-  return score;
+// 사내에서 실제로 얼마나 자주 '완료'로 처리했는지(모든 질문을 통틀어) — 이 값이 높을수록
+// "자주 활용되는 실행 항목"으로 보고 같은 우선순위 안에서 상단에 노출한다. 별도 저장소 없이
+// 질문마다 이미 저장돼 있는 actionStates를 그때그때 집계한다.
+function qnaRecoUsageCount(actionId){
+  return qnaState.questions.reduce((n, q) => n + ((q.actionStates && q.actionStates[actionId] === 'done') ? 1 : 0), 0);
 }
-function qnaRecoTier(score){
-  if(score >= 3) return '필수';
-  if(score === 2) return '자주 요청';
-  return '추천';
-}
-// 질문 하나를 분석해 우선순위(필수 → 자주 요청 → 추천) 순으로 정렬된 추천 3~5건을 만든다.
+// 질문 하나(내용+카테고리)를 분석해 우선순위 순으로 정렬된 실행 추천 3~5건을 만든다.
 function qnaRecoCompute(q){
-  const scored = QNA_RECO_CATALOG
-    .map(item => ({ item, score: qnaRecoScore(item, q) }))
-    .filter(s => s.score > 0)
-    .sort((a, b) => b.score - a.score);
-  const picked = scored.slice(0, 5);
-  QNA_RECO_FALLBACK_IDS.forEach(id => {
-    if(picked.length >= 3) return;
-    if(picked.some(p => p.item.id === id)) return;
-    const item = QNA_RECO_CATALOG.find(c => c.id === id);
-    if(item) picked.push({ item, score: 0 });
+  const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
+  const matched = QNA_RECO_RULES.filter(rule =>
+    (rule.categories.length && rule.categories.includes(q.category)) ||
+    rule.keywords.some(k => haystack.includes(k.toLowerCase()))
+  );
+  const actionEntries = (matched.length ? matched : [{ actions: QNA_RECO_FALLBACK }]).flatMap(r => r.actions);
+  const byId = new Map();
+  actionEntries.forEach(([actionId, tier]) => {
+    const prev = byId.get(actionId);
+    if(!prev || QNA_RECO_TIER_ORDER[tier] < QNA_RECO_TIER_ORDER[prev]) byId.set(actionId, tier);
   });
-  return picked.slice(0, 5).map(p => ({ ...p.item, tier: qnaRecoTier(p.score) }));
+  return Array.from(byId.entries())
+    .map(([actionId, tier]) => ({ id: actionId, tier, usage: qnaRecoUsageCount(actionId), ...QNA_RECO_ACTIONS[actionId] }))
+    .sort((a, b) => QNA_RECO_TIER_ORDER[a.tier] - QNA_RECO_TIER_ORDER[b.tier] || b.usage - a.usage)
+    .slice(0, 5);
 }
-// 추천의 기준이 되는 "현재 질문" — 답변을 펼쳐서 보고 있는 질문이 있으면 그걸 쓰고, 없거나
-// 지금 화면(탭/검색 결과)에 더 이상 보이지 않으면 지금 목록의 맨 위 질문을 기본값으로 쓴다.
-// 이렇게 하면 탭을 바꾸거나 검색어를 바꿀 때 추천도 자동으로 함께 갱신된다.
+// 추천의 기준이 되는 "현재 질문" — 방금 등록/수정/펼친 질문이 있으면 그걸 쓰고, 없거나 지금
+// 화면(탭/검색 결과)에 더 이상 보이지 않으면 지금 목록의 맨 위 질문을 기본값으로 쓴다. 이렇게
+// 하면 새 질문 등록·질문 수정·탭 전환·검색 시 추천도 전부 자동으로 함께 갱신된다.
 function qnaRecoCurrentQuestion(){
   const list = qnaVisibleList();
   if(qnaRecoQuestionId){
@@ -692,6 +721,23 @@ function qnaRecoCurrentQuestion(){
     if(q) return q;
   }
   return list.length ? list[0] : null;
+}
+function qnaRecoStatusLabel(state){
+  if(state === 'in_progress') return '진행중';
+  if(state === 'done') return '완료됨';
+  if(state === 'excluded') return '제외됨';
+  return '';
+}
+function qnaRenderRecoActionButtons(q, actionId, state){
+  if(state === 'done' || state === 'excluded'){
+    return `<button type="button" class="qna-reco-btn" data-action="reco-reset" data-qid="${q.id}" data-aid="${actionId}">되돌리기</button>`;
+  }
+  const startBtn = state === 'in_progress' ? '' : `<button type="button" class="qna-reco-btn" data-action="reco-start" data-qid="${q.id}" data-aid="${actionId}">실행하기</button>`;
+  return `
+    ${startBtn}
+    <button type="button" class="qna-reco-btn" data-action="reco-done" data-qid="${q.id}" data-aid="${actionId}">완료</button>
+    <button type="button" class="qna-reco-btn muted" data-action="reco-exclude" data-qid="${q.id}" data-aid="${actionId}">제외</button>
+  `;
 }
 function qnaRenderRecoPanel(){
   const body = document.getElementById('qnaRecoBody');
@@ -702,18 +748,47 @@ function qnaRenderRecoPanel(){
     return;
   }
   const tierClass = t => t === '필수' ? 'required' : t === '자주 요청' ? 'frequent' : 'suggested';
+  const states = q.actionStates || {};
   const items = qnaRecoCompute(q);
   body.innerHTML = `
     <p class="qna-reco-context">현재 질문: <span>${qnaEscapeHtml(q.question)}</span></p>
-    ${items.map(it => `
-      <div class="qna-reco-item">
-        <span class="qna-reco-priority ${tierClass(it.tier)}">[${it.tier}]</span>
-        <span class="qna-reco-label">${qnaEscapeHtml(it.label)}</span>
+    ${items.map(it => {
+      const state = states[it.id] || '';
+      const done = state === 'done', excluded = state === 'excluded';
+      return `
+      <div class="qna-reco-item ${done ? 'is-done' : ''} ${excluded ? 'is-excluded' : ''}">
+        <div class="qna-reco-item-head">
+          <span class="qna-reco-priority ${tierClass(it.tier)}">[${it.tier}]</span>
+          <span class="qna-reco-label">${qnaEscapeHtml(it.label)}</span>
+          ${state ? `<span class="qna-reco-state">${qnaRecoStatusLabel(state)}</span>` : ''}
+        </div>
         <p class="qna-reco-reason">${qnaEscapeHtml(it.reason)}</p>
+        <div class="qna-reco-actions">${qnaRenderRecoActionButtons(q, it.id, state)}</div>
       </div>
-    `).join('')}
+    `;
+    }).join('')}
   `;
 }
+// 실행하기/완료/제외/되돌리기 — 전부 "지금 이 질문"의 actionStates에만 저장되므로 다른
+// 질문의 추천 상태와 섞이지 않는다.
+function qnaRecoSetState(qId, aId, state){
+  const q = qnaState.questions.find(x => x.id === qId);
+  if(!q) return;
+  if(!q.actionStates) q.actionStates = {};
+  if(state) q.actionStates[aId] = state; else delete q.actionStates[aId];
+  qnaSaveState();
+  qnaRenderRecoPanel();
+}
+document.getElementById('qnaRecoBody').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const { qid, aid } = btn.dataset;
+  const action = btn.dataset.action;
+  if(action === 'reco-start') qnaRecoSetState(qid, aid, 'in_progress');
+  else if(action === 'reco-done') qnaRecoSetState(qid, aid, 'done');
+  else if(action === 'reco-exclude') qnaRecoSetState(qid, aid, 'excluded');
+  else if(action === 'reco-reset') qnaRecoSetState(qid, aid, null);
+});
 
 function qnaRenderAll(){
   qnaRenderTabs();
@@ -784,6 +859,8 @@ function qnaOpenQuestionModal(editId){
       existing.answer = answer;
       existing.isImportant = isImportant;
       existing.updatedAt = now;
+      qnaActiveTab = part;
+      qnaRecoQuestionId = existing.id; // 방금 수정한 질문 기준으로 오른쪽 실행 추천을 다시 계산해서 보여준다.
       qnaSaveState(); qnaCloseModal(); qnaRenderAll();
       qnaShowToast('질문이 수정되었습니다');
       return;
@@ -803,6 +880,7 @@ function qnaOpenQuestionModal(editId){
         if(!Array.isArray(similar.aliases)) similar.aliases = [];
         if(question !== similar.question && !similar.aliases.includes(question)) similar.aliases.push(question);
         if(answer && !similar.answer) similar.answer = answer; // 기존 답변이 비어있을 때만 이번 답변으로 채움 — 추측 답변 절대 생성하지 않음
+        qnaRecoQuestionId = similar.id; // 병합된 대표 질문 기준으로 오른쪽 실행 추천을 갱신한다.
         qnaSaveState(); qnaCloseModal();
         qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaActiveTab = similar.part; qnaRenderAll();
         qnaShowToast(`기존 질문 빈도가 추가되었습니다 (${similar.frequencyCount}회)`);
@@ -812,11 +890,13 @@ function qnaOpenQuestionModal(editId){
     }
 
     const partMax = qnaState.questions.filter(q=>q.part===part).reduce((m,q)=>Math.max(m,q.order), -1);
+    const newId = qnaUid();
     qnaState.questions.push({
-      id: qnaUid(), part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
-      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now
+      id: newId, part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
+      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now, actionStates: {}
     });
     qnaActiveTab = part;
+    qnaRecoQuestionId = newId; // 방금 등록한 새 질문 기준으로 오른쪽 실행 추천을 바로 보여준다.
     qnaSaveState(); qnaCloseModal();
     qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaRenderAll();
     qnaShowToast('질문이 등록되었습니다');
