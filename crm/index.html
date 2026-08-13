@@ -391,6 +391,8 @@
   .cdash-header-left{ min-width:0; }
   .cdash-header-title{ font-size:19px; font-weight:700; line-height:1.3; }
   .cdash-header-title .cdash-sub{ font-size:13px; font-weight:500; opacity:0.82; margin-left:6px; }
+  .cdash-header-contact{ font-size:11.5px; color:rgba(255,255,255,0.82); margin-top:5px; display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; }
+  .cdash-header-contact .co-field-copy-btn{ background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.35); color:#fff; }
   .cdash-header-actions{ display:flex; align-items:center; gap:8px; margin-top:6px; }
   .cdash-header-actions .co-text-action, .cdash-header-actions .chart-memo-btn, .cdash-header-actions .card-copy-all-btn{
     background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.35);
@@ -2073,6 +2075,14 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="cdash-header">
         <div class="cdash-header-left">
           <div class="cdash-header-title">${esc(co.name)}<span class="cdash-sub">고객관리카드</span></div>
+          ${(co.phone || co.mobile || co.address || co.bizRegNo) ? `
+            <div class="cdash-header-contact">
+              ${co.phone ? `<span>전화 ${esc(co.phone)} <button type="button" class="co-field-copy-btn" data-header-copy="phone">복사</button></span>` : ''}
+              ${co.mobile ? `<span>휴대폰 ${esc(co.mobile)} <button type="button" class="co-field-copy-btn" data-header-copy="mobile">복사</button></span>` : ''}
+              ${co.address ? `<span>${esc(co.address)}</span>` : ''}
+              ${co.bizRegNo ? `<span>사업자번호 ${esc(co.bizRegNo)}</span>` : ''}
+            </div>
+          ` : ''}
           <div class="cdash-header-actions">
             <button type="button" class="chart-memo-btn" id="chartMemoParseBtn">고객 메모 정리</button>
             <button type="button" class="card-copy-all-btn" id="crmCopyAllBtn">전체정보 복사</button>
@@ -2128,6 +2138,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     document.getElementById('crmCopyAllBtn').addEventListener('click', (e)=> copyText(buildFullInfoText(co), e.currentTarget));
     document.getElementById('chartCloseBtn').addEventListener('click', closeChart);
     document.getElementById('chartMemoParseBtn').addEventListener('click', ()=> openMemoParseModal(co));
+    wrap.querySelectorAll('[data-header-copy]').forEach(btn=>{
+      btn.addEventListener('click', (e)=> copyText(co[btn.getAttribute('data-header-copy')] || '', e.currentTarget));
+    });
     document.getElementById('chartEditBtn').addEventListener('click', ()=>{
       cardState.chartEditing = !cardState.chartEditing;
       refreshChart();
