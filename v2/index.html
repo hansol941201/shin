@@ -1025,6 +1025,22 @@
   .qr-pending-empty{ font-size:12px; color:var(--text-muted); padding:4px; }
   .qr-pending-edit{ margin-top:6px; }
 
+  /* 업무 메모(§신규 라운드) — 목록 행 아래에 펼쳐지는 작은 인라인 입력칸. 일반 포스트잇
+     메모와는 완전히 다른 데이터(customerActivities.taskMemo)이며 스타일도 별도 팝업을
+     쓰지 않는다는 것만 지키면 되므로 기존 qr-unmatched 톤을 재사용한다. */
+  .qr-task-memo{ margin-top:6px; padding:8px 10px; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  .qr-task-memo textarea{
+    width:100%; min-height:52px; padding:7px 9px; font-size:12.5px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; box-sizing:border-box; outline:none; resize:vertical;
+  }
+  .qr-task-memo-actions{ display:flex; gap:6px; margin-top:6px; }
+  .qr-task-memo-preview{ font-size:11.5px; color:var(--text-muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* 처리완료 직후 잠깐 보여주는 실행취소 줄(§신규 라운드) — 큰 토스트/팝업이 아니라
+     방금 사라진 행 자리에 그대로 텍스트 한 줄만 남긴다. */
+  .qr-undo-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 4px; border-bottom:1px solid var(--line); font-size:12.5px; color:var(--text-muted); }
+  .qr-undo-row button{ background:none; border:none; color:var(--navy); font-weight:700; cursor:pointer; font-family:inherit; font-size:12.5px; padding:0; }
+
   /* 미등록 시공사 기록(§신규) — 업체명이 매칭되지 않아도 저장을 막지 않고, 규칙 기반으로
      추정한 업체명/특이사항을 사용자가 확인·수정한 뒤 저장하는 인라인 확인 UI. qr-notfound와
      같은 톤을 그대로 재사용한다. */
@@ -8905,6 +8921,62 @@ ${text}
     return rec;
   }
 
+  // §업무 입력 연동 라운드: [처리완료] 직후 "실행취소"용 — status를 'pending'으로 되돌리고
+  // completedAt만 지운다. 레코드를 지우거나 새로 만들지 않는다(완료/취소 모두 같은 레코드의
+  // 필드만 바뀐다).
+  function uncompleteActivity(id){
+    var all = loadActivities();
+    var rec = all.find(function(a){ return a.id === id; });
+    if(!rec) return null;
+    rec.status = 'pending';
+    rec.completedAt = null;
+    rec.updatedAt = new Date().toISOString();
+    saveActivities(all);
+    return rec;
+  }
+
+  // §업무 입력 연동 라운드: "업무 메모" — 일반 포스트잇 메모(shin2-memos-v1)와는 완전히 다른
+  // 필드다. customerActivities 레코드 자체에 taskMemo만 추가로 얹는다(새 저장소를 만들지
+  // 않음). originalText/activityText는 이 함수가 절대 건드리지 않는다.
+  function setTaskMemo(id, text){
+    var all = loadActivities();
+    var rec = all.find(function(a){ return a.id === id; });
+    if(!rec) return null;
+    rec.taskMemo = String(text || '').trim();
+    rec.taskMemoAt = new Date().toISOString();
+    rec.updatedAt = rec.taskMemoAt;
+    saveActivities(all);
+    return rec;
+  }
+
+  // §업무 입력 연동 라운드: 원문에서 "자재/자료 요청" 형태를 짧게 뽑아 목록 제목으로 쓴다
+  // (예: "MSDS 보내달라고 하심" → "MSDS 요청", "단가표랑 시방서 요청" → "단가표·시방서 요청").
+  // CRM(crm/index.html)의 REQUESTED_MATERIAL_TYPES/REQUEST_MATERIAL_KEYWORDS/
+  // REQUEST_INDICATOR_RE와 같은 판단 기준(자재 키워드 + 요청 표현이 함께 있어야 함)을 이
+  // 문서 안에서 그대로 다시 쓴다 — 애매하면(요청 표현이 없으면) 원문을 그대로 돌려주고,
+  // 절대 지어내지 않는다.
+  var REQ_MATERIAL_KEYWORDS = {
+    '단가표': ['단가표','가격표'], '시방서': ['시방서'], '실적자료': ['실적자료','시공실적'],
+    '카탈로그': ['카탈로그'], '특허자료': ['특허자료','특허증'], '시험성적서': ['시험성적서','성적서'],
+    '협약업체리스트': ['협약업체','협력업체 리스트'], 'MSDS': ['msds']
+  };
+  var REQ_INDICATOR_RE = /(요청|보내달라|보내주세요|보내줘|보내달라고|메일로|메일 요청|필요하다고|필요하다함|필요해서|달라고|요청함|요청드림|요청하심|요청 들어옴|요청이 들어옴)/;
+  function summarizeRequest(text, fallbackMax){
+    var t = String(text || '').trim();
+    if(!t) return '';
+    if(REQ_INDICATOR_RE.test(t)){
+      var low = t.toLowerCase();
+      var hit = [];
+      Object.keys(REQ_MATERIAL_KEYWORDS).forEach(function(mt){
+        var kws = REQ_MATERIAL_KEYWORDS[mt];
+        if(kws.some(function(kw){ return low.indexOf(kw.toLowerCase()) !== -1; })) hit.push(mt);
+      });
+      if(hit.length) return hit.join('·') + ' 요청';
+    }
+    var max = fallbackMax || 40;
+    return t.length > max ? t.slice(0, max) + '…' : t;
+  }
+
   // §신규 라운드: 홈 인라인 미처리 목록이 읽는 단일 소스. companyId가 있는(=matched) 레코드
   // 중 pendingStatusOf가 'pending'인 것만, 최신순으로 돌려준다. companyId가 없는(§ 저확신
   // 미등록 레코드, matchStatus:'unmatched') 레코드는 여기 절대 섞이지 않는다 — 그쪽은 여전히
@@ -9036,7 +9108,9 @@ ${text}
     // §신규 라운드(요구사항 2/3/5/6):
     pendingStatusOf: pendingStatusOf, complete: completeActivity, pendingList: pendingList,
     normCompanyKey: normCompanyKey, findExistingCompanyByName: findExistingCompanyByName,
-    extractContactHint: extractContactHint, extractPhoneHint: extractPhoneHint
+    extractContactHint: extractContactHint, extractPhoneHint: extractPhoneHint,
+    // §업무 입력 연동 라운드:
+    uncomplete: uncompleteActivity, setTaskMemo: setTaskMemo, summarizeRequest: summarizeRequest
   };
 })();
 </script>
@@ -9203,13 +9277,21 @@ ${text}
   // 보기")이 아니라 이 목록이 담당한다. 데이터는 여전히 SHIN2_ACTIVITIES(customerActivities)
   // 하나뿐이고, 여기서는 pendingList()/complete()/update()만 호출한다(새 저장소 없음).
   // ==========================================================================
-  var pState = { expanded: false, editingId: null };
+  var pState = { expanded: false, editingId: null, memoOpenId: null };
   var PENDING_CAP = 5;
+  // §업무 입력 연동 라운드: [처리완료] 직후 그 자리에 "처리완료 · 실행취소" 한 줄만 남기고
+  // 실제 목록에서는 즉시 빼는 낙관적 UI. undoState는 딱 1건만 기억한다(연속 처리완료 시
+  // 이전 건은 그냥 확정). 새 레코드를 만들지 않고 기존 uncomplete()를 호출할 뿐이다.
+  var undoState = null; // { id, name, label, timer }
+  var UNDO_MS = 5000;
 
   function pendingSummary(r){
-    var t = (r.activityText && r.activityText.trim()) ? r.activityText.trim() : (r.originalText || '').trim();
-    if(t.length > 40) t = t.slice(0, 40) + '…';
-    return t;
+    var src = (r.activityText && r.activityText.trim()) ? r.activityText.trim() : (r.originalText || '').trim();
+    return window.SHIN2_ACTIVITIES.summarizeRequest(src, 40);
+  }
+
+  function clearUndoTimer(){
+    if(undoState && undoState.timer){ clearTimeout(undoState.timer); }
   }
 
   function renderPending(){
@@ -9218,12 +9300,18 @@ ${text}
     var companies = ACT.loadCompanies();
     function findCo(id){ return companies.find(function(c){ return c && c.id === id; }); }
     var all = ACT.pendingList();
-    if(!all.length){
+    if(!all.length && !undoState){
       pendingWrap.innerHTML = '';
       return;
     }
     var visible = pState.expanded ? all : all.slice(0, PENDING_CAP);
-    var html = '<div class="qr-pending-head"><span class="qr-pending-title">미처리 ' + all.length + '건</span></div>';
+    var html = '<div class="qr-pending-head"><span class="qr-pending-title">최근 접수 / 처리할 업무' + (all.length ? ' ' + all.length + '건' : '') + '</span></div>';
+    if(undoState){
+      html += '<div class="qr-undo-row" data-id="' + escapeHtml(undoState.id) + '">' +
+        '<span>' + escapeHtml(undoState.name) + ' · ' + escapeHtml(undoState.label) + ' — 처리완료</span>' +
+        '<button type="button" data-pending-undo="' + escapeHtml(undoState.id) + '">실행취소</button>' +
+      '</div>';
+    }
     html += visible.map(function(r){
       var co = findCo(r.companyId);
       var name = co ? co.name : '(삭제된 업체)';
@@ -9237,7 +9325,10 @@ ${text}
           '<button type="button" class="co-text-action" data-pending-cancel-edit="1">취소</button></div>' +
         '</div>';
       }
-      return '<div class="qr-pending-row" data-id="' + escapeHtml(r.id) + '">' +
+      var memoOpen = pState.memoOpenId === r.id;
+      var memoBtnLabel = r.taskMemo ? '메모 있음' : '메모';
+      var row = '<div class="qr-pending-row" data-id="' + escapeHtml(r.id) + '" style="flex-direction:column;align-items:stretch;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
         '<div class="qr-pending-main">' +
           '<span class="qr-pending-co">' + escapeHtml(name) + '</span>' +
           (contact ? '<span class="qr-pending-contact">' + escapeHtml(contact) + '</span>' : '') +
@@ -9246,9 +9337,23 @@ ${text}
         '<span class="qr-pending-meta">' + escapeHtml(fmtShort(r.createdAt)) + '</span>' +
         '<div class="qr-pending-actions">' +
           '<button type="button" class="co-text-action" data-pending-edit="' + escapeHtml(r.id) + '">수정</button>' +
-          '<button type="button" class="ai-run-btn" data-pending-confirm="' + escapeHtml(r.id) + '">확인</button>' +
+          '<button type="button" class="co-text-action" data-pending-memo-toggle="' + escapeHtml(r.id) + '">' + memoBtnLabel + '</button>' +
+          '<button type="button" class="ai-run-btn" data-pending-confirm="' + escapeHtml(r.id) + '">처리완료</button>' +
         '</div>' +
-      '</div>';
+        '</div>';
+      if(memoOpen){
+        row += '<div class="qr-task-memo">' +
+          '<textarea id="qrTaskMemoText" placeholder="업무 처리 중 기억할 내용을 적어주세요.">' + escapeHtml(r.taskMemo || '') + '</textarea>' +
+          '<div class="qr-task-memo-actions">' +
+            '<button type="button" class="ai-run-btn" data-memo-save="' + escapeHtml(r.id) + '">저장</button>' +
+            '<button type="button" class="co-text-action" data-memo-cancel="1">취소</button>' +
+          '</div>' +
+        '</div>';
+      } else if(r.taskMemo){
+        row += '<div class="qr-task-memo-preview">' + escapeHtml(r.taskMemo) + '</div>';
+      }
+      row += '</div>';
+      return row;
     }).join('');
     if(!pState.expanded && all.length > PENDING_CAP){
       html += '<button type="button" class="qr-pending-more-btn" data-pending-more="1">더 보기 (' + (all.length - PENDING_CAP) + '건 더)</button>';
@@ -9262,15 +9367,34 @@ ${text}
   function wirePending(){
     pendingWrap.querySelectorAll('[data-pending-confirm]').forEach(function(btn){
       btn.addEventListener('click', function(){
-        window.SHIN2_ACTIVITIES.complete(btn.getAttribute('data-pending-confirm'));
+        var id = btn.getAttribute('data-pending-confirm');
+        var ACT = window.SHIN2_ACTIVITIES;
+        var rec = ACT.pendingList().find(function(x){ return x.id === id; });
+        if(!rec) return;
+        var co = ACT.loadCompanies().find(function(c){ return c && c.id === rec.companyId; });
+        clearUndoTimer();
+        ACT.complete(id);
+        undoState = { id: id, name: co ? co.name : '(삭제된 업체)', label: pendingSummary(rec), timer: null };
+        undoState.timer = setTimeout(function(){ undoState = null; renderPending(); }, UNDO_MS);
         renderPending();
         // 홈 "고객 업무" 섹션도 같은 customerActivities 레코드를 보여주므로 즉시 갱신한다.
+        if(window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-pending-undo]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-pending-undo');
+        clearUndoTimer();
+        window.SHIN2_ACTIVITIES.uncomplete(id);
+        undoState = null;
+        renderPending();
         if(window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
       });
     });
     pendingWrap.querySelectorAll('[data-pending-edit]').forEach(function(btn){
       btn.addEventListener('click', function(){
         pState.editingId = btn.getAttribute('data-pending-edit');
+        pState.memoOpenId = null;
         renderPending();
       });
     });
@@ -9287,6 +9411,30 @@ ${text}
         // originalText는 이 저장 경로에서 절대 건드리지 않는다(update가 activityText만 갱신).
         window.SHIN2_ACTIVITIES.update(id, { activityText: ta ? ta.value.trim() : '' });
         pState.editingId = null;
+        renderPending();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-pending-memo-toggle]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-pending-memo-toggle');
+        pState.editingId = null;
+        pState.memoOpenId = (pState.memoOpenId === id) ? null : id;
+        renderPending();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-memo-save]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-memo-save');
+        var ta = document.getElementById('qrTaskMemoText');
+        window.SHIN2_ACTIVITIES.setTaskMemo(id, ta ? ta.value : '');
+        pState.memoOpenId = null;
+        renderPending();
+        if(window.SHIN2_CUSTOMER_TASKS_HOME) window.SHIN2_CUSTOMER_TASKS_HOME.render();
+      });
+    });
+    pendingWrap.querySelectorAll('[data-memo-cancel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        pState.memoOpenId = null;
         renderPending();
       });
     });
