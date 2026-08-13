@@ -481,6 +481,27 @@
   .cdash-material-table td:nth-child(2){ white-space:nowrap; }
   select.cdash-material-status{ font-size:11px; padding:1px 4px; border:1px solid var(--line); border-radius:4px; color:var(--text); background:#fff; }
 
+  /* ---- 진행 기록 — 질문서→1차미팅→2차미팅→MOU 진행바(§진행 기록 라운드). PC에서는
+     가로 한 줄, 화려한 프로세스 그래픽/아이콘 없이 단계명·상태·날짜·연결선만 사용한다. ---- */
+  .cdash-progress-bar{ display:flex; align-items:stretch; gap:0; margin-top:2px; }
+  .cdash-progress-stage{
+    flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:2px; align-items:center;
+    padding:8px 4px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; font-family:inherit;
+  }
+  .cdash-progress-stage.current{ background:#EDF1FA; }
+  .cdash-progress-stage.selected{ border-color:var(--navy); }
+  .cdash-progress-stage-name{ font-size:12.5px; font-weight:700; color:var(--text); }
+  .cdash-progress-stage-status{ font-size:11px; color:var(--text-muted); }
+  .cdash-progress-stage-date{ font-size:11px; color:var(--text-muted); }
+  .cdash-progress-connector{ flex:0 0 18px; align-self:center; height:1px; background:var(--line); }
+  .cdash-progress-detail{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+  .cdash-progress-detail-row{ display:flex; gap:10px; font-size:12.5px; padding:2px 0; }
+  .cdash-progress-detail-row span:first-child{ flex:none; width:56px; color:var(--text-muted); }
+  @media (max-width:640px){
+    .cdash-progress-bar{ flex-direction:column; }
+    .cdash-progress-connector{ display:none; }
+  }
+
   @media (max-width:1180px){ .cdash-4col{ grid-template-columns:repeat(2, 1fr); } .cdash-col:nth-child(3){ border-left:none; } .cdash-col:nth-child(n+3){ border-top:1px solid var(--line); } }
   @media (max-width:760px){ .cdash-2col{ grid-template-columns:1fr; } .cdash-2col .cdash-col{ border-left:none; border-top:1px solid var(--line); } .cdash-2col .cdash-col:first-child{ border-top:none; } }
 
@@ -2001,6 +2022,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardState.questionLinkOpenId = null;
     cardState.memoModal = null;
     cardState.sectionEdit = {};
+    cardState.progressStageSel = null; // §진행 기록 라운드: 업체를 새로 열 때만 선택 단계 초기화
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -2032,7 +2054,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   // sectionEdit: 영업 대시보드 카드의 각 영역별 독립 "수정" 토글(§15) — 전체 카드를 한 번에
   // 편집모드로 바꾸는 대신, 영역 제목 옆 작은 [수정]을 누른 영역만 편집 상태가 된다. 키:
   // header/basicInfo/wants/situation/interest/questions/reactions/nextActions/summary.
-  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {}, questionLinkOpenId: null, memoModal: null, sectionEdit: {} };
+  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {}, questionLinkOpenId: null, memoModal: null, sectionEdit: {}, progressStageSel: null };
   // 다른 탭(v2 또는 CRM 다른 탭)에서 shin2-companies-staging이 바뀌었을 때 지금 이 탭이
   // 편집 폼을 띄워둔 상태라면 storage 이벤트로 인한 재렌더링이 사용자의 입력 중인 내용을
   // 덮어쓰지 않도록 막는 플래그(§ crm 신규등록 폼).
@@ -2096,7 +2118,7 @@ window.SHIN2_CRM_APP_INIT = function(){
               <button type="button" id="cdashBtnInfo">업체정보</button>
               <button type="button" id="cdashBtnDocs">서류함</button>
               <button type="button" id="cdashBtnMemo">요청자료</button>
-              <button type="button" id="cdashBtnMeeting">미팅 기록</button>
+              <button type="button" id="cdashBtnMeeting">진행 기록</button>
             </div>
 
             <div class="cdash-panel-wrap" id="cdashInfoWrap" style="display:none;">
@@ -2323,6 +2345,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(isNaN(dt.getTime())) return null;
     return { ts: dt.getTime(), display: y + '.' + String(mo).padStart(2,'0') + '.' + String(d).padStart(2,'0') };
   }
+  // (§요청자료 정리 라운드까지 쓰이던 날짜 역순 표 버전 — §진행 기록 라운드에서 아래
+  // buildProgressStages/renderMeetingRecordSection로 교체되어 더 이상 호출되지 않지만,
+  // 데이터/로직은 그대로 남겨둔다.)
   function buildMeetingRecords(co){
     const nm = co.partnerDashboard && co.partnerDashboard.newMou;
     if(!nm) return [];
@@ -2340,18 +2365,91 @@ window.SHIN2_CRM_APP_INIT = function(){
     entries.sort((a,b)=> b.ts - a.ts);
     return entries;
   }
+
+  // ---- 진행 기록(§진행 기록 라운드) — 질문서→1차미팅→2차미팅→MOU 고정 순서의 진행바.
+  // co.partnerDashboard.newMou에 이미 있는 값만 그대로 읽어서 상태를 "계산"할 뿐, 새 진행
+  // 데이터를 만들거나 기존 값을 고치지 않는다. 상태는 세 가지만 쓴다:
+  //   done(완료)      — 신뢰 가능한 완료 신호가 있음(질문서=회신일 존재, 미팅=날짜가 오늘 이하,
+  //                      MOU=newMou.mouDone===true인 경우만 — 추측하지 않음)
+  //   scheduled(예정) — 날짜가 파싱되고 아직 미래인 경우(실제 날짜 비교, 지어내지 않음)
+  //   waiting(대기)   — 파싱 가능한 날짜가 아직 없음
+  // ----
+  function buildProgressStages(co){
+    const nm = (co.partnerDashboard && co.partnerDashboard.newMou) || {};
+    const now = Date.now();
+    function dateState(label){
+      const p = parsePartnerDateLabel(label);
+      if(!p) return { state:'waiting', dateDisplay:'—', ts:null };
+      return { state: p.ts <= now ? 'done' : 'scheduled', dateDisplay: p.display, ts: p.ts };
+    }
+    const q = (()=>{
+      const reply = parsePartnerDateLabel(nm.qReplyLabel);
+      if(reply) return { state:'done', dateDisplay: reply.display, ts: reply.ts };
+      const sent = parsePartnerDateLabel(nm.qSentLabel);
+      if(sent) return { state:'waiting', dateDisplay: sent.display, ts: sent.ts }; // 발송만 되고 회신 대기
+      return { state:'waiting', dateDisplay:'—', ts:null };
+    })();
+    const m1 = dateState(nm.m1Label);
+    const m2 = dateState(nm.m2Label);
+    const mou = (()=>{
+      if(nm.mouDone){
+        const p = parsePartnerDateLabel(nm.mouLabel);
+        return { state:'done', dateDisplay: p ? p.display : '완료', ts: p ? p.ts : now };
+      }
+      return dateState(nm.mouLabel);
+    })();
+    const stages = [
+      { key:'q', label:'질문서', ...q },
+      { key:'m1', label:'1차미팅', ...m1 },
+      { key:'m2', label:'2차미팅', ...m2 },
+      { key:'mou', label:'MOU', ...mou }
+    ];
+    // 현재 단계(§6): 마지막으로 완료된 단계의 "다음" 단계. 전부 완료면 MOU, 전부 대기면 질문서.
+    let lastDoneIdx = -1;
+    stages.forEach((s,i)=>{ if(s.state === 'done') lastDoneIdx = i; });
+    const currentIdx = lastDoneIdx === -1 ? 0 : Math.min(lastDoneIdx + 1, stages.length - 1);
+    return { stages, currentIdx, hasAny: !!(co.partnerDashboard && co.partnerDashboard.newMou) };
+  }
+  const PROGRESS_STATUS_LABEL = { done:'완료', scheduled:'예정', waiting:'대기' };
   function renderMeetingRecordSection(co){
     const wrap = document.getElementById('cdashMeetingBlock');
     if(!wrap) return;
-    const entries = buildMeetingRecords(co);
+    const { stages, currentIdx, hasAny } = buildProgressStages(co);
+    if(!hasAny){
+      wrap.innerHTML = `
+        <div class="cdash-col-title-row"><div class="cdash-col-title">진행 기록</div></div>
+        <div class="cdash-field-value is-muted">미확인</div>
+      `;
+      return;
+    }
+    const selKey = cardState.progressStageSel || stages[currentIdx].key;
+    const selIdx = Math.max(0, stages.findIndex(s=> s.key === selKey));
+    const sel = stages[selIdx];
+    const nm = co.partnerDashboard.newMou;
     wrap.innerHTML = `
-      <div class="cdash-col-title-row"><div class="cdash-col-title">미팅 기록</div></div>
-      ${entries.length
-        ? `<table class="cdash-meeting-table"><tbody>
-            ${entries.map(e=> `<tr><td>${esc(e.dateDisplay)}</td><td>${esc(e.type)}</td><td>${esc(e.status)}</td></tr>`).join('')}
-          </tbody></table>`
-        : `<div class="cdash-field-value is-muted">미확인</div>`}
+      <div class="cdash-col-title-row"><div class="cdash-col-title">진행 기록</div></div>
+      <div class="cdash-progress-bar">
+        ${stages.map((s,i)=> `
+          ${i>0 ? '<div class="cdash-progress-connector"></div>' : ''}
+          <button type="button" class="cdash-progress-stage${i===currentIdx?' current':''}${i===selIdx?' selected':''}" data-stage="${esc(s.key)}">
+            <div class="cdash-progress-stage-name">${esc(s.label)}</div>
+            <div class="cdash-progress-stage-status">${esc(PROGRESS_STATUS_LABEL[s.state])}</div>
+            <div class="cdash-progress-stage-date">${esc(s.dateDisplay)}</div>
+          </button>
+        `).join('')}
+      </div>
+      <div class="cdash-progress-detail">
+        <div class="cdash-progress-detail-row"><span>현재 단계</span><strong>${esc(sel.label)}</strong></div>
+        <div class="cdash-progress-detail-row"><span>일시</span><span>${esc(sel.dateDisplay)}</span></div>
+        <div class="cdash-progress-detail-row"><span>상태</span><span>${esc(PROGRESS_STATUS_LABEL[sel.state])}</span></div>
+        ${nm.site ? `<div class="cdash-progress-detail-row"><span>현장</span><span>${esc(nm.site)}</span></div>` : ''}
+        ${nm.note ? `<div class="cdash-progress-detail-row"><span>비고</span><span>${esc(nm.note)}</span></div>` : ''}
+      </div>
     `;
+    wrap.querySelectorAll('[data-stage]').forEach(btn=> btn.addEventListener('click', ()=>{
+      cardState.progressStageSel = btn.getAttribute('data-stage');
+      renderMeetingRecordSection(co);
+    }));
   }
 
   // ---- 요청 자료(§12~16) — co.requestedMaterials[]를 최신순으로 표시. 상태 변경(요청/준비중/
