@@ -86,11 +86,15 @@ button, select, input, textarea {
 }
 
 .topbar-left {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--navy);
+  display: flex;
+  align-items: center;
   flex: 0 0 auto;
   min-width: 80px;
+}
+.topbar-logo {
+  height: 22px;
+  width: auto;
+  display: block;
 }
 
 .topbar-center {

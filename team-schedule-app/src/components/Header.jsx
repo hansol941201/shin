@@ -6,6 +6,7 @@ import SummaryCards from './SummaryCards.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
 import { REMINDER_MINUTE_OPTIONS } from '../services/localSettings.js';
+import netformLogo from '../assets/netform-logo.png';
 
 function SettingsPopover({ anchor, onClose }) {
   const {
@@ -271,7 +272,9 @@ export default function Header() {
   return (
     <>
       <header className="topbar">
-        <div className="topbar-left">팀장 일정</div>
+        <div className="topbar-left">
+          <img className="topbar-logo" src={netformLogo} alt="NETFORM" />
+        </div>
 
         <div className="topbar-center">
           <button className="nav-arrow" onClick={goPrev} aria-label="이전달">‹</button>
