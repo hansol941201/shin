@@ -253,6 +253,7 @@ button, select, input, textarea {
 }
 .summary-card-mini:hover { text-decoration: underline; }
 .summary-card-mini-reject { color: var(--reject-text); }
+.summary-card-mini-accompany { color: var(--own-text); }
 
 .approval-menu-list {
   display: flex;
@@ -631,8 +632,9 @@ button, select, input, textarea {
   margin-top: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--navy);
-  background: var(--navy-soft);
+  color: var(--own-text);
+  background: var(--own-bg);
+  border: 1px solid var(--own-border);
   border-radius: 6px;
   padding: 6px 9px;
 }
@@ -668,8 +670,8 @@ button, select, input, textarea {
   transition: transform .15s ease;
 }
 .pv-toggle.pv-toggle-on {
-  background: var(--navy);
-  border-color: var(--navy);
+  background: var(--own-text);
+  border-color: var(--own-text);
 }
 .pv-toggle.pv-toggle-on .pv-toggle-knob {
   transform: translateX(15px);
@@ -1027,6 +1029,12 @@ button, select, input, textarea {
   font-weight: 700;
   opacity: 0.85;
   flex: 0 0 auto;
+}
+/* 한솔 동행 배지는 일정 카드 색(파랑 등)과 무관하게 항상 분홍색으로
+   눈에 띄게 표시한다 — 다른 배지들과 달리 opacity를 낮추지 않는다. */
+.month-chip-badge-accompany {
+  color: var(--own-text);
+  opacity: 1;
 }
 .month-more { font-size: 11px; color: var(--text-faint); }
 

@@ -225,7 +225,11 @@ export default function MonthView() {
                         <span className="month-chip-source-tag">공유</span>
                       )}
                       <span className="month-chip-title">{e.title}</span>
-                      {chipBadge(e) && <span className="month-chip-badge">{chipBadge(e)}</span>}
+                      {chipBadge(e) && (
+                        <span className={`month-chip-badge${e.hansolAccompany ? ' month-chip-badge-accompany' : ''}`}>
+                          {chipBadge(e)}
+                        </span>
+                      )}
                     </div>
                   ))}
                   {evts.length > 3 && <div className="month-more">+{evts.length - 3}</div>}

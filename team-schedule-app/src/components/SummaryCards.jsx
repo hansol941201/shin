@@ -180,7 +180,7 @@ export default function SummaryCards() {
       )}
       {accompanyItems.length > 0 && (
         <button
-          className="summary-card-mini"
+          className="summary-card-mini summary-card-mini-accompany"
           onClick={(e) => openList(e, '동행 일정', accompanyItems)}
         >
           동행 일정 {accompanyItems.length}
