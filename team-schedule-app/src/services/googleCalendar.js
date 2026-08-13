@@ -172,8 +172,24 @@ export async function hasConflict({ accessToken, calendarId, startISO, endISO, e
   }
 }
 
+// ---------- 알림(reminders) ----------
+// mode: 'google_default'면 팀장님이 그 캘린더에 이미 설정해둔 기본 알림을
+// 그대로 쓰고(useDefault:true, overrides 없음), 'app'이면 이 앱이 지정한
+// 분(minutes) 전 팝업 알림을 명시적으로 붙인다(기본값 30분 전). 나중에
+// 다른 알림 방식(이메일 등)이나 다중 알림을 추가하고 싶으면 overrides
+// 배열에 항목만 더 넣으면 되는 구조.
+export function buildReminders(mode, minutes) {
+  if (mode === 'google_default') {
+    return { useDefault: true };
+  }
+  return {
+    useDefault: false,
+    overrides: [{ method: 'popup', minutes: Number(minutes) || 30 }],
+  };
+}
+
 // ---------- 확정 일정 생성 ----------
-export async function createEvent({ accessToken, calendarId, title, location, description, startISO, endISO }) {
+export async function createEvent({ accessToken, calendarId, title, location, description, startISO, endISO, reminders }) {
   try {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
     const res = await fetch(`${API_BASE}/calendars/${encodeURIComponent(calendarId)}/events`, {
@@ -185,6 +201,7 @@ export async function createEvent({ accessToken, calendarId, title, location, de
         description: description || undefined,
         start: { dateTime: startISO, timeZone },
         end: { dateTime: endISO, timeZone },
+        reminders: reminders || { useDefault: true },
       }),
     });
     if (!res.ok) {
@@ -199,8 +216,11 @@ export async function createEvent({ accessToken, calendarId, title, location, de
 }
 
 // ---------- 확정 일정 수정 (events.patch) ----------
-// title/location/description/startISO/endISO 중 넘어온 필드만 바꾼다(부분 수정).
-export async function patchEvent({ accessToken, calendarId, eventId, title, location, description, startISO, endISO }) {
+// title/location/description/startISO/endISO/reminders 중 넘어온 필드만
+// 바꾼다(부분 수정). 시간이 바뀌어도 reminders는 항상 "N분 전"처럼 상대
+// 오프셋이라 자동으로 새 시간 기준이 되지만, 알림 방식 자체(app/구글기본)가
+// 그 사이 바뀌었을 수도 있으니 수정 시에도 현재 설정을 다시 실어 보낸다.
+export async function patchEvent({ accessToken, calendarId, eventId, title, location, description, startISO, endISO, reminders }) {
   try {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
     const body = {};
@@ -209,6 +229,7 @@ export async function patchEvent({ accessToken, calendarId, eventId, title, loca
     if (description !== undefined) body.description = description;
     if (startISO !== undefined) body.start = { dateTime: startISO, timeZone };
     if (endISO !== undefined) body.end = { dateTime: endISO, timeZone };
+    if (reminders !== undefined) body.reminders = reminders;
 
     const res = await fetch(
       `${API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,

@@ -5,6 +5,7 @@ import Legend from './Legend.jsx';
 import SummaryCards from './SummaryCards.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
+import { REMINDER_MINUTE_OPTIONS } from '../services/localSettings.js';
 
 function SettingsPopover({ anchor, onClose }) {
   const {
@@ -22,6 +23,10 @@ function SettingsPopover({ anchor, onClose }) {
     demoMode,
     setDemoMode,
     googleActive,
+    reminderMode,
+    setReminderMode,
+    reminderMinutes,
+    setReminderMinutes,
   } = useApp();
   const [workStart, setWorkStart] = useState(Math.floor(settings.workStartMin / 60));
   const [workEnd, setWorkEnd] = useState(Math.floor(settings.workEndMin / 60));
@@ -109,6 +114,44 @@ function SettingsPopover({ anchor, onClose }) {
           )}
         </>
       )}
+
+      <hr className="settings-sep" />
+
+      <div className="settings-block-title">일정 알림</div>
+      <div className="pv-reject-options">
+        <label className="pv-reject-option">
+          <input
+            type="radio"
+            name="reminder-mode"
+            checked={reminderMode === 'app'}
+            onChange={() => setReminderMode('app')}
+          />
+          앱 지정 알림 사용
+        </label>
+        <label className="pv-reject-option">
+          <input
+            type="radio"
+            name="reminder-mode"
+            checked={reminderMode === 'google_default'}
+            onChange={() => setReminderMode('google_default')}
+          />
+          Google 기본 알림 사용
+        </label>
+      </div>
+      {reminderMode === 'app' && (
+        <select
+          className="settings-select-full"
+          value={reminderMinutes}
+          onChange={(e) => setReminderMinutes(Number(e.target.value))}
+        >
+          {REMINDER_MINUTE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      )}
+      <div className="pv-hint">
+        한솔 요청을 수락해 Google Calendar에 실제 일정을 만들 때 이 알림이 함께 설정됩니다.
+      </div>
 
       <hr className="settings-sep" />
 

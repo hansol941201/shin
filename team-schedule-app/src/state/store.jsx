@@ -23,6 +23,10 @@ import {
   setDemoModeFlag,
   getManagerCalendarId,
   setManagerCalendarId as persistManagerCalendarId,
+  getReminderMode,
+  setReminderMode as persistReminderMode,
+  getReminderMinutes,
+  setReminderMinutes as persistReminderMinutes,
 } from '../services/localSettings.js';
 
 const AppContext = createContext(null);
@@ -209,6 +213,22 @@ export function AppProvider({ children }) {
   const [calendarsLoading, setCalendarsLoading] = useState(false);
   const [calendarsError, setCalendarsError] = useState('');
   const [managerCalendarId, setManagerCalendarIdState] = useState(getManagerCalendarId);
+
+  // 한솔 요청이 수락돼 Google Calendar에 실제 일정을 만들 때 붙일 알림
+  // 설정. 'app'이면 아래 reminderMinutes(기본 30분) 전 팝업 알림을 명시
+  // 붙이고, 'google_default'면 팀장님이 그 캘린더에 이미 설정해둔 기본
+  // 알림을 그대로 쓴다.
+  const [reminderMode, setReminderModeState] = useState(getReminderMode);
+  const [reminderMinutes, setReminderMinutesState] = useState(getReminderMinutes);
+
+  const setReminderMode = useCallback((mode) => {
+    setReminderModeState(mode);
+    persistReminderMode(mode);
+  }, []);
+  const setReminderMinutes = useCallback((minutes) => {
+    setReminderMinutesState(minutes);
+    persistReminderMinutes(minutes);
+  }, []);
 
   const [googleEvents, setGoogleEvents] = useState([]);
   const [googleEventsLoading, setGoogleEventsLoading] = useState(false);
@@ -493,17 +513,20 @@ export function AppProvider({ children }) {
         description: target.memo,
         startISO: target.start,
         endISO: target.end,
+        reminders: googleCalendarApi.buildReminders(reminderMode, reminderMinutes),
       });
       if (!created.ok) {
         if (created.code === 'UNAUTHORIZED') signOutGoogle();
-        return { error: created.message };
+        // 앱에서만 확정 처리하지 않는다 — Google 쪽 생성이 실패하면 로컬
+        // 상태도 그대로 pending으로 남겨두고 실패 사실을 명확히 알린다.
+        return { error: `Google Calendar 일정 등록에 실패했습니다.\n${created.message}` };
       }
 
       dispatchAndPersist({ type: 'ACCEPT_REQUEST', id, googleCalendarEventId: created.googleEventId });
       fetchGoogleEvents();
       return { ok: true };
     },
-    [localEvents, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+    [localEvents, googleActive, accessToken, managerCalendarId, reminderMode, reminderMinutes, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
   );
 
   // reason: 'unavailable'(일정 불가) | 'other'(기타). detail: 'other'일 때
@@ -549,17 +572,18 @@ export function AppProvider({ children }) {
         description: target.memo,
         startISO: target.proposedStart,
         endISO: target.proposedEnd,
+        reminders: googleCalendarApi.buildReminders(reminderMode, reminderMinutes),
       });
       if (!created.ok) {
         if (created.code === 'UNAUTHORIZED') signOutGoogle();
-        return { error: created.message };
+        return { error: `Google Calendar 일정 등록에 실패했습니다.\n${created.message}` };
       }
 
       dispatchAndPersist({ type: 'ACCEPT_RESCHEDULE', id, googleCalendarEventId: created.googleEventId });
       fetchGoogleEvents();
       return { ok: true };
     },
-    [localEvents, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+    [localEvents, googleActive, accessToken, managerCalendarId, reminderMode, reminderMinutes, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
   );
 
   const cancelReschedule = useCallback((id) => {
@@ -637,6 +661,9 @@ export function AppProvider({ children }) {
         description: patch.memo,
         startISO: patch.start,
         endISO: patch.end,
+        // 일정 수정 시에도 현재 알림 설정을 다시 실어 보내 변경된 시간
+        // 기준으로 알림이 유지되게 한다.
+        reminders: googleCalendarApi.buildReminders(reminderMode, reminderMinutes),
       });
       if (!patched.ok) {
         if (patched.code === 'UNAUTHORIZED') signOutGoogle();
@@ -646,7 +673,7 @@ export function AppProvider({ children }) {
       await fetchGoogleEvents();
       return { ok: true };
     },
-    [events, googleActive, accessToken, managerCalendarId, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
+    [events, googleActive, accessToken, managerCalendarId, reminderMode, reminderMinutes, dispatchAndPersist, signOutGoogle, fetchGoogleEvents]
   );
 
   // 일정 삭제. pending/reschedule_requested는 아직 Google에 없으므로 로컬만
@@ -737,6 +764,11 @@ export function AppProvider({ children }) {
       googleEventsLoading,
       googleEventsError,
       refreshGoogleEvents: fetchGoogleEvents,
+      // Google 일정 알림(reminders) 설정
+      reminderMode,
+      setReminderMode,
+      reminderMinutes,
+      setReminderMinutes,
       // 데모 모드(개발용)
       demoMode,
       setDemoMode,
@@ -775,6 +807,10 @@ export function AppProvider({ children }) {
       googleEventsLoading,
       googleEventsError,
       fetchGoogleEvents,
+      reminderMode,
+      setReminderMode,
+      reminderMinutes,
+      setReminderMinutes,
       demoMode,
       setDemoMode,
     ]
