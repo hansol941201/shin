@@ -87,6 +87,8 @@
   .qna-row{padding:9px 4px;border-bottom:1px solid var(--qna-border);}
   .qna-row-top{display:flex;align-items:center;gap:10px;}
   .qna-row-q{flex:1;min-width:0;font-size:13px;font-weight:600;line-height:1.45;color:var(--qna-text);}
+  /* 자주 나오는 질문의 반복 횟수 — 아주 작고 연하게, 화면을 복잡하게 만들지 않는다 */
+  .qna-count-tag{flex:none;font-size:10px;color:var(--qna-text-faint);margin-left:4px;}
   .qna-row-part-tag{
     flex:none;font-size:10.5px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);
     padding:2px 9px;border-radius:999px;white-space:nowrap;
@@ -250,19 +252,62 @@ function qnaPartLabel(key){
 // 이 횟수 이상 반복되면 "자주 나오는 질문"으로 표시하고 상단 우선순위를 준다.
 const QNA_FREQUENT_THRESHOLD = 3;
 // 새 질문 등록 시 이 값 이상 유사하면 "기존 질문과 유사합니다" 확인창을 띄운다.
-// 애매한 경우는 절대 자동으로 합치지 않고, 확실히 비슷할 때만 물어본다.
-const QNA_SIMILAR_THRESHOLD = 0.55;
+// 키워드 충돌 가드(아래)로 서로 다른 제품/주제를 묻는 질문이 잘못 묶이지 않도록 막는다.
+// 최종 판단은 항상 사람이 "기존 질문에 합칠까요?" 확인창에서 내린다 — 자동 병합은 하지 않는다.
+const QNA_SIMILAR_THRESHOLD = 0.45;
+// "~할 수 있나요?/가능한가요?/되나요?" 같은 흔한 질문 어미가 같다는 이유만으로 유사도가 높게
+// 나오는 걸 막기 위해, 유사도를 잴 때는 이런 흔한 어미를 먼저 떼어내고 남은 핵심 내용(무엇을
+// 묻는지)끼리 비교한다. 예: "관공사에 POUR공법 적용 가능한가요?" → "관공사에 POUR공법"
+const QNA_QUESTION_ENDINGS = [
+  '진행할 수 있나요', '진행이 가능한가요', '적용할 수 있나요', '적용이 가능한가요', '적용 가능한가요',
+  '가능한가요', '할 수 있나요', '받을 수 있나요', '해 주나요', '해주나요', '주나요',
+  '계획이 있나요', '문제는 없나요', '문제가 될 수 있는 부분은 없나요', '구성되나요', '다른가요',
+  '되는 건가요', '되는건가요', '되나요', '있나요', '인가요',
+];
+function qnaStripQuestionEnding(text){
+  let t = (text || '').trim().replace(/[?!.]+$/, '').trim();
+  for(const ending of QNA_QUESTION_ENDINGS){
+    if(t.endsWith(ending)){ t = t.slice(0, t.length - ending.length).trim(); break; }
+  }
+  return t;
+}
+// 문장이 비슷해도 실제로 묻는 대상(구체적인 제품/공법명)이나 주제(가격·마진·기간 등)가 다르면
+// 같은 질문으로 보면 안 된다. 예:
+//  · "POUR공법 관공사 적용이 가능한가요?" vs "아스팔트슁글도 관공사 적용이 가능한가요?" (제품이 다름)
+//  · "공종별로 예상 마진율이 다른가요?" vs "공종별로 시공 기간이 다른가요?" (같은 틀, 묻는 항목이 다름)
+// 'POUR'는 거의 모든 질문에 등장하는 회사명이라 구분 기준으로 쓸 수 없어 제외했다 — 대신 구체적인
+// 세부 제품/공법명만 넣어서, 한쪽이라도 특정 제품을 콕 집어 말하는데 다른 쪽은 그 제품을 전혀
+// 언급하지 않으면(둘 다 언급 안 하거나 같은 제품을 언급하면 통과) 무조건 다른 질문으로 본다.
+const QNA_SUBJECT_KEYWORDS = ['아스팔트슁글', '다모아', '루프마스터', '금속기와', '우레탄', '방수'];
+// 주제 키워드는 양쪽 모두 이 목록의 키워드를 언급했는데 겹치는 게 하나도 없을 때만(둘 다 언급이
+// 없으면 판단하지 않음) 다른 질문으로 본다.
+const QNA_TOPIC_KEYWORDS = ['마진', '단가', '가격', '조달', '계약', '하도급', '법적', '영업', '특허', '현장', '기간', '등록', '시공', '대금', '발주처', '병행', '관공사', '아파트', '입찰'];
+function qnaKeywordsIn(text, list){
+  return list.filter(k => (text||'').includes(k));
+}
+// 두 질문이 서로 다른 대상/주제를 가리키고 있으면 true — 이 경우 아무리 문장이 비슷해도 합치지 않는다.
+function qnaHasSubjectConflict(a, b){
+  const sa = qnaKeywordsIn(a, QNA_SUBJECT_KEYWORDS), sb = qnaKeywordsIn(b, QNA_SUBJECT_KEYWORDS);
+  if((sa.length || sb.length) && !sa.some(k => sb.includes(k))) return true; // 한쪽만 특정 제품을 언급 → 다른 질문
+  const ta = qnaKeywordsIn(a, QNA_TOPIC_KEYWORDS), tb = qnaKeywordsIn(b, QNA_TOPIC_KEYWORDS);
+  if(ta.length && tb.length && !ta.some(k => tb.includes(k))) return true; // 둘 다 주제어가 있는데 안 겹침 → 다른 질문
+  return false;
+}
 
 // 서강건설 1차 미팅에서 실제 나온 질문 — 처음 접속했을 때만 예시로 보이는 초기 자료.
 function qnaBuildSeedQuestions(){
   const now = new Date().toISOString();
   let order = 0;
   // category는 화면에 표시하지 않는 내부 관리용 값이다(질문지 원본의 분류 제목을 그대로 보관).
-  const mk = (part, question, answer, category, freq) => ({
-    id: qnaUid(), part, question, answer: answer || '', category: category || '',
-    createdAt: now, updatedAt: now, order: order++,
-    frequencyCount: freq || 1, isImportant: false, lastAskedAt: now
-  });
+  const mk = (part, question, answer, category, freq, aliases) => {
+    const frequencyCount = freq || 1;
+    return {
+      id: qnaUid(), part, question, answer: answer || '', category: category || '',
+      createdAt: now, updatedAt: now, order: order++,
+      frequencyCount, isImportant: false, frequent: frequencyCount >= QNA_FREQUENT_THRESHOLD,
+      aliases: aliases || [], lastAskedAt: now
+    };
+  };
   return [
     // (주)서강건설 1차 미팅 질문 — 첨부해주신 원본 문서(1차질문.hwpx) 문구 그대로 반영.
     // 두 번째로 첨부해주신 질문지(관급공사 적용 관련 3건 추가, 나머지 15건은 첫 번째 질문지와
@@ -302,6 +347,8 @@ function qnaLoadState(){
         if(typeof q.isImportant !== 'boolean') q.isImportant = false;
         if(!q.lastAskedAt) q.lastAskedAt = q.updatedAt || q.createdAt || new Date().toISOString();
         if(typeof q.category !== 'string') q.category = ''; // 화면에는 쓰지 않는 내부 관리용 값
+        if(!Array.isArray(q.aliases)) q.aliases = []; // 병합된 과거 질문 원문(표현이 달랐던 문구들)
+        if(typeof q.frequent !== 'boolean') q.frequent = q.frequencyCount >= QNA_FREQUENT_THRESHOLD;
       });
       return parsed;
     }
@@ -358,20 +405,29 @@ function qnaBigrams(text){
   return grams;
 }
 function qnaQuestionSimilarity(a, b){
-  const ga = qnaBigrams(a), gb = qnaBigrams(b);
+  // 묻는 대상(제품/공법)이 서로 다르면 문장이 아무리 비슷해도 유사하지 않은 것으로 본다.
+  // 예: "POUR공법 관공사 적용이 가능한가요?" vs "아스팔트슁글도 관공사 적용이 가능한가요?"
+  if(qnaHasSubjectConflict(a, b)) return 0;
+  // "~할 수 있나요?/가능한가요?" 같은 흔한 어미를 떼어내고 핵심 내용끼리만 비교한다 — 그래야
+  // "관공사에 POUR공법 적용 가능한가요?" / "관공사에도 POUR로 진행할 수 있나요?"처럼 어순·표현이
+  // 달라도 실제로 같은 걸 묻는 질문을 놓치지 않는다.
+  const ca = qnaStripQuestionEnding(a), cb = qnaStripQuestionEnding(b);
+  const ga = qnaBigrams(ca), gb = qnaBigrams(cb);
   if(!ga.size || !gb.size) return 0;
   let overlap = 0;
   ga.forEach(g => { if(gb.has(g)) overlap++; });
-  // Dice 계수(2*교집합/전체합) 사용 — "~있나요?" 같은 흔한 어미만 겹쳐도 유사하다고
-  // 오판하지 않도록, 길이가 크게 다른 두 질문은 자동으로 점수가 낮아지게 한다.
+  // Dice 계수(2*교집합/전체합) — 길이가 크게 다른 두 질문은 자동으로 점수가 낮아진다.
   return (2 * overlap) / (ga.size + gb.size);
 }
 // 같은 파트 안에서 가장 비슷한 기존 질문 1건을 찾는다(임계값 미만이면 null → 새 질문으로 등록).
+// 원본 질문(question)뿐 아니라 그 질문에 이미 병합된 과거 표현(aliases)과도 비교해서, 표현이
+// 조금씩 다른 질문이 여러 번 들어와도 계속 같은 대표 질문에 잘 모이도록 한다.
 function qnaFindMostSimilar(question, part, excludeId){
   let best = null, bestScore = 0;
   qnaState.questions.forEach(q => {
     if(q.part !== part || q.id === excludeId) return;
-    const s = qnaQuestionSimilarity(question, q.question);
+    const candidates = [q.question, ...(q.aliases || [])];
+    const s = Math.max(...candidates.map(c => qnaQuestionSimilarity(question, c)));
     if(s > bestScore){ bestScore = s; best = q; }
   });
   return bestScore >= QNA_SIMILAR_THRESHOLD ? best : null;
@@ -453,11 +509,14 @@ function qnaRenderBadge(item){
 // 1차 미팅 전용: 질문 한 줄 + [답변 보기 ▼] — 클릭하면 그 질문 아래에만 답변이 펼쳐진다(여러 개 동시에 열람 가능).
 function qnaRenderRowToggle(item, showPartTag){
   const isOpen = qnaOpenIds.has(item.id);
-  const star = qnaIsStarred(item) ? '★ ' : '';
+  const isFrequent = (item.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD;
+  const star = (item.isImportant || isFrequent) ? '★ ' : '';
+  // 빈도 횟수는 아주 작고 연한 회색으로만 — 화면이 복잡해 보이지 않게 최소한으로 표시한다.
+  const countTag = isFrequent ? `<span class="qna-count-tag">${item.frequencyCount}회</span>` : '';
   return `
     <div class="qna-row" data-id="${item.id}">
       <div class="qna-row-top">
-        <span class="qna-row-q">${star}${qnaEscapeHtml(item.question)}</span>
+        <span class="qna-row-q">${star}${qnaEscapeHtml(item.question)}</span>${countTag}
         ${showPartTag ? `<span class="qna-row-part-tag">${qnaEscapeHtml(qnaPartLabel(item.part))}</span>` : ''}
         <button type="button" class="qna-row-toggle" data-action="toggle-answer" data-id="${item.id}">${isOpen ? '답변 닫기 ▲' : '답변 보기 ▼'}</button>
       </div>
@@ -571,9 +630,14 @@ function qnaOpenQuestionModal(editId){
       const ok = confirm(`기존 질문과 유사합니다.\n\n"${similar.question}"\n\n기존 질문에 횟수를 추가할까요?\n(취소하면 새 질문으로 따로 등록합니다)`);
       if(ok){
         similar.frequencyCount = (similar.frequencyCount||1) + 1;
+        similar.frequent = similar.frequencyCount >= QNA_FREQUENT_THRESHOLD;
         similar.lastAskedAt = now;
         similar.isImportant = similar.isImportant || isImportant;
-        if(answer && !similar.answer) similar.answer = answer; // 기존 답변이 비어있을 때만 이번 답변으로 채움
+        // 이번에 실제로 들어온 표현(원문)을 aliases에 남겨서 나중에 어떤 문구들이 이 질문으로
+        // 모였는지 추적할 수 있게 한다. 대표 질문 문구 자체와 같으면 중복으로 남기지 않는다.
+        if(!Array.isArray(similar.aliases)) similar.aliases = [];
+        if(question !== similar.question && !similar.aliases.includes(question)) similar.aliases.push(question);
+        if(answer && !similar.answer) similar.answer = answer; // 기존 답변이 비어있을 때만 이번 답변으로 채움 — 추측 답변 절대 생성하지 않음
         qnaSaveState(); qnaCloseModal();
         qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaActiveTab = similar.part; qnaRenderAll();
         qnaShowToast(`기존 질문 빈도가 추가되었습니다 (${similar.frequencyCount}회)`);
@@ -585,7 +649,7 @@ function qnaOpenQuestionModal(editId){
     const partMax = qnaState.questions.filter(q=>q.part===part).reduce((m,q)=>Math.max(m,q.order), -1);
     qnaState.questions.push({
       id: qnaUid(), part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
-      frequencyCount: 1, isImportant, lastAskedAt: now
+      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now
     });
     qnaActiveTab = part;
     qnaSaveState(); qnaCloseModal();
