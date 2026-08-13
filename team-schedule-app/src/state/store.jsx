@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, getWeekStart, addDays } from '../utils/time.js';
 import { makeId } from '../utils/id.js';
 import { loadPersistedEvents, persistEvents } from '../services/firebase.js';
 import * as googleCalendarApi from '../services/googleCalendar.js';
-import { subscribeLegacySchedules } from '../services/legacyScheduleAdapter.js';
+import { subscribeSharedSchedules } from '../services/legacyScheduleAdapter.js';
 import {
   GOOGLE_CONFIGURED,
   GOOGLE_CLIENT_ID_VALID,
@@ -192,14 +192,14 @@ export function AppProvider({ children }) {
   // ---------------------------------------------------------------------
   // 공유 일정(다른 팀 Firebase, 읽기 전용): Google 연동 여부와 무관하게
   // 앱이 열리는 즉시 항상 구독을 시작한다 — 완전히 별도의 실시간 소스다.
-  // 이 앱은 이 데이터를 절대 쓰지/지우지 않는다(subscribeLegacySchedules
+  // 이 앱은 이 데이터를 절대 쓰지/지우지 않는다(subscribeSharedSchedules
   // 내부도 onValue만 사용, set/update/remove 없음).
   // ---------------------------------------------------------------------
   const [sharedEvents, setSharedEvents] = useState([]);
   const [sharedStatus, setSharedStatus] = useState({ ok: null, message: '연결 확인 중…' });
 
   useEffect(() => {
-    const unsubscribe = subscribeLegacySchedules(setSharedEvents, setSharedStatus);
+    const unsubscribe = subscribeSharedSchedules(setSharedEvents, setSharedStatus);
     return () => {
       unsubscribe();
     };

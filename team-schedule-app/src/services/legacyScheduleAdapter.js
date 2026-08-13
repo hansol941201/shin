@@ -105,6 +105,10 @@ function toEvent(id, raw, sourceType) {
   return {
     id: `legacy_${sourceType}_${id}`,
     source: 'shared_team_calendar',
+    // 이 앱에서 절대 수정/삭제/승인/거절 대상이 될 수 없는 데이터임을
+    // 명시적으로 표시(UI는 source로도 이미 분기하지만, 이중 안전장치로
+    // 이 필드도 함께 검사한다).
+    readOnly: true,
     sourceType,
     title: raw.title || raw.siteName || raw.company || TYPE_LABEL[sourceType] || '공유 일정',
     start: start.toISOString(),
@@ -145,6 +149,7 @@ function toVacationEventFromHiworks(v) {
   return {
     id: `legacy_hiworks_${v.office_user_no || ''}_${v.date}_${v.start_time || ''}`,
     source: 'shared_team_calendar',
+    readOnly: true,
     sourceType: 'vacation',
     title: v.vacation_type_title || '휴가',
     start: start.toISOString(),
@@ -162,7 +167,7 @@ function toVacationEventFromHiworks(v) {
 // 구독 시작. onUpdate(events)를 실시간(onValue)으로 계속 호출한다.
 // onStatus({ok, message})로 연결/오류 상태를 알려준다(설정 화면 진단용).
 // 구독 해제 함수를 반환한다.
-export function subscribeLegacySchedules(onUpdate, onStatus, teamLeadName = LEGACY_TEAM_LEAD_NAME) {
+export function subscribeSharedSchedules(onUpdate, onStatus, teamLeadName = LEGACY_TEAM_LEAD_NAME) {
   let app;
   let db;
   try {

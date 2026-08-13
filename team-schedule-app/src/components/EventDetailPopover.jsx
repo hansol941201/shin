@@ -59,7 +59,9 @@ export default function EventDetailPopover({ event, anchor, onClose }) {
 
   // 다른 팀 Firebase에서 가져온 공유 일정은 완전히 읽기 전용이다 —
   // 수정/삭제/수락/거절 등 어떤 액션 버튼도 두지 않고 정보만 보여준다.
-  if (event.source === 'shared_team_calendar') {
+  // source와 readOnly 플래그를 이중으로 검사해 실수로라도 아래의
+  // 수정/삭제/승인 로직에 도달하지 않게 한다.
+  if (event.source === 'shared_team_calendar' || event.readOnly) {
     return (
       <PopoverShell anchor={anchor} onClose={onClose} width={296}>
         <div className="pv-head">
