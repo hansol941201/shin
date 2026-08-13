@@ -492,6 +492,23 @@
   .memo-sticky-actions{ display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:8px; }
   .memo-sticky textarea{ width:100%; min-height:72px; border:none; background:transparent; resize:vertical; font-family:inherit; font-size:12.5px; color:#374151; outline:none; padding:0; flex:1; }
   .memo-sticky-del-confirm{ display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-muted); margin-top:8px; justify-content:flex-end; }
+
+  /* ---- 요청자료 — 세로 리스트 패널(§요청자료 정리 라운드). 포스트잇 카드 그리드 대신
+     한 줄 중심의 컴팩트한 리스트. 팝업 자체(.chart-memo-panel/.chart-memo-body)는 이미
+     head 고정 + body만 스크롤되는 구조라 그대로 재사용한다. ---- */
+  .req-list-scroll{ max-height:60vh; }
+  .req-row{ display:flex; align-items:baseline; gap:14px; padding:8px 2px; border-bottom:1px solid var(--line); }
+  .req-row:last-child{ border-bottom:none; }
+  .req-row-meta{ flex:none; width:78px; font-size:11px; color:var(--text-muted); }
+  .req-row-text{ flex:1 1 auto; min-width:0; font-size:13.5px; font-weight:600; color:var(--text); line-height:1.4; }
+  .req-row-actions{ flex:none; display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-muted); }
+  .req-row-edit{ flex-direction:column; align-items:stretch; }
+  .req-row-edit-body{ width:100%; }
+  .req-row-edit-body textarea{
+    width:100%; min-height:56px; box-sizing:border-box; padding:8px 9px; font-family:inherit; font-size:13px;
+    border:1px solid var(--line); border-radius:6px; outline:none; resize:vertical; color:var(--text); margin-top:4px;
+  }
+  .req-row-edit-body .req-row-actions{ justify-content:flex-end; margin-top:6px; }
   @media (max-width:760px){
     .cdash-4col{ grid-template-columns:1fr; }
     .cdash-col{ border-left:none !important; border-top:1px solid var(--line); }
@@ -2050,7 +2067,11 @@ window.SHIN2_CRM_APP_INIT = function(){
   function renderChart(co){
     // 전화기록 원문에서 명확한 자료 요청만 추출해 requestedMaterials에 병합(§14, 멱등이라
     // 카드를 열 때마다 실행해도 중복 생성되지 않는다) — originalText 자체는 절대 건드리지 않음.
+    // [버그 수정 — §요청자료 정리 라운드] loadCompanies()는 매번 새 객체를 반환하므로
+    // extractRequestedMaterialsFromActivities가 저장한 값은 위에서 넘어온 co 참조에는
+    // 반영되지 않는다 — 이후 렌더가 방금 추출된 자료를 놓치지 않도록 co를 다시 읽는다.
     D.extractRequestedMaterialsFromActivities(co.id);
+    co = D.findCompany(co.id) || co;
     cardView.innerHTML = `
       <div class="chart-overlay" id="chartOverlay">
         <div class="chart-panel" role="dialog" aria-modal="true" aria-label="고객 차트">
@@ -2063,7 +2084,6 @@ window.SHIN2_CRM_APP_INIT = function(){
             </div>
 
             <div class="cdash-block" id="cdashMeetingBlock"></div>
-            <div class="cdash-block" id="cdashMaterialsBlock"></div>
 
             <div class="cdash-bottom3" style="grid-template-columns:1fr 1fr;">
               <div class="cdash-bcol" id="cdashReactionsCol"></div>
@@ -2075,7 +2095,8 @@ window.SHIN2_CRM_APP_INIT = function(){
             <div class="cdash-btn-row">
               <button type="button" id="cdashBtnInfo">업체정보</button>
               <button type="button" id="cdashBtnDocs">서류함</button>
-              <button type="button" id="cdashBtnMemo">메모</button>
+              <button type="button" id="cdashBtnMemo">요청자료</button>
+              <button type="button" id="cdashBtnMeeting">미팅 기록</button>
             </div>
 
             <div class="cdash-panel-wrap" id="cdashInfoWrap" style="display:none;">
@@ -2095,7 +2116,6 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderBasicInfoCol(co);
     renderInterestCol(co);
     renderMeetingRecordSection(co);
-    renderRequestedMaterialsSection(co);
     renderReactionsCol(co);
     renderNextActionsCol(co);
     renderSummaryCol(co);
@@ -2119,9 +2139,18 @@ window.SHIN2_CRM_APP_INIT = function(){
       });
     });
     const memoBtn = document.getElementById('cdashBtnMemo');
-    const memoCount = D.memosFor(co.id).length;
-    memoBtn.textContent = memoCount ? `메모 ${memoCount}` : '메모';
+    const reqCount = buildRequestListItems(co).length;
+    memoBtn.textContent = reqCount ? `요청자료 ${reqCount}` : '요청자료';
     memoBtn.addEventListener('click', ()=> openMemoPanel(co));
+    // §진행 기록으로 갈아탄 이후에도 "미팅 기록" 바로가기 버튼(§요청자료 정리 라운드)은
+    // 새 팝업을 만들지 않고 이미 화면에 그려져 있는 진행 기록 블록으로 스크롤만 시켜준다.
+    const meetingBtn = document.getElementById('cdashBtnMeeting');
+    if(meetingBtn){
+      meetingBtn.addEventListener('click', ()=>{
+        const block = document.getElementById('cdashMeetingBlock');
+        if(block) block.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    }
   }
 
   // ---- 상단 헤더(§1~5) — 업체명만 크게, "고객관리카드" 문구/개별 복사버튼 삭제. X는 카드
@@ -3764,12 +3793,45 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
   /* ==========================================================================
-     메모 — 포스트잇형 패널(§ 메모 포스트잇 라운드). 고객카드 하단 [메모] 버튼을 누르면
-     카드 위에 겹쳐 뜨는 작은 오버레이(기존 "고객 메모 정리" 모달과 동일한 패턴)로, 메모
-     목록/작성/수정/삭제는 그대로 D.memosFor/addMemo/updateMemo/deleteMemo만 사용한다
-     (targetType:'company', targetId=company.id — 업체별로 완전히 분리, 새 저장소 없음).
-     "다음 행동"/전화기록/요청자료와는 다른 데이터이므로 여기서 절대 서로 변환하지 않는다(§11/§12).
+     요청자료 — 세로 리스트 패널(§요청자료 정리 라운드). 예전 "메모" 포스트잇 패널을
+     그대로 재사용하되(같은 오버레이 열림/닫힘 구조, 같은 memoPanelState 변수, 같은
+     D.memosFor/addMemo/updateMemo/deleteMemo 호출) 화면에는 두 가지 기존 데이터를
+     날짜순으로 합쳐서 보여준다 — 새 저장소를 만들지 않는다:
+       1) D.memosFor(co.id) — 직원이 자유 텍스트로 남긴 기록("15:41 msds발행" 같은
+          기존 항목 포함). [수정]/[삭제]까지 그대로 가능.
+       2) co.requestedMaterials — 전화기록에서 자동 추출되었거나 수동으로 추가된
+          자재/자료 요청(§요청 자료 라운드에서 이미 만든 구조). 같은 sourceActivityId를
+          가진 항목들은 한 통화에서 나온 것이므로 "단가표·시방서 요청"처럼 한 줄로 묶어
+          보여준다. 여기서는 읽기+삭제만(자유 텍스트가 아니라 구조화된 자재명이라 인라인
+          수정 대상에서 제외했다) — 상태(요청/준비중/발송완료) 선택 UI는 만들지 않는다(§9).
+     "+ 요청자료 추가"로 새로 적는 항목은 자유 텍스트이므로 D.addMemo로 저장한다(메모
+     저장 로직 재사용, §2). 다음 행동/전화기록 원문과는 여기서 절대 서로 변환하지 않는다.
      ========================================================================== */
+  function buildRequestListItems(co){
+    const items = [];
+    D.memosFor(co.id).forEach(m=> items.push({
+      id: 'memo:' + m.id, kind:'memo', memoId: m.id, text: m.text,
+      ts: m.updatedAt || m.createdAt, createdAtIso: new Date(m.createdAt).toISOString()
+    }));
+    const materials = (co.requestedMaterials || []);
+    const groups = new Map(); // sourceActivityId(있으면) 또는 개별 id로 그룹
+    materials.forEach(mat=>{
+      const key = mat.sourceActivityId ? ('act:' + mat.sourceActivityId) : ('single:' + mat.id);
+      if(!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(mat);
+    });
+    groups.forEach(group=>{
+      const types = group.map(g=> g.materialType).filter(Boolean);
+      const earliest = group.reduce((a,b)=> new Date(a.createdAt) < new Date(b.createdAt) ? a : b);
+      items.push({
+        id: 'mat:' + group.map(g=> g.id).join(','), kind:'material',
+        materialIds: group.map(g=> g.id), text: types.join('·') + ' 요청',
+        ts: earliest.createdAt, createdAtIso: earliest.createdAt
+      });
+    });
+    items.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+    return items;
+  }
   let memoPanelState = { editingId: null, drafting: false, deleteConfirmId: null };
   function openMemoPanel(co){
     memoPanelState = { editingId: null, drafting: false, deleteConfirmId: null };
@@ -3779,75 +3841,91 @@ window.SHIN2_CRM_APP_INIT = function(){
     memoPanelState = { editingId: null, drafting: false, deleteConfirmId: null };
     const root = document.getElementById('memoPanelRoot');
     if(root) root.innerHTML = '';
-    // 메모 개수가 바뀌었을 수 있으니 하단 [메모] 버튼 라벨만 다시 계산한다(카드 전체를 다시 그리지 않음).
+    // 목록 건수가 바뀌었을 수 있으니 하단 [요청자료] 버튼 라벨만 다시 계산한다(카드 전체를 다시 그리지 않음).
     const btn = document.getElementById('cdashBtnMemo');
     if(btn && currentCompanyId){
-      const n = D.memosFor(currentCompanyId).length;
-      btn.textContent = n ? `메모 ${n}` : '메모';
+      const co = D.findCompany(currentCompanyId);
+      const n = co ? buildRequestListItems(co).length : 0;
+      btn.textContent = n ? `요청자료 ${n}` : '요청자료';
     }
   }
-  function memoStickyHtml(co, m){
-    const meta = fmtDate(new Date(m.createdAt).toISOString()) + ' ' + fmtTime(new Date(m.createdAt).toISOString());
-    if(memoPanelState.editingId === m.id){
-      return `<div class="memo-sticky" data-memo-id="${esc(m.id)}">
-        <div class="memo-sticky-meta">${esc(meta)}</div>
-        <textarea data-memo-edit-input="${esc(m.id)}">${esc(m.text)}</textarea>
-        <div class="memo-sticky-actions">
-          <button type="button" class="cdash-mini-edit" data-memo-edit-cancel="1">취소</button>
-          <button type="button" class="co-text-action primary" data-memo-edit-save="${esc(m.id)}" style="font-size:11px;padding:2px 8px;">저장</button>
+  function reqRowHtml(co, it){
+    const dateLabel = fmtDate(it.createdAtIso) + ' ' + fmtTime(it.createdAtIso);
+    if(it.kind === 'memo' && memoPanelState.editingId === it.memoId){
+      return `<div class="req-row req-row-edit" data-req-id="${esc(it.id)}">
+        <div class="req-row-meta">${esc(dateLabel)}</div>
+        <div class="req-row-edit-body">
+          <textarea data-memo-edit-input="${esc(it.memoId)}">${esc(it.text)}</textarea>
+          <div class="req-row-actions">
+            <button type="button" class="cdash-mini-edit" data-memo-edit-cancel="1">취소</button>
+            <button type="button" class="co-text-action primary" data-memo-edit-save="${esc(it.memoId)}" style="font-size:11px;padding:2px 8px;">저장</button>
+          </div>
         </div>
       </div>`;
     }
-    if(memoPanelState.deleteConfirmId === m.id){
-      return `<div class="memo-sticky" data-memo-id="${esc(m.id)}">
-        <div class="memo-sticky-meta">${esc(meta)}</div>
-        <div class="memo-sticky-text">${esc(m.text)}</div>
-        <div class="memo-sticky-del-confirm">
+    if(it.kind === 'memo' && memoPanelState.deleteConfirmId === it.id){
+      return `<div class="req-row" data-req-id="${esc(it.id)}">
+        <div class="req-row-meta">${esc(dateLabel)}</div>
+        <div class="req-row-text">${esc(it.text)}</div>
+        <div class="req-row-actions">
           삭제할까요?
           <button type="button" class="cdash-mini-edit" data-memo-del-cancel="1">취소</button>
-          <button type="button" class="cdash-mini-edit" data-memo-del-confirm="${esc(m.id)}" style="color:#B91C1C;">삭제</button>
+          <button type="button" class="cdash-mini-edit" data-memo-del-confirm="${esc(it.memoId)}" style="color:#B91C1C;">삭제</button>
         </div>
       </div>`;
     }
-    return `<div class="memo-sticky" data-memo-id="${esc(m.id)}">
-      <div class="memo-sticky-meta">${esc(meta)}</div>
-      <div class="memo-sticky-text">${esc(m.text)}</div>
-      <div class="memo-sticky-actions">
-        <button type="button" class="cdash-mini-edit" data-memo-edit="${esc(m.id)}">수정</button>
-        <button type="button" class="cdash-mini-edit" data-memo-del="${esc(m.id)}">삭제</button>
+    if(it.kind === 'material' && memoPanelState.deleteConfirmId === it.id){
+      return `<div class="req-row" data-req-id="${esc(it.id)}">
+        <div class="req-row-meta">${esc(dateLabel)}</div>
+        <div class="req-row-text">${esc(it.text)}</div>
+        <div class="req-row-actions">
+          삭제할까요?
+          <button type="button" class="cdash-mini-edit" data-material-del-cancel="1">취소</button>
+          <button type="button" class="cdash-mini-edit" data-material-del-confirm="${esc(it.id)}" style="color:#B91C1C;">삭제</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="req-row" data-req-id="${esc(it.id)}">
+      <div class="req-row-meta">${esc(dateLabel)}</div>
+      <div class="req-row-text">${esc(it.text)}</div>
+      <div class="req-row-actions">
+        ${it.kind === 'memo' ? `<button type="button" class="cdash-mini-edit" data-memo-edit="${esc(it.memoId)}">수정</button>` : ''}
+        ${it.kind === 'memo'
+          ? `<button type="button" class="cdash-mini-edit" data-memo-del="${esc(it.memoId)}">삭제</button>`
+          : `<button type="button" class="cdash-mini-edit" data-material-del="${esc(it.id)}">삭제</button>`}
       </div>
     </div>`;
   }
-  function memoDraftHtml(){
-    return `<div class="memo-sticky" id="memoDraftCard">
-      <div class="memo-sticky-meta">새 메모</div>
-      <textarea id="memoDraftInput" placeholder="메모를 입력하세요."></textarea>
-      <div class="memo-sticky-actions">
-        <button type="button" class="cdash-mini-edit" id="memoDraftCancel">취소</button>
-        <button type="button" class="co-text-action primary" id="memoDraftSave" style="font-size:11px;padding:2px 8px;">저장</button>
+  function reqDraftHtml(){
+    return `<div class="req-row req-row-edit" id="memoDraftCard">
+      <div class="req-row-meta">신규</div>
+      <div class="req-row-edit-body">
+        <textarea id="memoDraftInput" placeholder="요청자료 내용을 입력하세요"></textarea>
+        <div class="req-row-actions">
+          <button type="button" class="cdash-mini-edit" id="memoDraftCancel">취소</button>
+          <button type="button" class="co-text-action primary" id="memoDraftSave" style="font-size:11px;padding:2px 8px;">저장</button>
+        </div>
       </div>
     </div>`;
   }
   function renderMemoPanel(co){
     const root = document.getElementById('memoPanelRoot');
     if(!root) return;
-    const items = D.memosFor(co.id); // 최신순 정렬은 memosFor가 이미 보장(§7)
+    const items = buildRequestListItems(co);
     root.innerHTML = `
       <div class="chart-memo-overlay" id="memoPanelOverlay">
-        <div class="chart-memo-panel" style="max-width:680px;">
+        <div class="chart-memo-panel req-panel" style="max-width:680px;">
           <div class="chart-memo-head">
-            <div class="chart-memo-title">메모 — ${esc(co.name)}</div>
+            <div class="chart-memo-title">요청자료 — ${esc(co.name)}</div>
             <div style="display:flex;align-items:center;gap:10px;">
-              <button type="button" class="co-text-action primary" id="memoPanelAddBtn">+ 새 메모</button>
+              <button type="button" class="co-text-action primary" id="memoPanelAddBtn">+ 요청자료 추가</button>
               <button type="button" class="chart-close-btn" id="memoPanelCloseBtn" aria-label="닫기">&times;</button>
             </div>
           </div>
-          <div class="chart-memo-body">
-            <div class="memo-sticky-grid">
-              ${memoPanelState.drafting ? memoDraftHtml() : ''}
-              ${items.map(m=> memoStickyHtml(co, m)).join('')}
-              ${(!items.length && !memoPanelState.drafting) ? '<div class="chart-memo-preview-empty">아직 작성된 메모가 없습니다. [+ 새 메모]를 눌러 적어보세요.</div>' : ''}
-            </div>
+          <div class="chart-memo-body req-list-scroll">
+            ${memoPanelState.drafting ? reqDraftHtml() : ''}
+            ${items.map(it=> reqRowHtml(co, it)).join('')}
+            ${(!items.length && !memoPanelState.drafting) ? '<div class="chart-memo-preview-empty">아직 요청자료 기록이 없습니다. [+ 요청자료 추가]를 눌러 적어보세요.</div>' : ''}
           </div>
         </div>
       </div>
@@ -3900,7 +3978,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       renderMemoPanel(co);
     }));
     root.querySelectorAll('[data-memo-del]').forEach(btn=> btn.addEventListener('click', ()=>{
-      memoPanelState.deleteConfirmId = btn.getAttribute('data-memo-del');
+      memoPanelState.deleteConfirmId = 'memo:' + btn.getAttribute('data-memo-del');
       renderMemoPanel(co);
     }));
     root.querySelectorAll('[data-memo-del-cancel]').forEach(btn=> btn.addEventListener('click', ()=>{
@@ -3911,6 +3989,21 @@ window.SHIN2_CRM_APP_INIT = function(){
       D.deleteMemo(btn.getAttribute('data-memo-del-confirm'));
       memoPanelState.deleteConfirmId = null;
       renderMemoPanel(co);
+    }));
+    root.querySelectorAll('[data-material-del]').forEach(btn=> btn.addEventListener('click', ()=>{
+      memoPanelState.deleteConfirmId = btn.getAttribute('data-material-del');
+      renderMemoPanel(co);
+    }));
+    root.querySelectorAll('[data-material-del-cancel]').forEach(btn=> btn.addEventListener('click', ()=>{
+      memoPanelState.deleteConfirmId = null;
+      renderMemoPanel(co);
+    }));
+    root.querySelectorAll('[data-material-del-confirm]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const compositeId = btn.getAttribute('data-material-del-confirm'); // 'mat:id1,id2,...'
+      const idPart = compositeId.slice(compositeId.indexOf(':') + 1);
+      idPart.split(',').forEach(matId=> D.removeRequestedMaterial(co.id, matId));
+      memoPanelState.deleteConfirmId = null;
+      currentCompanyId ? renderMemoPanel(D.findCompany(currentCompanyId)) : renderMemoPanel(co);
     }));
   }
 
