@@ -51,8 +51,10 @@
   .qna-tab:hover{border-color:var(--qna-navy);color:var(--qna-navy);}
   .qna-tab.active{background:var(--qna-navy);border-color:var(--qna-navy);color:#fff;}
 
-  .qna-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .qna-toolbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+  .qna-toolbar-text{min-width:0;}
   .qna-toolbar-label{font-size:15px;font-weight:700;color:var(--qna-navy);}
+  .qna-toolbar-desc{font-size:12.5px;color:var(--qna-text-gray);margin-top:3px;}
   .qna-add-btn{
     background:var(--qna-navy);color:#fff;border:none;border-radius:8px;padding:10px 18px;
     font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;
@@ -78,6 +80,26 @@
   }
   .qna-mini-btn:hover{border-color:var(--qna-navy);color:var(--qna-navy);}
   .qna-mini-btn.danger:hover{border-color:#c0392b;color:#c0392b;}
+
+  /* 1차 미팅 전용: 질문 한 줄 + [답변 보기] 토글 방식 (사내 FAQ 스타일, 카드/그림자 없음) */
+  .qna-row{padding:15px 4px;border-bottom:1px solid var(--qna-border);}
+  .qna-row-top{display:flex;align-items:center;gap:16px;}
+  .qna-row-q{flex:1;min-width:0;font-size:16px;font-weight:600;line-height:1.6;color:var(--qna-text);}
+  .qna-row-part-tag{
+    flex:none;font-size:11.5px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);
+    padding:3px 10px;border-radius:999px;white-space:nowrap;
+  }
+  .qna-row-toggle{
+    flex:none;background:none;border:none;color:var(--qna-navy);font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;white-space:nowrap;padding:2px;
+  }
+  .qna-row-toggle:hover{text-decoration:underline;}
+  .qna-row-answer{
+    margin-top:12px;padding:14px 16px;border-radius:6px;background:var(--qna-navy-soft);
+    color:var(--qna-text);font-size:14.5px;line-height:1.75;white-space:pre-wrap;
+  }
+  .qna-row-answer.empty{color:var(--qna-text-faint);}
+  .qna-row-manage{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
 
   .qna-empty-state{padding:60px 10px;text-align:center;color:var(--qna-text-gray);font-size:15px;}
 
@@ -128,7 +150,7 @@
   <div class="qna-title">Q&amp;A 자료집</div>
   <p class="qna-subtitle">1차 미팅·2차 미팅·PT에서 받은 질문과 답변을 모아둔 사내 자료집입니다.</p>
 
-  <input type="text" id="qnaSearchInput" class="qna-search-input" placeholder="질문·답변 검색 (예: 조달)" autocomplete="off" />
+  <input type="text" id="qnaSearchInput" class="qna-search-input" placeholder="질문 검색하기" autocomplete="off" />
 
   <div class="qna-tabs" id="qnaTabs"></div>
 
@@ -210,7 +232,7 @@
    유사 질문이 반복되면 빈도(frequencyCount)를 누적하고, 사용자가 직접
    지정한 중요 질문(isImportant)과 함께 목록 상단에 우선 노출한다.
    ============================================================ */
-const QNA_STORAGE_KEY = 'qna-site-state-v4';
+const QNA_STORAGE_KEY = 'qna-site-state-v5';
 function qnaUid(){ return 'q' + Math.random().toString(36).slice(2,10); }
 
 const QNA_PARTS = [
@@ -255,8 +277,8 @@ function qnaBuildSeedQuestions(){
     mk('first_meeting', '처음 아파트 영업을 시작할 때 POUR에서 어떤 자료나 지원을 받을 수 있나요?', ''),
     mk('first_meeting', '특허나 공법 스펙을 활용해서 아파트 입찰에 들어가는 방법도 안내해 주나요?', ''),
     mk('first_meeting', '아직 예정된 현장이 없는 상태에서도 협약 후 영업을 시작할 수 있나요?', ''),
-    mk('first_meeting', '다모아(루프마스터) 공법과 POUR공법을 병행할 수 있나요?', ''),
-    mk('first_meeting', '유사 공법을 같이 사용할 경우 제한사항이 있나요?', '')
+    mk('first_meeting', '현재 다모아(루프마스터) 공법도 병행할 예정인데 POUR공법과 같이 운영해도 되나요?', ''),
+    mk('first_meeting', '유사한 공법을 병행하는 경우 협약이나 영업상 제한사항이 있나요?', '')
   ];
 }
 
@@ -364,6 +386,9 @@ function qnaSortCompare(a, b){
 // 탐색 위치(현재 탭/검색어)는 데이터가 아니므로 localStorage에 저장하지 않는다.
 let qnaActiveTab = 'first_meeting';
 let qnaSearchQuery = '';
+// 1차 미팅에서만 쓰는 "답변 보기/닫기" 펼침 상태 — 여러 개를 동시에 열어둘 수 있도록 Set으로 관리.
+// (2차 미팅/PT는 기존 그대로 답변이 항상 함께 보이는 방식이라 이 상태를 쓰지 않는다.)
+let qnaOpenIds = new Set();
 
 function qnaRenderTabs(){
   document.getElementById('qnaTabs').innerHTML = QNA_PARTS.map(p => `
@@ -386,9 +411,14 @@ function qnaRenderMain(){
   const list = qnaVisibleList();
   const isSearching = !!qnaSearchQuery.trim();
   const label = isSearching ? `검색 결과 (${list.length}건)` : qnaPartLabel(qnaActiveTab);
+  // 1차 미팅에서만 소개 문구를 보여준다(다른 파트의 화면 구조는 그대로 유지).
+  const desc = (!isSearching && qnaActiveTab === 'first_meeting') ? '자주 나온 질문과 답변을 빠르게 확인하세요.' : '';
   return `
     <div class="qna-toolbar">
-      <span class="qna-toolbar-label">${qnaEscapeHtml(label)}</span>
+      <div class="qna-toolbar-text">
+        <div class="qna-toolbar-label">${qnaEscapeHtml(label)}</div>
+        ${desc ? `<div class="qna-toolbar-desc">${qnaEscapeHtml(desc)}</div>` : ''}
+      </div>
       <button type="button" class="qna-add-btn" data-action="add-open">+ 질문 추가</button>
     </div>
     <div id="qnaListArea">${qnaRenderListArea(list, isSearching)}</div>
@@ -396,15 +426,44 @@ function qnaRenderMain(){
 }
 function qnaRenderListArea(list, showPartTag){
   if(!list.length){
-    return `<div class="qna-empty-state">${qnaSearchQuery.trim() ? '검색 결과가 없습니다.' : '등록된 질문이 없습니다. [+ 질문 추가]로 첫 질문을 등록해보세요.'}</div>`;
+    return `<div class="qna-empty-state">${qnaSearchQuery.trim() ? '해당하는 질문을 찾을 수 없습니다.' : '등록된 질문이 없습니다. [+ 질문 추가]로 첫 질문을 등록해보세요.'}</div>`;
   }
-  return `<div class="qna-list">${list.map(item => qnaRenderItem(item, showPartTag)).join('')}</div>`;
+  return `<div class="qna-list">${list.map(item => (
+    item.part === 'first_meeting' ? qnaRenderRowToggle(item, showPartTag) : qnaRenderItem(item, showPartTag)
+  )).join('')}</div>`;
+}
+function qnaIsStarred(item){
+  return !!item.isImportant || (item.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD;
 }
 function qnaRenderBadge(item){
   if(item.isImportant) return `<span class="qna-badge">★ 중요 질문</span>`;
   if((item.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD) return `<span class="qna-badge">★ 자주 나오는 질문 · ${item.frequencyCount}회</span>`;
   return '';
 }
+// 1차 미팅 전용: 질문 한 줄 + [답변 보기 ▼] — 클릭하면 그 질문 아래에만 답변이 펼쳐진다(여러 개 동시에 열람 가능).
+function qnaRenderRowToggle(item, showPartTag){
+  const isOpen = qnaOpenIds.has(item.id);
+  const star = qnaIsStarred(item) ? '★ ' : '';
+  return `
+    <div class="qna-row" data-id="${item.id}">
+      <div class="qna-row-top">
+        <span class="qna-row-q">${star}${qnaEscapeHtml(item.question)}</span>
+        ${showPartTag ? `<span class="qna-row-part-tag">${qnaEscapeHtml(qnaPartLabel(item.part))}</span>` : ''}
+        <button type="button" class="qna-row-toggle" data-action="toggle-answer" data-id="${item.id}">${isOpen ? '답변 닫기 ▲' : '답변 보기 ▼'}</button>
+      </div>
+      ${isOpen ? `
+        <div class="qna-row-answer ${item.answer ? '' : 'empty'}">${item.answer ? qnaEscapeHtml(item.answer) : '아직 등록된 답변이 없습니다.'}</div>
+        <div class="qna-row-manage">
+          <button type="button" class="qna-mini-btn" data-action="edit" data-id="${item.id}">수정</button>
+          <button type="button" class="qna-mini-btn danger" data-action="delete" data-id="${item.id}">삭제</button>
+          <button type="button" class="qna-mini-btn" data-action="move-up" data-id="${item.id}">위로</button>
+          <button type="button" class="qna-mini-btn" data-action="move-down" data-id="${item.id}">아래로</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+// 2차 미팅 / PT 전용: 기존 그대로 — 질문 아래 답변이 항상 함께 보인다.
 function qnaRenderItem(item, showPartTag){
   return `
     <div class="qna-item" data-id="${item.id}">
@@ -545,6 +604,11 @@ qnaMainEl.addEventListener('click', (e)=>{
   if(action === 'add-open'){
     qnaOpenQuestionModal(null);
   }
+  else if(action === 'toggle-answer'){
+    const id = btn.dataset.id;
+    if(qnaOpenIds.has(id)) qnaOpenIds.delete(id); else qnaOpenIds.add(id);
+    qnaUpdateListUI();
+  }
   else if(action === 'edit'){
     qnaOpenQuestionModal(btn.dataset.id);
   }
@@ -553,6 +617,7 @@ qnaMainEl.addEventListener('click', (e)=>{
     if(!item) return;
     if(confirm('이 질문을 삭제하시겠습니까?')){
       qnaState.questions = qnaState.questions.filter(q=>q.id!==item.id);
+      qnaOpenIds.delete(item.id);
       qnaSaveState(); qnaRenderAll();
     }
   }
