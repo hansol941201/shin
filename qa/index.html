@@ -137,28 +137,16 @@
   .qna-reco-context{font-size:11px;color:var(--qna-text-faint);margin:0 0 10px;line-height:1.5;}
   .qna-reco-context span{color:var(--qna-text-gray);font-weight:600;}
   .qna-reco-empty{font-size:12px;color:var(--qna-text-faint);margin:0;}
-  .qna-reco-item{padding:10px 0;border-top:1px solid var(--qna-border);}
+  .qna-reco-item{padding:9px 0;border-top:1px solid var(--qna-border);}
   .qna-reco-item:first-of-type{border-top:none;padding-top:0;}
-  .qna-reco-item.is-done{opacity:.6;}
-  .qna-reco-item.is-excluded{opacity:.45;}
-  .qna-reco-item-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;}
   .qna-reco-priority{
     display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;
-    color:var(--qna-navy);background:var(--qna-navy-soft);
+    margin-right:4px;color:var(--qna-navy);background:var(--qna-navy-soft);
   }
   .qna-reco-priority.required{background:var(--qna-navy);color:#fff;}
   .qna-reco-priority.frequent{background:var(--qna-blue-soft);color:var(--qna-navy);}
   .qna-reco-label{font-size:12.5px;font-weight:700;color:var(--qna-text);}
-  .qna-reco-state{font-size:10px;font-weight:700;color:var(--qna-text-faint);margin-left:auto;}
   .qna-reco-reason{font-size:11px;color:var(--qna-text-gray);margin:3px 0 0;line-height:1.5;}
-  .qna-reco-actions{display:flex;gap:10px;margin-top:6px;}
-  .qna-reco-btn{
-    background:none;border:none;padding:0;margin:0;font-size:11px;font-weight:700;
-    color:var(--qna-navy);cursor:pointer;font-family:inherit;
-  }
-  .qna-reco-btn:hover{text-decoration:underline;}
-  .qna-reco-btn.muted{color:var(--qna-text-faint);}
-  .qna-reco-btn.muted:hover{color:#c0392b;}
 
   @media (max-width:960px){
     .qna-content-row{flex-direction:column;}
@@ -377,7 +365,7 @@ function qnaBuildSeedQuestions(){
       id: qnaUid(), part, question, answer: answer || '', category: category || '',
       createdAt: now, updatedAt: now, order: order++,
       frequencyCount, isImportant: false, frequent: frequencyCount >= QNA_FREQUENT_THRESHOLD,
-      aliases: aliases || [], lastAskedAt: now, actionStates: {}
+      aliases: aliases || [], lastAskedAt: now
     };
   };
   return [
@@ -421,7 +409,6 @@ function qnaLoadState(){
         if(typeof q.category !== 'string') q.category = ''; // 화면에는 쓰지 않는 내부 관리용 값
         if(!Array.isArray(q.aliases)) q.aliases = []; // 병합된 과거 질문 원문(표현이 달랐던 문구들)
         if(typeof q.frequent !== 'boolean') q.frequent = q.frequencyCount >= QNA_FREQUENT_THRESHOLD;
-        if(!q.actionStates || typeof q.actionStates !== 'object') q.actionStates = {}; // 질문별 실행 추천 완료/제외 상태
       });
       return parsed;
     }
@@ -632,8 +619,8 @@ function qnaRenderItem(item, showPartTag){
 }
 /* ============================================================
    오른쪽 추천 패널: "질문 기반 실행 추천"
-   이미 보유한 자료(제안서/시방서/공고문 예시/기존 PT 자료)를 반복해서
-   추천하지 않고, 질문 내용 + 카테고리를 함께 분석해 우리 회사가 실제로
+   이미 보유한 자료(제안서/시방서/공고문 예시/기존 PT 자료)나 이미 하고 있는
+   일(샘플·카탈로그 발송)은 반복해서 추천하지 않고, 질문 내용 + 카테고리를 함께 분석해 우리 회사가 실제로
    추가 실행/제공할 수 있는 일을 3~5개 추천한다. 질문 목록의 구조/데이터/
    기능(검색, 답변 보기/닫기, 1차·2차·PT 등)에는 전혀 관여하지 않는다.
    ============================================================ */
@@ -657,7 +644,6 @@ const QNA_RECO_ACTIONS = {
   'site-pt': { label:'담당자 대상 맞춤 PT·설명회', reason:'공법 설명과 관계자 협의가 필요한 질문입니다.' },
   'proposal-custom': { label:'질문 현장에 맞춘 제안서·시방서 수정', reason:'기존 자료를 그대로 쓰기보다 이 현장에 맞춰 보완이 필요합니다.' },
   'drone-diagnosis': { label:'드론 촬영·현장 진단', reason:'현장 상태를 직접 진단할 자료가 필요한 질문입니다.' },
-  'sample-catalog-send': { label:'샘플·카탈로그 발송', reason:'실물 확인을 원하는 질문에는 샘플 제공이 효과적입니다.' },
   'cad-detail': { label:'CAD 상세도 또는 시공 상세도 제공', reason:'설계 반영을 위한 상세 도면이 필요한 질문입니다.' },
   'pre-construction-checklist': { label:'시공 전 체크리스트 제공', reason:'시공 착수 전 확인할 사항을 미리 정리해두면 좋습니다.' },
   'contact-register': { label:'담당자·완료 목표일·다음 연락일 등록', reason:'후속 대응이 늦어지지 않도록 담당자와 일정을 남겨둘 필요가 있습니다.' },
@@ -681,18 +667,13 @@ const QNA_RECO_RULES = [
   { id:'sales-pt', categories:['민간 아파트 영업 지원'], keywords:['pt','설명회','발표','주민','입주민','영업','자료'],
     actions:[['site-pt','필수'], ['proposal-custom','자주 요청'], ['drone-diagnosis','추천']] },
   { id:'material', categories:[], keywords:['샘플','카탈로그','재질','제품','자재','슁글','우레탄','방수','기와'],
-    actions:[['sample-catalog-send','필수'], ['cad-detail','자주 요청'], ['pre-construction-checklist','추천']] },
+    // 샘플·카탈로그 발송은 이미 상시로 하고 있는 일이라 추천 목록에 넣지 않는다.
+    actions:[['cad-detail','필수'], ['proposal-custom','자주 요청'], ['pre-construction-checklist','추천']] },
 ];
 const QNA_RECO_TIER_ORDER = { '필수':0, '자주 요청':1, '추천':2 };
 // 매칭되는 규칙이 하나도 없을 때 쓰는 기본 3건(전부 '추천' 등급) — 항상 최소 3개를 보장한다.
 const QNA_RECO_FALLBACK = [['site-visit','추천'], ['similar-case-pick','추천'], ['contact-register','추천']];
 
-// 사내에서 실제로 얼마나 자주 '완료'로 처리했는지(모든 질문을 통틀어) — 이 값이 높을수록
-// "자주 활용되는 실행 항목"으로 보고 같은 우선순위 안에서 상단에 노출한다. 별도 저장소 없이
-// 질문마다 이미 저장돼 있는 actionStates를 그때그때 집계한다.
-function qnaRecoUsageCount(actionId){
-  return qnaState.questions.reduce((n, q) => n + ((q.actionStates && q.actionStates[actionId] === 'done') ? 1 : 0), 0);
-}
 // 질문 하나(내용+카테고리)를 분석해 우선순위 순으로 정렬된 실행 추천 3~5건을 만든다.
 function qnaRecoCompute(q){
   const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
@@ -707,8 +688,8 @@ function qnaRecoCompute(q){
     if(!prev || QNA_RECO_TIER_ORDER[tier] < QNA_RECO_TIER_ORDER[prev]) byId.set(actionId, tier);
   });
   return Array.from(byId.entries())
-    .map(([actionId, tier]) => ({ id: actionId, tier, usage: qnaRecoUsageCount(actionId), ...QNA_RECO_ACTIONS[actionId] }))
-    .sort((a, b) => QNA_RECO_TIER_ORDER[a.tier] - QNA_RECO_TIER_ORDER[b.tier] || b.usage - a.usage)
+    .map(([actionId, tier]) => ({ id: actionId, tier, ...QNA_RECO_ACTIONS[actionId] }))
+    .sort((a, b) => QNA_RECO_TIER_ORDER[a.tier] - QNA_RECO_TIER_ORDER[b.tier])
     .slice(0, 5);
 }
 // 추천의 기준이 되는 "현재 질문" — 방금 등록/수정/펼친 질문이 있으면 그걸 쓰고, 없거나 지금
@@ -722,23 +703,6 @@ function qnaRecoCurrentQuestion(){
   }
   return list.length ? list[0] : null;
 }
-function qnaRecoStatusLabel(state){
-  if(state === 'in_progress') return '진행중';
-  if(state === 'done') return '완료됨';
-  if(state === 'excluded') return '제외됨';
-  return '';
-}
-function qnaRenderRecoActionButtons(q, actionId, state){
-  if(state === 'done' || state === 'excluded'){
-    return `<button type="button" class="qna-reco-btn" data-action="reco-reset" data-qid="${q.id}" data-aid="${actionId}">되돌리기</button>`;
-  }
-  const startBtn = state === 'in_progress' ? '' : `<button type="button" class="qna-reco-btn" data-action="reco-start" data-qid="${q.id}" data-aid="${actionId}">실행하기</button>`;
-  return `
-    ${startBtn}
-    <button type="button" class="qna-reco-btn" data-action="reco-done" data-qid="${q.id}" data-aid="${actionId}">완료</button>
-    <button type="button" class="qna-reco-btn muted" data-action="reco-exclude" data-qid="${q.id}" data-aid="${actionId}">제외</button>
-  `;
-}
 function qnaRenderRecoPanel(){
   const body = document.getElementById('qnaRecoBody');
   if(!body) return;
@@ -748,47 +712,18 @@ function qnaRenderRecoPanel(){
     return;
   }
   const tierClass = t => t === '필수' ? 'required' : t === '자주 요청' ? 'frequent' : 'suggested';
-  const states = q.actionStates || {};
   const items = qnaRecoCompute(q);
   body.innerHTML = `
     <p class="qna-reco-context">현재 질문: <span>${qnaEscapeHtml(q.question)}</span></p>
-    ${items.map(it => {
-      const state = states[it.id] || '';
-      const done = state === 'done', excluded = state === 'excluded';
-      return `
-      <div class="qna-reco-item ${done ? 'is-done' : ''} ${excluded ? 'is-excluded' : ''}">
-        <div class="qna-reco-item-head">
-          <span class="qna-reco-priority ${tierClass(it.tier)}">[${it.tier}]</span>
-          <span class="qna-reco-label">${qnaEscapeHtml(it.label)}</span>
-          ${state ? `<span class="qna-reco-state">${qnaRecoStatusLabel(state)}</span>` : ''}
-        </div>
+    ${items.map(it => `
+      <div class="qna-reco-item">
+        <span class="qna-reco-priority ${tierClass(it.tier)}">[${it.tier}]</span>
+        <span class="qna-reco-label">${qnaEscapeHtml(it.label)}</span>
         <p class="qna-reco-reason">${qnaEscapeHtml(it.reason)}</p>
-        <div class="qna-reco-actions">${qnaRenderRecoActionButtons(q, it.id, state)}</div>
       </div>
-    `;
-    }).join('')}
+    `).join('')}
   `;
 }
-// 실행하기/완료/제외/되돌리기 — 전부 "지금 이 질문"의 actionStates에만 저장되므로 다른
-// 질문의 추천 상태와 섞이지 않는다.
-function qnaRecoSetState(qId, aId, state){
-  const q = qnaState.questions.find(x => x.id === qId);
-  if(!q) return;
-  if(!q.actionStates) q.actionStates = {};
-  if(state) q.actionStates[aId] = state; else delete q.actionStates[aId];
-  qnaSaveState();
-  qnaRenderRecoPanel();
-}
-document.getElementById('qnaRecoBody').addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-action]');
-  if(!btn) return;
-  const { qid, aid } = btn.dataset;
-  const action = btn.dataset.action;
-  if(action === 'reco-start') qnaRecoSetState(qid, aid, 'in_progress');
-  else if(action === 'reco-done') qnaRecoSetState(qid, aid, 'done');
-  else if(action === 'reco-exclude') qnaRecoSetState(qid, aid, 'excluded');
-  else if(action === 'reco-reset') qnaRecoSetState(qid, aid, null);
-});
 
 function qnaRenderAll(){
   qnaRenderTabs();
@@ -893,7 +828,7 @@ function qnaOpenQuestionModal(editId){
     const newId = qnaUid();
     qnaState.questions.push({
       id: newId, part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
-      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now, actionStates: {}
+      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now
     });
     qnaActiveTab = part;
     qnaRecoQuestionId = newId; // 방금 등록한 새 질문 기준으로 오른쪽 실행 추천을 바로 보여준다.
