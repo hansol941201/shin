@@ -232,7 +232,7 @@
    유사 질문이 반복되면 빈도(frequencyCount)를 누적하고, 사용자가 직접
    지정한 중요 질문(isImportant)과 함께 목록 상단에 우선 노출한다.
    ============================================================ */
-const QNA_STORAGE_KEY = 'qna-site-state-v5';
+const QNA_STORAGE_KEY = 'qna-site-state-v6';
 function qnaUid(){ return 'q' + Math.random().toString(36).slice(2,10); }
 
 const QNA_PARTS = [
@@ -254,31 +254,37 @@ const QNA_SIMILAR_THRESHOLD = 0.55;
 function qnaBuildSeedQuestions(){
   const now = new Date().toISOString();
   let order = 0;
-  const mk = (part, question, answer) => ({
-    id: qnaUid(), part, question, answer: answer || '',
+  // category는 화면에 표시하지 않는 내부 관리용 값이다(질문지 원본의 분류 제목을 그대로 보관).
+  const mk = (part, question, answer, category, freq) => ({
+    id: qnaUid(), part, question, answer: answer || '', category: category || '',
     createdAt: now, updatedAt: now, order: order++,
-    frequencyCount: 1, isImportant: false, lastAskedAt: now
+    frequencyCount: freq || 1, isImportant: false, lastAskedAt: now
   });
   return [
-    // (주)서강건설 1차 미팅 질문 — 첨부해주신 원본 문서(1차질문.hwpx) 문구 그대로 반영
-    mk('first_meeting', 'POUR 제품이나 공법은 조달 등록이 되어 있나요?', ''),
-    mk('first_meeting', '아스팔트슁글도 조달을 통해 진행할 수 있나요?', ''),
-    mk('first_meeting', '현재 조달 등록이 되어 있지 않은 제품은 향후 등록 계획이 있나요?', ''),
-    mk('first_meeting', '아파트 입찰에서는 결국 단가 경쟁이 발생하는데, 현장 상황에 따라 단가 조정이 가능한가요?', ''),
-    mk('first_meeting', '견적 경쟁이 붙었을 때 본사에서 어느 정도까지 가격 협의나 지원이 가능한가요?', ''),
-    mk('first_meeting', 'POUR공법으로 실제 공사를 진행하면 시공사가 가져갈 수 있는 평균적인 마진은 어느 정도인가요?', ''),
-    mk('first_meeting', '공종별로 예상 마진율이 다른가요?', ''),
-    mk('first_meeting', '일반 공사와 비교했을 때 POUR 협력사가 얻을 수 있는 수익적인 장점은 무엇인가요?', ''),
-    mk('first_meeting', '현장 수주 후 실행공사를 진행할 때 POUR 측에서 대금 관련 부분까지 지원하는 경우가 있나요?', ''),
-    mk('first_meeting', '그렇게 진행하면 실질적으로 하도급 계약 형태가 되는 건가요?', ''),
-    mk('first_meeting', '계약이나 대금 지급 구조상 법적으로 문제가 될 수 있는 부분은 없나요?', ''),
-    mk('first_meeting', '실제 계약 관계는 발주처·시공사·POUR 중 어떻게 구성되나요?', ''),
-    mk('first_meeting', '현재 관공사 위주로 해왔는데, 아파트 민간시장에 처음 진입하는 업체도 지원받을 수 있나요?', ''),
-    mk('first_meeting', '처음 아파트 영업을 시작할 때 POUR에서 어떤 자료나 지원을 받을 수 있나요?', ''),
-    mk('first_meeting', '특허나 공법 스펙을 활용해서 아파트 입찰에 들어가는 방법도 안내해 주나요?', ''),
-    mk('first_meeting', '아직 예정된 현장이 없는 상태에서도 협약 후 영업을 시작할 수 있나요?', ''),
-    mk('first_meeting', '현재 다모아(루프마스터) 공법도 병행할 예정인데 POUR공법과 같이 운영해도 되나요?', ''),
-    mk('first_meeting', '유사한 공법을 병행하는 경우 협약이나 영업상 제한사항이 있나요?', '')
+    // (주)서강건설 1차 미팅 질문 — 첨부해주신 원본 문서(1차질문.hwpx) 문구 그대로 반영.
+    // 두 번째로 첨부해주신 질문지(관급공사 적용 관련 3건 추가, 나머지 15건은 첫 번째 질문지와
+    // 완전히 동일한 문구라 중복 등록하지 않고 frequencyCount만 1건씩 올려 반영했다.
+    mk('first_meeting', 'POUR 제품이나 공법은 관공서·공공기관 발주 공사에도 적용할 수 있나요?', '', '관급공사 적용 관련'),
+    mk('first_meeting', 'POUR 아스팔트슁글도 관급공사에 적용하여 진행할 수 있나요?', '', '관급공사 적용 관련'),
+    mk('first_meeting', '현재 관급공사에 적용이 어려운 제품이 있다면, 향후 공공공사에도 적용할 수 있도록 추진할 계획이 있나요?', '', '관급공사 적용 관련'),
+    mk('first_meeting', 'POUR 제품이나 공법은 조달 등록이 되어 있나요?', '', '조달 관련', 2),
+    mk('first_meeting', '아스팔트슁글도 조달을 통해 진행할 수 있나요?', '', '조달 관련', 2),
+    mk('first_meeting', '현재 조달 등록이 되어 있지 않은 제품은 향후 등록 계획이 있나요?', '', '조달 관련', 2),
+    mk('first_meeting', '아파트 입찰에서는 결국 단가 경쟁이 발생하는데, 현장 상황에 따라 단가 조정이 가능한가요?', '', '가격 / 단가', 2),
+    mk('first_meeting', '견적 경쟁이 붙었을 때 본사에서 어느 정도까지 가격 협의나 지원이 가능한가요?', '', '가격 / 단가', 2),
+    mk('first_meeting', 'POUR공법으로 실제 공사를 진행하면 시공사가 가져갈 수 있는 평균적인 마진은 어느 정도인가요?', '', '수익 / 마진', 2),
+    mk('first_meeting', '공종별로 예상 마진율이 다른가요?', '', '수익 / 마진', 2),
+    mk('first_meeting', '일반 공사와 비교했을 때 POUR 협력사가 얻을 수 있는 수익적인 장점은 무엇인가요?', '', '수익 / 마진', 2),
+    mk('first_meeting', '현장 수주 후 실행공사를 진행할 때 POUR 측에서 대금 관련 부분까지 지원하는 경우가 있나요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '그렇게 진행하면 실질적으로 하도급 계약 형태가 되는 건가요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '계약이나 대금 지급 구조상 법적으로 문제가 될 수 있는 부분은 없나요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '실제 계약 관계는 발주처·시공사·POUR 중 어떻게 구성되나요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '현재 관공사 위주로 해왔는데, 아파트 민간시장에 처음 진입하는 업체도 지원받을 수 있나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '처음 아파트 영업을 시작할 때 POUR에서 어떤 자료나 지원을 받을 수 있나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '특허나 공법 스펙을 활용해서 아파트 입찰에 들어가는 방법도 안내해 주나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '아직 예정된 현장이 없는 상태에서도 협약 후 영업을 시작할 수 있나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '현재 다모아(루프마스터) 공법도 병행할 예정인데 POUR공법과 같이 운영해도 되나요?', '', '타 공법 병행', 2),
+    mk('first_meeting', '유사한 공법을 병행하는 경우 협약이나 영업상 제한사항이 있나요?', '', '타 공법 병행', 2)
   ];
 }
 
@@ -292,6 +298,7 @@ function qnaLoadState(){
         if(typeof q.frequencyCount !== 'number') q.frequencyCount = 1;
         if(typeof q.isImportant !== 'boolean') q.isImportant = false;
         if(!q.lastAskedAt) q.lastAskedAt = q.updatedAt || q.createdAt || new Date().toISOString();
+        if(typeof q.category !== 'string') q.category = ''; // 화면에는 쓰지 않는 내부 관리용 값
       });
       return parsed;
     }
@@ -574,7 +581,7 @@ function qnaOpenQuestionModal(editId){
 
     const partMax = qnaState.questions.filter(q=>q.part===part).reduce((m,q)=>Math.max(m,q.order), -1);
     qnaState.questions.push({
-      id: qnaUid(), part, question, answer, createdAt: now, updatedAt: now, order: partMax + 1,
+      id: qnaUid(), part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
       frequencyCount: 1, isImportant, lastAskedAt: now
     });
     qnaActiveTab = part;
