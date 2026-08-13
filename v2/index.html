@@ -9930,10 +9930,10 @@ ${text}
     }
   }
   if(approvalPill){
-    // 숫자를 눌러도 별도 화면 없이 동일한 팝오버만 연다(그리드 기본 진입은 openPopover와 동일).
+    // §일정 바로가기 라운드: "일정" 항목과 동일하게 팀장 일정(team-schedule-app)으로 이동한다.
     approvalPill.addEventListener('click', function(e){
       e.stopPropagation();
-      isOpen() ? closePopover() : openPopover();
+      window.open('https://hansol941201.github.io/shin/team-schedule/', '_blank', 'noopener');
     });
   }
 
@@ -9956,7 +9956,10 @@ ${text}
   }
   function isOpen(){ return popover.style.display !== 'none'; }
 
-  fabBtn.addEventListener('click', function(){ isOpen() ? closePopover() : openPopover(); });
+  // §일정 바로가기 라운드: 팝오버를 열지 않고 팀장 일정(team-schedule-app)으로 바로 이동한다.
+  // 팝오버 자체(openPopover/closePopover)와 데이터는 그대로 남겨둔다 — 이 버튼의 클릭 대상만
+  // 바꿨다(향후 되돌릴 수 있게 로직 삭제 없음).
+  fabBtn.addEventListener('click', function(){ window.open('https://hansol941201.github.io/shin/team-schedule/', '_blank', 'noopener'); });
   popCloseBtn.addEventListener('click', closePopover);
   document.addEventListener('click', function(e){
     if(!isOpen()) return;
