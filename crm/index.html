@@ -296,9 +296,67 @@
   .chart-tag-chip-del{ border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); line-height:1; padding:0; }
   .chart-tag-chip-del:hover{ color:#B91C1C; }
   @media (max-width:640px){ .chart-needs3{ grid-template-columns:1fr; } }
-  #chartWhyPour:not(:empty), #chartCoreNeeds:not(:empty), #chartKeyFactors:not(:empty),
-  #chartQuestions:not(:empty), #chartMeetingChecklist:not(:empty), #chartSalesTendency:not(:empty),
-  #chartNextActions:not(:empty){ margin-bottom:14px; }
+  #chartCoreNeeds:not(:empty), #chartKeyFactors:not(:empty),
+  #chartMeetingChecklist:not(:empty), #chartSalesTendency:not(:empty),
+  #chartReactions:not(:empty), #chartRecommendedSupports:not(:empty){ margin-bottom:14px; }
+
+  /* ---- 시공사 니즈 기반 영업지원 CRM(§ 고객 니즈 기반 영업지원 CRM 라운드) ---- */
+  .chart-header-meta{ display:flex; flex-wrap:wrap; gap:4px 16px; margin-top:8px; font-size:11.5px; color:var(--text-muted); }
+  .chart-header-meta b{ color:var(--text); font-weight:600; }
+  .chart-grid2x2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .chart-grid2x2-cell{ background:#F7F8FA; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .chart-grid2x2-cell.is-blocker{ background:#F7F5F0; }
+  @media (max-width:640px){ .chart-grid2x2{ grid-template-columns:1fr; } }
+
+  .chart-na-item{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:12.5px; color:var(--text); padding:2px 0; }
+  .chart-na-item.is-done{ color:#9CA3AF; text-decoration:line-through; }
+  .chart-na-actions{ flex:none; display:flex; gap:6px; }
+  .chart-na-complete-btn{ border:1px solid var(--line); background:#fff; border-radius:5px; font-size:10.5px; padding:1px 7px; cursor:pointer; color:var(--navy); }
+  .chart-na-complete-btn:hover{ background:var(--hover-blue-soft, #EFF4FF); }
+
+  .chart-q-group{ margin-bottom:10px; }
+  .chart-q-group-title{ font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px; }
+  .chart-q-item{ padding:6px 0; border-top:1px dashed var(--line); }
+  .chart-q-item:first-child{ border-top:none; }
+  .chart-q-text{ font-size:12.5px; color:var(--text); line-height:1.4; }
+  .chart-q-meta{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .chart-status-badge{ font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:4px; background:#EEF1F7; color:var(--navy); border:none; }
+  .chart-status-badge.st-미답변{ background:#F3E9E9; color:#8A4B4B; }
+  .chart-status-badge.st-확인중{ background:#F5F0DE; color:#8A7327; }
+  .chart-status-badge.st-답변완료{ background:#E7F0EA; color:#2F6B45; }
+  .chart-status-badge.st-자료발송{ background:#E7EEF7; color:#2C5A8A; }
+  .chart-status-badge.st-추가확인{ background:#EEF1F7; color:var(--navy); }
+  select.chart-status-select{ font-size:10.5px; padding:1px 4px; border:1px solid var(--line); border-radius:4px; color:var(--text); background:#fff; }
+  .chart-doc-link-chip{ font-size:10.5px; color:var(--text-muted); background:#fff; border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
+  .chart-doc-link-chip b{ color:var(--text); font-weight:600; }
+  .chart-q-link-btn{ border:none; background:transparent; cursor:pointer; font-size:10.5px; color:var(--text-muted); padding:0; text-decoration:underline; }
+  .chart-q-link-panel{ margin-top:5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .chart-q-link-panel select{ font-size:11px; padding:2px 5px; border:1px solid var(--line); border-radius:4px; }
+
+  .chart-recommend-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chart-recommend-chip{ font-size:11.5px; color:var(--navy); background:#EAF1FE; border:1px solid #D6E4F7; border-radius:5px; padding:3px 9px; }
+  .chart-recommend-chip.is-suggested{ color:var(--text-muted); background:#fff; border-style:dashed; display:inline-flex; align-items:center; gap:6px; }
+  .chart-recommend-chip.is-suggested button{ border:none; background:transparent; cursor:pointer; font-size:10.5px; color:var(--navy); padding:0; }
+  .chart-recommend-chip .chart-tag-chip-del{ margin-left:4px; }
+
+  .chart-legacy-note{ font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+
+  .chart-memo-btn{ border:1px solid var(--line); background:#fff; color:var(--navy); border-radius:6px; font-size:12px; padding:5px 10px; cursor:pointer; }
+  .chart-memo-btn:hover{ background:var(--hover-blue-soft, #EFF4FF); }
+  .chart-memo-overlay{ position:fixed; inset:0; background:rgba(20,24,34,0.45); display:flex; align-items:center; justify-content:center; z-index:300; padding:20px; }
+  .chart-memo-panel{ background:#fff; border-radius:12px; width:100%; max-width:720px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+  .chart-memo-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .chart-memo-title{ font-size:14px; font-weight:700; color:var(--text); }
+  .chart-memo-body{ padding:16px 18px; overflow-y:auto; }
+  .chart-memo-body textarea{ width:100%; min-height:160px; box-sizing:border-box; padding:10px; font-size:12.5px; border:1px solid var(--line); border-radius:8px; outline:none; resize:vertical; font-family:inherit; }
+  .chart-memo-actions{ display:flex; justify-content:flex-end; gap:8px; padding:12px 18px; border-top:1px solid var(--line); }
+  .chart-memo-preview-section{ margin-bottom:14px; }
+  .chart-memo-preview-title{ font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:5px; }
+  .chart-memo-preview-item{ display:flex; align-items:flex-start; gap:8px; padding:4px 0; font-size:12.5px; }
+  .chart-memo-preview-item input[type=checkbox]{ margin-top:3px; flex:none; }
+  .chart-memo-preview-empty{ font-size:11.5px; color:#9CA3AF; }
+  .chart-memo-conflict{ background:#F7F5F0; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .chart-memo-conflict-row{ display:flex; align-items:center; gap:10px; font-size:12px; margin-top:6px; flex-wrap:wrap; }
 
   .chart-recent-item{ display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12px; }
   .chart-recent-date{ flex:none; color:var(--text-muted); }
@@ -369,6 +427,7 @@
   </div>
 
   <div id="cardView" style="display:none;"></div>
+  <div id="chartMemoModalRoot"></div>
 </div>
 
 <script>
@@ -769,6 +828,10 @@ window.SHIN2_CRM_OCR = (function(){
   const DOC_KEY = 'shin2-customer-documents-v1';
   const BLOB_KEY = 'shin2-customer-doc-blobs-v1'; // 로컬 전용 — SHIN2_SYNC_KEYS에 절대 추가하지 않는다(§25)
   const MEMO_KEY = 'shin2-memos-v1';
+  // 공용 자료실(v2/index.html SHIN2_LIBRARY 모듈)의 메타데이터 저장소 — CRM은 여기서 "읽기만"
+  // 한다. 업로드/삭제/수정은 전부 v2 자료실 화면의 몫이고, 이 파일은 그 저장소의 이름과 구조를
+  // 절대 바꾸지 않는다(§29). 질문에 "제공자료"를 연결할 때 파일명을 보여주기 위한 참조 전용.
+  const LIB_KEY = 'shin2-library-documents-v1';
 
   function readArr(key){ try{ const raw = localStorage.getItem(key); const a = raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
   function writeArr(key, arr){ try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('저장 실패', key, e); } }
@@ -845,6 +908,10 @@ window.SHIN2_CRM_OCR = (function(){
     return loadDocuments().filter(d=> d.companyId === companyId && (!type || d.documentType === type))
       .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
   }
+  function findDocument(id){ return loadDocuments().find(d=> d.id === id) || null; }
+  // 공용 자료실(읽기 전용 참조, §13) — v2 SHIN2_LIBRARY와 완전히 같은 키를 읽기만 한다.
+  function loadLibraryDocs(){ return readArr(LIB_KEY); }
+  function findLibraryDoc(id){ return loadLibraryDocs().find(d=> d.id === id) || null; }
   const DOC_MAX_LOCAL_BYTES = 2 * 1024 * 1024; // 2MB — 로컬 dataURL 폴백에만 적용되는 상한(localStorage 용량 한계 때문).
   // 클라우드(Storage) 업로드 경로에는 이 상한을 적용하지 않는다 — resumable upload라 대용량
   // 파일도 처리할 수 있고, 목적이 다른(브라우저 localStorage 용량 보호) 상한이기 때문이다.
@@ -1078,16 +1145,56 @@ window.SHIN2_CRM_OCR = (function(){
     const co = findCompany(companyId); if(!co) return null;
     return updateCompany(companyId, { keyFactors: (co.keyFactors||[]).filter(x=> x.id !== itemId) });
   }
-  // customerQuestions: 고객이 실제로 한 질문 원문(§8 — meetingChecklist와 역할 분리).
-  function addCustomerQuestion(companyId, text, evidence){
+  // customerQuestions: 고객이 실제로 한 질문 원문(§8 — meetingChecklist와 역할 분리). §고객
+  // 니즈 기반 영업지원 CRM 라운드에서 category/status/자료연결/출처 필드로 확장한다 — 기존
+  // 항목(§고객 니즈/영업 핵심정보 라운드에서 만든 {id,text,evidence,createdAt})은 그대로 두고,
+  // 새 필드는 읽는 시점에 기본값(카테고리 '기타', status '미답변')으로 취급한다(마이그레이션 없음).
+  const QUESTION_CATEGORIES = ['조달','가격/단가','수익/마진','실행공사/계약','영업지원','공종/제품','실적','자료','타 공법','기타'];
+  const QUESTION_STATUSES = ['미답변','확인중','답변완료','자료발송','추가확인'];
+  function normQuestionText(s){ return String(s || '').replace(/\s+/g, '').toLowerCase(); }
+  // fields: {text, category, evidence, sourceType('manual'|'memo-parse'), sourceId}
+  function addCustomerQuestion(companyId, fields){
     const co = findCompany(companyId); if(!co) return null;
     const list = (co.customerQuestions || []).slice();
-    list.push({ id: genId('cq'), text, evidence: evidence || '', createdAt: nowIso() });
+    list.push({
+      id: genId('cq'), text: fields.text, category: fields.category || '기타',
+      status: '미답변', evidence: fields.evidence || '',
+      customerDocumentId: null, libraryMaterialId: null,
+      sourceType: fields.sourceType || 'manual', sourceId: fields.sourceId || null,
+      createdAt: nowIso(), resolvedAt: null
+    });
     return updateCompany(companyId, { customerQuestions: list });
+  }
+  // §23 질문 누적/중복 방지 — 자동정리가 같은 질문을 다시 만들지 않도록, 정규화한 텍스트가
+  // 이미 있으면 아무것도 하지 않고 null을 반환한다(수동 추가에는 쓰지 않음 — 사람이 같은 말을
+  // 두 번 입력하고 싶을 수도 있어 강제하지 않는다).
+  function addCustomerQuestionIfNew(companyId, fields){
+    const co = findCompany(companyId); if(!co) return null;
+    const exists = (co.customerQuestions || []).some(q=> normQuestionText(q.text) === normQuestionText(fields.text));
+    if(exists) return null;
+    return addCustomerQuestion(companyId, fields);
   }
   function removeCustomerQuestion(companyId, itemId){
     const co = findCompany(companyId); if(!co) return null;
     return updateCompany(companyId, { customerQuestions: (co.customerQuestions||[]).filter(x=> x.id !== itemId) });
+  }
+  function setQuestionStatus(companyId, questionId, status){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.customerQuestions || []).slice();
+    const q = list.find(x=> x.id === questionId); if(!q) return null;
+    q.status = status;
+    if(status === '답변완료' || status === '자료발송') q.resolvedAt = nowIso();
+    return updateCompany(companyId, { customerQuestions: list });
+  }
+  // links: {customerDocumentId} 그리고/또는 {libraryMaterialId} — 파일 자체를 복제하지 않고
+  // 기존 저장소(고객별 서류함 customerDocuments / 공용 자료실 library)의 id만 참조한다(§13).
+  function linkQuestionDocument(companyId, questionId, links){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.customerQuestions || []).slice();
+    const q = list.find(x=> x.id === questionId); if(!q) return null;
+    if('customerDocumentId' in links) q.customerDocumentId = links.customerDocumentId || null;
+    if('libraryMaterialId' in links) q.libraryMaterialId = links.libraryMaterialId || null;
+    return updateCompany(companyId, { customerQuestions: list });
   }
   // meetingChecklist: 다음 미팅에서 우리가 답변/확인해야 할 것(§8 — customerQuestions와 역할 분리).
   function addMeetingChecklistItem(companyId, text, evidence){
@@ -1104,27 +1211,256 @@ window.SHIN2_CRM_OCR = (function(){
   function setSalesTendency(companyId, text, evidence){
     return updateCompany(companyId, { salesTendency: { text: text || '', evidence: evidence || '' } });
   }
-  function addNextAction(companyId, text){
+  // nextActions: §고객 니즈 기반 영업지원 CRM 라운드 — 완료 처리(done/completedAt)를 추가한다.
+  // 완료된 항목은 "다음 행동" 활성 목록에서는 빠지지만 배열에서 삭제하지 않고, 완료 사실을
+  // customerActivities에도 기록해 활동/완료이력에 남긴다(§9 — 새 저장소를 만들지 않고 기존
+  // 활동기록을 재사용).
+  function addNextAction(companyId, text, evidence){
     const co = findCompany(companyId); if(!co) return null;
     const list = (co.nextActions || []).slice();
-    list.push({ id: genId('na'), text, createdAt: nowIso() });
+    list.push({ id: genId('na'), text, evidence: evidence || '', done:false, completedAt:null, createdAt: nowIso() });
     return updateCompany(companyId, { nextActions: list });
   }
   function removeNextAction(companyId, itemId){
     const co = findCompany(companyId); if(!co) return null;
     return updateCompany(companyId, { nextActions: (co.nextActions||[]).filter(x=> x.id !== itemId) });
   }
+  function completeNextAction(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.nextActions || []).slice();
+    const item = list.find(x=> x.id === itemId); if(!item || item.done) return null;
+    item.done = true; item.completedAt = nowIso();
+    updateCompany(companyId, { nextActions: list });
+    addActivity(companyId, '완료: ' + item.text);
+    return item;
+  }
+  // ---- 2×2 핵심영역의 나머지 두 칸(§고객 니즈 기반 영업지원 CRM 라운드) — "이 업체가 원하는
+  // 것"은 기존 whyPour 필드를 그대로 재사용(§ 이전 라운드 "왜 POUR인가"와 개념이 사실상 같아
+  // 필드를 새로 쪼개지 않는다). 여기서는 "현재 막히는 것"과 "POUR가 해줘야 할 것"만 새로 추가. ----
+  function addBlocker(companyId, text, evidence){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.blockers || []).slice();
+    list.push({ id: genId('bl'), text, evidence: evidence || '', createdAt: nowIso() });
+    return updateCompany(companyId, { blockers: list });
+  }
+  function removeBlocker(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { blockers: (co.blockers||[]).filter(x=> x.id !== itemId) });
+  }
+  function addPourSupport(companyId, text, evidence){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.pourSupports || []).slice();
+    list.push({ id: genId('ps'), text, evidence: evidence || '', createdAt: nowIso() });
+    return updateCompany(companyId, { pourSupports: list });
+  }
+  function removePourSupport(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { pourSupports: (co.pourSupports||[]).filter(x=> x.id !== itemId) });
+  }
+  // 고객 반응(§16) — 근거 없는 성향 판단(salesTendency)과 달리, 고객이 실제로 표현한 반응을
+  // 그대로 누적 기록한다.
+  function addReaction(companyId, text, evidence){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.reactions || []).slice();
+    list.push({ id: genId('rc'), text, evidence: evidence || '', createdAt: nowIso() });
+    return updateCompany(companyId, { reactions: list });
+  }
+  function removeReaction(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { reactions: (co.reactions||[]).filter(x=> x.id !== itemId) });
+  }
+  // 추천 지원(§14/§15) — 직원이 "확정"한 지원 태그만 여기 저장한다. 화면에 함께 뜨는 규칙기반
+  // 추천 후보는 저장하지 않고 매번 다시 계산한다(렌더 레이어의 suggestSupportsFor 참고) —
+  // "추천만 하고 자동 발송하지 않는다"는 원칙을 "후보는 상태가 없고, 확정한 것만 남는다"는
+  // 방식으로 지킨다.
+  function addRecommendedSupport(companyId, text){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.recommendedSupports || []).slice();
+    if(list.some(x=> x.text === text)) return co; // 이미 확정된 태그는 중복 추가하지 않는다
+    list.push({ id: genId('rs'), text, createdAt: nowIso() });
+    return updateCompany(companyId, { recommendedSupports: list });
+  }
+  function removeRecommendedSupport(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { recommendedSupports: (co.recommendedSupports||[]).filter(x=> x.id !== itemId) });
+  }
+  // 메모 자동정리로 만든(또는 직원이 직접 다듬은) "이 업체 한눈에 보기" 확정 문장(§4/§21) —
+  // 비어있으면 렌더 레이어의 규칙기반 buildChartBrief() 계산값을 계속 그대로 보여준다.
+  function setMemoSummary(companyId, text){
+    return updateCompany(companyId, { memoSummary: text || '' });
+  }
 
   window.SHIN2_CRM_DATA = {
     loadCompanies, findCompany, addCompany, updateCompany,
     loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
-    loadDocuments, documentsForCompany, addDocument, updateDocumentExtracted, getBlob, renameDocument, setDocumentMemo, deleteDocument,
+    loadDocuments, documentsForCompany, addDocument, updateDocumentExtracted, getBlob, renameDocument, setDocumentMemo, deleteDocument, findDocument,
     memosFor, addMemo, updateMemo, deleteMemo,
     pendingActivitiesForCompany, tasksForCompany, calendarEventsForCompany, upcomingCalendarEventsForCompany,
     DEAL_STAGES, setDealStage, addNeed, removeNeed, dismissNeedSuggestion, addSpecialNote, removeSpecialNote, setImportant, suggestNeedFor,
     addWhyPour, removeWhyPour, setCoreNeed, addKeyFactor, removeKeyFactor,
-    addCustomerQuestion, removeCustomerQuestion, addMeetingChecklistItem, removeMeetingChecklistItem,
-    setSalesTendency, addNextAction, removeNextAction
+    QUESTION_CATEGORIES, QUESTION_STATUSES,
+    addCustomerQuestion, addCustomerQuestionIfNew, removeCustomerQuestion, setQuestionStatus, linkQuestionDocument,
+    addMeetingChecklistItem, removeMeetingChecklistItem,
+    setSalesTendency, addNextAction, removeNextAction, completeNextAction,
+    addBlocker, removeBlocker, addPourSupport, removePourSupport,
+    addReaction, removeReaction, addRecommendedSupport, removeRecommendedSupport, setMemoSummary,
+    loadLibraryDocs, findLibraryDoc
+  };
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   자동정리 엔진(§ 고객 니즈 기반 영업지원 CRM 라운드) — 순수 함수(입력 텍스트 → 표준 결과
+   객체)이며 localStorage/DOM/네트워크를 전혀 건드리지 않는다. 실제 저장은 항상 UI 레이어가
+   사람의 확인(미리보기 → [적용])을 거친 뒤 SHIN2_CRM_DATA 함수를 호출해서만 이루어진다 —
+   이 파일은 절대 직접 쓰지 않는다.
+
+   교체 가능한 엔진 인터페이스: window.SHIN2_CRM_ANALYSIS.analyzeCustomerMemo가 현재 활성
+   엔진을 가리킨다(지금은 ruleBasedAnalyzeCustomerMemo). 나중에 서버측 AI 분석이 필요해지면
+   같은 표준 스키마를 반환하는 aiAnalyzeCustomerMemo(text)를 만들어 이 참조만 바꿔 끼우면
+   되고, 고객카드 UI/저장 로직은 전혀 손댈 필요가 없다(§ 엔진 교체 가능 원칙). v2의
+   SHIN2_AI.callOpenAI()는 이번 라운드에서 재사용하지 않는다(§ CRM과 v2를 억지로 결합하지
+   않는다) — 이 모듈은 v2를 전혀 참조하지 않는다.
+
+   원칙(§20/§21/§23): 원문에 없는 사실을 생성하지 않는다. "없음"과 "미확인"을 구분한다 —
+   원문에 명시적 부정이 있을 때만 blockers/questions로 뽑고, 언급 자체가 없는 항목은 결과에
+   아예 넣지 않는다(빈 배열 = 미확인, UI가 그렇게 표시한다). 질문을 예상해서 만들지 않는다 —
+   실제 문장에서만 뽑는다. 결과는 항상 그 근거가 된 원문 문장(evidence)을 함께 반환한다.
+   ========================================================================== */
+window.SHIN2_CRM_ANALYSIS = (function(){
+  'use strict';
+  const QUESTION_CATEGORIES = ['조달','가격/단가','수익/마진','실행공사/계약','영업지원','공종/제품','실적','자료','타 공법','기타'];
+
+  // 문장 분리 — 줄바꿈과 종결부호(. ? !) 기준. 너무 짧은 조각은 버린다(1글자 등 잡음 방지).
+  function splitSentences(text){
+    return String(text || '')
+      .split(/\n+/)
+      .reduce((acc, line)=> acc.concat(line.split(/(?<=[.?!])\s+/)), [])
+      .map(s=> s.trim())
+      .filter(s=> s.length >= 2);
+  }
+
+  const QUESTION_MARKERS = /(궁금|가능한지|가능할지|되는지|되나요|하나요|있는지|없는지|없나요|어떻게 되|어느 정도|문의|물어|여쭤|아닌지|않는지|질문)/;
+  function looksLikeQuestion(s){
+    return /[?？]\s*$/.test(s) || QUESTION_MARKERS.test(s);
+  }
+
+  const CATEGORY_KEYWORDS = {
+    '조달': ['조달'],
+    '가격/단가': ['가격','단가','입찰가'],
+    '수익/마진': ['마진','수익','이윤'],
+    '실행공사/계약': ['실행공사','실행비','하도급','계약','대금','시공지원','실행 지원','시공 지원'],
+    '영업지원': ['pt','설명회','영업지원','영업 지원','스펙영업','스펙 영업'],
+    '공종/제품': ['공종','제품','자재','아스팔트슁글','슁글'],
+    '실적': ['실적'],
+    '자료': ['자료','시방서','카탈로그','제안서'],
+    '타 공법': ['타 공법','루프마스터','우레탄','타공법','병행']
+  };
+  function categorize(s){
+    const low = s.toLowerCase();
+    for(const cat of Object.keys(CATEGORY_KEYWORDS)){
+      if(CATEGORY_KEYWORDS[cat].some(kw=> low.includes(kw.toLowerCase()))) return cat;
+    }
+    return '기타';
+  }
+
+  // "POUR가 해줘야 할 것"(§8)/"다음 행동"(§9)/"추천 지원"(§14~15) — 고객 질문을 그대로
+  // 복사하지 않고 카테고리별로 우리 회사가 제공할 서비스/행동 형태로 바꾼다.
+  const SUPPORT_TEMPLATE = {
+    '조달':'조달 등록 현황 확인 및 안내', '가격/단가':'입찰 단가 및 가격지원 기준 안내',
+    '수익/마진':'실행견적·예상 마진 검토', '실행공사/계약':'계약·대금 구조 및 실행 지원범위 안내',
+    '영업지원':'관공사 설계반영 자료 및 PT 지원', '공종/제품':'적용 가능한 특허·기술자료 제공',
+    '실적':'관련 실적자료 제공', '자료':'요청 자료 준비 및 제공', '타 공법':'타 공법 대비 비교자료 제공',
+    '기타':'문의 내용 확인 및 안내'
+  };
+  const NEXT_ACTION_TEMPLATE = {
+    '조달':'조달등록 현황 확인', '가격/단가':'단가 조정 기준 확인', '수익/마진':'실행비·마진 설명자료 준비',
+    '실행공사/계약':'계약구조 답변 준비', '영업지원':'영업지원 자료 준비', '공종/제품':'적용 제품·기술자료 준비',
+    '실적':'관련 실적자료 준비', '자료':'요청 자료 준비', '타 공법':'비교자료 준비', '기타':'문의 내용 확인'
+  };
+  const RECOMMEND_TAG = {
+    '조달':'조달자료', '가격/단가':'단가표', '수익/마진':'마진 검토', '실행공사/계약':'실행견적',
+    '영업지원':'PT 지원', '공종/제품':'공종별 실적', '실적':'공종별 실적', '자료':'표준자료',
+    '타 공법':'비교자료', '기타':null
+  };
+
+  const WANT_MARKERS = ['확대','진출','키우고 싶','늘리고 싶','넓히고 싶','스펙 영업','스펙영업','희망','원함','추진'];
+  const BLOCKER_MARKERS = ['안 돼','안돼','못했','문제','어려움','힘듦','막혀','불가'];
+  const REACTION_MARKERS = ['긍정적','좋게 평가','관심 있','만족스럽','희망함','구체적으로 확인하고 싶'];
+  const COMPETITOR_NAMES = ['루프마스터','우레탄','타공법','타 공법'];
+  const BUSINESS_MARKERS = ['사업','업종','공사','시공','영업'];
+
+  // ruleBasedAnalyzeCustomerMemo: 입력 텍스트 하나에서 표준 결과 객체를 만든다. 문장 하나는
+  // 항상 한 카테고리로만 분류한다(질문 → 경쟁공법 비교 → 막히는 것 → 원하는 것 → 반응 →
+  // 사업설명, 이 순서로 먼저 매칭되는 것을 채택 — 중복 분류로 같은 문장이 여러 섹션에 흩어져
+  // 보이는 것을 막는다).
+  function ruleBasedAnalyzeCustomerMemo(text){
+    const sentences = splitSentences(text);
+    const result = {
+      summary: '', wants: [], blockers: [], pourSupports: [], nextActions: [],
+      questions: [], reactions: [], salesStyle: null, recommendedSupports: []
+    };
+    const businessClauses = [];
+    const wantClauses = [];
+    const supportCatSeen = new Set();
+    const actionCatSeen = new Set();
+    const recommendSeen = new Set();
+
+    sentences.forEach(s=>{
+      if(looksLikeQuestion(s)){
+        const cat = categorize(s);
+        result.questions.push({ text: s, category: cat });
+        if(!supportCatSeen.has(cat)){
+          supportCatSeen.add(cat);
+          result.pourSupports.push({ text: SUPPORT_TEMPLATE[cat] || SUPPORT_TEMPLATE['기타'], evidence: s });
+        }
+        if(!actionCatSeen.has(cat)){
+          actionCatSeen.add(cat);
+          result.nextActions.push({ text: NEXT_ACTION_TEMPLATE[cat] || NEXT_ACTION_TEMPLATE['기타'], evidence: s });
+        }
+        const tag = RECOMMEND_TAG[cat];
+        if(tag && !recommendSeen.has(tag)){ recommendSeen.add(tag); result.recommendedSupports.push(tag); }
+        return;
+      }
+      if(COMPETITOR_NAMES.some(name=> s.includes(name)) && /(검토|비교|병행|같이)/.test(s)){
+        result.salesStyle = { text:'현장 조건에 따라 여러 공법을 비교·활용하는 방식.', evidence: s };
+        return;
+      }
+      if(BLOCKER_MARKERS.some(kw=> s.includes(kw))){
+        result.blockers.push({ text: s, evidence: s });
+        return;
+      }
+      if(WANT_MARKERS.some(kw=> s.includes(kw))){
+        result.wants.push({ text: s, evidence: s });
+        wantClauses.push(s);
+        return;
+      }
+      if(REACTION_MARKERS.some(kw=> s.includes(kw))){
+        result.reactions.push({ text: s, evidence: s });
+        return;
+      }
+      if(BUSINESS_MARKERS.some(kw=> s.includes(kw)) && !/pour/i.test(s.toLowerCase())){
+        businessClauses.push(s);
+      }
+    });
+
+    // 한 줄 요약(§4) — "이 업체가 무슨 사업을 하는지" 한 문장 + "무엇을 원하는지" 한 문장을
+    // 실제 원문 문장에서 그대로 뽑아 이어붙인다. 새 문장을 창작하지 않는다.
+    const bizSentence = businessClauses.find(s=> /영업|스펙|관공사/.test(s)) || businessClauses[0];
+    const summaryParts = [];
+    if(bizSentence) summaryParts.push(bizSentence.replace(/[.]+$/, ''));
+    if(wantClauses[0]) summaryParts.push(wantClauses[0].replace(/[.]+$/, ''));
+    result.summary = summaryParts.join(' · ');
+
+    return result;
+  }
+
+  return {
+    ruleBasedAnalyzeCustomerMemo,
+    analyzeCustomerMemo: ruleBasedAnalyzeCustomerMemo, // 현재 활성 엔진 — 교체 시 이 참조만 바꾼다
+    QUESTION_CATEGORIES,
+    RECOMMEND_TAG // 추천 지원 칩 계산(§14/§15)에서 렌더 레이어가 재사용 — 표를 두 곳에 중복 정의하지 않는다
   };
 })();
 </script>
@@ -1230,6 +1566,8 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!co){ return; }
     currentCompanyId = id;
     cardState.evidenceOpen = {}; // 업체를 새로 열 때만 근거 펼침 상태 초기화 — 같은 업체 재렌더링(수정 등) 중에는 유지
+    cardState.questionLinkOpenId = null;
+    cardState.memoModal = null;
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -1258,7 +1596,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   ];
   // 업체정보(펼치기) 패널에는 헤더에 이미 노출되는 업체명/담당자/직책은 다시 넣지 않는다.
   const CO_INFO_LABELS = CO_FIELD_LABELS.filter(([k])=> !['name','contactName','position'].includes(k));
-  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {} };
+  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {}, questionLinkOpenId: null, memoModal: null };
   // 다른 탭(v2 또는 CRM 다른 탭)에서 shin2-companies-staging이 바뀌었을 때 지금 이 탭이
   // 편집 폼을 띄워둔 상태라면 storage 이벤트로 인한 재렌더링이 사용자의 입력 중인 내용을
   // 덮어쓰지 않도록 막는 플래그(§ crm 신규등록 폼).
@@ -1274,6 +1612,11 @@ window.SHIN2_CRM_APP_INIT = function(){
   // ---- 정보 우선순위(§ 5-10초 브리핑 카드 라운드) — ①헤더 ②한눈에 보기(신규) ③핵심
   // 3-strip ④고객니즈/특이사항 ⑤최근 이력/예정 일정 ⑥서류 요약 ⑦업체정보·전체이력·메모
   // (모두 펼치기 방식의 보조영역)를 이 순서 그대로 DOM에 둔다. ----
+  // ---- 정보 순서(§ 고객 니즈 기반 영업지원 CRM 라운드, §2/§26) — ①업체 헤더 ②한눈에 보기
+  // ③2×2 핵심영역(원하는 것/막히는 것/POUR가 해줘야 할 것/다음 행동) ④고객 실제 질문(해결
+  // 상태 포함) ⑤추천 지원 ⑥고객 반응·영업 성향 ⑦최근 활동/예정일정 ⑧서류 요약 ⑨업체정보
+  // ⑩이전 라운드에서 만든 3분할 strip/니즈·특이사항/판단요소/미팅확인사항(레거시, 삭제하지
+  // 않고 접어서 유지) ⑪전체이력/서류함/메모, 이 순서 그대로 DOM에 둔다. ----
   function renderChart(co){
     cardView.innerHTML = `
       <div class="chart-overlay" id="chartOverlay">
@@ -1282,26 +1625,30 @@ window.SHIN2_CRM_APP_INIT = function(){
           <div class="chart-body" id="chartBody">
             <div class="chart-brief" id="chartBrief"></div>
 
-            <div id="chartWhyPour"></div>
-            <div id="chartCoreNeeds"></div>
-            <div id="chartKeyFactors"></div>
+            <div class="chart-grid2x2" id="chartGrid2x2">
+              <div class="chart-grid2x2-cell" id="chartWants"></div>
+              <div class="chart-grid2x2-cell is-blocker" id="chartBlockers"></div>
+              <div class="chart-grid2x2-cell" id="chartPourSupports"></div>
+              <div class="chart-grid2x2-cell" id="chartNextActions"></div>
+            </div>
+
+            <div class="chart-hr"></div>
             <div id="chartQuestions"></div>
-            <div id="chartMeetingChecklist"></div>
-            <div id="chartSalesTendency"></div>
-            <div id="chartNextActions"></div>
 
             <div class="chart-hr"></div>
-            <div class="chart-strip chart-strip-emphasis" id="chartStrip"></div>
+            <div id="chartRecommendedSupports"></div>
 
             <div class="chart-hr"></div>
-            <div id="chartImportant"></div>
-            <div id="chartNeedsSpecialWrap"></div>
+            <div class="chart-2col">
+              <div id="chartReactions"></div>
+              <div id="chartSalesTendency"></div>
+            </div>
 
             <div class="chart-hr"></div>
             <div class="chart-2col">
               <div>
                 <div class="chart-section-head">
-                  <div class="chart-section-title">최근 이력</div>
+                  <div class="chart-section-title">최근 활동</div>
                   <button type="button" class="co-text-action" id="chartHistoryToggleBtn">전체 이력 보기</button>
                 </div>
                 <div id="chartRecentActs"></div>
@@ -1325,6 +1672,21 @@ window.SHIN2_CRM_APP_INIT = function(){
               <button type="button" class="co-text-action" id="chartInfoToggleBtn">업체정보 보기</button>
             </div>
             <div id="crmBasicInfo" class="chart-expand" style="display:none;"></div>
+
+            <div class="chart-hr"></div>
+            <div class="chart-section-head">
+              <div class="chart-section-title">이전 요약 정보</div>
+              <button type="button" class="co-text-action" id="chartLegacyToggleBtn">펼치기</button>
+            </div>
+            <div id="chartLegacyWrap" class="chart-expand" style="display:none;">
+              <div class="chart-legacy-note">이전 화면 개편 라운드에서 만든 항목들입니다 — 데이터는 지우지 않고 여기 그대로 남겨둡니다.</div>
+              <div class="chart-strip chart-strip-emphasis" id="chartStrip"></div>
+              <div id="chartImportant"></div>
+              <div id="chartNeedsSpecialWrap"></div>
+              <div id="chartCoreNeeds"></div>
+              <div id="chartKeyFactors"></div>
+              <div id="chartMeetingChecklist"></div>
+            </div>
 
             <div id="chartHistoryWrap" class="chart-expand" style="display:none;">
               <div class="chart-section-title">전체 이력</div>
@@ -1351,16 +1713,20 @@ window.SHIN2_CRM_APP_INIT = function(){
     document.body.classList.add('chart-lock');
     renderChartHeader(co);
     renderChartBrief(co);
-    renderWhyPourSection(co);
-    renderCoreNeedsSection(co);
-    renderKeyFactorsSection(co);
-    renderQuestionsSection(co);
-    renderMeetingChecklistSection(co);
-    renderSalesTendencySection(co);
+    renderWantsSection(co);
+    renderBlockersSection(co);
+    renderPourSupportsSection(co);
     renderNextActionsSection(co);
+    renderQuestionsSection(co);
+    renderRecommendedSupportsSection(co);
+    renderReactionsSection(co);
+    renderSalesTendencySection(co);
     renderTopStrip(co);
     renderImportantSection(co);
     renderNeedsSpecialSection(co);
+    renderCoreNeedsSection(co);
+    renderKeyFactorsSection(co);
+    renderMeetingChecklistSection(co);
     renderRecentActivities(co);
     if(cardState.chartEditing){ renderBasicInfoForm(co); document.getElementById('crmBasicInfo').style.display = 'block'; document.getElementById('chartInfoToggleBtn').textContent = '업체정보 접기'; }
     else { renderBasicInfoView(co); }
@@ -1395,8 +1761,26 @@ window.SHIN2_CRM_APP_INIT = function(){
       wrap.style.display = showing ? 'none' : 'block';
       document.getElementById('chartActToggleBtn').textContent = showing ? '활동 기록 직접 관리' : '접기';
     });
+    document.getElementById('chartLegacyToggleBtn').addEventListener('click', ()=>{
+      const wrap = document.getElementById('chartLegacyWrap');
+      const showing = wrap.style.display !== 'none';
+      wrap.style.display = showing ? 'none' : 'block';
+      document.getElementById('chartLegacyToggleBtn').textContent = showing ? '펼치기' : '접기';
+    });
   }
 
+  function partnerStatusLabel(co){
+    const st = co && co.partnerStatus;
+    if(st === 'partner') return '협력사';
+    if(st === 'nonPartner') return '비협력사';
+    return '미설정';
+  }
+  // 최근 접촉일(§3) — customerActivities 중 가장 최근 기록의 날짜. 기록이 하나도 없으면
+  // "미확인"(§14 없음/미확인 엄격 구분 — 접촉 자체가 없었다고 단정하지 않는다).
+  function lastContactDate(co){
+    const last = D.activitiesForCompany(co.id)[0];
+    return last ? fmtDate(last.createdAt) : '미확인';
+  }
   function renderChartHeader(co){
     const wrap = document.getElementById('chartHeader');
     const stage = co.dealStage || '';
@@ -1420,8 +1804,15 @@ window.SHIN2_CRM_APP_INIT = function(){
           ${phoneRow('phone','전화')}
           ${phoneRow('mobile','휴대폰')}
         </div>
+        <div class="chart-header-meta">
+          <span>협력사 <b>${esc(partnerStatusLabel(co))}</b></span>
+          <span>영업단계 <b>${esc(stage || '미설정')}</b></span>
+          <span>담당자 <b>${esc(contact || '미확인')}</b></span>
+          <span>최근 접촉 <b>${esc(lastContactDate(co))}</b></span>
+        </div>
       </div>
       <div class="chart-header-actions">
+        <button type="button" class="chart-memo-btn" id="chartMemoParseBtn">고객 메모 정리</button>
         <button type="button" class="card-copy-all-btn" id="crmCopyAllBtn">전체정보 복사</button>
         <button type="button" class="co-text-action${editing ? ' primary' : ''}" id="chartEditBtn">${editing ? '수정 완료' : '수정'}</button>
         <button type="button" class="chart-close-btn" id="chartCloseBtn" title="닫기" aria-label="닫기">&times;</button>
@@ -1429,6 +1820,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     document.getElementById('crmCopyAllBtn').addEventListener('click', (e)=> copyText(buildFullInfoText(co), e.currentTarget));
     document.getElementById('chartCloseBtn').addEventListener('click', closeChart);
+    document.getElementById('chartMemoParseBtn').addEventListener('click', ()=> openMemoParseModal(co));
     wrap.querySelectorAll('[data-phone-copy]').forEach(btn=>{
       btn.addEventListener('click', (e)=> copyText(co[btn.getAttribute('data-phone-copy')] || '', e.currentTarget));
     });
@@ -1509,9 +1901,28 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!sentence) return '기본정보만 등록됨';
     return sentence + ' 업체';
   }
+  // memoSummary(§4/§21) — 자동정리로 [적용]했거나 직원이 직접 확정한 한 줄 요약이 있으면
+  // 그것을 우선 보여준다. 없으면 이전 라운드부터 있던 규칙기반 buildChartBrief() 계산값으로
+  // 자연스럽게 대체된다(§ 기존 기능 보호 — 계산 로직 자체는 그대로 둔다).
   function renderChartBrief(co){
     const wrap = document.getElementById('chartBrief');
-    wrap.innerHTML = `<div class="chart-brief-label">이 업체 한눈에 보기</div><div>${esc(buildChartBrief(co))}</div>`;
+    const editing = cardState.chartEditing;
+    const text = co.memoSummary || buildChartBrief(co);
+    if(editing){
+      wrap.innerHTML = `
+        <div class="chart-brief-label">이 업체 한눈에 보기</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="chartBriefInput" value="${esc(co.memoSummary || '')}" placeholder="${esc(buildChartBrief(co))}" style="flex:1;padding:6px 8px;font-size:13px;border:1px solid var(--line);border-radius:6px;outline:none;" />
+          <button type="button" class="co-text-action primary" id="chartBriefSaveBtn">저장</button>
+        </div>
+      `;
+      document.getElementById('chartBriefSaveBtn').addEventListener('click', ()=>{
+        D.setMemoSummary(co.id, document.getElementById('chartBriefInput').value.trim());
+        renderChartBrief(D.findCompany(co.id));
+      });
+      return;
+    }
+    wrap.innerHTML = `<div class="chart-brief-label">이 업체 한눈에 보기</div><div>${esc(text)}</div>`;
   }
 
   // ---- 고객 니즈/영업 핵심정보(§ 고객 니즈/영업 핵심정보 구조 개선 라운드) ------------------
@@ -1580,11 +1991,31 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
   // ---- 왜 POUR인가(§4) ----
-  function renderWhyPourSection(co){
+  // ---- 2×2 핵심영역 ①: 이 업체가 원하는 것(§6) — 이전 라운드의 "왜 POUR인가"(whyPour
+  // 필드)와 개념이 사실상 같아 필드를 새로 쪼개지 않고 그대로 재사용한다. 항상 칸을 보여주고
+  // (hideWhenEmpty:false) 비어있으면 "—"만 표시해 2×2 그리드 구조가 흐트러지지 않게 한다. ----
+  function renderWantsSection(co){
     renderEditableTextList(co, {
-      wrapId: 'chartWhyPour', key: 'whyPour', title: '왜 POUR인가',
-      addFn: D.addWhyPour, removeFn: D.removeWhyPour, renderSelf: renderWhyPourSection,
-      placeholder: '왜 POUR인가 (실제 확인된 내용만)', withEvidence: true, hideWhenEmpty: true
+      wrapId: 'chartWants', key: 'whyPour', title: '이 업체가 원하는 것',
+      addFn: D.addWhyPour, removeFn: D.removeWhyPour, renderSelf: renderWantsSection,
+      placeholder: '이 업체가 원하는 것 (실제 확인된 내용만)', withEvidence: true, hideWhenEmpty: false
+    });
+  }
+  // ---- 2×2 핵심영역 ②: 현재 막히는 것(§7) ----
+  function renderBlockersSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartBlockers', key: 'blockers', title: '현재 막히는 것',
+      addFn: D.addBlocker, removeFn: D.removeBlocker, renderSelf: renderBlockersSection,
+      placeholder: '실제 확인이 필요하거나 장애가 되는 요소', withEvidence: true, hideWhenEmpty: false
+    });
+  }
+  // ---- 2×2 핵심영역 ③: POUR가 해줘야 할 것(§8) — 고객 문제를 그대로 복사하지 않고 우리
+  // 회사가 제공할 서비스 형태로 바꿔 적는다(자동정리 미리보기에서도 이 변환을 거쳐 들어온다). ----
+  function renderPourSupportsSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartPourSupports', key: 'pourSupports', title: 'POUR가 해줘야 할 것',
+      addFn: D.addPourSupport, removeFn: D.removePourSupport, renderSelf: renderPourSupportsSection,
+      placeholder: '우리 회사가 제공할 지원(서비스 형태로)', withEvidence: true, hideWhenEmpty: false
     });
   }
 
@@ -1627,13 +2058,386 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
   }
 
-  // ---- 고객 주요 질문(§7/§8) — 고객이 실제로 한 질문의 원문 기록 ----
+  // ---- 고객 실제 질문(§10~13) — 카테고리별로 묶어서 보여주고, 질문마다 해결 상태(§12)와
+  // 관련자료 연결(§13, 고객서류함/공용자료실 둘 다 참조 가능하되 화면에서 성격을 구분해
+  // 보여준다)을 관리한다. 실제 질문이 존재하는 카테고리만 표시한다(§10). 상태 변경/자료연결은
+  // 일상적인 운영 조작이라 전체 [수정] 모드와 무관하게 항상 가능하다 — 질문 문장 자체의
+  // 추가/삭제만 [수정] 모드에서 가능하게 한다(§ 사람이 직접 작성한 질문 원문은 함부로 안 늘림).
   function renderQuestionsSection(co){
-    renderEditableTextList(co, {
-      wrapId: 'chartQuestions', key: 'customerQuestions', title: '고객 주요 질문',
-      addFn: D.addCustomerQuestion, removeFn: D.removeCustomerQuestion, renderSelf: renderQuestionsSection,
-      placeholder: '고객이 실제로 한 질문', withEvidence: true, quote: true, hideWhenEmpty: true
+    const wrap = document.getElementById('chartQuestions');
+    if(!wrap) return;
+    const editing = cardState.chartEditing;
+    const questions = co.customerQuestions || [];
+    if(!editing && !questions.length){ wrap.innerHTML = ''; return; }
+    const byCat = {};
+    questions.forEach(q=>{
+      const cat = q.category || '기타';
+      (byCat[cat] = byCat[cat] || []).push(q);
     });
+    const cats = D.QUESTION_CATEGORIES.filter(c=> byCat[c] && byCat[c].length);
+    const linkOpenId = cardState.questionLinkOpenId;
+
+    function docLinkChips(q){
+      const chips = [];
+      if(q.customerDocumentId){
+        const doc = D.findDocument(q.customerDocumentId);
+        chips.push(`<span class="chart-doc-link-chip">[고객서류] <b>${esc(doc ? (doc.fileName || doc.originalFileName || '문서') : '(삭제된 문서)')}</b></span>`);
+      }
+      if(q.libraryMaterialId){
+        const doc = D.findLibraryDoc(q.libraryMaterialId);
+        chips.push(`<span class="chart-doc-link-chip">[제공자료] <b>${esc(doc ? (doc.title || doc.originalFileName || '자료') : '(삭제된 자료)')}</b></span>`);
+      }
+      return chips.join('');
+    }
+
+    function linkPanelHtml(q){
+      if(linkOpenId !== q.id) return '';
+      const customerDocs = D.documentsForCompany(co.id);
+      const libDocs = D.loadLibraryDocs();
+      return `
+        <div class="chart-q-link-panel">
+          <span style="font-size:10.5px;color:var(--text-muted);">고객서류</span>
+          <select data-link-customer-doc="${esc(q.id)}">
+            <option value="">연결 안 함</option>
+            ${customerDocs.map(d=> `<option value="${esc(d.id)}" ${q.customerDocumentId===d.id?'selected':''}>${esc(d.fileName || d.originalFileName || d.id)}</option>`).join('')}
+          </select>
+          <span style="font-size:10.5px;color:var(--text-muted);">공용자료실</span>
+          <select data-link-library-doc="${esc(q.id)}">
+            <option value="">연결 안 함</option>
+            ${libDocs.map(d=> `<option value="${esc(d.id)}" ${q.libraryMaterialId===d.id?'selected':''}>${esc(d.title || d.originalFileName || d.id)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    }
+
+    wrap.innerHTML = `
+      <div class="chart-section-head">
+        <div class="chart-section-title">고객 실제 질문</div>
+      </div>
+      ${cats.length ? cats.map(cat=> `
+        <div class="chart-q-group">
+          <div class="chart-q-group-title">${esc(cat)}</div>
+          ${byCat[cat].map(q=> `
+            <div class="chart-q-item" data-q-id="${esc(q.id)}">
+              <div class="chart-q-text">"${esc(q.text)}"${editing ? ` <button type="button" class="chart-tag-del" data-del-question="${esc(q.id)}">삭제</button>` : ''}</div>
+              <div class="chart-q-meta">
+                <select class="chart-status-select" data-status-select="${esc(q.id)}">
+                  ${D.QUESTION_STATUSES.map(st=> `<option value="${esc(st)}" ${q.status===st?'selected':''}>${esc(st)}</option>`).join('')}
+                </select>
+                <span class="chart-status-badge st-${esc(q.status || '미답변')}">${esc(q.status || '미답변')}</span>
+                ${docLinkChips(q)}
+                <button type="button" class="chart-q-link-btn" data-toggle-link="${esc(q.id)}">${linkOpenId===q.id ? '자료연결 닫기' : '자료연결'}</button>
+              </div>
+              ${linkPanelHtml(q)}
+            </div>
+          `).join('')}
+        </div>
+      `).join('') : '<div class="chart-empty">—</div>'}
+      ${editing ? `<div class="chart-add-inline">
+          <input type="text" id="chartQuestionInput" placeholder="고객이 실제로 한 질문" />
+          <select id="chartQuestionCategory">${D.QUESTION_CATEGORIES.map(c=> `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+          <button type="button" class="co-text-action primary" id="chartQuestionAddBtn">추가</button>
+        </div>` : ''}
+    `;
+    wrap.querySelectorAll('[data-del-question]').forEach(btn=> btn.addEventListener('click', ()=>{
+      D.removeCustomerQuestion(co.id, btn.getAttribute('data-del-question'));
+      renderQuestionsSection(D.findCompany(co.id));
+    }));
+    wrap.querySelectorAll('[data-status-select]').forEach(sel=> sel.addEventListener('change', ()=>{
+      D.setQuestionStatus(co.id, sel.getAttribute('data-status-select'), sel.value);
+      renderQuestionsSection(D.findCompany(co.id));
+    }));
+    wrap.querySelectorAll('[data-toggle-link]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-toggle-link');
+      cardState.questionLinkOpenId = (cardState.questionLinkOpenId === id) ? null : id;
+      renderQuestionsSection(D.findCompany(co.id));
+    }));
+    wrap.querySelectorAll('[data-link-customer-doc]').forEach(sel=> sel.addEventListener('change', ()=>{
+      D.linkQuestionDocument(co.id, sel.getAttribute('data-link-customer-doc'), { customerDocumentId: sel.value || null });
+      renderQuestionsSection(D.findCompany(co.id));
+    }));
+    wrap.querySelectorAll('[data-link-library-doc]').forEach(sel=> sel.addEventListener('change', ()=>{
+      D.linkQuestionDocument(co.id, sel.getAttribute('data-link-library-doc'), { libraryMaterialId: sel.value || null });
+      renderQuestionsSection(D.findCompany(co.id));
+    }));
+    if(editing){
+      const doAdd = ()=>{
+        const input = document.getElementById('chartQuestionInput');
+        const text = input.value.trim();
+        if(!text) return;
+        const category = document.getElementById('chartQuestionCategory').value;
+        D.addCustomerQuestion(co.id, { text, category, sourceType:'manual' });
+        renderQuestionsSection(D.findCompany(co.id));
+      };
+      document.getElementById('chartQuestionAddBtn').addEventListener('click', doAdd);
+      document.getElementById('chartQuestionInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
+    }
+  }
+
+  // ---- 추천 지원(§14/§15) — 카테고리 규칙 기반 후보(저장 안 함, 매번 재계산)와 직원이
+  // 확정한 태그(co.recommendedSupports, 저장됨)를 함께 보여준다. 후보의 [추가]를 눌러야만
+  // 확정 목록으로 들어간다 — 자동으로 자료를 발송하거나 확정하지 않는다(§15). ----
+  function suggestSupportsFor(co){
+    const A = window.SHIN2_CRM_ANALYSIS;
+    const cats = new Set((co.customerQuestions || []).map(q=> q.category || '기타'));
+    const confirmed = new Set((co.recommendedSupports || []).map(x=> x.text));
+    const out = [];
+    cats.forEach(cat=>{
+      const tag = A.RECOMMEND_TAG[cat];
+      if(tag && !confirmed.has(tag) && !out.includes(tag)) out.push(tag);
+    });
+    return out;
+  }
+  function renderRecommendedSupportsSection(co){
+    const wrap = document.getElementById('chartRecommendedSupports');
+    if(!wrap) return;
+    const editing = cardState.chartEditing;
+    const confirmed = co.recommendedSupports || [];
+    const suggestions = suggestSupportsFor(co);
+    if(!editing && !confirmed.length && !suggestions.length){ wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `
+      <div class="chart-section-title">이 업체에 추천하는 지원</div>
+      <div class="chart-recommend-row">
+        ${confirmed.map(x=> `<span class="chart-recommend-chip">${esc(x.text)}${editing ? `<button type="button" class="chart-tag-chip-del" data-del-recommend="${esc(x.id)}" title="삭제">×</button>` : ''}</span>`).join('')}
+        ${suggestions.map(tag=> `<span class="chart-recommend-chip is-suggested">${esc(tag)}(제안)<button type="button" data-add-recommend="${esc(tag)}">추가</button></span>`).join('')}
+        ${(!confirmed.length && !suggestions.length) ? '<span class="chart-empty">—</span>' : ''}
+      </div>
+    `;
+    wrap.querySelectorAll('[data-del-recommend]').forEach(btn=> btn.addEventListener('click', ()=>{
+      D.removeRecommendedSupport(co.id, btn.getAttribute('data-del-recommend'));
+      renderRecommendedSupportsSection(D.findCompany(co.id));
+    }));
+    wrap.querySelectorAll('[data-add-recommend]').forEach(btn=> btn.addEventListener('click', ()=>{
+      D.addRecommendedSupport(co.id, btn.getAttribute('data-add-recommend'));
+      renderRecommendedSupportsSection(D.findCompany(co.id));
+    }));
+  }
+
+  // ---- 고객 반응(§16) — 고객이 실제로 표현한 반응만 누적. 성향 판단(salesTendency)과 달리
+  // 여러 건이 쌓일 수 있어 목록형으로 관리한다. ----
+  function renderReactionsSection(co){
+    renderEditableTextList(co, {
+      wrapId: 'chartReactions', key: 'reactions', title: '고객 반응',
+      addFn: D.addReaction, removeFn: D.removeReaction, renderSelf: renderReactionsSection,
+      placeholder: '고객이 실제로 표현한 반응', withEvidence: true, hideWhenEmpty: true
+    });
+  }
+
+  /* ==========================================================================
+     고객 메모 정리(§19~23) — 흐름: 메모 입력 → [분석](ruleBasedAnalyzeCustomerMemo, 순수
+     계산, 아무것도 저장하지 않음) → 미리보기(항목별 체크박스로 선택) → 사람 확인 → [적용]
+     (선택된 항목만 SHIN2_CRM_DATA로 저장). AI 결과가 기존 값을 자동으로 덮어쓰지 않는다(§21) —
+     이미 값이 있는 한줄요약/영업성향은 [기존 유지]/[새 결과 적용] 중 하나를 직접 골라야만
+     바뀐다(§22). 목록형 항목(원하는 것/막히는 것/POUR 지원/다음 행동/고객 반응/질문)은
+     전부 "추가"일 뿐 기존 값을 덮어쓰지 않으므로 충돌 선택이 필요 없다 — 질문은
+     addCustomerQuestionIfNew로 중복(정규화 텍스트 일치)을 걸러 누적한다(§23).
+     ========================================================================== */
+  function openMemoParseModal(co){
+    cardState.memoModal = { companyId: co.id, step:'input', text:'', analysis:null, accepted:null, summaryChoice:'new', tendencyChoice:'new' };
+    renderMemoModal();
+  }
+  function closeMemoModal(){
+    cardState.memoModal = null;
+    renderMemoModal();
+  }
+  function renderMemoModal(){
+    const root = document.getElementById('chartMemoModalRoot');
+    if(!root) return;
+    const m = cardState.memoModal;
+    if(!m){ root.innerHTML = ''; return; }
+    const co = D.findCompany(m.companyId);
+    if(!co){ closeMemoModal(); return; }
+
+    if(m.step === 'input'){
+      root.innerHTML = `
+        <div class="chart-memo-overlay" id="memoOverlay">
+          <div class="chart-memo-panel" role="dialog" aria-modal="true" aria-label="고객 메모 정리">
+            <div class="chart-memo-head">
+              <div class="chart-memo-title">고객 메모 정리 — ${esc(co.name)}</div>
+              <button type="button" class="chart-close-btn" id="memoModalCloseBtn" aria-label="닫기">&times;</button>
+            </div>
+            <div class="chart-memo-body">
+              <div class="chart-legacy-note">전화내용/미팅내용/메모를 자유롭게 붙여넣으세요. 원문에 없는 내용은 만들어내지 않고, 실제 문장에서만 항목을 뽑습니다(규칙 기반 — AI 미사용).</div>
+              <textarea id="memoTextarea" placeholder="예) 기존 실내건축, 창호, 금속공사. 관공사 위주. ...">${esc(m.text)}</textarea>
+            </div>
+            <div class="chart-memo-actions">
+              <button type="button" class="co-text-action" id="memoCancelBtn">취소</button>
+              <button type="button" class="co-text-action primary" id="memoAnalyzeBtn">분석</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('memoModalCloseBtn').addEventListener('click', closeMemoModal);
+      document.getElementById('memoCancelBtn').addEventListener('click', closeMemoModal);
+      document.getElementById('memoAnalyzeBtn').addEventListener('click', ()=>{
+        const text = document.getElementById('memoTextarea').value;
+        m.text = text;
+        if(!text.trim()) return;
+        m.analysis = window.SHIN2_CRM_ANALYSIS.analyzeCustomerMemo(text);
+        // 기본값: 목록형 항목은 전부 체크(사람이 미리보기에서 해제 가능) — 저장은 [적용]을
+        // 눌러야만 실행되므로 기본 체크가 "즉시 반영"을 뜻하지 않는다.
+        m.accepted = {
+          wants: m.analysis.wants.map(()=> true),
+          blockers: m.analysis.blockers.map(()=> true),
+          pourSupports: m.analysis.pourSupports.map(()=> true),
+          nextActions: m.analysis.nextActions.map(()=> true),
+          questions: m.analysis.questions.map(()=> true),
+          reactions: m.analysis.reactions.map(()=> true),
+          recommendedSupports: m.analysis.recommendedSupports.map(()=> true),
+          summary: !!m.analysis.summary,
+          salesStyle: !!m.analysis.salesStyle
+        };
+        m.summaryConflict = !!(co.memoSummary && m.analysis.summary);
+        m.tendencyConflict = !!(co.salesTendency && co.salesTendency.text && m.analysis.salesStyle);
+        m.summaryChoice = m.summaryConflict ? 'keep' : 'new';
+        m.tendencyChoice = m.tendencyConflict ? 'keep' : 'new';
+        m.step = 'preview';
+        renderMemoModal();
+      });
+      return;
+    }
+
+    // ---- 미리보기 단계 ----
+    const A = m.analysis;
+    const listSection = (label, key, items, textOf)=>{
+      if(!items.length) return '';
+      return `
+        <div class="chart-memo-preview-section">
+          <div class="chart-memo-preview-title">${esc(label)} (${items.length}건)</div>
+          ${items.map((it,i)=> `
+            <label class="chart-memo-preview-item">
+              <input type="checkbox" data-accept="${key}:${i}" ${m.accepted[key][i] ? 'checked' : ''} />
+              <span>${esc(textOf(it))}</span>
+            </label>
+          `).join('')}
+        </div>
+      `;
+    };
+    const questionSection = A.questions.length ? `
+      <div class="chart-memo-preview-section">
+        <div class="chart-memo-preview-title">고객 실제 질문 (${A.questions.length}건)</div>
+        ${A.questions.map((q,i)=> `
+          <label class="chart-memo-preview-item">
+            <input type="checkbox" data-accept="questions:${i}" ${m.accepted.questions[i] ? 'checked' : ''} />
+            <span>[${esc(q.category)}] "${esc(q.text)}"</span>
+          </label>
+        `).join('')}
+      </div>
+    ` : '';
+    const recommendSection = A.recommendedSupports.length ? `
+      <div class="chart-memo-preview-section">
+        <div class="chart-memo-preview-title">추천 지원 후보 (${A.recommendedSupports.length}건)</div>
+        ${A.recommendedSupports.map((tag,i)=> `
+          <label class="chart-memo-preview-item">
+            <input type="checkbox" data-accept="recommendedSupports:${i}" ${m.accepted.recommendedSupports[i] ? 'checked' : ''} />
+            <span>${esc(tag)}</span>
+          </label>
+        `).join('')}
+      </div>
+    ` : '';
+    const summaryHtml = A.summary ? `
+      <div class="chart-memo-preview-section">
+        <div class="chart-memo-preview-title">이 업체 한눈에 보기</div>
+        ${m.summaryConflict ? `
+          <div class="chart-memo-conflict">
+            <div>기존 값이 이미 있습니다 — 사람이 확인한 값을 자동으로 덮어쓰지 않습니다.</div>
+            <div style="margin-top:4px;color:var(--text-muted);">기존: ${esc(co.memoSummary)}</div>
+            <div style="color:var(--text);">새 결과: ${esc(A.summary)}</div>
+            <div class="chart-memo-conflict-row">
+              <label><input type="radio" name="summaryChoice" value="keep" ${m.summaryChoice==='keep'?'checked':''} /> 기존 유지</label>
+              <label><input type="radio" name="summaryChoice" value="new" ${m.summaryChoice==='new'?'checked':''} /> 새 결과 적용</label>
+            </div>
+          </div>
+        ` : `<label class="chart-memo-preview-item"><input type="checkbox" data-accept="summary:0" ${m.accepted.summary?'checked':''} /><span>${esc(A.summary)}</span></label>`}
+      </div>
+    ` : '';
+    const tendencyHtml = A.salesStyle ? `
+      <div class="chart-memo-preview-section">
+        <div class="chart-memo-preview-title">영업 성향</div>
+        ${m.tendencyConflict ? `
+          <div class="chart-memo-conflict">
+            <div>기존 값이 이미 있습니다 — 사람이 확인한 값을 자동으로 덮어쓰지 않습니다.</div>
+            <div style="margin-top:4px;color:var(--text-muted);">기존: ${esc(co.salesTendency.text)}</div>
+            <div style="color:var(--text);">새 결과: ${esc(A.salesStyle.text)}</div>
+            <div class="chart-memo-conflict-row">
+              <label><input type="radio" name="tendencyChoice" value="keep" ${m.tendencyChoice==='keep'?'checked':''} /> 기존 유지</label>
+              <label><input type="radio" name="tendencyChoice" value="new" ${m.tendencyChoice==='new'?'checked':''} /> 새 결과 적용</label>
+            </div>
+          </div>
+        ` : `<label class="chart-memo-preview-item"><input type="checkbox" data-accept="salesStyle:0" ${m.accepted.salesStyle?'checked':''} /><span>${esc(A.salesStyle.text)} <span style="color:var(--text-muted);">(근거: ${esc(A.salesStyle.evidence)})</span></span></label>`}
+      </div>
+    ` : '';
+
+    const nothingFound = !A.wants.length && !A.blockers.length && !A.pourSupports.length && !A.nextActions.length
+      && !A.questions.length && !A.reactions.length && !A.recommendedSupports.length && !A.summary && !A.salesStyle;
+
+    root.innerHTML = `
+      <div class="chart-memo-overlay" id="memoOverlay">
+        <div class="chart-memo-panel" role="dialog" aria-modal="true" aria-label="고객 메모 정리 미리보기">
+          <div class="chart-memo-head">
+            <div class="chart-memo-title">분석 결과 확인 — ${esc(co.name)}</div>
+            <button type="button" class="chart-close-btn" id="memoModalCloseBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="chart-memo-body">
+            ${nothingFound ? '<div class="chart-memo-preview-empty">원문에서 추가로 뽑아낼 수 있는 항목을 찾지 못했습니다. 원문에 없는 내용은 만들어내지 않습니다.</div>' : ''}
+            ${summaryHtml}
+            ${listSection('이 업체가 원하는 것', 'wants', A.wants, it=> it.text)}
+            ${listSection('현재 막히는 것', 'blockers', A.blockers, it=> it.text)}
+            ${listSection('POUR가 해줘야 할 것', 'pourSupports', A.pourSupports, it=> it.text + ' (근거: ' + it.evidence + ')')}
+            ${listSection('다음 행동', 'nextActions', A.nextActions, it=> it.text)}
+            ${questionSection}
+            ${recommendSection}
+            ${listSection('고객 반응', 'reactions', A.reactions, it=> it.text)}
+            ${tendencyHtml}
+          </div>
+          <div class="chart-memo-actions">
+            <button type="button" class="co-text-action" id="memoBackBtn">다시 입력</button>
+            <button type="button" class="co-text-action" id="memoCancelBtn2">취소</button>
+            <button type="button" class="co-text-action primary" id="memoApplyBtn">적용</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('memoModalCloseBtn').addEventListener('click', closeMemoModal);
+    document.getElementById('memoCancelBtn2').addEventListener('click', closeMemoModal);
+    document.getElementById('memoBackBtn').addEventListener('click', ()=>{ m.step = 'input'; renderMemoModal(); });
+    root.querySelectorAll('[data-accept]').forEach(cb=> cb.addEventListener('change', (e)=>{
+      const [key, idx] = cb.getAttribute('data-accept').split(':');
+      if(key === 'summary') m.accepted.summary = cb.checked;
+      else if(key === 'salesStyle') m.accepted.salesStyle = cb.checked;
+      else m.accepted[key][Number(idx)] = cb.checked;
+    }));
+    root.querySelectorAll('input[name=summaryChoice]').forEach(r=> r.addEventListener('change', ()=>{ m.summaryChoice = r.value; }));
+    root.querySelectorAll('input[name=tendencyChoice]').forEach(r=> r.addEventListener('change', ()=>{ m.tendencyChoice = r.value; }));
+    document.getElementById('memoApplyBtn').addEventListener('click', ()=> applyMemoAnalysis());
+  }
+
+  // applyMemoAnalysis: 체크된 항목만 SHIN2_CRM_DATA를 통해 실제로 저장한다. 목록형 항목은
+  // 전부 추가(append)일 뿐이라 기존 값을 지우거나 바꾸지 않는다 — 질문만 addCustomerQuestionIfNew로
+  // 중복을 걸러 누적한다(§23). summary/salesStyle은 충돌이 있을 때 사람이 고른 선택을 따른다(§22).
+  function applyMemoAnalysis(){
+    const m = cardState.memoModal;
+    if(!m || !m.analysis) return;
+    const companyId = m.companyId;
+    const A = m.analysis;
+    A.wants.forEach((it,i)=>{ if(m.accepted.wants[i]) D.addWhyPour(companyId, it.text, it.evidence); });
+    A.blockers.forEach((it,i)=>{ if(m.accepted.blockers[i]) D.addBlocker(companyId, it.text, it.evidence); });
+    A.pourSupports.forEach((it,i)=>{ if(m.accepted.pourSupports[i]) D.addPourSupport(companyId, it.text, it.evidence); });
+    A.nextActions.forEach((it,i)=>{ if(m.accepted.nextActions[i]) D.addNextAction(companyId, it.text, it.evidence); });
+    A.questions.forEach((q,i)=>{ if(m.accepted.questions[i]) D.addCustomerQuestionIfNew(companyId, { text: q.text, category: q.category, sourceType:'memo-parse' }); });
+    A.reactions.forEach((it,i)=>{ if(m.accepted.reactions[i]) D.addReaction(companyId, it.text, it.evidence); });
+    A.recommendedSupports.forEach((tag,i)=>{ if(m.accepted.recommendedSupports[i]) D.addRecommendedSupport(companyId, tag); });
+    if(A.summary){
+      const applySummary = m.summaryConflict ? (m.summaryChoice === 'new') : m.accepted.summary;
+      if(applySummary) D.setMemoSummary(companyId, A.summary);
+    }
+    if(A.salesStyle){
+      const applyTendency = m.tendencyConflict ? (m.tendencyChoice === 'new') : m.accepted.salesStyle;
+      if(applyTendency) D.setSalesTendency(companyId, A.salesStyle.text, A.salesStyle.evidence);
+    }
+    cardState.memoModal = null;
+    renderMemoModal();
+    refreshChart();
   }
 
   // ---- 다음 미팅 핵심 확인사항(§7/§8) — 고객 질문 중 아직 답변/확인이 필요한 것 ----
@@ -1687,14 +2491,54 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
   }
 
-  // ---- 다음 액션(§10) — 고객 니즈/질문을 바탕으로 우리가 할 일(고객 질문의 단순 복사가
-  // 아니라 우리 쪽 행동으로 직접 입력한다) ----
+  // ---- 2×2 핵심영역 ④: 다음 행동(§9) — 고객 니즈/질문을 바탕으로 우리 직원이 할 일(질문의
+  // 단순 복사가 아니라 우리 쪽 행동으로 적는다). [완료]는 전체 [수정] 모드와 무관하게 항상
+  // 누를 수 있는 일상 조작이다 — 완료된 항목은 이 활성 목록에서는 빠지지만 배열에서 지우지
+  // 않고, 완료 사실을 customerActivities에도 남겨 활동/완료이력에서 계속 확인할 수 있다(§9). ----
   function renderNextActionsSection(co){
-    renderEditableTextList(co, {
-      wrapId: 'chartNextActions', key: 'nextActions', title: '다음 액션',
-      addFn: (id,text)=> D.addNextAction(id,text), removeFn: D.removeNextAction, renderSelf: renderNextActionsSection,
-      placeholder: '우리가 다음에 해야 할 행동', hideWhenEmpty: true
-    });
+    const wrap = document.getElementById('chartNextActions');
+    if(!wrap) return;
+    const editing = cardState.chartEditing;
+    const all = co.nextActions || [];
+    const active = all.filter(x=> !x.done);
+    wrap.innerHTML = `
+      <div class="chart-section-title">다음 행동</div>
+      <div class="chart-bullet-list">
+        ${active.length ? active.map(it=> `
+          <div class="chart-na-item">
+            <span>– ${esc(it.text)}</span>
+            <span class="chart-na-actions">
+              <button type="button" class="chart-na-complete-btn" data-complete-na="${esc(it.id)}">완료</button>
+              ${editing ? `<button type="button" class="chart-tag-del" data-del="${esc(it.id)}">삭제</button>` : ''}
+            </span>
+          </div>
+        `).join('') : '<div class="chart-empty">—</div>'}
+      </div>
+      ${editing ? `<div class="chart-add-inline">
+          <input type="text" id="chartNextActionsInput" placeholder="우리가 다음에 해야 할 행동" />
+          <button type="button" class="co-text-action primary" id="chartNextActionsAddBtn">추가</button>
+        </div>` : ''}
+    `;
+    wrap.querySelectorAll('[data-complete-na]').forEach(btn=> btn.addEventListener('click', ()=>{
+      D.completeNextAction(co.id, btn.getAttribute('data-complete-na'));
+      renderNextActionsSection(D.findCompany(co.id));
+      renderRecentActivities(D.findCompany(co.id)); // 완료 시 활동이력에도 기록되므로 최근 활동도 함께 갱신
+    }));
+    wrap.querySelectorAll('[data-del]').forEach(btn=> btn.addEventListener('click', ()=>{
+      D.removeNextAction(co.id, btn.getAttribute('data-del'));
+      renderNextActionsSection(D.findCompany(co.id));
+    }));
+    if(editing){
+      const doAdd = ()=>{
+        const input = document.getElementById('chartNextActionsInput');
+        const text = input.value.trim();
+        if(!text) return;
+        D.addNextAction(co.id, text);
+        renderNextActionsSection(D.findCompany(co.id));
+      };
+      document.getElementById('chartNextActionsAddBtn').addEventListener('click', doAdd);
+      document.getElementById('chartNextActionsInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
+    }
   }
 
   // ---- 고객 니즈 / 특이사항 — 둘 다 비어 있고(편집모드가 아니고, 등록 제안도 없을 때) 한
