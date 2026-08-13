@@ -21,8 +21,9 @@ function chipClass(e) {
   if (e.source !== 'platform') return 'dot-confirmed';
   // 한솔이 올린 요청도 확정되고 나면(팀장 수락 또는 "바로 확정") 팀장님이
   // 직접 올린 Google 일정과 똑같이 파란색으로 보이게 한다 — 승인대기일
-  // 때만 분홍색으로 구분하고, 확정된 뒤에는 출처를 굳이 색으로 나누지
-  // 않는다(딱따구리 아이콘으로는 여전히 한솔이 올린 요청임을 알 수 있음).
+  // 때만 분홍색으로 구분하고, 확정된 뒤에는 색/배지/아이콘 어디에서도
+  // 출처를 구분하지 않는다(아래 chipBadge, 렌더링부의 딱따구리 아이콘도
+  // 동일하게 status==='confirmed'면 숨김).
   if (e.status === 'confirmed') return 'dot-confirmed';
   if (e.status === 'reschedule_requested') return 'dot-reschedule';
   if (e.status === 'rejected') return 'dot-rejected';
@@ -36,7 +37,10 @@ function chipClass(e) {
 function chipBadge(e) {
   if (e.hansolAccompany) return '동행';
   if (e.source !== 'platform') return null;
-  if (e.status === 'confirmed') return '확정';
+  // 확정된 요청은 이제 팀장 Google 일정과 색도 같아졌으므로(파랑), "확정"
+  // 글자 배지까지 붙이면 오히려 출처를 티 내는 셈이 된다 — 배지도 없애서
+  // 팀장님이 직접 올린 일정과 완전히 똑같이 보이게 한다.
+  if (e.status === 'confirmed') return null;
   if (e.status === 'reschedule_requested') return '시간변경 요청';
   if (e.status === 'pending') return '✓';
   if (e.status === 'rejected') return e.rejectionReason === 'unavailable' ? '일정 불가' : '거절';
@@ -235,7 +239,10 @@ export default function MonthView() {
                       className={`month-event-chip ${chipClass(e)}`}
                       onClick={(ev) => handleEventClick(e, ev)}
                     >
-                      {e.source === 'platform' && (
+                      {/* 확정되기 전(승인대기/시간변경요청/거절)에만 딱따구리 아이콘으로
+                          한솔이 올린 요청임을 표시한다. 확정되고 나면 팀장님이 직접
+                          올린 Google 일정과 완전히 똑같이 보이도록 아이콘도 뗀다. */}
+                      {e.source === 'platform' && e.status !== 'confirmed' && (
                         <img className="month-chip-icon" src={woodpeckerIcon} alt="한솔 요청" />
                       )}
                       {e.source === 'shared_team_calendar' && (
