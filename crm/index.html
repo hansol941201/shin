@@ -497,6 +497,18 @@
   .cdash-progress-detail{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
   .cdash-progress-detail-row{ display:flex; gap:10px; font-size:12.5px; padding:2px 0; }
   .cdash-progress-detail-row span:first-child{ flex:none; width:56px; color:var(--text-muted); }
+
+  /* ---- 현장 이력(§진행 기록 라운드 — 현장 이력 정리) ---- */
+  .cdash-site-log{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+  .cdash-site-log-head{ font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .cdash-site-log-list{ max-height:180px; overflow-y:auto; }
+  .cdash-site-row{ display:flex; align-items:baseline; gap:8px; padding:3px 0; font-size:12px; color:var(--text-muted); }
+  .cdash-site-row.won{ color:var(--text); font-weight:600; }
+  .cdash-site-row-text{ flex:1 1 auto; min-width:0; }
+  .cdash-site-row-tag{
+    flex:none; font-size:10.5px; padding:1px 6px; border-radius:8px; border:1px solid var(--line); color:var(--text-muted);
+  }
+  .cdash-site-row.won .cdash-site-row-tag{ background:#EDF1FA; border-color:var(--navy); color:var(--navy); }
   @media (max-width:640px){
     .cdash-progress-bar{ flex-direction:column; }
     .cdash-progress-connector{ display:none; }
@@ -2543,6 +2555,24 @@ window.SHIN2_CRM_APP_INIT = function(){
     return { stages, currentIdx, hasAny: !!(co.partnerDashboard && co.partnerDashboard.newMou) };
   }
   const PROGRESS_STATUS_LABEL = { done:'완료', scheduled:'예정', waiting:'대기' };
+
+  // §진행 기록 라운드(현장 이력 정리) — co.partnerDashboard.newMou.site는 실제로 줄바꿈으로
+  // 구분된 "현장별 진행 로그"다(예: "1/31_영등포대우미래사랑(옥상방수)_낙찰"). 지금까지는
+  // 이 값을 한 줄로 통째로 붙여 보여줘서 몇 건이 낙찰인지 알아보기 어려웠다 — 원문을 고치지
+  // 않고 줄 단위로만 나눠서 각 줄에 실제 적혀 있는 상태 단어(낙찰/진행/PT/유찰/보류/중단/대기)를
+  // 그 줄에서 가장 마지막에 나오는 단어로 판단해 배지로 붙이고, "낙찰" 건수를 세어 보여준다.
+  // 상태 단어가 없는 줄은 배지 없이 원문 그대로만 보여준다(추측해서 채우지 않음).
+  const SITE_STATUS_KEYWORDS = ['낙찰','유찰','보류','중단','진행','PT','대기'];
+  function parseSiteLog(text){
+    return String(text || '').split(/\n+/).map(s=> s.trim()).filter(Boolean).map(line=>{
+      let status = null, bestIdx = -1;
+      SITE_STATUS_KEYWORDS.forEach(kw=>{
+        const idx = line.lastIndexOf(kw);
+        if(idx > bestIdx){ bestIdx = idx; status = kw; }
+      });
+      return { text: line, status };
+    });
+  }
   function renderMeetingRecordSection(co){
     const wrap = document.getElementById('cdashMeetingBlock');
     if(!wrap) return;
@@ -2574,9 +2604,24 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="cdash-progress-detail-row"><span>현재 단계</span><strong>${esc(sel.label)}</strong></div>
         <div class="cdash-progress-detail-row"><span>일시</span><span>${esc(sel.dateDisplay)}</span></div>
         <div class="cdash-progress-detail-row"><span>상태</span><span>${esc(PROGRESS_STATUS_LABEL[sel.state])}</span></div>
-        ${nm.site ? `<div class="cdash-progress-detail-row"><span>현장</span><span>${esc(nm.site)}</span></div>` : ''}
         ${nm.note ? `<div class="cdash-progress-detail-row"><span>비고</span><span>${esc(nm.note)}</span></div>` : ''}
       </div>
+      ${(()=>{
+        if(!nm.site) return '';
+        const entries = parseSiteLog(nm.site);
+        const wonCount = entries.filter(e=> e.status === '낙찰').length;
+        return `
+          <div class="cdash-site-log">
+            <div class="cdash-site-log-head">현장 이력 ${entries.length}건 · 낙찰 ${wonCount}건</div>
+            <div class="cdash-site-log-list">
+              ${entries.map(e=> `<div class="cdash-site-row${e.status==='낙찰' ? ' won' : ''}">
+                <span class="cdash-site-row-text">${esc(e.text)}</span>
+                ${e.status ? `<span class="cdash-site-row-tag">${esc(e.status)}</span>` : ''}
+              </div>`).join('')}
+            </div>
+          </div>
+        `;
+      })()}
     `;
     wrap.querySelectorAll('[data-stage]').forEach(btn=> btn.addEventListener('click', ()=>{
       cardState.progressStageSel = btn.getAttribute('data-stage');
