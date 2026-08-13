@@ -212,9 +212,9 @@
     padding:5vh 16px; overflow-y:auto;
   }
   .chart-panel{
-    width:100%; max-width:920px; min-width:0;
+    width:90vw; max-width:1560px; min-width:0;
     background:var(--surface); border-radius:14px; box-shadow:0 24px 60px rgba(17,24,39,0.28);
-    max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
+    max-height:92vh; display:flex; flex-direction:column; overflow:hidden;
   }
   .chart-header{
     flex:none; padding:16px 22px 14px; border-bottom:1px solid var(--line);
@@ -296,9 +296,8 @@
   .chart-tag-chip-del{ border:none; background:transparent; cursor:pointer; font-size:11px; color:var(--text-muted); line-height:1; padding:0; }
   .chart-tag-chip-del:hover{ color:#B91C1C; }
   @media (max-width:640px){ .chart-needs3{ grid-template-columns:1fr; } }
-  #chartCoreNeeds:not(:empty), #chartKeyFactors:not(:empty),
-  #chartMeetingChecklist:not(:empty), #chartSalesTendency:not(:empty),
-  #chartReactions:not(:empty), #chartRecommendedSupports:not(:empty){ margin-bottom:14px; }
+  #chartCoreNeeds:not(:empty), #chartKeyFactors:not(:empty), #chartMeetingChecklist:not(:empty),
+  #chartBlockersLegacy:not(:empty), #chartPourSupportsLegacy:not(:empty), #chartRecommendedSupports:not(:empty){ margin-bottom:14px; }
 
   /* ---- 시공사 니즈 기반 영업지원 CRM(§ 고객 니즈 기반 영업지원 CRM 라운드) ---- */
   .chart-header-meta{ display:flex; flex-wrap:wrap; gap:4px 16px; margin-top:8px; font-size:11.5px; color:var(--text-muted); }
@@ -321,11 +320,6 @@
   .chart-q-text{ font-size:12.5px; color:var(--text); line-height:1.4; }
   .chart-q-meta{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:4px; }
   .chart-status-badge{ font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:4px; background:#EEF1F7; color:var(--navy); border:none; }
-  .chart-status-badge.st-미답변{ background:#F3E9E9; color:#8A4B4B; }
-  .chart-status-badge.st-확인중{ background:#F5F0DE; color:#8A7327; }
-  .chart-status-badge.st-답변완료{ background:#E7F0EA; color:#2F6B45; }
-  .chart-status-badge.st-자료발송{ background:#E7EEF7; color:#2C5A8A; }
-  .chart-status-badge.st-추가확인{ background:#EEF1F7; color:var(--navy); }
   select.chart-status-select{ font-size:10.5px; padding:1px 4px; border:1px solid var(--line); border-radius:4px; color:var(--text); background:#fff; }
   .chart-doc-link-chip{ font-size:10.5px; color:var(--text-muted); background:#fff; border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
   .chart-doc-link-chip b{ color:var(--text); font-weight:600; }
@@ -357,6 +351,110 @@
   .chart-memo-preview-empty{ font-size:11.5px; color:#9CA3AF; }
   .chart-memo-conflict{ background:#F7F5F0; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:12px; }
   .chart-memo-conflict-row{ display:flex; align-items:center; gap:10px; font-size:12px; margin-top:6px; flex-wrap:wrap; }
+
+  /* ==========================================================================
+     영업 대시보드형 고객카드(§ 한 장짜리 영업 대시보드 라운드) — 3단 고정 구조:
+     1단 헤더(진한 남색 바) + 4분할, 2단 고객 주요 질문(전체 폭), 3단 반응/액션/요약 3분할.
+     색상: 화이트/진한 남색/검정·진회색/연회색/아주 연한 하늘색만 사용 — 빨강/초록/주황/보라/
+     그라데이션/큰 그림자/이모티콘 금지(§18). 여백은 좁게(§19), 본문 폰트는 읽기 가능한
+     크기 유지(§20). ========================================================================== */
+  .cdash-body{ padding:10px 20px 18px; }
+  .cdash-header{
+    background:var(--navy); color:#fff; border-radius:10px;
+    padding:12px 18px; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .cdash-header-left{ min-width:0; }
+  .cdash-header-title{ font-size:19px; font-weight:700; line-height:1.3; }
+  .cdash-header-title .cdash-sub{ font-size:13px; font-weight:500; opacity:0.82; margin-left:6px; }
+  .cdash-header-actions{ display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .cdash-header-actions .co-text-action, .cdash-header-actions .chart-memo-btn, .cdash-header-actions .card-copy-all-btn{
+    background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.35);
+  }
+  .cdash-header-actions .co-text-action:hover, .cdash-header-actions .chart-memo-btn:hover{ background:rgba(255,255,255,0.22); }
+  .cdash-header-actions .chart-close-btn{ color:#fff; }
+  .cdash-header-box{
+    background:#fff; border-radius:8px; padding:8px 18px; flex:none;
+    display:flex; align-items:stretch; gap:0; flex-wrap:wrap;
+  }
+  .cdash-header-field{ padding:2px 16px; border-left:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; gap:2px; min-width:96px; }
+  .cdash-header-field:first-child{ border-left:none; }
+  .cdash-header-field-label{ font-size:10.5px; color:var(--text-muted); }
+  .cdash-header-field-value{ font-size:12.5px; color:var(--text); font-weight:600; line-height:1.3; }
+  .cdash-header-edit{ display:flex; flex-direction:column; gap:6px; min-width:220px; }
+  .cdash-header-edit input, .cdash-header-edit select{ font-size:12px; padding:4px 6px; border:1px solid var(--line); border-radius:5px; }
+
+  .cdash-4col{ display:grid; grid-template-columns:repeat(4, 1fr); margin-bottom:12px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  .cdash-col{ padding:10px 14px; border-left:1px solid var(--line); min-width:0; }
+  .cdash-col:first-child{ border-left:none; }
+  .cdash-col-title-row{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; padding-bottom:5px; border-bottom:1.5px solid var(--navy); }
+  .cdash-col-title{ font-size:12.5px; font-weight:700; color:var(--navy); }
+  .cdash-mini-edit{ font-size:10.5px; color:var(--text-muted); background:transparent; border:none; cursor:pointer; padding:0; text-decoration:underline; flex:none; }
+  .cdash-mini-edit:hover{ color:var(--navy); }
+  .cdash-col-body{ font-size:12.5px; color:var(--text); line-height:1.6; }
+  .cdash-bullets{ margin:0; padding-left:16px; }
+  .cdash-bullets li{ margin-bottom:2px; }
+  .cdash-field-row{ margin-bottom:6px; }
+  .cdash-field-row:last-child{ margin-bottom:0; }
+  .cdash-field-label{ font-size:10.5px; color:var(--text-muted); margin-bottom:1px; }
+  .cdash-field-value{ font-size:12.5px; color:var(--text); }
+  .cdash-field-value.is-muted{ color:#9CA3AF; }
+  .cdash-tag-wrap{ display:flex; flex-wrap:wrap; gap:6px; }
+  .cdash-tag{ font-size:11.5px; color:var(--navy); background:#EAF3FC; border:1px solid #D7E9F9; border-radius:5px; padding:3px 9px; }
+  .cdash-mini-form{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+  .cdash-mini-form textarea{ width:100%; min-height:64px; box-sizing:border-box; font-size:12px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; resize:vertical; font-family:inherit; }
+  .cdash-mini-form input{ width:100%; box-sizing:border-box; font-size:12px; padding:5px 7px; border:1px solid var(--line); border-radius:6px; }
+  .cdash-mini-form-actions{ display:flex; gap:8px; }
+  .cdash-mini-list-item{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .cdash-mini-list-item .chart-tag-del{ flex:none; }
+  .cdash-mini-add-row{ display:flex; gap:6px; margin-top:6px; }
+  .cdash-mini-add-row input{ flex:1; font-size:12px; padding:5px 7px; border:1px solid var(--line); border-radius:5px; }
+  .cdash-mini-form-field{ width:100%; box-sizing:border-box; font-size:12.5px; padding:5px 7px; border:1px solid var(--line); border-radius:6px; }
+
+  .cdash-qmega{ border:1px solid var(--line); border-radius:8px; background:#fff; padding:12px 16px; margin-bottom:12px; }
+  .cdash-qmega-title-row{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .cdash-qmega-title{ font-size:14px; font-weight:700; color:var(--navy); }
+  .cdash-qmega-sub{ font-size:11.5px; color:var(--text-muted); margin-left:8px; font-weight:400; }
+  .cdash-q-important{ background:#F5F7FA; border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-bottom:10px; }
+  .cdash-q-important-title{ font-size:11px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+  .cdash-qcols{ display:flex; gap:0; border-top:1px solid var(--line); }
+  .cdash-qcol{ flex:1 1 0; min-width:0; padding:9px 14px; border-left:1px solid var(--line); }
+  .cdash-qcol:first-child{ border-left:none; }
+  .cdash-qcol-title{ font-size:12px; font-weight:700; color:var(--navy); margin-bottom:6px; padding-bottom:4px; border-bottom:1.5px solid var(--navy); }
+  .cdash-q-item{ padding:4px 0; border-top:1px dashed var(--line); }
+  .cdash-q-item:first-child{ border-top:none; }
+  .cdash-q-text{ font-size:12.5px; color:var(--text); line-height:1.45; }
+  .cdash-q-status{ font-size:9.5px; color:var(--text-muted); background:#F0F1F4; border-radius:3px; padding:1px 5px; margin-left:6px; white-space:nowrap; vertical-align:middle; }
+  .cdash-q-empty{ font-size:12px; color:#9CA3AF; padding:6px 0; }
+
+  .cdash-bottom3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+  .cdash-bcol{ border:1px solid var(--line); border-radius:8px; background:#fff; padding:10px 14px; min-width:0; }
+  .cdash-bcol-title-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; padding-bottom:5px; border-bottom:1.5px solid var(--navy); }
+  .cdash-bcol-title{ font-size:12.5px; font-weight:700; color:var(--navy); }
+  .cdash-summary-col{ padding:0; overflow:hidden; }
+  .cdash-summary-bar{ background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; padding:8px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .cdash-summary-body{ padding:10px 14px; font-size:13px; color:var(--text); line-height:1.55; }
+  .cdash-summary-highlight{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--navy); font-weight:600; line-height:1.5; }
+
+  .cdash-btn-row{ display:flex; flex-wrap:wrap; gap:8px; padding-top:2px; }
+  .cdash-btn-row button{ font-size:11.5px; color:var(--navy); background:#fff; border:1px solid var(--line); border-radius:6px; padding:5px 12px; cursor:pointer; }
+  .cdash-btn-row button:hover{ background:#F5F7FA; }
+  .cdash-panel-wrap{ margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
+
+  @media (max-width:1180px){ .cdash-4col{ grid-template-columns:repeat(2, 1fr); } .cdash-col:nth-child(3){ border-left:none; } .cdash-col:nth-child(n+3){ border-top:1px solid var(--line); } }
+  @media (max-width:760px){
+    .cdash-4col{ grid-template-columns:1fr; }
+    .cdash-col{ border-left:none !important; border-top:1px solid var(--line); }
+    .cdash-col:first-child{ border-top:none; }
+    .cdash-bottom3{ grid-template-columns:1fr; }
+    .cdash-qcols{ flex-direction:column; }
+    .cdash-qcol{ border-left:none; border-top:1px solid var(--line); }
+    .cdash-qcol:first-child{ border-top:none; }
+  }
+  @media (max-width:1360px) and (min-width:761px){
+    .cdash-qcols.many-cols{ flex-wrap:wrap; }
+    .cdash-qcols.many-cols .cdash-qcol{ flex:1 1 33%; border-top:1px solid var(--line); }
+  }
 
   .chart-recent-item{ display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12px; }
   .chart-recent-date{ flex:none; color:var(--text-muted); }
@@ -846,7 +944,10 @@ window.SHIN2_CRM_OCR = (function(){
   function saveCompanies(list){ writeArr(CO_KEY, list); } // §37: 화면 개편과 무관하게 항상 이 키 그대로 유지
   function findCompany(id){ return loadCompanies().find(c=> c.id === id) || null; }
   function addCompany(fields){
-    const rec = Object.assign({ id: genId('co'), name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'' }, fields);
+    // createdAt은 §영업 대시보드 카드 라운드에서 "등록일" 표시를 위해 새로 추가하는 업체부터만
+    // 채운다 — 기존에 이미 저장된 업체 레코드에는 절대 소급 기입하지 않는다(§13/§17, 없음/미확인
+    // 구분 원칙 — 등록일을 몰라서 비어있는 기존 업체는 화면에서 "미확인"으로만 표시된다).
+    const rec = Object.assign({ id: genId('co'), name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'', createdAt: nowIso() }, fields);
     const list = loadCompanies();
     list.push(rec);
     saveCompanies(list);
@@ -1290,6 +1391,38 @@ window.SHIN2_CRM_OCR = (function(){
     return updateCompany(companyId, { memoSummary: text || '' });
   }
 
+  // ---- 영업 대시보드형 고객카드 라운드 — 전부 companies 레코드에 추가형 필드로만 얹는다.
+  // "업체 기본 정보" 4칸(기존주력/주요시장/협력시공사/타공법)은 짧은 문자열 필드, "현재 상황"과
+  // "관심 공종/제품"은 다른 목록형 항목(blockers 등)과 동일한 {id,text,createdAt} 배열 패턴을
+  // 그대로 따른다 — 새 저장 방식을 만들지 않는다. ----
+  function setLegacyBusiness(companyId, text){ return updateCompany(companyId, { legacyBusiness: text || '' }); }
+  function setTargetMarket(companyId, text){ return updateCompany(companyId, { targetMarket: text || '' }); }
+  function setPartnerContractor(companyId, text){ return updateCompany(companyId, { partnerContractor: text || '' }); }
+  function setOtherMethods(companyId, text){ return updateCompany(companyId, { otherMethods: text || '' }); }
+  // 고객 상태(customerStatusNote) — 영업단계(dealStage, 고정 목록)와는 다른 개념의 자유
+  // 문장형 상태 메모(예: "협약 검토 (2차 미팅 예정)"). 헤더 우측 요약 박스에서만 쓰인다.
+  function setCustomerStatusNote(companyId, text){ return updateCompany(companyId, { customerStatusNote: text || '' }); }
+  function addCurrentSituation(companyId, text){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.currentSituation || []).slice();
+    list.push({ id: genId('cs'), text, createdAt: nowIso() });
+    return updateCompany(companyId, { currentSituation: list });
+  }
+  function removeCurrentSituation(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { currentSituation: (co.currentSituation||[]).filter(x=> x.id !== itemId) });
+  }
+  function addInterestField(companyId, text){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.interestFields || []).slice();
+    list.push({ id: genId('if'), text, createdAt: nowIso() });
+    return updateCompany(companyId, { interestFields: list });
+  }
+  function removeInterestField(companyId, itemId){
+    const co = findCompany(companyId); if(!co) return null;
+    return updateCompany(companyId, { interestFields: (co.interestFields||[]).filter(x=> x.id !== itemId) });
+  }
+
   window.SHIN2_CRM_DATA = {
     loadCompanies, findCompany, addCompany, updateCompany,
     loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
@@ -1304,7 +1437,9 @@ window.SHIN2_CRM_OCR = (function(){
     setSalesTendency, addNextAction, removeNextAction, completeNextAction,
     addBlocker, removeBlocker, addPourSupport, removePourSupport,
     addReaction, removeReaction, addRecommendedSupport, removeRecommendedSupport, setMemoSummary,
-    loadLibraryDocs, findLibraryDoc
+    loadLibraryDocs, findLibraryDoc,
+    setLegacyBusiness, setTargetMarket, setPartnerContractor, setOtherMethods, setCustomerStatusNote,
+    addCurrentSituation, removeCurrentSituation, addInterestField, removeInterestField
   };
 })();
 </script>
@@ -1568,6 +1703,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardState.evidenceOpen = {}; // 업체를 새로 열 때만 근거 펼침 상태 초기화 — 같은 업체 재렌더링(수정 등) 중에는 유지
     cardState.questionLinkOpenId = null;
     cardState.memoModal = null;
+    cardState.sectionEdit = {};
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -1596,7 +1732,10 @@ window.SHIN2_CRM_APP_INIT = function(){
   ];
   // 업체정보(펼치기) 패널에는 헤더에 이미 노출되는 업체명/담당자/직책은 다시 넣지 않는다.
   const CO_INFO_LABELS = CO_FIELD_LABELS.filter(([k])=> !['name','contactName','position'].includes(k));
-  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {}, questionLinkOpenId: null, memoModal: null };
+  // sectionEdit: 영업 대시보드 카드의 각 영역별 독립 "수정" 토글(§15) — 전체 카드를 한 번에
+  // 편집모드로 바꾸는 대신, 영역 제목 옆 작은 [수정]을 누른 영역만 편집 상태가 된다. 키:
+  // header/basicInfo/wants/situation/interest/questions/reactions/nextActions/summary.
+  let cardState = { editingCompany: false, chartEditing: false, ocrReview: null, evidenceOpen: {}, questionLinkOpenId: null, memoModal: null, sectionEdit: {} };
   // 다른 탭(v2 또는 CRM 다른 탭)에서 shin2-companies-staging이 바뀌었을 때 지금 이 탭이
   // 편집 폼을 띄워둔 상태라면 storage 이벤트로 인한 재렌더링이 사용자의 입력 중인 내용을
   // 덮어쓰지 않도록 막는 플래그(§ crm 신규등록 폼).
@@ -1617,78 +1756,51 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 상태 포함) ⑤추천 지원 ⑥고객 반응·영업 성향 ⑦최근 활동/예정일정 ⑧서류 요약 ⑨업체정보
   // ⑩이전 라운드에서 만든 3분할 strip/니즈·특이사항/판단요소/미팅확인사항(레거시, 삭제하지
   // 않고 접어서 유지) ⑪전체이력/서류함/메모, 이 순서 그대로 DOM에 둔다. ----
+  // ---- 정보 순서(§ 한 장짜리 영업 대시보드 라운드, §2/§22) — 반드시 3단 고정 구조:
+  // 1단 헤더(진한 남색 바 + 4분할 요약박스), 2단 4분할(업체 기본정보/POUR 협약목적/현재상황/
+  // 관심공종·제품), 3단 고객 주요 질문(전체 폭, 카테고리별 동적 컬럼), 4단 3분할(고객 반응·
+  // 성향/다음 행동/핵심 한줄요약), 마지막 작은 버튼 줄(업체정보/서류함/전체이력/메모/미팅기록/
+  // 이전 요약정보)로 나머지 기존 기능을 전부 접어서 보존한다(§14/§17 — 삭제 금지). ----
   function renderChart(co){
     cardView.innerHTML = `
       <div class="chart-overlay" id="chartOverlay">
         <div class="chart-panel" role="dialog" aria-modal="true" aria-label="고객 차트">
-          <div class="chart-header" id="chartHeader"></div>
-          <div class="chart-body" id="chartBody">
-            <div class="chart-brief" id="chartBrief"></div>
+          <div class="cdash-body" id="chartBody">
+            <div id="chartHeader"></div>
 
-            <div class="chart-grid2x2" id="chartGrid2x2">
-              <div class="chart-grid2x2-cell" id="chartWants"></div>
-              <div class="chart-grid2x2-cell is-blocker" id="chartBlockers"></div>
-              <div class="chart-grid2x2-cell" id="chartPourSupports"></div>
-              <div class="chart-grid2x2-cell" id="chartNextActions"></div>
+            <div class="cdash-4col">
+              <div class="cdash-col" id="cdashBasicInfoCol"></div>
+              <div class="cdash-col" id="cdashWantsCol"></div>
+              <div class="cdash-col" id="cdashSituationCol"></div>
+              <div class="cdash-col" id="cdashInterestCol"></div>
             </div>
 
-            <div class="chart-hr"></div>
-            <div id="chartQuestions"></div>
+            <div class="cdash-qmega" id="cdashQuestionsMega"></div>
 
-            <div class="chart-hr"></div>
-            <div id="chartRecommendedSupports"></div>
-
-            <div class="chart-hr"></div>
-            <div class="chart-2col">
-              <div id="chartReactions"></div>
-              <div id="chartSalesTendency"></div>
+            <div class="cdash-bottom3">
+              <div class="cdash-bcol" id="cdashReactionsCol"></div>
+              <div class="cdash-bcol" id="cdashNextActionsCol"></div>
+              <div class="cdash-bcol cdash-summary-col" id="cdashSummaryCol"></div>
             </div>
 
-            <div class="chart-hr"></div>
-            <div class="chart-2col">
-              <div>
-                <div class="chart-section-head">
-                  <div class="chart-section-title">최근 활동</div>
-                  <button type="button" class="co-text-action" id="chartHistoryToggleBtn">전체 이력 보기</button>
-                </div>
-                <div id="chartRecentActs"></div>
-              </div>
-              <div>
-                <div class="chart-section-title">예정 일정</div>
-                <div id="chartCalendar"></div>
-              </div>
+            <div class="cdash-btn-row">
+              <button type="button" id="cdashBtnInfo">업체정보</button>
+              <button type="button" id="cdashBtnDocs">서류함</button>
+              <button type="button" id="cdashBtnHistory">전체 이력</button>
+              <button type="button" id="cdashBtnMemo">메모</button>
+              <button type="button" id="cdashBtnMeetings">미팅 기록</button>
+              <button type="button" id="cdashBtnLegacy">이전 요약정보</button>
             </div>
 
-            <div class="chart-hr"></div>
-            <div class="chart-section-head">
+            <div class="cdash-panel-wrap" id="cdashInfoWrap" style="display:none;">
+              <div id="crmBasicInfo"></div>
+            </div>
+            <div class="cdash-panel-wrap" id="cdashDocsWrap" style="display:none;">
               <div class="chart-section-title">서류</div>
-              <button type="button" class="co-text-action" id="chartDocsToggleBtn">서류함 열기</button>
+              <div id="chartDocCounts"></div>
+              <div id="crmDocsSection"></div>
             </div>
-            <div id="chartDocCounts"></div>
-
-            <div class="chart-hr"></div>
-            <div class="chart-section-head">
-              <div class="chart-section-title">업체정보</div>
-              <button type="button" class="co-text-action" id="chartInfoToggleBtn">업체정보 보기</button>
-            </div>
-            <div id="crmBasicInfo" class="chart-expand" style="display:none;"></div>
-
-            <div class="chart-hr"></div>
-            <div class="chart-section-head">
-              <div class="chart-section-title">이전 요약 정보</div>
-              <button type="button" class="co-text-action" id="chartLegacyToggleBtn">펼치기</button>
-            </div>
-            <div id="chartLegacyWrap" class="chart-expand" style="display:none;">
-              <div class="chart-legacy-note">이전 화면 개편 라운드에서 만든 항목들입니다 — 데이터는 지우지 않고 여기 그대로 남겨둡니다.</div>
-              <div class="chart-strip chart-strip-emphasis" id="chartStrip"></div>
-              <div id="chartImportant"></div>
-              <div id="chartNeedsSpecialWrap"></div>
-              <div id="chartCoreNeeds"></div>
-              <div id="chartKeyFactors"></div>
-              <div id="chartMeetingChecklist"></div>
-            </div>
-
-            <div id="chartHistoryWrap" class="chart-expand" style="display:none;">
+            <div class="cdash-panel-wrap" id="cdashHistoryWrap" style="display:none;">
               <div class="chart-section-title">전체 이력</div>
               <div id="chartTimeline"></div>
               <div class="chart-subtoggle-row">
@@ -1696,15 +1808,25 @@ window.SHIN2_CRM_APP_INIT = function(){
               </div>
               <div id="crmActivitySection" style="display:none;"></div>
             </div>
-
-            <div id="chartDocsFullWrap" class="chart-expand" style="display:none;">
-              <div class="chart-section-title">서류함</div>
-              <div id="crmDocsSection"></div>
-            </div>
-
-            <div class="chart-expand">
+            <div class="cdash-panel-wrap" id="cdashMemoWrap" style="display:none;">
               <div class="chart-section-title">메모</div>
               <div id="crmMemoSection"></div>
+            </div>
+            <div class="cdash-panel-wrap" id="cdashMeetingsWrap" style="display:none;">
+              <div class="chart-section-title">미팅 기록(예정 일정)</div>
+              <div id="cdashMeetingLog"></div>
+            </div>
+            <div class="cdash-panel-wrap" id="cdashLegacyWrap" style="display:none;">
+              <div class="chart-legacy-note">이전 화면 개편 라운드에서 만든 항목들입니다 — 데이터는 지우지 않고 여기 그대로 남겨둡니다.</div>
+              <div class="chart-strip chart-strip-emphasis" id="chartStrip"></div>
+              <div id="chartImportant"></div>
+              <div id="chartNeedsSpecialWrap"></div>
+              <div id="chartCoreNeeds"></div>
+              <div id="chartKeyFactors"></div>
+              <div id="chartMeetingChecklist"></div>
+              <div id="chartBlockersLegacy"></div>
+              <div id="chartPourSupportsLegacy"></div>
+              <div id="chartRecommendedSupports"></div>
             </div>
           </div>
         </div>
@@ -1712,127 +1834,266 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     document.body.classList.add('chart-lock');
     renderChartHeader(co);
-    renderChartBrief(co);
-    renderWantsSection(co);
-    renderBlockersSection(co);
-    renderPourSupportsSection(co);
-    renderNextActionsSection(co);
-    renderQuestionsSection(co);
-    renderRecommendedSupportsSection(co);
-    renderReactionsSection(co);
-    renderSalesTendencySection(co);
+    renderBasicInfoCol(co);
+    renderPourGoalCol(co);
+    renderSituationCol(co);
+    renderInterestCol(co);
+    renderQuestionsMega(co);
+    renderReactionsCol(co);
+    renderNextActionsCol(co);
+    renderSummaryCol(co);
+
+    // ---- 나머지 버튼 줄(§14) — 전부 기존 기능을 그대로 재사용, 접힘 기본값 ----
     renderTopStrip(co);
     renderImportantSection(co);
     renderNeedsSpecialSection(co);
     renderCoreNeedsSection(co);
     renderKeyFactorsSection(co);
     renderMeetingChecklistSection(co);
-    renderRecentActivities(co);
-    if(cardState.chartEditing){ renderBasicInfoForm(co); document.getElementById('crmBasicInfo').style.display = 'block'; document.getElementById('chartInfoToggleBtn').textContent = '업체정보 접기'; }
+    renderBlockersLegacySection(co);
+    renderPourSupportsLegacySection(co);
+    renderRecommendedSupportsSection(co);
+    if(cardState.chartEditing){ renderBasicInfoForm(co); }
     else { renderBasicInfoView(co); }
     renderDocCounts(co);
     renderDocsSection(co);
-    renderCalendarSection(co);
     renderTimelineSection(co);
     renderActivitySection(co);
     renderMemoSection(co);
+    renderMeetingLog(co);
 
-    document.getElementById('chartInfoToggleBtn').addEventListener('click', ()=>{
-      const el = document.getElementById('crmBasicInfo');
-      const showing = el.style.display !== 'none';
-      el.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartInfoToggleBtn').textContent = showing ? '업체정보 보기' : '업체정보 접기';
-    });
-    document.getElementById('chartDocsToggleBtn').addEventListener('click', ()=>{
-      const wrap = document.getElementById('chartDocsFullWrap');
-      const showing = wrap.style.display !== 'none';
-      wrap.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartDocsToggleBtn').textContent = showing ? '서류함 열기' : '서류함 닫기';
-    });
-    document.getElementById('chartHistoryToggleBtn').addEventListener('click', ()=>{
-      const wrap = document.getElementById('chartHistoryWrap');
-      const showing = wrap.style.display !== 'none';
-      wrap.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartHistoryToggleBtn').textContent = showing ? '전체 이력 보기' : '전체 이력 닫기';
-    });
     document.getElementById('chartActToggleBtn').addEventListener('click', ()=>{
       const wrap = document.getElementById('crmActivitySection');
       const showing = wrap.style.display !== 'none';
       wrap.style.display = showing ? 'none' : 'block';
       document.getElementById('chartActToggleBtn').textContent = showing ? '활동 기록 직접 관리' : '접기';
     });
-    document.getElementById('chartLegacyToggleBtn').addEventListener('click', ()=>{
-      const wrap = document.getElementById('chartLegacyWrap');
-      const showing = wrap.style.display !== 'none';
-      wrap.style.display = showing ? 'none' : 'block';
-      document.getElementById('chartLegacyToggleBtn').textContent = showing ? '펼치기' : '접기';
+    const panelBtns = [
+      ['cdashBtnInfo','cdashInfoWrap'], ['cdashBtnDocs','cdashDocsWrap'], ['cdashBtnHistory','cdashHistoryWrap'],
+      ['cdashBtnMemo','cdashMemoWrap'], ['cdashBtnMeetings','cdashMeetingsWrap'], ['cdashBtnLegacy','cdashLegacyWrap']
+    ];
+    panelBtns.forEach(([btnId, wrapId])=>{
+      const btn = document.getElementById(btnId);
+      const wrap = document.getElementById(wrapId);
+      const label = btn.textContent;
+      btn.addEventListener('click', ()=>{
+        const showing = wrap.style.display !== 'none';
+        wrap.style.display = showing ? 'none' : 'block';
+        btn.textContent = showing ? label : (label + ' 닫기');
+      });
     });
   }
 
-  function partnerStatusLabel(co){
-    const st = co && co.partnerStatus;
-    if(st === 'partner') return '협력사';
-    if(st === 'nonPartner') return '비협력사';
-    return '미설정';
-  }
-  // 최근 접촉일(§3) — customerActivities 중 가장 최근 기록의 날짜. 기록이 하나도 없으면
-  // "미확인"(§14 없음/미확인 엄격 구분 — 접촉 자체가 없었다고 단정하지 않는다).
-  function lastContactDate(co){
-    const last = D.activitiesForCompany(co.id)[0];
-    return last ? fmtDate(last.createdAt) : '미확인';
-  }
+  // ---- 상단 헤더(§2/§3) — 진한 남색 바 하나: 왼쪽 업체명+"고객관리카드"+액션 버튼,
+  // 오른쪽 흰색 요약박스(고객 상태/영업단계/등록일/담당자, 한 줄 정렬). "수정"은 업체정보/
+  // 이전 요약정보 등 기존 상세 편집 화면(§레거시)만 토글하고, 우측 요약박스의 고객상태·
+  // 영업단계는 박스 안의 작은 [수정]으로 별도 관리한다(cardState.sectionEdit.header). ----
   function renderChartHeader(co){
     const wrap = document.getElementById('chartHeader');
     const stage = co.dealStage || '';
     const editing = cardState.chartEditing;
+    const headerEditing = !!cardState.sectionEdit.header;
     const contact = co.contactName || co.repName || '';
-    const position = co.position || '';
-    const phoneRow = (key, label)=> co[key] ? `<span>${label} ${esc(co[key])} <button type="button" class="co-field-copy-btn" data-phone-copy="${key}">복사</button></span>` : '';
+    const registeredDate = co.createdAt ? fmtDate(co.createdAt) : '미확인';
+    const statusNote = co.customerStatusNote || '';
     wrap.innerHTML = `
-      <div class="chart-header-main">
-        <div class="chart-header-title-row">
-          <span class="chart-co-name">${partnerGlyphHtml(co)}${esc(co.name)}</span>
-          ${editing
-            ? `<select id="chartDealStageSel" style="font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;">
-                <option value="">협약상태 미설정</option>
-                ${D.DEAL_STAGES.map(s=> `<option value="${esc(s)}" ${s===stage?'selected':''}>${esc(s)}</option>`).join('')}
-              </select>`
-            : `<span class="chart-badge${stage?'':' empty'}">${esc(stage || '협약상태 미설정')}</span>`}
+      <div class="cdash-header">
+        <div class="cdash-header-left">
+          <div class="cdash-header-title">${esc(co.name)}<span class="cdash-sub">고객관리카드</span></div>
+          <div class="cdash-header-actions">
+            <button type="button" class="chart-memo-btn" id="chartMemoParseBtn">고객 메모 정리</button>
+            <button type="button" class="card-copy-all-btn" id="crmCopyAllBtn">전체정보 복사</button>
+            <button type="button" class="co-text-action${editing ? ' primary' : ''}" id="chartEditBtn">${editing ? '상세정보 수정 완료' : '상세정보 수정'}</button>
+            <button type="button" class="chart-close-btn" id="chartCloseBtn" title="닫기" aria-label="닫기">&times;</button>
+          </div>
         </div>
-        <div class="chart-header-sub">
-          ${contact ? `<span><b>${esc(contact)}</b>${position ? ' · ' + esc(position) : ''}</span>` : `<span class="muted">담당자 미등록</span>`}
-          ${phoneRow('phone','전화')}
-          ${phoneRow('mobile','휴대폰')}
-        </div>
-        <div class="chart-header-meta">
-          <span>협력사 <b>${esc(partnerStatusLabel(co))}</b></span>
-          <span>영업단계 <b>${esc(stage || '미설정')}</b></span>
-          <span>담당자 <b>${esc(contact || '미확인')}</b></span>
-          <span>최근 접촉 <b>${esc(lastContactDate(co))}</b></span>
-        </div>
-      </div>
-      <div class="chart-header-actions">
-        <button type="button" class="chart-memo-btn" id="chartMemoParseBtn">고객 메모 정리</button>
-        <button type="button" class="card-copy-all-btn" id="crmCopyAllBtn">전체정보 복사</button>
-        <button type="button" class="co-text-action${editing ? ' primary' : ''}" id="chartEditBtn">${editing ? '수정 완료' : '수정'}</button>
-        <button type="button" class="chart-close-btn" id="chartCloseBtn" title="닫기" aria-label="닫기">&times;</button>
+        ${headerEditing ? `
+          <div class="cdash-header-box">
+            <div class="cdash-header-edit">
+              <div>
+                <div class="cdash-header-field-label">고객 상태</div>
+                <input type="text" id="cdashStatusNoteInput" value="${esc(statusNote)}" placeholder="예: 협약 검토 (2차 미팅 예정)" />
+              </div>
+              <div>
+                <div class="cdash-header-field-label">영업 단계</div>
+                <select id="cdashDealStageSel">
+                  <option value="">미설정</option>
+                  ${D.DEAL_STAGES.map(s=> `<option value="${esc(s)}" ${s===stage?'selected':''}>${esc(s)}</option>`).join('')}
+                </select>
+              </div>
+              <div class="cdash-mini-form-actions">
+                <button type="button" class="co-text-action primary" id="cdashHeaderSaveBtn">저장</button>
+                <button type="button" class="co-text-action" id="cdashHeaderCancelBtn">취소</button>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="cdash-header-box">
+            <div class="cdash-header-field">
+              <div class="cdash-header-field-label">고객 상태</div>
+              <div class="cdash-header-field-value">${esc(statusNote || '미확인')}</div>
+            </div>
+            <div class="cdash-header-field">
+              <div class="cdash-header-field-label">영업 단계</div>
+              <div class="cdash-header-field-value">${esc(stage || '미설정')}</div>
+            </div>
+            <div class="cdash-header-field">
+              <div class="cdash-header-field-label">등록일</div>
+              <div class="cdash-header-field-value">${esc(registeredDate)}</div>
+            </div>
+            <div class="cdash-header-field">
+              <div class="cdash-header-field-label">담당자</div>
+              <div class="cdash-header-field-value">${esc(contact || '미확인')}</div>
+            </div>
+            <div class="cdash-header-field" style="border-left:none;justify-content:flex-end;">
+              <button type="button" class="cdash-mini-edit" id="cdashHeaderEditBtn">수정</button>
+            </div>
+          </div>
+        `}
       </div>
     `;
     document.getElementById('crmCopyAllBtn').addEventListener('click', (e)=> copyText(buildFullInfoText(co), e.currentTarget));
     document.getElementById('chartCloseBtn').addEventListener('click', closeChart);
     document.getElementById('chartMemoParseBtn').addEventListener('click', ()=> openMemoParseModal(co));
-    wrap.querySelectorAll('[data-phone-copy]').forEach(btn=>{
-      btn.addEventListener('click', (e)=> copyText(co[btn.getAttribute('data-phone-copy')] || '', e.currentTarget));
-    });
     document.getElementById('chartEditBtn').addEventListener('click', ()=>{
       cardState.chartEditing = !cardState.chartEditing;
       refreshChart();
     });
-    if(editing){
-      document.getElementById('chartDealStageSel').addEventListener('change', (e)=>{
-        D.setDealStage(co.id, e.target.value);
+    if(headerEditing){
+      document.getElementById('cdashHeaderSaveBtn').addEventListener('click', ()=>{
+        D.setCustomerStatusNote(co.id, document.getElementById('cdashStatusNoteInput').value.trim());
+        D.setDealStage(co.id, document.getElementById('cdashDealStageSel').value);
+        cardState.sectionEdit.header = false;
+        refreshChart();
+      });
+      document.getElementById('cdashHeaderCancelBtn').addEventListener('click', ()=>{
+        cardState.sectionEdit.header = false;
+        refreshChart();
+      });
+    } else {
+      document.getElementById('cdashHeaderEditBtn').addEventListener('click', ()=>{
+        cardState.sectionEdit.header = true;
+        refreshChart();
       });
     }
+  }
+
+  // ---- 2단 4분할의 공통 불릿 목록 렌더러(§9/§21) — POUR 협약 목적/현재 상황/관심 공종·제품이
+  // 전부 "목록 + 영역별 독립 [수정]" 모양이라 공통 함수로 묶는다. 값이 없으면 "미확인"만
+  // 작게 표시한다(§13). ----
+  function renderMiniBulletCol(co, cfg){
+    const wrap = document.getElementById(cfg.wrapId);
+    if(!wrap) return;
+    const editing = !!cardState.sectionEdit[cfg.sectionKey];
+    const items = cfg.items(co) || [];
+    const bodyHtml = items.length
+      ? (cfg.asTags
+          ? `<div class="cdash-tag-wrap">${items.map(it=> `<span class="cdash-tag">${esc(it.text)}${editing ? `<button type="button" class="chart-tag-chip-del" data-mini-del="${esc(it.id)}" title="삭제">×</button>` : ''}</span>`).join('')}</div>`
+          : `<ul class="cdash-bullets">${items.map(it=> `<li>${esc(it.text)}${editing ? ` <button type="button" class="chart-tag-del" data-mini-del="${esc(it.id)}">삭제</button>` : ''}</li>`).join('')}</ul>`)
+      : `<div class="cdash-field-value is-muted">미확인</div>`;
+    wrap.innerHTML = `
+      <div class="cdash-col-title-row">
+        <div class="cdash-col-title">${esc(cfg.title)}</div>
+        <button type="button" class="cdash-mini-edit" data-mini-toggle="1">${editing ? '완료' : '수정'}</button>
+      </div>
+      <div class="cdash-col-body">${bodyHtml}</div>
+      ${editing ? `<div class="cdash-mini-add-row">
+        <input type="text" id="${cfg.wrapId}Input" placeholder="${esc(cfg.placeholder)}" />
+        <button type="button" class="co-text-action primary" id="${cfg.wrapId}AddBtn">추가</button>
+      </div>` : ''}
+    `;
+    wrap.querySelector('[data-mini-toggle]').addEventListener('click', ()=>{
+      cardState.sectionEdit[cfg.sectionKey] = !editing;
+      refreshChart();
+    });
+    wrap.querySelectorAll('[data-mini-del]').forEach(btn=> btn.addEventListener('click', ()=>{
+      cfg.removeFn(co.id, btn.getAttribute('data-mini-del'));
+      refreshChart();
+    }));
+    if(editing){
+      const doAdd = ()=>{
+        const input = document.getElementById(cfg.wrapId + 'Input');
+        const text = input.value.trim();
+        if(!text) return;
+        cfg.addFn(co.id, text);
+        refreshChart();
+      };
+      document.getElementById(cfg.wrapId + 'AddBtn').addEventListener('click', doAdd);
+      document.getElementById(cfg.wrapId + 'Input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
+    }
+  }
+
+  // ---- 2단 ①: 업체 기본 정보 — 기존 주력/주요 시장/협력 시공사/타 공법(§3 본문, 짧은 문자열
+  // 4칸). 신규 추가 필드(co.legacyBusiness 등)일 뿐 기존 업체 스키마는 바뀌지 않는다(§17). ----
+  const CDASH_BASIC_FIELDS = [
+    ['legacyBusiness','기존 주력'], ['targetMarket','주요 시장'],
+    ['partnerContractor','협력 시공사'], ['otherMethods','타 공법']
+  ];
+  function renderBasicInfoCol(co){
+    const wrap = document.getElementById('cdashBasicInfoCol');
+    if(!wrap) return;
+    const editing = !!cardState.sectionEdit.basicInfo;
+    const bodyHtml = editing
+      ? CDASH_BASIC_FIELDS.map(([k,label])=> `
+          <div class="cdash-field-row">
+            <div class="cdash-field-label">${esc(label)}</div>
+            <input type="text" class="cdash-mini-form-field" data-basic-field="${k}" value="${esc(co[k] || '')}" />
+          </div>
+        `).join('')
+      : CDASH_BASIC_FIELDS.map(([k,label])=> `
+          <div class="cdash-field-row">
+            <div class="cdash-field-label">${esc(label)}</div>
+            <div class="cdash-field-value${co[k] ? '' : ' is-muted'}">${esc(co[k] || '미확인')}</div>
+          </div>
+        `).join('');
+    wrap.innerHTML = `
+      <div class="cdash-col-title-row">
+        <div class="cdash-col-title">업체 기본 정보</div>
+        <button type="button" class="cdash-mini-edit" id="cdashBasicInfoToggle">${editing ? '완료' : '수정'}</button>
+      </div>
+      <div class="cdash-col-body">${bodyHtml}</div>
+      ${editing ? `<div class="cdash-mini-form-actions" style="margin-top:6px;"><button type="button" class="co-text-action primary" id="cdashBasicInfoSaveBtn">저장</button></div>` : ''}
+    `;
+    document.getElementById('cdashBasicInfoToggle').addEventListener('click', ()=>{
+      cardState.sectionEdit.basicInfo = !editing;
+      refreshChart();
+    });
+    if(editing){
+      document.getElementById('cdashBasicInfoSaveBtn').addEventListener('click', ()=>{
+        D.setLegacyBusiness(co.id, document.querySelector('[data-basic-field="legacyBusiness"]').value.trim());
+        D.setTargetMarket(co.id, document.querySelector('[data-basic-field="targetMarket"]').value.trim());
+        D.setPartnerContractor(co.id, document.querySelector('[data-basic-field="partnerContractor"]').value.trim());
+        D.setOtherMethods(co.id, document.querySelector('[data-basic-field="otherMethods"]').value.trim());
+        cardState.sectionEdit.basicInfo = false;
+        refreshChart();
+      });
+    }
+  }
+
+  // ---- 2단 ②: POUR 협약 목적(§3) — 이전 라운드의 whyPour 필드를 그대로 재사용(개념이 같아
+  // 필드를 새로 쪼개지 않는다, §17). ----
+  function renderPourGoalCol(co){
+    renderMiniBulletCol(co, {
+      wrapId:'cdashWantsCol', sectionKey:'wants', title:'POUR 협약 목적',
+      items: c=> c.whyPour || [], addFn: D.addWhyPour, removeFn: D.removeWhyPour,
+      placeholder:'POUR와 협약하려는 실제 목적(확인된 내용만)'
+    });
+  }
+  // ---- 2단 ③: 현재 상황(§3) ----
+  function renderSituationCol(co){
+    renderMiniBulletCol(co, {
+      wrapId:'cdashSituationCol', sectionKey:'situation', title:'현재 상황',
+      items: c=> c.currentSituation || [], addFn: D.addCurrentSituation, removeFn: D.removeCurrentSituation,
+      placeholder:'실제 확인된 현재 상황'
+    });
+  }
+  // ---- 2단 ④: 관심 공종/제품(§3) — 연한 하늘색 태그로 표시 ----
+  function renderInterestCol(co){
+    renderMiniBulletCol(co, {
+      wrapId:'cdashInterestCol', sectionKey:'interest', title:'관심 공종 / 제품',
+      items: c=> c.interestFields || [], addFn: D.addInterestField, removeFn: D.removeInterestField,
+      placeholder:'고객이 실제 언급한 공종/제품', asTags:true
+    });
   }
 
   function renderTopStrip(co){
@@ -1904,25 +2165,44 @@ window.SHIN2_CRM_APP_INIT = function(){
   // memoSummary(§4/§21) — 자동정리로 [적용]했거나 직원이 직접 확정한 한 줄 요약이 있으면
   // 그것을 우선 보여준다. 없으면 이전 라운드부터 있던 규칙기반 buildChartBrief() 계산값으로
   // 자연스럽게 대체된다(§ 기존 기능 보호 — 계산 로직 자체는 그대로 둔다).
-  function renderChartBrief(co){
-    const wrap = document.getElementById('chartBrief');
-    const editing = cardState.chartEditing;
+  // ---- 4단 ③: 핵심 한 줄 요약(§12) — 하단에서 가장 중요한 칸. memoSummary(자동정리로
+  // [적용]했거나 직원이 직접 확정한 문장)가 있으면 그것을, 없으면 이전 라운드부터 있던
+  // 규칙기반 buildChartBrief() 계산값을 그대로 보여준다(§17 — 계산 로직은 건드리지 않는다).
+  // 강조줄은 이전 라운드의 "중요 판단요소"(keyFactors)를 문장으로 이어붙여 재사용한다(§16과
+  // 같은 원칙 — 새 필드를 만들지 않고 이미 있는 데이터를 다른 자리에 표시만 한다). ----
+  function renderSummaryCol(co){
+    const wrap = document.getElementById('cdashSummaryCol');
+    if(!wrap) return;
+    const editing = !!cardState.sectionEdit.summary;
     const text = co.memoSummary || buildChartBrief(co);
+    const keyFactors = co.keyFactors || [];
+    const highlight = keyFactors.length ? (keyFactors.map(k=> k.text).join(', ') + '를 가장 중요하게 보는 업체.') : '';
+    wrap.innerHTML = `
+      <div class="cdash-summary-bar">
+        핵심 한 줄 요약
+        <button type="button" class="cdash-mini-edit" id="cdashSummaryToggle" style="color:rgba(255,255,255,0.85);">${editing ? '완료' : '수정'}</button>
+      </div>
+      <div class="cdash-summary-body">
+        ${editing ? `
+          <input type="text" id="chartBriefInput" class="cdash-mini-form-field" value="${esc(co.memoSummary || '')}" placeholder="${esc(buildChartBrief(co))}" />
+          <div class="cdash-mini-form-actions" style="margin-top:6px;"><button type="button" class="co-text-action primary" id="chartBriefSaveBtn">저장</button></div>
+        ` : `
+          <div>${esc(text)}</div>
+          ${highlight ? `<div class="cdash-summary-highlight">${esc(highlight)}</div>` : ''}
+        `}
+      </div>
+    `;
+    document.getElementById('cdashSummaryToggle').addEventListener('click', ()=>{
+      cardState.sectionEdit.summary = !editing;
+      refreshChart();
+    });
     if(editing){
-      wrap.innerHTML = `
-        <div class="chart-brief-label">이 업체 한눈에 보기</div>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="chartBriefInput" value="${esc(co.memoSummary || '')}" placeholder="${esc(buildChartBrief(co))}" style="flex:1;padding:6px 8px;font-size:13px;border:1px solid var(--line);border-radius:6px;outline:none;" />
-          <button type="button" class="co-text-action primary" id="chartBriefSaveBtn">저장</button>
-        </div>
-      `;
       document.getElementById('chartBriefSaveBtn').addEventListener('click', ()=>{
         D.setMemoSummary(co.id, document.getElementById('chartBriefInput').value.trim());
-        renderChartBrief(D.findCompany(co.id));
+        cardState.sectionEdit.summary = false;
+        refreshChart();
       });
-      return;
     }
-    wrap.innerHTML = `<div class="chart-brief-label">이 업체 한눈에 보기</div><div>${esc(text)}</div>`;
   }
 
   // ---- 고객 니즈/영업 핵심정보(§ 고객 니즈/영업 핵심정보 구조 개선 라운드) ------------------
@@ -1990,32 +2270,23 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
   }
 
-  // ---- 왜 POUR인가(§4) ----
-  // ---- 2×2 핵심영역 ①: 이 업체가 원하는 것(§6) — 이전 라운드의 "왜 POUR인가"(whyPour
-  // 필드)와 개념이 사실상 같아 필드를 새로 쪼개지 않고 그대로 재사용한다. 항상 칸을 보여주고
-  // (hideWhenEmpty:false) 비어있으면 "—"만 표시해 2×2 그리드 구조가 흐트러지지 않게 한다. ----
-  function renderWantsSection(co){
+  // ---- "현재 막히는 것"/"POUR가 해줘야 할 것" 원본 목록(§17 — 삭제 금지, 전체 CRUD는 여기
+  // "이전 요약정보" 패널에서만 계속 제공한다). 메인 화면(고객 주요 질문 상단의 "중요 확인사항",
+  // 다음 행동 하단의 "참고")에는 읽기 전용 요약만 별도로 표시한다(renderQuestionsMega/
+  // renderNextActionsCol 참고) — 데이터는 co.blockers/co.pourSupports 하나뿐이고 표시 위치만
+  // 두 곳이다. ----
+  function renderBlockersLegacySection(co){
     renderEditableTextList(co, {
-      wrapId: 'chartWants', key: 'whyPour', title: '이 업체가 원하는 것',
-      addFn: D.addWhyPour, removeFn: D.removeWhyPour, renderSelf: renderWantsSection,
-      placeholder: '이 업체가 원하는 것 (실제 확인된 내용만)', withEvidence: true, hideWhenEmpty: false
+      wrapId: 'chartBlockersLegacy', key: 'blockers', title: '현재 막히는 것(원본 목록)',
+      addFn: D.addBlocker, removeFn: D.removeBlocker, renderSelf: renderBlockersLegacySection,
+      placeholder: '실제 확인이 필요하거나 장애가 되는 요소', withEvidence: true, hideWhenEmpty: true
     });
   }
-  // ---- 2×2 핵심영역 ②: 현재 막히는 것(§7) ----
-  function renderBlockersSection(co){
+  function renderPourSupportsLegacySection(co){
     renderEditableTextList(co, {
-      wrapId: 'chartBlockers', key: 'blockers', title: '현재 막히는 것',
-      addFn: D.addBlocker, removeFn: D.removeBlocker, renderSelf: renderBlockersSection,
-      placeholder: '실제 확인이 필요하거나 장애가 되는 요소', withEvidence: true, hideWhenEmpty: false
-    });
-  }
-  // ---- 2×2 핵심영역 ③: POUR가 해줘야 할 것(§8) — 고객 문제를 그대로 복사하지 않고 우리
-  // 회사가 제공할 서비스 형태로 바꿔 적는다(자동정리 미리보기에서도 이 변환을 거쳐 들어온다). ----
-  function renderPourSupportsSection(co){
-    renderEditableTextList(co, {
-      wrapId: 'chartPourSupports', key: 'pourSupports', title: 'POUR가 해줘야 할 것',
-      addFn: D.addPourSupport, removeFn: D.removePourSupport, renderSelf: renderPourSupportsSection,
-      placeholder: '우리 회사가 제공할 지원(서비스 형태로)', withEvidence: true, hideWhenEmpty: false
+      wrapId: 'chartPourSupportsLegacy', key: 'pourSupports', title: 'POUR가 해줘야 할 것(원본 목록)',
+      addFn: D.addPourSupport, removeFn: D.removePourSupport, renderSelf: renderPourSupportsLegacySection,
+      placeholder: '우리 회사가 제공할 지원(서비스 형태로)', withEvidence: true, hideWhenEmpty: true
     });
   }
 
@@ -2058,23 +2329,37 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
   }
 
-  // ---- 고객 실제 질문(§10~13) — 카테고리별로 묶어서 보여주고, 질문마다 해결 상태(§12)와
+  // 카테고리 표시 라벨(§6/§7 — 실제 저장값은 D.QUESTION_CATEGORIES 그대로 유지, 화면 문구만
+  // 시안에 맞춘다. 데이터 마이그레이션 없음 — 기존 customerQuestions의 category 값과 완전히
+  // 호환된다).
+  const QUESTION_CATEGORY_DISPLAY = {
+    '조달':'조달 관련', '가격/단가':'가격 / 단가', '수익/마진':'수익 / 마진',
+    '실행공사/계약':'실행공사 / 계약 구조', '영업지원':'민간 아파트 영업 지원', '타 공법':'타 공법 병행'
+  };
+  function questionCategoryLabel(cat){ return QUESTION_CATEGORY_DISPLAY[cat] || cat; }
+
+  // ---- 3단(고객 주요 질문, §5~8) — 카테고리별로 묶어서 보여주고, 질문마다 해결 상태(§12)와
   // 관련자료 연결(§13, 고객서류함/공용자료실 둘 다 참조 가능하되 화면에서 성격을 구분해
-  // 보여준다)을 관리한다. 실제 질문이 존재하는 카테고리만 표시한다(§10). 상태 변경/자료연결은
-  // 일상적인 운영 조작이라 전체 [수정] 모드와 무관하게 항상 가능하다 — 질문 문장 자체의
-  // 추가/삭제만 [수정] 모드에서 가능하게 한다(§ 사람이 직접 작성한 질문 원문은 함부로 안 늘림).
-  function renderQuestionsSection(co){
-    const wrap = document.getElementById('chartQuestions');
+  // 보여준다)을 관리한다. 실제 질문이 존재하는 카테고리만 동일 폭으로 나열한다(§6 — 빈 카테고리
+  // 칸을 만들지 않는다). 상단에는 "중요 확인사항"으로 co.blockers를 함께 보여준다(§16 매핑:
+  // blockers → 고객 주요 질문/중요 확인사항, 원본 목록 자체는 "이전 요약정보"에서만 편집).
+  // 상태 변경/자료연결은 일상적인 운영 조작이라 [수정] 모드와 무관하게 항상 가능하고, 질문
+  // 문장 자체의 추가/삭제만 이 영역의 [수정](cardState.sectionEdit.questions)에서 가능하다. ----
+  function renderQuestionsMega(co){
+    const wrap = document.getElementById('cdashQuestionsMega');
     if(!wrap) return;
-    const editing = cardState.chartEditing;
+    const editing = !!cardState.sectionEdit.questions;
     const questions = co.customerQuestions || [];
-    if(!editing && !questions.length){ wrap.innerHTML = ''; return; }
+    const blockers = co.blockers || [];
     const byCat = {};
     questions.forEach(q=>{
       const cat = q.category || '기타';
       (byCat[cat] = byCat[cat] || []).push(q);
     });
-    const cats = D.QUESTION_CATEGORIES.filter(c=> byCat[c] && byCat[c].length);
+    // 저장된 값이 D.QUESTION_CATEGORIES에 없는 옛 데이터라도 절대 누락시키지 않는다(§ 하위호환).
+    const knownCats = D.QUESTION_CATEGORIES.filter(c=> byCat[c] && byCat[c].length);
+    const extraCats = Object.keys(byCat).filter(c=> !D.QUESTION_CATEGORIES.includes(c));
+    const cats = knownCats.concat(extraCats);
     const linkOpenId = cardState.questionLinkOpenId;
 
     function docLinkChips(q){
@@ -2089,7 +2374,6 @@ window.SHIN2_CRM_APP_INIT = function(){
       }
       return chips.join('');
     }
-
     function linkPanelHtml(q){
       if(linkOpenId !== q.id) return '';
       const customerDocs = D.documentsForCompany(co.id);
@@ -2111,54 +2395,68 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
 
     wrap.innerHTML = `
-      <div class="chart-section-head">
-        <div class="chart-section-title">고객 실제 질문</div>
+      <div class="cdash-qmega-title-row">
+        <div><span class="cdash-qmega-title">고객 주요 질문</span><span class="cdash-qmega-sub">2차 미팅에서 확인할 사항</span></div>
+        <button type="button" class="cdash-mini-edit" id="cdashQuestionsToggle">${editing ? '완료' : '수정'}</button>
       </div>
-      ${cats.length ? cats.map(cat=> `
-        <div class="chart-q-group">
-          <div class="chart-q-group-title">${esc(cat)}</div>
-          ${byCat[cat].map(q=> `
-            <div class="chart-q-item" data-q-id="${esc(q.id)}">
-              <div class="chart-q-text">"${esc(q.text)}"${editing ? ` <button type="button" class="chart-tag-del" data-del-question="${esc(q.id)}">삭제</button>` : ''}</div>
-              <div class="chart-q-meta">
-                <select class="chart-status-select" data-status-select="${esc(q.id)}">
-                  ${D.QUESTION_STATUSES.map(st=> `<option value="${esc(st)}" ${q.status===st?'selected':''}>${esc(st)}</option>`).join('')}
-                </select>
-                <span class="chart-status-badge st-${esc(q.status || '미답변')}">${esc(q.status || '미답변')}</span>
-                ${docLinkChips(q)}
-                <button type="button" class="chart-q-link-btn" data-toggle-link="${esc(q.id)}">${linkOpenId===q.id ? '자료연결 닫기' : '자료연결'}</button>
-              </div>
-              ${linkPanelHtml(q)}
+      ${blockers.length ? `
+        <div class="cdash-q-important">
+          <div class="cdash-q-important-title">중요 확인사항</div>
+          <ul class="cdash-bullets">${blockers.map(b=> `<li>${esc(b.text)}</li>`).join('')}</ul>
+        </div>
+      ` : ''}
+      ${cats.length ? `
+        <div class="cdash-qcols${cats.length > 4 ? ' many-cols' : ''}">
+          ${cats.map(cat=> `
+            <div class="cdash-qcol">
+              <div class="cdash-qcol-title">${esc(questionCategoryLabel(cat))}</div>
+              ${byCat[cat].map(q=> `
+                <div class="cdash-q-item" data-q-id="${esc(q.id)}">
+                  <div class="cdash-q-text">${esc(q.text)}${editing ? ` <button type="button" class="chart-tag-del" data-del-question="${esc(q.id)}">삭제</button>` : ''}</div>
+                  <div class="chart-q-meta">
+                    <select class="chart-status-select" data-status-select="${esc(q.id)}">
+                      ${D.QUESTION_STATUSES.map(st=> `<option value="${esc(st)}" ${q.status===st?'selected':''}>${esc(st)}</option>`).join('')}
+                    </select>
+                    ${docLinkChips(q)}
+                    <button type="button" class="chart-q-link-btn" data-toggle-link="${esc(q.id)}">${linkOpenId===q.id ? '자료연결 닫기' : '자료연결'}</button>
+                  </div>
+                  ${linkPanelHtml(q)}
+                </div>
+              `).join('')}
             </div>
           `).join('')}
         </div>
-      `).join('') : '<div class="chart-empty">—</div>'}
-      ${editing ? `<div class="chart-add-inline">
+      ` : '<div class="cdash-q-empty">미확인 — 아직 기록된 질문이 없습니다.</div>'}
+      ${editing ? `<div class="chart-add-inline" style="margin-top:10px;">
           <input type="text" id="chartQuestionInput" placeholder="고객이 실제로 한 질문" />
-          <select id="chartQuestionCategory">${D.QUESTION_CATEGORIES.map(c=> `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+          <select id="chartQuestionCategory">${D.QUESTION_CATEGORIES.map(c=> `<option value="${esc(c)}">${esc(questionCategoryLabel(c))}</option>`).join('')}</select>
           <button type="button" class="co-text-action primary" id="chartQuestionAddBtn">추가</button>
         </div>` : ''}
     `;
+    document.getElementById('cdashQuestionsToggle').addEventListener('click', ()=>{
+      cardState.sectionEdit.questions = !editing;
+      refreshChart();
+    });
     wrap.querySelectorAll('[data-del-question]').forEach(btn=> btn.addEventListener('click', ()=>{
       D.removeCustomerQuestion(co.id, btn.getAttribute('data-del-question'));
-      renderQuestionsSection(D.findCompany(co.id));
+      refreshChart();
     }));
     wrap.querySelectorAll('[data-status-select]').forEach(sel=> sel.addEventListener('change', ()=>{
       D.setQuestionStatus(co.id, sel.getAttribute('data-status-select'), sel.value);
-      renderQuestionsSection(D.findCompany(co.id));
+      refreshChart();
     }));
     wrap.querySelectorAll('[data-toggle-link]').forEach(btn=> btn.addEventListener('click', ()=>{
       const id = btn.getAttribute('data-toggle-link');
       cardState.questionLinkOpenId = (cardState.questionLinkOpenId === id) ? null : id;
-      renderQuestionsSection(D.findCompany(co.id));
+      refreshChart();
     }));
     wrap.querySelectorAll('[data-link-customer-doc]').forEach(sel=> sel.addEventListener('change', ()=>{
       D.linkQuestionDocument(co.id, sel.getAttribute('data-link-customer-doc'), { customerDocumentId: sel.value || null });
-      renderQuestionsSection(D.findCompany(co.id));
+      refreshChart();
     }));
     wrap.querySelectorAll('[data-link-library-doc]').forEach(sel=> sel.addEventListener('change', ()=>{
       D.linkQuestionDocument(co.id, sel.getAttribute('data-link-library-doc'), { libraryMaterialId: sel.value || null });
-      renderQuestionsSection(D.findCompany(co.id));
+      refreshChart();
     }));
     if(editing){
       const doAdd = ()=>{
@@ -2167,7 +2465,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(!text) return;
         const category = document.getElementById('chartQuestionCategory').value;
         D.addCustomerQuestion(co.id, { text, category, sourceType:'manual' });
-        renderQuestionsSection(D.findCompany(co.id));
+        refreshChart();
       };
       document.getElementById('chartQuestionAddBtn').addEventListener('click', doAdd);
       document.getElementById('chartQuestionInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
@@ -2213,14 +2511,63 @@ window.SHIN2_CRM_APP_INIT = function(){
     }));
   }
 
-  // ---- 고객 반응(§16) — 고객이 실제로 표현한 반응만 누적. 성향 판단(salesTendency)과 달리
-  // 여러 건이 쌓일 수 있어 목록형으로 관리한다. ----
-  function renderReactionsSection(co){
-    renderEditableTextList(co, {
-      wrapId: 'chartReactions', key: 'reactions', title: '고객 반응',
-      addFn: D.addReaction, removeFn: D.removeReaction, renderSelf: renderReactionsSection,
-      placeholder: '고객이 실제로 표현한 반응', withEvidence: true, hideWhenEmpty: true
+  // ---- 4단 ①: 고객 반응 / 성향(§10) — reactions[](고객이 실제로 표현한 반응, 누적) +
+  // salesTendency(근거가 명확할 때만 한 줄, §11)를 한 칸에 합쳐 보여준다. 근거 없는 성향
+  // 판단은 절대 만들지 않는다 — salesTendency는 사람이 직접 입력할 때만 채워진다. ----
+  function renderReactionsCol(co){
+    const wrap = document.getElementById('cdashReactionsCol');
+    if(!wrap) return;
+    const editing = !!cardState.sectionEdit.reactions;
+    const reactions = co.reactions || [];
+    const st = co.salesTendency || {};
+    const bodyHtml = `
+      ${reactions.length
+        ? `<ul class="cdash-bullets">${reactions.map(r=> `<li>${esc(r.text)}${editing ? ` <button type="button" class="chart-tag-del" data-del-reaction="${esc(r.id)}">삭제</button>` : ''}</li>`).join('')}</ul>`
+        : `<div class="cdash-field-value is-muted">미확인</div>`}
+      ${st.text ? `<div class="chart-evidence-line" style="margin-top:6px;font-size:12px;color:var(--text);">성향: ${esc(st.text)}</div>` : ''}
+    `;
+    wrap.innerHTML = `
+      <div class="cdash-bcol-title-row">
+        <div class="cdash-bcol-title">고객 반응 / 성향</div>
+        <button type="button" class="cdash-mini-edit" id="cdashReactionsToggle">${editing ? '완료' : '수정'}</button>
+      </div>
+      <div class="cdash-col-body">${bodyHtml}</div>
+      ${editing ? `
+        <div class="cdash-mini-add-row">
+          <input type="text" id="cdashReactionInput" placeholder="고객이 실제로 표현한 반응" />
+          <button type="button" class="co-text-action primary" id="cdashReactionAddBtn">추가</button>
+        </div>
+        <div class="cdash-mini-form" style="margin-top:8px;">
+          <div class="cdash-field-label">영업 성향(실제 발언/행동에서 명확히 확인될 때만)</div>
+          <input type="text" id="cdashTendencyInput" value="${esc(st.text || '')}" placeholder="예: 현장 조건에 따라 여러 공법을 비교·활용" />
+          <input type="text" id="cdashTendencyEvInput" value="${esc(st.evidence || '')}" placeholder="근거(실제 기록/발언)" />
+          <div class="cdash-mini-form-actions"><button type="button" class="co-text-action primary" id="cdashTendencySaveBtn">성향 저장</button></div>
+        </div>
+      ` : ''}
+    `;
+    document.getElementById('cdashReactionsToggle').addEventListener('click', ()=>{
+      cardState.sectionEdit.reactions = !editing;
+      refreshChart();
     });
+    wrap.querySelectorAll('[data-del-reaction]').forEach(btn=> btn.addEventListener('click', ()=>{
+      D.removeReaction(co.id, btn.getAttribute('data-del-reaction'));
+      refreshChart();
+    }));
+    if(editing){
+      const doAdd = ()=>{
+        const input = document.getElementById('cdashReactionInput');
+        const text = input.value.trim();
+        if(!text) return;
+        D.addReaction(co.id, text);
+        refreshChart();
+      };
+      document.getElementById('cdashReactionAddBtn').addEventListener('click', doAdd);
+      document.getElementById('cdashReactionInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
+      document.getElementById('cdashTendencySaveBtn').addEventListener('click', ()=>{
+        D.setSalesTendency(co.id, document.getElementById('cdashTendencyInput').value.trim(), document.getElementById('cdashTendencyEvInput').value.trim());
+        refreshChart();
+      });
+    }
   }
 
   /* ==========================================================================
@@ -2449,61 +2796,25 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
   }
 
-  // ---- 영업 성향(§9) — 근거가 명확할 때만 한 줄로 기록. AI가 성격을 판단하지 않고 사람이
-  // 직접 입력한다(입력창 자체가 "근거" 칸을 필수로 받도록 안내만 한다 — 강제 검증은 하지 않음). ----
-  function renderSalesTendencySection(co){
-    const wrap = document.getElementById('chartSalesTendency');
+  // ---- 4단 ②: 다음 행동(§11) — 고객 니즈/질문을 바탕으로 우리 직원이 할 일(질문의 단순
+  // 복사가 아니라 우리 쪽 행동으로 적는다). [완료]는 이 영역의 [수정] 모드와 무관하게 항상
+  // 누를 수 있는 일상 조작이다 — 완료된 항목은 활성 목록에서는 빠지지만 배열에서 지우지 않고,
+  // 완료 사실을 customerActivities에도 남겨 "전체 이력"에서 계속 확인할 수 있다. 하단에는
+  // pourSupports를 참고용으로 작게 보여준다(§16 매핑: pourSupports → 다음 액션 참고, 읽기
+  // 전용 — 실제 편집은 "이전 요약정보"의 원본 목록에서만 한다). ----
+  function renderNextActionsCol(co){
+    const wrap = document.getElementById('cdashNextActionsCol');
     if(!wrap) return;
-    const editing = cardState.chartEditing;
-    const st = co.salesTendency || {};
-    if(!editing && !st.text){ wrap.innerHTML = ''; return; }
-    const evOpen = !!cardState.evidenceOpen.chartSalesTendency;
-    if(editing){
-      wrap.innerHTML = `
-        <div class="chart-section-title">영업 성향</div>
-        <div class="chart-important-edit" style="flex-direction:column;align-items:stretch;gap:6px;">
-          <input type="text" id="chartTendencyText" value="${esc(st.text || '')}" placeholder="실제 발언/행동에서 명확히 확인되는 경우에만 입력" />
-          <input type="text" id="chartTendencyEvidence" value="${esc(st.evidence || '')}" placeholder="근거(실제 기록/발언)" />
-          <button type="button" class="co-text-action primary" id="chartTendencySaveBtn" style="align-self:flex-start;">저장</button>
-        </div>
-      `;
-      document.getElementById('chartTendencySaveBtn').addEventListener('click', ()=>{
-        const text = document.getElementById('chartTendencyText').value.trim();
-        const evidence = document.getElementById('chartTendencyEvidence').value.trim();
-        D.setSalesTendency(co.id, text, evidence);
-        renderSalesTendencySection(D.findCompany(co.id));
-      });
-      return;
-    }
-    wrap.innerHTML = `
-      <div class="chart-section-head">
-        <div class="chart-section-title">영업 성향</div>
-        ${st.evidence ? `<button type="button" class="co-text-action" id="chartTendencyEvBtn">${evOpen ? '근거 숨기기' : '근거 보기'}</button>` : ''}
-      </div>
-      <div>${esc(st.text)}</div>
-      ${(st.evidence && evOpen) ? `<div class="chart-evidence-line">근거: ${esc(st.evidence)}</div>` : ''}
-    `;
-    if(st.evidence){
-      document.getElementById('chartTendencyEvBtn').addEventListener('click', ()=>{
-        cardState.evidenceOpen.chartSalesTendency = !evOpen;
-        renderSalesTendencySection(D.findCompany(co.id));
-      });
-    }
-  }
-
-  // ---- 2×2 핵심영역 ④: 다음 행동(§9) — 고객 니즈/질문을 바탕으로 우리 직원이 할 일(질문의
-  // 단순 복사가 아니라 우리 쪽 행동으로 적는다). [완료]는 전체 [수정] 모드와 무관하게 항상
-  // 누를 수 있는 일상 조작이다 — 완료된 항목은 이 활성 목록에서는 빠지지만 배열에서 지우지
-  // 않고, 완료 사실을 customerActivities에도 남겨 활동/완료이력에서 계속 확인할 수 있다(§9). ----
-  function renderNextActionsSection(co){
-    const wrap = document.getElementById('chartNextActions');
-    if(!wrap) return;
-    const editing = cardState.chartEditing;
+    const editing = !!cardState.sectionEdit.nextActions;
     const all = co.nextActions || [];
     const active = all.filter(x=> !x.done);
+    const pourSupports = co.pourSupports || [];
     wrap.innerHTML = `
-      <div class="chart-section-title">다음 행동</div>
-      <div class="chart-bullet-list">
+      <div class="cdash-bcol-title-row">
+        <div class="cdash-bcol-title">다음 행동</div>
+        <button type="button" class="cdash-mini-edit" id="cdashNextActionsToggle">${editing ? '완료' : '수정'}</button>
+      </div>
+      <div class="cdash-col-body">
         ${active.length ? active.map(it=> `
           <div class="chart-na-item">
             <span>– ${esc(it.text)}</span>
@@ -2512,21 +2823,29 @@ window.SHIN2_CRM_APP_INIT = function(){
               ${editing ? `<button type="button" class="chart-tag-del" data-del="${esc(it.id)}">삭제</button>` : ''}
             </span>
           </div>
-        `).join('') : '<div class="chart-empty">—</div>'}
+        `).join('') : '<div class="cdash-field-value is-muted">미확인</div>'}
       </div>
-      ${editing ? `<div class="chart-add-inline">
+      ${editing ? `<div class="cdash-mini-add-row">
           <input type="text" id="chartNextActionsInput" placeholder="우리가 다음에 해야 할 행동" />
           <button type="button" class="co-text-action primary" id="chartNextActionsAddBtn">추가</button>
         </div>` : ''}
+      ${pourSupports.length ? `
+        <div class="chart-evidence-line" style="margin-top:8px;">
+          참고: POUR 지원 방향 — ${esc(pourSupports.map(p=> p.text).join(' · '))}
+        </div>
+      ` : ''}
     `;
+    document.getElementById('cdashNextActionsToggle').addEventListener('click', ()=>{
+      cardState.sectionEdit.nextActions = !editing;
+      refreshChart();
+    });
     wrap.querySelectorAll('[data-complete-na]').forEach(btn=> btn.addEventListener('click', ()=>{
       D.completeNextAction(co.id, btn.getAttribute('data-complete-na'));
-      renderNextActionsSection(D.findCompany(co.id));
-      renderRecentActivities(D.findCompany(co.id)); // 완료 시 활동이력에도 기록되므로 최근 활동도 함께 갱신
+      refreshChart();
     }));
     wrap.querySelectorAll('[data-del]').forEach(btn=> btn.addEventListener('click', ()=>{
       D.removeNextAction(co.id, btn.getAttribute('data-del'));
-      renderNextActionsSection(D.findCompany(co.id));
+      refreshChart();
     }));
     if(editing){
       const doAdd = ()=>{
@@ -2534,7 +2853,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         const text = input.value.trim();
         if(!text) return;
         D.addNextAction(co.id, text);
-        renderNextActionsSection(D.findCompany(co.id));
+        refreshChart();
       };
       document.getElementById('chartNextActionsAddBtn').addEventListener('click', doAdd);
       document.getElementById('chartNextActionsInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
@@ -2653,11 +2972,6 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
   }
 
-  function renderRecentActivities(co){
-    const wrap = document.getElementById('chartRecentActs');
-    const acts = D.activitiesForCompany(co.id).slice(0, 3);
-    wrap.innerHTML = acts.length ? acts.map(a=> `<div class="chart-recent-item"><span class="chart-recent-date">${fmtDate(a.createdAt)}</span><span class="chart-recent-cat">${esc(a.category)}</span><span class="chart-recent-text">${esc(a.activityText || a.originalText)}${(a.status || 'completed') === 'pending' ? ' (미처리)' : ''}</span></div>`).join('') : '<div class="chart-empty">—</div>';
-  }
 
   function renderDocCounts(co){
     const wrap = document.getElementById('chartDocCounts');
@@ -2666,10 +2980,16 @@ window.SHIN2_CRM_APP_INIT = function(){
     wrap.innerHTML = `<div class="chart-doc-line">${esc(counts.join(' · '))}</div>`;
   }
 
-  function renderCalendarSection(co){
-    const wrap = document.getElementById('chartCalendar');
-    const events = D.upcomingCalendarEventsForCompany(co.id).slice(0, 2);
-    wrap.innerHTML = events.length ? events.map(ev=> `<div class="chart-cal-item"><span class="chart-cal-date">${esc(ev.date)}${ev.time ? ' ' + esc(ev.time) : ''}</span>${ev.isImportant ? `<mark class="kb-hl">${esc(ev.title)}</mark>` : esc(ev.title)}</div>`).join('') : '<div class="chart-empty">—</div>';
+  // ---- [미팅 기록] 버튼 패널(§14) — 이 업체와 연결된 캘린더 일정 전체(예정+지난 일정 모두,
+  // upcomingCalendarEventsForCompany가 아니라 calendarEventsForCompany를 써서 "기록"이라는
+  // 이름에 맞게 지난 일정도 함께 보여준다). 기존 calendarEvents 저장소를 그대로 읽기만 한다. ----
+  function renderMeetingLog(co){
+    const wrap = document.getElementById('cdashMeetingLog');
+    if(!wrap) return;
+    const events = D.calendarEventsForCompany(co.id);
+    wrap.innerHTML = events.length
+      ? events.map(ev=> `<div class="chart-cal-item"><span class="chart-cal-date">${esc(ev.date)}${ev.time ? ' ' + esc(ev.time) : ''}</span>${ev.isImportant ? `<mark class="kb-hl">${esc(ev.title)}</mark>` : esc(ev.title)}</div>`).join('')
+      : '<div class="chart-empty">미확인 — 등록된 일정이 없습니다.</div>';
   }
 
   // ---- 전체 타임라인: 저장된 데이터를 새로 만들지 않고 기존 배열들을 매 렌더링마다
@@ -3222,9 +3542,8 @@ window.SHIN2_CRM_APP_INIT = function(){
   function refreshChartDerived(co){
     const fresh = D.findCompany(co.id);
     if(!fresh) return;
-    renderChartBrief(fresh);
+    renderSummaryCol(fresh);
     renderTopStrip(fresh);
-    renderRecentActivities(fresh);
     renderTimelineSection(fresh);
     renderNeedsSpecialSection(fresh);
   }
