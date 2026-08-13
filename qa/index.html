@@ -619,32 +619,38 @@ function qnaRenderItem(item, showPartTag){
 }
 /* ============================================================
    오른쪽 추천 패널: "질문 기반 실행 추천"
-   이미 보유한 자료(제안서/시방서/공고문 예시/기존 PT 자료)나 이미 하고 있는
-   일(샘플·카탈로그 발송)은 반복해서 추천하지 않고, 질문 내용 + 카테고리를 함께 분석해 우리 회사가 실제로
-   추가 실행/제공할 수 있는 일을 3~5개 추천한다. 질문 목록의 구조/데이터/
-   기능(검색, 답변 보기/닫기, 1차·2차·PT 등)에는 전혀 관여하지 않는다.
+   이미 보유한 자료(제안서/시방서/공고문 예시/기존 PT 자료)나 이미 상시로
+   하고 있는 일(영업지원 동행, PT·공법설명회 지원, CAD·물량산출, 실행견적·
+   자재견적 제공, 전문 시공팀·직영 시공 교육, 공사 진행관리·준공자료·
+   하자대응·현장 품질관리, AI·드론 진단, 카탈로그·샘플 발송, 공법·영업
+   교육, 협력사 영업권/영업보고 시스템 등)은 반복해서 추천하지 않는다.
+   질문 내용 + 카테고리를 함께 분석해, 그 위에 "지금 더 해볼 만한" 실행
+   3~5개만 추천한다. 질문 목록의 구조/데이터/기능(검색, 답변 보기/닫기,
+   1차·2차·PT 등)에는 전혀 관여하지 않는다.
    ============================================================ */
 // 실행 후보 카탈로그. "제안서/시방서를 그냥 준비하세요" 같은 보유 자료 재추천은 넣지 않고,
 // 넣더라도 '현장에 맞춘 수정/맞춤 제작'처럼 실제로 손이 가는 작업으로만 표현한다.
 const QNA_RECO_ACTIONS = {
-  'cost-estimate': { label:'현장 물량·공사비 간이 산출', reason:'도면이나 현장 규모를 기준으로 예상 비용을 제시할 수 있습니다.' },
+  // 현재 실행견적/CAD·물량산출/PT지원/드론진단/하자대응/품질관리 등으로 이미 상시 제공 중인
+  // 항목(공사비 산출, 단가 근거, 현장 방문, 품질·하자 대응안, 맞춤 PT, 드론 진단, CAD 상세도)은
+  // 추천 후보에서 제외하고, 아래는 그 위에 추가로 해볼 만한 새로운 실행 항목들이다.
+  'margin-scenario': { label:'낙찰가 대비 마진 시뮬레이션', reason:'실행금액에 예상 낙찰가를 대입해 시공사가 가져갈 수 있는 마진 구간을 미리 계산해 볼 수 있습니다.' },
   'cost-compare': { label:'경쟁 공법 대비 비용 비교표', reason:'기존 공법과의 비용 차이를 빠르게 설명할 수 있습니다.' },
-  'unit-price-basis': { label:'일위대가 및 단가 근거 정리', reason:'시공사가 내부 보고에 사용할 근거 자료가 필요합니다.' },
+  'competitor-rebuttal': { label:'경쟁 공법 반박 대응자료 작성', reason:'경쟁사가 제기할 만한 지적에 미리 대응할 논리를 정리해 제공할 수 있습니다.' },
   'site-fit-review': { label:'현장 조건 적합성 검토', reason:'도면·사진·현장 정보를 확인해 적용 가능 여부를 판단해야 합니다.' },
-  'site-marking': { label:'현장 사진·도면에 적용 위치 표시', reason:'실제 적용 구간을 표시하면 시공사가 이해하기 쉬워집니다.' },
-  'site-visit': { label:'현장 방문 및 기술 미팅', reason:'문답만으로 판단하기 어려운 조건을 직접 확인할 수 있습니다.' },
+  've-alternative': { label:'설계 대안(VE) 제시', reason:'비용이나 조건이 맞지 않을 때 사양을 조정한 대안을 제시해 협의 여지를 만들 수 있습니다.' },
+  'design-office-consult': { label:'설계사무소 사전 기술 협의 지원', reason:'문구를 작성하기 전에 설계사무소와 먼저 기술 협의를 진행해 반영 가능성을 높일 수 있습니다.' },
   'similar-case-pick': { label:'가장 유사한 현장 적용 사례 선별', reason:'전체 실적이 아니라 질문·조건이 비슷한 사례가 필요합니다.' },
   'cert-select': { label:'시험성적서·특허·인증자료 선별 제공', reason:'질문과 직접 관련된 증빙만 골라서 제공해야 합니다.' },
-  'quality-defect-plan': { label:'품질관리·하자 대응안 제공', reason:'시공 이후 관리 방법까지 제시하면 신뢰도를 높일 수 있습니다.' },
+  'post-completion-survey': { label:'준공 후 만족도 확인 및 후속 관리 제안', reason:'공사 종료 후 별도로 만족도를 확인하고 필요하면 추가 지원을 제안할 수 있습니다.' },
   'bid-doc-check': { label:'공고문 요구사항 체크', reason:'참여 조건과 제출자료 누락 여부를 먼저 확인해야 합니다.' },
   'design-wording': { label:'설계 반영 문구·발주용 문안 작성', reason:'발주처가 바로 사용할 수 있는 문안으로 정리할 수 있습니다.' },
   'procurement-review': { label:'조달·관급 적용 가능성 검토', reason:'등록 요건과 적용 절차를 확인할 필요가 있습니다.' },
   'mou-process-guide': { label:'공법 사용협약 및 적용 절차 안내', reason:'협약 체결부터 실제 적용까지의 절차를 안내해야 합니다.' },
   'followup-plan': { label:'발주처·설계사·시공사별 후속 대응안', reason:'관계자별로 다음에 무엇을 확인·전달할지 정리가 필요합니다.' },
-  'site-pt': { label:'담당자 대상 맞춤 PT·설명회', reason:'공법 설명과 관계자 협의가 필요한 질문입니다.' },
+  'ready-brief-doc': { label:'질문 맞춤형 1페이지 요약자료 작성', reason:'카탈로그 전체 대신 이번 질문에 필요한 내용만 한 장으로 정리해 빠르게 공유할 수 있습니다.' },
   'proposal-custom': { label:'질문 현장에 맞춘 제안서·시방서 수정', reason:'기존 자료를 그대로 쓰기보다 이 현장에 맞춰 보완이 필요합니다.' },
-  'drone-diagnosis': { label:'드론 촬영·현장 진단', reason:'현장 상태를 직접 진단할 자료가 필요한 질문입니다.' },
-  'cad-detail': { label:'CAD 상세도 또는 시공 상세도 제공', reason:'설계 반영을 위한 상세 도면이 필요한 질문입니다.' },
+  'reference-call': { label:'유사 현장 담당자 레퍼런스콜 주선', reason:'말로 설명하는 대신 실제 시공한 현장 담당자와 직접 연결해 신뢰를 높일 수 있습니다.' },
   'pre-construction-checklist': { label:'시공 전 체크리스트 제공', reason:'시공 착수 전 확인할 사항을 미리 정리해두면 좋습니다.' },
   'contact-register': { label:'담당자·완료 목표일·다음 연락일 등록', reason:'후속 대응이 늦어지지 않도록 담당자와 일정을 남겨둘 필요가 있습니다.' },
 };
@@ -653,11 +659,11 @@ const QNA_RECO_ACTIONS = {
 // 우선순위 → 사내 활용 빈도(완료 처리된 횟수) 순으로 정렬해 최종 3~5개만 남긴다.
 const QNA_RECO_RULES = [
   { id:'cost', categories:['가격 / 단가','수익 / 마진'], keywords:['단가','예산','금액','가격','견적','비용','마진'],
-    actions:[['cost-estimate','필수'], ['cost-compare','자주 요청'], ['unit-price-basis','추천']] },
+    actions:[['margin-scenario','필수'], ['cost-compare','자주 요청'], ['competitor-rebuttal','추천']] },
   { id:'applicability', categories:['타 공법 병행'], keywords:['적용 가능','현장 조건','시공 방법','적용할 수','병행'],
-    actions:[['site-fit-review','필수'], ['site-marking','자주 요청'], ['site-visit','추천']] },
+    actions:[['site-fit-review','필수'], ['ve-alternative','자주 요청'], ['design-office-consult','추천']] },
   { id:'trust', categories:[], keywords:['실적','신뢰','품질','하자','사례'],
-    actions:[['similar-case-pick','필수'], ['cert-select','자주 요청'], ['quality-defect-plan','추천']] },
+    actions:[['similar-case-pick','필수'], ['cert-select','자주 요청'], ['post-completion-survey','추천']] },
   { id:'bid', categories:['민간 아파트 영업 지원'], keywords:['입찰','공고','발주','관급','조달'],
     actions:[['bid-doc-check','필수'], ['design-wording','자주 요청'], ['procurement-review','추천']] },
   { id:'procurement', categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사','등록'],
@@ -665,14 +671,14 @@ const QNA_RECO_RULES = [
   { id:'contract', categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금'],
     actions:[['mou-process-guide','필수'], ['followup-plan','자주 요청'], ['contact-register','추천']] },
   { id:'sales-pt', categories:['민간 아파트 영업 지원'], keywords:['pt','설명회','발표','주민','입주민','영업','자료'],
-    actions:[['site-pt','필수'], ['proposal-custom','자주 요청'], ['drone-diagnosis','추천']] },
+    actions:[['ready-brief-doc','필수'], ['proposal-custom','자주 요청'], ['reference-call','추천']] },
   { id:'material', categories:[], keywords:['샘플','카탈로그','재질','제품','자재','슁글','우레탄','방수','기와'],
-    // 샘플·카탈로그 발송은 이미 상시로 하고 있는 일이라 추천 목록에 넣지 않는다.
-    actions:[['cad-detail','필수'], ['proposal-custom','자주 요청'], ['pre-construction-checklist','추천']] },
+    // 샘플·카탈로그 발송/CAD 상세도 제공은 이미 상시로 하고 있는 일이라 추천 목록에 넣지 않는다.
+    actions:[['ready-brief-doc','필수'], ['proposal-custom','자주 요청'], ['pre-construction-checklist','추천']] },
 ];
 const QNA_RECO_TIER_ORDER = { '필수':0, '자주 요청':1, '추천':2 };
 // 매칭되는 규칙이 하나도 없을 때 쓰는 기본 3건(전부 '추천' 등급) — 항상 최소 3개를 보장한다.
-const QNA_RECO_FALLBACK = [['site-visit','추천'], ['similar-case-pick','추천'], ['contact-register','추천']];
+const QNA_RECO_FALLBACK = [['reference-call','추천'], ['similar-case-pick','추천'], ['contact-register','추천']];
 
 // 질문 하나(내용+카테고리)를 분석해 우선순위 순으로 정렬된 실행 추천 3~5건을 만든다.
 function qnaRecoCompute(q){
