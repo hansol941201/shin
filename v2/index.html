@@ -10804,29 +10804,51 @@ ${text}
   // onProgress(pct)는 실제 진행률(클라우드: bytesTransferred/totalBytes, 로컬: FileReader
   // loaded/total)을 그대로 전달한다 — 가짜 100%를 만들지 않는다.
   // 반환: { localOnly, storagePath, dataUrl } — dataUrl은 localOnly일 때만 채워진다.
+  // §shin/v2 전체 공용 동기화 라운드: crm/index.html의 saveDocumentFile에서 발견/수정했던
+  // 것과 같은 레이스 컨디션이 여기도 그대로 있었다 — Firebase 로그인이 비동기로 아직 진행
+  // 중인 순간(예: 사이트 잠금을 막 풀고 곧바로 자료실에 파일을 올린 경우)에는
+  // window.SHIN2_STORAGE가 아직 없어 useCloud가 false로 판정되어, 잠시 뒤 로그인이 성공했을
+  // 상황에도 곧장 2MB 로컬 폴백으로 새버렸다. crm과 동일한 waitForCloudReady(최대 4초 대기)로
+  // 고쳤다 — 새 메커니즘이 아니라 이미 검증된 패턴을 그대로 재사용.
+  function waitForCloudReady(timeoutMs){
+    return new Promise((resolve)=>{
+      const start = Date.now();
+      (function check(){
+        const ST = window.SHIN2_STORAGE;
+        if(ST && ST.isSignedIn && ST.isSignedIn()){ resolve(true); return; }
+        if(Date.now() - start >= timeoutMs){ resolve(false); return; }
+        setTimeout(check, 150);
+      })();
+    });
+  }
   function saveLibraryFile(id, file, onProgress, opts){
     opts = opts || {};
-    const ST = window.SHIN2_STORAGE;
-    const useCloud = !opts.forceLocal && ST && ST.isSignedIn && ST.isSignedIn();
-    if(useCloud){
-      // 클라우드 업로드 경로 — 2MB 로컬 폴백 상한은 여기 적용하지 않는다(resumable upload라
-      // 대용량 파일도 처리 가능). 실패하면 그대로 reject(로컬로 자동 대체하지 않음).
-      const path = `users/${ST.getUid()}/library/${id}/${file.name}`;
-      return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
-    }
-    // 로컬 전용 폴백 — Storage 미로그인이거나 사용자가 명시적으로 "이 기기에만 저장"을 선택한
-    // 경우에만 여기로 온다. localStorage 용량 한계 때문에 이 분기에만 2MB 상한이 있다.
-    return new Promise((resolve, reject)=>{
-      if(file.size > LIB_MAX_LOCAL_BYTES){
-        reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
-        return;
+    function attempt(useCloud){
+      const ST = window.SHIN2_STORAGE;
+      if(useCloud && ST){
+        // 클라우드 업로드 경로 — 2MB 로컬 폴백 상한은 여기 적용하지 않는다(resumable upload라
+        // 대용량 파일도 처리 가능). 실패하면 그대로 reject(로컬로 자동 대체하지 않음).
+        const path = `users/${ST.getUid()}/library/${id}/${file.name}`;
+        return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
       }
-      const reader = new FileReader();
-      reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
-      reader.onload = ()=>{ if(onProgress) onProgress(100); resolve({ localOnly:true, storagePath: 'local:' + id, dataUrl: reader.result }); };
-      reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
-      reader.readAsDataURL(file);
-    });
+      // 로컬 전용 폴백 — Storage 미로그인이거나 사용자가 명시적으로 "이 기기에만 저장"을 선택한
+      // 경우에만 여기로 온다. localStorage 용량 한계 때문에 이 분기에만 2MB 상한이 있다.
+      return new Promise((resolve, reject)=>{
+        if(file.size > LIB_MAX_LOCAL_BYTES){
+          reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
+        reader.onload = ()=>{ if(onProgress) onProgress(100); resolve({ localOnly:true, storagePath: 'local:' + id, dataUrl: reader.result }); };
+        reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
+        reader.readAsDataURL(file);
+      });
+    }
+    if(opts.forceLocal) return attempt(false);
+    const ST0 = window.SHIN2_STORAGE;
+    if(ST0 && ST0.isSignedIn && ST0.isSignedIn()) return attempt(true);
+    return waitForCloudReady(4000).then(ready=> attempt(ready));
   }
 
   function addDoc(file, meta, onProgress, opts){
