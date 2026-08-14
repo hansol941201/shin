@@ -444,6 +444,7 @@
   .cdash-doc-status-chips{ display:flex; flex-wrap:wrap; gap:6px; }
   .cdash-doc-status-chip{ font-size:11px; color:#9CA3AF; background:#F3F4F6; border:1px solid #E5E7EB; border-radius:5px; padding:2px 8px; }
   .cdash-doc-status-chip.is-on{ color:var(--navy); background:#EAF3FC; border-color:#D7E9F9; }
+  .cdash-doc-status-note{ font-size:10.5px; color:#9A6B00; margin-top:6px; }
   .doc-cat-status{ font-size:11px; font-weight:600; color:#9CA3AF; margin-left:8px; }
   .doc-cat-status.is-on{ color:var(--navy); }
   .cdash-mini-form{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
@@ -4270,11 +4271,19 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!wrap) return;
     list = list || buildDocStatusList(co);
     const registered = list.filter(d=> d.count > 0).length;
+    // §MOU 체결서 추가 라운드 §6/§7: Partner Dashboard의 "MOU 완료"(진행상태)와 실제 MOU
+    // 체결서 파일 존재 여부는 서로 다른 데이터라 절대 섞어서 판단하지 않는다 — 진행상태만
+    // 보고 파일이 있다고 자동으로 표시하지 않고, 둘이 어긋날 때만(진행상태=완료 + 파일 없음)
+    // 작은 안내 문구만 보여준다. 이 안내로 Todo를 자동 생성하지 않는다(§7 명시).
+    const mouDone = !!(co.partnerDashboard && co.partnerDashboard.newMou && co.partnerDashboard.newMou.mouDone);
+    const mouDoc = list.find(d=> d.type === 'mouAgreement');
+    const mouMismatch = mouDone && mouDoc && mouDoc.count === 0;
     wrap.innerHTML = `
       <div class="cdash-col-title-row"><div class="cdash-col-title">서류 현황</div><div class="cdash-doc-status-total">${registered} / ${list.length} 등록</div></div>
       <div class="cdash-doc-status-chips">
         ${list.map(d=> `<span class="cdash-doc-status-chip${d.count ? ' is-on' : ''}">${esc(d.label)} ${esc(d.statusText)}</span>`).join('')}
       </div>
+      ${mouMismatch ? `<div class="cdash-doc-status-note">MOU 체결서 미등록 (진행상태는 MOU 완료로 표시됨)</div>` : ''}
     `;
   }
 
@@ -4388,7 +4397,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['questionnaire','질문서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx,.txt'],
     ['logo','로고', 'image/*'],
     ['bankbook','통장사본', 'image/*,application/pdf'],
-    ['supplyContract','물품공급계약서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx']
+    ['supplyContract','물품공급계약서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx'],
+    // §MOU 체결서 추가 라운드: 기존 6종 documentType 이름 규칙(업로드 서류 성격을
+    // 그대로 카멜케이스로) 그대로 따랐다 — 기존 6종의 type 문자열은 손대지 않았다(§8).
+    ['mouAgreement','MOU 체결서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx']
   ];
   // §서류함 첨부 여부 자동 표시 라운드: 별도 저장소를 만들지 않는다 — companyId +
   // documentType 기준으로 D.documentsForCompany를 그대로 세어서(derived data) 매번 새로
