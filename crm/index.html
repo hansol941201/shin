@@ -5015,32 +5015,76 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
   }
 
+  // §서류함 클라우드 영구저장 라운드 §4: 사진(JPEG/PNG/WEBP)만 대상으로, 업로드 전에
+  // 캔버스로 리사이즈+재인코딩한다. PDF/오피스 문서는 이 함수에 걸리지 않고 그대로
+  // 통과한다(이미지가 아니면 첫 줄에서 바로 원본을 반환). 이미 충분히 작은 사진(1.5MB
+  // 이하)은 화질 유지를 위해 건드리지 않는다. 압축 결과가 오히려 더 커지면(이미 최적화된
+  // 사진 등) 원본을 그대로 쓴다 — 무조건 재인코딩하지 않는다.
+  function compressImageIfNeeded(file){
+    const isRasterImage = /^image\/(jpeg|png|webp)$/.test(file.type);
+    if(!isRasterImage || file.size <= 1.5 * 1024 * 1024) return Promise.resolve(file);
+    return new Promise((resolve)=>{
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = ()=>{
+        URL.revokeObjectURL(url);
+        try{
+          const maxSide = 2200; // §4: 긴 변 2000~2500px 권장 범위의 중간값.
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const outType = file.type === 'image/webp' ? 'image/webp' : 'image/jpeg'; // PNG도 사진이면 JPEG로(문서 사진 특성상 용량 절감 효과가 큼).
+          canvas.toBlob((blob)=>{
+            if(!blob || blob.size >= file.size){ resolve(file); return; }
+            const ext = outType === 'image/webp' ? '.webp' : '.jpg';
+            const newName = file.name.replace(/\.\w+$/, '') + ext;
+            resolve(new File([blob], newName, { type: outType, lastModified: Date.now() }));
+          }, outType, 0.85);
+        }catch(e){ resolve(file); }
+      };
+      img.onerror = ()=>{ URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
   async function handleDocFiles(co, type, fileList){
     const files = Array.from(fileList || []);
     const statusEl = document.getElementById('crmUploadStatus_' + type);
-    for(const file of files){
-      await uploadOneDoc(co, type, file, statusEl); // 순차 처리 — 여러 파일이어도 진행률 표시가 하나씩 명확하게 보이도록.
+    const total = files.length;
+    let done = 0;
+    for(const rawFile of files){
+      const file = await compressImageIfNeeded(rawFile);
+      // 순차 처리 — 여러 파일이어도 진행률 표시가 하나씩 명확하게 보이도록(§7 "N / M 업로드").
+      await uploadOneDoc(co, type, file, statusEl, null, total > 1 ? { index: done + 1, total } : null);
+      done++;
     }
   }
 
   // uploadOneDoc: 파일 1개 저장(클라우드 우선 시도 → 실패 시 재시도/이 기기에만 저장 UI) +
   // 저장이 "성공"한 뒤에만 OCR을 돌린다(§8 OCR/파일저장 완전 분리는 그대로 유지).
   // opts.forceLocal===true는 사용자가 실패 후 명시적으로 "이 기기에만 저장"을 눌렀을 때만 켜진다.
-  function uploadOneDoc(co, type, file, statusEl, opts){
+  // multiInfo({index,total})는 여러 파일을 한꺼번에 드롭했을 때만 채워지고, 진행 라벨에
+  // "N / M 업로드"만 덧붙일 뿐 업로드 로직 자체에는 영향을 주지 않는다.
+  function uploadOneDoc(co, type, file, statusEl, opts, multiInfo){
     opts = opts || {};
     const wasCloudAttempt = !opts.forceLocal && crmCloudReady();
+    const multiPrefix = multiInfo ? `(${multiInfo.index} / ${multiInfo.total}) ` : '';
     if(statusEl){
       statusEl.style.display = 'block';
-      statusEl.innerHTML = `<div class="doc-upload-progress"><div class="doc-upload-bar" style="width:0%"></div></div><div class="doc-upload-label">업로드 중 0%</div>`;
+      statusEl.innerHTML = `<div class="doc-upload-progress"><div class="doc-upload-bar" style="width:0%"></div></div><div class="doc-upload-label">${esc(multiPrefix)}업로드 중 0%</div>`;
     }
     const bar = statusEl && statusEl.querySelector('.doc-upload-bar');
     const label = statusEl && statusEl.querySelector('.doc-upload-label');
     return D.addDocument(co.id, type, file, (pct)=>{
       if(bar) bar.style.width = pct + '%';
-      if(label) label.textContent = '업로드 중... ' + pct + '%';
+      if(label) label.textContent = multiPrefix + '업로드 중... ' + pct + '%';
     }, null, opts).then(async (rec)=>{
       // §8: 성공은 잠깐 "업로드 완료"로 보여준 뒤 상태 표시를 닫는다.
-      if(statusEl){ if(bar) bar.style.width='100%'; if(label) label.textContent = '업로드 완료'; setTimeout(()=>{ statusEl.style.display = 'none'; statusEl.innerHTML = ''; }, 700); }
+      if(statusEl){ if(bar) bar.style.width='100%'; if(label) label.textContent = multiPrefix + '업로드 완료'; setTimeout(()=>{ statusEl.style.display = 'none'; statusEl.innerHTML = ''; }, 700); }
       renderDocList(co, type);
       renderDocCounts(co);
       renderTimelineSection(co);
@@ -5060,7 +5104,11 @@ window.SHIN2_CRM_APP_INIT = function(){
         return;
       }
       if(code === 'SIZE_LIMIT'){
-        statusEl.innerHTML = `<div class="doc-upload-err">이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 로그인 후 다시 시도해주세요.</div>`;
+        // §서류함 클라우드 영구저장 라운드 §1/§12: 이 오류는 파일이 커서가 아니라 "이 기기가
+        // 지금 클라우드에 로그인되어 있지 않아" 2MB 로컬 임시저장 경로로 빠졌다는 뜻이다 —
+        // 문구를 그 원인이 드러나게 바꿨다(추측 아님, crmCloudReady()가 false일 때만 이
+        // 코드 경로를 탄다, saveDocumentFile 로직 그대로).
+        statusEl.innerHTML = `<div class="doc-upload-err">클라우드 저장소에 연결되어 있지 않아 이 기기에만 임시 저장할 수 있는 상태입니다(2MB 이하만 가능). 사이트 잠금을 다시 풀거나 페이지를 새로고침한 뒤 다시 시도해주세요 — 계속되면 관리자에게 Firebase 연결 상태 확인을 요청하세요.</div>`;
         return;
       }
       // 업로드/저장 실패는 절대 조용히 로컬로 대체되지 않는다 — 재시도 또는 사용자가 직접
