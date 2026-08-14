@@ -473,6 +473,57 @@
   .cdash-2col .cdash-col{ border-left:1px solid var(--line); }
   .cdash-2col .cdash-col:first-child{ border-left:none; }
   .cdash-block{ border:1px solid var(--line); border-radius:8px; background:#fff; padding:10px 14px; margin-bottom:12px; }
+
+  /* ---- §카드 재구성 라운드: 업체 한눈에 보기 / 4분할 / 하단2분할 / 하단 탭메뉴 ---- */
+  .cdash-glance-row{ display:grid; grid-template-columns:1.1fr 1fr; gap:12px; margin-bottom:12px; align-items:stretch; }
+  .cdash-glance-summary{ margin-bottom:0; }
+  .cdash-glance-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:8px; background:#fff; overflow:hidden; }
+  .cdash-glance-stat{ padding:10px 12px; border-left:1px solid var(--line); min-width:0; }
+  .cdash-glance-stat:first-child{ border-left:none; }
+  .cdash-glance-stat-label{ font-size:11px; color:var(--text-muted); margin-bottom:4px; }
+  .cdash-glance-stat-value{ font-size:13px; font-weight:700; color:var(--text); line-height:1.3; }
+  .cdash-glance-stat-value.is-muted{ color:var(--text-muted); font-weight:600; }
+  .cdash-glance-stat-sub{ font-size:11px; font-weight:400; color:var(--text-muted); margin-top:1px; }
+
+  .cdash-quad{ display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:8px; background:#fff; margin-bottom:12px; }
+  .cdash-quad .cdash-col{ border-left:1px solid var(--line); }
+  .cdash-quad .cdash-col:first-child{ border-left:none; }
+
+  .cdash-bottom2{ display:grid; grid-template-columns:1.3fr 1fr; gap:12px; margin-bottom:12px; align-items:start; }
+
+  .cdash-tab-row{ display:flex; flex-wrap:wrap; gap:6px; padding-top:2px; }
+  .cdash-tab{ font-size:12px; font-weight:600; color:var(--text-muted); background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 14px; cursor:pointer; font-family:inherit; }
+  .cdash-tab:hover{ background:#F5F7FA; }
+  .cdash-tab-active{ color:var(--navy); background:#EDF1FA; border-color:var(--navy); }
+
+  .cdash-recent-act{ margin-top:8px; padding:8px 10px; background:var(--bg); border-radius:6px; }
+  .cdash-recent-act-label{ font-size:11px; color:var(--text-muted); margin-bottom:2px; }
+  .cdash-recent-act-body{ font-size:12.5px; color:var(--text); font-weight:600; }
+
+  .cdash-req-preview-list{ display:flex; flex-direction:column; }
+  .cdash-req-preview-row{ display:flex; gap:10px; padding:4px 0; border-top:1px dashed var(--line); font-size:12.5px; }
+  .cdash-req-preview-row:first-child{ border-top:none; }
+  .cdash-req-preview-date{ flex:none; color:var(--text-muted); width:70px; }
+  .cdash-req-preview-text{ flex:1; min-width:0; color:var(--text); font-weight:600; }
+
+  @media (max-width:900px){
+    .cdash-glance-row{ grid-template-columns:1fr; }
+    .cdash-glance-stats{ grid-template-columns:1fr 1fr; }
+    .cdash-glance-stat:nth-child(2){ border-left:1px solid var(--line); }
+    .cdash-glance-stat:nth-child(3){ border-left:none; border-top:1px solid var(--line); }
+    .cdash-quad{ grid-template-columns:1fr 1fr; }
+    .cdash-quad .cdash-col:nth-child(3){ border-left:none; border-top:1px solid var(--line); }
+    .cdash-bottom2{ grid-template-columns:1fr; }
+  }
+  @media (max-width:640px){
+    .cdash-glance-stats{ grid-template-columns:1fr; }
+    .cdash-glance-stat{ border-left:none !important; border-top:1px solid var(--line); }
+    .cdash-glance-stat:first-child{ border-top:none; }
+    .cdash-quad{ grid-template-columns:1fr; }
+    .cdash-quad .cdash-col{ border-left:none !important; border-top:1px solid var(--line); }
+    .cdash-quad .cdash-col:first-child{ border-top:none; }
+  }
+
   .cdash-meeting-table, .cdash-material-table{ width:100%; border-collapse:collapse; font-size:12px; }
   .cdash-meeting-table td, .cdash-material-table td{ padding:4px 6px; border-top:1px dashed var(--line); color:var(--text); }
   .cdash-meeting-table tr:first-child td, .cdash-material-table tr:first-child td{ border-top:none; }
@@ -2227,6 +2278,62 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 수동 추가) ⑦고객 반응·성향|다음 행동 2분할 ⑧핵심 한 줄 요약 ⑨보조 버튼(업체정보/서류함/
   // 메모)만. POUR 협약목적/현재상황/고객주요질문/전체이력/이전요약정보는 화면에서만 빼고
   // 데이터(D.addWhyPour 등)는 그대로 남겨둔다(§6/§17 — 삭제 아님, 렌더 호출만 하지 않음). ----
+  // ---- 업체 한눈에 보기(§카드 재구성 라운드) — 헤더 바로 아래, 왼쪽은 기존 "핵심 한 줄
+  // 요약"(cdashSummaryCol, D.setMemoSummary가 이미 쓰던 그 값 그대로) 재사용, 오른쪽은
+  // 현재단계/최근접촉/POUR실적/담당자 4개 스탯만 계산해서 보여준다. 새 데이터 필드를 만들지
+  // 않는다 — 전부 이미 있는 함수(buildProgressStages/activitiesForCompany/pourTrackRecords)를
+  // 다시 읽기만 한다. ----
+  function buildGlanceStats(co){
+    const { stages, currentIdx, hasAny } = buildProgressStages(co);
+    const stageText = hasAny ? `${stages[currentIdx].label} ${PROGRESS_STATUS_LABEL[stages[currentIdx].state]}` : '미확인';
+    const recentAct = (D.activitiesForCompany(co.id) || [])[0];
+    const pour = (co.pourTrackRecords || []);
+    const pourYears = pour.map(r=> r.year).sort((a,b)=> b-a);
+    return {
+      stageText,
+      recentContact: recentAct ? fmtDate(recentAct.createdAt) : '—',
+      pourCount: pour.length,
+      pourLatestYear: pourYears[0] || null,
+      contactPerson: co.contactName || '미확인'
+    };
+  }
+  function renderGlanceRow(co){
+    const wrap = document.getElementById('cdashGlanceStats');
+    if(!wrap) return;
+    const g = buildGlanceStats(co);
+    wrap.innerHTML = `
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">현재 단계</div><div class="cdash-glance-stat-value">${esc(g.stageText)}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">최근 접촉</div><div class="cdash-glance-stat-value">${esc(g.recentContact)}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">POUR 시공실적</div><div class="cdash-glance-stat-value">${g.pourCount ? `${g.pourCount}건` : '—'}${g.pourLatestYear ? `<div class="cdash-glance-stat-sub">최근 ${esc(g.pourLatestYear)}년</div>` : ''}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">담당자</div><div class="cdash-glance-stat-value${g.contactPerson === '미확인' ? ' is-muted' : ''}">${esc(g.contactPerson)}</div></div>
+    `;
+  }
+
+  // ---- 요청자료 미리보기(§카드 재구성 라운드) — 하단 우측 영역. 데이터 소스는 기존
+  // buildRequestListItems(co)를 그대로 재사용(§요청자료 정리 라운드에서 만든 함수) — 최신
+  // 3건만 보여주고 [더보기]는 기존 요청자료 팝업(openMemoPanel)을 그대로 연다. 새 저장소/
+  // 새 팝업 없음. ----
+  function renderReqPreview(co){
+    const wrap = document.getElementById('cdashReqPreviewBlock');
+    if(!wrap) return;
+    const items = buildRequestListItems(co);
+    if(!items.length){ wrap.className = ''; wrap.innerHTML = ''; return; }
+    wrap.className = 'cdash-block';
+    const visible = items.slice(0, 3);
+    wrap.innerHTML = `
+      <div class="cdash-col-title-row"><div class="cdash-col-title">요청자료</div></div>
+      <div class="cdash-req-preview-list">
+        ${visible.map(it=> `<div class="cdash-req-preview-row">
+          <span class="cdash-req-preview-date">${esc(fmtDate(it.createdAtIso))}</span>
+          <span class="cdash-req-preview-text">${esc(it.text)}</span>
+        </div>`).join('')}
+      </div>
+      ${items.length > 3 ? `<button type="button" class="cdash-pour-more-btn" id="cdashReqPreviewMoreBtn">더보기 (전체 ${items.length}건)</button>` : ''}
+    `;
+    const moreBtn = document.getElementById('cdashReqPreviewMoreBtn');
+    if(moreBtn) moreBtn.addEventListener('click', ()=> openMemoPanel(co));
+  }
+
   function renderChart(co){
     // 전화기록 원문에서 명확한 자료 요청만 추출해 requestedMaterials에 병합(§14, 멱등이라
     // 카드를 열 때마다 실행해도 중복 생성되지 않는다) — originalText 자체는 절대 건드리지 않음.
@@ -2241,27 +2348,33 @@ window.SHIN2_CRM_APP_INIT = function(){
           <div class="cdash-body" id="chartBody">
             <div id="chartHeader"></div>
 
-            <div class="cdash-2col">
-              <div class="cdash-col" id="cdashBasicInfoCol"></div>
-              <div class="cdash-col" id="cdashInterestCol"></div>
+            <!-- §카드 재구성 라운드: "업체 한눈에 보기" — 왼쪽 기존 핵심 한 줄 요약(cdashSummaryCol,
+                 함수/데이터 변경 없이 위치만 이동) + 오른쪽 현재단계/최근접촉/POUR실적/담당자 4스탯. -->
+            <div class="cdash-glance-row">
+              <div class="cdash-bcol cdash-summary-col cdash-glance-summary" id="cdashSummaryCol"></div>
+              <div class="cdash-glance-stats" id="cdashGlanceStats"></div>
             </div>
 
             <div class="cdash-block" id="cdashMeetingBlock"></div>
 
-            <div id="cdashPourTrackBlock"></div>
-
-            <div class="cdash-bottom3" style="grid-template-columns:1fr 1fr;">
-              <div class="cdash-bcol" id="cdashReactionsCol"></div>
-              <div class="cdash-bcol" id="cdashNextActionsCol"></div>
+            <div class="cdash-quad">
+              <div class="cdash-col" id="cdashBasicInfoCol"></div>
+              <div class="cdash-col" id="cdashInterestCol"></div>
+              <div class="cdash-col" id="cdashReactionsCol"></div>
+              <div class="cdash-col" id="cdashNextActionsCol"></div>
             </div>
 
-            <div class="cdash-bcol cdash-summary-col" id="cdashSummaryCol" style="margin-bottom:12px;"></div>
+            <div class="cdash-bottom2">
+              <div id="cdashPourTrackBlock"></div>
+              <div id="cdashReqPreviewBlock"></div>
+            </div>
 
-            <div class="cdash-btn-row">
-              <button type="button" id="cdashBtnInfo">업체정보</button>
-              <button type="button" id="cdashBtnDocs">서류함</button>
-              <button type="button" id="cdashBtnMemo">요청자료</button>
-              <button type="button" id="cdashBtnMeeting">진행 기록</button>
+            <div class="cdash-tab-row">
+              <button type="button" class="cdash-tab" id="cdashBtnMeeting">진행 기록</button>
+              <button type="button" class="cdash-tab" id="cdashBtnPour">POUR 시공실적</button>
+              <button type="button" class="cdash-tab" id="cdashBtnMemo">요청자료</button>
+              <button type="button" class="cdash-tab" id="cdashBtnDocs">서류함</button>
+              <button type="button" class="cdash-tab" id="cdashBtnInfo">업체정보</button>
             </div>
 
             <div class="cdash-panel-wrap" id="cdashInfoWrap" style="display:none;">
@@ -2282,9 +2395,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderInterestCol(co);
     renderMeetingRecordSection(co);
     renderPourTrackSection(co);
+    renderReqPreview(co);
     renderReactionsCol(co);
     renderNextActionsCol(co);
     renderSummaryCol(co);
+    renderGlanceRow(co);
 
     if(cardState.chartEditing){ renderBasicInfoForm(co); }
     else { renderBasicInfoView(co); }
@@ -2300,23 +2415,26 @@ window.SHIN2_CRM_APP_INIT = function(){
       const label = btn.textContent;
       btn.addEventListener('click', ()=>{
         const showing = wrap.style.display !== 'none';
+        wrap.classList.toggle('cdash-tab-active', !showing);
         wrap.style.display = showing ? 'none' : 'block';
-        btn.textContent = showing ? label : (label + ' 닫기');
       });
     });
     const memoBtn = document.getElementById('cdashBtnMemo');
     const reqCount = buildRequestListItems(co).length;
     memoBtn.textContent = reqCount ? `요청자료 ${reqCount}` : '요청자료';
     memoBtn.addEventListener('click', ()=> openMemoPanel(co));
-    // §진행 기록으로 갈아탄 이후에도 "미팅 기록" 바로가기 버튼(§요청자료 정리 라운드)은
-    // 새 팝업을 만들지 않고 이미 화면에 그려져 있는 진행 기록 블록으로 스크롤만 시켜준다.
-    const meetingBtn = document.getElementById('cdashBtnMeeting');
-    if(meetingBtn){
-      meetingBtn.addEventListener('click', ()=>{
-        const block = document.getElementById('cdashMeetingBlock');
+    // §카드 재구성 라운드: 하단 탭 중 진행 기록/POUR 시공실적은 이미 화면에 늘 보이는
+    // 섹션으로 스크롤만 시켜준다(새 팝업/토글 패널 아님) — §요청자료 정리 라운드에서 만든
+    // 패턴 그대로 재사용.
+    const scrollTabs = [['cdashBtnMeeting','cdashMeetingBlock'], ['cdashBtnPour','cdashPourTrackBlock']];
+    scrollTabs.forEach(([btnId, blockId])=>{
+      const btn = document.getElementById(btnId);
+      if(!btn) return;
+      btn.addEventListener('click', ()=>{
+        const block = document.getElementById(blockId);
         if(block) block.scrollIntoView({ behavior:'smooth', block:'center' });
       });
-    }
+    });
   }
 
   // ---- 상단 헤더(§1~5) — 업체명만 크게, "고객관리카드" 문구/개별 복사버튼 삭제. X는 카드
@@ -2370,7 +2488,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       ? (cfg.asTags
           ? `<div class="cdash-tag-wrap">${items.map(it=> `<span class="cdash-tag">${esc(it.text)}${editing ? `<button type="button" class="chart-tag-chip-del" data-mini-del="${esc(it.id)}" title="삭제">×</button>` : ''}</span>`).join('')}</div>`
           : `<ul class="cdash-bullets">${items.map(it=> `<li>${esc(it.text)}${editing ? ` <button type="button" class="chart-tag-del" data-mini-del="${esc(it.id)}">삭제</button>` : ''}</li>`).join('')}</ul>`)
-      : `<div class="cdash-field-value is-muted">미확인</div>`;
+      : `<div class="cdash-field-value is-muted">${esc(cfg.emptyText || '미확인')}</div>`;
     wrap.innerHTML = `
       <div class="cdash-col-title-row">
         <div class="cdash-col-title">${esc(cfg.title)}</div>
@@ -2427,6 +2545,9 @@ window.SHIN2_CRM_APP_INIT = function(){
           <div class="cdash-field-label">영업 단계</div>
           <div class="cdash-field-value${stage ? '' : ' is-muted'}">${esc(stage || '미확인')}</div>
         </div>`;
+    // §카드 재구성 라운드: 편집모드는 기존 필드 나열 폼 그대로(데이터/저장 로직 변경 없음).
+    // 기본(읽기)모드만 "업체 특징" 불릿 요약으로 바꾼다 — 실제 값이 있는 필드만 한 줄씩,
+    // 하나도 없으면 "아직 등록된 정보 없음" 한 줄만(§8/§17, 미확인 반복 금지).
     const bodyHtml = editing
       ? stageRow + CDASH_BASIC_FIELDS.map(([k,label])=> `
           <div class="cdash-field-row">
@@ -2434,15 +2555,17 @@ window.SHIN2_CRM_APP_INIT = function(){
             <input type="text" class="cdash-mini-form-field" data-basic-field="${k}" value="${esc(co[k] || '')}" />
           </div>
         `).join('')
-      : stageRow + CDASH_BASIC_FIELDS.map(([k,label])=> `
-          <div class="cdash-field-row">
-            <div class="cdash-field-label">${esc(label)}</div>
-            <div class="cdash-field-value${co[k] ? '' : ' is-muted'}">${esc(co[k] || '미확인')}</div>
-          </div>
-        `).join('');
+      : (()=>{
+          const bullets = [];
+          if(stage) bullets.push('영업 단계: ' + stage);
+          CDASH_BASIC_FIELDS.forEach(([k,label])=>{ if(co[k]) bullets.push(label + ': ' + co[k]); });
+          return bullets.length
+            ? `<ul class="cdash-bullets">${bullets.map(b=> `<li>${esc(b)}</li>`).join('')}</ul>`
+            : `<div class="cdash-field-value is-muted">아직 등록된 정보 없음</div>`;
+        })();
     wrap.innerHTML = `
       <div class="cdash-col-title-row">
-        <div class="cdash-col-title">업체 기본 정보</div>
+        <div class="cdash-col-title">업체 특징</div>
         <button type="button" class="cdash-mini-edit" id="cdashBasicInfoToggle">${editing ? '완료' : '수정'}</button>
       </div>
       <div class="cdash-col-body">${bodyHtml}</div>
@@ -2470,7 +2593,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderMiniBulletCol(co, {
       wrapId:'cdashInterestCol', sectionKey:'interest', title:'관심 공종 / 제품',
       items: c=> c.interestFields || [], addFn: D.addInterestField, removeFn: D.removeInterestField,
-      placeholder:'고객이 실제 언급한 공종/제품', asTags:true
+      placeholder:'고객이 실제 언급한 공종/제품', asTags:true, emptyText:'—'
     });
   }
 
@@ -2588,6 +2711,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     const selIdx = Math.max(0, stages.findIndex(s=> s.key === selKey));
     const sel = stages[selIdx];
     const nm = co.partnerDashboard.newMou;
+    // §카드 재구성 라운드(최근 기록) — 진행바 바로 아래에 가장 최근 전화기록 1건만 강조.
+    // 새 저장소 없음, D.activitiesForCompany가 이미 최신순으로 정렬해서 돌려준다.
+    const recentAct = (D.activitiesForCompany(co.id) || [])[0];
     wrap.innerHTML = `
       <div class="cdash-col-title-row"><div class="cdash-col-title">진행 기록</div></div>
       <div class="cdash-progress-bar">
@@ -2600,6 +2726,12 @@ window.SHIN2_CRM_APP_INIT = function(){
           </button>
         `).join('')}
       </div>
+      ${recentAct ? `
+        <div class="cdash-recent-act">
+          <div class="cdash-recent-act-label">최근 기록</div>
+          <div class="cdash-recent-act-body">${esc([fmtDate(recentAct.createdAt), recentAct.category, (recentAct.activityText || recentAct.originalText)].filter(Boolean).join(' · '))}</div>
+        </div>
+      ` : ''}
       <div class="cdash-progress-detail">
         <div class="cdash-progress-detail-row"><span>현재 단계</span><strong>${esc(sel.label)}</strong></div>
         <div class="cdash-progress-detail-row"><span>일시</span><span>${esc(sel.dateDisplay)}</span></div>
@@ -3181,7 +3313,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const bodyHtml = `
       ${reactions.length
         ? `<ul class="cdash-bullets">${reactions.map(r=> `<li>${esc(r.text)}${editing ? ` <button type="button" class="chart-tag-del" data-del-reaction="${esc(r.id)}">삭제</button>` : ''}</li>`).join('')}</ul>`
-        : `<div class="cdash-field-value is-muted">미확인</div>`}
+        : `<div class="cdash-field-value is-muted">—</div>`}
       ${st.text ? `<div class="chart-evidence-line" style="margin-top:6px;font-size:12px;color:var(--text);">성향: ${esc(st.text)}</div>` : ''}
     `;
     wrap.innerHTML = `
@@ -3475,13 +3607,13 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="cdash-col-body">
         ${active.length ? active.map(it=> `
           <div class="chart-na-item">
-            <span>– ${esc(it.text)}</span>
+            <span>☐ ${esc(it.text)}</span>
             <span class="chart-na-actions">
               <button type="button" class="chart-na-complete-btn" data-complete-na="${esc(it.id)}">완료</button>
               ${editing ? `<button type="button" class="chart-tag-del" data-del="${esc(it.id)}">삭제</button>` : ''}
             </span>
           </div>
-        `).join('') : '<div class="cdash-field-value is-muted">미확인</div>'}
+        `).join('') : '<div class="cdash-field-value is-muted">—</div>'}
       </div>
       ${editing ? `<div class="cdash-mini-add-row">
           <input type="text" id="chartNextActionsInput" placeholder="우리가 다음에 해야 할 행동" />
