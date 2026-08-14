@@ -180,28 +180,32 @@
 
   /* ---------- 서류함(4분류) — 고객별 파일 보관함 ---------- */
   .doc-blocked-note{ font-size:11.5px; color:#9A6B00; background:#FFF7E6; border:1px solid #F0DDA8; border-radius:6px; padding:8px 10px; margin-bottom:14px; }
-  .doc-category{ position:relative; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; background:var(--surface); cursor:pointer; }
-  .doc-category.drag-over{ border-color:var(--navy); border-width:2px; padding:11px 13px; background:#F0F3F9; }
-  .doc-category:last-child{ margin-bottom:0; }
-  .doc-cat-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-  .doc-cat-title{ font-size:13.5px; font-weight:700; color:var(--text); }
-  .doc-add-btn{ font-size:12px; }
-  .doc-drop-hint{ font-size:12px; color:var(--text-muted); padding:10px 0; text-align:center; border:1px dashed var(--line); border-radius:6px; margin-top:2px; }
+  /* §서류함 컴팩트 그리드 라운드: 세로로 길게 쌓이던 7개 박스를 사용자 요청대로 정사각형에
+     가까운 타일로 만들어 한 줄에 최대한 많이 들어가게 한다(auto-fill). 업로드/드래그드롭/
+     열기/다운로드/삭제 기능과 데이터는 전혀 바꾸지 않았고 크기/배치만 컴팩트하게 줄였다. */
+  .doc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(148px, 1fr)); gap:8px; }
+  .doc-category{ position:relative; border:1px solid var(--line); border-radius:8px; padding:8px 9px; background:var(--surface); cursor:pointer; min-width:0; }
+  .doc-category.drag-over{ border-color:var(--navy); border-width:2px; padding:7px 8px; background:#F0F3F9; }
+  .doc-cat-head{ display:flex; align-items:center; justify-content:space-between; gap:4px; margin-bottom:4px; }
+  .doc-cat-title{ font-size:12px; font-weight:700; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .doc-add-btn{ flex:none; font-size:12px; line-height:1; padding:2px 7px; }
+  .doc-drop-hint{ font-size:10.5px; color:var(--text-muted); padding:10px 2px; text-align:center; line-height:1.4; border:1px dashed var(--line); border-radius:6px; }
   .doc-category.has-docs .doc-drop-hint{ display:none; }
-  .doc-drop-active-label{ display:none; position:absolute; inset:0; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--navy); background:rgba(240,243,249,.92); border-radius:8px; pointer-events:none; }
+  .doc-drop-active-label{ display:none; position:absolute; inset:0; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; color:var(--navy); background:rgba(240,243,249,.92); border-radius:8px; pointer-events:none; }
   .doc-category.drag-over .doc-drop-active-label{ display:flex; }
   .doc-category.drag-over .doc-drop-hint{ visibility:hidden; }
-  .doc-item{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--line); }
+  .doc-item{ display:flex; gap:6px; align-items:flex-start; padding:6px 0; border-bottom:1px solid var(--line); }
   .doc-item:last-child{ border-bottom:none; }
-  .doc-thumb{ width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid var(--line); flex:none; background:var(--bg); }
-  .doc-thumb-generic{ width:52px; height:52px; border-radius:6px; border:1px solid var(--line); flex:none; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-muted); }
+  .doc-thumb{ width:28px; height:28px; object-fit:cover; border-radius:5px; border:1px solid var(--line); flex:none; background:var(--bg); }
+  .doc-thumb-generic{ width:28px; height:28px; border-radius:5px; border:1px solid var(--line); flex:none; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:8.5px; color:var(--text-muted); }
   .doc-main{ flex:1; min-width:0; }
-  .doc-name{ font-size:13px; color:var(--text); font-weight:600; word-break:break-all; }
-  .doc-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
-  .doc-memo{ font-size:12px; color:var(--text-muted); margin-top:4px; white-space:pre-wrap; }
-  .doc-local-note{ font-size:10.5px; color:#9A6B00; margin-top:4px; }
-  .doc-actions{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
-  .doc-empty{ font-size:12px; color:var(--text-muted); padding:6px 0; }
+  .doc-name{ font-size:11px; color:var(--text); font-weight:600; word-break:break-all; line-height:1.3; }
+  .doc-meta{ font-size:9px; color:var(--text-muted); margin-top:1px; }
+  .doc-memo{ font-size:10px; color:var(--text-muted); margin-top:3px; white-space:pre-wrap; }
+  .doc-local-note{ font-size:9px; color:#9A6B00; margin-top:3px; }
+  .doc-actions{ display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
+  .doc-actions .co-text-action{ font-size:10px; }
+  .doc-empty{ font-size:10.5px; color:var(--text-muted); padding:2px 0; }
   .doc-upload-status{ margin:6px 0; }
   .doc-upload-progress{ height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
   .doc-upload-bar{ height:100%; width:0%; background:var(--navy); transition:width .15s linear; }
@@ -2380,6 +2384,14 @@ window.SHIN2_CRM_APP_INIT = function(){
   'use strict';
   const D = window.SHIN2_CRM_DATA;
   const OCR = window.SHIN2_CRM_OCR;
+
+  // §드래그앤드롭 실제 동작 수정 라운드 §10/§11: 문서 박스가 아닌 곳(예: 박스 경계에서
+  // 몇 픽셀 벗어난 지점)에 파일을 놓으면 브라우저 기본 동작으로 그 파일이 새 탭에 열리며
+  // 페이지를 벗어나 버릴 수 있다 — 각 박스는 이미 자기 자신의 drop에서 stopPropagation을
+  // 하므로 이 리스너는 "박스가 아닌 곳에 놓인" 경우에만 도달하고, 그 경우 페이지 이탈만
+  // 막는다(실제 업로드 처리를 가로채지 않음 — 박스 안에서는 절대 여기까지 안 옴).
+  window.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+  window.addEventListener('drop', (e)=>{ e.preventDefault(); });
 
   function esc(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4803,19 +4815,21 @@ window.SHIN2_CRM_APP_INIT = function(){
     const wrap = document.getElementById('crmDocsSection');
     wrap.innerHTML = `
       <div class="doc-blocked-note" id="crmDocNote">${esc(docNoteText())}</div>
-      ${DOC_TYPES.map(([type,label])=> `
-        <div class="doc-category" data-doc-cat="${type}">
-          <div class="doc-cat-head">
-            <div class="doc-cat-title">${label}<span class="doc-cat-status" id="crmDocStatus_${type}"></span></div>
-            <button type="button" class="co-text-action primary doc-add-btn" data-doc-add="${type}">+ 파일 추가</button>
+      <div class="doc-grid">
+        ${DOC_TYPES.map(([type,label])=> `
+          <div class="doc-category" data-doc-cat="${type}">
+            <div class="doc-cat-head">
+              <div class="doc-cat-title">${label}<span class="doc-cat-status" id="crmDocStatus_${type}"></span></div>
+              <button type="button" class="co-text-action primary doc-add-btn" data-doc-add="${type}">+</button>
+            </div>
+            <input type="file" id="crmDocInput_${type}" style="display:none;" multiple />
+            <div id="crmUploadStatus_${type}" class="doc-upload-status" style="display:none;"></div>
+            <div class="doc-drop-hint" id="crmDropHint_${type}">끌어다 놓기<br/>또는 클릭</div>
+            <div class="doc-drop-active-label">여기에 놓기</div>
+            <div class="doc-list" id="crmDocList_${type}"></div>
           </div>
-          <input type="file" id="crmDocInput_${type}" style="display:none;" multiple />
-          <div id="crmUploadStatus_${type}" class="doc-upload-status" style="display:none;"></div>
-          <div class="doc-drop-hint" id="crmDropHint_${type}">파일을 여기에 끌어다 놓으세요 또는 클릭하여 파일 선택</div>
-          <div class="doc-drop-active-label">여기에 놓아 업로드</div>
-          <div class="doc-list" id="crmDocList_${type}"></div>
-        </div>
-      `).join('')}
+        `).join('')}
+      </div>
     `;
     DOC_TYPES.forEach(([type,label,accept])=>{
       const box = wrap.querySelector(`[data-doc-cat="${type}"]`);
@@ -4830,14 +4844,23 @@ window.SHIN2_CRM_APP_INIT = function(){
         e.target.value = '';
         if(files.length) handleDocFiles(co, type, files);
       });
-      // §2: 박스 전체를 드래그앤드롭 대상으로 삼는다(버튼만이 아니라) — 이미 그렇게 되어
-      // 있던 기존 dragover/drop 배선은 그대로 유지하고, 여기에 hover 시각 피드백(navy 테두리
-      // + "여기에 놓아 업로드" 문구)만 추가한다.
-      box.addEventListener('dragover', (e)=>{ e.preventDefault(); box.classList.add('drag-over'); });
+      // §드래그앤드롭 실제 동작 수정 라운드: dragover만 preventDefault하던 기존 배선에
+      // dragenter도 추가했다(일부 브라우저는 dragenter에서 preventDefault가 안 되어 있으면
+      // 그 뒤 dragover/drop이 아예 도달하지 않는 경우가 있음, §2/§11) — 새 업로드 로직을
+      // 만들지 않고, 놓인 파일을 그대로 기존 handleDocFiles(co,type,files)로 넘긴다(§3,
+      // "+ 파일 추가"/클릭 선택과 완전히 같은 함수).
+      box.addEventListener('dragenter', (e)=>{ e.preventDefault(); e.stopPropagation(); box.classList.add('drag-over'); });
+      box.addEventListener('dragover', (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        box.classList.add('drag-over');
+      });
       box.addEventListener('dragleave', (e)=>{ if(!box.contains(e.relatedTarget)) box.classList.remove('drag-over'); });
       box.addEventListener('drop', (e)=>{
-        e.preventDefault(); box.classList.remove('drag-over');
-        if(e.dataTransfer.files.length) handleDocFiles(co, type, e.dataTransfer.files);
+        e.preventDefault(); e.stopPropagation();
+        box.classList.remove('drag-over');
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if(files && files.length) handleDocFiles(co, type, files);
       });
       // 빈 영역(목록/버튼이 아닌 곳) 클릭으로도 파일 선택 창이 열리도록 — "+ 파일 추가" 버튼과
       // 기능은 같지만, 스펙 §2가 요구하는 "박스 전체가 드롭 영역"과 일관되게 클릭도 박스
