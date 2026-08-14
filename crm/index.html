@@ -440,6 +440,12 @@
   .cdash-auto-facts{ margin-bottom:8px; }
   .cdash-tag-wrap{ display:flex; flex-wrap:wrap; gap:6px; }
   .cdash-tag{ font-size:11.5px; color:var(--navy); background:#EAF3FC; border:1px solid #D7E9F9; border-radius:5px; padding:3px 9px; }
+  .cdash-doc-status-total{ font-size:11.5px; color:var(--text-muted); font-weight:600; }
+  .cdash-doc-status-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .cdash-doc-status-chip{ font-size:11px; color:#9CA3AF; background:#F3F4F6; border:1px solid #E5E7EB; border-radius:5px; padding:2px 8px; }
+  .cdash-doc-status-chip.is-on{ color:var(--navy); background:#EAF3FC; border-color:#D7E9F9; }
+  .doc-cat-status{ font-size:11px; font-weight:600; color:#9CA3AF; margin-left:8px; }
+  .doc-cat-status.is-on{ color:var(--navy); }
   .cdash-mini-form{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
   .cdash-mini-form textarea{ width:100%; min-height:64px; box-sizing:border-box; font-size:12px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; resize:vertical; font-family:inherit; }
   .cdash-mini-form input{ width:100%; box-sizing:border-box; font-size:12px; padding:5px 7px; border:1px solid var(--line); border-radius:6px; }
@@ -2552,6 +2558,8 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div id="cdashReqPreviewBlock"></div>
             </div>
 
+            <div class="cdash-block" id="cdashDocStatusBlock"></div>
+
             <div class="cdash-tab-row">
               <button type="button" class="cdash-tab" id="cdashBtnMeeting">진행 기록</button>
               <button type="button" class="cdash-tab" id="cdashBtnPour">POUR 시공실적</button>
@@ -4242,11 +4250,32 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
 
+  // renderDocCounts: 서류함 탭 안(chartDocCounts)과 카드 본문(cdashDocStatusBlock) 두 곳
+  // 모두 여기서 함께 갱신한다 — 업로드/삭제/공용전환 등 모든 변경 지점이 이미 이 함수를
+  // 호출하고 있어(§ 문서 업로드 여러 라운드) 새 호출 지점을 늘리지 않고 한 곳만 넓힌다.
   function renderDocCounts(co){
+    const list = buildDocStatusList(co);
     const wrap = document.getElementById('chartDocCounts');
+    if(wrap){
+      const counts = list.map(d=> `${d.label} ${d.statusText}`);
+      wrap.innerHTML = `<div class="chart-doc-line">${esc(counts.join(' · '))}</div>`;
+    }
+    renderDocStatusBlock(co, list);
+  }
+  // §서류함 첨부 여부 자동 표시 라운드: 고객카드에서 서류함을 열지 않아도 보이는 요약
+  // (§ "고객카드에도 요약 표시"). 사람이 저장한 값이 아니라 buildDocStatusList(derived)를
+  // 그대로 화면에 옮길 뿐이다.
+  function renderDocStatusBlock(co, list){
+    const wrap = document.getElementById('cdashDocStatusBlock');
     if(!wrap) return;
-    const counts = DOC_TYPES.map(([type,label])=> `${label} ${D.documentsForCompany(co.id, type).length}`);
-    wrap.innerHTML = `<div class="chart-doc-line">${esc(counts.join(' · '))}</div>`;
+    list = list || buildDocStatusList(co);
+    const registered = list.filter(d=> d.count > 0).length;
+    wrap.innerHTML = `
+      <div class="cdash-col-title-row"><div class="cdash-col-title">서류 현황</div><div class="cdash-doc-status-total">${registered} / ${list.length} 등록</div></div>
+      <div class="cdash-doc-status-chips">
+        ${list.map(d=> `<span class="cdash-doc-status-chip${d.count ? ' is-on' : ''}">${esc(d.label)} ${esc(d.statusText)}</span>`).join('')}
+      </div>
+    `;
   }
 
   // ---- [미팅 기록] 버튼 패널(§14) — 이 업체와 연결된 캘린더 일정 전체(예정+지난 일정 모두,
@@ -4361,6 +4390,15 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['bankbook','통장사본', 'image/*,application/pdf'],
     ['supplyContract','물품공급계약서', 'image/*,application/pdf,.doc,.docx,.hwp,.hwpx']
   ];
+  // §서류함 첨부 여부 자동 표시 라운드: 별도 저장소를 만들지 않는다 — companyId +
+  // documentType 기준으로 D.documentsForCompany를 그대로 세어서(derived data) 매번 새로
+  // 계산만 한다. 사람이 "있음/없음"을 입력하는 필드가 아니다.
+  function buildDocStatusList(co){
+    return DOC_TYPES.map(([type,label])=>{
+      const count = D.documentsForCompany(co.id, type).length;
+      return { type, label, count, statusText: count ? `등록 ${count}건` : '없음' };
+    });
+  }
   const LOCAL_ONLY_NOTICE = '이 파일은 현재 이 기기에만 저장되어 있습니다 (다른 기기에서는 목록만 보이고 파일은 없을 수 있습니다)';
   function crmCloudReady(){ const ST = window.SHIN2_STORAGE; return !!(ST && ST.isSignedIn && ST.isSignedIn()); }
   // docsSyncReady: 클라우드 로그인뿐 아니라, 이 기기가 서류함 메타데이터 실시간 구독까지
@@ -4452,7 +4490,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       ${DOC_TYPES.map(([type,label])=> `
         <div class="doc-category" data-doc-cat="${type}">
           <div class="doc-cat-head">
-            <div class="doc-cat-title">${label}</div>
+            <div class="doc-cat-title">${label}<span class="doc-cat-status" id="crmDocStatus_${type}"></span></div>
             <button type="button" class="co-text-action primary doc-add-btn" data-doc-add="${type}">+ 파일 추가</button>
           </div>
           <input type="file" id="crmDocInput_${type}" style="display:none;" multiple />
@@ -4509,6 +4547,13 @@ window.SHIN2_CRM_APP_INIT = function(){
     const box = listWrap.closest('.doc-category');
     const docs = D.documentsForCompany(co.id, type);
     if(box) box.classList.toggle('has-docs', docs.length > 0);
+    // §서류함 첨부 여부 자동 표시 라운드: 이 항목 헤더의 "등록 N건"/"없음"도 항상 실제
+    // documentsForCompany 개수에서만 계산한다(derived, 별도 저장 없음).
+    const statusEl = document.getElementById('crmDocStatus_' + type);
+    if(statusEl){
+      statusEl.textContent = docs.length ? `등록 ${docs.length}건` : '없음';
+      statusEl.classList.toggle('is-on', docs.length > 0);
+    }
     if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">—</div>'; return; }
     listWrap.innerHTML = docs.map(doc=>{
       // 로컬 전용 문서는 실제 blob이 있어야 하고, 클라우드 문서는 storagePath가 local:이
