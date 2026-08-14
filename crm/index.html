@@ -1220,6 +1220,72 @@ window.SHIN2_CRM_OCR = (function(){
         isReady: ()=> docsSyncStarted
       };
 
+      // §shin/v2 전체 공용 동기화 라운드: companies(업체목록)/customerActivities(전화·활동
+      // 기록)/memos(업체 공용 메모)는 customerDocuments와 달리 "새 기기는 항상 비어서
+      // 시작"이라고 가정할 수 없다 — 이미 그 기기에 상당한 로컬 데이터가 쌓여 있을 수 있는
+      // 배열이므로, v2의 CASE A/B/C 최초 병합(§2~4) 없이 곧바로 실시간 동기화를 켜면 병합
+      // 안전장치를 건너뛰게 된다. 그래서 이 세 키는 반드시 이 "기기"에서 v2의 [클라우드
+      // 동기화 시작] 버튼이 이미 실행되어 localStorage['shin2-cloud-sync-enabled']==='1'가
+      // 된 뒤에만 실시간 push/subscribe를 켠다 — v2 없이 CRM 탭만 단독으로 계속 열어도(그
+      // 탭에서 최초 병합이 이미 끝난 상태라면) 그 이후로는 v2 탭이 없어도 그대로 동기화된다.
+      // v2/index.html의 pushToCloud/실시간 onSnapshot 패턴(§1701-1741)을 그대로 복제한
+      // 것이며, 새 동기화 메커니즘이 아니다. Firestore 문서 경로도 v2와 완전히 동일
+      // (users/{uid}/shin2/{storageKey}) — 두 파일이 같은 문서를 공유해서 병합한다.
+      const SHARED_ARRAY_KEYS = { companies: CO_KEY, customerActivities: ACT_KEY, memos: MEMO_KEY };
+      const sharedSyncStarted = {};
+      const sharedPushTimers = {};
+      function sharedLocalRevKey(storageKey){ return 'shin2-sync-rev-' + storageKey; }
+      function pushSharedKeyToCloud(name, storageKey, data){
+        if(!currentUid) return;
+        if(!Array.isArray(data) || data.length === 0) return; // §15와 동일한 빈 값 가드
+        const rev = Date.now();
+        try{ localStorage.setItem(sharedLocalRevKey(storageKey), String(rev)); }catch(e){}
+        clearTimeout(sharedPushTimers[name]);
+        sharedPushTimers[name] = setTimeout(async ()=>{
+          try{ await setDoc(doc(db, 'users', currentUid, 'shin2', storageKey), { value: data, updatedAt: serverTimestamp(), localRev: rev }); }
+          catch(e){ console.error(`[CRM/Firebase] ${name} 저장 실패`, e); }
+        }, 500);
+      }
+      function startSharedKeySync(name, storageKey){
+        if(sharedSyncStarted[name] || !currentUid) return;
+        sharedSyncStarted[name] = true;
+        const ref = doc(db, 'users', currentUid, 'shin2', storageKey);
+        onSnapshot(ref, (snap)=>{
+          if(!snap.exists()) return;
+          const payload = snap.data();
+          if(payload.value == null || !Array.isArray(payload.value) || payload.value.length === 0) return;
+          let localRev = 0;
+          try{ localRev = parseInt(localStorage.getItem(sharedLocalRevKey(storageKey)) || '0', 10) || 0; }catch(e){}
+          const snapRev = (typeof payload.localRev === 'number') ? payload.localRev : 0;
+          if(localRev && localRev > snapRev){
+            // 이 기기의 아직 반영 안 된 최신 로컬 변경(삭제 포함)을 되돌리지 않는다 — v2와
+            // 동일한 가드. 대신 현재 로컬 값을 다시 밀어 클라우드가 따라잡게 한다.
+            let currentLocal = null;
+            try{ const raw = localStorage.getItem(storageKey); currentLocal = raw ? JSON.parse(raw) : null; }catch(e){}
+            if(Array.isArray(currentLocal) && currentLocal.length) pushSharedKeyToCloud(name, storageKey, currentLocal);
+            return;
+          }
+          try{ localStorage.setItem(storageKey, JSON.stringify(payload.value)); }catch(e){}
+          window.dispatchEvent(new CustomEvent('shin2-crm-cloud-update', { detail: { key: name } }));
+        }, (err)=> console.warn(`[CRM/Firebase] ${name} 구독 실패`, err));
+      }
+      function maybeStartSharedSync(){
+        if(!currentUid) return;
+        let enabled = false;
+        try{ enabled = localStorage.getItem('shin2-cloud-sync-enabled') === '1'; }catch(e){}
+        if(!enabled) return; // 이 기기에서 v2의 최초 병합(CASE A/B/C)이 아직 안 끝났다면 대기
+        Object.keys(SHARED_ARRAY_KEYS).forEach((name)=> startSharedKeySync(name, SHARED_ARRAY_KEYS[name]));
+      }
+      window.SHIN2_CRM_SHARED_SYNC = {
+        push: (name, data)=>{ if(SHARED_ARRAY_KEYS[name]) pushSharedKeyToCloud(name, SHARED_ARRAY_KEYS[name], data); },
+        isReady: (name)=> !!sharedSyncStarted[name]
+      };
+      // 다른 탭(같은 브라우저의 v2)에서 방금 [클라우드 동기화 시작] 버튼을 눌러 플래그가
+      // 새로 켜지면, 이 CRM 탭을 새로고침하지 않아도 바로 이어받아 실시간 동기화를 켠다.
+      window.addEventListener('storage', (e)=>{
+        if(e.key === 'shin2-cloud-sync-enabled' && e.newValue === '1') maybeStartSharedSync();
+      });
+
       onAuthStateChanged(auth, (user) => {
         currentUid = user ? user.uid : null;
         window.dispatchEvent(new CustomEvent('shin2-crm-firebase-ready'));
@@ -1232,6 +1298,7 @@ window.SHIN2_CRM_OCR = (function(){
         // 안전한 그림), 이미 파일을 올린 기기는 자기 로컬 rev가 더 최신이면 오히려 클라우드로
         // 다시 밀어주는 기존 가드(localRev vs snapRev)가 그대로 지켜준다 — 데이터 유실 없음.
         if(currentUid) startDocsSync();
+        maybeStartSharedSync();
       });
 
       // §클라우드 파일 저장 문제 해결 라운드: 로그인 실패 이유가 지금까지 console.warn에만
@@ -1370,7 +1437,16 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   const LIB_KEY = 'shin2-library-documents-v1';
 
   function readArr(key){ try{ const raw = localStorage.getItem(key); const a = raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-  function writeArr(key, arr){ try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('저장 실패', key, e); } }
+  function writeArr(key, arr){
+    try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('저장 실패', key, e); }
+    // §shin/v2 전체 공용 동기화 라운드: companies/customerActivities/memos 세 키는 v2 탭 없이
+    // CRM 단독으로 수정해도 클라우드로 나가도록, 저장 시점에 바로 push를 시도한다(§SHIN2_CRM_SHARED_SYNC,
+    // 위 Firebase 모듈 정의). 아직 로그인 전이거나 이 기기에서 최초 병합이 안 끝났으면 함수 내부
+    // 가드가 조용히 무시한다 — 로컬 저장 자체는 항상 그대로 이루어진다.
+    const SYNC_NAME_BY_KEY = { [CO_KEY]: 'companies', [ACT_KEY]: 'customerActivities', [MEMO_KEY]: 'memos' };
+    const syncName = SYNC_NAME_BY_KEY[key];
+    if(syncName){ try{ if(window.SHIN2_CRM_SHARED_SYNC) window.SHIN2_CRM_SHARED_SYNC.push(syncName, arr); }catch(e){} }
+  }
   function readObj(key){ try{ const raw = localStorage.getItem(key); const o = raw?JSON.parse(raw):{}; return (o && typeof o==='object')?o:{}; }catch(e){ return {}; } }
   function writeObj(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){ console.error('저장 실패(용량 초과 가능)', key, e); } }
 
