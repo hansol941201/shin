@@ -144,7 +144,6 @@
   .qna-ai-tier.tier-must{background:#c0392b;}
   .qna-ai-tier.tier-frequent{background:var(--qna-star);}
   .qna-ai-tier.tier-recommend{background:var(--qna-navy);}
-  .qna-ai-tag{font-size:10px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);padding:2px 8px;border-radius:6px;flex:none;}
   .qna-ai-item-title{font-size:12.5px;font-weight:800;color:var(--qna-text);line-height:1.4;}
   .qna-ai-item-reason{font-size:11px;color:var(--qna-text-gray);margin:3px 0 0;line-height:1.5;}
   .qna-ai-item-actions{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
@@ -646,74 +645,170 @@ function qnaRenderItem(item, showPartTag){
    질문 목록의 구조/데이터/기능(검색, 답변 보기/닫기, 1차·2차·PT,
    질문 등록·수정·삭제, 저장 구조)에는 전혀 관여하지 않는다.
    ============================================================ */
-// 실행 항목 카탈로그 — 오늘 바로 시작하거나 시공사에 바로 줄 수 있는 것들로만 구성했다.
-// 새로운 시스템 구축, 막연한 신사업 아이디어는 넣지 않는다.
-const QNA_ACTIONS = {
-  'similar-cases':      { title:'비슷한 현장 사례 3개 보내기', reason:'이 현장과 조건이 비슷한 실적만 골라 시공사에 보내세요.', tag:'자료 고르기' },
-  'margin-calc':         { title:'이 공사가 남는지 계산하기', reason:'예상 금액에서 자재비와 시공비를 빼서 수익을 확인하세요.', tag:'계산하기' },
-  'next-contact':        { title:'다음에 연락할 사람과 날짜 정하기', reason:'답변 후 후속 연락이 빠지지 않도록 담당자와 날짜를 정하세요.', tag:'등록하기' },
-  'mark-drawing':        { title:'도면·사진에 적용 위치 표시하기', reason:'어디에 적용할지 도면이나 현장 사진에 직접 표시해서 보내세요.', tag:'표시하기' },
-  'method-compare':      { title:'공법 비교표 만들기', reason:'경쟁 공법과 이 공법의 차이를 표 한 장으로 정리하세요.', tag:'표 만들기' },
-  'cost-schedule-compare':{ title:'비용·기간·품질 비교표 만들기', reason:'경쟁 공법과 비용·기간·품질을 항목별로 비교해서 정리하세요.', tag:'표 만들기' },
-  'quantity-estimate':   { title:'물량 산출해서 보내기', reason:'도면을 보고 필요한 물량을 계산해서 시공사에 보내세요.', tag:'계산하기' },
-  'cost-estimate':       { title:'예상 공사비 계산해서 보내기', reason:'물량에 단가를 곱해 예상 공사비를 계산해서 보내세요.', tag:'계산하기' },
-  'design-wording-check':{ title:'설계 반영 문구 다듬어서 보내기', reason:'설계사무소에 그대로 전달할 수 있게 문구를 정리하세요.', tag:'문구 다듬기' },
-  'bid-requirement-check':{ title:'입찰 참여 조건 확인하기', reason:'공고문에서 우리가 참여 가능한 조건인지 먼저 확인하세요.', tag:'확인하기' },
-  'bid-document-check':  { title:'제출 서류 목록 확인하기', reason:'공고에서 요구하는 제출 서류를 빠짐없이 확인하세요.', tag:'확인하기' },
-  'cert-select':         { title:'필요한 인증·시험성적서 골라 보내기', reason:'이 질문에 맞는 인증서·시험성적서만 골라서 보내세요.', tag:'자료 고르기' },
-  'construction-sequence':{ title:'시공 순서 한 장으로 정리하기', reason:'시공 순서를 그림과 함께 한 장으로 정리해서 보내세요.', tag:'정리하기' },
-  'site-visit':          { title:'현장 방문 일정 잡기', reason:'직접 현장을 보고 확인해야 정확한 답을 줄 수 있습니다.', tag:'일정 잡기' },
-  'defect-prevention':   { title:'하자 예방 방법 정리해서 보내기', reason:'이 조건에서 자주 생기는 하자와 예방 방법을 정리해서 보내세요.', tag:'정리하기' },
-  'maintenance-guide':   { title:'유지관리 방법 안내하기', reason:'준공 후 관리 방법을 간단히 안내해서 신뢰를 높이세요.', tag:'안내하기' },
-  'procurement-check':   { title:'조달·관급 적용 가능 여부 확인하기', reason:'이 제품이 조달 등록 대상인지, 관급공사에 쓸 수 있는지 확인하세요.', tag:'확인하기' },
-  'pt-customize':        { title:'PT 자료 이 현장에 맞게 고치기', reason:'기존 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고치세요.', tag:'자료 고치기' },
-  'drone-diagnosis':     { title:'드론 진단이 필요한지 확인하기', reason:'현장이 넓거나 접근이 어려우면 드론 진단으로 빠르게 확인하세요.', tag:'확인하기' },
-};
-// 규칙 그룹: 질문 문구 키워드/카테고리가 매칭되면 정해진 순서(=중요도)대로 실행 항목을 제안한다.
-// 배열 안 순서가 곧 필수(0) → 자주 요청(1) → 추천(2) 우선순위다.
-const QNA_RECO_RULES = [
-  { categories:['가격 / 단가','수익 / 마진'], keywords:['단가','예산','금액','가격','견적','비용','마진'],
-    actions:['quantity-estimate','cost-estimate','cost-schedule-compare'] },
-  { categories:['타 공법 병행'], keywords:['적용 가능','현장 조건','시공 방법','적용할 수','병행','적용'],
-    actions:['mark-drawing','method-compare','site-visit'] },
-  { categories:[], keywords:['품질','하자','보증','유지관리'],
-    actions:['cert-select','defect-prevention','maintenance-guide'] },
-  { categories:[], keywords:['실적','신뢰','사례','경험'],
-    actions:['similar-cases','pt-customize','next-contact'] },
-  { categories:['민간 아파트 영업 지원'], keywords:['입찰','공고','참여'],
-    actions:['bid-requirement-check','bid-document-check','design-wording-check'] },
-  { categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사','등록'],
-    actions:['procurement-check','bid-requirement-check','next-contact'] },
-  { categories:[], keywords:['pt','설명','발표','설명회','교육','주민','입주민'],
-    actions:['pt-customize','next-contact','site-visit'] },
-  { categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금','법적'],
-    actions:['design-wording-check','bid-document-check','next-contact'] },
-  { categories:[], keywords:['시공 순서','공정','드론','진단','접근'],
-    actions:['construction-sequence','drone-diagnosis','site-visit'] },
-];
-// 어떤 규칙에도 안 걸리는 질문을 위한 기본 제안(항상 실행 가능한 것들로만 구성).
-const QNA_RECO_FALLBACK = ['similar-cases','next-contact','pt-customize'];
+// ------------------------------------------------------------------
+// 질문 "한 건"의 핵심 목적을 먼저 파악한 뒤(질문 유형 분류), 그 유형에 맞게 검수된
+// 자연스러운 문구 템플릿으로 제안을 만든다. 순서는 항상
+//   질문 목적 파악 → 필요한 확인 사항 → 시공사에 제공할 내용 → 다음 행동
+// 을 따르고, 단순히 키워드를 이어붙여 제목을 만들지 않는다.
+// ------------------------------------------------------------------
 
-// 질문 한 건에 대해 관련 실행 항목을 (필수→자주 요청→추천 순서로) 최대 6개까지 뽑는다.
-function qnaMatchActionsForQuestion(q){
+// 질문 문장에서 "무엇에" 적용/설치/시공하려는지(장소·대상)를 추출한다.
+// 못 찾으면 null을 반환하고, 호출하는 쪽에서 "이 현장" 같은 일반적인 표현으로 대체한다.
+function qnaExtractSubject(question){
+  const m = (question||'').match(/([가-힣A-Za-z0-9·]{2,12})에(?:도|서)?\s*(적용|설치|시공|사용)/);
+  return m ? m[1] : null;
+}
+
+// 질문 유형 분류 — 우선순위가 높은 것부터 먼저 검사해 "가장 핵심에 가까운 목적" 하나만 고른다.
+// (여러 유형이 뒤섞여 애매한 제안이 나오지 않도록, 하나의 질문에는 하나의 대표 유형만 적용한다.)
+const QNA_QUESTION_TYPES = [
+  { key:'cost', categories:['가격 / 단가','수익 / 마진'], keywords:['단가','가격','견적','비용','마진','금액','예산'] },
+  { key:'quality', categories:[], keywords:['하자','품질','보증','유지관리','시험성적서','인증'] },
+  { key:'track-record', categories:[], keywords:['실적','신뢰','사례','경험'] },
+  { key:'bid', categories:[], keywords:['입찰','공고'] },
+  { key:'procurement', categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사'] },
+  { key:'explain', categories:[], keywords:['pt','설명','발표','설명회','교육','주민','입주민'] },
+  { key:'contract', categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금','법적'] },
+  { key:'sequence', categories:[], keywords:['시공 순서','공정','드론','진단'] },
+  { key:'apply', categories:['타 공법 병행'], keywords:['적용','현장 조건','시공 방법','병행','설치'] },
+];
+const QNA_GOV_KEYWORDS = ['조달','관급','관공서','공공기관','관공사'];
+
+function qnaClassifyQuestionType(q, haystack){
+  for(const t of QNA_QUESTION_TYPES){
+    const hit = (t.categories.length && t.categories.includes(q.category)) ||
+      t.keywords.some(k => haystack.includes(k.toLowerCase()));
+    if(hit) return t.key;
+  }
+  return 'general';
+}
+
+// 유형별 제안 템플릿 — 검수된 자연스러운 한국어 문장만 사용한다. 각 항목의 tier(0=필수,
+// 1=자주 요청, 2=추천)가 화면에 보이는 순서와 색을 결정한다.
+const QNA_TYPE_TEMPLATES = {
+  apply(q){
+    const subject = qnaExtractSubject(q.question) || '이 현장';
+    return [
+      { id:'apply-check', tier:0, title:`${subject} 적용 가능 여부 확인`,
+        desc:`${subject}의 장소와 사용 목적을 확인한 뒤 POUR 제품·공법을 적용할 수 있는지 검토하세요.`, button:'검토하기' },
+      { id:'apply-cases', tier:0, title:`비슷한 ${subject} 적용 사례 찾기`,
+        desc:'조건이 비슷한 현장 사례를 찾아 시공사에 보여주세요.', button:'사례 찾기' },
+      { id:'apply-product', tier:1, title:`${subject}에 맞는 제품 추천하기`,
+        desc:'설치 장소, 이용 인원, 주변 환경에 맞는 제품과 공법을 골라주세요.', button:'제품 고르기' },
+      { id:'apply-cost', tier:2, title:'예상 비용과 공사 기간 안내하기',
+        desc:'현장 규모를 확인해 대략적인 비용과 필요한 공사 기간을 알려주세요.', button:'계산하기' },
+    ];
+  },
+  cost(){
+    return [
+      { id:'cost-quantity', tier:0, title:'필요한 물량 산출하기',
+        desc:'도면을 보고 이 공사에 필요한 물량을 계산해서 시공사에 보내세요.', button:'산출하기' },
+      { id:'cost-estimate', tier:0, title:'예상 공사비 계산해서 보내기',
+        desc:'물량에 단가를 곱해 예상 공사비를 계산해서 알려주세요.', button:'계산하기' },
+      { id:'cost-compare', tier:1, title:'현장에 맞는 공법 비교하기',
+        desc:'다른 공법과 비용·기간·품질을 비교한 자료를 만들어 전달하세요.', button:'비교하기' },
+      { id:'cost-margin', tier:2, title:'이 공사가 남는지 확인하기',
+        desc:'예상 금액에서 자재비와 시공비를 빼서 수익을 확인하세요.', button:'계산하기' },
+    ];
+  },
+  quality(){
+    return [
+      { id:'quality-cert', tier:0, title:'필요한 인증·시험성적서 준비하기',
+        desc:'이 질문에 맞는 인증서·시험성적서를 찾아 골라 보내세요.', button:'자료 보내기' },
+      { id:'quality-prevent', tier:0, title:'하자 예방 방법 안내하기',
+        desc:'이런 조건에서 자주 생기는 하자와 예방 방법을 정리해서 알려주세요.', button:'안내하기' },
+      { id:'quality-maintenance', tier:1, title:'준공 후 유지관리 방법 안내하기',
+        desc:'시공이 끝난 뒤 관리하는 방법을 간단히 정리해서 전달하세요.', button:'안내하기' },
+      { id:'quality-cases', tier:2, title:'비슷한 현장의 하자 대응 사례 찾기',
+        desc:'비슷한 조건에서 하자가 생겼을 때 어떻게 대응했는지 사례를 찾아 보여주세요.', button:'사례 찾기' },
+    ];
+  },
+  'track-record'(){
+    return [
+      { id:'track-cases', tier:0, title:'비슷한 현장 사례 찾기',
+        desc:'이 현장과 조건이 비슷한 실적만 골라 시공사에 보내세요.', button:'사례 찾기' },
+      { id:'track-pt', tier:1, title:'발표 자료를 이 현장에 맞게 고치기',
+        desc:'있는 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고쳐서 보내세요.', button:'자료 보내기' },
+      { id:'track-contact', tier:2, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+    ];
+  },
+  bid(){
+    return [
+      { id:'bid-requirement', tier:0, title:'입찰 참여 조건 확인하기',
+        desc:'공고문에서 우리가 참여할 수 있는 조건인지 먼저 확인하세요.', button:'확인하기' },
+      { id:'bid-document', tier:0, title:'제출 서류 확인하기',
+        desc:'공고에서 요구하는 제출 서류를 빠짐없이 확인하세요.', button:'확인하기' },
+      { id:'bid-wording', tier:1, title:'설계 반영 문구 정리해서 보내기',
+        desc:'설계사무소에 바로 전달할 수 있게 문구를 정리해서 보내세요.', button:'자료 보내기' },
+    ];
+  },
+  procurement(){
+    return [
+      { id:'gov-check', tier:0, title:'관급공사에 사용할 수 있는지 확인하기',
+        desc:'제품 등록 여부와 발주 조건을 확인해 관급공사 적용 가능성을 검토하세요.', button:'확인하기' },
+      { id:'bid-requirement', tier:1, title:'입찰 참여 조건 확인하기',
+        desc:'공고문에서 우리가 참여할 수 있는 조건인지 먼저 확인하세요.', button:'확인하기' },
+      { id:'track-contact', tier:2, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+    ];
+  },
+  explain(){
+    return [
+      { id:'track-pt', tier:0, title:'발표 자료를 이 현장에 맞게 고치기',
+        desc:'있는 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고쳐서 보내세요.', button:'자료 보내기' },
+      { id:'explain-schedule', tier:1, title:'다음 설명 일정 잡기',
+        desc:'추가로 설명이 필요하면 담당자와 다음 일정을 미리 정해두세요.', button:'일정 잡기' },
+      { id:'sequence-visit', tier:2, title:'현장 방문 일정 잡기',
+        desc:'직접 현장을 보고 설명해야 이해가 빠르면 방문 일정을 잡으세요.', button:'일정 잡기' },
+    ];
+  },
+  contract(){
+    return [
+      { id:'contract-structure', tier:0, title:'계약 구조 정리해서 안내하기',
+        desc:'발주처·시공사·POUR 사이의 계약 관계를 정리해서 설명하세요.', button:'안내하기' },
+      { id:'bid-wording', tier:1, title:'설계 반영 문구 정리해서 보내기',
+        desc:'설계사무소에 바로 전달할 수 있게 문구를 정리해서 보내세요.', button:'자료 보내기' },
+      { id:'track-contact', tier:2, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+    ];
+  },
+  sequence(){
+    return [
+      { id:'sequence-doc', tier:0, title:'시공 순서 정리해서 보내기',
+        desc:'착공부터 마감까지 시공 순서를 그림과 함께 한 장으로 정리해서 보내세요.', button:'자료 보내기' },
+      { id:'sequence-drone', tier:1, title:'드론 진단이 필요한지 확인하기',
+        desc:'현장이 넓거나 접근이 어려우면 드론으로 미리 진단할지 확인하세요.', button:'확인하기' },
+      { id:'sequence-visit', tier:2, title:'현장 방문 일정 잡기',
+        desc:'직접 현장을 보고 확인해야 정확하게 답할 수 있습니다.', button:'일정 잡기' },
+    ];
+  },
+  general(){
+    return [
+      { id:'track-cases', tier:0, title:'비슷한 현장 사례 찾기',
+        desc:'이 현장과 조건이 비슷한 실적만 골라 시공사에 보내세요.', button:'사례 찾기' },
+      { id:'track-contact', tier:1, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+      { id:'track-pt', tier:2, title:'발표 자료를 이 현장에 맞게 고치기',
+        desc:'있는 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고쳐서 보내세요.', button:'자료 보내기' },
+    ];
+  },
+};
+
+// 질문 한 건에 대해 자연스러운 문구의 제안을 만든다. 관급/조달과 관련된 질문이면(대표 유형이
+// 이미 조달인 경우는 제외) "관급공사에 사용할 수 있는지 확인하기" 항목을 추가로 붙인다.
+function qnaBuildRecoItems(q){
   if(!q) return [];
   const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
-  const picked = []; // { id, tier }
-  const seen = new Set();
-  QNA_RECO_RULES.forEach(rule => {
-    const hit = (rule.categories.length && rule.categories.includes(q.category)) ||
-      rule.keywords.some(k => haystack.includes(k.toLowerCase()));
-    if(!hit) return;
-    rule.actions.forEach((id, idx) => {
-      if(seen.has(id)) return;
-      seen.add(id); picked.push({ id, tier: idx });
-    });
-  });
-  if(!picked.length){
-    QNA_RECO_FALLBACK.forEach((id, idx) => { if(!seen.has(id)){ seen.add(id); picked.push({ id, tier: idx }); } });
+  const type = qnaClassifyQuestionType(q, haystack);
+  const items = (QNA_TYPE_TEMPLATES[type] || QNA_TYPE_TEMPLATES.general)(q).slice();
+  const mentionsGov = QNA_GOV_KEYWORDS.some(k => haystack.includes(k));
+  if(type !== 'procurement' && mentionsGov && !items.some(it => it.id === 'gov-check')){
+    items.push({ id:'gov-check', tier:2, title:'관급공사에 사용할 수 있는지 확인하기',
+      desc:'제품 등록 여부와 발주 조건을 확인해 관급공사 적용 가능성을 검토하세요.', button:'확인하기' });
   }
-  picked.sort((a,b) => a.tier - b.tier);
-  return picked.slice(0, 6);
+  items.sort((a,b) => a.tier - b.tier);
+  return items.slice(0, 6);
 }
 const QNA_TIER_LABEL = { 0:'필수', 1:'자주 요청', 2:'추천' };
 const QNA_TIER_CLASS = { 0:'tier-must', 1:'tier-frequent', 2:'tier-recommend' };
@@ -728,28 +823,26 @@ function qnaResolveRecoQuestion(){
   const list = qnaState.questions.filter(q => q.part === qnaActiveTab).slice().sort(qnaSortCompare);
   return list[0] || null;
 }
-function qnaRenderRecoItem(q, entry){
-  const state = (q.actionStates && q.actionStates[entry.id]) || null;
-  const item = QNA_ACTIONS[entry.id];
-  const tierLabel = QNA_TIER_LABEL[entry.tier];
-  const tierClass = QNA_TIER_CLASS[entry.tier];
+function qnaRenderRecoItem(q, item){
+  const state = (q.actionStates && q.actionStates[item.id]) || null;
+  const tierLabel = QNA_TIER_LABEL[item.tier];
+  const tierClass = QNA_TIER_CLASS[item.tier];
   const statusHtml = state === 'done'
-    ? `<div class="qna-ai-status done">완료됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${entry.id}">되돌리기</button></div>`
+    ? `<div class="qna-ai-status done">완료됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${item.id}">되돌리기</button></div>`
     : state === 'excluded'
-      ? `<div class="qna-ai-status">제외됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${entry.id}">되돌리기</button></div>`
+      ? `<div class="qna-ai-status">제외됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${item.id}">되돌리기</button></div>`
       : `<div class="qna-ai-item-actions">
-          <button type="button" class="qna-ai-btn primary" data-action="ai-start" data-qid="${q.id}" data-aid="${entry.id}">실행하기</button>
-          <button type="button" class="qna-ai-btn" data-action="ai-done" data-qid="${q.id}" data-aid="${entry.id}">완료</button>
-          <button type="button" class="qna-ai-btn danger" data-action="ai-exclude" data-qid="${q.id}" data-aid="${entry.id}">제외</button>
+          <button type="button" class="qna-ai-btn primary" data-action="ai-start" data-qid="${q.id}" data-aid="${item.id}">${qnaEscapeHtml(item.button)}</button>
+          <button type="button" class="qna-ai-btn" data-action="ai-done" data-qid="${q.id}" data-aid="${item.id}">완료</button>
+          <button type="button" class="qna-ai-btn danger" data-action="ai-exclude" data-qid="${q.id}" data-aid="${item.id}">제외</button>
         </div>`;
   return `
     <div class="qna-ai-item">
       <div class="qna-ai-item-head">
         <span class="qna-ai-tier ${tierClass}">${tierLabel}</span>
-        <span class="qna-ai-tag">${qnaEscapeHtml(item.tag)}</span>
       </div>
       <div class="qna-ai-item-title">${qnaEscapeHtml(item.title)}</div>
-      <div class="qna-ai-item-reason">${qnaEscapeHtml(item.reason)}</div>
+      <div class="qna-ai-item-reason">${qnaEscapeHtml(item.desc)}</div>
       ${statusHtml}
     </div>
   `;
@@ -763,7 +856,7 @@ function qnaRenderRecoPanel(){
     return;
   }
   qnaRecoQuestionId = q.id;
-  const matches = qnaMatchActionsForQuestion(q);
+  const matches = qnaBuildRecoItems(q);
   const main = matches.slice(0, 3);
   const rest = matches.slice(3);
   const shortQ = q.question.length > 46 ? q.question.slice(0, 46) + '…' : q.question;
