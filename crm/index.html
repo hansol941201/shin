@@ -131,12 +131,17 @@
 
   /* ---------- 서류함(4분류) — 고객별 파일 보관함 ---------- */
   .doc-blocked-note{ font-size:11.5px; color:#9A6B00; background:#FFF7E6; border:1px solid #F0DDA8; border-radius:6px; padding:8px 10px; margin-bottom:14px; }
-  .doc-category{ border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; background:var(--surface); }
-  .doc-category.drag-over{ border-color:#C7CEDB; background:#F5F7FB; }
+  .doc-category{ position:relative; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; background:var(--surface); cursor:pointer; }
+  .doc-category.drag-over{ border-color:var(--navy); border-width:2px; padding:11px 13px; background:#F0F3F9; }
   .doc-category:last-child{ margin-bottom:0; }
   .doc-cat-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
   .doc-cat-title{ font-size:13.5px; font-weight:700; color:var(--text); }
   .doc-add-btn{ font-size:12px; }
+  .doc-drop-hint{ font-size:12px; color:var(--text-muted); padding:10px 0; text-align:center; border:1px dashed var(--line); border-radius:6px; margin-top:2px; }
+  .doc-category.has-docs .doc-drop-hint{ display:none; }
+  .doc-drop-active-label{ display:none; position:absolute; inset:0; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--navy); background:rgba(240,243,249,.92); border-radius:8px; pointer-events:none; }
+  .doc-category.drag-over .doc-drop-active-label{ display:flex; }
+  .doc-category.drag-over .doc-drop-hint{ visibility:hidden; }
   .doc-item{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--line); }
   .doc-item:last-child{ border-bottom:none; }
   .doc-thumb{ width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid var(--line); flex:none; background:var(--bg); }
@@ -1031,12 +1036,26 @@ window.SHIN2_CRM_OCR = (function(){
       const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
       const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } =
         await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
-      const { getStorage, ref: storageRef, uploadBytesResumable, getDownloadURL } =
+      const { getStorage, ref: storageRef, uploadBytesResumable, getDownloadURL, deleteObject } =
         await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js');
+      // Firestore — 서류함 드래그앤드롭+전 직원 공유 라운드에서 새로 추가. 지금까지 CRM 탭은
+      // Firestore를 전혀 쓰지 않고(§ 위 파일 헤더 주석), customerDocuments 메타데이터가
+      // v2 탭이 같은 브라우저에 열려 있을 때만("storage" 이벤트 전달자) 클라우드로 옮겨졌다 —
+      // 즉 v2 탭 없이 CRM만 단독으로 열려 있으면(다른 직원 PC 등) 실제로 클라우드에 올라가지
+      // 않는 구멍이 있었다. 그래서 이 라운드부터 customerDocuments 키 "하나만" v2와 완전히
+      // 동일한 문서 경로(users/{uid}/shin2/shin2-customer-documents-v1)·동일한 localRev
+      // 가드로 직접 동기화한다 — 새 동기화 메커니즘이 아니라 기존 v2 realtime sync 패턴을
+      // 그대로 복제한 것이다. 최초 동기화(CASE A/B/C 판단, 병합)는 여전히 v2의 [클라우드
+      // 동기화 시작] 버튼에서만 일어나고, 이 블록은 그 버튼을 이미 누른 기기(localStorage의
+      // shin2-cloud-sync-enabled==='1')에서만 이어받아 실시간으로 켠다 — CRM이 새로 동의를
+      // 받거나 자동으로 최초 동기화를 실행하지 않는다(§12 자동 마이그레이션 금지).
+      const { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } =
+        await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
 
       const app = initializeApp(cfg, 'shin2crm');
       const auth = getAuth(app);
       const storage = getStorage(app);
+      const db = getFirestore(app);
       let currentUid = null;
 
       function uploadToStorage(file, path, onProgress){
@@ -1058,16 +1077,66 @@ window.SHIN2_CRM_OCR = (function(){
       function getStorageFileURL(path){
         return getDownloadURL(storageRef(storage, path));
       }
+      // deleteFromStorage: 파일 삭제 시 메타데이터와 함께 실제 Storage 객체도 지우기 위한
+      // 함수(§ 서류함 드래그앤드롭 라운드 §11 — 고아 없이 일관 삭제). 이미 없는 객체를
+      // 지우려는 경우(storage/object-not-found)는 성공으로 취급한다(멱등).
+      function deleteFromStorage(path){
+        return deleteObject(storageRef(storage, path)).catch((err)=>{
+          if(err && err.code === 'storage/object-not-found') return;
+          throw err;
+        });
+      }
       window.SHIN2_STORAGE = {
         uploadFile: uploadToStorage,
         getFileURL: getStorageFileURL,
+        deleteFile: deleteFromStorage,
         isSignedIn: () => !!currentUid,
         getUid: () => currentUid
+      };
+
+      // customerDocuments 전용 실시간 동기화 — v2 SHIN2_SYNC_KEYS.customerDocuments와
+      // 완전히 동일한 문자열 키를 그대로 쓴다(새 키를 만들지 않음, §4 메타데이터 요구사항).
+      const DOC_SYNC_STORAGE_KEY = 'shin2-customer-documents-v1';
+      function docSyncLocalRevKey(){ return 'shin2-sync-rev-' + DOC_SYNC_STORAGE_KEY; }
+      let docsSyncStarted = false;
+      let docsPushTimer = null;
+      function pushDocsToCloud(data){
+        if(!currentUid) return;
+        const rev = Date.now();
+        try{ localStorage.setItem(docSyncLocalRevKey(), String(rev)); }catch(e){}
+        clearTimeout(docsPushTimer);
+        docsPushTimer = setTimeout(async ()=>{
+          try{ await setDoc(doc(db, 'users', currentUid, 'shin2', DOC_SYNC_STORAGE_KEY), { value: data, updatedAt: serverTimestamp(), localRev: rev }); }
+          catch(e){ console.error('[CRM/Firebase] 서류함 메타데이터 저장 실패', e); }
+        }, 500);
+      }
+      function startDocsSync(){
+        if(docsSyncStarted || !currentUid) return;
+        docsSyncStarted = true;
+        const ref = doc(db, 'users', currentUid, 'shin2', DOC_SYNC_STORAGE_KEY);
+        onSnapshot(ref, (snap)=>{
+          if(!snap.exists()) return;
+          const payload = snap.data();
+          if(payload.value == null || !Array.isArray(payload.value)) return;
+          let localRev = 0;
+          try{ localRev = parseInt(localStorage.getItem(docSyncLocalRevKey()) || '0', 10) || 0; }catch(e){}
+          const snapRev = (typeof payload.localRev === 'number') ? payload.localRev : 0;
+          if(localRev && localRev > snapRev) return; // 이 기기의 아직 반영 안 된 최신 변경(삭제 포함)을 되돌리지 않는다.
+          try{ localStorage.setItem(DOC_SYNC_STORAGE_KEY, JSON.stringify(payload.value)); }catch(e){}
+          window.dispatchEvent(new CustomEvent('shin2-crm-docs-cloud-update'));
+        }, (err)=> console.warn('[CRM/Firebase] 서류함 메타데이터 구독 실패', err));
+      }
+      window.SHIN2_CRM_DOCS_SYNC = {
+        push: (data)=> pushDocsToCloud(data),
+        isReady: ()=> docsSyncStarted
       };
 
       onAuthStateChanged(auth, (user) => {
         currentUid = user ? user.uid : null;
         window.dispatchEvent(new CustomEvent('shin2-crm-firebase-ready'));
+        // v2의 [클라우드 동기화 시작] 버튼을 이 기기에서 이미 눌러 최초 동기화(CASE A/B/C)를
+        // 마친 적이 있을 때만 이어서 실시간 동기화를 켠다 — CRM이 스스로 새 동의를 만들지 않는다.
+        if(currentUid && localStorage.getItem('shin2-cloud-sync-enabled') === '1') startDocsSync();
       });
 
       trySignInWithPassword = (pw) => {
@@ -1264,7 +1333,15 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
 
   // ---- customerDocuments (메타데이터만 — 바이너리는 별도 로컬 전용 blob 저장소) ----
   function loadDocuments(){ return readArr(DOC_KEY); }
-  function saveDocuments(list){ writeArr(DOC_KEY, list); }
+  // saveDocuments: 로컬에 쓴 직후, 이미 실시간 동기화가 켜진 기기라면(§ 위 firebase 블록의
+  // SHIN2_CRM_DOCS_SYNC — v2에서 [클라우드 동기화 시작]을 이미 눌러둔 기기만) 같은 배열을
+  // 그대로 클라우드에도 밀어준다 — v2 탭이 열려있어야만 동작하던 기존 "storage 이벤트
+  // 전달자" 경로에 의존하지 않고 이 함수를 호출하는 모든 지점(추가/이름변경/메모/삭제/
+  // 공용전환)에서 항상 직접 동기화된다.
+  function saveDocuments(list){
+    writeArr(DOC_KEY, list);
+    try{ if(window.SHIN2_CRM_DOCS_SYNC && window.SHIN2_CRM_DOCS_SYNC.push) window.SHIN2_CRM_DOCS_SYNC.push(list); }catch(e){}
+  }
   function documentsForCompany(companyId, type){
     return loadDocuments().filter(d=> d.companyId === companyId && (!type || d.documentType === type))
       .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
@@ -1274,8 +1351,44 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   function loadLibraryDocs(){ return readArr(LIB_KEY); }
   function findLibraryDoc(id){ return loadLibraryDocs().find(d=> d.id === id) || null; }
   const DOC_MAX_LOCAL_BYTES = 2 * 1024 * 1024; // 2MB — 로컬 dataURL 폴백에만 적용되는 상한(localStorage 용량 한계 때문).
-  // 클라우드(Storage) 업로드 경로에는 이 상한을 적용하지 않는다 — resumable upload라 대용량
-  // 파일도 처리할 수 있고, 목적이 다른(브라우저 localStorage 용량 보호) 상한이기 때문이다.
+  // 클라우드(Storage) 업로드 경로는 로컬 저장 용량 문제가 없지만, 완전 무제한도 아니다
+  // (§9 — "무제한은 아니되" 요청). 20MB는 요청서의 제안값을 그대로 채택했다.
+  const DOC_MAX_CLOUD_BYTES = 20 * 1024 * 1024;
+  // 허용 파일 종류(§10) — PDF/JPG/JPEG/PNG/WEBP는 필수, 오피스 문서(XLSX/XLS/DOCX/HWP 등)는
+  // 이미 질문서/물품공급계약서 카테고리의 accept 속성이 문서 파일을 받고 있었으므로(§실제 서류함
+  // 단순화 라운드) 안전하게 허용 목록에 포함했다. 실행파일 등은 목록에 없으므로 거부된다.
+  const DOC_ALLOWED_EXT = ['pdf','jpg','jpeg','png','webp','xlsx','xls','docx','doc','hwp','hwpx'];
+  function isAllowedDocFile(file){
+    const name = String((file && file.name) || '').toLowerCase();
+    const dot = name.lastIndexOf('.');
+    const ext = dot >= 0 ? name.slice(dot+1) : '';
+    return DOC_ALLOWED_EXT.indexOf(ext) !== -1;
+  }
+  // currentUserLabel: uploadedBy 기록용. v2의 SHIN2_USER가 쓰는 것과 완전히 같은 localStorage
+  // 키(shin2-active-user-id)를 읽기만 한다 — CRM은 별도 로그인 개념이 없으므로, 이미 존재하는
+  // "지금 이 브라우저에서 선택된 사용자 1/2/3" 값을 그대로 재사용한다(새 로그인/식별 체계를
+  // 만들지 않음). 이 키가 없으면(v2를 한 번도 안 연 기기 등) 기존 관례대로 '1'을 기본값으로 쓴다.
+  function currentUserLabel(){
+    let uid = '1';
+    try{ uid = localStorage.getItem('shin2-active-user-id') || '1'; }catch(e){}
+    return '사용자 ' + uid;
+  }
+  function dataUrlToFileRec(dataUrl, fileName){
+    return new Promise((resolve, reject)=>{
+      try{
+        const commaIdx = dataUrl.indexOf(',');
+        const meta = dataUrl.slice(0, commaIdx);
+        const isBase64 = /;base64/.test(meta);
+        const mimeMatch = /^data:([^;]*)/.exec(meta);
+        const mime = (mimeMatch && mimeMatch[1]) || 'application/octet-stream';
+        const raw = dataUrl.slice(commaIdx + 1);
+        const bin = isBase64 ? atob(raw) : decodeURIComponent(raw);
+        const arr = new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+        resolve(new File([arr], fileName || 'file', { type: mime }));
+      }catch(e){ reject(e); }
+    });
+  }
 
   // saveDocumentFile: 실제 파일 바이트를 저장하는 유일한 진입점(§ Storage 연결 라운드).
   // window.SHIN2_STORAGE(로그인 상태)가 있으면 클라우드 업로드를 먼저 시도하고, 없거나
@@ -1287,6 +1400,9 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
     const ST = window.SHIN2_STORAGE;
     const useCloud = !opts.forceLocal && ST && ST.isSignedIn && ST.isSignedIn();
     if(useCloud){
+      if(file.size > DOC_MAX_CLOUD_BYTES){
+        return Promise.reject(Object.assign(new Error('SIZE_LIMIT_CLOUD'), { code:'SIZE_LIMIT_CLOUD' }));
+      }
       const path = `users/${ST.getUid()}/customers/${companyId}/documents/${id}/${file.name}`;
       return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
     }
@@ -1307,6 +1423,11 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   // addDocument: OCR 등 부가 처리와 완전히 독립적으로 "파일 저장(성공)→메타데이터 기록" 순서만
   // 지킨다(§8 OCR/파일저장 분리는 그대로 유지 — 이 함수 자체가 OCR을 전혀 모른다).
   function addDocument(companyId, documentType, file, onProgress, extracted, opts){
+    // §10 허용 파일 종류 검증 — Storage 업로드/로컬 저장을 시도하기 전에 먼저 거부한다
+    // (실행파일 등 원치 않는 종류가 아예 저장 시도조차 되지 않도록).
+    if(!isAllowedDocFile(file)){
+      return Promise.reject(Object.assign(new Error('FILE_TYPE'), { code:'FILE_TYPE' }));
+    }
     const id = genId('doc');
     return saveDocumentFile(id, companyId, file, onProgress, opts).then(result=>{
       if(result.dataUrl){
@@ -1314,11 +1435,13 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
         blobs[id] = result.dataUrl;
         writeObj(BLOB_KEY, blobs);
       }
+      const now = nowIso();
       const rec = {
         id, companyId, documentType,
         fileName: file.name, originalFileName: file.name, // originalFileName은 업로드 이후 절대 바꾸지 않는다 — fileName만 "이름변경"으로 바뀔 수 있다.
         storagePath: result.storagePath,
-        mimeType: file.type || '', size: file.size || 0, memo:'', createdAt: nowIso(), updatedAt: nowIso(),
+        mimeType: file.type || '', size: file.size || 0, fileSize: file.size || 0, memo:'',
+        createdAt: now, updatedAt: now, uploadedAt: now, uploadedBy: currentUserLabel(),
         localOnly: result.localOnly // true면 이 기기에만 파일 바이트가 있음, false면 Storage 업로드 완료
       };
       if(extracted){
@@ -1362,10 +1485,56 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   function deleteDocument(id){
     // companyId로만 연결되어 있으므로(§9) 이 id 하나만 지우면 같은 회사의 다른 문서,
     // 다른 회사의 문서 모두 영향 없음 — 메타데이터와 blob을 함께, 그리고 이것만 지운다.
+    const rec = findDocument(id);
     saveDocuments(loadDocuments().filter(d=> d.id !== id));
     const blobs = readObj(BLOB_KEY);
     delete blobs[id];
     writeObj(BLOB_KEY, blobs);
+    // §11: 메타데이터를 지운 뒤 실제 Storage 파일도 함께 지운다(클라우드 문서일 때만).
+    // 메타데이터 삭제(화면/다른 직원에게 즉시 반영되어야 함)를 이 네트워크 요청 때문에
+    // 지연시키지 않는다 — best-effort로 뒤따라 지우고, 실패해도 콘솔 경고만 남긴다
+    // (이미 메타데이터가 없으므로 다른 직원 화면에는 더 이상 이 파일이 보이지 않는다).
+    if(rec && rec.localOnly === false && rec.storagePath){
+      const ST = window.SHIN2_STORAGE;
+      if(ST && ST.deleteFile){
+        ST.deleteFile(rec.storagePath).catch(e=> console.warn('[CRM] Storage 파일 삭제 실패(메타데이터는 이미 삭제됨)', e));
+      }
+    }
+  }
+  // migrateDocumentToCloud: §15 "기존 로컬 전용 파일 보호 — 자동 마이그레이션 금지" 원칙에
+  // 따라, 사용자가 명시적으로 [공용으로 업로드] 버튼을 눌렀을 때만 호출된다. 같은 문서 id의
+  // 레코드를 그대로 유지한 채(§ 새 레코드를 만들지 않음 — 메모/추출정보 등 기존 필드 보존)
+  // storagePath/localOnly만 클라우드 업로드 성공 후에 갱신한다. 업로드 실패 시 기존 로컬
+  // 파일은 전혀 건드리지 않는다(reject만 하고 아무것도 바꾸지 않음).
+  function migrateDocumentToCloud(id, onProgress){
+    const ST = window.SHIN2_STORAGE;
+    if(!ST || !ST.isSignedIn || !ST.isSignedIn()){
+      return Promise.reject(Object.assign(new Error('NOT_AUTHENTICATED'), { code:'NOT_AUTHENTICATED' }));
+    }
+    const rec = findDocument(id);
+    if(!rec) return Promise.reject(Object.assign(new Error('NOT_FOUND'), { code:'NOT_FOUND' }));
+    const blobs = readObj(BLOB_KEY);
+    const dataUrl = blobs[id];
+    if(!dataUrl) return Promise.reject(Object.assign(new Error('NO_BLOB'), { code:'NO_BLOB' }));
+    return dataUrlToFileRec(dataUrl, rec.fileName || rec.originalFileName).then(file=>{
+      if(file.size > DOC_MAX_CLOUD_BYTES){
+        return Promise.reject(Object.assign(new Error('SIZE_LIMIT_CLOUD'), { code:'SIZE_LIMIT_CLOUD' }));
+      }
+      const path = `users/${ST.getUid()}/customers/${rec.companyId}/documents/${id}/${file.name}`;
+      return ST.uploadFile(file, path, onProgress).then(res=>{
+        const list = loadDocuments();
+        const rec2 = list.find(d=> d.id===id);
+        if(!rec2) return null;
+        rec2.storagePath = res.storagePath;
+        rec2.localOnly = false;
+        rec2.updatedAt = nowIso();
+        saveDocuments(list);
+        const blobs2 = readObj(BLOB_KEY);
+        delete blobs2[id];
+        writeObj(BLOB_KEY, blobs2);
+        return rec2;
+      });
+    });
   }
 
   // ---- memos (공용 컴포넌트 재사용 — targetType 'company', v2의 SHIN2_MEMO와 완전히 동일한 스키마) ----
@@ -1939,7 +2108,7 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   window.SHIN2_CRM_DATA = {
     loadCompanies, findCompany, addCompany, updateCompany,
     loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
-    loadDocuments, documentsForCompany, addDocument, updateDocumentExtracted, getBlob, renameDocument, setDocumentMemo, deleteDocument, findDocument,
+    loadDocuments, documentsForCompany, addDocument, updateDocumentExtracted, getBlob, renameDocument, setDocumentMemo, deleteDocument, findDocument, migrateDocumentToCloud,
     memosFor, addMemo, updateMemo, deleteMemo,
     pendingActivitiesForCompany, tasksForCompany, calendarEventsForCompany, upcomingCalendarEventsForCompany,
     DEAL_STAGES, setDealStage, setAssigneeUserId, addNeed, removeNeed, dismissNeedSuggestion, addSpecialNote, removeSpecialNote, setImportant, suggestNeedFor,
@@ -2350,6 +2519,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 반영되지 않는다 — 이후 렌더가 방금 추출된 자료를 놓치지 않도록 co를 다시 읽는다.
     D.extractRequestedMaterialsFromActivities(co.id);
     co = D.findCompany(co.id) || co;
+    window.__crmOpenCompanyId = co.id; // § 서류함 실시간 공유 라운드 — 다른 직원이 올린 파일이 클라우드에서 도착했을 때 지금 열려있는 카드가 어떤 회사인지 알기 위함.
     // §고객 진행단계 연동 라운드: 카드를 열 때마다 진행단계를 다시 확인해서 필요한 자동
     // 할 일만 만들거나(멱등, autoKey 중복 방지) 실제 일정이 등록됐으면 자동 완료 처리한다.
     syncCustomerStageTodos(co);
@@ -4020,14 +4190,39 @@ window.SHIN2_CRM_APP_INIT = function(){
   ];
   const LOCAL_ONLY_NOTICE = '이 파일은 현재 이 기기에만 저장되어 있습니다 (다른 기기에서는 목록만 보이고 파일은 없을 수 있습니다)';
   function crmCloudReady(){ const ST = window.SHIN2_STORAGE; return !!(ST && ST.isSignedIn && ST.isSignedIn()); }
-  // 로그인 완료 시점에 안내 문구만 갱신한다(자동 업로드/마이그레이션 아님 — 단순 텍스트 갱신,
-  // §수동 액션 원칙 위반 아님). 카드 화면이 열려 있지 않으면 조용히 무시된다.
+  // docsSyncReady: 클라우드 로그인뿐 아니라, 이 기기가 서류함 메타데이터 실시간 구독까지
+  // 켜져 있는지(=다른 직원이 올린 파일도 실시간으로 받아볼 수 있는지)를 함께 본다. v2에서
+  // [클라우드 동기화 시작]을 이미 눌러둔 기기에서만 true가 된다(§12 자동 동의 금지).
+  function docsSyncReady(){
+    const S = window.SHIN2_CRM_DOCS_SYNC;
+    return crmCloudReady() && !!(S && S.isReady && S.isReady());
+  }
+  function docNoteText(){
+    if(!crmCloudReady()){
+      return '클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다 — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.';
+    }
+    if(!docsSyncReady()){
+      return '새 파일은 클라우드(Firebase Storage)에 업로드되어 회사 공용으로 저장됩니다. 다만 다른 직원이 올린 파일을 이 기기에서 실시간으로 받아보려면, v2 화면에서 [클라우드 동기화 시작]을 이 기기에서도 한 번 눌러주세요.';
+    }
+    // §12: 실제 공용 클라우드 동기화(업로드+실시간 수신)가 이 기기에서 확인된 뒤에만 짧은 안내로 교체한다.
+    return '업로드된 서류는 회사 공용으로 저장되며 모든 사용자가 확인할 수 있습니다.';
+  }
+  // 로그인/동기화 상태 변화 시점에 안내 문구만 갱신한다(자동 업로드/마이그레이션 아님 —
+  // 단순 텍스트 갱신, §수동 액션 원칙 위반 아님). 카드 화면이 열려 있지 않으면 조용히 무시된다.
   window.addEventListener('shin2-crm-firebase-ready', ()=>{
     const note = document.getElementById('crmDocNote');
-    if(!note) return;
-    note.textContent = crmCloudReady()
-      ? '새 파일은 자동으로 클라우드(Firebase Storage)에 업로드됩니다. 업로드에 실패하면 재시도하거나 이 기기에만 저장할 수 있습니다. 메타데이터(파일명/종류/업로드일/메모)는 기존처럼 클라우드 동기화 대상에 포함됩니다.'
-      : ('클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다 — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.');
+    if(note) note.textContent = docNoteText();
+  });
+  // 다른 직원의 기기에서 올리거나 지운 서류함 메타데이터가 클라우드에서 도착했을 때, 지금
+  // 열려있는 카드가 그 회사면 목록을 바로 다시 그린다(§5 전 직원 공유가 "새로고침해야만
+  // 보인다"가 아니라 실제로 실시간이 되도록).
+  window.addEventListener('shin2-crm-docs-cloud-update', ()=>{
+    const note = document.getElementById('crmDocNote');
+    if(note) note.textContent = docNoteText();
+    const openId = window.__crmOpenCompanyId;
+    if(!openId || !document.getElementById('crmDocsSection')) return;
+    const co = D.findCompany(openId);
+    if(co) DOC_TYPES.forEach(([type])=> renderDocList(co, type));
   });
   // 문서 id → Blob object URL 캐시. dataURL을 그대로 window.open에 넘기면 최신 브라우저가
   // top-level 네비게이션을 막는 경우가 있어, 보기/다운로드는 항상 이 object URL을 쓴다.
@@ -4079,11 +4274,8 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   function renderDocsSection(co){
     const wrap = document.getElementById('crmDocsSection');
-    const noteText = crmCloudReady()
-      ? '새 파일은 자동으로 클라우드(Firebase Storage)에 업로드됩니다. 업로드에 실패하면 재시도하거나 이 기기에만 저장할 수 있습니다. 메타데이터(파일명/종류/업로드일/메모)는 기존처럼 클라우드 동기화 대상에 포함됩니다.'
-      : '클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다 — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.';
     wrap.innerHTML = `
-      <div class="doc-blocked-note" id="crmDocNote">${esc(noteText)}</div>
+      <div class="doc-blocked-note" id="crmDocNote">${esc(docNoteText())}</div>
       ${DOC_TYPES.map(([type,label])=> `
         <div class="doc-category" data-doc-cat="${type}">
           <div class="doc-cat-head">
@@ -4092,6 +4284,8 @@ window.SHIN2_CRM_APP_INIT = function(){
           </div>
           <input type="file" id="crmDocInput_${type}" style="display:none;" multiple />
           <div id="crmUploadStatus_${type}" class="doc-upload-status" style="display:none;"></div>
+          <div class="doc-drop-hint" id="crmDropHint_${type}">파일을 여기에 끌어다 놓으세요 또는 클릭하여 파일 선택</div>
+          <div class="doc-drop-active-label">여기에 놓아 업로드</div>
           <div class="doc-list" id="crmDocList_${type}"></div>
         </div>
       `).join('')}
@@ -4100,7 +4294,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       const box = wrap.querySelector(`[data-doc-cat="${type}"]`);
       const input = document.getElementById('crmDocInput_' + type);
       input.setAttribute('accept', accept);
-      wrap.querySelector(`[data-doc-add="${type}"]`).addEventListener('click', ()=> input.click());
+      wrap.querySelector(`[data-doc-add="${type}"]`).addEventListener('click', (e)=>{ e.stopPropagation(); input.click(); });
       input.addEventListener('change', (e)=>{
         // §2 실사용 버그 수정: e.target.files는 input에 연결된 살아있는(live) FileList라서
         // 바로 아래에서 e.target.value=''로 입력을 비우면 이 참조도 함께 비어버려(길이 0)
@@ -4109,20 +4303,39 @@ window.SHIN2_CRM_APP_INIT = function(){
         e.target.value = '';
         if(files.length) handleDocFiles(co, type, files);
       });
+      // §2: 박스 전체를 드래그앤드롭 대상으로 삼는다(버튼만이 아니라) — 이미 그렇게 되어
+      // 있던 기존 dragover/drop 배선은 그대로 유지하고, 여기에 hover 시각 피드백(navy 테두리
+      // + "여기에 놓아 업로드" 문구)만 추가한다.
       box.addEventListener('dragover', (e)=>{ e.preventDefault(); box.classList.add('drag-over'); });
-      box.addEventListener('dragleave', ()=> box.classList.remove('drag-over'));
+      box.addEventListener('dragleave', (e)=>{ if(!box.contains(e.relatedTarget)) box.classList.remove('drag-over'); });
       box.addEventListener('drop', (e)=>{
         e.preventDefault(); box.classList.remove('drag-over');
         if(e.dataTransfer.files.length) handleDocFiles(co, type, e.dataTransfer.files);
+      });
+      // 빈 영역(목록/버튼이 아닌 곳) 클릭으로도 파일 선택 창이 열리도록 — "+ 파일 추가" 버튼과
+      // 기능은 같지만, 스펙 §2가 요구하는 "박스 전체가 드롭 영역"과 일관되게 클릭도 박스
+      // 전체에서 동작하게 한다. 목록 안의 열기/다운로드/삭제 등 버튼 클릭은 이미 각자
+      // stopPropagation 없이도 doc-list 안에서 발생하므로 아래 조건으로 걸러낸다.
+      box.addEventListener('click', (e)=>{
+        if(e.target.closest('.doc-list') || e.target.closest('.doc-add-btn')) return;
+        input.click();
       });
       renderDocList(co, type);
     });
   }
 
+  function fmtFileSize(bytes){
+    const n = Number(bytes) || 0;
+    if(n < 1024) return n + 'B';
+    if(n < 1024*1024) return Math.round(n/1024) + 'KB';
+    return (n/(1024*1024)).toFixed(1) + 'MB';
+  }
   function renderDocList(co, type){
     const listWrap = document.getElementById('crmDocList_' + type);
     if(!listWrap) return;
+    const box = listWrap.closest('.doc-category');
     const docs = D.documentsForCompany(co.id, type);
+    if(box) box.classList.toggle('has-docs', docs.length > 0);
     if(!docs.length){ listWrap.innerHTML = '<div class="doc-empty">—</div>'; return; }
     listWrap.innerHTML = docs.map(doc=>{
       // 로컬 전용 문서는 실제 blob이 있어야 하고, 클라우드 문서는 storagePath가 local:이
@@ -4132,18 +4345,26 @@ window.SHIN2_CRM_APP_INIT = function(){
       const isImg = (doc.mimeType||'').startsWith('image/');
       const dataUrl = (doc.localOnly && hasBlob) ? D.getBlob(doc.id) : '';
       const displayName = doc.fileName || doc.originalFileName || '(이름 없음)';
+      // §6 목록 표시: 업로드일 + 업로드한 사용자 + 파일 크기. uploadedBy는 이 라운드부터
+      // 새로 기록되는 필드라 그 이전에 이미 저장된 문서에는 없을 수 있다(§ 소급 기입 금지 원칙 —
+      // 없으면 그냥 생략, 지어내지 않음).
+      const metaBits = [fmtDate(doc.createdAt) + ' ' + fmtTime(doc.createdAt)];
+      if(doc.uploadedBy) metaBits.push(esc(doc.uploadedBy) + ' 업로드');
+      if(doc.size || doc.fileSize) metaBits.push(fmtFileSize(doc.size || doc.fileSize));
+      if(doc.extractedContactName) metaBits.push('추출: ' + esc(doc.extractedContactName) + (doc.extractedPosition ? '('+esc(doc.extractedPosition)+')' : ''));
       return `<div class="doc-item" data-doc-id="${esc(doc.id)}">
         ${isImg && dataUrl ? `<img class="doc-thumb" src="${dataUrl}" alt="${esc(displayName)}" />` : `<div class="doc-thumb-generic">FILE</div>`}
         <div class="doc-main">
           <div class="doc-name" data-name-view="${esc(doc.id)}">${esc(displayName)}</div>
-          <div class="doc-meta">${fmtDate(doc.createdAt)} ${fmtTime(doc.createdAt)}${doc.extractedContactName ? ' · 추출: ' + esc(doc.extractedContactName) + (doc.extractedPosition ? '('+esc(doc.extractedPosition)+')' : '') : ''}</div>
+          <div class="doc-meta">${metaBits.join(' · ')}</div>
           ${doc.memo ? `<div class="doc-memo">${esc(doc.memo)}</div>` : ''}
           ${doc.localOnly !== false ? `<div class="doc-local-note">${esc(LOCAL_ONLY_NOTICE)}</div>` : ''}
           <div class="doc-actions">
-            ${hasBlob && canPreviewInline(doc) ? `<button type="button" class="co-text-action" data-view="${esc(doc.id)}">보기</button>` : ''}
+            ${hasBlob && canPreviewInline(doc) ? `<button type="button" class="co-text-action" data-view="${esc(doc.id)}">열기</button>` : ''}
             ${hasBlob ? `<button type="button" class="co-text-action" data-download="${esc(doc.id)}">다운로드</button>` : ''}
             <button type="button" class="co-text-action" data-rename="${esc(doc.id)}">이름변경</button>
             <button type="button" class="co-text-action" data-memo="${esc(doc.id)}">메모</button>
+            ${doc.localOnly !== false ? `<button type="button" class="co-text-action" data-migrate="${esc(doc.id)}">공용으로 업로드</button>` : ''}
             <button type="button" class="co-text-action danger" data-del="${esc(doc.id)}">삭제</button>
           </div>
         </div>
@@ -4197,15 +4418,34 @@ window.SHIN2_CRM_APP_INIT = function(){
         });
       });
     });
+    listWrap.querySelectorAll('[data-migrate]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        // §15: 사용자가 이 버튼을 명시적으로 눌렀을 때만 로컬 전용 파일을 클라우드로
+        // 올린다 — 자동 마이그레이션은 절대 하지 않는다.
+        const id = btn.getAttribute('data-migrate');
+        btn.disabled = true; btn.textContent = '업로드 중…';
+        D.migrateDocumentToCloud(id, (pct)=>{ btn.textContent = '업로드 중 ' + pct + '%'; }).then(()=>{
+          revokeDocObjectUrl(id);
+          renderDocList(co, type);
+          renderDocCounts(co);
+        }).catch((err)=>{
+          btn.disabled = false;
+          const code = err && err.code;
+          btn.textContent = code === 'SIZE_LIMIT_CLOUD' ? '20MB 초과 — 업로드 불가' : '공용으로 업로드';
+          if(code !== 'SIZE_LIMIT_CLOUD') btn.insertAdjacentHTML('afterend', '<span class="doc-inline-err">업로드 실패 — 이 기기의 파일은 그대로 남아있습니다</span>');
+        });
+      });
+    });
     listWrap.querySelectorAll('[data-del]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        // §6: alert()/confirm() 대신 인라인 확인만 사용 — 이 파일 하나만 지우고, 같은 분류의
-        // 다른 파일이나 다른 분류/다른 회사의 파일에는 전혀 영향을 주지 않는다(id 단위 삭제, §9).
+        // §11: alert()/confirm() 대신 인라인 확인만 사용하되, 문구는 스펙이 요구한 그대로
+        // — 이 파일 하나만 지우고, 같은 분류의 다른 파일이나 다른 분류/다른 회사의 파일에는
+        // 전혀 영향을 주지 않는다(id 단위 삭제, §9).
         const item = btn.closest('.doc-item');
         const id = btn.getAttribute('data-del');
-        item.querySelector('.doc-actions').innerHTML = `<span style="font-size:12px;color:var(--text-muted);">이 파일을 삭제할까요?</span>
-          <button type="button" class="co-text-action danger" data-del-confirm="${id}">삭제</button>
-          <button type="button" class="co-text-action" data-del-cancel="1">취소</button>`;
+        item.querySelector('.doc-actions').innerHTML = `<span style="font-size:12px;color:var(--text-muted);">이 파일을 삭제하시겠습니까? 모든 직원의 서류함에서도 삭제됩니다.</span>
+          <button type="button" class="co-text-action" data-del-cancel="1">취소</button>
+          <button type="button" class="co-text-action danger" data-del-confirm="${id}">삭제</button>`;
         item.querySelector('[data-del-cancel]').addEventListener('click', ()=> renderDocList(co, type));
         item.querySelector('[data-del-confirm]').addEventListener('click', ()=>{
           revokeDocObjectUrl(id);
@@ -4240,9 +4480,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     const label = statusEl && statusEl.querySelector('.doc-upload-label');
     return D.addDocument(co.id, type, file, (pct)=>{
       if(bar) bar.style.width = pct + '%';
-      if(label) label.textContent = '업로드 중 ' + pct + '%';
+      if(label) label.textContent = '업로드 중... ' + pct + '%';
     }, null, opts).then(async (rec)=>{
-      if(statusEl){ statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
+      // §8: 성공은 잠깐 "업로드 완료"로 보여준 뒤 상태 표시를 닫는다.
+      if(statusEl){ if(bar) bar.style.width='100%'; if(label) label.textContent = '업로드 완료'; setTimeout(()=>{ statusEl.style.display = 'none'; statusEl.innerHTML = ''; }, 700); }
       renderDocList(co, type);
       renderDocCounts(co);
       renderTimelineSection(co);
@@ -4253,12 +4494,21 @@ window.SHIN2_CRM_APP_INIT = function(){
       const code = err && err.code;
       if(!statusEl) return;
       statusEl.style.display = 'block';
+      if(code === 'FILE_TYPE'){
+        statusEl.innerHTML = `<div class="doc-upload-err">허용되지 않는 파일 종류입니다. (허용: PDF, JPG, PNG, WEBP, XLSX, DOCX, HWP 등)</div>`;
+        return;
+      }
+      if(code === 'SIZE_LIMIT_CLOUD'){
+        statusEl.innerHTML = `<div class="doc-upload-err">이 파일은 업로드 한도(20MB)를 초과합니다.</div>`;
+        return;
+      }
       if(code === 'SIZE_LIMIT'){
         statusEl.innerHTML = `<div class="doc-upload-err">이 파일은 로컬 저장 한도(2MB)를 초과합니다. 클라우드 로그인 후 다시 시도해주세요.</div>`;
         return;
       }
       // 업로드/저장 실패는 절대 조용히 로컬로 대체되지 않는다 — 재시도 또는 사용자가 직접
-      // "이 기기에만 저장"을 눌러야만 로컬 폴백으로 진행된다(§ 안전 규칙).
+      // "이 기기에만 저장"을 눌러야만 로컬 폴백으로 진행된다(§ 안전 규칙, 실패 시 고아
+      // 메타데이터를 만들지 않는다 — addDocument는 저장이 성공한 뒤에만 메타데이터를 쓴다).
       statusEl.innerHTML = '';
       const msg = document.createElement('div');
       msg.className = 'doc-upload-err';
