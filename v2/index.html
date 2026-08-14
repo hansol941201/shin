@@ -4674,7 +4674,13 @@
   const ACCT_STORAGE_KEY = 'shin2-accounts-vault';
   const PBKDF2_ITERATIONS = 150000;
   const CHECK_PLAINTEXT = 'shin2-vault-check-v1';
-  const GATE_SESSION_KEY = 'shin2-gate-session-key'; // sessionStorage: base64 raw AES-GCM 키 바이트(탭 한정)
+  // §비밀번호 재입력 최소화 라운드: 사용자 요청으로 sessionStorage(탭 종료 시 소멸) →
+  // localStorage(브라우저를 껐다 켜도 유지)로 변경했다. 계정함 자체를 없애거나 암호화를
+  // 약화한 것은 아니다 — 여전히 원시 AES-GCM 키 바이트만 저장하고 원본 비밀번호 문자열은
+  // 절대 저장하지 않으며, 우측 상단 자물쇠 버튼(clearSessionKeyBytes)으로 언제든 다시 잠글 수
+  // 있다. 트레이드오프: 이 브라우저에 접근 가능한 사람은 이제 탭을 새로 열어도 다시 비밀번호를
+  // 묻지 않는다(§22 이전 결정 "탭 종료 시 재인증"에서 벗어남 — 사용자가 명시적으로 선택).
+  const GATE_SESSION_KEY = 'shin2-gate-session-key'; // localStorage: base64 raw AES-GCM 키 바이트(이 브라우저에서 계속 유지)
 
   let vaultKey = null;      // CryptoKey, 메모리 변수 (탭 새로고침 시 sessionStorage에서 재구성)
   let vaultMeta = null;     // { salt, check } — localStorage에서 읽은 비밀 아닌 메타데이터
@@ -5182,19 +5188,21 @@
     appRoot.style.removeProperty('display');
   }
 
-  // sessionStorage: 유도된 AES-GCM 키의 "원시 바이트"만 base64로 저장한다(원본 비밀번호 문자열은
-  // 절대 저장하지 않음). 탭을 닫으면 sessionStorage가 사라지므로 재접속 시 다시 인증을 요구하게 된다.
+  // localStorage: 유도된 AES-GCM 키의 "원시 바이트"만 base64로 저장한다(원본 비밀번호 문자열은
+  // 절대 저장하지 않음). §비밀번호 재입력 최소화 라운드 — 브라우저를 껐다 켜도 유지되도록
+  // sessionStorage에서 localStorage로 바꿨다(매번 다시 입력하지 않도록). 우측 상단 자물쇠
+  // 버튼을 누르면 언제든 이 값을 지우고 다시 잠글 수 있다(clearSessionKeyBytes).
   function saveSessionKeyBytes(rawBytes){
-    try{ sessionStorage.setItem(GATE_SESSION_KEY, b64FromBuf(rawBytes.buffer)); }catch(e){}
+    try{ localStorage.setItem(GATE_SESSION_KEY, b64FromBuf(rawBytes.buffer)); }catch(e){}
   }
   function loadSessionKeyBytes(){
     try{
-      const b64 = sessionStorage.getItem(GATE_SESSION_KEY);
+      const b64 = localStorage.getItem(GATE_SESSION_KEY);
       return b64 ? new Uint8Array(bufFromB64(b64)) : null;
     }catch(e){ return null; }
   }
   function clearSessionKeyBytes(){
-    try{ sessionStorage.removeItem(GATE_SESSION_KEY); }catch(e){}
+    try{ localStorage.removeItem(GATE_SESSION_KEY); }catch(e){}
   }
 
   async function tryAutoUnlockFromSession(){

@@ -916,7 +916,7 @@ window.SHIN2_CRM_OCR = (function(){
   const ACCT_KEY = 'shin2-accounts-vault';
   const PBKDF2_ITERATIONS = 150000;
   const CHECK_PLAINTEXT = 'shin2-vault-check-v1';
-  const CRM_SESSION_KEY = 'shin2-crm-gate-session-ok'; // sessionStorage(탭 한정): 통과 여부만 기록, 비밀번호/키는 저장하지 않음
+  const CRM_SESSION_KEY = 'shin2-crm-gate-session-ok'; // localStorage(§비밀번호 재입력 최소화 라운드 — 브라우저를 껐다 켜도 유지): 통과 여부만 기록, 비밀번호/키는 저장하지 않음
 
   function b64FromBuf(buf){ const b=new Uint8Array(buf); let s=''; for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
   function bufFromB64(b64){ const bin=atob(b64); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return a.buffer; }
@@ -965,7 +965,7 @@ window.SHIN2_CRM_OCR = (function(){
     gateNoVaultBtn.addEventListener('click', ()=>{ window.open('../v2/', '_blank', 'noopener'); });
   } else {
     try{
-      if(sessionStorage.getItem(CRM_SESSION_KEY) === '1'){ showApp(); return; }
+      if(localStorage.getItem(CRM_SESSION_KEY) === '1'){ showApp(); return; }
     }catch(e){}
   }
 
@@ -983,7 +983,7 @@ window.SHIN2_CRM_OCR = (function(){
       let ok = false;
       try{ ok = (await decryptStr(key, current.check.cipher, current.check.iv)) === CHECK_PLAINTEXT; }catch(e){ ok = false; }
       if(!ok){ showGateError('비밀번호가 올바르지 않습니다.'); return; }
-      try{ sessionStorage.setItem(CRM_SESSION_KEY, '1'); }catch(e){}
+      try{ localStorage.setItem(CRM_SESSION_KEY, '1'); }catch(e){}
       showApp();
       // v2/index.html의 'shin2-app-unlocked'와 동일한 패턴 — 이 비밀번호로 Firebase 로그인을
       // 시도한다(서류함 Storage 업로드가 로그인 사용자의 uid를 필요로 하므로). 비밀번호는 이
