@@ -530,6 +530,15 @@
   .cdash-summary-bar{ background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; padding:8px 14px; display:flex; align-items:center; justify-content:space-between; }
   .cdash-summary-body{ padding:10px 14px; font-size:13px; color:var(--text); line-height:1.55; }
   .cdash-summary-highlight{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--navy); font-weight:600; line-height:1.5; }
+  /* §현장이력/낙찰이력 요약+상세 라운드 */
+  .cdash-summary-site-line{ margin-top:6px; font-size:12px; color:var(--text-muted); }
+  .cdash-summary-site-line.cdash-site-none{ color:var(--text-faint); }
+  .cdash-site-link{ background:none; border:none; padding:0; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--navy); }
+  .cdash-site-link:hover{ text-decoration:underline; }
+  .cdash-site-hist-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .cdash-site-hist-table th{ text-align:left; font-weight:600; color:var(--text-muted); font-size:11.5px; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .cdash-site-hist-table td{ padding:6px 8px; border-bottom:1px solid var(--line); color:var(--text); }
+  .cdash-site-hist-table tr:last-child td{ border-bottom:none; }
 
   .cdash-btn-row{ display:flex; flex-wrap:wrap; gap:8px; padding-top:2px; }
   .cdash-btn-row button{ font-size:11.5px; color:var(--navy); background:#fff; border:1px solid var(--line); border-radius:6px; padding:5px 12px; cursor:pointer; }
@@ -786,6 +795,7 @@
   <div id="chartMemoModalRoot"></div>
   <div id="partnerImportModalRoot"></div>
   <div id="pourImportModalRoot"></div>
+  <div id="siteHistoryModalRoot"></div>
   <div id="memoPanelRoot"></div>
 </div>
 
@@ -3263,6 +3273,83 @@ window.SHIN2_CRM_APP_INIT = function(){
       return { text: line, status };
     });
   }
+
+  // §현장이력/낙찰이력 요약+상세 라운드: parseSiteLog(위, §진행 기록 라운드에서 이미 만든
+  // 함수)가 돌려주는 원문 줄({text,status})을 그대로 다시 쓴다 — 새로 집계/저장하지 않는다
+  // (§1/§13). 실제 관찰된 원문 형식은 "M/D_현장명(공종)_상태"(§진행 기록 라운드 주석) —
+  // 이 형식에서만 날짜/현장명/공종을 관대하게 뽑아내고, 형식이 안 맞으면 원문 전체를
+  // 현장명 칸에 그대로 두고 날짜/공종은 비운다(추측해서 채우지 않음, §4/§6).
+  function parseSiteEntryDetail(entry){
+    const parts = String(entry.text || '').split('_').map(s=> s.trim()).filter(Boolean);
+    let date = '', site = entry.text;
+    if(parts.length >= 2 && /^[\d.\/]+$/.test(parts[0])){
+      date = parts[0];
+      site = parts.slice(1).join('_');
+    }
+    let category = '';
+    const catMatch = site.match(/\(([^)]+)\)/);
+    if(catMatch){ category = catMatch[1]; site = (site.slice(0, catMatch.index) + site.slice(catMatch.index + catMatch[0].length)).trim(); }
+    if(entry.status){
+      const idx = site.lastIndexOf(entry.status);
+      // 상태 단어 뒤에 장식 문자(☆ 등)가 붙는 실제 사례가 있어(§진행 기록 라운드 주석의
+      // "…_낙찰☆" 예시), 상태 단어 위치까지만 자르고 그 뒤는 버린다(추측이 아니라 원문의
+      // 장식 기호를 뗀 것 — 날짜/현장명/공종 값 자체는 전혀 새로 만들지 않는다).
+      if(idx !== -1) site = site.slice(0, idx).trim();
+    }
+    site = site.replace(/^_+|_+$/g, '').trim();
+    return { date, site: site || entry.text, category, status: entry.status };
+  }
+  // buildSiteHistoryData: 원문 순서(오래된 것부터 기록되는 것이 실제 관찰된 패턴)를 뒤집어
+  // 최신 항목이 먼저 오게만 한다(§7) — 날짜에 연도가 없어 실제 날짜 비교로 정렬하면 오히려
+  // 잘못될 수 있어(§4 "날짜 없는 값은 임의 생성하지 마세요") 원문 기록 순서를 신뢰한다.
+  function buildSiteHistoryData(co){
+    const nm = co.partnerDashboard && co.partnerDashboard.newMou;
+    if(!nm || !nm.site) return { total:0, wonCount:0, entries: [] };
+    const entries = parseSiteLog(nm.site).slice().reverse().map(parseSiteEntryDetail);
+    const wonCount = entries.filter(e=> e.status === '낙찰').length;
+    return { total: entries.length, wonCount, entries };
+  }
+  function closeSiteHistoryModal(){
+    const root = document.getElementById('siteHistoryModalRoot');
+    if(root) root.innerHTML = '';
+  }
+  function openSiteHistoryModal(co, mode){
+    const root = document.getElementById('siteHistoryModalRoot');
+    if(!root) return;
+    const data = buildSiteHistoryData(co);
+    const list = mode === 'won' ? data.entries.filter(e=> e.status === '낙찰') : data.entries;
+    const title = (mode === 'won' ? '낙찰 이력 — ' : '현장 이력 — ') + co.name;
+    root.innerHTML = `
+      <div class="pi-overlay" id="siteHistOverlay">
+        <div class="pi-panel" style="max-width:560px;">
+          <div class="pi-head">
+            <div class="pi-title">${esc(title)}</div>
+            <button type="button" class="chart-close-btn" id="siteHistCloseBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body">
+            ${list.length ? `
+              <table class="cdash-site-hist-table">
+                <thead><tr>
+                  <th>날짜</th><th>아파트명 / 현장명</th>
+                  ${mode === 'won' ? '' : '<th>공종</th><th>상태</th>'}
+                </tr></thead>
+                <tbody>
+                  ${list.map(e=> `<tr>
+                    <td>${esc(e.date || '—')}</td>
+                    <td>${esc(e.site)}</td>
+                    ${mode === 'won' ? '' : `<td>${e.category ? esc(e.category) : '—'}</td><td>${e.status ? `<span class="cdash-site-row-tag${e.status==='낙찰'?' won':''}">${esc(e.status)}</span>` : '—'}</td>`}
+                  </tr>`).join('')}
+                </tbody>
+              </table>
+            ` : `<div class="cdash-field-value is-muted">표시할 이력이 없습니다.</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('siteHistCloseBtn').addEventListener('click', closeSiteHistoryModal);
+    document.getElementById('siteHistOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'siteHistOverlay') closeSiteHistoryModal(); });
+  }
+
   function renderMeetingRecordSection(co){
     const wrap = document.getElementById('cdashMeetingBlock');
     if(!wrap) return;
@@ -3309,14 +3396,14 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(!nm.site) return '';
         const entries = parseSiteLog(nm.site);
         const wonCount = entries.filter(e=> e.status === '낙찰').length;
+        // §현장이력/낙찰이력 요약+상세 라운드 §10: 진행기록 안에서는 더 이상 전체 목록을
+        // 길게 펼치지 않는다 — 요약 한 줄만 두고, 클릭하면 핵심 한 줄 요약과 동일한 상세
+        // 모달(openSiteHistoryModal)을 연다(같은 데이터를 두 곳에서 각자 다시 만들지 않음).
         return `
           <div class="cdash-site-log">
-            <div class="cdash-site-log-head">현장 이력 ${entries.length}건 · 낙찰 ${wonCount}건</div>
-            <div class="cdash-site-log-list">
-              ${entries.map(e=> `<div class="cdash-site-row${e.status==='낙찰' ? ' won' : ''}">
-                <span class="cdash-site-row-text">${esc(e.text)}</span>
-                ${e.status ? `<span class="cdash-site-row-tag">${esc(e.status)}</span>` : ''}
-              </div>`).join('')}
+            <div class="cdash-site-log-head">
+              <button type="button" class="cdash-site-link" data-site-detail="all">현장 이력 ${entries.length}건</button>
+              ${wonCount ? ` · <button type="button" class="cdash-site-link" data-site-detail="won">낙찰 ${wonCount}건</button>` : ' · <span class="cdash-site-none">낙찰 없음</span>'}
             </div>
           </div>
         `;
@@ -3325,6 +3412,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     wrap.querySelectorAll('[data-stage]').forEach(btn=> btn.addEventListener('click', ()=>{
       cardState.progressStageSel = btn.getAttribute('data-stage');
       renderMeetingRecordSection(co);
+    }));
+    wrap.querySelectorAll('[data-site-detail]').forEach(btn=> btn.addEventListener('click', ()=>{
+      openSiteHistoryModal(co, btn.getAttribute('data-site-detail'));
     }));
   }
 
@@ -3625,6 +3715,15 @@ window.SHIN2_CRM_APP_INIT = function(){
     const text = co.memoSummary || buildChartBrief(co);
     const keyFactors = co.keyFactors || [];
     const highlight = keyFactors.length ? (keyFactors.map(k=> k.text).join(', ') + '를 가장 중요하게 보는 업체.') : '';
+    // §현장이력/낙찰이력 요약+상세 라운드: 진행기록에서 이미 계산하는 것과 완전히 같은
+    // buildSiteHistoryData(co)를 다시 불러서만 쓴다 — 별도로 다시 세거나 저장하지 않는다(§1).
+    const siteHist = buildSiteHistoryData(co);
+    const siteLineHtml = siteHist.total
+      ? `<div class="cdash-summary-site-line">
+          <button type="button" class="cdash-site-link" data-site-detail="all">현장이력 ${siteHist.total}건</button>
+          ${siteHist.wonCount ? ` · <button type="button" class="cdash-site-link" data-site-detail="won">낙찰 ${siteHist.wonCount}건</button>` : ' · 낙찰 없음'}
+        </div>`
+      : `<div class="cdash-summary-site-line cdash-site-none">현장이력 없음</div>`;
     wrap.innerHTML = `
       <div class="cdash-summary-bar">
         핵심 한 줄 요약
@@ -3637,6 +3736,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         ` : `
           <div>${esc(text)}</div>
           ${highlight ? `<div class="cdash-summary-highlight">${esc(highlight)}</div>` : ''}
+          ${siteLineHtml}
         `}
       </div>
     `;
@@ -3651,6 +3751,9 @@ window.SHIN2_CRM_APP_INIT = function(){
         refreshChart();
       });
     }
+    wrap.querySelectorAll('[data-site-detail]').forEach(btn=> btn.addEventListener('click', ()=>{
+      openSiteHistoryModal(co, btn.getAttribute('data-site-detail'));
+    }));
   }
 
   // ---- 고객 니즈/영업 핵심정보(§ 고객 니즈/영업 핵심정보 구조 개선 라운드) ------------------
