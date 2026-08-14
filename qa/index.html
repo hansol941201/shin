@@ -135,18 +135,33 @@
   .qna-reco-details[open] .qna-reco-summary::after{transform:rotate(180deg);}
   .qna-reco-body{padding:12px 14px 14px;}
   .qna-ai-empty{font-size:11.5px;color:var(--qna-text-faint);margin:0 0 4px;}
-  .qna-ai-section{margin-bottom:16px;}
-  .qna-ai-section:last-child{margin-bottom:0;}
-  .qna-ai-section-title{
-    display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px;margin-bottom:8px;
-  }
-  .qna-ai-section-title.cat-prepare{background:var(--qna-navy);color:#fff;}
-  .qna-ai-section-title.cat-idea{background:#fff;color:var(--qna-navy);border:1px solid var(--qna-navy);}
-  .qna-ai-item{padding:8px 0;border-top:1px solid var(--qna-border);}
+  .qna-ai-current{font-size:11px;color:var(--qna-text-gray);margin:0 0 12px;padding-bottom:10px;border-bottom:1px dashed var(--qna-border);line-height:1.5;}
+  .qna-ai-current b{color:var(--qna-navy);}
+  .qna-ai-item{padding:10px 0;border-top:1px solid var(--qna-border);}
   .qna-ai-item:first-of-type{border-top:none;padding-top:0;}
-  .qna-ai-item-title{font-size:12.5px;font-weight:700;color:var(--qna-text);}
-  .qna-ai-item-content{font-size:11.5px;color:var(--qna-text-gray);margin:3px 0 0;line-height:1.5;}
-  .qna-ai-item-reason{font-size:10.5px;color:var(--qna-text-faint);margin:3px 0 0;line-height:1.5;}
+  .qna-ai-item-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;}
+  .qna-ai-tier{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;color:#fff;flex:none;}
+  .qna-ai-tier.tier-must{background:#c0392b;}
+  .qna-ai-tier.tier-frequent{background:var(--qna-star);}
+  .qna-ai-tier.tier-recommend{background:var(--qna-navy);}
+  .qna-ai-tag{font-size:10px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);padding:2px 8px;border-radius:6px;flex:none;}
+  .qna-ai-item-title{font-size:12.5px;font-weight:800;color:var(--qna-text);line-height:1.4;}
+  .qna-ai-item-reason{font-size:11px;color:var(--qna-text-gray);margin:3px 0 0;line-height:1.5;}
+  .qna-ai-item-actions{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+  .qna-ai-btn{
+    border:1px solid var(--qna-border);background:#fff;color:var(--qna-text-gray);font-size:10.5px;font-weight:700;
+    padding:3px 9px;border-radius:6px;cursor:pointer;font-family:inherit;
+  }
+  .qna-ai-btn:hover{border-color:var(--qna-navy);color:var(--qna-navy);}
+  .qna-ai-btn.primary{background:var(--qna-navy);border-color:var(--qna-navy);color:#fff;}
+  .qna-ai-btn.primary:hover{background:var(--qna-navy-dark);}
+  .qna-ai-btn.danger:hover{border-color:#c0392b;color:#c0392b;}
+  .qna-ai-status{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--qna-text-faint);margin-top:7px;}
+  .qna-ai-status.done{color:#1f6f3f;}
+  .qna-ai-more{margin-top:10px;}
+  .qna-ai-more summary{list-style:none;cursor:pointer;font-size:11px;font-weight:700;color:var(--qna-navy);}
+  .qna-ai-more summary::-webkit-details-marker{display:none;}
+  .qna-ai-more[open] summary{margin-bottom:4px;}
 
   @media (max-width:960px){
     .qna-content-row{flex-direction:column;}
@@ -365,7 +380,7 @@ function qnaBuildSeedQuestions(){
       id: qnaUid(), part, question, answer: answer || '', category: category || '',
       createdAt: now, updatedAt: now, order: order++,
       frequencyCount, isImportant: false, frequent: frequencyCount >= QNA_FREQUENT_THRESHOLD,
-      aliases: aliases || [], lastAskedAt: now
+      aliases: aliases || [], lastAskedAt: now, actionStates: {}
     };
   };
   return [
@@ -409,6 +424,7 @@ function qnaLoadState(){
         if(typeof q.category !== 'string') q.category = ''; // 화면에는 쓰지 않는 내부 관리용 값
         if(!Array.isArray(q.aliases)) q.aliases = []; // 병합된 과거 질문 원문(표현이 달랐던 문구들)
         if(typeof q.frequent !== 'boolean') q.frequent = q.frequencyCount >= QNA_FREQUENT_THRESHOLD;
+        if(!q.actionStates || typeof q.actionStates !== 'object') q.actionStates = {}; // AI 업무 제안 실행/완료/제외 상태(질문별로 별도 저장)
       });
       return parsed;
     }
@@ -515,6 +531,9 @@ let qnaSearchQuery = '';
 // 1차 미팅에서만 쓰는 "답변 보기/닫기" 펼침 상태 — 여러 개를 동시에 열어둘 수 있도록 Set으로 관리.
 // (2차 미팅/PT는 기존 그대로 답변이 항상 함께 보이는 방식이라 이 상태를 쓰지 않는다.)
 let qnaOpenIds = new Set();
+// 오른쪽 "AI 업무 제안" 패널이 지금 어떤 질문을 기준으로 제안을 보여주고 있는지 — 질문 등록/수정/
+// 병합/답변 열람 시점마다 갱신된다. 데이터가 아니라 화면 상태라서 저장하지 않는다.
+let qnaRecoQuestionId = null;
 
 function qnaRenderTabs(){
   document.getElementById('qnaTabs').innerHTML = QNA_PARTS.map(p => `
@@ -616,116 +635,151 @@ function qnaRenderItem(item, showPartTag){
 }
 /* ============================================================
    오른쪽 패널: "AI 업무 제안"
-   현재 탭(1차/2차/PT)에 누적된 질문 전체를 분석해서 두 가지를 보여준다.
-   ① 준비하면 좋은 것 — 지금까지의 질문에서 확인되는
-      관심사·요구사항을 근거로 미리 만들어두면 좋을 자료. ② 새로운
-      아이디어 — 이미 하고 있는 일(영업지원 동행, PT·공법설명회 지원,
-      CAD·물량산출, 실행견적·자재견적 제공, 전문 시공팀·직영 시공 교육,
-      공사 진행관리·준공자료·하자대응·현장 품질관리, AI·드론 진단,
-      카탈로그·샘플 발송, 공법·영업 교육, 협력사 영업권/영업보고 시스템
-      등)은 제외하고, 그 위에 시도해볼 만한 새로운 대응방법을 제안한다.
-      질문 목록의 구조/데이터/기능(검색, 답변 보기/닫기, 1차·2차·PT,
-      질문 등록·수정·삭제, 저장 구조)에는 전혀 관여하지 않는다.
+   지금 보고 있는(가장 최근 등록·수정·열람한) 질문 "한 건"을 분석해서,
+   그 질문과 직접 관련된 실행 제안만 최대 3개를 우선 보여주고, 나머지는
+   "더보기"에 접어둔다. 이미 하고 있는 일(영업지원 동행, PT·공법설명회
+   지원, CAD·물량산출, 실행견적·자재견적 제공, 전문 시공팀·직영 시공
+   교육, 공사 진행관리·준공자료·하자대응·현장 품질관리, AI·드론 진단,
+   카탈로그·샘플 발송, 공법·영업 교육, 협력사 영업권/영업보고 시스템
+   등)을 "준비하세요"처럼 처음부터 다시 만들라고 권하지 않고, 지금 있는
+   자료를 이 질문/현장에 맞게 고치거나 골라 보내는 실행 위주로 제안한다.
+   질문 목록의 구조/데이터/기능(검색, 답변 보기/닫기, 1차·2차·PT,
+   질문 등록·수정·삭제, 저장 구조)에는 전혀 관여하지 않는다.
    ============================================================ */
-// "준비하면 좋은 것" 후보 — 축적된 질문에서 확인되는 관심사를 근거로 미리 준비해두는 자료.
-// '필수'라는 단정적 표현은 쓰지 않는다.
-const QNA_PREPARE_ACTIONS = {
-  'cost-compare': { title:'경쟁 공법 대비 비용 비교표', content:'기존 공법과의 예상 비용 차이를 표로 정리', reason:'가격 관련 질문이 반복돼 미리 준비해두면 답변이 빨라집니다.' },
-  'competitor-rebuttal': { title:'경쟁 공법 반박 대응자료', content:'경쟁사가 제기할 만한 지적에 대한 대응 논리 정리', reason:'비교 질문이 반복돼 선제 대응자료가 있으면 도움이 됩니다.' },
-  'design-wording': { title:'발주용 문안 템플릿', content:'설계 반영 문구·발주 문안 예시 정리', reason:'입찰·공고 관련 질문에서 자주 확인되는 요구사항입니다.' },
-  'bid-doc-check': { title:'공고 요건 체크리스트', content:'참여 조건·제출자료를 체크리스트로 정리', reason:'공고 관련 질문이 나올 때마다 빠르게 확인할 수 있습니다.' },
-  'procurement-review': { title:'조달·관급 적용 가이드', content:'등록 요건과 적용 절차 정리', reason:'조달·관급 관련 질문이 여러 차례 확인되었습니다.' },
-  'mou-process-guide': { title:'협약·적용 절차 안내자료', content:'협약 체결부터 적용까지의 절차 정리', reason:'절차를 묻는 질문에 바로 안내할 수 있습니다.' },
-  'ready-brief-doc': { title:'질문 맞춤 1페이지 요약자료', content:'긴 자료 대신 핵심만 담은 요약본 준비', reason:'빠른 공유가 필요한 질문이 여러 건 확인됩니다.' },
-  'proposal-custom': { title:'공종별 제안서·시방서 템플릿', content:'현장별로 바로 수정할 수 있는 기본 틀 준비', reason:'현장마다 맞춤 수정 요청이 반복됩니다.' },
-  'pre-construction-checklist': { title:'시공 전 체크리스트', content:'착공 전 확인 사항을 목록으로 정리', reason:'시공 방법을 묻는 질문에서 자주 이어지는 요청입니다.' },
-  'similar-case-pick': { title:'유사 현장 사례 모음', content:'조건이 비슷한 현장 사례만 선별해 정리', reason:'실적·신뢰성을 묻는 질문이 반복해서 나옵니다.' },
-  'cert-select': { title:'인증·시험성적서 세트', content:'질문에 자주 쓰이는 인증자료 모음 준비', reason:'특허·성능 관련 질문이 계속 이어지고 있습니다.' },
-  'site-fit-review': { title:'현장 조건 체크 가이드', content:'적용 가능 여부를 빠르게 판단할 기준 정리', reason:'현장 조건을 묻는 질문이 반복됩니다.' },
+// 실행 항목 카탈로그 — 오늘 바로 시작하거나 시공사에 바로 줄 수 있는 것들로만 구성했다.
+// 새로운 시스템 구축, 막연한 신사업 아이디어는 넣지 않는다.
+const QNA_ACTIONS = {
+  'similar-cases':      { title:'비슷한 현장 사례 3개 보내기', reason:'이 현장과 조건이 비슷한 실적만 골라 시공사에 보내세요.', tag:'자료 고르기' },
+  'margin-calc':         { title:'이 공사가 남는지 계산하기', reason:'예상 금액에서 자재비와 시공비를 빼서 수익을 확인하세요.', tag:'계산하기' },
+  'next-contact':        { title:'다음에 연락할 사람과 날짜 정하기', reason:'답변 후 후속 연락이 빠지지 않도록 담당자와 날짜를 정하세요.', tag:'등록하기' },
+  'mark-drawing':        { title:'도면·사진에 적용 위치 표시하기', reason:'어디에 적용할지 도면이나 현장 사진에 직접 표시해서 보내세요.', tag:'표시하기' },
+  'method-compare':      { title:'공법 비교표 만들기', reason:'경쟁 공법과 이 공법의 차이를 표 한 장으로 정리하세요.', tag:'표 만들기' },
+  'cost-schedule-compare':{ title:'비용·기간·품질 비교표 만들기', reason:'경쟁 공법과 비용·기간·품질을 항목별로 비교해서 정리하세요.', tag:'표 만들기' },
+  'quantity-estimate':   { title:'물량 산출해서 보내기', reason:'도면을 보고 필요한 물량을 계산해서 시공사에 보내세요.', tag:'계산하기' },
+  'cost-estimate':       { title:'예상 공사비 계산해서 보내기', reason:'물량에 단가를 곱해 예상 공사비를 계산해서 보내세요.', tag:'계산하기' },
+  'design-wording-check':{ title:'설계 반영 문구 다듬어서 보내기', reason:'설계사무소에 그대로 전달할 수 있게 문구를 정리하세요.', tag:'문구 다듬기' },
+  'bid-requirement-check':{ title:'입찰 참여 조건 확인하기', reason:'공고문에서 우리가 참여 가능한 조건인지 먼저 확인하세요.', tag:'확인하기' },
+  'bid-document-check':  { title:'제출 서류 목록 확인하기', reason:'공고에서 요구하는 제출 서류를 빠짐없이 확인하세요.', tag:'확인하기' },
+  'cert-select':         { title:'필요한 인증·시험성적서 골라 보내기', reason:'이 질문에 맞는 인증서·시험성적서만 골라서 보내세요.', tag:'자료 고르기' },
+  'construction-sequence':{ title:'시공 순서 한 장으로 정리하기', reason:'시공 순서를 그림과 함께 한 장으로 정리해서 보내세요.', tag:'정리하기' },
+  'site-visit':          { title:'현장 방문 일정 잡기', reason:'직접 현장을 보고 확인해야 정확한 답을 줄 수 있습니다.', tag:'일정 잡기' },
+  'defect-prevention':   { title:'하자 예방 방법 정리해서 보내기', reason:'이 조건에서 자주 생기는 하자와 예방 방법을 정리해서 보내세요.', tag:'정리하기' },
+  'maintenance-guide':   { title:'유지관리 방법 안내하기', reason:'준공 후 관리 방법을 간단히 안내해서 신뢰를 높이세요.', tag:'안내하기' },
+  'procurement-check':   { title:'조달·관급 적용 가능 여부 확인하기', reason:'이 제품이 조달 등록 대상인지, 관급공사에 쓸 수 있는지 확인하세요.', tag:'확인하기' },
+  'pt-customize':        { title:'PT 자료 이 현장에 맞게 고치기', reason:'기존 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고치세요.', tag:'자료 고치기' },
+  'drone-diagnosis':     { title:'드론 진단이 필요한지 확인하기', reason:'현장이 넓거나 접근이 어려우면 드론 진단으로 빠르게 확인하세요.', tag:'확인하기' },
 };
-// "새로운 아이디어" 후보 — 지금 하고 있지 않은 대응방법·서비스 아이디어. 대기업/전문기업의
-// B2B 고객관리·영업지원에서 흔히 쓰이는 방식을 참고했으며, 특정 회사가 실제로 이렇게 한다고
-// 단정하지 않는다.
-const QNA_IDEA_ACTIONS = {
-  'margin-scenario': { title:'낙찰가 대비 마진 시뮬레이션', content:'예상 낙찰가를 넣으면 마진 구간이 계산되는 방식', reason:'단가·마진 질문에 숫자로 바로 답할 수 있습니다.' },
-  'reference-call': { title:'유사 현장 담당자 레퍼런스콜', content:'실제 시공한 현장 담당자와 통화·미팅 연결', reason:'설명보다 실제 사례가 신뢰를 더 높입니다.' },
-  'design-office-consult': { title:'설계사무소 사전 기술 협의', content:'문안 작성 전 설계사무소와 먼저 기술 협의 진행', reason:'발주 반영 가능성을 미리 높일 수 있습니다.' },
-  'post-completion-survey': { title:'준공 후 만족도 확인', content:'공사 종료 후 별도로 만족도를 확인하고 후속 제안', reason:'하자·품질 질문 이후의 관리까지 챙길 수 있습니다.' },
-  've-alternative': { title:'설계 대안(VE) 제시', content:'조건이 맞지 않을 때 사양을 조정한 대안 제시', reason:'적용 조건을 묻는 질문에서 협의 여지를 만들 수 있습니다.' },
-  'followup-plan': { title:'관계자별 후속 대응 트래커', content:'발주처·설계사·시공사별로 다음 대응을 기록', reason:'누가 무엇을 물었는지 놓치지 않을 수 있습니다.' },
-  'contact-register': { title:'담당자·다음 연락일 등록', content:'질문마다 담당자와 다음 연락일을 남겨두는 습관', reason:'후속 대응이 늦어지지 않도록 도와줍니다.' },
-};
-// 규칙 그룹: 질문 문구 키워드 또는 카테고리가 매칭되면 해당하는 실행 항목이 후보에 포함된다.
-// 여러 질문에 걸쳐 얼마나 자주 매칭됐는지를 세어, 탭 전체에서 자주 필요했던 항목이 위로 온다.
+// 규칙 그룹: 질문 문구 키워드/카테고리가 매칭되면 정해진 순서(=중요도)대로 실행 항목을 제안한다.
+// 배열 안 순서가 곧 필수(0) → 자주 요청(1) → 추천(2) 우선순위다.
 const QNA_RECO_RULES = [
   { categories:['가격 / 단가','수익 / 마진'], keywords:['단가','예산','금액','가격','견적','비용','마진'],
-    actions:['margin-scenario','cost-compare','competitor-rebuttal'] },
-  { categories:['타 공법 병행'], keywords:['적용 가능','현장 조건','시공 방법','적용할 수','병행'],
-    actions:['site-fit-review','ve-alternative','design-office-consult'] },
-  { categories:[], keywords:['실적','신뢰','품질','하자','사례'],
-    actions:['similar-case-pick','cert-select','post-completion-survey'] },
-  { categories:['민간 아파트 영업 지원'], keywords:['입찰','공고','발주','관급','조달'],
-    actions:['bid-doc-check','design-wording','procurement-review'] },
+    actions:['quantity-estimate','cost-estimate','cost-schedule-compare'] },
+  { categories:['타 공법 병행'], keywords:['적용 가능','현장 조건','시공 방법','적용할 수','병행','적용'],
+    actions:['mark-drawing','method-compare','site-visit'] },
+  { categories:[], keywords:['품질','하자','보증','유지관리'],
+    actions:['cert-select','defect-prevention','maintenance-guide'] },
+  { categories:[], keywords:['실적','신뢰','사례','경험'],
+    actions:['similar-cases','pt-customize','next-contact'] },
+  { categories:['민간 아파트 영업 지원'], keywords:['입찰','공고','참여'],
+    actions:['bid-requirement-check','bid-document-check','design-wording-check'] },
   { categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사','등록'],
-    actions:['procurement-review','bid-doc-check','design-wording'] },
-  { categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금'],
-    actions:['mou-process-guide','followup-plan','contact-register'] },
-  { categories:['민간 아파트 영업 지원'], keywords:['pt','설명회','발표','주민','입주민','영업','자료'],
-    actions:['ready-brief-doc','proposal-custom','reference-call'] },
-  { categories:[], keywords:['샘플','카탈로그','재질','제품','자재','슁글','우레탄','방수','기와'],
-    actions:['ready-brief-doc','proposal-custom','pre-construction-checklist'] },
+    actions:['procurement-check','bid-requirement-check','next-contact'] },
+  { categories:[], keywords:['pt','설명','발표','설명회','교육','주민','입주민'],
+    actions:['pt-customize','next-contact','site-visit'] },
+  { categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금','법적'],
+    actions:['design-wording-check','bid-document-check','next-contact'] },
+  { categories:[], keywords:['시공 순서','공정','드론','진단','접근'],
+    actions:['construction-sequence','drone-diagnosis','site-visit'] },
 ];
-// 지금 탭에 쌓인 질문 전체에서, 어떤 실행 항목이 몇 건의 질문과 관련 있는지 센다.
-function qnaAiMatchCounts(questions){
-  const counts = new Map();
-  questions.forEach(q => {
-    const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
-    QNA_RECO_RULES.forEach(rule => {
-      const hit = (rule.categories.length && rule.categories.includes(q.category)) ||
-        rule.keywords.some(k => haystack.includes(k.toLowerCase()));
-      if(hit) rule.actions.forEach(id => counts.set(id, (counts.get(id)||0) + 1));
+// 어떤 규칙에도 안 걸리는 질문을 위한 기본 제안(항상 실행 가능한 것들로만 구성).
+const QNA_RECO_FALLBACK = ['similar-cases','next-contact','pt-customize'];
+
+// 질문 한 건에 대해 관련 실행 항목을 (필수→자주 요청→추천 순서로) 최대 6개까지 뽑는다.
+function qnaMatchActionsForQuestion(q){
+  if(!q) return [];
+  const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
+  const picked = []; // { id, tier }
+  const seen = new Set();
+  QNA_RECO_RULES.forEach(rule => {
+    const hit = (rule.categories.length && rule.categories.includes(q.category)) ||
+      rule.keywords.some(k => haystack.includes(k.toLowerCase()));
+    if(!hit) return;
+    rule.actions.forEach((id, idx) => {
+      if(seen.has(id)) return;
+      seen.add(id); picked.push({ id, tier: idx });
     });
   });
-  return counts;
+  if(!picked.length){
+    QNA_RECO_FALLBACK.forEach((id, idx) => { if(!seen.has(id)){ seen.add(id); picked.push({ id, tier: idx }); } });
+  }
+  picked.sort((a,b) => a.tier - b.tier);
+  return picked.slice(0, 6);
 }
-function qnaAiPickTop(catalog, counts, limit){
-  const ids = Object.keys(catalog);
-  return ids
-    .map(id => ({ id, count: counts.get(id) || 0, ...catalog[id] }))
-    .sort((a, b) => b.count - a.count || ids.indexOf(a.id) - ids.indexOf(b.id))
-    .slice(0, limit);
+const QNA_TIER_LABEL = { 0:'필수', 1:'자주 요청', 2:'추천' };
+const QNA_TIER_CLASS = { 0:'tier-must', 1:'tier-frequent', 2:'tier-recommend' };
+
+// 지금 패널이 다룰 질문 한 건을 정한다 — 직접 지정된 게 있으면 그걸, 없거나 현재 탭에 없으면
+// 지금 탭에서 우선순위가 가장 높은 질문(중요 → 자주 나오는 질문 → 최신 순)으로 대체한다.
+function qnaResolveRecoQuestion(){
+  if(qnaRecoQuestionId){
+    const found = qnaState.questions.find(q => q.id === qnaRecoQuestionId && q.part === qnaActiveTab);
+    if(found) return found;
+  }
+  const list = qnaState.questions.filter(q => q.part === qnaActiveTab).slice().sort(qnaSortCompare);
+  return list[0] || null;
+}
+function qnaRenderRecoItem(q, entry){
+  const state = (q.actionStates && q.actionStates[entry.id]) || null;
+  const item = QNA_ACTIONS[entry.id];
+  const tierLabel = QNA_TIER_LABEL[entry.tier];
+  const tierClass = QNA_TIER_CLASS[entry.tier];
+  const statusHtml = state === 'done'
+    ? `<div class="qna-ai-status done">완료됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${entry.id}">되돌리기</button></div>`
+    : state === 'excluded'
+      ? `<div class="qna-ai-status">제외됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${entry.id}">되돌리기</button></div>`
+      : `<div class="qna-ai-item-actions">
+          <button type="button" class="qna-ai-btn primary" data-action="ai-start" data-qid="${q.id}" data-aid="${entry.id}">실행하기</button>
+          <button type="button" class="qna-ai-btn" data-action="ai-done" data-qid="${q.id}" data-aid="${entry.id}">완료</button>
+          <button type="button" class="qna-ai-btn danger" data-action="ai-exclude" data-qid="${q.id}" data-aid="${entry.id}">제외</button>
+        </div>`;
+  return `
+    <div class="qna-ai-item">
+      <div class="qna-ai-item-head">
+        <span class="qna-ai-tier ${tierClass}">${tierLabel}</span>
+        <span class="qna-ai-tag">${qnaEscapeHtml(item.tag)}</span>
+      </div>
+      <div class="qna-ai-item-title">${qnaEscapeHtml(item.title)}</div>
+      <div class="qna-ai-item-reason">${qnaEscapeHtml(item.reason)}</div>
+      ${statusHtml}
+    </div>
+  `;
 }
 function qnaRenderRecoPanel(){
   const body = document.getElementById('qnaRecoBody');
   if(!body) return;
-  const questions = qnaState.questions.filter(q => q.part === qnaActiveTab);
-  if(!questions.length){
+  const q = qnaResolveRecoQuestion();
+  if(!q){
     body.innerHTML = `<p class="qna-ai-empty">질문이 등록되면 제안이 표시됩니다.</p>`;
     return;
   }
-  const counts = qnaAiMatchCounts(questions);
-  const prepared = qnaAiPickTop(QNA_PREPARE_ACTIONS, counts, 3);
-  const ideas = qnaAiPickTop(QNA_IDEA_ACTIONS, counts, 3);
+  qnaRecoQuestionId = q.id;
+  const matches = qnaMatchActionsForQuestion(q);
+  const main = matches.slice(0, 3);
+  const rest = matches.slice(3);
+  const shortQ = q.question.length > 46 ? q.question.slice(0, 46) + '…' : q.question;
 
-  const renderItem = (title, content, reason) => `
-    <div class="qna-ai-item">
-      <div class="qna-ai-item-title">${qnaEscapeHtml(title)}</div>
-      <div class="qna-ai-item-content">${qnaEscapeHtml(content)}</div>
-      <div class="qna-ai-item-reason">${qnaEscapeHtml(reason)}</div>
-    </div>
-  `;
-  const preparedHtml = prepared.map(it => renderItem(it.title, it.content, it.reason)).join('');
-  const ideasHtml = ideas.map(it => renderItem(it.title, it.content, it.reason)).join('');
+  const mainHtml = main.map(entry => qnaRenderRecoItem(q, entry)).join('');
+  const moreHtml = rest.length ? `
+    <details class="qna-ai-more">
+      <summary>더보기 (${rest.length})</summary>
+      ${rest.map(entry => qnaRenderRecoItem(q, entry)).join('')}
+    </details>
+  ` : '';
 
   body.innerHTML = `
-    <div class="qna-ai-section">
-      <div class="qna-ai-section-title cat-prepare">준비하면 좋은 것</div>
-      ${preparedHtml}
-    </div>
-    <div class="qna-ai-section">
-      <div class="qna-ai-section-title cat-idea">새로운 아이디어</div>
-      ${ideasHtml}
-    </div>
+    <p class="qna-ai-current">현재 질문: <b>${qnaEscapeHtml(shortQ)}</b></p>
+    ${mainHtml}
+    ${moreHtml}
   `;
 }
 
@@ -739,6 +793,7 @@ function qnaUpdateListUI(){
   if(!area) return;
   const list = qnaVisibleList();
   area.innerHTML = qnaRenderListArea(list, !!qnaSearchQuery.trim());
+  qnaRenderRecoPanel();
 }
 
 /* ---------- 질문 등록/수정 모달 ---------- */
@@ -798,6 +853,7 @@ function qnaOpenQuestionModal(editId){
       existing.isImportant = isImportant;
       existing.updatedAt = now;
       qnaActiveTab = part;
+      qnaRecoQuestionId = existing.id; // 방금 수정한 질문 기준으로 AI 업무 제안을 갱신한다
       qnaSaveState(); qnaCloseModal(); qnaRenderAll();
       qnaShowToast('질문이 수정되었습니다');
       return;
@@ -817,6 +873,7 @@ function qnaOpenQuestionModal(editId){
         if(!Array.isArray(similar.aliases)) similar.aliases = [];
         if(question !== similar.question && !similar.aliases.includes(question)) similar.aliases.push(question);
         if(answer && !similar.answer) similar.answer = answer; // 기존 답변이 비어있을 때만 이번 답변으로 채움 — 추측 답변 절대 생성하지 않음
+        qnaRecoQuestionId = similar.id; // 이번에 합쳐진 질문 기준으로 AI 업무 제안을 갱신한다
         qnaSaveState(); qnaCloseModal();
         qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaActiveTab = similar.part; qnaRenderAll();
         qnaShowToast(`기존 질문 빈도가 추가되었습니다 (${similar.frequencyCount}회)`);
@@ -829,9 +886,10 @@ function qnaOpenQuestionModal(editId){
     const newId = qnaUid();
     qnaState.questions.push({
       id: newId, part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
-      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now
+      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now, actionStates: {}
     });
     qnaActiveTab = part;
+    qnaRecoQuestionId = newId; // 방금 등록한 질문 기준으로 AI 업무 제안을 갱신한다
     qnaSaveState(); qnaCloseModal();
     qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaRenderAll();
     qnaShowToast('질문이 등록되었습니다');
@@ -860,7 +918,12 @@ qnaMainEl.addEventListener('click', (e)=>{
   }
   else if(action === 'toggle-answer'){
     const id = btn.dataset.id;
-    if(qnaOpenIds.has(id)) qnaOpenIds.delete(id); else qnaOpenIds.add(id);
+    if(qnaOpenIds.has(id)){
+      qnaOpenIds.delete(id);
+    } else {
+      qnaOpenIds.add(id);
+      qnaRecoQuestionId = id; // 방금 펼쳐본 질문 기준으로 AI 업무 제안을 갱신한다
+    }
     qnaUpdateListUI();
   }
   else if(action === 'edit'){
@@ -872,6 +935,7 @@ qnaMainEl.addEventListener('click', (e)=>{
     if(confirm('이 질문을 삭제하시겠습니까?')){
       qnaState.questions = qnaState.questions.filter(q=>q.id!==item.id);
       qnaOpenIds.delete(item.id);
+      if(qnaRecoQuestionId === item.id) qnaRecoQuestionId = null;
       qnaSaveState(); qnaRenderAll();
     }
   }
@@ -879,7 +943,28 @@ qnaMainEl.addEventListener('click', (e)=>{
 document.getElementById('qnaSearchInput').addEventListener('input', (e)=>{
   qnaSearchQuery = e.target.value;
   document.getElementById('qnaMain').innerHTML = qnaRenderMain();
-  // AI 업무 제안 패널은 검색 결과가 아니라 현재 탭에 쌓인 질문 전체를 분석하므로 검색으로는 갱신하지 않는다.
+  // AI 업무 제안 패널은 검색 중에는 그대로 두고, 지금 보고 있던 질문 기준 제안을 유지한다.
+});
+
+// AI 업무 제안 패널의 실행하기/완료/제외/되돌리기 — 질문마다 별도로 상태를 저장한다.
+document.getElementById('qnaRecoBody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  if(!['ai-start','ai-done','ai-exclude','ai-undo'].includes(action)) return;
+  const q = qnaState.questions.find(x => x.id === btn.dataset.qid);
+  if(!q) return;
+  if(!q.actionStates || typeof q.actionStates !== 'object') q.actionStates = {};
+  const aid = btn.dataset.aid;
+  if(action === 'ai-start'){
+    qnaShowToast('실행을 시작하세요');
+    return;
+  }
+  if(action === 'ai-done') q.actionStates[aid] = 'done';
+  else if(action === 'ai-exclude') q.actionStates[aid] = 'excluded';
+  else if(action === 'ai-undo') delete q.actionStates[aid];
+  qnaSaveState();
+  qnaRenderRecoPanel();
 });
 
 qnaRenderAll();
