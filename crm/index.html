@@ -13,12 +13,17 @@
      완전히 독립적으로 배포/롤백될 수 있도록 값만 그대로 복제했다 — 색/간격 값이 바뀌면
      양쪽을 각각 맞춰야 하지만, 지금 단계에서는 안전성이 더 중요하다고 판단했다.) ───────── */
   :root{
-    --bg: #F8F9FB;
+    /* §첫 화면 최종 수정 라운드: WHITE+NAVY+LIGHT BLUE+COOL GRAY 4계열로 통일 — 이 토큰들이
+       파일 전체에서 재사용되므로 값만 바꿔도 앱 전체 톤이 일관되게 맞춰진다(개별 컴포넌트를
+       하나씩 다시 칠하지 않음). */
+    --bg: #F8FAFC;
     --surface: #FFFFFF;
-    --navy: #1E2A4A;
-    --text: #1F2937;
-    --text-muted: #6B7280;
-    --line: #E5E7EB;
+    --navy: #172A52;
+    --navy-hover: #223A6B;
+    --text: #1E293B;
+    --text-muted: #64748B;
+    --text-faint: #94A3B8;
+    --line: #E2E8F0;
   }
   *{ box-sizing:border-box; }
   html,body{
@@ -63,34 +68,78 @@
   }
   .tb-btn:hover{ background:#F0F1F4; color:var(--text); }
 
-  /* ---------- Search + list (첫 화면) ---------- */
-  .search-box{
-    display:flex; align-items:center; gap:8px; height:42px; padding:0 14px;
-    background:var(--surface); border:1px solid var(--line); border-radius:8px; max-width:520px;
-  }
-  .search-box svg{ flex:none; color:var(--text-muted); }
-  .search-box input{ flex:1; border:none; outline:none; font-size:14px; color:var(--text); background:transparent; }
-  .search-box input::placeholder{ color:#9CA3AF; }
-
-  .list-head{ display:flex; justify-content:space-between; align-items:center; margin:22px 0 8px; }
-  .list-title{ font-size:14px; font-weight:700; color:var(--text); }
+  /* ---------- 첫 화면(§첫 화면 최종 수정 라운드) — 고객 수 → 상태 필터 → 검색/정렬 →
+     목록 → 페이지네이션 순서로만 구성한다(§1/§2, 알림 배너류는 만들지 않는다 §25). ---------- */
+  .list-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .list-title{ font-size:19px; font-weight:700; color:var(--text); }
   .list-add-btn{
-    height:30px; padding:0 12px; font-size:12.5px; font-weight:600; color:#fff; background:var(--navy);
+    height:32px; padding:0 14px; font-size:13px; font-weight:600; color:#fff; background:var(--navy);
     border:none; border-radius:6px; cursor:pointer;
   }
-  .list-add-btn:hover{ opacity:0.92; }
+  .list-add-btn:hover{ background:var(--navy-hover); }
+  .list-secondary-actions{ display:flex; gap:14px; align-items:center; }
+  .list-secondary-link{
+    font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline;
+  }
+  .list-secondary-link:hover{ color:var(--text); }
 
-  .co-table-head{ display:flex; gap:12px; padding:8px 10px; font-size:11.5px; color:var(--text-muted); border-bottom:1px solid var(--line); }
+  .list-filter-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .list-filter-chip{
+    height:30px; padding:0 12px; font-size:12.5px; font-weight:600; color:#475569; background:#fff;
+    border:1px solid var(--line); border-radius:6px; cursor:pointer; white-space:nowrap;
+  }
+  .list-filter-chip:hover{ background:var(--bg); }
+  .list-filter-chip.is-active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+
+  .list-search-row{ display:flex; gap:8px; margin-bottom:8px; }
+  .search-box{
+    display:flex; align-items:center; gap:8px; height:38px; padding:0 12px;
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; flex:1; min-width:0;
+  }
+  .search-box:focus-within{ border-color:var(--text-faint); }
+  .search-box svg{ flex:none; color:var(--text-muted); }
+  .search-box input{ flex:1; min-width:0; border:none; outline:none; font-size:13.5px; color:var(--text); background:transparent; }
+  .search-box input::placeholder{ color:var(--text-faint); }
+  .list-sort-select{
+    height:38px; padding:0 10px; font-size:13px; color:var(--text); background:var(--surface);
+    border:1px solid var(--line); border-radius:6px; cursor:pointer; flex:none;
+  }
+  .list-sort-select:focus{ outline:none; border-color:var(--text-faint); }
+
+  .co-table-head{ display:flex; gap:12px; padding:9px 10px; font-size:12.5px; font-weight:600; color:var(--text-muted); border-bottom:1px solid var(--line); }
   .co-list{ }
   .co-row{
-    display:flex; gap:12px; padding:12px 10px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center;
+    display:flex; gap:12px; padding:0 10px; height:44px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center;
   }
-  .co-row:hover{ background:#F8F9FB; }
-  .col-name{ flex:1 1 180px; min-width:0; font-weight:600; color:var(--text); }
-  .col-contact{ flex:1 1 140px; min-width:0; color:var(--text-muted); font-size:12.5px; }
-  .col-recent{ flex:2 1 240px; min-width:0; color:var(--text-muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .col-date{ flex:0 0 110px; color:var(--text-muted); font-size:12px; text-align:right; }
+  .co-row:hover{ background:var(--bg); }
+  .col-name{ flex:1.2 1 160px; min-width:0; font-weight:600; color:var(--text); font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-stage{ flex:0 0 100px; }
+  .col-contact{ flex:0 0 90px; min-width:0; color:var(--text-muted); font-size:13px; }
+  .col-recent{ flex:2 1 200px; min-width:0; color:var(--text-muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-date{ flex:0 0 90px; color:var(--text-muted); font-size:12.5px; text-align:right; }
+  .col-pour{ flex:0 0 70px; text-align:right; }
   .empty-note{ font-size:12.5px; color:var(--text-muted); padding:24px 4px; text-align:center; }
+
+  .co-star{ color:#F5B942; font-size:11px; margin-right:3px; }
+  .stage-badge{ display:inline-block; font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; }
+  .stage-badge.st-meeting{ background:#EAF2FF; color:#2563EB; }
+  .stage-badge.st-doc{ background:#F1F5F9; color:#64748B; }
+  .stage-badge.st-mou{ background:#FFF4DF; color:#B7791F; }
+  .stage-badge.st-none{ background:#F1F5F9; color:var(--text-faint); }
+  .pour-count{ font-size:13px; font-weight:600; color:#2563EB; background:none; border:none; cursor:pointer; padding:0; }
+  .pour-count:hover{ text-decoration:underline; }
+  .pour-none{ font-size:13px; color:var(--text-faint); }
+
+  .list-pagination{ display:flex; justify-content:center; align-items:center; gap:4px; margin-top:16px; }
+  .page-btn{
+    min-width:26px; height:26px; padding:0 6px; font-size:12px; color:#334155; background:transparent;
+    border:none; border-radius:5px; cursor:pointer;
+  }
+  .page-btn:hover{ background:var(--bg); }
+  .page-btn.active{ background:var(--navy); color:#fff; font-weight:600; }
+  .page-btn:disabled{ color:var(--text-faint); cursor:default; }
+  .page-btn:disabled:hover{ background:transparent; }
+  .page-ellipsis{ color:var(--text-faint); font-size:12px; padding:0 2px; }
 
   /* ---------- Customer card ---------- */
   .back-link{ font-size:12.5px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:0; margin-bottom:14px; }
@@ -695,26 +744,42 @@
     </div>
   </div>
 
+  <!-- §첫 화면 최종 수정 라운드: 고객 수 → 상태 필터 → 검색/정렬 → 고객 목록 순서로만
+       구성한다(§1/§2). 이전에 논의됐던 "1차/2차 미팅을 잡아야 할 업체" 알림 배너는 여기
+       만들지 않는다 — 해당 업무 데이터/자동 Todo(§고객 진행단계 연동 라운드)는 그대로
+       살아있고 v2의 "내 할 일"에서 계속 보인다(§1, 첫 화면 표시만 뺀 것). -->
   <div id="listView">
-    <div class="search-box">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input type="text" id="crmSearchInput" placeholder="업체명 / 담당자 / 활동내용 검색" />
-    </div>
-    <div class="list-head">
+    <div class="list-toolbar">
       <div class="list-title" id="crmListTitle">고객</div>
-      <div style="display:flex;gap:8px;">
-        <button type="button" id="crmPartnerImportBtn" class="list-add-btn" style="background:#fff;color:var(--navy);border:1px solid var(--line);">협력사 데이터 가져오기</button>
-        <button type="button" id="crmPourImportBtn" class="list-add-btn" style="background:#fff;color:var(--navy);border:1px solid var(--line);">POUR 시공실적 가져오기</button>
+      <div class="list-secondary-actions">
+        <button type="button" id="crmPartnerImportBtn" class="list-secondary-link">협력사 데이터 가져오기</button>
+        <button type="button" id="crmPourImportBtn" class="list-secondary-link">POUR 시공실적 가져오기</button>
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
       </div>
     </div>
+    <div class="list-filter-row" id="crmFilterRow"></div>
+    <div class="list-search-row">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="text" id="crmSearchInput" placeholder="업체명 / 담당자 / 활동내용 검색" />
+      </div>
+      <select class="list-sort-select" id="crmSortSelect">
+        <option value="pour">POUR 실적순</option>
+        <option value="recent">최근 활동순</option>
+        <option value="name">업체명순</option>
+        <option value="stage">진행 단계순</option>
+      </select>
+    </div>
     <div class="co-table-head">
-      <div class="col-name">고객명</div>
+      <div class="col-name">업체명</div>
+      <div class="col-stage">현재 단계</div>
       <div class="col-contact">담당자</div>
-      <div class="col-recent">최근활동</div>
+      <div class="col-recent">최근 활동</div>
       <div class="col-date">마지막 활동일</div>
+      <div class="col-pour">POUR 실적</div>
     </div>
     <div class="co-list" id="crmList"></div>
+    <div class="list-pagination" id="crmPagination"></div>
   </div>
 
   <div id="cardView" style="display:none;"></div>
@@ -2346,6 +2411,100 @@ window.SHIN2_CRM_APP_INIT = function(){
   const listTitle = document.getElementById('crmListTitle');
   let searchQuery = '';
   let currentCompanyId = null;
+  // §첫 화면 최종 수정 라운드: 필터/정렬/페이지 상태. 서버가 없는 순수 클라이언트 화면이라
+  // 세 값 모두 렌더 시점에 메모리에서만 들고 있고, 별도로 저장하지 않는다(새로고침하면
+  // 기본값 "전체/POUR 실적순/1페이지"로 돌아간다 — 스펙 §3 기본 정렬 유지).
+  let filterKey = 'all';
+  let sortMode = 'pour';
+  let currentPage = 1;
+  const PAGE_SIZE = 15;
+  // §2 필터 칩 정의 — "진행중"은 buildProgressStages(co).hasAny(=Partner Dashboard 진행
+  // 데이터가 실제로 있음)를 그대로 쓴다. 질문서/1차미팅/2차미팅/MOU는 그 안에서 "현재 단계"
+  // (buildProgressStages의 currentIdx, 이미 §진행 기록 라운드에서 만든 계산)로 좁힌다.
+  const FILTER_DEFS = [
+    ['all','전체'], ['inProgress','진행중'], ['q','질문서'],
+    ['m1','1차미팅'], ['m2','2차미팅'], ['mou','MOU'], ['partner','협력업체']
+  ];
+  function matchesFilter(co, progress, key){
+    if(key === 'all') return true;
+    if(key === 'partner') return co.partnerStatus === 'partner';
+    if(key === 'inProgress') return progress.hasAny;
+    if(!progress.hasAny) return false;
+    return progress.stages[progress.currentIdx].key === key;
+  }
+  function buildStageBadgeHtml(progress){
+    if(!progress.hasAny) return `<span class="stage-badge st-none">미확인</span>`;
+    const stage = progress.stages[progress.currentIdx];
+    const cls = stage.key === 'q' ? 'st-doc' : (stage.key === 'mou' ? 'st-mou' : 'st-meeting');
+    return `<span class="stage-badge ${cls}">${esc(stage.label)} ${esc(PROGRESS_STATUS_LABEL[stage.state])}</span>`;
+  }
+  function applySort(rows){
+    if(sortMode === 'recent'){
+      rows.sort((a,b)=>{
+        const ta = a.summary ? new Date(a.summary.createdAt).getTime() : 0;
+        const tb = b.summary ? new Date(b.summary.createdAt).getTime() : 0;
+        if(tb !== ta) return tb - ta;
+        return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+      });
+    } else if(sortMode === 'name'){
+      rows.sort((a,b)=> String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko'));
+    } else if(sortMode === 'stage'){
+      const order = { q:0, m1:1, m2:2, mou:3 };
+      rows.sort((a,b)=>{
+        const oa = a.progress.hasAny ? order[a.progress.stages[a.progress.currentIdx].key] : 99;
+        const ob = b.progress.hasAny ? order[b.progress.stages[b.progress.currentIdx].key] : 99;
+        if(oa !== ob) return oa - ob;
+        return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+      });
+    } else {
+      // §3 기본 정렬: POUR 시공실적 건수 내림차순(하드코딩 없이 co.pourTrackRecords.length 집계).
+      rows.sort((a,b)=> (b.pourCount - a.pourCount) || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko'));
+    }
+  }
+  function renderFilterChips(counts){
+    const wrap = document.getElementById('crmFilterRow');
+    if(!wrap) return;
+    wrap.innerHTML = FILTER_DEFS.map(([key,label])=>
+      `<button type="button" class="list-filter-chip${filterKey===key?' is-active':''}" data-filter="${esc(key)}">${esc(label)} ${counts[key]||0}</button>`
+    ).join('');
+    wrap.querySelectorAll('[data-filter]').forEach(btn=> btn.addEventListener('click', ()=>{
+      filterKey = btn.getAttribute('data-filter');
+      currentPage = 1;
+      renderList();
+    }));
+  }
+  function renderPagination(totalPages){
+    const wrap = document.getElementById('crmPagination');
+    if(!wrap) return;
+    if(totalPages <= 1){ wrap.innerHTML = ''; return; }
+    const windowSize = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + windowSize - 1);
+    start = Math.max(1, end - windowSize + 1);
+    const pages = [];
+    for(let p = start; p <= end; p++) pages.push(p);
+    let html = `<button type="button" class="page-btn" data-page="${currentPage-1}" ${currentPage<=1?'disabled':''}>&lt;</button>`;
+    if(start > 1){ html += `<button type="button" class="page-btn" data-page="1">1</button>`; if(start > 2) html += `<span class="page-ellipsis">…</span>`; }
+    html += pages.map(p=> `<button type="button" class="page-btn${p===currentPage?' active':''}" data-page="${p}">${p}</button>`).join('');
+    if(end < totalPages){ if(end < totalPages - 1) html += `<span class="page-ellipsis">…</span>`; html += `<button type="button" class="page-btn" data-page="${totalPages}">${totalPages}</button>`; }
+    html += `<button type="button" class="page-btn" data-page="${currentPage+1}" ${currentPage>=totalPages?'disabled':''}>&gt;</button>`;
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-page]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const p = parseInt(btn.getAttribute('data-page'), 10);
+      if(!p || p < 1 || p > totalPages || p === currentPage) return;
+      currentPage = p;
+      renderList();
+    }));
+  }
+  // §5: POUR 실적 숫자를 누르면 그 업체 카드를 열고 POUR 시공실적 상세(§POUR 시공실적
+  // 라운드에서 이미 있는 #cdashPourTrackBlock)로 스크롤한다 — 새 화면/구조를 만들지 않는다.
+  function openCardAndScrollToPour(id){
+    openCard(id);
+    requestAnimationFrame(()=>{
+      const target = document.getElementById('cdashPourTrackBlock');
+      if(target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+  }
 
   function companySummary(co){
     const acts = D.activitiesForCompany(co.id);
@@ -2362,31 +2521,64 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   function renderList(){
     const companies = D.loadCompanies();
-    listTitle.textContent = '고객 ' + companies.length + '건';
-    const rows = companies.map(co=>{
+    listTitle.textContent = '고객 ' + companies.length;
+    // 파생 데이터는 매번 다시 계산만 한다(§26 — companyId 기준 실제 POUR/진행 데이터에서
+    // 집계, 회사명 텍스트로 새 데이터를 만들지 않음. 별도 저장 없음).
+    const enriched = companies.map(co=>{
       const acts = D.activitiesForCompany(co.id);
-      return { co, acts, summary: acts[0] || null };
-    }).filter(r=> matchesSearch(r.co, r.acts, searchQuery));
+      const progress = buildProgressStages(co);
+      const pourCount = (co.pourTrackRecords || []).length;
+      return { co, acts, summary: acts[0] || null, progress, pourCount };
+    });
+
+    // §6 ★ 상위 20% — POUR 실적을 가진 업체 전체를 기준으로(필터/검색과 무관하게 항상
+    // 동일한 기준), 건수 내림차순 상위 ceil(20%)만 표시. "우수업체" 평가가 아니라 단순
+    // 시각 표시(§6 명시).
+    const withPour = enriched.filter(r=> r.pourCount > 0).slice().sort((a,b)=> b.pourCount - a.pourCount);
+    const starCut = Math.ceil(withPour.length * 0.2);
+    const starredIds = new Set(withPour.slice(0, starCut).map(r=> r.co.id));
+
+    const filterCounts = {};
+    FILTER_DEFS.forEach(([key])=>{ filterCounts[key] = enriched.filter(r=> matchesFilter(r.co, r.progress, key)).length; });
+    renderFilterChips(filterCounts);
+
+    const rows = enriched
+      .filter(r=> matchesFilter(r.co, r.progress, filterKey))
+      .filter(r=> matchesSearch(r.co, r.acts, searchQuery));
+    applySort(rows);
+
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if(currentPage > totalPages) currentPage = totalPages;
+    const pageRows = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     if(!rows.length){
       listEl.innerHTML = `<div class="empty-note">${companies.length===0 ? '등록된 고객이 없습니다.' : '검색 결과가 없습니다.'}</div>`;
+      renderPagination(0);
       return;
     }
-    // 최근 활동일 최신순 → 없으면 이름순
-    rows.sort((a,b)=>{
-      const ta = a.summary ? new Date(a.summary.createdAt).getTime() : 0;
-      const tb = b.summary ? new Date(b.summary.createdAt).getTime() : 0;
-      if(tb !== ta) return tb - ta;
-      return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
-    });
-    listEl.innerHTML = rows.map(r=> `
+    listEl.innerHTML = pageRows.map(r=>{
+      const star = starredIds.has(r.co.id) ? '<span class="co-star">★</span>' : '';
+      const assignee = r.co.assigneeUserId ? '사용자 ' + esc(r.co.assigneeUserId) : '—';
+      const pourHtml = r.pourCount > 0
+        ? `<button type="button" class="pour-count" data-pour-link="${esc(r.co.id)}">${r.pourCount}건</button>`
+        : `<span class="pour-none">—</span>`;
+      return `
       <div class="co-row" data-id="${esc(r.co.id)}">
-        <div class="col-name">${partnerGlyphHtml(r.co)}${esc(r.co.name)}</div>
-        <div class="col-contact">${esc(r.co.contactName || r.co.repName || '-')}</div>
-        <div class="col-recent">${r.summary ? esc(r.summary.activityText || r.summary.originalText) : '-'}</div>
-        <div class="col-date">${r.summary ? fmtDate(r.summary.createdAt) : '-'}</div>
-      </div>
-    `).join('');
+        <div class="col-name">${star}${partnerGlyphHtml(r.co)}${esc(r.co.name)}</div>
+        <div class="col-stage">${buildStageBadgeHtml(r.progress)}</div>
+        <div class="col-contact">${assignee}</div>
+        <div class="col-recent">${r.summary ? esc(r.summary.activityText || r.summary.originalText) : '—'}</div>
+        <div class="col-date">${r.summary ? fmtDate(r.summary.createdAt) : '—'}</div>
+        <div class="col-pour">${pourHtml}</div>
+      </div>`;
+    }).join('');
+    listEl.querySelectorAll('[data-pour-link]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        openCardAndScrollToPour(btn.getAttribute('data-pour-link'));
+      });
+    });
+    renderPagination(totalPages);
     listEl.querySelectorAll('.co-row').forEach(row=>{
       row.addEventListener('click', ()=> openCard(row.getAttribute('data-id')));
     });
@@ -5363,7 +5555,12 @@ window.SHIN2_CRM_APP_INIT = function(){
   document.getElementById('crmPartnerImportBtn').addEventListener('click', openPartnerImportModal);
   document.getElementById('crmPourImportBtn').addEventListener('click', openPourImportModal);
   document.getElementById('hansolLinkBtn').addEventListener('click', ()=> window.open('../v2/', '_blank', 'noopener'));
-  searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim(); renderList(); });
+  searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim(); currentPage = 1; renderList(); });
+  const sortSelect = document.getElementById('crmSortSelect');
+  if(sortSelect){
+    sortSelect.value = sortMode;
+    sortSelect.addEventListener('change', ()=>{ sortMode = sortSelect.value; currentPage = 1; renderList(); });
+  }
 
   // 다른 탭(v2 또는 CRM의 다른 탭)에서 shin2-companies-staging을 바꾸면 native storage
   // 이벤트가 이 탭에 도착한다(자기 자신이 쓴 변경에는 절대 발생하지 않음 — 브라우저 표준
