@@ -1223,19 +1223,39 @@ window.SHIN2_CRM_OCR = (function(){
       onAuthStateChanged(auth, (user) => {
         currentUid = user ? user.uid : null;
         window.dispatchEvent(new CustomEvent('shin2-crm-firebase-ready'));
-        // v2의 [클라우드 동기화 시작] 버튼을 이 기기에서 이미 눌러 최초 동기화(CASE A/B/C)를
-        // 마친 적이 있을 때만 이어서 실시간 동기화를 켠다 — CRM이 스스로 새 동의를 만들지 않는다.
-        if(currentUid && localStorage.getItem('shin2-cloud-sync-enabled') === '1') startDocsSync();
+        // §클라우드 파일 저장 문제 해결 라운드: customerDocuments는 v2의 tasks/memos/todos
+        // 같은 "개인 데이터"가 아니라 처음부터 회사 공용 서류함이다(§4 "사용자별 파일이
+        // 아니다") — 그래서 v2의 [클라우드 동기화 시작] 버튼(개인 데이터의 CASE A/B/C 최초
+        // 병합 판단용)을 기다리지 않고, 로그인만 되면 바로 이 기기에서 실시간 동기화를 켠다.
+        // 안전한 이유: 이 배열은 기기별로 서로 다른 "지켜야 할 로컬 데이터"가 없다 — 새
+        // 기기는 항상 비어있는 채로 시작해 클라우드 값을 그대로 받으면 되고(§CASE B와 동일한
+        // 안전한 그림), 이미 파일을 올린 기기는 자기 로컬 rev가 더 최신이면 오히려 클라우드로
+        // 다시 밀어주는 기존 가드(localRev vs snapRev)가 그대로 지켜준다 — 데이터 유실 없음.
+        if(currentUid) startDocsSync();
       });
 
+      // §클라우드 파일 저장 문제 해결 라운드: 로그인 실패 이유가 지금까지 console.warn에만
+      // 남아 화면에서는 "클라우드 로그인이 안 되어 있어..."라는 뭉뚱그린 문구만 보였다 —
+      // 실제 원인(예: Firebase 콘솔에서 이메일/비밀번호 로그인 제공업체가 꺼져있으면
+      // auth/operation-not-allowed, 네트워크 차단이면 auth/network-request-failed 등)을
+      // 화면에서도 바로 진단할 수 있게 저장+이벤트로 알린다. 로그인 로직 자체(고정 이메일 +
+      // 사이트 잠금 비밀번호)는 그대로 — 실패 사유를 "보이게" 만들 뿐이다.
+      let lastAuthError = null;
+      window.SHIN2_STORAGE.getAuthError = () => lastAuthError;
+      function reportAuthFailure(err){
+        lastAuthError = err ? { code: err.code || 'unknown', message: err.message || String(err) } : null;
+        window.dispatchEvent(new CustomEvent('shin2-crm-auth-error', { detail: lastAuthError }));
+      }
       trySignInWithPassword = (pw) => {
-        signInWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).catch((err) => {
+        signInWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).then(()=>{ lastAuthError = null; }).catch((err) => {
           if(err && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')){
-            createUserWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).catch((createErr) => {
+            createUserWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).then(()=>{ lastAuthError = null; }).catch((createErr) => {
               console.warn('[CRM/Firebase] 로그인 계정 생성 실패 — 서류함이 localStorage 전용 모드로 계속 동작합니다.', createErr);
+              reportAuthFailure(createErr);
             });
           } else {
             console.warn('[CRM/Firebase] 로그인 실패 — 서류함이 localStorage 전용 모드로 계속 동작합니다.', err);
+            reportAuthFailure(err);
           }
         });
       };
@@ -1479,6 +1499,21 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
     });
   }
 
+  // §클라우드 파일 저장 문제 해결 라운드: 페이지를 막 연 직후(Firebase SDK 비동기 로딩+
+  // 로그인 왕복이 아직 안 끝난 순간) 파일을 놓으면 실제로는 로그인이 곧 성공할 상황인데도
+  // 그 순간의 isSignedIn()이 false라서 로컬로 잘못 빠지는 경우를 줄인다 — 최대 4초만 짧게
+  // 기다렸다가 그래도 로그인이 안 되면 그때 로컬 폴백으로 넘어간다(무한 대기 아님).
+  function waitForCloudReady(timeoutMs){
+    return new Promise((resolve)=>{
+      const start = Date.now();
+      (function check(){
+        const ST = window.SHIN2_STORAGE;
+        if(ST && ST.isSignedIn && ST.isSignedIn()){ resolve(true); return; }
+        if(Date.now() - start >= timeoutMs){ resolve(false); return; }
+        setTimeout(check, 150);
+      })();
+    });
+  }
   // saveDocumentFile: 실제 파일 바이트를 저장하는 유일한 진입점(§ Storage 연결 라운드).
   // window.SHIN2_STORAGE(로그인 상태)가 있으면 클라우드 업로드를 먼저 시도하고, 없거나
   // opts.forceLocal이면 기존 로컬 전용 blob 저장소(dataURL)에 쓴다. 업로드/저장이 "성공"한
@@ -1486,28 +1521,36 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   // 반환: Promise<{ localOnly, storagePath, dataUrl }> — dataUrl은 localOnly일 때만 채워진다.
   function saveDocumentFile(id, companyId, file, onProgress, opts){
     opts = opts || {};
-    const ST = window.SHIN2_STORAGE;
-    const useCloud = !opts.forceLocal && ST && ST.isSignedIn && ST.isSignedIn();
-    if(useCloud){
-      if(file.size > DOC_MAX_CLOUD_BYTES){
-        return Promise.reject(Object.assign(new Error('SIZE_LIMIT_CLOUD'), { code:'SIZE_LIMIT_CLOUD' }));
+    function attempt(useCloud){
+      const ST = window.SHIN2_STORAGE; // §클라우드 파일 저장 문제 해결 라운드: waitForCloudReady로
+      // 기다리는 동안 Firebase 모듈이 이제 막 로드돼 window.SHIN2_STORAGE 자체가 이 함수
+      // 호출 시점엔 아직 없었을 수 있다 — 그래서 매번 최신 값을 다시 읽는다(호출 시점에
+      // 한 번 캐시해두면 대기 후에도 계속 undefined로 남는 버그가 있었다).
+      if(useCloud && ST){
+        if(file.size > DOC_MAX_CLOUD_BYTES){
+          return Promise.reject(Object.assign(new Error('SIZE_LIMIT_CLOUD'), { code:'SIZE_LIMIT_CLOUD' }));
+        }
+        const path = `users/${ST.getUid()}/customers/${companyId}/documents/${id}/${file.name}`;
+        return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
       }
-      const path = `users/${ST.getUid()}/customers/${companyId}/documents/${id}/${file.name}`;
-      return ST.uploadFile(file, path, onProgress).then(res=> ({ localOnly:false, storagePath: res.storagePath, dataUrl:null }));
+      // 로컬 전용 폴백 — Storage 미로그인이거나 사용자가 명시적으로 "이 기기에만 저장"을 선택한
+      // 경우에만 여기로 온다.
+      return new Promise((resolve, reject)=>{
+        if(file.size > DOC_MAX_LOCAL_BYTES){
+          reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
+        reader.onload = ()=>{ if(onProgress) onProgress(100); resolve({ localOnly:true, storagePath: 'local:' + id, dataUrl: reader.result }); };
+        reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
+        reader.readAsDataURL(file);
+      });
     }
-    // 로컬 전용 폴백 — Storage 미로그인이거나 사용자가 명시적으로 "이 기기에만 저장"을 선택한
-    // 경우에만 여기로 온다.
-    return new Promise((resolve, reject)=>{
-      if(file.size > DOC_MAX_LOCAL_BYTES){
-        reject(Object.assign(new Error('SIZE_LIMIT'), { code:'SIZE_LIMIT' }));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onprogress = (e)=>{ if(onProgress && e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
-      reader.onload = ()=>{ if(onProgress) onProgress(100); resolve({ localOnly:true, storagePath: 'local:' + id, dataUrl: reader.result }); };
-      reader.onerror = ()=> reject(reader.error || Object.assign(new Error('READ_FAILED'), { code:'READ_FAILED' }));
-      reader.readAsDataURL(file);
-    });
+    if(opts.forceLocal) return attempt(false);
+    const ST0 = window.SHIN2_STORAGE;
+    if(ST0 && ST0.isSignedIn && ST0.isSignedIn()) return attempt(true);
+    return waitForCloudReady(4000).then(ready=> attempt(ready));
   }
   // addDocument: OCR 등 부가 처리와 완전히 독립적으로 "파일 저장(성공)→메타데이터 기록" 순서만
   // 지킨다(§8 OCR/파일저장 분리는 그대로 유지 — 이 함수 자체가 OCR을 전혀 모른다).
@@ -4738,14 +4781,29 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
   function docNoteText(){
     if(!crmCloudReady()){
-      return '클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다 — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.';
+      const ST = window.SHIN2_STORAGE;
+      const authErr = ST && ST.getAuthError && ST.getAuthError();
+      // §클라우드 파일 저장 문제 해결 라운드 §1: "왜" 로그인이 안 됐는지 화면에서 바로
+      // 진단할 수 있게 실제 Firebase 오류 코드를 덧붙인다(추측이 아니라 실제 발생한 오류
+      // 그대로 — 원인 파악은 Firebase 콘솔에서 해당 코드 기준으로 확인).
+      const reasonHint = authErr
+        ? ` (오류: ${authErr.code} — 이 코드가 auth/operation-not-allowed이면 Firebase 콘솔에서 이메일/비밀번호 로그인이 꺼져 있는 것이고, auth/network-request-failed면 네트워크 차단입니다)`
+        : ' (아직 로그인 시도 결과를 받지 못했습니다 — 잠시 후 자동으로 다시 확인됩니다)';
+      return '클라우드 로그인이 안 되어 있어 지금은 파일 1개당 2MB 이하만 이 기기에 임시로 저장할 수 있습니다' + reasonHint + ' — ' + LOCAL_ONLY_NOTICE + '. 메타데이터(파일명/종류/업로드일/메모)는 정상적으로 기존 클라우드 동기화 대상에 포함되지만, 바이너리 자체는 로컬 저장일 때 어떤 경우에도 Firestore로 전송되지 않습니다.';
     }
     if(!docsSyncReady()){
-      return '새 파일은 클라우드(Firebase Storage)에 업로드되어 회사 공용으로 저장됩니다. 다만 다른 직원이 올린 파일을 이 기기에서 실시간으로 받아보려면, v2 화면에서 [클라우드 동기화 시작]을 이 기기에서도 한 번 눌러주세요.';
+      return '새 파일은 클라우드(Firebase Storage)에 업로드되어 회사 공용으로 저장됩니다. 다른 직원이 올린 파일을 받아오는 중입니다…';
     }
     // §12: 실제 공용 클라우드 동기화(업로드+실시간 수신)가 이 기기에서 확인된 뒤에만 짧은 안내로 교체한다.
     return '업로드된 서류는 회사 공용으로 저장되며 모든 사용자가 확인할 수 있습니다.';
   }
+  // 로그인 시도가 실패로 확정되는 순간에도 안내 문구를 즉시 갱신한다(§1 진단 정보를
+  // 최대한 빨리 화면에 반영 — shin2-crm-firebase-ready는 auth 상태 변화 시에만 오고,
+  // 로그인 실패 자체는 그와 별개 이벤트라 따로 듣는다).
+  window.addEventListener('shin2-crm-auth-error', ()=>{
+    const note = document.getElementById('crmDocNote');
+    if(note) note.textContent = docNoteText();
+  });
   // 로그인/동기화 상태 변화 시점에 안내 문구만 갱신한다(자동 업로드/마이그레이션 아님 —
   // 단순 텍스트 갱신, §수동 액션 원칙 위반 아님). 카드 화면이 열려 있지 않으면 조용히 무시된다.
   window.addEventListener('shin2-crm-firebase-ready', ()=>{
