@@ -383,7 +383,11 @@
      색상: 화이트/진한 남색/검정·진회색/연회색/아주 연한 하늘색만 사용 — 빨강/초록/주황/보라/
      그라데이션/큰 그림자/이모티콘 금지(§18). 여백은 좁게(§19), 본문 폰트는 읽기 가능한
      크기 유지(§20). ========================================================================== */
-  .cdash-body{ padding:10px 20px 18px; }
+  /* [버그 수정] .chart-panel이 max-height:92vh + overflow:hidden인데 .cdash-body에는
+     스크롤이 없어서, 서류함처럼 내용이 길어지는 패널을 열면 화면 아래가 그냥 잘려서
+     더 내려갈 방법이 없었다 — .cdash-body 자신을 세로 스크롤 영역으로 만든다(헤더 높이를
+     뺀 나머지 공간만 차지하도록 flex:1/min-height:0). */
+  .cdash-body{ padding:10px 20px 18px; flex:1; min-height:0; overflow-y:auto; }
   .cdash-header{
     position:relative;
     background:var(--navy); color:#fff; border-radius:10px;
@@ -478,7 +482,7 @@
   /* ---- §카드 재구성 라운드: 업체 한눈에 보기 / 4분할 / 하단2분할 / 하단 탭메뉴 ---- */
   .cdash-glance-row{ display:grid; grid-template-columns:1.1fr 1fr; gap:12px; margin-bottom:12px; align-items:stretch; }
   .cdash-glance-summary{ margin-bottom:0; }
-  .cdash-glance-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:8px; background:#fff; overflow:hidden; }
+  .cdash-glance-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--line); border-radius:8px; background:#fff; overflow:hidden; }
   .cdash-glance-stat{ padding:10px 12px; border-left:1px solid var(--line); min-width:0; }
   .cdash-glance-stat:first-child{ border-left:none; }
   .cdash-glance-stat-label{ font-size:11px; color:var(--text-muted); margin-bottom:4px; }
@@ -2284,9 +2288,11 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 데이터(D.addWhyPour 등)는 그대로 남겨둔다(§6/§17 — 삭제 아님, 렌더 호출만 하지 않음). ----
   // ---- 업체 한눈에 보기(§카드 재구성 라운드) — 헤더 바로 아래, 왼쪽은 기존 "핵심 한 줄
   // 요약"(cdashSummaryCol, D.setMemoSummary가 이미 쓰던 그 값 그대로) 재사용, 오른쪽은
-  // 현재단계/최근접촉/POUR실적/담당자 4개 스탯만 계산해서 보여준다. 새 데이터 필드를 만들지
-  // 않는다 — 전부 이미 있는 함수(buildProgressStages/activitiesForCompany/pourTrackRecords)를
-  // 다시 읽기만 한다. ----
+  // 현재단계/최근접촉/POUR실적 3개 스탯만 계산해서 보여준다(§서류함 스크롤/담당자 정리
+  // 라운드 — "담당자" 스탯은 co.contactName(고객 쪽 연락처, 실제로 안 쓰여 항상 "미확인"만
+  // 뜨던 필드)을 보여주던 것이라 사용자 요청으로 제거했다. 새 데이터 필드를 만들지 않는다 —
+  // 전부 이미 있는 함수(buildProgressStages/activitiesForCompany/pourTrackRecords)를 다시
+  // 읽기만 한다. ----
   function buildGlanceStats(co){
     const { stages, currentIdx, hasAny } = buildProgressStages(co);
     const stageText = hasAny ? `${stages[currentIdx].label} ${PROGRESS_STATUS_LABEL[stages[currentIdx].state]}` : '미확인';
@@ -2297,8 +2303,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       stageText,
       recentContact: recentAct ? fmtDate(recentAct.createdAt) : '—',
       pourCount: pour.length,
-      pourLatestYear: pourYears[0] || null,
-      contactPerson: co.contactName || '미확인'
+      pourLatestYear: pourYears[0] || null
     };
   }
   function renderGlanceRow(co){
@@ -2309,7 +2314,6 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">현재 단계</div><div class="cdash-glance-stat-value">${esc(g.stageText)}</div></div>
       <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">최근 접촉</div><div class="cdash-glance-stat-value">${esc(g.recentContact)}</div></div>
       <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">POUR 시공실적</div><div class="cdash-glance-stat-value">${g.pourCount ? `${g.pourCount}건` : '—'}${g.pourLatestYear ? `<div class="cdash-glance-stat-sub">최근 ${esc(g.pourLatestYear)}년</div>` : ''}</div></div>
-      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">담당자</div><div class="cdash-glance-stat-value${g.contactPerson === '미확인' ? ' is-muted' : ''}">${esc(g.contactPerson)}</div></div>
     `;
   }
 
