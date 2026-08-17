@@ -793,6 +793,585 @@
     .chart-overlay{ padding:0; }
     .chart-panel{ max-height:100vh; border-radius:0; }
   }
+
+
+  /* ── ChatGPT visual-only refinement: customer detail card ───────────────
+     CSS override only. No data, text, event, Firebase, calculation or DOM logic changed. */
+  .chart-overlay{
+    background:rgba(15,23,42,.46);
+    padding:2.4vh 14px;
+  }
+  .chart-panel{
+    width:96vw;
+    max-width:1600px;
+    max-height:95vh;
+    border:1px solid rgba(226,232,240,.92);
+    border-radius:16px;
+    box-shadow:0 22px 55px rgba(15,23,42,.20);
+  }
+  .cdash-body{
+    padding:14px 16px 18px;
+    background:#F8FAFC;
+  }
+  .cdash-header{
+    background:#172A52;
+    border-radius:12px;
+    padding:15px 44px 15px 18px;
+    margin-bottom:12px;
+    box-shadow:0 5px 16px rgba(23,42,82,.10);
+  }
+  .cdash-header-title{
+    font-size:21px;
+    letter-spacing:-.35px;
+  }
+  .cdash-header-actions{ margin-top:7px; gap:6px; }
+  .cdash-header-actions .co-text-action,
+  .cdash-header-actions .chart-memo-btn{
+    border:1px solid rgba(255,255,255,.32);
+    background:rgba(255,255,255,.09);
+    border-radius:6px;
+    padding:5px 10px;
+  }
+  .cdash-header-box{
+    padding:7px 10px;
+    border-radius:9px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);
+  }
+  .cdash-header-field{ padding:2px 15px; }
+  .cdash-header-field-label{ color:#7C8BA1; font-size:10px; }
+  .cdash-header-field-value{ color:#16233B; font-size:12.5px; }
+
+  .cdash-glance-row{ gap:10px; margin-bottom:10px; grid-template-columns:1.08fr 1fr; }
+  .cdash-bcol,
+  .cdash-block,
+  .cdash-glance-stats,
+  .cdash-quad{
+    border-color:#DCE4EE;
+    border-radius:10px;
+    box-shadow:0 1px 2px rgba(15,23,42,.025);
+  }
+  .cdash-summary-bar{
+    background:#172A52;
+    padding:8px 13px;
+    letter-spacing:-.1px;
+  }
+  .cdash-summary-body{ padding:10px 13px; }
+  .cdash-glance-stat{ padding:11px 13px; }
+  .cdash-glance-stat-label{ color:#738198; font-size:10.5px; }
+  .cdash-glance-stat-value{ font-size:13.5px; letter-spacing:-.15px; }
+  .cdash-glance-stat-sub{ color:#8491A5; }
+
+  #cdashMeetingBlock{
+    padding:10px 14px;
+    margin-bottom:10px;
+  }
+  #cdashMeetingBlock .cdash-col-title-row,
+  #cdashPourTrackBlock .cdash-col-title-row,
+  #cdashDocStatusBlock .cdash-col-title-row{
+    border-bottom:1px solid #D7E0EB;
+    padding-bottom:7px;
+    margin-bottom:7px;
+  }
+  .cdash-col-title{ color:#20365F; font-size:12.5px; }
+  .cdash-mini-edit{ color:#718096; text-decoration:none; }
+  .cdash-mini-edit:hover{ color:#172A52; text-decoration:underline; }
+
+  .cdash-bottom2{
+    grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+    gap:10px;
+    margin-bottom:10px;
+  }
+  #cdashPourTrackBlock.cdash-block,
+  #cdashReqPreviewBlock.cdash-block{ margin-bottom:0; }
+  .cdash-pour-summary{ color:#475569; margin-bottom:7px; }
+  .cdash-pour-year-tabs{ margin-bottom:7px; }
+  .cdash-pour-year-tab{
+    border-color:#D8E1EC;
+    background:#F8FAFC;
+    color:#64748B;
+    padding:3px 10px;
+  }
+  .cdash-pour-year-tab.active{
+    background:#172A52;
+    color:#fff;
+    border-color:#172A52;
+  }
+  .cdash-pour-table th{
+    background:#F8FAFC;
+    color:#68778E;
+    padding:6px 7px;
+    border-bottom:1px solid #DCE4EE;
+  }
+  .cdash-pour-table td{
+    padding:6px 7px;
+    border-top:1px solid #EEF2F6;
+  }
+  .cdash-pour-table tbody tr:hover{ background:#FAFCFF; }
+  .cdash-pour-more-btn{ color:#24599A; font-weight:600; }
+
+  .cdash-quad{ margin-bottom:10px; overflow:hidden; }
+  .cdash-quad .cdash-col{ padding:11px 14px; border-color:#E2E8F0; }
+  .cdash-quad .cdash-col-title-row{
+    border-bottom:1px solid #D7E0EB;
+    padding-bottom:6px;
+    margin-bottom:7px;
+  }
+  .cdash-col-body{ color:#334155; }
+  .cdash-field-label,
+  .cdash-col-subtitle{ color:#7A879A; }
+  .cdash-field-value.is-muted{ color:#9AA6B6; }
+
+  #cdashDocStatusBlock{
+    padding:10px 14px;
+    margin-bottom:10px;
+  }
+  .cdash-doc-status-chips{ gap:5px; }
+  .cdash-doc-status-chip{
+    background:#F4F6F8;
+    border-color:#E4E9EF;
+    color:#8995A5;
+    border-radius:6px;
+    padding:3px 8px;
+  }
+  .cdash-doc-status-chip.is-on{
+    color:#20365F;
+    background:#EEF4FB;
+    border-color:#D9E6F4;
+  }
+  .cdash-tab-row{ gap:5px; padding-top:0; }
+  .cdash-tab{
+    border-radius:7px;
+    padding:6px 13px;
+    background:#fff;
+    color:#65748A;
+  }
+  .cdash-tab:hover{ background:#F6F8FB; color:#20365F; }
+  .cdash-tab-active{
+    color:#172A52;
+    background:#EEF3FA;
+    border-color:#C8D5E6;
+  }
+
+  @media (max-width:900px){
+    .chart-overlay{ padding:0; }
+    .chart-panel{ width:100vw; max-height:100vh; border-radius:0; border:none; }
+    .cdash-body{ padding:10px; }
+    .cdash-header{ border-radius:9px; }
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────────────
+     ChatGPT FINAL VISUAL PASS — 2026-08-17
+     디자인 전용 CSS 오버라이드. HTML/JS/Firebase/데이터/계산/이벤트 로직은 변경하지 않는다.
+     첫 화면과 업체 상세카드의 색감·간격·테이블 밀도만 동일한 CRM 톤으로 통일한다.
+     ───────────────────────────────────────────────────────────────────── */
+  :root{
+    --bg:#F4F7FB;
+    --surface:#FFFFFF;
+    --navy:#17305C;
+    --navy-hover:#214274;
+    --text:#17233A;
+    --text-muted:#64748B;
+    --text-faint:#94A3B8;
+    --line:#DFE6EF;
+    --soft-blue:#F1F6FC;
+    --soft-blue-2:#EAF2FB;
+  }
+
+  body{ background:linear-gradient(180deg,#F7F9FC 0,#F4F7FB 100%); }
+  .app{
+    max-width:1480px;
+    padding:24px 28px 54px;
+  }
+  .topbar{
+    margin-bottom:20px;
+    padding:0 2px;
+  }
+  .brand{
+    font-size:23px;
+    font-weight:800;
+    letter-spacing:-.55px;
+    color:#132B55;
+  }
+  .brand-sub{ color:#738198; margin-left:9px; }
+  .tb-btn{
+    height:34px;
+    padding:0 13px;
+    background:#fff;
+    color:#53647B;
+    border-color:#DDE5EF;
+    box-shadow:0 1px 2px rgba(15,23,42,.02);
+  }
+  .tb-btn:hover{ background:#F7FAFD; color:#17305C; }
+
+  /* 첫 화면 — 목록과 동향 영역을 하나의 가벼운 업무 대시보드처럼 보이게 한다. */
+  #listView{
+    background:transparent;
+  }
+  .list-toolbar{
+    margin-bottom:12px;
+    align-items:flex-end;
+  }
+  .list-title{
+    font-size:21px;
+    font-weight:800;
+    color:#17233A;
+    letter-spacing:-.35px;
+  }
+  .list-add-btn{
+    height:36px;
+    padding:0 16px;
+    border-radius:7px;
+    box-shadow:0 3px 8px rgba(23,48,92,.11);
+  }
+  .list-secondary-actions{ gap:16px; }
+  .list-secondary-link{
+    color:#65758B;
+    text-decoration:none;
+    border-bottom:1px solid #BFC9D7;
+    line-height:1.45;
+  }
+  .list-secondary-link:hover{ color:#17305C; border-bottom-color:#17305C; }
+
+  .list-filter-row{ gap:7px; margin-bottom:13px; }
+  .list-filter-chip{
+    height:32px;
+    padding:0 13px;
+    border-radius:7px;
+    background:#fff;
+    border-color:#DDE5EF;
+    color:#53647B;
+    box-shadow:0 1px 2px rgba(15,23,42,.018);
+  }
+  .list-filter-chip:hover{ background:#F7FAFD; }
+  .list-filter-chip.is-active{
+    background:#17305C;
+    border-color:#17305C;
+    color:#fff;
+    box-shadow:0 3px 8px rgba(23,48,92,.10);
+  }
+
+  .rising-section{
+    background:#fff;
+    border:1px solid #DFE6EF;
+    border-radius:12px;
+    padding:15px 16px 16px;
+    margin:0 0 15px;
+    box-shadow:0 2px 8px rgba(15,23,42,.035);
+  }
+  .rising-head{ margin-bottom:11px; }
+  .rising-title{
+    font-size:16px;
+    color:#17305C;
+    letter-spacing:-.2px;
+  }
+  .rising-title .rising-arrow{ font-size:15px; color:#159447; }
+  .rising-title .rising-sub{ color:#74839A; font-size:12px; }
+  .rising-more{ color:#2D65A8; font-weight:600; }
+  .rising-grid{ gap:10px; }
+  .rising-card{
+    border-color:#E0E7F0;
+    border-radius:9px;
+    padding:12px 13px 11px;
+    box-shadow:0 1px 3px rgba(15,23,42,.025);
+    transition:border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+  }
+  .rising-card:hover{
+    border-color:#C5D3E4;
+    box-shadow:0 4px 12px rgba(23,48,92,.07);
+    transform:translateY(-1px);
+  }
+  .rising-card-top{ font-size:13.5px; margin-bottom:8px; color:#17233A; }
+  .rising-rank{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:23px;
+    height:23px;
+    border-radius:5px;
+    background:#17305C;
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+  }
+  .rising-row{ color:#7C899A; }
+  .rising-nums{ margin-top:4px; font-size:14px; }
+  .rising-nums .rising-up{ color:#14944A; font-size:15px; }
+  .rising-bar{ background:#E8EEF4; height:4px; margin-top:8px; }
+  .rising-bar-fill{ background:#18964D; }
+
+  .list-search-row{
+    gap:9px;
+    margin:0 0 0;
+    padding:10px;
+    background:#fff;
+    border:1px solid #DFE6EF;
+    border-bottom:none;
+    border-radius:11px 11px 0 0;
+  }
+  .search-box{
+    height:40px;
+    border-color:#DEE6EF;
+    background:#FBFCFE;
+    border-radius:7px;
+  }
+  .search-box:focus-within{ background:#fff; border-color:#AEBFD2; box-shadow:0 0 0 2px rgba(23,48,92,.035); }
+  .list-sort-select{
+    height:40px;
+    min-width:132px;
+    border-radius:7px;
+    border-color:#DEE6EF;
+    background:#fff;
+  }
+
+  .co-table-head{
+    background:#F5F8FC;
+    border:1px solid #DFE6EF;
+    border-bottom-color:#D5DFEB;
+    padding:10px 13px;
+    gap:12px;
+    color:#566980;
+    font-size:11.8px;
+  }
+  .co-list{
+    background:#fff;
+    border-left:1px solid #DFE6EF;
+    border-right:1px solid #DFE6EF;
+  }
+  .co-row{
+    min-height:44px;
+    padding:7px 13px;
+    gap:12px;
+    border-bottom:1px solid #E7ECF2;
+    transition:background .12s ease;
+  }
+  .co-row:hover{ background:#F7FAFD; }
+  .col-name{ font-size:13.2px; color:#17233A; }
+  .col-recent{ font-size:12px; color:#506078; }
+  .col-yr,.col-total,.col-revenue{ font-weight:600; }
+  .col-cat{ color:#43546B; }
+  .pour-count{ color:#1768D7; font-weight:700; }
+  .grade-badge{
+    min-width:30px;
+    height:22px;
+    padding:0 8px;
+    border-radius:5px;
+    background:#EEF4F2;
+    color:#277A57;
+    border:1px solid #CFE5DA;
+    font-size:11px;
+  }
+  .grade-badge.g-default{ background:#F1F4F7; color:#66758A; border-color:#DDE3EA; }
+
+  .contrib-cell{
+    width:100%;
+    padding:5px 8px;
+    border-radius:6px;
+    border:1px solid transparent;
+  }
+  .contrib-cell.lv-high{ background:#F1F8F4; border-color:#D6EADF; }
+  .contrib-cell.lv-mid{ background:#FFF8EE; border-color:#F1E1C9; }
+  .contrib-cell.lv-low{ background:#FFF4F4; border-color:#F0DADA; }
+  .contrib-cell.lv-insufficient{ background:#F5F7F9; border-color:#E5E9EE; }
+  .contrib-cell .contrib-level{ font-size:11.5px; }
+  .contrib-cell .contrib-sub{ font-size:10.3px; line-height:1.25; }
+  .trend-cell{ font-size:12.2px; }
+
+  .list-pagination{
+    margin-top:0;
+    padding:14px 12px 15px;
+    background:#fff;
+    border:1px solid #DFE6EF;
+    border-top:none;
+    border-radius:0 0 11px 11px;
+  }
+  .page-btn{ min-width:29px; height:29px; border-radius:6px; }
+  .page-btn.active{ background:#17305C; box-shadow:0 2px 5px rgba(23,48,92,.12); }
+
+  /* 상세 고객카드 — 정보 구조는 그대로 두고 카드 위계를 선명하게 한다. */
+  .chart-overlay{
+    background:rgba(15,23,42,.48);
+    backdrop-filter:blur(1.5px);
+    padding:12px;
+  }
+  .chart-panel{
+    width:calc(100vw - 24px);
+    max-width:1580px;
+    max-height:calc(100vh - 24px);
+    border-radius:15px;
+    border:1px solid rgba(220,228,238,.96);
+    box-shadow:0 28px 70px rgba(15,23,42,.23);
+  }
+  .cdash-body{
+    padding:12px 14px 16px;
+    background:#F5F8FC;
+  }
+  .cdash-header{
+    min-height:88px;
+    padding:15px 48px 15px 18px;
+    margin-bottom:11px;
+    border-radius:11px;
+    background:linear-gradient(100deg,#17305C 0%,#1D3A69 100%);
+    box-shadow:0 5px 15px rgba(23,48,92,.12);
+  }
+  .cdash-header-title{
+    font-size:21px;
+    font-weight:800;
+    letter-spacing:-.45px;
+  }
+  .cdash-header-actions .co-text-action,
+  .cdash-header-actions .chart-memo-btn{
+    min-height:29px;
+    padding:5px 11px;
+    border-radius:6px;
+    border-color:rgba(255,255,255,.34);
+    background:rgba(255,255,255,.08);
+  }
+  .cdash-header-box{
+    background:#fff;
+    border:1px solid rgba(226,232,240,.85);
+    border-radius:9px;
+    padding:8px 10px;
+    box-shadow:0 2px 5px rgba(15,23,42,.035);
+  }
+  .cdash-header-field{
+    padding:2px 17px;
+    border-color:#E3E8EF;
+  }
+  .cdash-header-field-label{ color:#7B899B; font-size:10px; }
+  .cdash-header-field-value{ color:#17233A; font-size:12.5px; font-weight:700; }
+
+  .cdash-glance-row{ gap:11px; margin-bottom:11px; }
+  .cdash-bcol,.cdash-block,.cdash-glance-stats,.cdash-quad{
+    background:#fff;
+    border-color:#DDE5EF;
+    border-radius:9px;
+    box-shadow:0 1px 3px rgba(15,23,42,.025);
+  }
+  .cdash-summary-bar{
+    background:#17305C;
+    min-height:35px;
+    padding:8px 13px;
+  }
+  .cdash-summary-body{ padding:11px 13px 12px; }
+  .cdash-glance-stats{ overflow:hidden; }
+  .cdash-glance-stat{ padding:12px 14px; }
+  .cdash-glance-stat-label{ color:#748297; font-size:10.5px; }
+  .cdash-glance-stat-value{ color:#17233A; font-size:14px; }
+  .cdash-glance-stat-sub{ color:#8390A2; }
+
+  #cdashMeetingBlock{
+    padding:11px 14px 12px;
+    margin-bottom:11px;
+  }
+  #cdashMeetingBlock .cdash-col-title-row,
+  #cdashPourTrackBlock .cdash-col-title-row,
+  #cdashReqPreviewBlock .cdash-col-title-row,
+  #cdashDocStatusBlock .cdash-col-title-row{
+    border-bottom:1px solid #D9E2EC;
+    padding-bottom:7px;
+    margin-bottom:8px;
+  }
+  .cdash-col-title{
+    color:#203A67;
+    font-size:12.8px;
+    letter-spacing:-.1px;
+  }
+  .cdash-bottom2{ gap:11px; margin-bottom:11px; }
+  #cdashPourTrackBlock.cdash-block,#cdashReqPreviewBlock.cdash-block{ padding:12px 14px; }
+  .cdash-pour-summary{ color:#506078; margin-bottom:8px; }
+  .cdash-pour-year-tab{
+    padding:4px 11px;
+    border-radius:14px;
+    background:#F8FAFC;
+  }
+  .cdash-pour-year-tab.active{ background:#17305C; }
+  .cdash-pour-table{
+    border-collapse:separate;
+    border-spacing:0;
+  }
+  .cdash-pour-table th{
+    background:#F5F8FC;
+    color:#62738A;
+    font-weight:700;
+    padding:7px 8px;
+  }
+  .cdash-pour-table td{
+    padding:7px 8px;
+    color:#334155;
+    border-top:1px solid #ECF0F4;
+  }
+  .cdash-pour-table tbody tr:hover{ background:#F8FBFE; }
+
+  .cdash-quad{
+    margin-bottom:11px;
+    overflow:hidden;
+  }
+  .cdash-quad .cdash-col{ padding:12px 14px 13px; }
+  .cdash-quad .cdash-col-title-row{
+    border-bottom:1px solid #D9E2EC;
+    padding-bottom:7px;
+  }
+  .cdash-col-body{ line-height:1.65; }
+
+  #cdashDocStatusBlock{
+    padding:11px 14px 12px;
+    margin-bottom:9px;
+  }
+  .cdash-doc-status-chip{
+    padding:3px 9px;
+    border-radius:5px;
+    background:#F4F6F9;
+    border-color:#E2E7ED;
+    color:#8B97A6;
+  }
+  .cdash-doc-status-chip.is-on{
+    background:#EDF4FB;
+    border-color:#D5E4F3;
+    color:#244D80;
+  }
+  .cdash-tab{
+    min-height:30px;
+    padding:6px 13px;
+    border-radius:6px;
+    background:#fff;
+    border-color:#DDE5EF;
+  }
+  .cdash-tab:hover{ background:#F5F8FC; }
+  .cdash-tab-active{ background:#EAF2FB; color:#17305C; border-color:#C7D7EA; }
+
+  /* 상세 서류함도 같은 시각 언어만 적용한다. 기능과 업로드 방식은 그대로다. */
+  .doc-blocked-note{
+    background:#FFF9EB;
+    border-color:#F1DCA5;
+    color:#8B6412;
+  }
+  .doc-grid{ gap:9px; }
+  .doc-category{
+    border-color:#DFE6EF;
+    border-radius:9px;
+    box-shadow:0 1px 2px rgba(15,23,42,.02);
+  }
+  .doc-category:hover{ border-color:#C8D4E2; background:#FBFCFE; }
+  .doc-cat-title{ color:#233651; }
+  .doc-drop-hint{ background:#FAFCFE; border-color:#DCE5EF; }
+
+  @media(max-width:1100px){
+    .app{ padding-left:18px; padding-right:18px; }
+    .rising-grid{ grid-template-columns:repeat(3,1fr); }
+    .co-table-head,.co-row{ gap:8px; }
+    .col-contrib{ flex-basis:115px; }
+  }
+  @media(max-width:760px){
+    .app{ padding:16px 12px 36px; }
+    .brand{ font-size:20px; }
+    .rising-grid{ grid-template-columns:1fr 1fr; }
+    .list-search-row{ flex-direction:column; }
+    .list-sort-select{ width:100%; }
+    .chart-overlay{ padding:0; }
+    .chart-panel{ width:100vw; max-height:100vh; border-radius:0; }
+  }
+
 </style>
 </head>
 <body>
