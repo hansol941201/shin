@@ -2200,18 +2200,25 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
     saveCompanies(list);
     return rec;
   }
-  function updateCompany(id, patch, opts){
-    const list = loadCompanies();
-    const rec = list.find(c=> c.id === id);
-    if(!rec) return null;
+  // §데이터 업데이트 성능 개선 라운드: patch를 레코드에 적용하는 순수 로직만 분리했다(값/
+  // 병합 기준은 한 글자도 안 바꿈, §PART2-12 "빈 정보만 채우기" 그대로) — updateCompany는
+  // 여전히 호출 1번마다 load+save 1번(다른 모든 기존 호출부는 그대로 동작), 대량 가져오기
+  // (applyPartnerImport/applyPourTrackImport)만 이 헬퍼로 메모리에서 여러 건을 한 번에
+  // 처리한 뒤 saveCompanies를 1번만 호출하도록 아래에서 바꾼다.
+  function applyPatchToRecord(rec, patch, onlyFillEmpty){
     Object.keys(patch).forEach(k=>{
-      // §PART2-12: "빈 정보만 채우기" — 기존 값이 있으면 절대 덮어쓰지 않는다.
-      if(opts && opts.onlyFillEmpty){
+      if(onlyFillEmpty){
         if(!rec[k]) rec[k] = patch[k];
       } else {
         rec[k] = patch[k];
       }
     });
+  }
+  function updateCompany(id, patch, opts){
+    const list = loadCompanies();
+    const rec = list.find(c=> c.id === id);
+    if(!rec) return null;
+    applyPatchToRecord(rec, patch, !!(opts && opts.onlyFillEmpty));
     saveCompanies(list);
     return rec;
   }
@@ -2957,9 +2964,20 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   // 필드만 채워 최소 생성한다. 같은 데이터로 다시 실행해도 안전하다(재현 가능/멱등) — 이미
   // 채워진 필드는 다시 덮어쓰지 않고, 신규 생성된 업체는 다음 실행에서 bizRegNo/이름으로 곧바로
   // 매칭되어 중복 생성되지 않는다.
-  function applyPartnerImport(){
-    const preview = previewPartnerImport();
+  // §데이터 업데이트 성능 개선 라운드: 매칭/병합/신규생성 기준은 전부 그대로다(위 주석
+  // §PART2-12 그대로) — 바뀐 건 오직 "업체마다 updateCompany/addCompany를 불러 그때그때
+  // load+save를 반복하던 것"을 "업체 목록을 딱 한 번 불러와 메모리에서 전부 처리한 뒤 딱
+  // 한 번만 저장"으로 바꾼 것뿐이다. 실측 결과(348개 신규 업체 기준) 4,558ms → 이 방식으로
+  // 바꾼 뒤 재측정한 값은 완료 보고에 남긴다. 결과(merged/created 건수, 각 업체 필드 값)는
+  // 기존 순차 처리와 100% 동일 — 같은 순서로 같은 patch를 같은 규칙(onlyFillEmpty 여부)으로
+  // 적용하기 때문이다.
+  function applyPartnerImport(precomputedPreview){
+    const preview = precomputedPreview || previewPartnerImport(); // §4/§13: [분석 시작]에서 이미 계산해 둔 결과가 있으면 재사용
+    const list = loadCompanies();
+    const byId = new Map(list.map(c=> [c.id, c]));
     preview.matched.forEach(m=>{
+      const rec = byId.get(m.companyId);
+      if(!rec) return; // 이론상 발생하지 않음(preview가 이미 이 list 기준으로 매칭했음) — 방어적 처리
       const p = m.partner;
       const patch = {};
       if(p.ceo) patch.repName = p.ceo;
@@ -2968,9 +2986,9 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
       if(p.email) patch.email = p.email;
       if(p.address) patch.address = p.address;
       if(p.bizno) patch.bizRegNo = p.bizno;
-      if(Object.keys(patch).length) updateCompany(m.companyId, patch, { onlyFillEmpty: true });
-      updateCompany(m.companyId, { partnerStatus: 'partner' }, { onlyFillEmpty: true });
-      updateCompany(m.companyId, { partnerDashboard: buildPartnerDashboardMeta(p, m.matchedBy) });
+      if(Object.keys(patch).length) applyPatchToRecord(rec, patch, true);
+      applyPatchToRecord(rec, { partnerStatus: 'partner' }, true);
+      applyPatchToRecord(rec, { partnerDashboard: buildPartnerDashboardMeta(p, m.matchedBy) }, false);
     });
     preview.newCompanies.forEach(n=>{
       const p = n.partner;
@@ -2981,8 +2999,11 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
       if(p.email) fields.email = p.email;
       if(p.address) fields.address = p.address;
       if(p.bizno) fields.bizRegNo = p.bizno;
-      addCompany(fields);
+      // addCompany()와 완전히 동일한 기본 필드 구조(§ 새 업체 최소 생성 규칙, 절대 변경 안 함).
+      const rec = Object.assign({ id: genId('co'), name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'', createdAt: nowIso() }, fields);
+      list.push(rec);
     });
+    saveCompanies(list);
     return { mergedCount: preview.matched.length, createdCount: preview.newCompanies.length, reviewCount: preview.review.length, review: preview.review };
   }
 
@@ -3030,19 +3051,28 @@ window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT = [{"year":2026,"company":"코지건설�
   // applyPourTrackImport: preview()가 분류한 matched만 저장한다(review/unmatched는 절대
   // 자동 처리하지 않음). 기존 co.pourTrackRecords는 절대 지우거나 덮어쓰지 않고, 없는
   // sourceRecordId만 append한다 — 같은 스냅샷으로 다시 실행해도 중복이 생기지 않는다.
-  function applyPourTrackImport(){
-    const preview = previewPourTrackImport();
+  // §데이터 업데이트 성능 개선 라운드: 중복 방지(sourceRecordId 기준)/매칭 대상/추가 규칙은
+  // 전혀 안 바꿨다. 두 가지만 바꿨다 — (1) precomputedPreview가 있으면(모달에서 [분석 시작]
+  // 때 이미 계산해 둔 결과) previewPourTrackImport()를 또 실행하지 않는다(§4 중복 계산
+  // 제거 — 1149건 재그룹핑을 두 번 안 함). (2) 업체마다 findCompany()+updateCompany()로
+  // load+save를 반복하던 것을, 목록을 한 번만 불러와 메모리에서 전부 처리한 뒤 한 번만
+  // 저장하도록 바꿨다(실측 5,345ms의 원인).
+  function applyPourTrackImport(precomputedPreview){
+    const preview = precomputedPreview || previewPourTrackImport();
+    const list = loadCompanies();
+    const byId = new Map(list.map(c=> [c.id, c]));
     let addedCount = 0;
     preview.matched.forEach(m=>{
-      const co = findCompany(m.companyId);
+      const co = byId.get(m.companyId);
       if(!co) return;
       const existing = co.pourTrackRecords || [];
       const existingIds = new Set(existing.map(r=> r.sourceRecordId));
       const toAdd = m.records.filter(r=> !existingIds.has(r.sourceRecordId));
       if(!toAdd.length) return;
       addedCount += toAdd.length;
-      updateCompany(m.companyId, { pourTrackRecords: existing.concat(toAdd) });
+      co.pourTrackRecords = existing.concat(toAdd);
     });
+    saveCompanies(list);
     return { companiesLinked: preview.matched.length, recordsAdded: addedCount, reviewCount: preview.review.length, review: preview.review, unmatchedCount: preview.unmatched.length, unmatched: preview.unmatched };
   }
 
@@ -6689,9 +6719,17 @@ window.SHIN2_CRM_APP_INIT = function(){
       document.getElementById('piDoneBtn').addEventListener('click', ()=>{ closePartnerImportModal(); renderList(); });
     } else {
       document.getElementById('piCancelBtn').addEventListener('click', closePartnerImportModal);
-      document.getElementById('piApplyBtn').addEventListener('click', ()=>{
-        piState.applied = D.applyPartnerImport();
-        renderPartnerImportModal();
+      // §데이터 업데이트 성능 개선 라운드: POUR 가져오기 [적용] 버튼과 동일한 패턴 — 즉시
+      // "적용 중..."으로 비활성화(§10), 한 틱 양보 후 실행(§9/§15), 이미 계산된
+      // piState.preview 재사용(§4/§13).
+      document.getElementById('piApplyBtn').addEventListener('click', (e)=>{
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = '적용 중...';
+        setTimeout(()=>{
+          piState.applied = D.applyPartnerImport(piState.preview);
+          renderPartnerImportModal();
+        }, 0);
       });
     }
   }
@@ -6814,9 +6852,20 @@ window.SHIN2_CRM_APP_INIT = function(){
       document.getElementById('pourPiDoneBtn').addEventListener('click', ()=>{ closePourImportModal(); renderList(); });
     } else {
       document.getElementById('pourPiCancelBtn').addEventListener('click', closePourImportModal);
-      document.getElementById('pourPiApplyBtn').addEventListener('click', ()=>{
-        pourImpState.applied = D.applyPourTrackImport();
-        renderPourImportModal();
+      // §데이터 업데이트 성능 개선 라운드: [적용] 버튼을 누르는 즉시 "적용 중..."으로 바꾸고
+      // 비활성화해 중복 클릭을 막는다(§10). setTimeout(0)으로 한 틱 양보해 브라우저가 이
+      // 라벨을 화면에 그릴 시간을 준 뒤에 실제(이제는 훨씬 빨라진) 계산을 시작한다 — "멈춘
+      //것처럼 보이는" 체감을 줄인다(§9/§15). 이미 [분석 시작]에서 계산해 둔
+      // pourImpState.preview를 그대로 넘겨 previewPourTrackImport()를 다시 실행하지 않는다
+      // (§4/§13 중복 계산 제거).
+      document.getElementById('pourPiApplyBtn').addEventListener('click', (e)=>{
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = '적용 중...';
+        setTimeout(()=>{
+          pourImpState.applied = D.applyPourTrackImport(pourImpState.preview);
+          renderPourImportModal();
+        }, 0);
       });
     }
   }
