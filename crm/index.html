@@ -24,6 +24,12 @@
     --text-muted: #64748B;
     --text-faint: #94A3B8;
     --line: #E2E8F0;
+    /* §고객관리 CRM 첫화면 대시보드 개편 라운드: 상승/유지/감소/경고 4색 규칙 — 화면 전체에서
+       이 네 토큰만 재사용한다(동전/별 아이콘 대신 색+텍스트로만 구분, §1). */
+    --up: #16A34A; --up-bg: #ECFDF3;
+    --flat: #2563EB; --flat-bg: #EFF6FF;
+    --down: #DC2626; --down-bg: #FEF2F2;
+    --warn: #C2670A; --warn-bg: #FFF7ED;
   }
   *{ box-sizing:border-box; }
   html,body{
@@ -106,21 +112,37 @@
   }
   .list-sort-select:focus{ outline:none; border-color:var(--text-faint); }
 
-  .co-table-head{ display:flex; gap:12px; padding:9px 10px; font-size:12.5px; font-weight:600; color:var(--text-muted); border-bottom:1px solid var(--line); }
+  /* §고객관리 CRM 첫화면 대시보드 개편 라운드: 8개 컬럼(협력사/최근 실적 활동/1년 실적/
+     전체 실적/토탈 매출/주요 공종/매출 기여/최근 흐름, §3) — 담당자/마지막 활동일 컬럼은
+     제거했다(§3 "불필요한 컬럼 제거"). 행 높이를 기존 44px→36px로 줄여 한 화면에 더 많은
+     업체가 보이게 한다(§1 "컴팩트하게"). */
+  .co-table-head{ display:flex; gap:10px; padding:8px 10px; font-size:11.5px; font-weight:600; color:var(--text-muted); border-bottom:1px solid var(--line); }
+  .col-info{ font-size:10px; color:var(--text-faint); cursor:help; }
   .co-list{ }
   .co-row{
-    display:flex; gap:12px; padding:0 10px; height:44px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center;
+    display:flex; gap:10px; padding:5px 10px; min-height:36px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center;
   }
   .co-row:hover{ background:var(--bg); }
-  .col-name{ flex:1.2 1 160px; min-width:0; font-weight:600; color:var(--text); font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .col-stage{ flex:0 0 100px; }
-  .col-contact{ flex:0 0 90px; min-width:0; color:var(--text-muted); font-size:13px; }
-  .col-recent{ flex:2 1 200px; min-width:0; color:var(--text-muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .col-date{ flex:0 0 90px; color:var(--text-muted); font-size:12.5px; text-align:right; }
-  .col-pour{ flex:0 0 70px; text-align:right; }
+  .col-name{ flex:1.1 1 140px; min-width:0; display:flex; align-items:center; gap:5px; font-weight:600; color:var(--text); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-recent{ flex:1.4 1 150px; min-width:0; color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-recent .recent-date{ color:var(--text-faint); margin-right:4px; }
+  .col-yr, .col-total{ flex:0 0 62px; font-size:12.5px; color:var(--text); text-align:right; }
+  .col-revenue{ flex:0 0 90px; font-size:12.5px; color:var(--text); text-align:right; white-space:nowrap; }
+  .col-cat{ flex:1 1 110px; min-width:0; font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-contrib{ flex:0 0 128px; font-size:11px; line-height:1.4; }
+  .col-trend{ flex:0 0 70px; font-size:12px; text-align:center; }
   .empty-note{ font-size:12.5px; color:var(--text-muted); padding:24px 4px; text-align:center; }
+  .data-none{ color:var(--text-faint); }
 
-  .co-star{ color:#F5B942; font-size:11px; margin-right:3px; }
+  /* 협력사 등급 배지(§4) — 별표 금지, 색상+텍스트 배지만 사용. */
+  .grade-badge{ display:inline-flex; align-items:center; justify-content:center; flex:none; min-width:26px; height:18px; padding:0 5px; font-size:10.5px; font-weight:700; border-radius:4px; }
+  .grade-badge.g-vip{ background:#FEF3C7; color:#92400E; }
+  .grade-badge.g-a{ background:var(--flat-bg); color:var(--flat); }
+  .grade-badge.g-b{ background:#F1F5F9; color:#475569; }
+  .grade-badge.g-c{ background:#F1F5F9; color:var(--text-faint); }
+  .grade-badge.g-신규{ background:#F1F5F9; color:var(--text-muted); }
+  .grade-badge.g-default{ background:#F1F5F9; color:var(--text-muted); }
+
   .stage-badge{ display:inline-block; font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; }
   .stage-badge.st-meeting{ background:#EAF2FF; color:#2563EB; }
   .stage-badge.st-doc{ background:#F1F5F9; color:#64748B; }
@@ -129,6 +151,48 @@
   .pour-count{ font-size:13px; font-weight:600; color:#2563EB; background:none; border:none; cursor:pointer; padding:0; }
   .pour-count:hover{ text-decoration:underline; }
   .pour-none{ font-size:13px; color:var(--text-faint); }
+
+  /* 매출 기여 셀(§10) — 아이콘 없이 텍스트+옅은 배경색만 사용. */
+  .contrib-cell{ display:inline-block; padding:4px 7px; border-radius:6px; }
+  .contrib-cell .contrib-level{ font-weight:700; }
+  .contrib-cell .contrib-sub{ display:block; color:var(--text-muted); font-weight:400; margin-top:1px; }
+  .contrib-cell.lv-high{ background:var(--up-bg); }
+  .contrib-cell.lv-high .contrib-level{ color:var(--up); }
+  .contrib-cell.lv-mid{ background:var(--flat-bg); }
+  .contrib-cell.lv-mid .contrib-level{ color:var(--flat); }
+  .contrib-cell.lv-low{ background:var(--down-bg); }
+  .contrib-cell.lv-low .contrib-level{ color:var(--down); }
+  .contrib-cell.lv-insufficient{ background:#F1F5F9; }
+  .contrib-cell.lv-insufficient .contrib-level{ color:var(--text-faint); }
+
+  /* 최근 흐름 셀(§11) — 화살표+텍스트, 증감률은 있을 때만 작게. */
+  .trend-cell{ font-weight:700; }
+  .trend-cell.tr-up{ color:var(--up); }
+  .trend-cell.tr-flat{ color:var(--flat); }
+  .trend-cell.tr-down{ color:var(--down); }
+  .trend-cell.tr-insufficient{ color:var(--text-faint); font-weight:400; }
+  .trend-pct{ display:block; font-size:10.5px; font-weight:400; color:var(--text-faint); margin-top:1px; }
+
+  /* 최근 상승 업체(§2) */
+  .rising-section{ margin-bottom:14px; }
+  .rising-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .rising-title{ font-size:13.5px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:6px; }
+  .rising-title .rising-sub{ font-size:11.5px; font-weight:400; color:var(--text-muted); }
+  .rising-title .rising-arrow{ color:var(--up); }
+  .rising-more{ font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; }
+  .rising-more:hover{ color:var(--text); text-decoration:underline; }
+  .rising-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  .rising-card{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:10px 12px; cursor:pointer; min-width:0; }
+  .rising-card:hover{ border-color:var(--text-faint); }
+  .rising-card-top{ display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+  .rising-rank{ flex:none; color:var(--text-faint); font-weight:600; }
+  .rising-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .rising-row{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-faint); }
+  .rising-nums{ display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--text); margin-top:2px; }
+  .rising-nums .rising-up{ color:var(--up); font-weight:700; }
+  .rising-bar{ height:4px; border-radius:2px; background:var(--line); margin-top:6px; overflow:hidden; }
+  .rising-bar-fill{ height:100%; background:var(--up); }
+  .rising-empty{ font-size:12px; color:var(--text-faint); padding:14px 4px; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:8px; }
 
   .list-pagination{ display:flex; justify-content:center; align-items:center; gap:4px; margin-top:16px; }
   .page-btn{
@@ -770,6 +834,7 @@
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
       </div>
     </div>
+    <div class="rising-section" id="crmRisingSection"></div>
     <div class="list-filter-row" id="crmFilterRow"></div>
     <div class="list-search-row">
       <div class="search-box">
@@ -784,12 +849,14 @@
       </select>
     </div>
     <div class="co-table-head">
-      <div class="col-name">업체명</div>
-      <div class="col-stage">현재 단계</div>
-      <div class="col-contact">담당자</div>
-      <div class="col-recent">최근 활동</div>
-      <div class="col-date">마지막 활동일</div>
-      <div class="col-pour">POUR 실적</div>
+      <div class="col-name">협력사</div>
+      <div class="col-recent">최근 실적 활동</div>
+      <div class="col-yr">1년 실적</div>
+      <div class="col-total">전체 실적</div>
+      <div class="col-revenue">토탈 매출</div>
+      <div class="col-cat">주요 공종</div>
+      <div class="col-contrib">매출 기여 <span class="col-info" title="최근 1년 실적이 실제 매출로 얼마나 연결됐는지">ⓘ</span></div>
+      <div class="col-trend">최근 흐름 <span class="col-info" title="최근 실적/매출 증감 추세">ⓘ</span></div>
     </div>
     <div class="co-list" id="crmList"></div>
     <div class="list-pagination" id="crmPagination"></div>
@@ -2672,12 +2739,10 @@ window.SHIN2_CRM_APP_INIT = function(){
       return { co, acts, summary: acts[0] || null, progress, pourCount };
     });
 
-    // §6 ★ 상위 20% — POUR 실적을 가진 업체 전체를 기준으로(필터/검색과 무관하게 항상
-    // 동일한 기준), 건수 내림차순 상위 ceil(20%)만 표시. "우수업체" 평가가 아니라 단순
-    // 시각 표시(§6 명시).
-    const withPour = enriched.filter(r=> r.pourCount > 0).slice().sort((a,b)=> b.pourCount - a.pourCount);
-    const starCut = Math.ceil(withPour.length * 0.2);
-    const starredIds = new Set(withPour.slice(0, starCut).map(r=> r.co.id));
+    // §고객관리 CRM 첫화면 대시보드 개편 라운드: 예전의 "★ 상위 20%" 표시는 별표를 절대
+    // 쓰지 않는다는 새 원칙(§4)에 따라 제거했다 — 대신 실제 Partner Dashboard 등급
+    // (co.partnerDashboard.grade)이 있는 업체만 등급 배지로 표시한다(getCompanyGrade).
+    renderRisingSection(companies);
 
     const filterCounts = {};
     FILTER_DEFS.forEach(([key])=>{ filterCounts[key] = enriched.filter(r=> matchesFilter(r.co, r.progress, key)).length; });
@@ -2698,19 +2763,38 @@ window.SHIN2_CRM_APP_INIT = function(){
       return;
     }
     listEl.innerHTML = pageRows.map(r=>{
-      const star = starredIds.has(r.co.id) ? '<span class="co-star">★</span>' : '';
-      const assignee = r.co.assigneeUserId ? '사용자 ' + esc(r.co.assigneeUserId) : '—';
-      const pourHtml = r.pourCount > 0
-        ? `<button type="button" class="pour-count" data-pour-link="${esc(r.co.id)}">${r.pourCount}건</button>`
-        : `<span class="pour-none">—</span>`;
+      const co = r.co;
+      const grade = getCompanyGrade(co);
+      const gradeHtml = grade ? `<span class="grade-badge ${grade.badgeClass}">${esc(grade.label)}</span>` : '';
+      const recentAct = buildRecentPourActivity(co);
+      const recentHtml = recentAct
+        ? `<span class="recent-date">${esc(recentAct.date)}</span>${esc(recentAct.text)}`
+        : '<span class="data-none">데이터 없음</span>';
+      const yr = getThisYearPourCount(co);
+      const yrHtml = yr == null ? '<span class="data-none">데이터 없음</span>' : `${yr}건`;
+      const total = getTotalPourCount(co);
+      const totalHtml = total > 0 ? `<button type="button" class="pour-count" data-pour-link="${esc(co.id)}">${total}건</button>` : '<span class="pour-none">—</span>';
+      const revenue = getTotalRevenue(co);
+      const revenueHtml = revenue == null ? '<span class="data-none">데이터 없음</span>' : esc(fmtKrwCompact(revenue));
+      const catText = buildTopCategoriesText(co, 2);
+      const catHtml = catText ? esc(catText) : '<span class="data-none">데이터 없음</span>';
+      const contrib = buildRevenueContribution(co);
+      const contribLevelClass = { high:'lv-high', mid:'lv-mid', low:'lv-low', insufficient:'lv-insufficient' }[contrib.level] || 'lv-insufficient';
+      const contribHtml = `<span class="contrib-cell ${contribLevelClass}"><span class="contrib-level">${esc(contrib.label)}</span><span class="contrib-sub">${esc(contrib.detail)}</span><span class="contrib-sub">${esc(contrib.sub)}</span></span>`;
+      const trend = buildRecentTrend(co);
+      const trendArrow = { up:'↑', flat:'→', down:'↓', insufficient:'—' }[trend.state];
+      const trendPctHtml = (trend.pct != null) ? `<span class="trend-pct">(${trend.pct > 0 ? '+' : ''}${trend.pct}%)</span>` : '';
+      const trendHtml = `<span class="trend-cell tr-${trend.state}">${trendArrow} ${esc(trend.label)}${trendPctHtml}</span>`;
       return `
-      <div class="co-row" data-id="${esc(r.co.id)}">
-        <div class="col-name">${star}${partnerGlyphHtml(r.co)}${esc(r.co.name)}</div>
-        <div class="col-stage">${buildStageBadgeHtml(r.progress)}</div>
-        <div class="col-contact">${assignee}</div>
-        <div class="col-recent">${r.summary ? esc(r.summary.activityText || r.summary.originalText) : '—'}</div>
-        <div class="col-date">${r.summary ? fmtDate(r.summary.createdAt) : '—'}</div>
-        <div class="col-pour">${pourHtml}</div>
+      <div class="co-row" data-id="${esc(co.id)}">
+        <div class="col-name">${gradeHtml}${partnerGlyphHtml(co)}${esc(co.name)}</div>
+        <div class="col-recent">${recentHtml}</div>
+        <div class="col-yr">${yrHtml}</div>
+        <div class="col-total">${totalHtml}</div>
+        <div class="col-revenue">${revenueHtml}</div>
+        <div class="col-cat">${catHtml}</div>
+        <div class="col-contrib">${contribHtml}</div>
+        <div class="col-trend">${trendHtml}</div>
       </div>`;
     }).join('');
     listEl.querySelectorAll('[data-pour-link]').forEach(btn=>{
@@ -3594,6 +3678,146 @@ window.SHIN2_CRM_APP_INIT = function(){
       regionAll: regionList,
       patents
     };
+  }
+
+  /* ==========================================================================
+     §고객관리 CRM 첫화면 대시보드 개편 라운드 — 데이터 출처/한계(구현 전 조사 결과, §14).
+     코드를 읽는 사람도 알 수 있게 여기 먼저 명시한다.
+
+     1) co.pourTrackRecords[].year: 숫자 "연도"만 있고 월/일이 없다(원본 "★POUR 년도별
+        공사실적" 엑셀 자체가 연 단위 시트 구성이라 그렇다 — §POUR 시공실적 라운드 주석
+        참고). 그래서 "최근 30일 vs 직전 30일" 같은 일 단위 비교는 이 데이터로 계산할 수
+        없다(§12 원칙: 없는 데이터를 만들지 않는다). "1년 실적"은 대신 "올해(달력 연도,
+        new Date().getFullYear()) 실적"으로 계산한다 — 진짜 최근 365일 롤링 윈도우가
+        아니라 달력 연도 기준이라는 차이를 여기 명시해 둔다.
+     2) co.partnerDashboard.newMou.site 파싱 결과(parseSiteEntryDetail/buildSiteHistoryData,
+        위에 이미 존재)는 "M/D"만 있고 연도가 없다(원본 로그 형식 자체가 그렇다 — 기존
+        buildSiteHistoryData 주석에서 이미 확인된 사실이며 그 이유로 그 함수도 날짜로
+        정렬하지 않는다). 그래서 "최근 실적 활동"에도 이 원문 순서·원문 필드만 그대로
+        쓰고, 연도를 지어 붙이지 않는다.
+     3) co.partnerDashboard.gradeSales: Partner Dashboard 2026-07-23 스냅샷 시점의 "등급
+        산정용 매출" 단일 값이다(연도별 시계열이 아님). "토탈 매출"에는 쓸 수 있지만(그
+        스냅샷 시점 기준이라는 것을 UI에 밝힌다), "최근 1년 매출"과 "매출 기여"(실적 대비
+        매출)는 시계열이 없어 계산할 수 없다 — 실적 건수 ÷ 매출금액 같은 의미 없는 비율을
+        만들지 않고(§10에서 명시적으로 금지) 정직하게 "데이터 부족"으로 표시한다.
+     4) 위 1)의 이유로 "최근 상승 업체"(최근 30일 vs 직전 30일)도 이 데이터로는 계산할 수
+        없다 — 화면 틀은 만들되 가짜 TOP5를 채우지 않고 "데이터 부족" 상태를 정직하게
+        보여준다. 나중에 실적 데이터에 일자가 추가되면 이 함수들만 채우면 되도록 구조는
+        남겨둔다.
+     ========================================================================== */
+  const GRADE_LABEL = { S:'VIP', N:'신규' }; // 나머지 등급(A/B/C/F 등)은 원본 글자를 그대로 표시(§ 확인 안 된 매핑을 지어내지 않음)
+  const GRADE_BADGE_CLASS = { VIP:'g-vip', A:'g-a', B:'g-b', C:'g-c', '신규':'g-신규' }; // 정의된 배지 색만, 나머지는 기본 회색(g-default)
+  function getCompanyGrade(co){
+    const g = co.partnerDashboard && co.partnerDashboard.grade;
+    if(!g) return null;
+    const label = GRADE_LABEL[g] || g;
+    return { raw: g, label, badgeClass: GRADE_BADGE_CLASS[label] || 'g-default' };
+  }
+  function getThisYearPourCount(co){
+    const records = co.pourTrackRecords || [];
+    if(!records.length) return null;
+    const y = new Date().getFullYear();
+    return records.filter(r=> r.year === y).length;
+  }
+  function getTotalPourCount(co){ return (co.pourTrackRecords || []).length; }
+  function buildTopCategoriesText(co, n){
+    const records = co.pourTrackRecords || [];
+    if(!records.length) return null;
+    const catCount = new Map();
+    records.forEach(r=>{
+      String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean).forEach(c=>{
+        catCount.set(c, (catCount.get(c) || 0) + 1);
+      });
+    });
+    if(!catCount.size) return null;
+    return Array.from(catCount.entries()).sort((a,b)=> b[1]-a[1]).slice(0, n || 2).map(([c])=> c).join(', ');
+  }
+  function getTotalRevenue(co){
+    const gs = co.partnerDashboard && co.partnerDashboard.gradeSales;
+    return (typeof gs === 'number') ? gs : null; // null=데이터 없음, 0=실제 0원(§ 구분)
+  }
+  function fmtKrwCompact(n){
+    if(n === 0) return '0원';
+    const neg = n < 0; const abs = Math.abs(n);
+    const eok = Math.floor(abs / 100000000);
+    const man = Math.round((abs % 100000000) / 10000);
+    let s = '';
+    if(eok > 0) s += eok + '억';
+    if(man > 0) s += (s ? ' ' : '') + man.toLocaleString('ko-KR') + '만원';
+    else if(!s) s = '1만원 미만';
+    return (neg ? '-' : '') + s;
+  }
+  // 최근 실적 활동 — 실제 영업성과(시공/낙찰/등록/매출)와 직접 연결된 기록만(§5, 전화/메모/
+  // 자료요청 같은 일반 CRM 활동은 절대 포함하지 않는다). 기존 buildSiteHistoryData를 그대로
+  // 재사용(새 파싱 로직을 만들지 않음) — 그 결과는 이미 최신순이고 날짜는 M/D만 있다.
+  function buildRecentPourActivity(co){
+    const data = buildSiteHistoryData(co);
+    const withDate = data.entries.find(e=> e.date);
+    if(!withDate) return null;
+    const parts = [withDate.site];
+    if(withDate.category) parts.push('(' + withDate.category + ')');
+    if(withDate.status) parts.push(withDate.status);
+    return { date: withDate.date, text: parts.join(' ') };
+  }
+  // 매출 기여(§10) — 위 3)의 이유로 현재는 항상 "데이터 부족"이다. 나중에 매출이 시계열로
+  // (연/월별) 쌓이면 이 함수 하나만 실제 로직으로 바꾸면 되도록 구조를 만들어 둔다.
+  function buildRevenueContribution(co){
+    return { level: 'insufficient', label: '데이터 부족', detail: '1년 매출 데이터 없음', sub: '산정 기준 필요' };
+  }
+  // 최근 흐름(§11) — "최근 1년 실적 + 최근 매출 변화" 중 매출 변화는 위 3)의 이유로 계산
+  // 불가하므로 실적만으로 판단한다. 진짜 최근 1년 롤링 비교가 아니라 "올해 누적 vs 작년
+  // 누적"(달력 연도) 비교라는 한계를 명시한다. 기준(코드로 명시, §10과 동일 원칙): 작년
+  // 실적이 0건이면 비율 계산이 무의미하므로 데이터 부족. 그 외에는 증감률 10%를 경계로
+  // 상승/유지/감소를 나눈다 — 이 10% 기준은 이 라운드에서 정한 값이며, 필요시 조정 가능.
+  function buildRecentTrend(co){
+    const records = co.pourTrackRecords || [];
+    if(!records.length) return { state: 'insufficient', label: '데이터 부족', pct: null };
+    const y = new Date().getFullYear();
+    const thisYear = records.filter(r=> r.year === y).length;
+    const lastYear = records.filter(r=> r.year === y - 1).length;
+    if(lastYear === 0){
+      if(thisYear === 0) return { state: 'insufficient', label: '데이터 부족', pct: null };
+      return { state: 'up', label: '상승', pct: null }; // 작년 0건 대비는 %가 무의미해 방향만 표시
+    }
+    const pct = Math.round(((thisYear - lastYear) / lastYear) * 100);
+    if(pct > 10) return { state: 'up', label: '상승', pct };
+    if(pct < -10) return { state: 'down', label: '감소', pct };
+    return { state: 'flat', label: '유지', pct };
+  }
+  // 최근 상승 업체 TOP5(§2) — 위 1)의 이유로 "최근 30일 vs 직전 30일" 계산이 현재 데이터로
+  // 불가능하다. 가짜 TOP5를 만들지 않고 정직하게 "데이터 부족" 상태를 반환한다. 실적 데이터에
+  // 일자가 추가되면 이 함수 내부만 실제 30일 윈도우 비교 로직으로 바꾸면 된다.
+  function buildRisingCompaniesTop5(companies){
+    return { available: false, items: [] };
+  }
+  function renderRisingSection(companies){
+    const root = document.getElementById('crmRisingSection');
+    if(!root) return;
+    const data = buildRisingCompaniesTop5(companies);
+    if(!data.available){
+      root.innerHTML = `
+        <div class="rising-head">
+          <div class="rising-title"><span class="rising-arrow">▲</span> 최근 상승 업체 <span class="rising-sub">(최근 30일 POUR 실적 기준)</span></div>
+        </div>
+        <div class="rising-empty">데이터 부족 — POUR 실적 데이터에 연도만 있고 날짜(월/일)가 없어 최근 30일 비교를 계산할 수 없습니다.</div>
+      `;
+      return;
+    }
+    root.innerHTML = `
+      <div class="rising-head">
+        <div class="rising-title"><span class="rising-arrow">▲</span> 최근 상승 업체 <span class="rising-sub">(최근 30일 POUR 실적 기준)</span></div>
+      </div>
+      <div class="rising-grid">${data.items.map((it, i)=> `
+        <div class="rising-card" data-id="${esc(it.co.id)}">
+          <div class="rising-card-top"><span class="rising-rank">${i+1}</span>${it.grade ? `<span class="grade-badge ${it.grade.badgeClass}">${esc(it.grade.label)}</span>` : ''}<span class="rising-name">${esc(it.co.name)}</span></div>
+          <div class="rising-row"><span>직전 30일</span><span>최근 30일</span><span>증가</span></div>
+          <div class="rising-nums">${it.prev}건 → ${it.recent}건 <span class="rising-up">▲ ${it.diff}건</span></div>
+          <div class="rising-bar"><div class="rising-bar-fill" style="width:${Math.min(100, it.barPct)}%"></div></div>
+        </div>`).join('')}</div>
+    `;
+    root.querySelectorAll('.rising-card').forEach(card=>{
+      card.addEventListener('click', ()=> openCard(card.getAttribute('data-id')));
+    });
   }
 
   // ---- §자동 요약 구조 개선 라운드: 업체 특징 자동 사실(facts) — "느낌/평가"가 아니라
