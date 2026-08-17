@@ -135,12 +135,9 @@
   .data-none{ color:var(--text-faint); }
 
   /* 협력사 등급 배지(§4) — 별표 금지, 색상+텍스트 배지만 사용. */
-  .grade-badge{ display:inline-flex; align-items:center; justify-content:center; flex:none; min-width:26px; height:18px; padding:0 5px; font-size:10.5px; font-weight:700; border-radius:4px; }
-  .grade-badge.g-vip{ background:#FEF3C7; color:#92400E; }
-  .grade-badge.g-a{ background:var(--flat-bg); color:var(--flat); }
-  .grade-badge.g-b{ background:#F1F5F9; color:#475569; }
-  .grade-badge.g-c{ background:#F1F5F9; color:var(--text-faint); }
-  .grade-badge.g-신규{ background:#F1F5F9; color:var(--text-muted); }
+  /* §등급 표시 재확인 라운드: 등급의 실제 우열 의미가 확인되지 않아, 색으로 "좋다/나쁘다"를
+     암시하지 않는다 — 전 등급 동일한 중립 회색 계열, 글자(원본 값)만 다르게 표시한다. */
+  .grade-badge{ display:inline-flex; align-items:center; justify-content:center; flex:none; min-width:20px; height:18px; padding:0 5px; font-size:10.5px; font-weight:700; border-radius:4px; background:#F1F5F9; color:#475569; }
   .grade-badge.g-default{ background:#F1F5F9; color:var(--text-muted); }
 
   .stage-badge{ display:inline-block; font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; }
@@ -3705,13 +3702,21 @@ window.SHIN2_CRM_APP_INIT = function(){
         보여준다. 나중에 실적 데이터에 일자가 추가되면 이 함수들만 채우면 되도록 구조는
         남겨둔다.
      ========================================================================== */
-  const GRADE_LABEL = { S:'VIP', N:'신규' }; // 나머지 등급(A/B/C/F 등)은 원본 글자를 그대로 표시(§ 확인 안 된 매핑을 지어내지 않음)
-  const GRADE_BADGE_CLASS = { VIP:'g-vip', A:'g-a', B:'g-b', C:'g-c', '신규':'g-신규' }; // 정의된 배지 색만, 나머지는 기본 회색(g-default)
+  // §등급 표시 재확인 라운드: S→VIP/N→신규로 표시하던 매핑을 되돌렸다. 코드/주석 전체를
+  // 다시 뒤져봤지만 S/A/B/C/N/F 각 등급이 실제로 무엇을 뜻하는지 설명하는 범례가 어디에도
+  // 없었고, 실제 스냅샷 데이터로 직접 검증해본 결과도 추측이 틀렸음을 확인했다 — 예를 들어
+  // grade:'N'인 ㈜종명건설은 gradeHistory에 y24:'F', y23:'F(C)', y22:'A'라는 과거 등급
+  // 이력이 있다(여러 해에 걸쳐 등급이 매겨져 왔다는 뜻이라 "신규(New)"라는 추측과 모순된다).
+  // 근거 없이 표시명을 지어내지 않는다는 원칙에 따라, 저장된 원본 등급 값(storedGrade)은
+  // 그대로 두고 화면 표시(displayGrade)도 원본 그대로 보여준다 — 실제 의미가 확인되면 그때
+  // displayGrade 매핑만 추가하면 된다(구조는 남겨둠, GRADE_LABEL을 빈 객체로 시작).
+  const GRADE_LABEL = {}; // 확인된 매핑 없음 — 예: 나중에 확인되면 { S:'실제의미', N:'실제의미' } 형태로만 채운다
+  const GRADE_BADGE_CLASS = { S:'g-s', A:'g-a', B:'g-b', C:'g-c', N:'g-n', F:'g-f' }; // 등급별 구분(색상에 우열 의미를 담지 않음 — 전부 중립 회색 계열)
   function getCompanyGrade(co){
-    const g = co.partnerDashboard && co.partnerDashboard.grade;
-    if(!g) return null;
-    const label = GRADE_LABEL[g] || g;
-    return { raw: g, label, badgeClass: GRADE_BADGE_CLASS[label] || 'g-default' };
+    const storedGrade = co.partnerDashboard && co.partnerDashboard.grade;
+    if(!storedGrade) return null;
+    const displayGrade = GRADE_LABEL[storedGrade] || storedGrade; // 매핑 없으면 저장값 그대로 표시
+    return { raw: storedGrade, label: displayGrade, badgeClass: GRADE_BADGE_CLASS[storedGrade] || 'g-default' };
   }
   function getThisYearPourCount(co){
     const records = co.pourTrackRecords || [];
