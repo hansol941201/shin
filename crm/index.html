@@ -88,6 +88,18 @@
     font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline;
   }
   .list-secondary-link:hover{ color:var(--text); }
+  /* §데이터 가져오기 버튼 통합 라운드: [데이터 업데이트] 작은 드롭다운. */
+  .update-menu-wrap{ position:relative; }
+  .update-menu{
+    display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:15; min-width:172px;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,.12); padding:4px;
+  }
+  .update-menu.is-open{ display:block; }
+  .update-menu button{
+    display:block; width:100%; text-align:left; font-size:12.5px; color:var(--text); background:none; border:none;
+    padding:8px 9px; border-radius:5px; cursor:pointer; font-family:inherit; text-decoration:none;
+  }
+  .update-menu button:hover{ background:var(--bg); }
 
   .list-filter-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
   .list-filter-chip{
@@ -163,12 +175,14 @@
   .contrib-cell.lv-insufficient .contrib-level{ color:var(--text-faint); }
 
   /* 최근 흐름 셀(§11) — 화살표+텍스트, 증감률은 있을 때만 작게. */
-  .trend-cell{ font-weight:700; }
+  /* §최근 흐름 재수정 라운드: 상승세=초록, 유지=남색(요청한 "진회색 또는 남색" 중 남색
+     선택 — 기존 --navy 토큰 재사용), 하락세=빨강, 판단불가=연회색. 화살표를 크게 강조하지
+     않는다는 요청에 맞춰 font-weight/크기를 다른 텍스트와 비슷하게 맞췄다. */
+  .trend-cell{ font-weight:600; font-size:12px; }
   .trend-cell.tr-up{ color:var(--up); }
-  .trend-cell.tr-flat{ color:var(--flat); }
+  .trend-cell.tr-flat{ color:var(--navy); }
   .trend-cell.tr-down{ color:var(--down); }
   .trend-cell.tr-insufficient{ color:var(--text-faint); font-weight:400; }
-  .trend-pct{ display:block; font-size:10.5px; font-weight:400; color:var(--text-faint); margin-top:1px; }
 
   /* 최근 상승 업체(§2) */
   .rising-section{ margin-bottom:14px; }
@@ -1465,8 +1479,18 @@ html,body{background:#F7F9FC;font-size:13px}
     <div class="list-toolbar">
       <div class="list-title" id="crmListTitle">고객</div>
       <div class="list-secondary-actions">
-        <button type="button" id="crmPartnerImportBtn" class="list-secondary-link">협력사 데이터 가져오기</button>
-        <button type="button" id="crmPourImportBtn" class="list-secondary-link">POUR 시공실적 가져오기</button>
+        <!-- §데이터 가져오기 버튼 통합 라운드: 평소에 늘 보이던 큰 버튼 2개를 작은 [데이터
+             업데이트] 하나로 합쳤다 — 기존 가져오기 함수(openPartnerImportModal/
+             openPourImportModal, previewXxxImport/applyXxxImport)는 전혀 바꾸지 않았고,
+             그 함수를 부르는 버튼을 드롭다운 메뉴 안으로 옮겼을 뿐이다(§ 아래 완료 보고에서
+             이 버튼들이 "매번 눌러야 하는" 게 아니라는 걸 설명). -->
+        <div class="update-menu-wrap" id="crmUpdateMenuWrap">
+          <button type="button" id="crmDataUpdateBtn" class="list-secondary-link">데이터 업데이트 ▾</button>
+          <div class="update-menu" id="crmUpdateMenu">
+            <button type="button" id="crmPartnerImportBtn">협력사 데이터 업데이트</button>
+            <button type="button" id="crmPourImportBtn">POUR 시공실적 업데이트</button>
+          </div>
+        </div>
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
       </div>
     </div>
@@ -3453,9 +3477,11 @@ window.SHIN2_CRM_APP_INIT = function(){
           </div>
         </span>`;
       const trend = buildRecentTrend(co);
-      const trendArrow = { up:'↑', flat:'→', down:'↓', insufficient:'—' }[trend.state];
-      const trendPctHtml = (trend.pct != null) ? `<span class="trend-pct">(${trend.pct > 0 ? '+' : ''}${trend.pct}%)</span>` : '';
-      const trendHtml = `<span class="trend-cell tr-${trend.state}">${trendArrow} ${esc(trend.label)}${trendPctHtml}</span>`;
+      // §최근 흐름 재수정 라운드: 첫 화면에서는 퍼센트를 완전히 뺀다(요청사항) — trend.pct는
+      // 함수 안에 그대로 남아있고(나중에 필요하면 다시 씀), 화면 렌더링에서만 안 쓴다.
+      // 기호도 ↑/↓/→/—(큰 화살표 느낌)에서 ▲/―/▼(작은 기호, 텍스트 위주)로 바꿨다.
+      const trendMark = { up:'▲', flat:'―', down:'▼', insufficient:'―' }[trend.state];
+      const trendHtml = `<span class="trend-cell tr-${trend.state}">${trendMark} ${esc(trend.label)}</span>`;
       return `
       <div class="co-row" data-id="${esc(co.id)}">
         <div class="col-name">${gradeHtml}${partnerGlyphHtml(co)}${esc(co.name)}</div>
@@ -4474,19 +4500,26 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 누적"(달력 연도) 비교라는 한계를 명시한다. 기준(코드로 명시, §10과 동일 원칙): 작년
   // 실적이 0건이면 비율 계산이 무의미하므로 데이터 부족. 그 외에는 증감률 10%를 경계로
   // 상승/유지/감소를 나눈다 — 이 10% 기준은 이 라운드에서 정한 값이며, 필요시 조정 가능.
+  // §최근 흐름 재수정 라운드: 실제로 확인해보니 "올해(진행 중, 불완전) vs 작년(1년 전체)"을
+  // 비교하는 예전 방식은 구조적으로 편향되어 있었다 — 오늘이 몇 월이든 "올해 누적 실적"은
+  // 아직 한 해가 다 안 지났으니 "작년 전체 실적"보다 작게 나올 수밖에 없고, 그러면 실제
+  // 흐름과 무관하게 거의 모든 업체가 "감소"로 잘못 표시된다(사용자가 실제로 이 문제를
+  // 확인함). 이 문제를 근본적으로 없애기 위해, 이미 완전히 끝난 두 해(작년 vs 재작년)만
+  // 비교한다 — 둘 다 이미 지난 해라 "얼마나 지났는지"를 따질 필요 없이 공정하게 비교
+  // 가능하다. 올해(불완전한 진행 중인 해) 데이터는 흐름 판정에 아예 쓰지 않는다 — 실제
+  // 날짜(월/일) 없이 부분 연도를 억지로 비교하면 추정이 섞이기 때문이다(§12 원칙).
   function buildRecentTrend(co){
     const records = co.pourTrackRecords || [];
-    if(!records.length) return { state: 'insufficient', label: '데이터 부족', pct: null };
+    if(!records.length) return { state: 'insufficient', label: '판단불가', pct: null };
     const y = new Date().getFullYear();
-    const thisYear = records.filter(r=> r.year === y).length;
-    const lastYear = records.filter(r=> r.year === y - 1).length;
-    if(lastYear === 0){
-      if(thisYear === 0) return { state: 'insufficient', label: '데이터 부족', pct: null };
-      return { state: 'up', label: '상승', pct: null }; // 작년 0건 대비는 %가 무의미해 방향만 표시
-    }
-    const pct = Math.round(((thisYear - lastYear) / lastYear) * 100);
-    if(pct > 10) return { state: 'up', label: '상승', pct };
-    if(pct < -10) return { state: 'down', label: '감소', pct };
+    const lastYear = records.filter(r=> r.year === y - 1).length;      // 완결된 해
+    const twoYearsAgo = records.filter(r=> r.year === y - 2).length;    // 그 이전 완결된 해
+    // 비교 기준(재작년)이 아예 없으면 증감률 자체가 무의미하다 — 추정하지 않고 판단불가.
+    if(lastYear === 0) return { state: 'insufficient', label: '판단불가', pct: null };
+    if(twoYearsAgo === 0) return { state: 'up', label: '상승세', pct: null }; // 0건 -> lastYear건은 실제 값 그대로의 증가(추정 아님)
+    const pct = Math.round(((lastYear - twoYearsAgo) / twoYearsAgo) * 100);
+    if(pct > 10) return { state: 'up', label: '상승세', pct };
+    if(pct < -10) return { state: 'down', label: '하락세', pct };
     return { state: 'flat', label: '유지', pct };
   }
   // 최근 상승 업체 TOP5(§2) — 위 1)의 이유로 "최근 30일 vs 직전 30일" 계산이 현재 데이터로
@@ -6786,8 +6819,19 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   // ---------------- 진입 ----------------
   document.getElementById('crmAddBtn').addEventListener('click', openAddCompanyForm);
-  document.getElementById('crmPartnerImportBtn').addEventListener('click', openPartnerImportModal);
-  document.getElementById('crmPourImportBtn').addEventListener('click', openPourImportModal);
+  // 기존 두 함수(openPartnerImportModal/openPourImportModal)는 그대로 두고, 드롭다운 메뉴
+  // 항목을 눌렀을 때 각각 그대로 호출한다 — 메뉴 클릭 후에는 메뉴를 닫는다.
+  document.getElementById('crmPartnerImportBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPartnerImportModal(); });
+  document.getElementById('crmPourImportBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPourImportModal(); });
+  function closeUpdateMenu(){ document.getElementById('crmUpdateMenu').classList.remove('is-open'); }
+  document.getElementById('crmDataUpdateBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    document.getElementById('crmUpdateMenu').classList.toggle('is-open');
+  });
+  document.addEventListener('click', (e)=>{
+    const wrap = document.getElementById('crmUpdateMenuWrap');
+    if(wrap && !wrap.contains(e.target)) closeUpdateMenu();
+  });
   document.getElementById('hansolLinkBtn').addEventListener('click', ()=> window.open('../v2/', '_blank', 'noopener'));
   searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim(); currentPage = 1; renderList(); });
   const sortSelect = document.getElementById('crmSortSelect');
