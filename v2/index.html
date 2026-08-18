@@ -4936,7 +4936,9 @@
       row.addEventListener('click', ()=>{
         acctState.selectedId = row.getAttribute('data-id');
         acctState.mode = 'detail';
-        acctState.revealPassword = false;
+        // 상세를 열면 비밀번호를 처음부터 보이게 한다(§계정 비밀번호 표시 요청). 가리고 싶으면
+        // 상세 화면의 [숨기기] 버튼으로 언제든 되돌릴 수 있다.
+        acctState.revealPassword = true;
         renderAcctPopup();
       });
     });
@@ -4990,6 +4992,12 @@
           ${rec.cipher ? `<button type="button" class="acct-link-btn" id="acctCopyPw">복사</button><button type="button" class="acct-link-btn" id="acctTogglePw">${acctState.revealPassword ? '숨기기' : '보기'}</button>` : ''}
         </div>
       </div>
+      ${rec.cipher ? `
+      <div class="acct-field">
+        <div class="acct-field-row">
+          <button type="button" class="acct-link-btn" id="acctCopyBoth">아이디+비밀번호 함께 복사</button>
+        </div>
+      </div>` : ''}
       ${urlRowHtml}
       ${memoRowHtml}
       <div class="acct-detail-actions" id="acctActionsRow">
@@ -5010,6 +5018,18 @@
           const pw = await decryptStr(vaultKey, rec.cipher, rec.iv);
           copyText(pw, e.currentTarget);
         }catch(err){}
+      });
+    }
+    // 아이디와 비밀번호를 값만 두 줄로 클립보드에 담는다(1줄=아이디, 2줄=비밀번호).
+    // 비밀번호는 저장된 암호문을 그때그때 복호화해서 쓰고 어디에도 따로 보관하지 않는다.
+    const copyBothBtn = document.getElementById('acctCopyBoth');
+    if(copyBothBtn){
+      copyBothBtn.addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        try{
+          const pw = await decryptStr(vaultKey, rec.cipher, rec.iv);
+          copyText((rec.username || '') + '\n' + pw, btn);
+        }catch(err){ console.error('[계정] 아이디+비밀번호 복사 실패', err); }
       });
     }
     const toggleBtn = document.getElementById('acctTogglePw');
@@ -5146,7 +5166,7 @@
         acctState.selectedId = rec.id;
         acctState.mode = 'detail';
       }
-      acctState.revealPassword = false;
+      acctState.revealPassword = true;
       renderAcctPopup();
     });
   }
@@ -5332,7 +5352,7 @@
       if(!vaultKey){ openAcctPopup(); return; }
       acctState.selectedId = id;
       acctState.mode = 'detail';
-      acctState.revealPassword = false;
+      acctState.revealPassword = true;
       acctPopupOverlay.classList.add('open');
       renderAcctPopup();
     }
