@@ -1537,11 +1537,13 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
         <!-- §미등록 업체 관리 라운드: 매출자료-CRM 비교 결과 미등록 업체가 있을 때만 보이는
              작은 경고 배지. 0건이면 아예 렌더링하지 않는다(§ "0개면 표시 안 해도 됨"). -->
         <button type="button" class="unreg-badge" id="crmUnregBadge" style="display:none;"></button>
-        <!-- §최근 활동일/단계 D+N 복원 라운드: 기한 초과 업체 알림 배지 — 미등록 업체 배지와
-             같은 규칙(0건이면 렌더링 안 함, 클릭 시 목록 패널). -->
-        <button type="button" class="overdue-badge" id="crmOverdueBadge" style="display:none;"></button>
-        <!-- §2026 매출/자재판매/미수금 라운드: 미수금 업체 알림 배지 — 위 두 배지와 같은
-             규칙(0건이면 렌더링 안 함, 클릭 시 목록 패널). -->
+        <!-- §상단 경고 정리 라운드: "⏱ 기한 초과 N" 배지는 메인 첫화면 상단 경고에서
+             제거했다(§요청) — buildOverdueCompanies/getStageDurationInfo/D+N 계산 자체와
+             행 왼쪽 빨간 라인(.co-row.is-overdue) 강조는 그대로 두고, 배지 버튼(#crmOverdueBadge)
+             과 그걸 부르던 renderOverdueBadge() 호출만 없앴다(§ "기능 자체를 삭제하지 마세요,
+             상단 경고에서만 제거"). -->
+        <!-- §2026 매출/자재판매/미수금 라운드: 미수금 업체 알림 배지 — 위 배지와 같은 규칙
+             (0건이면 렌더링 안 함, 클릭 시 목록 패널). -->
         <button type="button" class="overdue-badge" id="crmReceivableBadge" style="display:none;"></button>
       </div>
       <div class="list-secondary-actions">
@@ -3406,6 +3408,64 @@ window.SHIN2_RECEIVABLES_2026_SNAPSHOT = [{"name":"일성기업","site":"산격�
     return result;
   }
 
+  /* ==========================================================================
+     §최근 시공 매칭 재점검 라운드
+
+     [원인 조사 결과] "최근 시공"이 "—"로 너무 많이 나온 진짜 원인은 이 함수가 co.
+     pourTrackRecords(= "POUR 시공실적 업데이트" 버튼을 눌러야만, 그것도
+     previewPourTrackImport()가 "정규화 업체명이 CRM에서 정확히 1건과만 일치"한 경우에만
+     채워지는, 상태를 가진 필드)에만 의존하고 있었기 때문이다 — 즉 "현재 화면에 이미
+     연결된 일부 실적만" 봤다(§요청 진단과 일치). 아직 업데이트를 한 번도 안 눌렀거나,
+     같은 정규화 이름의 CRM 업체가 여러 건이라 review로 빠진 업체는 실제로 POUR 실적이
+     있어도 co.pourTrackRecords가 비어 있어 "—"로 보였다.
+
+     [수정] "최근 시공"만은 co.pourTrackRecords에 의존하지 않고, 매번
+     window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT(전체 1149건 원본, §POUR 시공실적 라운드에서
+     이미 임베드됨) 전체를 normCompanyNameForPour로 새로 정규화 매칭한다 — 2026 매출/미수금
+     인덱스(buildRevenue2026Index 등)와 같은 방식이다. "1년 실적"/"주요 공종"/"전체
+     실적"(getThisYearPourCount/buildTopCategoriesText/getTotalPourCount)은 기존 그대로
+     co.pourTrackRecords를 계속 쓴다 — 이번 수정은 "최근 시공" 표시에만 적용한다(§10
+     "오직 최근 시공 데이터 매칭 및 표시만").
+
+     [연도 제한 없음] 특정 연도(2026 등)로 필터하지 않고 스냅샷 전체에서 연도가 가장 큰
+     레코드를 고른다 — 2026년 실적이 없어도 2025/2024년 중 가장 최근 것이 표시된다(§6).
+
+     [데이터 범위 한계 — 임의로 확장하지 않음] 임베드된 스냅샷 자체가 원본 POUR 실적
+     리스트 중 2024~2026년 시트만 포함한다(원본 파일에는 2018~2023년/OBM 시트도 있지만
+     이번 라운드 범위 밖이라 추가하지 않았다, §10 "이번 수정은 오직 매칭/표시만"). 그래서
+     실제로 2023년 이전 실적만 있는 업체는 이 스냅샷 자체에 없어 여전히 "—"로 표시될 수
+     있다 — 이건 매칭 버그가 아니라 임베드 데이터의 연도 범위 한계이며, 완료 보고에서
+     별도로 밝힌다.
+     ========================================================================== */
+  function buildPourRecordIndex(){
+    const snapshot = window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT || [];
+    const index = new Map(); // normName -> records[]
+    snapshot.forEach(r=>{
+      const norm = normCompanyNameForPour(r.company);
+      if(!norm) return;
+      if(!index.has(norm)) index.set(norm, []);
+      index.get(norm).push(r);
+    });
+    return index;
+  }
+  // getLatestPourRecordForCompany: 정규화 업체명이 일치하는 스냅샷 레코드 중 "가장 최근
+  // 것" 1건을 반환한다 — 연도가 가장 크고, 동률이면 원본 시트의 나중 행(sourceRow 큰 쪽)을
+  // 최신으로 본다(buildSiteHistoryData가 이미 쓰는 "원문 기록 순서 = 최신 순서" 관례와
+  // 동일, 새 규칙 아님). 매칭되는 레코드가 하나도 없으면 null(§7 "실적이 정말 없는 업체").
+  function getLatestPourRecordForCompany(co){
+    const norm = normCompanyNameForPour(co && co.name);
+    if(!norm) return null;
+    const index = buildPourRecordIndex();
+    const records = index.get(norm);
+    if(!records || !records.length) return null;
+    let best = null;
+    records.forEach(r=>{
+      if(typeof r.year !== 'number') return;
+      if(!best || r.year > best.year || (r.year === best.year && (r.sourceRow||0) > (best.sourceRow||0))) best = r;
+    });
+    return best;
+  }
+
   window.SHIN2_CRM_DATA = {
     loadCompanies, findCompany, addCompany, updateCompany,
     loadActivities, addActivity, updateActivityText, deleteActivity, activitiesForCompany, classifyActivity,
@@ -3429,7 +3489,8 @@ window.SHIN2_RECEIVABLES_2026_SNAPSHOT = [{"name":"일성기업","site":"산격�
     addRequestedMaterial, removeRequestedMaterial, setRequestedMaterialStatus, extractRequestedMaterialsFromActivities,
     buildUnregisteredCompanies, getCompany2025Revenue,
     buildRevenue2026Index, getCompany2026Revenue, buildUnregisteredCompanies2026,
-    getCompanyReceivable, buildReceivableCompanies
+    getCompanyReceivable, buildReceivableCompanies,
+    getLatestPourRecordForCompany
   };
 })();
 </script>
@@ -3806,11 +3867,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     // §미등록 업체 관리 라운드: 별도 저장소 없이 매번 다시 계산한다(§ "등록 후" 요구사항 —
     // 사용자가 업체를 등록하면 다음 renderList()에서 자동으로 줄어든다).
     renderUnregisteredBadge();
-    // §최근 활동일/단계 D+N 복원 라운드: 위 미등록 업체 배지와 같은 규칙 — 별도 저장소 없이
-    // 매번 다시 계산하고, 0건이면 배지 자체를 숨긴다.
-    renderOverdueBadge();
-    // §2026 매출/자재판매/미수금 라운드: 미수금 업체 배지도 같은 규칙(별도 저장 없이 매번
-    // 재계산, 0건이면 숨김).
+    // §상단 경고 정리 라운드: renderOverdueBadge() 호출을 없앴다 — "기한 초과" 배지는
+    // 더 이상 메인 첫화면 상단에 안 보인다(함수 자체는 아래에 그대로 남아있다, §요청).
+    // §2026 매출/자재판매/미수금 라운드: 미수금 업체 배지는 계속 같은 규칙(별도 저장 없이
+    // 매번 재계산, 0건이면 숨김).
     renderReceivableBadge();
     // 파생 데이터는 매번 다시 계산만 한다(§26 — companyId 기준 실제 POUR/진행 데이터에서
     // 집계, 회사명 텍스트로 새 데이터를 만들지 않음. 별도 저장 없음).
@@ -5003,14 +5063,15 @@ window.SHIN2_CRM_APP_INIT = function(){
   // category 필드의 첫 줄만 쓴다(한 레코드에 "슬라브\n재도장\n에폭시"처럼 여러 줄이 있을
   // 수 있어 §8 "너무 길어지지 않게"에 맞춰 대표 공종 하나만 보여준다 — 목록 전체 나열은
   // 이미 "주요 공종" 컬럼(buildTopCategoriesText)이 따로 하고 있다).
+  // §최근 시공 매칭 재점검 라운드: co.pourTrackRecords(= "POUR 시공실적 업데이트"를 눌러야만
+  // 채워지는 상태값)에 의존하던 것을 D.getLatestPourRecordForCompany(co)로 바꿨다 — 매번
+  // 전체 POUR 시공실적 스냅샷(1149건)을 정규화 업체명으로 새로 매칭하므로, 아직 업데이트를
+  // 안 눌렀거나 동일 정규화 이름이 여러 건이라 자동 저장에서 빠진 업체도 실제로 실적이
+  // 있으면 여기서는 찾아낸다(§조사 결과, 자세한 원인은 D.getLatestPourRecordForCompany
+  // 위쪽 주석 참고). "1년 실적"/"주요 공종"/"전체 실적"은 여전히 co.pourTrackRecords를
+  // 그대로 쓴다(§10 "오직 최근 시공 매칭만" — 다른 계산은 안 바꿈).
   function getLatestPourRecord(co){
-    const records = co.pourTrackRecords || [];
-    let best = null;
-    records.forEach(r=>{
-      if(typeof r.year !== 'number') return;
-      if(!best || r.year > best.year || (r.year === best.year && (r.sourceRow||0) > (best.sourceRow||0))) best = r;
-    });
-    return best;
+    return D.getLatestPourRecordForCompany(co);
   }
   function buildLatestPourDisplay(co){
     const r = getLatestPourRecord(co);
@@ -5220,6 +5281,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     result.sort((a,b)=> b.overdueDays - a.overdueDays || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko'));
     return result;
   }
+  // §상단 경고 정리 라운드: renderList()가 더 이상 renderOverdueBadge()를 부르지 않아
+  // #crmOverdueBadge는 항상 숨김 상태다(§요청 "기한초과 관련 표시/경고는 제거"). 이 함수와
+  // buildOverdueCompanies/openOverduePanel/closeOverduePanel은 지우지 않고 그대로 뒀다 —
+  // D+N/기한초과 계산 기능 자체는 삭제하지 말라는 요청 그대로, 나중에 다른 화면(예: 상세
+  // 카드)에서 다시 필요해지면 그대로 재사용할 수 있다.
   function renderOverdueBadge(){
     const btn = document.getElementById('crmOverdueBadge');
     if(!btn) return;
