@@ -184,6 +184,35 @@
   }
   .revenue-detail-subtotal{ display:flex; justify-content:space-between; align-items:baseline; margin-top:10px; font-size:13px; font-weight:700; color:var(--text); }
   .revenue-detail-subtotal span:last-child{ font-size:12px; font-weight:600; color:var(--text-muted); }
+
+  /* §미수금 Drawer 라운드: 오른쪽 고정 Side Drawer 디자인 시스템(§22 "다른 Drawer와 디자인
+     통일" — 이번 라운드는 미수금에 처음 적용하지만, 클래스명을 범용으로 지어 나중에 다른
+     기능도 재사용할 수 있게 한다). 중앙 팝업이 아니라 오른쪽 고정, 배경은 옅게 dim 처리만
+     하고 본문 스크롤 위치는 건드리지 않는다(§8 "메인 고객목록 스크롤 위치는 유지"). */
+  .side-drawer-overlay{ position:fixed; inset:0; background:rgba(15,23,42,.28); z-index:400; }
+  .side-drawer-panel{
+    position:fixed; top:0; right:0; height:100vh; width:560px; max-width:92vw; background:#fff;
+    box-shadow:-8px 0 28px rgba(15,23,42,.14); z-index:401; display:flex; flex-direction:column;
+  }
+  .side-drawer-head{ display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--line); flex:none; }
+  .side-drawer-back{ background:none; border:none; cursor:pointer; color:var(--navy); font-size:12.5px; font-weight:600; padding:0; font-family:inherit; white-space:nowrap; }
+  .side-drawer-back:hover{ text-decoration:underline; }
+  .side-drawer-title{ font-size:15px; font-weight:700; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .side-drawer-close{ background:none; border:none; font-size:22px; line-height:1; cursor:pointer; color:var(--text-muted); padding:0 2px; }
+  .side-drawer-body{ flex:1; overflow-y:auto; padding:16px 20px 24px; }
+  /* 미수금 배지/총액 강조는 빨강, 패널 전체는 흰 배경(§23 "전체 패널을 빨갛게 만들지 마세요"). */
+  .receivable-drawer-total{ font-size:15px; font-weight:700; color:#B91C1C; margin-bottom:4px; }
+  .receivable-drawer-total-sub{ font-size:12px; color:var(--text-muted); margin-bottom:14px; }
+  .receivable-site-card{ border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+  .receivable-site-name{ font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .receivable-site-row{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-muted); padding:2px 0; }
+  .receivable-site-row .receivable-amt{ color:#B91C1C; font-weight:700; }
+  .receivable-site-source{ font-size:10.5px; color:var(--text-faint); margin-top:6px; }
+  .receivable-list-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid #EDF1F5; cursor:pointer; }
+  .receivable-list-row:hover{ background:var(--bg); }
+  .receivable-list-name{ font-size:13px; font-weight:600; color:var(--text); }
+  .receivable-list-meta{ font-size:11px; color:var(--text-muted); margin-top:1px; }
+  .receivable-list-amt{ font-size:13px; font-weight:700; color:#B91C1C; white-space:nowrap; }
   .col-cat{ flex:1 1 110px; min-width:0; font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-contrib{ flex:0 0 128px; font-size:11px; line-height:1.4; }
   .col-trend{ flex:0 0 70px; font-size:12px; text-align:center; }
@@ -5491,56 +5520,128 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   const RECEIVABLE_TYPE_LABEL = { consultingReceivable:'컨설팅', patentReceivable:'특허료', solutionReceivable:'솔루션 현장', materialReceivable:'자재판매' };
 
-  function closeReceivableDetailModal(){
-    const root = document.getElementById('receivableDetailModalRoot');
+  /* ==========================================================================
+     §미수금 상세 Drawer 라운드
+
+     [입금액 표시 관련 조사 결과 — §16/§17] 원본 시트를 다시 확인했다. "입금" 컬럼은
+     날짜만 있고(발행/예정/입금 세 쌍이 전부 날짜다), 금액 컬럼 중 "수금액"(특허료 매출
+     섹션 16열, 자재매출 섹션 8열)이 있긴 하지만 실제 값을 대조해보니 신뢰할 수 없었다 —
+     예를 들어 코지건설 62행은 "수금액"=7,282,700인데, 실제로 입금된 것은 그 값이 아니라
+     별도 설치금(2번째 installment, 5,397,500원, 입금일 2026-01-12 존재)이었다. 즉 이
+     "수금액" 컬럼이 어느 시점/어느 설치금을 가리키는지 원본만 봐서는 확정할 수 없다 —
+     확실하지 않은 값을 "입금액"이라고 표시하면 오히려 잘못된 정보가 된다(§16 "데이터에
+     없는 값을 만들어내지 마세요"). 그래서 이번 Drawer에는 입금액을 표시하지 않는다 —
+     매출액도 같은 이유(설치금 쌍이 여러 개라 "이 미수금에 대응하는 매출액"을 하나로 확정
+     하기 애매함)로 넣지 않았다. 확실한 값(미수금 금액 자체, 현장명, 구분, 원본 시트/행)만
+     보여준다.
+
+     [Drawer 상태] receivableDrawerState = { view: 'list'|'detail', companyId, fromList }
+     — 별도 저장 없이 열려있는 동안만 메모리에 유지, 닫으면 초기화.
+     ========================================================================== */
+  let receivableDrawerState = { view: null, companyId: null, fromList: false };
+
+  function closeReceivableDrawer(){
+    const root = document.getElementById('receivableModalRoot');
     if(root) root.innerHTML = '';
+    receivableDrawerState = { view: null, companyId: null, fromList: false };
   }
-  // §16: 미수금 배지 클릭 -> 현장별 상세(현장명/매출구분/매출일/미수금). 0원/완납된 행은
-  // 빼고 실제로 남아있는 미수금 행만 보여준다(§15 "미수금이 있는 업체").
+  // §7/§21: 업체명 옆 미수금 배지 클릭 -> 그 업체의 상세로 바로 연다(목록 경유 안 함,
+  // 그래서 뒤로가기 버튼 없음). 업체명 클릭(고객카드 열기)으로 이벤트가 전파되지 않도록
+  // 호출부(renderList)에서 이미 stopPropagation 처리되어 있다.
   function openReceivableDetailModal(co){
-    const root = document.getElementById('receivableDetailModalRoot');
+    receivableDrawerState = { view: 'detail', companyId: co.id, fromList: false };
+    renderReceivableDrawerRoot();
+  }
+  // §18/§19: 상단 "❗ 미수금 업체 N" 배지 -> 전체 목록. 목록에서 업체를 클릭하면(§19) 같은
+  // Drawer 안에서 상세로 전환하고(중앙 팝업을 새로 띄우지 않음), 상세 화면에는 "← 미수금
+  // 업체 목록" 뒤로가기를 보여준다(§20).
+  function openReceivablePanel(){
+    receivableDrawerState = { view: 'list', companyId: null, fromList: false };
+    renderReceivableDrawerRoot();
+  }
+
+  function renderReceivableDrawerRoot(){
+    const root = document.getElementById('receivableModalRoot');
     if(!root) return;
-    const data = D.getCompanyReceivable(co);
-    if(!data){ return; }
-    const rows = data.rows.filter(r=> r.amount !== 0).slice().sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+    if(!receivableDrawerState.view){ root.innerHTML = ''; return; }
+    const isDetail = receivableDrawerState.view === 'detail';
+    const co = isDetail ? D.findCompany(receivableDrawerState.companyId) : null;
+    if(isDetail && !co){ closeReceivableDrawer(); return; }
+    const backBtnHtml = (isDetail && receivableDrawerState.fromList)
+      ? `<button type="button" class="side-drawer-back" id="receivableDrawerBack">← 미수금 업체 목록</button>`
+      : '';
+    const titleText = isDetail ? ('미수금 상세 — ' + co.name) : '미수금 업체';
     root.innerHTML = `
-      <div class="pi-overlay" id="receivableDetailOverlay">
-        <div class="pi-panel" style="max-width:560px;">
-          <div class="pi-head">
-            <div class="pi-title">미수금 현황 — ${esc(co.name)}</div>
-            <button type="button" class="chart-close-btn" id="receivableDetailCloseBtn" aria-label="닫기">&times;</button>
+      <div class="side-drawer-overlay" id="receivableDrawerOverlay">
+        <div class="side-drawer-panel" role="dialog" aria-modal="true" aria-label="${esc(titleText)}">
+          <div class="side-drawer-head">
+            ${backBtnHtml}
+            <div class="side-drawer-title">${esc(titleText)}</div>
+            <button type="button" class="side-drawer-close" id="receivableDrawerClose" aria-label="닫기">&times;</button>
           </div>
-          <div class="pi-body">
-            <div class="revenue-detail-total" style="color:#B91C1C;">총 미수금 ${esc(fmtKrwCompact(data.total))}</div>
-            ${rows.length ? `
-              <table class="pi-sample-table" style="margin-top:12px;">
-                <thead><tr><th>현장명</th><th>매출구분</th><th>매출일</th><th>미수금</th></tr></thead>
-                <tbody>
-                  ${rows.map(r=> `
-                    <tr>
-                      <td>${r.site ? esc(r.site) : '—'}</td>
-                      <td>${esc(RECEIVABLE_TYPE_LABEL[r.sourceType] || r.sourceType)}</td>
-                      <td>${r.date ? esc(fmtDate(r.date)) : '—'}</td>
-                      <td>${esc(fmtKrwCompact(r.amount))}</td>
-                    </tr>`).join('')}
-                </tbody>
-              </table>
-            ` : `<div class="pi-note" style="margin-top:10px;">미수금 상세 내역이 없습니다.</div>`}
-          </div>
-          <div class="pi-actions">
-            <button type="button" class="co-text-action primary" id="receivableDetailCloseBtn2">닫기</button>
-          </div>
+          <div class="side-drawer-body" id="receivableDrawerBody"></div>
         </div>
       </div>
     `;
-    document.getElementById('receivableDetailCloseBtn').addEventListener('click', closeReceivableDetailModal);
-    document.getElementById('receivableDetailCloseBtn2').addEventListener('click', closeReceivableDetailModal);
-    document.getElementById('receivableDetailOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'receivableDetailOverlay') closeReceivableDetailModal(); });
+    document.getElementById('receivableDrawerClose').addEventListener('click', closeReceivableDrawer);
+    document.getElementById('receivableDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'receivableDrawerOverlay') closeReceivableDrawer(); });
+    const backBtn = document.getElementById('receivableDrawerBack');
+    if(backBtn) backBtn.addEventListener('click', ()=>{ receivableDrawerState = { view:'list', companyId:null, fromList:false }; renderReceivableDrawerRoot(); });
+    if(isDetail) renderReceivableDrawerDetailBody(co); else renderReceivableDrawerListBody();
+  }
+
+  // §9/§10/§11/§12: 총 미수금(원 단위 그대로) + 현장별 카드(매출구분/미수금/원본 시트·행).
+  // 0원(완납)인 행은 빼고 실제로 남아있는 미수금 행만 보여준다(§15) — 800원 같은 소액도
+  // 그대로 포함한다(§24, 임의 금액 필터 없음).
+  function renderReceivableDrawerDetailBody(co){
+    const wrap = document.getElementById('receivableDrawerBody');
+    if(!wrap) return;
+    const data = D.getCompanyReceivable(co);
+    if(!data){ wrap.innerHTML = `<div class="pi-note">미수금 데이터가 없습니다.</div>`; return; }
+    const rows = data.rows.filter(r=> r.amount !== 0).slice().sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+    wrap.innerHTML = `
+      <div class="receivable-drawer-total">총 미수금 ${esc(data.total.toLocaleString('ko-KR'))}원</div>
+      <div class="receivable-drawer-total-sub">미수금 기준자료: 2025현장 미수금관리 (2026 매출과는 다른 자료입니다)</div>
+      ${rows.length ? rows.map(r=> `
+        <div class="receivable-site-card">
+          <div class="receivable-site-name">${r.site ? esc(r.site) : '현장명 미확인'}</div>
+          <div class="receivable-site-row"><span>매출구분</span><span>${esc(RECEIVABLE_TYPE_LABEL[r.sourceType] || r.sourceType)}</span></div>
+          <div class="receivable-site-row"><span>미수금</span><span class="receivable-amt">${esc(r.amount.toLocaleString('ko-KR'))}원</span></div>
+          <div class="receivable-site-source">원본: ${esc(r.sourceSheet)} · ${esc(r.sourceRow)}행</div>
+        </div>
+      `).join('') : `<div class="pi-note">미수금 상세 내역이 없습니다.</div>`}
+    `;
+  }
+
+  // §18: 업체명/총미수금/미수 현장수, 총 미수금 큰 순(기존 buildReceivableCompanies 정렬
+  // 그대로). §19: 행 클릭 시 같은 Drawer 안에서 상세로 전환(fromList=true로 표시해 뒤로가기
+  // 버튼이 뜨게 한다).
+  function renderReceivableDrawerListBody(){
+    const wrap = document.getElementById('receivableDrawerBody');
+    if(!wrap) return;
+    const list = D.buildReceivableCompanies();
+    wrap.innerHTML = `
+      <div class="pi-note" style="margin-bottom:8px;">2025현장 미수금관리 자료 기준 미수금이 남아있는 업체입니다. 총 미수금이 큰 업체부터 정렬됩니다.</div>
+      ${list.length ? list.map(x=> `
+        <div class="receivable-list-row" data-id="${esc(x.co.id)}">
+          <div>
+            <div class="receivable-list-name">${esc(x.co.name)}</div>
+            <div class="receivable-list-meta">미수 현장 ${x.siteCount}건</div>
+          </div>
+          <div class="receivable-list-amt">${esc(fmtKrwCompact(x.total))}</div>
+        </div>
+      `).join('') : `<div class="pi-note">미수금 업체가 없습니다.</div>`}
+    `;
+    wrap.querySelectorAll('.receivable-list-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        receivableDrawerState = { view:'detail', companyId: row.getAttribute('data-id'), fromList:true };
+        renderReceivableDrawerRoot();
+      });
+    });
   }
 
   // §17/§18: 상단 "❗ 미수금 업체 N" 배지 — 미등록 업체 배지와 같은 규칙(별도 저장 없이
-  // 매번 재계산, 0건이면 숨김). 클릭 시 전체 미수금 업체 목록(§18: 업체명/총미수금/미수
-  // 현장수/가장 오래된 미수일/최근 매출일), 총 미수금 큰 순 정렬.
+  // 매번 재계산, 0건이면 숨김).
   function renderReceivableBadge(){
     const btn = document.getElementById('crmReceivableBadge');
     if(!btn) return;
@@ -5549,56 +5650,6 @@ window.SHIN2_CRM_APP_INIT = function(){
     btn.style.display = '';
     btn.innerHTML = `<span class="unreg-badge-mark">❗</span> 미수금 업체 ${list.length}개`;
     btn.onclick = openReceivablePanel;
-  }
-  function closeReceivablePanel(){
-    const root = document.getElementById('receivableModalRoot');
-    if(root) root.innerHTML = '';
-  }
-  function openReceivablePanel(){
-    const root = document.getElementById('receivableModalRoot');
-    if(!root) return;
-    const list = D.buildReceivableCompanies();
-    root.innerHTML = `
-      <div class="pi-overlay" id="receivableOverlay">
-        <div class="pi-panel" role="dialog" aria-modal="true" aria-label="미수금 업체">
-          <div class="pi-head">
-            <div class="pi-title">미수금 업체</div>
-            <button type="button" class="chart-close-btn" id="receivableCloseBtn" aria-label="닫기">&times;</button>
-          </div>
-          <div class="pi-body">
-            <div class="pi-note">2025현장 미수금관리 자료 기준 미수금이 남아있는 업체입니다. 총 미수금이 큰 업체부터 정렬됩니다. 업체명을 클릭하면 고객관리카드가 열립니다.</div>
-            ${list.length ? `
-              <table class="pi-sample-table" style="margin-top:10px;">
-                <thead><tr><th>업체명</th><th>총 미수금</th><th>미수 현장수</th><th>가장 오래된 미수일</th><th>최근 매출일</th></tr></thead>
-                <tbody>
-                  ${list.map(x=> `
-                    <tr class="receivable-row" data-id="${esc(x.co.id)}" style="cursor:pointer;">
-                      <td>${esc(x.co.name)}</td>
-                      <td><span style="color:#B91C1C;font-weight:600;">${esc(fmtKrwCompact(x.total))}</span></td>
-                      <td>${x.siteCount}</td>
-                      <td>${x.oldestDate ? esc(fmtDate(x.oldestDate)) : '—'}</td>
-                      <td>${x.latestDate ? esc(fmtDate(x.latestDate)) : '—'}</td>
-                    </tr>`).join('')}
-                </tbody>
-              </table>
-            ` : `<div class="pi-note" style="margin-top:10px;">미수금 업체가 없습니다.</div>`}
-          </div>
-          <div class="pi-actions">
-            <button type="button" class="co-text-action primary" id="receivableCloseBtn2">닫기</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.getElementById('receivableCloseBtn').addEventListener('click', closeReceivablePanel);
-    document.getElementById('receivableCloseBtn2').addEventListener('click', closeReceivablePanel);
-    document.getElementById('receivableOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'receivableOverlay') closeReceivablePanel(); });
-    root.querySelectorAll('.receivable-row').forEach(row=>{
-      row.addEventListener('click', ()=>{
-        const id = row.getAttribute('data-id');
-        closeReceivablePanel();
-        openCard(id);
-      });
-    });
   }
 
   // ---- §자동 요약 구조 개선 라운드: 업체 특징 자동 사실(facts) — "느낌/평가"가 아니라
