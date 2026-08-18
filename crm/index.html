@@ -248,6 +248,29 @@
   .cat-dist-name{ font-size:13px; font-weight:600; color:var(--text); }
   .cat-dist-count{ font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; }
   .cat-cell{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  /* §시공실적 Drawer 통합 라운드: "최근 실적"/"주요 공종" Drawer를 하나로 합친 화면 전용
+     스타일 — 그래프/차트/아이콘/과한 색 없이 칩(공종+건수)과 3열 표(연도/현장명/공종)만
+     쓴다(§3 "아주 단순하고 깔끔하게"). */
+  .constr-filter-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .constr-filter-chip{
+    height:26px; padding:0 10px; font-size:12px; font-weight:600; color:var(--text-muted);
+    background:#fff; border:1px solid var(--line); border-radius:6px; cursor:pointer; font-family:inherit;
+  }
+  .constr-filter-chip:hover{ background:var(--bg); }
+  .constr-filter-chip.is-active{ background:#EAF2FF; color:var(--navy); border-color:#CFE0FA; }
+  .constr-list-title{ font-size:13px; font-weight:700; color:var(--text); margin:4px 0 8px; }
+  .constr-list-row{
+    display:grid; grid-template-columns:40px 1fr auto; gap:10px; align-items:center;
+    padding:8px 2px; border-bottom:1px solid #EDF1F5; font-size:12.5px;
+  }
+  .constr-list-row:last-child{ border-bottom:none; }
+  .constr-list-year{ color:var(--text-muted); font-weight:600; }
+  .constr-list-site{ color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .constr-list-cats{ display:flex; gap:4px; flex-wrap:nowrap; justify-self:end; }
+  .constr-cat-badge{
+    display:inline-flex; align-items:center; padding:2px 6px; font-size:10.5px; font-weight:600;
+    color:#475569; background:#F1F5F9; border-radius:4px; white-space:nowrap;
+  }
   .col-cat{ flex:1 1 110px; min-width:0; font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-contrib{ flex:0 0 128px; font-size:11px; line-height:1.4; }
   .col-trend{ flex:0 0 70px; font-size:12px; text-align:center; }
@@ -4430,12 +4453,13 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(co) openReceivableDetailModal(co);
       });
     });
-    // §3/§7: "최근 실적" 영역 클릭 -> 최근 실적 Drawer(업체명 클릭=고객카드와 분리).
+    // §3/§7/§시공실적 Drawer 통합 라운드 §10: "최근 실적" 영역 클릭 -> 시공실적 Drawer
+    // (업체명 클릭=고객카드와 분리), 기본값 [전체].
     listEl.querySelectorAll('[data-pour-detail]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-pour-detail'));
-        if(co) openPourDrawer(co);
+        if(co) openConstructionDrawer(co, null);
       });
     });
     // §13: 최근 요청 클릭 -> 최근 요청 Drawer.
@@ -4454,12 +4478,15 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(co) openYearPourDrawer(co);
       });
     });
-    // §주요 공종 데이터 소스 독립화 라운드 §8: "주요 공종" 클릭 -> 전체 공종 분포 Drawer.
+    // §주요 공종 데이터 소스 독립화 라운드 §8 → §시공실적 Drawer 통합 라운드 §10: "주요
+    // 공종" 클릭 -> 같은 시공실적 Drawer. 메인 목록의 이 셀은 "슬라브, 싱글"처럼 여러 공종이
+    // 합쳐진 텍스트 전체가 하나의 버튼이라 어떤 공종을 클릭했는지 구분할 방법이 없어서 기본값
+    // [전체]로 연다(§ "없는 클릭 정보를 지어내지 않는다").
     listEl.querySelectorAll('[data-cat-detail]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-cat-detail'));
-        if(co) openCategoryDrawer(co);
+        if(co) openConstructionDrawer(co, null);
       });
     });
     renderPagination(totalPages);
@@ -6117,35 +6144,97 @@ window.SHIN2_CRM_APP_INIT = function(){
     const root = document.getElementById('sideDrawerRoot');
     if(root) root.innerHTML = '';
   }
-  // §3/§최근 실적 독립 컬럼 복원 라운드: 업체명 클릭(고객카드)과 분리된, "최근 실적"(구
-  // "최근 시공") 전용 Drawer — 그 업체가 매칭되는 POUR 시공실적 전체(최신순)를 보여준다.
-  // 계산은 D.getAllPourRecordsForCompany() 그대로(컬럼 이름만 바뀌었을 뿐 선정 로직 불변).
-  function openPourDrawer(co){
+  /* ==========================================================================
+     §시공실적 Drawer 통합 라운드 — 기존에 따로 있던 "최근 실적" Drawer(openPourDrawer)와
+     "주요 공종" Drawer(openCategoryDrawer)를 하나의 "시공실적 Drawer"로 합쳤다. 데이터는
+     전혀 새로 계산하지 않는다 — D.getAllPourRecordsForCompany(co)(최근 실적이 쓰던 것)와
+     buildTopCategoryBreakdown(co)(주요 공종이 쓰던 것)를 그대로 재사용한다(§1/§13, 이
+     업체 하나의 이미 계산된 데이터만 다시 쓰고 363개 전체를 다시 훑지 않는다). 상단 공종
+     칩은 건수 상위 5개만 이름을 노출하고 나머지는 "기타"로 묶는다(§8) — buildTopCategory
+     Breakdown이 이미 건수 내림차순으로 정렬해 주므로 자르기만 하면 된다. "기타"의 건수는
+     나머지 항목들의 count 합계라 원본 집계와 항상 일치한다(별도로 다시 세지 않음).
+     ========================================================================== */
+  const CONSTR_DRAWER_TOP_N = 5;
+  function buildConstructionSummary(co){
+    const records = D.getAllPourRecordsForCompany(co); // 최근 실적과 같은 소스, 이미 연도·원본행 내림차순
+    const breakdown = buildTopCategoryBreakdown(co); // 주요 공종과 같은 소스, 이미 건수 내림차순(안정 정렬)
+    const topCats = breakdown.slice(0, CONSTR_DRAWER_TOP_N);
+    const otherCats = breakdown.slice(CONSTR_DRAWER_TOP_N);
+    const otherTotal = otherCats.reduce((s,b)=> s + b.count, 0);
+    const otherCatNames = new Set(otherCats.map(b=> b.category));
+    return { records, total: records.length, topCats, otherTotal, otherCatNames };
+  }
+  // filter: null(전체) | 공종명 문자열 | '__other__'(기타). §9: 원본 category 문자열(예:
+  // "싱글,슬라브")을 쪼개거나 합치지 않고 그대로 포함 여부만 비교한다 — 필터링 때문에 건수가
+  // 달라지지 않는다.
+  function filterConstructionRecords(records, filter, otherCatNames){
+    if(!filter) return records;
+    return records.filter(r=>{
+      const cats = String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean);
+      if(filter === '__other__') return cats.some(c=> otherCatNames.has(c));
+      return cats.includes(filter);
+    });
+  }
+  function renderConstructionDrawerBody(co, summary, filter){
+    const filterRow = document.getElementById('constrFilterRow');
+    const listEl = document.getElementById('constrList');
+    if(!filterRow || !listEl) return;
+    if(!summary.total){
+      filterRow.innerHTML = '';
+      listEl.innerHTML = '';
+      return;
+    }
+    const chips = [{ key: null, label: '전체', count: summary.total }]
+      .concat(summary.topCats.map(b=> ({ key: b.category, label: b.category, count: b.count })));
+    if(summary.otherTotal > 0) chips.push({ key: '__other__', label: '기타', count: summary.otherTotal });
+    filterRow.innerHTML = chips.map(c=>
+      `<button type="button" class="constr-filter-chip${filter===c.key?' is-active':''}" data-constr-filter="${c.key===null?'':esc(c.key)}">${esc(c.label)} ${esc(c.count)}</button>`
+    ).join('');
+    filterRow.querySelectorAll('[data-constr-filter]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const raw = btn.getAttribute('data-constr-filter');
+        const nextFilter = raw === '' ? null : raw;
+        renderConstructionDrawerBody(co, summary, nextFilter);
+      });
+    });
+    const filtered = filterConstructionRecords(summary.records, filter, summary.otherCatNames);
+    listEl.innerHTML = filtered.map(r=>{
+      const cats = String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean);
+      return `
+        <div class="constr-list-row">
+          <span class="constr-list-year">${esc(r.year)}</span>
+          <span class="constr-list-site" title="${r.client ? esc(r.client) : ''}">${r.client ? esc(r.client) : '현장명 미확인'}</span>
+          <span class="constr-list-cats">${cats.map(c=> `<span class="constr-cat-badge">${esc(c)}</span>`).join('')}</span>
+        </div>`;
+    }).join('');
+  }
+  // §10: 업체명 클릭(고객카드)과 분리된 시공실적 전용 Drawer. initialFilter는 메인 목록에서
+  // 어떤 공종을 클릭했는지 명확히 알 수 있을 때만 넘긴다 — 지금 메인 목록의 "주요 공종"
+  // 셀은 "슬라브, 싱글"처럼 여러 공종이 합쳐진 텍스트 전체가 하나의 버튼이라 어떤 공종을
+  // 클릭했는지 구분할 방법이 없어서(개별 공종마다 클릭 영역이 없음), 두 진입점 모두 기본값
+  // [전체]로 연다(§ "지어내지 않는다" — 없는 클릭 정보를 있는 것처럼 만들지 않음).
+  function openConstructionDrawer(co, initialFilter){
     const root = document.getElementById('sideDrawerRoot');
     if(!root) return;
-    const records = D.getAllPourRecordsForCompany(co);
+    const summary = buildConstructionSummary(co);
     root.innerHTML = `
       <div class="side-drawer-overlay" id="sideDrawerOverlay">
         <div class="side-drawer-panel">
           <div class="side-drawer-head">
-            <div class="side-drawer-title">최근 실적 — ${esc(co.name)}</div>
+            <div class="side-drawer-title">시공실적 — ${esc(co.name)}</div>
             <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
           </div>
           <div class="side-drawer-body">
-            ${records.length ? records.map(r=>{
-              const cats = String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean);
-              return `
-                <div class="receivable-site-card">
-                  <div class="receivable-site-name">${r.client ? esc(r.client) : '현장명 미확인'}</div>
-                  <div class="receivable-site-row"><span>연도</span><span>${esc(r.year)}년</span></div>
-                  ${cats.length ? `<div class="receivable-site-row"><span>공종</span><span>${esc(cats.join(', '))}</span></div>` : ''}
-                  <div class="receivable-site-source">원본: ${esc(r.sourceSheet)} · ${esc(r.sourceRow)}행</div>
-                </div>`;
-            }).join('') : `<div class="pi-note">POUR 시공실적이 없습니다.</div>`}
+            ${summary.total ? `
+              <div class="constr-filter-row" id="constrFilterRow"></div>
+              <div class="constr-list-title">최근 실적</div>
+              <div class="constr-list" id="constrList"></div>
+            ` : `<div class="cat-dist-total">전체 실적 0건</div><div class="pi-note">등록된 시공실적이 없습니다.</div>`}
           </div>
         </div>
       </div>
     `;
+    if(summary.total) renderConstructionDrawerBody(co, summary, initialFilter || null);
     document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
     document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
   }
@@ -6216,39 +6305,6 @@ window.SHIN2_CRM_APP_INIT = function(){
                   </div>`;
               }).join('')}
             ` : `<div class="pi-note">매칭된 POUR 실적이 없습니다.</div>`}
-          </div>
-        </div>
-      </div>
-    `;
-    document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
-    document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
-  }
-
-  // §주요 공종 데이터 소스 독립화 라운드 §8: "주요 공종" 클릭 -> 전체 공종 분포 Drawer(신규).
-  // buildTopCategoryBreakdown()은 목록에 보이는 buildTopCategoriesText()와 완전히 같은
-  // 집계(전체 POUR 실적을 공종별로 카운트) 결과를 그대로 펼쳐 보여준다.
-  function openCategoryDrawer(co){
-    const root = document.getElementById('sideDrawerRoot');
-    if(!root) return;
-    const breakdown = buildTopCategoryBreakdown(co);
-    const totalCount = D.getAllPourRecordsForCompany(co).length;
-    root.innerHTML = `
-      <div class="side-drawer-overlay" id="sideDrawerOverlay">
-        <div class="side-drawer-panel">
-          <div class="side-drawer-head">
-            <div class="side-drawer-title">주요 공종 — ${esc(co.name)}</div>
-            <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
-          </div>
-          <div class="side-drawer-body">
-            ${breakdown.length ? `
-              <div class="cat-dist-total">전체 실적 ${esc(totalCount)}건</div>
-              ${breakdown.map(b=> `
-                <div class="cat-dist-row">
-                  <span class="cat-dist-name">${esc(b.category)}</span>
-                  <span class="cat-dist-count">${esc(b.count)}건</span>
-                </div>
-              `).join('')}
-            ` : `<div class="pi-note">공종 데이터가 없습니다.</div>`}
           </div>
         </div>
       </div>
