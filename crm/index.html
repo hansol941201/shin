@@ -4679,7 +4679,16 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 하는 집계를 그대로 재사용할 뿐, 별도로 저장하지 않는다(§8).
   function buildGlanceStats(co){
     const { stages, currentIdx, hasAny } = buildProgressStages(co);
-    const stageText = hasAny ? `${stages[currentIdx].label} ${PROGRESS_STATUS_LABEL[stages[currentIdx].state]}` : '미확인';
+    // §MOU 체결 업체의 단계 판정 예외 처리 라운드 §1: MOU가 실제로 체결된 업체(mouDone===
+    // true, buildProgressStages가 이미 그 신호만으로 done 판정)는 "MOU 완료"가 아니라
+    // "협약 완료"로 표시한다 — 다른 단계 조합은 전혀 바꾸지 않는다. 1·2차 미팅 기록이 아예
+    // 없이 MOU만 체결된 경우(§9 사례 A) 안내 문구를 별도로 붙인다 — 빈 원(미도달 표시)이
+    // "누락"/"미완료 경고"로 오해되지 않게 하기 위함(§ 요구사항).
+    const curStage = hasAny ? stages[currentIdx] : null;
+    const isMouDone = curStage && curStage.key === 'mou' && curStage.state === 'done';
+    const stageText = hasAny ? (isMouDone ? '협약 완료' : `${curStage.label} ${PROGRESS_STATUS_LABEL[curStage.state]}`) : '미확인';
+    const skippedMeetings = isMouDone && stages.find(s=>s.key==='m1').state !== 'done' && stages.find(s=>s.key==='m2').state !== 'done';
+    const stageNote = skippedMeetings ? '1·2차 미팅 없이 MOU 체결' : '';
     const usage = buildPourUsageSummary(co);
     const topCats = usage ? usage.categoryTop.slice(0, 2) : [];
     // §첫화면 단순화 라운드(§4): 첫 화면 표에서 "토탈 매출" 컬럼을 뺀 대신, 이 값이 사라지지
@@ -4688,6 +4697,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const revenue = getTotalRevenue(co);
     return {
       stageText,
+      stageNote,
       mainCategoryText: topCats.length ? topCats.map(([name])=> name).join(' · ') : '—',
       mainCategorySub: topCats.length ? topCats.map(([name,count])=> name + ' ' + count).join(' · ') : '',
       pourCount: usage ? usage.totalCount : 0,
@@ -4700,7 +4710,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!wrap) return;
     const g = buildGlanceStats(co);
     wrap.innerHTML = `
-      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">현재 단계</div><div class="cdash-glance-stat-value">${esc(g.stageText)}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">현재 단계</div><div class="cdash-glance-stat-value">${esc(g.stageText)}</div>${g.stageNote ? `<div class="cdash-glance-stat-sub">${esc(g.stageNote)}</div>` : ''}</div>
       <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">주요 시공</div><div class="cdash-glance-stat-value">${esc(g.mainCategoryText)}</div>${g.mainCategorySub ? `<div class="cdash-glance-stat-sub">${esc(g.mainCategorySub)}</div>` : ''}</div>
       <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">시공실적</div><div class="cdash-glance-stat-value">${g.pourCount ? `${g.pourCount}건` : '없음'}</div>${g.pourLatestYear ? `<div class="cdash-glance-stat-sub">최근 ${esc(g.pourLatestYear)}년</div>` : ''}</div>
       <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">토탈 매출</div><div class="cdash-glance-stat-value${g.revenueText ? '' : ' is-muted'}">${g.revenueText ? esc(g.revenueText) : '데이터 없음'}</div></div>
@@ -5207,11 +5217,18 @@ window.SHIN2_CRM_APP_INIT = function(){
   function computeNextActionLabel(progress){
     if(!progress.hasAny) return null;
     const byKey = {}; progress.stages.forEach(s=>{ byKey[s.key] = s; });
+    // §MOU 체결 업체의 단계 판정 예외 처리 라운드 §1~2: MOU 체결(mouDone===true, 원본의
+    // 실제 서명완료 신호)이 있으면 1차/2차 미팅 기록 유무와 무관하게 항상 최우선으로 "행동
+    // 없음"을 반환한다 — 예전엔 q→m1→m2→mou 순서로만 검사해서, 미팅 없이 바로 MOU를 체결한
+    // 업체(질문서는 완료, 1차/2차미팅 기록 자체가 없음)가 "1차 미팅 제안"으로 잘못
+    // 표시됐다(§9 실제 조사로 확인된 버그). MOU가 이미 끝났으면 그 이전 단계로 절대
+    // 되돌리지 않는다(§ "상위 단계의 확정 기록이 있으면 하위 단계 기록이 없어도 상위 단계
+    // 유지").
+    if(byKey.mou.state === 'done') return null;
     if(byKey.q.state !== 'done') return null; // §10: 질문서 회신 전 확정 로직 없음
     if(byKey.m1.state !== 'done') return '1차 미팅 제안'; // §8-A
     if(byKey.m2.state !== 'done') return '2차 미팅 제안'; // §8-B
-    if(byKey.mou.state !== 'done') return 'MOU 체결 진행'; // §8-C
-    return null; // §8-D/§11: MOU 완료 -> 다음 행동 없음
+    return 'MOU 체결 진행'; // §8-C (mou.state는 이미 위에서 'done'이 아님을 확인함)
   }
   function buildNextActionCellHtml(progress){
     const label = computeNextActionLabel(progress);
@@ -6585,7 +6602,13 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
     if(co.partnerStatus === 'partner') facts.push({ text: '협력업체', source: 'partnerDashboard' });
     const { stages, currentIdx, hasAny } = buildProgressStages(co);
-    if(hasAny) facts.push({ text: '현재 ' + stages[currentIdx].label + ' ' + PROGRESS_STATUS_LABEL[stages[currentIdx].state], source: 'partnerStage' });
+    if(hasAny){
+      // §MOU 체결 업체의 단계 판정 예외 처리 라운드: buildGlanceStats와 동일한 문구 규칙 —
+      // MOU가 실제로 체결됐으면 "MOU 완료" 대신 "협약 완료"로 표시한다.
+      const curStage = stages[currentIdx];
+      const isMouDone = curStage.key === 'mou' && curStage.state === 'done';
+      facts.push({ text: '현재 ' + (isMouDone ? '협약 완료' : curStage.label + ' ' + PROGRESS_STATUS_LABEL[curStage.state]), source: 'partnerStage' });
+    }
     const hadMeeting = hasAny && stages.some(s=> (s.key === 'm1' || s.key === 'm2') && s.state === 'done');
     if(hadMeeting) facts.push({ text: '과거 미팅 진행 이력 있음', source: 'partnerStage' });
     const reqCount = (co.requestedMaterials || []).length;
@@ -7691,7 +7714,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="cdash-doc-status-chips">
         ${list.map(d=> `<span class="cdash-doc-status-chip${d.count ? ' is-on' : ''}">${esc(d.label)} ${esc(d.statusText)}</span>`).join('')}
       </div>
-      ${mouMismatch ? `<div class="cdash-doc-status-note">MOU 체결서 미등록 (진행상태는 MOU 완료로 표시됨)</div>` : ''}
+      ${mouMismatch ? `<div class="cdash-doc-status-note">MOU 체결서 미등록 (진행상태는 협약 완료로 표시됨)</div>` : ''}
     `;
   }
 
