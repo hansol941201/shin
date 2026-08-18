@@ -5619,10 +5619,27 @@
       return raw ? JSON.parse(raw) : null;
     }catch(e){ return null; }
   }
+  // [버그 수정 — "지식 추가에서 저장을 눌러도 아무 반응이 없다"] 이 setItem은 이 파일에서
+  // 거의 유일하게 try/catch 없이 노출돼 있던 저장 호출이었다. 이 origin(github.io 전체가 한
+  // origin — /shin, /shin/v2, /shin/crm이 같은 localStorage를 공유한다)의 용량이 가득 찬
+  // 기기에서는 QuotaExceededError가, localStorage가 차단된 브라우저에서는 SecurityError가
+  // 그대로 밖으로 던져졌다. 그러면 호출부(handleSave)의 closeOverlay()/renderKbList()까지
+  // 통째로 중단되면서 "저장도 안 되고, 모달도 안 닫히고, 목록도 그대로"인 무반응 증상이 됐다.
+  // 자료실 writeArr/writeObj(§ 폴더 일괄등록 라운드)와 동일한 패턴으로 성공 여부를 반환한다.
+  // 저장 키/데이터 구조는 전혀 바뀌지 않는다 — 예외를 밖으로 흘리지 않고 결과만 알려줄 뿐이다.
   function saveKb(){
     const kbSnapshot = { items: kbState.items, contacts: kbState.contacts, importBatches: kbState.importBatches };
-    localStorage.setItem(KB_STORAGE_KEY, JSON.stringify(kbSnapshot));
+    let ok = true;
+    try{
+      localStorage.setItem(KB_STORAGE_KEY, JSON.stringify(kbSnapshot));
+    }catch(e){
+      ok = false;
+      console.error('[지식] 로컬 저장 실패(저장 공간 초과 가능)', e);
+    }
+    // 로컬 저장이 실패해도 클라우드 push는 그대로 시도한다 — 로그인된 기기라면 여기서 데이터가
+    // 살아남는다(기존 동작과 동일한 경로/키를 그대로 사용).
     if(window.__shin2CloudSync) window.__shin2CloudSync.push('knowledge', kbSnapshot);
+    return ok;
   }
 
   function seedIfEmpty(){
@@ -6579,7 +6596,14 @@
         Object.keys(record).forEach(k=>{ if(!(k in payload) && PRESERVE_KEYS.indexOf(k) === -1) delete record[k]; });
         Object.assign(record, payload);
       }
-      saveKb();
+      // 저장에 실패했다면 아무 일도 없었던 것처럼 조용히 넘어가지 않는다 — 방금 추가한 항목만
+      // 메모리에서 되돌리고(기존 항목은 건드리지 않는다), 입력 내용을 잃지 않도록 모달을 열어둔
+      // 채로 이유를 알려준다. 예전에는 여기서 예외가 나면서 아래 두 줄이 실행되지 않았다.
+      if(!saveKb()){
+        if(isNew) kbState.items.pop();
+        alert('이 브라우저의 저장 공간이 가득 차 지식을 저장하지 못했습니다.\n자료실의 파일을 정리하거나 클라우드 로그인 후 다시 시도해주세요.\n(입력하신 내용은 그대로 남아 있습니다)');
+        return;
+      }
       closeOverlay();
       renderKbList();
     }
