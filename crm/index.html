@@ -2650,7 +2650,10 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
 
   // ---- companies (기존 저장소, 재사용만) ----
   function loadCompanies(){ return readArr(CO_KEY); }
-  function saveCompanies(list){ writeArr(CO_KEY, list); } // §37: 화면 개편과 무관하게 항상 이 키 그대로 유지
+  // §렉 수정 라운드: buildCrmNormNameCounts()가 이 companies 목록을 정규화해 캐시해 두므로
+  // (아래 정의), 목록이 실제로 바뀔 수 있는 유일한 지점인 여기서 캐시를 비운다 — 매출/미수금
+  // 중복업체 판정이 오래된 업체 목록을 보는 일이 없도록 항상 다음 조회 때 새로 계산하게 한다.
+  function saveCompanies(list){ writeArr(CO_KEY, list); _crmNormNameCountsCache = null; } // §37: 화면 개편과 무관하게 항상 이 키 그대로 유지
   function findCompany(id){ return loadCompanies().find(c=> c.id === id) || null; }
   function addCompany(fields){
     // createdAt은 §영업 대시보드 카드 라운드에서 "등록일" 표시를 위해 새로 추가하는 업체부터만
@@ -3546,7 +3549,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   }
   // buildRevenue2025Index: 스냅샷을 정규화 업체명으로 그룹핑하고 매출을 합산한다(§중복 업체
   // — 같은 정규화 업체가 여러 줄이면 합산, 원본 행은 rows[]로 추적 가능하게 유지).
+  // §렉 수정 라운드: window.SHIN2_REVENUE_2025_SNAPSHOT은 정적 임베드 데이터라 절대 안
+  // 바뀐다 — getCompany2025Revenue/getCompanyTotalRevenueAllYears가 업체마다(때로는 목록
+  // 렌더링당 348번) 이 함수를 부르는데 캐시가 없어 매번 스냅샷 전체를 다시 인덱싱했다
+  // (buildPourRecordIndex와 같은 문제, §같은 패턴으로 고침). 결과는 순수 계산이라 캐시해도
+  // 값이 바뀌지 않는다.
+  let _revenue2025IndexCache = null;
   function buildRevenue2025Index(){
+    if(_revenue2025IndexCache) return _revenue2025IndexCache;
     const snapshot = window.SHIN2_REVENUE_2025_SNAPSHOT || [];
     const index = new Map(); // normName -> { sampleName, rows:[{name,revenue2025,sourceRow}], total }
     snapshot.forEach(r=>{
@@ -3557,6 +3567,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       g.rows.push(r);
       g.total += r.revenue2025;
     });
+    _revenue2025IndexCache = index;
     return index;
   }
   // buildUnregisteredCompanies: 매출 스냅샷에는 있지만 정규화 후에도 현재 CRM companies에
@@ -3584,7 +3595,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // ambiguous:true로 표시하고 값을 반환하지 않는다(§매칭 안전 원칙, "부분일치·유사도만으로
   // 자동 연결 금지"의 연장선). buildCrmNormNameCounts()는 순수 계산이라 저장은 전혀 하지
   // 않는다.
+  // §렉 수정 라운드: getCompany2024/2025Revenue가 업체마다 이 함수를 부르는데, companies를
+  // 매번 localStorage에서 다시 읽고(readArr) 348건을 다시 정규화하는 게 캐시 없이는 아주
+  // 무거웠다(§ 총 매출/실적↔매출 계산 경로에서 특히 — 목록 렌더링 1번에 최대 348회 호출).
+  // companies는 (§POUR 스냅샷과 달리) 실제로 바뀔 수 있어 캐시를 saveCompanies()에서
+  // 무효화한다(위 §37 근처) — "회사 목록이 실제로 저장될 때만" 다시 계산한다.
+  let _crmNormNameCountsCache = null;
   function buildCrmNormNameCounts(){
+    if(_crmNormNameCountsCache) return _crmNormNameCountsCache;
     const companies = loadCompanies();
     const counts = new Map();
     companies.forEach(c=>{
@@ -3592,6 +3610,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       if(!norm) return;
       counts.set(norm, (counts.get(norm) || 0) + 1);
     });
+    _crmNormNameCountsCache = counts;
     return counts;
   }
   function getCompany2025Revenue(co){
@@ -3611,7 +3630,10 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
      지어내지 않기). 2024년 파일이 나중에 오면 이 함수는 코드 변경 없이 자동으로 실제 값을
      반환하게 된다.
      ========================================================================== */
+  // §렉 수정 라운드: 정적 스냅샷 기반 — buildRevenue2025Index와 같은 이유로 캐시.
+  let _revenue2024IndexCache = null;
   function buildRevenue2024Index(){
+    if(_revenue2024IndexCache) return _revenue2024IndexCache;
     const snapshot = window.SHIN2_REVENUE_2024_SNAPSHOT || [];
     const index = new Map();
     snapshot.forEach(r=>{
@@ -3622,6 +3644,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       g.rows.push(r);
       g.total += r.revenue2024;
     });
+    _revenue2024IndexCache = index;
     return index;
   }
   function getCompany2024Revenue(co){
@@ -3666,7 +3689,12 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // buildRevenue2026Index: 정규화 업체명으로 그룹핑, sourceType별 합계와 전체 합계를
   // 함께 계산한다(§2 "2026 총매출" = 4개 시트 합계, §3 "자재판매는 상세보기에서 별도
   // 구분"). 원본 행은 rows[]로 그대로 보존(§7 "원본 행은 상세보기에서 추적 가능").
+  // §렉 수정 라운드: 정적 스냅샷 기반 — buildRevenue2025Index와 같은 이유로 캐시. 이
+  // 함수는 "총 매출"/"실적↔매출" 계산 경로를 통해 업체마다 반복 호출되어(348개 × 목록
+  // 렌더링마다) 캐시 없이는 특히 무거웠다.
+  let _revenue2026IndexCache = null;
   function buildRevenue2026Index(){
+    if(_revenue2026IndexCache) return _revenue2026IndexCache;
     const snapshot = window.SHIN2_REVENUE_2026_SNAPSHOT || [];
     const index = new Map(); // normName -> { sampleName, rows:[], total, byType:{} }
     snapshot.forEach(r=>{
@@ -3678,6 +3706,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       g.total += r.amount;
       g.byType[r.sourceType] = (g.byType[r.sourceType] || 0) + r.amount;
     });
+    _revenue2026IndexCache = index;
     return index;
   }
   // getCompany2026Revenue: CRM에는 있지만 매출파일에 없으면 null(매출자료 없음),
@@ -3713,7 +3742,10 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   }
   // buildReceivable2026Index: 정규화 업체명으로 그룹핑해 미수금을 합산한다. 0원/마이너스
   // 행도 그대로 포함(§14 "완납"과 "데이터 없음"을 구분하려면 0원 존재 자체가 필요).
+  // §렉 수정 라운드: 정적 스냅샷 기반 — buildRevenue2025Index와 같은 이유로 캐시.
+  let _receivable2026IndexCache = null;
   function buildReceivable2026Index(){
+    if(_receivable2026IndexCache) return _receivable2026IndexCache;
     const snapshot = window.SHIN2_RECEIVABLES_2026_SNAPSHOT || [];
     const index = new Map(); // normName -> { sampleName, rows:[], total }
     snapshot.forEach(r=>{
@@ -3724,6 +3756,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       g.rows.push(r);
       g.total += r.amount;
     });
+    _receivable2026IndexCache = index;
     return index;
   }
   // getCompanyReceivable: CRM 업체 기준 — 미수금 데이터 자체가 없으면 null, 있으면
@@ -3791,7 +3824,16 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
      있다 — 이건 매칭 버그가 아니라 임베드 데이터의 연도 범위 한계이며, 완료 보고에서
      별도로 밝힌다.
      ========================================================================== */
+  // §렉 수정 라운드: window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT(1149건)은 페이지 로드 후
+  // 절대 바뀌지 않는 정적 임베드 데이터인데, 이 함수는 캐시 없이 호출될 때마다 그 1149건
+  // 전체를 다시 순회해 새 Map을 만들었다 — getTotalPourRecordsForCompany 계열 함수가
+  // 업체마다(때로는 정렬 비교마다 여러 번) 이 함수를 부르면서, 목록을 검색/필터/정렬할
+  // 때마다 업체 수 × 1149건이 반복 재계산되어 심한 렉의 원인이었다. 원본 스냅샷이 불변이라
+  // 결과 Map을 한 번만 만들어 재사용해도 값은 완전히 동일하다(순수 함수, 캐시가 답을
+  // 바꾸지 않음) — 그래서 최초 1회만 계산하고 이후 호출은 캐시를 그대로 반환한다.
+  let _pourRecordIndexCache = null;
   function buildPourRecordIndex(){
+    if(_pourRecordIndexCache) return _pourRecordIndexCache;
     const snapshot = window.SHIN2_POUR_TRACK_RECORD_SNAPSHOT || [];
     const index = new Map(); // normName -> records[]
     snapshot.forEach(r=>{
@@ -3800,6 +3842,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       if(!index.has(norm)) index.set(norm, []);
       index.get(norm).push(r);
     });
+    _pourRecordIndexCache = index;
     return index;
   }
   // getLatestPourRecordForCompany: 정규화 업체명이 일치하는 스냅샷 레코드 중 "가장 최근
@@ -4213,11 +4256,15 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 채워진다). list: [{co, type, anchorTs, days, activity?, hasPour?}], counts: {total,
   // firstActivity, l2Stall, reuse, unknown}.
   let managementNeedCache = { list: [], counts: { total:0, firstActivity:0, l2Stall:0, reuse:0, unknown:0 } };
-  function computeManagementNeedList(enrichedRows){
+  // pourLatestIndex: renderList()가 이미 한 번만 만들어 둔 D.buildPourLatestIndex()
+  // (Map<companyId, 최근POUR레코드|null>)를 그대로 받아 hasPour만 조회한다(§렉 수정
+  // 라운드 — classifyManagementNeed 안에서 업체마다 POUR 스냅샷을 다시 인덱싱하지 않도록).
+  function computeManagementNeedList(enrichedRows, pourLatestIndex){
     const list = [];
     const counts = { total:0, firstActivity:0, l2Stall:0, reuse:0, unknown:0 };
     enrichedRows.forEach(r=>{
-      const result = classifyManagementNeed(r.co, r.acts, r.progress);
+      const hasPour = pourLatestIndex.get(r.co.id) != null;
+      const result = classifyManagementNeed(r.co, r.acts, r.progress, hasPour);
       if(result.type === 'unknown'){ counts.unknown++; return; } // §4: 판정불가는 기본 관리필요 숫자에 포함하지 않는다
       if(result.type === 'none') return;
       counts.total++; counts[result.type] = (counts[result.type] || 0) + 1;
@@ -4452,7 +4499,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     // §관리필요 업체 라운드: renderList()가 이미 매번 계산해 둔 enriched(co/acts/progress)를
     // 그대로 재사용해 관리필요 목록을 한 번만 계산하고, 모달/버튼/고객카드 배너가 모두 이
     // 캐시(managementNeedCache)만 조회한다(§ "같은 계산을 여러 곳에서 반복하지 않는다").
-    managementNeedCache = computeManagementNeedList(enriched);
+    managementNeedCache = computeManagementNeedList(enriched, pourLatestIndex);
     filterCounts.manageNeeded = managementNeedCache.counts.total;
     renderFilterChips(filterCounts);
 
@@ -4984,7 +5031,10 @@ window.SHIN2_CRM_APP_INIT = function(){
   function renderMgmtNeedBanner(co){
     const wrap = document.getElementById('cdashMgmtNeedBanner');
     if(!wrap) return;
-    const result = classifyManagementNeed(co, D.activitiesForCompany(co.id), buildProgressStages(co));
+    // 카드는 업체 하나만 열리므로 getTotalPourRecordsForCompany(co) 1회 호출은 렉 원인이
+    // 아니다(렉은 renderList()가 348개 업체 전부에 대해 이걸 반복 호출하던 것이었다).
+    const hasPour = getTotalPourRecordsForCompany(co).length > 0;
+    const result = classifyManagementNeed(co, D.activitiesForCompany(co.id), buildProgressStages(co), hasPour);
     if(result.type !== 'firstActivity' && result.type !== 'l2Stall' && result.type !== 'reuse'){
       wrap.innerHTML = '';
       return;
@@ -5891,7 +5941,15 @@ window.SHIN2_CRM_APP_INIT = function(){
      | 'unknown'(판정불가 — L3/L4 실사용 증거가 POUR 실적뿐이고 정확한 날짜를 가진 활동
      기록이 하나도 없어 "마지막 관련 활동" 날짜를 계산할 수 없는 경우, §4).
      ========================================================================== */
-  function classifyManagementNeed(co, acts, progress){
+  // §렉 수정 라운드: hasPour를 이 함수 안에서 getTotalPourRecordsForCompany(co)로 직접
+  // 계산하면 buildPourRecordIndex()(1149건 POUR 스냅샷 전체를 매번 새 Map으로 재구성,
+  // 캐시 없음)가 업체마다 다시 실행된다 — 목록 렌더링 때마다(검색/필터/정렬/페이지 전환마다)
+  // 348개 업체 × 매번 1149건 재인덱싱이 반복되어 심한 렉의 원인이었다. 이 코드베이스가
+  // 이미 같은 문제를 피하려고 만들어 둔 D.buildPourLatestIndex()(스냅샷을 딱 한 번만
+  // 인덱싱해 Map<companyId,최근레코드>로 재사용하는 패턴, buildPourLatestIndex 주석 참고)를
+  // 그대로 재사용하도록, hasPour를 호출부에서 미리 계산해 인자로 받는다 — 계산 결과(어떤
+  // 업체가 POUR 실적이 있는지)는 완전히 동일하고, "매번 다시 계산하는 방식"만 바꿨다.
+  function classifyManagementNeed(co, acts, progress, hasPour){
     const mouStage = progress.hasAny ? progress.stages.find(s=> s.key === 'mou') : null;
     const mouDoneTs = (mouStage && mouStage.state === 'done' && typeof mouStage.ts === 'number') ? mouStage.ts : null;
     if(mouDoneTs == null) return { type:'none' }; // MOU/협약 자체가 완료되지 않은 업체는 이 기능의 판정 대상이 아니다(§3 전제조건)
@@ -5905,7 +5963,6 @@ window.SHIN2_CRM_APP_INIT = function(){
       .filter(a=> !isNaN(a.ts)) // §10: Invalid Date는 판정에서 제외(억지 판정 금지)
       .sort((a,b)=> a.ts - b.ts); // 오래된 순
 
-    const hasPour = getTotalPourRecordsForCompany(co).length > 0;
     const actsAfterMou = actsWithTs.filter(a=> a.ts > mouDoneTs);
     const hasAdvancedEvidence = hasPour || actsAfterMou.length >= 2;
 
