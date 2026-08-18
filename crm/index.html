@@ -154,10 +154,10 @@
   }
   .co-row:hover{ background:var(--bg); }
   .col-name{ flex:1.1 1 140px; min-width:0; display:flex; flex-direction:column; gap:2px; font-weight:600; color:var(--text); font-size:13px; }
-  /* §최근 시공 위치 변경 라운드: col-name-top은 이제 "이름+배지" 묶음과 최근 시공을 같은
-     줄에 나란히 놓는 flex-wrap 컨테이너다 — 공간이 부족할 때만(§7) 최근 시공이 자연스럽게
-     다음 줄로 내려간다(개별 강제 줄바꿈 없이 flex-wrap만으로 처리, 새 로직 아님). */
-  .col-name-top{ display:flex; flex-wrap:wrap; align-items:baseline; column-gap:12px; row-gap:1px; min-width:0; }
+  /* §최근 실적 독립 컬럼 복원 라운드: 업체명 오른쪽에 최근 실적을 붙였던 걸 취소하고, 다시
+     독립 컬럼(.col-pour)으로 분리했다 — 협력사 컬럼(.col-name-top)에는 등급/업체명/미수금
+     배지만 남는다(§5). */
+  .col-name-top{ display:flex; align-items:center; gap:5px; min-width:0; white-space:nowrap; overflow:hidden; }
   .co-name-badges{ display:flex; align-items:center; gap:5px; min-width:0; max-width:100%; }
   .co-name-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
   .col-recent{ flex:1.4 1 150px; min-width:0; color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -167,6 +167,8 @@
   /* §2026 매출/자재판매/미수금 라운드: 2026 매출 셀(클릭 가능) + 업체명 옆 미수금 인라인
      배지(§15 "행 전체를 빨간색으로 칠하지 마세요" — 작은 배지만). */
   .revenue-cell-btn{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  /* §최근 실적 독립 컬럼 복원 라운드: "1년 실적" 클릭 -> 1년 실적 Drawer(§7 새로 추가). */
+  .yr-cell-btn{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
   .receivable-inline-badge{
     display:inline-flex; align-items:center; height:18px; padding:0 6px; margin-left:2px; font-size:10.5px; font-weight:700;
     color:#B91C1C; background:#FEF2F2; border:1px solid #FCD5D5; border-radius:9px; cursor:pointer; font-family:inherit; white-space:nowrap;
@@ -237,23 +239,20 @@
      "최근 시공"(구 "최근 시공일") 컬럼은 이제 연도만이 아니라 실제 POUR 시공실적 원본의
      가장 최근 실적 1건에서 연도/공종/현장명을 함께 보여준다(§3~9, buildLatestPourDisplay).
      현장명이 길면 말줄임표 처리하고 title 속성으로 전체 텍스트를 볼 수 있게 한다(§12). */
-  /* §최근 요청 라운드: "최근 시공"을 협력사 컬럼 안으로 옮겨서 버튼으로 만들었다(§2/§3
-     클릭 분리) — 배경/테두리 없는 텍스트 버튼, hover 시에만 살짝 강조.
-     §최근 시공 위치 변경 라운드: 업체명 아래(세로 배치) 대신 업체명 오른쪽(같은 줄, 가로
-     배치)으로 옮겼다 — 값 계산/선정 로직은 전혀 안 바꾸고 표시 위치와 레이아웃만 바꿨다.
-     한 줄 기본(§6), 공간 부족 시에만 부모(.col-name-top)의 flex-wrap으로 다음 줄로
-     내려간다(§7). 업체명보다 작은 글씨(§4), 연도·공종은 진하게/현장명은 연한 회색으로
-     구분한다(§5). */
+  /* §최근 실적 독립 컬럼 복원 라운드: "업체명 오른쪽에 붙이는 방식"을 취소하고 다시 독립
+     컬럼(.col-pour, 헤더 라벨 "최근 실적")으로 되돌렸다 — 계산/선정 로직은 그대로, 표시
+     위치만 바뀐다(§1/§2/§11). 컬럼 폭이 고정되어 있어 업체명 길이와 무관하게 모든 행에서
+     시작 위치가 동일하다(§4 "정렬 통일"). 첫 줄(연도·공종)/둘째 줄(현장명) 2줄 고정, 첫
+     줄은 진한 텍스트·둘째 줄은 연한 회색(§4). */
+  .col-pour{ flex:0 0 150px; min-width:0; font-size:12px; }
   .lastpour-cell{
-    display:inline-block; min-width:0; max-width:100%; text-align:left; vertical-align:baseline;
-    background:none; border:none; padding:0; cursor:pointer; font-family:inherit;
-    font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    display:flex; flex-direction:column; gap:1px; line-height:1.3; min-width:0; max-width:100%; text-align:left;
+    background:none; border:none; padding:0; cursor:pointer; font-family:inherit; width:100%;
   }
   .lastpour-cell.lastpour-empty{ cursor:default; }
-  .lastpour-cell .lastpour-main{ font-weight:700; color:var(--text-muted); }
+  .lastpour-cell .lastpour-main{ font-weight:700; color:var(--text); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .lastpour-cell:hover:not(.lastpour-empty) .lastpour-main{ text-decoration:underline; }
-  .lastpour-cell .lastpour-sep{ color:var(--text-faint); }
-  .lastpour-cell .lastpour-site{ color:var(--text-faint); font-weight:400; }
+  .lastpour-cell .lastpour-site{ color:var(--text-faint); font-weight:400; font-size:10.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-stage{ flex:0 0 112px; font-size:12px; white-space:nowrap; } /* 더 이상 목록에 렌더링하지 않지만 클래스는 남겨둔다 */
   /* "최근 요청" 컬럼 — 첫 줄(작은 날짜)/둘째 줄(요청 내용), §10. */
   .col-request{ flex:0 0 150px; min-width:0; font-size:12px; }
@@ -1546,11 +1545,11 @@ html,body{background:#F7F9FC;font-size:13px}
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
    흐름, §3). 제거한 최근 실적 활동/전체 실적/토탈 매출 컬럼의 grid-template-columns 슬롯도
    같이 뺐다 — 다른 CSS 규칙/색상 토큰은 그대로 둔다(§ 디자인 단순화, 로직 변경 아님). */
-.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(260px,1.4fr) 150px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
+.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(150px,1fr) 150px 150px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
 .co-table-head{margin-top:8px;padding:8px 12px!important;background:#FBFCFE;border:1px solid var(--line);border-bottom-color:#DDE4ED;border-radius:7px 7px 0 0;font-size:10.5px;color:#596A82;text-align:left}
 .co-list{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 7px 7px;overflow:hidden}
 .co-row{padding:5px 12px!important;min-height:42px!important;border-bottom:1px solid #EDF1F5!important;background:#fff}.co-row:last-child{border-bottom:0!important}.co-row:hover{background:#F8FAFD!important}
-.col-name,.col-recent,.col-yr,.col-total,.col-revenue,.col-yr-revenue,.col-cat,.col-contrib,.col-trend{min-width:0!important;flex:none!important;text-align:left!important}
+.col-name,.col-recent,.col-pour,.col-yr,.col-total,.col-revenue,.col-yr-revenue,.col-cat,.col-contrib,.col-trend{min-width:0!important;flex:none!important;text-align:left!important}
 .col-name{font-size:11.5px!important;font-weight:700!important;gap:6px!important}.col-recent{font-size:10.5px!important;line-height:1.3!important;color:#53637A!important;white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.col-recent .recent-date{display:block;color:#7D8A9C;font-size:9.5px;margin:0}
 .col-yr{font-size:12px!important;font-weight:750!important;color:#2E78D2!important}.col-total{font-size:12px!important;font-weight:700!important;color:#26364D!important}.col-revenue,.col-yr-revenue{font-size:11.5px!important;font-weight:700!important;color:#24324A!important;white-space:nowrap}.col-cat{font-size:10.5px!important;color:#46566E!important;white-space:normal!important;line-height:1.3}
 /* 실적↔매출 근거 popover(§9) — 클릭/포커스 시에만 보인다, 기본은 숨김. */
@@ -1569,12 +1568,12 @@ html,body{background:#F7F9FC;font-size:13px}
 #cardView .section,#cardView .card-section,#cardView .detail-section{border-color:#E4EAF1!important;box-shadow:none!important}
 #cardView table{border-collapse:collapse}#cardView th{color:#66758D!important;font-size:10.5px!important;font-weight:650!important}#cardView td{font-size:11px!important}#cardView tr{border-color:#E9EEF4!important}
 
-@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:190px 130px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:780px}.co-list{overflow:visible}#listView{overflow-x:auto}}
-@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:780px}.co-row{grid-template-columns:190px 130px 50px 74px 90px 100px 62px!important}}
+@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 120px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:900px}.co-list{overflow:visible}#listView{overflow-x:auto}}
+@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:900px}.co-row{grid-template-columns:140px 130px 120px 50px 74px 90px 100px 62px!important}}
 
 /* HANSOL CRM corporate visual override */
 :root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(260px,1.4fr) 160px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:44px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 160px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
 </style>
 </head>
 <body>
@@ -1651,13 +1650,13 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
         <option value="name">업체명순</option>
       </select>
     </div>
-    <!-- §최근 요청 라운드: "최근 시공" 독립 컬럼을 없애고 "협력사" 컬럼 안(업체명 아래)에
-         작게 붙였다(§1/§2) — 업체명 클릭은 고객카드, 최근 시공 부분 클릭은 최근 시공
-         Drawer로 분리한다(§3). 비어난 자리에는 한솔 업무페이지와 이미 공용인
-         customerActivities(전화기록/업무입력 등, §5/§6에서 확인 — 별도 저장소 새로 안 만듦)
-         에서 기존 요청자료 추출 로직을 재사용해 계산한 "최근 요청"을 넣는다(§4/§9). -->
+    <!-- §최근 실적 독립 컬럼 복원 라운드: "최근 시공"을 업체명 옆에 붙이던 걸 취소하고
+         독립 컬럼(라벨은 "최근 실적"으로 변경)으로 되돌렸다(§1/§2/§3) — 협력사 컬럼에는
+         등급/업체명/미수금 배지만 남는다(§5). 최종 컬럼 순서: 협력사/최근 실적/최근 요청/
+         1년 실적/2026 매출/실적↔매출/주요 공종/최근 흐름(§2). -->
     <div class="co-table-head">
       <div class="col-name">협력사</div>
+      <div class="col-pour">최근 실적</div>
       <div class="col-request">최근 요청</div>
       <div class="col-yr">1년 실적</div>
       <div class="col-yr-revenue">2026 매출</div>
@@ -4102,7 +4101,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       const grade = getCompanyGrade(co);
       const gradeHtml = grade ? `<span class="grade-badge ${grade.badgeClass}">${esc(grade.label)}</span>` : '';
       const yr = getThisYearPourCount(co);
-      const yrHtml = yr == null ? '<span class="data-none">데이터 없음</span>' : `${yr}`;
+      // §최근 실적 독립 컬럼 복원 라운드: "1년 실적" 클릭 -> 1년 실적 Drawer(§7). 계산값(yr)은
+      // 그대로 getThisYearPourCount()이고, 버튼으로 감싸서 클릭만 가능하게 했을 뿐이다.
+      const yrHtml = yr == null
+        ? '<span class="data-none">데이터 없음</span>'
+        : `<button type="button" class="yr-cell-btn" data-yr-detail="${esc(co.id)}">${yr}</button>`;
       // §2026 매출/자재판매/미수금 라운드: "2026 매출" 컬럼 — getCompany2026Revenue()
       // (컨설팅+기술자문료+특허료+자재판매 합계, §2)를 쓴다. null=매출자료 없음, 0=실제
       // 0원을 그대로 구분해서 보여준다(§8 "0원과 데이터 없음 구분"). 클릭하면 구분별 상세
@@ -4118,18 +4121,20 @@ window.SHIN2_CRM_APP_INIT = function(){
       const receivableBadgeHtml = (receivable && receivable.total > 0)
         ? `<button type="button" class="receivable-inline-badge" data-receivable-detail="${esc(co.id)}">미수금 ${esc(fmtKrwCompact(receivable.total))}</button>`
         : '';
-      // §최근 요청 라운드: "최근 시공"을 협력사 컬럼 안으로 옮겼다(§1/§2) — 값 계산은
-      // 그대로 pourLatestIndex(위에서 한 번만 계산) 조회일 뿐, 새 계산이 아니다. 업체명
-      // 클릭과 분리해서 클릭 가능하게 button으로 감싼다(§3) — 클릭하면 최근 시공 Drawer가
-      // 열린다. 현장명이 길면 CSS로 말줄임표 처리하고 title로 전체를 볼 수 있다(§12).
-      // §최근 시공 위치 변경 라운드: 업체명 아래 별도 줄이 아니라 업체명 오른쪽, 같은 줄에
-      // "연도 · 공종 · 현장명" 한 줄로 이어 붙인다(§ 최종 형태) — 계산/선정 로직 불변, 표시
-      // 위치·형식만 변경.
+      // §최근 요청 라운드에서 "최근 시공"을 협력사 컬럼 안으로 옮겼다가, §최근 시공 위치
+      // 변경 라운드에서 업체명 오른쪽(같은 줄)으로 바꿨는데, 업체명 길이에 따라 위치가
+      // 흔들려 지저분하다는 피드백으로 §최근 실적 독립 컬럼 복원 라운드에서 다시 독립
+      // 컬럼(.col-pour, 헤더 라벨 "최근 실적")으로 되돌렸다 — 값 계산은 여전히
+      // pourLatestIndex(위에서 한 번만 계산) 조회 그대로다(새 계산 아님, §11). 업체명 클릭과
+      // 분리해서 클릭 가능하게 button으로 감싼다(§7) — 클릭하면 최근 실적 Drawer가 열린다.
+      // 컬럼 폭이 고정되어 모든 행에서 시작 위치가 동일하다(§4). 원본에 월 정보가 아예
+      // 없다는 사실은 이미 여러 차례 확인되어 있어(POUR 원본 전체 시트 재확인 기록 참고)
+      // 연도까지만 표시하고 월을 지어내지 않는다(§ "월을 추측하지 마세요").
       const latestPourRec = pourLatestIndex.get(co.id);
       const latestPourCats = latestPourRec ? String(latestPourRec.category || '').split('\n').map(s=> s.trim()).filter(Boolean) : [];
       const lastActHtml = latestPourRec
         ? `<button type="button" class="lastpour-cell" data-pour-detail="${esc(co.id)}" title="${esc(latestPourRec.year)}${latestPourCats[0] ? ' · ' + latestPourCats[0] : ''}${latestPourRec.client ? ' · ' + latestPourRec.client : ''}">
-            <span class="lastpour-main">${esc(latestPourRec.year)}${latestPourCats[0] ? ' · ' + esc(latestPourCats[0]) : ''}</span>${latestPourRec.client ? `<span class="lastpour-sep"> · </span><span class="lastpour-site">${esc(latestPourRec.client)}</span>` : ''}
+            <span class="lastpour-main">${esc(latestPourRec.year)}${latestPourCats[0] ? ' · ' + esc(latestPourCats[0]) : ''}</span>${latestPourRec.client ? `<span class="lastpour-site">${esc(latestPourRec.client)}</span>` : ''}
           </button>`
         : '<span class="lastpour-cell lastpour-empty data-none">—</span>';
       // §4~13: "최근 요청" 컬럼 — requestHistoryIndex(전체 업무기록을 한 번만 훑어 미리
@@ -4181,9 +4186,9 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="col-name">
           <div class="col-name-top">
             <span class="co-name-badges">${gradeHtml}${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
-            ${lastActHtml}
           </div>
         </div>
+        <div class="col-pour">${lastActHtml}</div>
         <div class="col-request">${requestHtml}</div>
         <div class="col-yr">${yrHtml}</div>
         <div class="col-yr-revenue">${yrRevenueHtml}</div>
@@ -4228,7 +4233,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(co) openReceivableDetailModal(co);
       });
     });
-    // §3: 최근 시공 영역 클릭 -> 최근 시공 Drawer(업체명 클릭=고객카드와 분리).
+    // §3/§7: "최근 실적" 영역 클릭 -> 최근 실적 Drawer(업체명 클릭=고객카드와 분리).
     listEl.querySelectorAll('[data-pour-detail]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
@@ -4242,6 +4247,14 @@ window.SHIN2_CRM_APP_INIT = function(){
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-request-detail'));
         if(co) openRequestDrawer(co);
+      });
+    });
+    // §최근 실적 독립 컬럼 복원 라운드 §7: "1년 실적" 클릭 -> 1년 실적 Drawer(신규).
+    listEl.querySelectorAll('[data-yr-detail]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const co = D.findCompany(btn.getAttribute('data-yr-detail'));
+        if(co) openYearPourDrawer(co);
       });
     });
     renderPagination(totalPages);
@@ -5262,6 +5275,15 @@ window.SHIN2_CRM_APP_INIT = function(){
     const y = new Date().getFullYear();
     return records.filter(r=> r.year === y).length;
   }
+  // §최근 실적 독립 컬럼 복원 라운드: "1년 실적" 클릭 시 Drawer에 보여줄 원본 목록만
+  // 뽑는다 — getThisYearPourCount()와 완전히 같은 필터(co.pourTrackRecords 중 올해 것)를
+  // 그대로 재사용한다(계산식 자체를 바꾸지 않음, §11). 개수만 보여주던 걸 그 개수를 만든
+  // 실제 레코드로 펼쳐 보여주는 것뿐이다.
+  function getThisYearPourRecords(co){
+    const records = co.pourTrackRecords || [];
+    const y = new Date().getFullYear();
+    return records.filter(r=> r.year === y).slice().sort((a,b)=> (b.sourceRow||0) - (a.sourceRow||0));
+  }
   function getTotalPourCount(co){ return (co.pourTrackRecords || []).length; }
   // §최근 활동일 정정 라운드: "최근 활동일" 컬럼에는 CRM 활동기록이 아니라 "최근 시공일"을
   // 보여달라는 요청으로 정정됐다. co.pourTrackRecords가 실제 시공실적 데이터인데, 위
@@ -5835,8 +5857,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     const root = document.getElementById('sideDrawerRoot');
     if(root) root.innerHTML = '';
   }
-  // §3: 업체명 클릭(고객카드)과 분리된, "최근 시공" 전용 Drawer — 그 업체가 매칭되는 POUR
-  // 시공실적 전체(최신순)를 보여준다. 계산은 D.getAllPourRecordsForCompany() 그대로.
+  // §3/§최근 실적 독립 컬럼 복원 라운드: 업체명 클릭(고객카드)과 분리된, "최근 실적"(구
+  // "최근 시공") 전용 Drawer — 그 업체가 매칭되는 POUR 시공실적 전체(최신순)를 보여준다.
+  // 계산은 D.getAllPourRecordsForCompany() 그대로(컬럼 이름만 바뀌었을 뿐 선정 로직 불변).
   function openPourDrawer(co){
     const root = document.getElementById('sideDrawerRoot');
     if(!root) return;
@@ -5845,7 +5868,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="side-drawer-overlay" id="sideDrawerOverlay">
         <div class="side-drawer-panel">
           <div class="side-drawer-head">
-            <div class="side-drawer-title">최근 시공 — ${esc(co.name)}</div>
+            <div class="side-drawer-title">최근 실적 — ${esc(co.name)}</div>
             <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
           </div>
           <div class="side-drawer-body">
@@ -5894,6 +5917,40 @@ window.SHIN2_CRM_APP_INIT = function(){
                 <div class="receivable-site-source">출처: ${esc(REQUEST_HISTORY_SOURCE_LABEL[h.category] || h.category || '업무입력')}</div>
               </div>
             `).join('') : `<div class="pi-note">확인되는 요청 이력이 없습니다.</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
+    document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
+  }
+
+  // §최근 실적 독립 컬럼 복원 라운드 §7: "1년 실적" 숫자 클릭 -> 1년 실적 Drawer(신규).
+  // getThisYearPourRecords()는 목록에 보이는 getThisYearPourCount()와 완전히 같은 필터
+  // (co.pourTrackRecords 중 올해 것)를 쓴다 — 계산식을 바꾸지 않고 그 개수를 만든 실제
+  // 레코드를 펼쳐 보여줄 뿐이다(§11 "1년 실적 계산은 변경하지 마세요").
+  function openYearPourDrawer(co){
+    const root = document.getElementById('sideDrawerRoot');
+    if(!root) return;
+    const records = getThisYearPourRecords(co);
+    root.innerHTML = `
+      <div class="side-drawer-overlay" id="sideDrawerOverlay">
+        <div class="side-drawer-panel">
+          <div class="side-drawer-head">
+            <div class="side-drawer-title">1년 실적 — ${esc(co.name)}</div>
+            <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
+          </div>
+          <div class="side-drawer-body">
+            ${records.length ? records.map(r=>{
+              const cats = String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean);
+              return `
+                <div class="receivable-site-card">
+                  <div class="receivable-site-name">${r.client ? esc(r.client) : '현장명 미확인'}</div>
+                  <div class="receivable-site-row"><span>연도</span><span>${esc(r.year)}년</span></div>
+                  ${cats.length ? `<div class="receivable-site-row"><span>공종</span><span>${esc(cats.join(', '))}</span></div>` : ''}
+                  <div class="receivable-site-source">원본: ${esc(r.sourceSheet)} · ${esc(r.sourceRow)}행</div>
+                </div>`;
+            }).join('') : `<div class="pi-note">올해(${new Date().getFullYear()}년) POUR 실적이 없습니다.</div>`}
           </div>
         </div>
       </div>
