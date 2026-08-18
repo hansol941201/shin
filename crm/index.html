@@ -174,6 +174,14 @@
     color:#B91C1C; background:#FEF2F2; border:1px solid #FCD5D5; border-radius:9px; cursor:pointer; font-family:inherit; white-space:nowrap;
   }
   .receivable-inline-badge:hover{ background:#FEE2E2; }
+  /* §등급 제거/2025년 매출 반영 라운드: 등급 배지가 있던 자리에 2025년 매출을 표시한다.
+     등급처럼 우열을 암시하는 색을 쓰지 않고 중립 회색 톤만 쓴다(§등급 표시 재확인 라운드
+     원칙과 동일한 톤 유지). */
+  .sales2025-badge{
+    display:inline-flex; align-items:center; height:18px; padding:0 6px; font-size:10.5px; font-weight:700;
+    color:#475569; background:#F1F5F9; border:1px solid #E2E8F0; border-radius:4px; white-space:nowrap;
+  }
+  .sales2025-badge.sales2025-ambiguous{ color:#92400E; background:#FFFBEB; border-color:#FDE68A; }
   .revenue-detail-total{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:8px; }
   .revenue-detail-bytype{ display:flex; flex-direction:column; gap:2px; }
   .revenue-detail-type-row{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-muted); padding:2px 0; }
@@ -3368,12 +3376,31 @@ window.SHIN2_RECEIVABLES_2026_SNAPSHOT = [{"name":"일성기업","site":"산격�
   // 어디에도 아직 연결하지 않았지만, "0원 ≠ 매출자료 없음" 구분이 필요한 다음 작업을 위해
   // 미리 준비해 둔다 — CRM에는 있지만 매출파일에 없으면 null(매출자료 없음), 있으면 실제
   // 합계(0 포함)를 반환한다.
+  // §등급 제거/2025년 매출 반영 라운드: 실제로 목록 화면에 연결하면서, 정규화된 이름이
+  // CRM에 2개 이상의 서로 다른 업체와 일치하는 경우(같은 협력사가 CRM에 중복 등록된 경우
+  // 등)를 자동으로 아무 업체에나 반영하지 않도록 방어 로직을 추가했다 — 그런 업체는
+  // ambiguous:true로 표시하고 값을 반환하지 않는다(§매칭 안전 원칙, "부분일치·유사도만으로
+  // 자동 연결 금지"의 연장선). buildCrmNormNameCounts()는 순수 계산이라 저장은 전혀 하지
+  // 않는다.
+  function buildCrmNormNameCounts(){
+    const companies = loadCompanies();
+    const counts = new Map();
+    companies.forEach(c=>{
+      const norm = normCompanyNameForRevenue(c.name);
+      if(!norm) return;
+      counts.set(norm, (counts.get(norm) || 0) + 1);
+    });
+    return counts;
+  }
   function getCompany2025Revenue(co){
     const norm = normCompanyNameForRevenue(co && co.name);
     if(!norm) return null;
+    const dupCounts = buildCrmNormNameCounts();
+    if((dupCounts.get(norm) || 0) > 1) return { ambiguous: true }; // 중복 후보 — 자동 반영 안 함
     const index = buildRevenue2025Index();
     const g = index.get(norm);
-    return g ? g.total : null; // null = 매출자료 없음(§구분), 0 = 실제 0원
+    if(!g) return null; // 매출자료 없음(§구분)
+    return { total: g.total, ambiguous: false }; // 0 포함 실제 값
   }
 
   /* ==========================================================================
@@ -4106,8 +4133,19 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 글랜스행·POUR 시공실적 섹션)에서 그대로 볼 수 있다(§4/§18, 데이터 삭제 아님).
     listEl.innerHTML = pageRows.map(r=>{
       const co = r.co;
-      const grade = getCompanyGrade(co);
-      const gradeHtml = grade ? `<span class="grade-badge ${grade.badgeClass}">${esc(grade.label)}</span>` : '';
+      // §등급 제거/2025년 매출 반영 라운드: 등급 배지를 없애고 그 자리에 2025년 매출을
+      // 표시한다(§1/§2). getCompanyGrade()/GRADE_LABEL/GRADE_BADGE_CLASS 함수 자체는
+      // 지우지 않았다(co.partnerDashboard.grade 원본 데이터도 그대로) — 화면에서만 안 쓴다.
+      // 매출자료가 없는 업체(엑셀에 없음)는 기존 등급-없음과 같은 규칙으로 배지 자체를 비운다
+      // — 258개 중 매칭 안 되는 업체마다 "매출자료 없음" 배지를 전부 띄우면 목록이 지저분해
+      // 지므로, 실제 값(0원 포함)이 있거나 중복 후보로 확인이 필요한 경우에만 배지를 보여준다.
+      const rev2025 = D.getCompany2025Revenue(co);
+      let sales2025Html = '';
+      if(rev2025 && rev2025.ambiguous){
+        sales2025Html = `<span class="sales2025-badge sales2025-ambiguous" title="정규화된 업체명이 CRM에 2건 이상과 일치해 자동 반영하지 않았습니다">중복 후보</span>`;
+      } else if(rev2025 && typeof rev2025.total === 'number'){
+        sales2025Html = `<span class="sales2025-badge">${esc(rev2025.total.toLocaleString('ko-KR'))}원</span>`;
+      }
       const yr = getThisYearPourCount(co);
       // §최근 실적 독립 컬럼 복원 라운드: "1년 실적" 클릭 -> 1년 실적 Drawer(§7). 계산값(yr)은
       // 그대로 getThisYearPourCount()이고, 버튼으로 감싸서 클릭만 가능하게 했을 뿐이다.
@@ -4197,7 +4235,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">
           <div class="col-name-top">
-            <span class="co-name-badges">${gradeHtml}${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
+            <span class="co-name-badges">${sales2025Html}${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
           </div>
         </div>
         <div class="col-pour">${lastActHtml}</div>
@@ -5469,7 +5507,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       </div>
       <div class="rising-grid">${data.items.map((it, i)=> `
         <div class="rising-card" data-id="${esc(it.co.id)}">
-          <div class="rising-card-top"><span class="rising-rank">${i+1}</span>${it.grade ? `<span class="grade-badge ${it.grade.badgeClass}">${esc(it.grade.label)}</span>` : ''}<span class="rising-name">${esc(it.co.name)}</span></div>
+          <div class="rising-card-top"><span class="rising-rank">${i+1}</span><span class="rising-name">${esc(it.co.name)}</span></div>
           <div class="rising-row"><span>직전 30일</span><span>최근 30일</span><span>증가</span></div>
           <div class="rising-nums">${it.prev}건 → ${it.recent}건 <span class="rising-up">▲ ${it.diff}건</span></div>
           <div class="rising-bar"><div class="rising-bar-fill" style="width:${Math.min(100, it.barPct)}%"></div></div>
