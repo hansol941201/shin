@@ -235,6 +235,25 @@
   .receivable-list-name{ font-size:13px; font-weight:600; color:var(--text); }
   .receivable-list-meta{ font-size:11px; color:var(--text-muted); margin-top:1px; }
   .receivable-list-amt{ font-size:13px; font-weight:700; color:#B91C1C; white-space:nowrap; }
+  /* §총 매출 Popover 전환 라운드: 오른쪽 전체높이 Drawer 대신 클릭한 금액 옆에 뜨는 작은
+     floating popover — 배경 dim 없음(§4), position:fixed로 JS가 좌표를 직접 계산해서
+     붙인다(§2). 디자인은 기존 side-drawer 계열과 같은 톤(흰 배경/얇은 회색 테두리/약한
+     그림자/작은 radius, §7)만 가져오고 크기만 작게 만들었다(§3, 폭 300px 고정). */
+  .rev-popover{
+    position:fixed; width:300px; max-width:92vw; background:#fff; border:1px solid var(--line);
+    border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.14); z-index:401; overflow:hidden;
+  }
+  .rev-pop-head{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); }
+  .rev-pop-title{ font-size:12.5px; font-weight:700; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rev-pop-close{ background:none; border:none; font-size:18px; line-height:1; cursor:pointer; color:var(--text-muted); padding:0 2px; flex:none; }
+  .rev-pop-close:hover{ color:var(--text); }
+  .rev-pop-body{ padding:12px 14px 14px; }
+  .rev-pop-total{ font-size:16px; font-weight:800; color:var(--text); }
+  .rev-pop-sub{ font-size:11px; color:var(--text-muted); margin-top:2px; margin-bottom:10px; }
+  .rev-pop-year-row{ display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; font-size:12px; }
+  .rev-pop-year-label{ color:var(--text-muted); }
+  .rev-pop-year-value{ color:var(--text); font-weight:700; text-align:right; }
+  .rev-pop-note{ font-size:12px; color:var(--text-muted); }
   /* §최근 요청 라운드: 최근 요청 Drawer 전용 — 미수금 Drawer의 .receivable-site-card를
      그대로 재사용하고(§22 디자인 통일), 요청 라벨/전화내용만 이 두 클래스로 추가한다. */
   .request-drawer-labels{ font-size:13px; font-weight:600; color:var(--text); margin:4px 0; }
@@ -1769,6 +1788,10 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   <div id="receivableDetailModalRoot"></div>
   <div id="sideDrawerRoot"></div>
   <div id="memoPanelRoot"></div>
+  <!-- §총 매출 Popover 전환 라운드: 전용 root — sideDrawerRoot(전체 높이 오른쪽 패널,
+       회색 overlay 포함)와 완전히 분리해서 만든다. 이 root는 position:fixed 작은 카드만
+       담고, overlay를 만들지 않는다(§4 "뒤의 업체 목록은 그대로 밝게 보여야 한다"). -->
+  <div id="totalRevenuePopoverRoot"></div>
 </div>
 
 <script>
@@ -4301,6 +4324,10 @@ window.SHIN2_CRM_APP_INIT = function(){
   }
 
   function renderList(){
+    // §총 매출 Popover 전환 라운드: 필터/검색/정렬/페이지가 바뀌면 목록 DOM이 통째로
+    // 새로 그려져 popover가 붙어있던 버튼이 사라진다 — 열려있던 popover가 엉뚱한 위치에
+    // 남지 않도록 재렌더링 전에 닫는다.
+    if(typeof closeTotalRevenuePopover === 'function') closeTotalRevenuePopover();
     const companies = D.loadCompanies();
     listTitle.textContent = '고객 ' + companies.length;
     // §미등록 업체 관리 라운드: 별도 저장소 없이 매번 다시 계산한다(§ "등록 후" 요구사항 —
@@ -4503,12 +4530,14 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(co) openRevenueDetailModal(co);
       });
     });
-    // §업체명 왼쪽 금액 이동 라운드 §4: "총 매출" 클릭 -> 원 단위 금액 확인용 Drawer.
+    // §총 매출 Popover 전환 라운드: "총 매출" 클릭 -> 클릭한 셀 옆에 뜨는 작은 popover
+    // (예전엔 오른쪽 전체높이 Drawer였다, openTotalRevenueDrawer는 더 이상 호출하지 않지만
+    // 함수 자체는 남겨뒀다).
     listEl.querySelectorAll('[data-total-revenue-detail]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-total-revenue-detail'));
-        if(co) openTotalRevenueDrawer(co);
+        if(co) openTotalRevenuePopover(co, btn);
       });
     });
     // §16: 미수금 배지 클릭 -> 미수금 상세 팝업.
@@ -6631,6 +6660,90 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
     document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
+  }
+
+  /* ==========================================================================
+     §총 매출 Popover 전환 라운드 — "총 매출" 클릭 시 오른쪽 전체높이 Drawer(위
+     openTotalRevenueDrawer, 함수 자체는 지우지 않고 그대로 둔다 — 더 이상 호출하지 않을
+     뿐) 대신, 클릭한 금액 옆에 뜨는 작은 floating popover를 연다. 데이터/계산 함수는
+     D.getCompanyTotalRevenueAllYears(co) 그대로 재사용 — 새 계산 없음(§5/§8). 표시 형식만
+     원 단위 콤마(옛 Drawer)에서 목록과 같은 축약 표기(fmtKrwCompact, 요청 mockup과 동일한
+     "23억 5,731만원" 형태)로 바꿨다.
+     ========================================================================== */
+  let closeTotalRevenuePopoverOutsideHandlers = null;
+  function closeTotalRevenuePopover(){
+    const root = document.getElementById('totalRevenuePopoverRoot');
+    if(root) root.innerHTML = '';
+    if(closeTotalRevenuePopoverOutsideHandlers){
+      closeTotalRevenuePopoverOutsideHandlers();
+      closeTotalRevenuePopoverOutsideHandlers = null;
+    }
+  }
+  // positionRevPopover: §2 위치 규칙 — 오른쪽 공간이 충분하면 오른쪽, 부족하면 왼쪽. 아래
+  // 공간이 부족하면 위쪽으로(앵커의 아래쪽 끝에 popover 아래쪽 끝을 맞춰 위로 펼친다).
+  // 화면 밖으로 잘리지 않게 최종적으로 좌우 여백 안에 clamp한다(§2 "화면 밖으로 잘리지
+  // 않게").
+  function positionRevPopover(pop, anchorEl){
+    const rect = anchorEl.getBoundingClientRect();
+    const margin = 8;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const popW = pop.offsetWidth || 300;
+    const popH = pop.offsetHeight || 160;
+    let left = rect.right + margin; // §2 우선순위 1: 오른쪽
+    if(left + popW > vw - margin) left = rect.left - popW - margin; // §2 우선순위 2: 왼쪽
+    left = Math.min(Math.max(left, margin), Math.max(margin, vw - popW - margin));
+    let top = rect.top;
+    if(top + popH > vh - margin) top = rect.bottom - popH; // §2 우선순위 3: 위쪽으로 조정
+    top = Math.min(Math.max(top, margin), Math.max(margin, vh - popH - margin));
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+  function openTotalRevenuePopover(co, anchorEl){
+    closeTotalRevenuePopover(); // §6 "다른 업체의 총 매출을 클릭하면 기존 것을 닫고 교체"
+    const root = document.getElementById('totalRevenuePopoverRoot');
+    if(!root) return;
+    const revAll = D.getCompanyTotalRevenueAllYears(co);
+    let bodyHtml;
+    if(revAll && revAll.ambiguous){
+      bodyHtml = `<div class="rev-pop-note">정규화된 업체명이 CRM에 2건 이상과 일치해 자동으로 반영하지 않았습니다("중복 후보") — 수동 확인이 필요합니다.</div>`;
+    } else if(revAll && typeof revAll.total === 'number'){
+      bodyHtml = `
+        <div class="rev-pop-total">${esc(fmtKrwCompact(revAll.total))}</div>
+        <div class="rev-pop-sub">2024~2026년(진행 중) 매출 합계</div>
+        ${revAll.byYear.map(y=> `
+          <div class="rev-pop-year-row">
+            <span class="rev-pop-year-label">${esc(y.year)}년${y.inProgress ? ' 현재' : ''}</span>
+            <span class="rev-pop-year-value">${esc(fmtKrwCompact(y.total))}</span>
+          </div>
+        `).join('')}
+      `;
+    } else {
+      bodyHtml = `<div class="rev-pop-note">매출자료가 없습니다.</div>`;
+    }
+    root.innerHTML = `
+      <div class="rev-popover" id="totalRevenuePopover">
+        <div class="rev-pop-head">
+          <div class="rev-pop-title">총 매출 — ${esc(co.name)}</div>
+          <button type="button" class="rev-pop-close" id="revPopCloseBtn" aria-label="닫기">&times;</button>
+        </div>
+        <div class="rev-pop-body">${bodyHtml}</div>
+      </div>
+    `;
+    const pop = document.getElementById('totalRevenuePopover');
+    positionRevPopover(pop, anchorEl);
+    document.getElementById('revPopCloseBtn').addEventListener('click', closeTotalRevenuePopover);
+    // §6: 바깥 클릭/ESC로 닫는다. 이 클릭 이벤트 자체가 document까지 버블링되어 곧바로
+    // 닫히지 않도록(§ "열자마자 바로 닫힘" 버그 방지) 리스너 등록을 다음 tick으로 미룬다.
+    const onOutside = (e)=>{ if(!pop.contains(e.target)) closeTotalRevenuePopover(); };
+    const onEsc = (e)=>{ if(e.key === 'Escape') closeTotalRevenuePopover(); };
+    setTimeout(()=>{
+      document.addEventListener('click', onOutside);
+      document.addEventListener('keydown', onEsc);
+    }, 0);
+    closeTotalRevenuePopoverOutsideHandlers = ()=>{
+      document.removeEventListener('click', onOutside);
+      document.removeEventListener('keydown', onEsc);
+    };
   }
 
   // ---- §자동 요약 구조 개선 라운드: 업체 특징 자동 사실(facts) — "느낌/평가"가 아니라
