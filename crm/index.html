@@ -1302,7 +1302,7 @@
   .search-box:focus-within{ background:#fff; border-color:#AEBFD2; box-shadow:0 0 0 2px rgba(23,48,92,.035); }
   .list-sort-select{
     height:40px;
-    min-width:132px;
+    min-width:168px;
     border-radius:7px;
     border-color:#DEE6EF;
     background:#fff;
@@ -1584,7 +1584,7 @@ html,body{background:#F7F9FC;font-size:13px}
 
 /* Search row */
 .list-filter-row{margin-bottom:8px;gap:5px}.list-filter-chip{height:27px;padding:0 10px;font-size:11px;border-radius:5px}
-.list-search-row{gap:7px;margin-bottom:0}.search-box,.list-sort-select{height:34px;border-radius:6px}.search-box{box-shadow:0 1px 2px rgba(20,40,70,.02)}.search-box input{font-size:12px}.list-sort-select{font-size:11.5px;min-width:130px}
+.list-search-row{gap:7px;margin-bottom:0}.search-box,.list-sort-select{height:34px;border-radius:6px}.search-box{box-shadow:0 1px 2px rgba(20,40,70,.02)}.search-box input{font-size:12px}.list-sort-select{font-size:11.5px;min-width:168px}
 
 /* Main table: crisp, dense, screenshot-like */
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
@@ -1687,10 +1687,19 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="text" id="crmSearchInput" placeholder="업체명 / 담당자 / 활동내용 검색" />
       </div>
+      <!-- §정렬 드롭다운 정리 라운드: "전체 실적순"(pour, 옛 co.pourTrackRecords 상태값
+           기준)/"최근 1년 매출순"(revenue, co.partnerDashboard.gradeSales 단일 스냅샷
+           기준)은 메인 테이블에 더 이상 없는 옛 용어라 드롭다운에서 뺐다(계산 코드 자체는
+           지우지 않음, applySort 안에 그대로 남아있음). 새 6개 옵션은 전부 메인 컬럼명과
+           동일한 함수를 그대로 재사용한다(계산 새로 안 만듦) — 총 실적순(yearPour)/총
+           매출순(totalRevDesc, "총 매출" 헤더 클릭 정렬과 완전히 같은 모드)/2026
+           매출순(revenue2026)/실적↔매출 높은순(contribDesc)/최근 흐름순(trend)/
+           업체명순(name). -->
       <select class="list-sort-select" id="crmSortSelect">
         <option value="yearPour">총 실적순</option>
-        <option value="revenue">최근 1년 매출순</option>
-        <option value="pour">전체 실적순</option>
+        <option value="totalRevDesc">총 매출순</option>
+        <option value="revenue2026">2026 매출순</option>
+        <option value="contribDesc">실적↔매출 높은순</option>
         <option value="trend">최근 흐름순</option>
         <option value="name">업체명순</option>
       </select>
@@ -4067,7 +4076,10 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 세 값 모두 렌더 시점에 메모리에서만 들고 있고, 별도로 저장하지 않는다(새로고침하면
   // 기본값 "전체/POUR 실적순/1페이지"로 돌아간다 — 스펙 §3 기본 정렬 유지).
   let filterKey = 'all';
-  let sortMode = 'pour';
+  // §정렬 드롭다운 정리 라운드: 기본 정렬을 "전체 실적순"(pour, co.pourTrackRecords
+  // 상태값 기준 — 더 이상 드롭다운에 없음)에서 "총 실적순"(yearPour, 메인 컬럼과 동일한
+  // fresh-match 소스)으로 바꿨다 — 드롭다운 첫 옵션과 실제 초기 정렬이 일치하게 한다.
+  let sortMode = 'yearPour';
   let currentPage = 1;
   const PAGE_SIZE = 15;
   // §2 필터 칩 정의 — "진행중"은 buildProgressStages(co).hasAny(=Partner Dashboard 진행
@@ -4096,7 +4108,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   // "1년" 단위로는 정렬할 수 없다 — 대신 현재 있는 유일한 매출 수치인
   // co.partnerDashboard.gradeSales(상세 카드의 "토탈 매출"과 같은 값)로 정렬한다. 새 계산을
   // 만든 게 아니라 이미 있는 값을 정렬 기준으로만 쓴 것이다.
-  function applySort(rows){
+  function applySort(rows, contribIndex){
     if(sortMode === 'yearPour'){
       // §최근 1년 실적순 정렬 수정 라운드: sortGroup(0=실제 숫자 있음, 1=데이터 없음)을
       // 먼저 비교하고, 같은 그룹 안에서만 sortValue(실제 숫자 내림차순)를 비교한다(§요청
@@ -4149,6 +4161,34 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(ga !== gb) return ga - gb;
         if(ga === 1) return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
         return dir * (va - vb) || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+      });
+    } else if(sortMode === 'revenue2026'){
+      // §정렬 드롭다운 정리 라운드: "2026 매출순" — "2026 매출" 컬럼과 완전히 같은 함수
+      // (D.getCompany2026Revenue)로 정렬한다. 데이터 없음(null)은 항상 하단, 0원(실제 값)은
+      // 구분해서 그대로 순서에 포함한다(§ "0과 데이터 없음은 구분").
+      rows.sort((a,b)=>{
+        const ra = D.getCompany2026Revenue(a.co); const rb = D.getCompany2026Revenue(b.co);
+        const va = (ra && typeof ra.total === 'number') ? ra.total : null;
+        const vb = (rb && typeof rb.total === 'number') ? rb.total : null;
+        const ga = va == null ? 1 : 0, gb = vb == null ? 1 : 0;
+        if(ga !== gb) return ga - gb;
+        if(ga === 1) return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+        return (vb - va) || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+      });
+    } else if(sortMode === 'contribDesc'){
+      // §정렬 드롭다운 정리 라운드: "실적↔매출 높은순" — 메인 목록 "실적↔매출" 컬럼과
+      // 완전히 같은 인덱스(contribIndex, renderList에서 한 번만 계산)를 조회만 한다. 등급이
+      // "데이터 부족"인 업체(실적 또는 매출 자료 자체가 없음)는 항상 하단, 나머지는 실적
+      // 1건당 매출(perUnit) 실제 값 내림차순으로 정렬한다.
+      rows.sort((a,b)=>{
+        const ca = contribIndex ? contribIndex.get(a.co.id) : null;
+        const cb = contribIndex ? contribIndex.get(b.co.id) : null;
+        const va = (ca && ca.level !== 'insufficient' && typeof ca.perUnit === 'number') ? ca.perUnit : null;
+        const vb = (cb && cb.level !== 'insufficient' && typeof cb.perUnit === 'number') ? cb.perUnit : null;
+        const ga = va == null ? 1 : 0, gb = vb == null ? 1 : 0;
+        if(ga !== gb) return ga - gb;
+        if(ga === 1) return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+        return (vb - va) || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
       });
     } else if(sortMode === 'stage'){
       const order = { q:0, m1:1, m2:2, mou:3 };
@@ -4272,7 +4312,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const rows = enriched
       .filter(r=> matchesFilter(r.co, r.progress, filterKey))
       .filter(r=> matchesSearch(r.co, r.acts, searchQuery));
-    applySort(rows);
+    applySort(rows, contribIndex);
 
     const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     if(currentPage > totalPages) currentPage = totalPages;
@@ -8715,15 +8755,16 @@ window.SHIN2_CRM_APP_INIT = function(){
     sortSelect.value = sortMode;
     sortSelect.addEventListener('change', ()=>{ sortMode = sortSelect.value; currentPage = 1; renderList(); updateTotalRevenueSortArrow(); });
   }
-  // §업체명 왼쪽 금액 이동 라운드 §6: "총 매출" 헤더 클릭 -> 내림차순/오름차순 토글 정렬.
-  // 기존 select 정렬과는 별도 진입점이지만 같은 sortMode 변수를 공유한다 — 헤더를 클릭하면
-  // sortMode가 'totalRevDesc'/'totalRevAsc'로 바뀌고, select를 다시 바꾸면 그 쪽 값으로
-  // 돌아간다(sortSelect.value가 'totalRevDesc' 등과 매치되는 <option>이 없으므로 select
-  // 표시는 자동으로 빈 값이 된다 — 별 문제 없음, 화살표가 활성 상태를 보여준다).
+  // §업체명 왼쪽 금액 이동 라운드 §6 → §정렬 드롭다운 정리 라운드: "총 매출" 헤더 클릭 ->
+  // 내림차순/오름차순 토글 정렬. 드롭다운의 "총 매출순"과 같은 sortMode('totalRevDesc')를
+  // 공유한다 — 헤더를 클릭하면 드롭다운도 "총 매출순"으로 맞춰 보여준다(오름차순일 때도
+  // 드롭다운엔 별도 옵션이 없어 "총 매출순"으로 표시되지만 실제 정렬은 오름차순이 적용됨,
+  // 화살표가 정확한 방향을 보여준다).
   const totalRevenueSortHeader = document.getElementById('totalRevenueSortHeader');
   if(totalRevenueSortHeader){
     totalRevenueSortHeader.addEventListener('click', ()=>{
       sortMode = (sortMode === 'totalRevDesc') ? 'totalRevAsc' : 'totalRevDesc';
+      if(sortSelect) sortSelect.value = 'totalRevDesc';
       currentPage = 1; renderList(); updateTotalRevenueSortArrow();
     });
   }
