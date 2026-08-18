@@ -169,6 +169,21 @@
   .revenue-detail-total{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:8px; }
   .revenue-detail-bytype{ display:flex; flex-direction:column; gap:2px; }
   .revenue-detail-type-row{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-muted); padding:2px 0; }
+  /* §매출 상세 패널 탭 라운드: 기업용 CRM처럼 절제된 탭 — 선택 탭은 연한 블루 배경+네이비
+     글자, 나머지는 흰 배경+회색 글자만(§9, 구분별로 색을 다르게 쓰지 않는다). */
+  .revenue-tab-row{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .revenue-tab{
+    height:28px; padding:0 12px; font-size:12.5px; font-weight:600; color:#64748B; background:#fff;
+    border:1px solid var(--line); border-radius:7px; cursor:pointer; font-family:inherit;
+  }
+  .revenue-tab:hover{ background:#F8FAFC; }
+  .revenue-tab.is-active{ color:var(--navy); background:#EAF2FF; border-color:#CFE0FA; }
+  .revenue-detail-search{
+    width:100%; height:32px; margin-top:8px; padding:0 10px; font-size:12.5px; font-family:inherit;
+    border:1px solid var(--line); border-radius:6px; box-sizing:border-box;
+  }
+  .revenue-detail-subtotal{ display:flex; justify-content:space-between; align-items:baseline; margin-top:10px; font-size:13px; font-weight:700; color:var(--text); }
+  .revenue-detail-subtotal span:last-child{ font-size:12px; font-weight:600; color:var(--text-muted); }
   .col-cat{ flex:1 1 110px; min-width:0; font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-contrib{ flex:0 0 128px; font-size:11px; line-height:1.4; }
   .col-trend{ flex:0 0 70px; font-size:12px; text-align:center; }
@@ -5352,23 +5367,37 @@ window.SHIN2_CRM_APP_INIT = function(){
      §2026 매출/자재판매/미수금 라운드 — 매출 상세 모달 / 미수금 배지·패널
      ========================================================================== */
   const REVENUE_TYPE_LABEL = { consulting:'컨설팅', techAdvisory:'기술자문료', patent:'특허료', materialSales:'자재판매' };
-  const REVENUE_TYPE_ORDER = ['materialSales','consulting','patent','techAdvisory']; // §21 표시 순서(예시 그대로)
+  const REVENUE_TYPE_ORDER = ['materialSales','consulting','techAdvisory','patent']; // §10 요약 카드 순서(요청 예시 그대로)
+  // §매출 상세 패널 탭 라운드: 탭 순서(§2 예시 그대로) — "전체"는 구분 없이 전부, 나머지
+  // 4개는 sourceType 하나씩과 대응된다.
+  const REVENUE_DETAIL_TABS = [
+    { key:'all', label:'전체' },
+    { key:'consulting', label:'컨설팅' },
+    { key:'materialSales', label:'자재판매' },
+    { key:'techAdvisory', label:'기술자문료' },
+    { key:'patent', label:'특허료' },
+  ];
+  // 모달이 열려있는 동안만 쓰는 상태 — 별도 저장 없음, 닫으면 사라진다.
+  let revenueDetailState = { co: null, data: null, tab: 'all', query: '' };
 
   function closeRevenueDetailModal(){
     const root = document.getElementById('revenueDetailModalRoot');
     if(root) root.innerHTML = '';
+    revenueDetailState = { co: null, data: null, tab: 'all', query: '' };
   }
-  // §20/§21: 2026 매출 금액 클릭 -> 구분별 합계 + 원본 행(현장/날짜/금액) 목록. 계산 로직은
-  // buildRevenue2026Index가 이미 한 것을 그대로 보여줄 뿐, 여기서 새로 계산하지 않는다.
+  // §20/§21: 2026 매출 금액 클릭 -> 구분별 합계 + 탭으로 나눈 원본 행(현장/날짜/금액) 목록.
+  // 계산 로직은 buildRevenue2026Index/getCompany2026Revenue가 이미 한 것을 그대로 보여줄
+  // 뿐이다 — 탭 전환은 이미 계산된 data.rows를 화면에서 sourceType으로 나눠 보여주는
+  // 필터링일 뿐, 새 합계를 계산하지 않는다(§15 "새 계산식을 만들지 마세요").
   function openRevenueDetailModal(co){
     const root = document.getElementById('revenueDetailModalRoot');
     if(!root) return;
     const data = D.getCompany2026Revenue(co);
     if(!data){ return; }
-    const rows = data.rows.slice().sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+    revenueDetailState = { co, data, tab: 'all', query: '' };
     root.innerHTML = `
       <div class="pi-overlay" id="revenueDetailOverlay">
-        <div class="pi-panel" style="max-width:620px;">
+        <div class="pi-panel" style="max-width:640px;">
           <div class="pi-head">
             <div class="pi-title">2026 매출 상세 — ${esc(co.name)}</div>
             <button type="button" class="chart-close-btn" id="revenueDetailCloseBtn" aria-label="닫기">&times;</button>
@@ -5378,20 +5407,11 @@ window.SHIN2_CRM_APP_INIT = function(){
             <div class="revenue-detail-bytype">
               ${REVENUE_TYPE_ORDER.map(t=> `<div class="revenue-detail-type-row"><span>${esc(REVENUE_TYPE_LABEL[t])}</span><span>${esc(fmtKrwCompact(data.byType[t] || 0))}</span></div>`).join('')}
             </div>
-            ${rows.length ? `
-              <table class="pi-sample-table" style="margin-top:12px;">
-                <thead><tr><th>구분</th><th>현장</th><th>날짜</th><th>금액</th></tr></thead>
-                <tbody>
-                  ${rows.map(r=> `
-                    <tr>
-                      <td>${esc(REVENUE_TYPE_LABEL[r.sourceType] || r.sourceType)}</td>
-                      <td>${r.site ? esc(r.site) : '—'}</td>
-                      <td>${r.date ? esc(fmtDate(r.date)) : '—'}</td>
-                      <td>${esc(fmtKrwCompact(r.amount))}</td>
-                    </tr>`).join('')}
-                </tbody>
-              </table>
-            ` : ''}
+            <div class="revenue-tab-row" id="revenueDetailTabRow">
+              ${REVENUE_DETAIL_TABS.map(t=> `<button type="button" class="revenue-tab${t.key==='all'?' is-active':''}" data-tab="${t.key}">${esc(t.label)}</button>`).join('')}
+            </div>
+            <input type="text" id="revenueDetailSearch" class="revenue-detail-search" placeholder="현장명 / 구분 검색" />
+            <div id="revenueDetailBody"></div>
           </div>
           <div class="pi-actions">
             <button type="button" class="co-text-action primary" id="revenueDetailCloseBtn2">닫기</button>
@@ -5402,6 +5422,62 @@ window.SHIN2_CRM_APP_INIT = function(){
     document.getElementById('revenueDetailCloseBtn').addEventListener('click', closeRevenueDetailModal);
     document.getElementById('revenueDetailCloseBtn2').addEventListener('click', closeRevenueDetailModal);
     document.getElementById('revenueDetailOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'revenueDetailOverlay') closeRevenueDetailModal(); });
+    document.querySelectorAll('#revenueDetailTabRow [data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        revenueDetailState.tab = btn.getAttribute('data-tab');
+        document.querySelectorAll('#revenueDetailTabRow [data-tab]').forEach(b=> b.classList.toggle('is-active', b === btn));
+        renderRevenueDetailBody();
+      });
+    });
+    document.getElementById('revenueDetailSearch').addEventListener('input', (e)=>{
+      revenueDetailState.query = e.target.value;
+      renderRevenueDetailBody();
+    });
+    renderRevenueDetailBody();
+  }
+  // renderRevenueDetailBody: 이미 계산되어 있는 revenueDetailState.data.rows를 탭
+  // (sourceType)과 검색어(현장명/구분)로 화면에서만 걸러 보여준다 — 새 합계를 계산하지
+  // 않는다(§15). "전체" 탭에서만 "구분" 컬럼을 보여주고, 개별 구분 탭은 이미 탭 자체가
+  // 구분을 나타내므로 그 탭의 소계/건수만 위에 작게 보여준다(§5~8). 항상 날짜 최신순
+  // (§12, 기존 정렬 그대로) — 음수 금액도 그대로 표시한다(§14, 값을 지우거나 0으로 만들지
+  // 않음).
+  function renderRevenueDetailBody(){
+    const wrap = document.getElementById('revenueDetailBody');
+    if(!wrap) return;
+    const { data, tab, query } = revenueDetailState;
+    const tabDef = REVENUE_DETAIL_TABS.find(t=> t.key === tab) || REVENUE_DETAIL_TABS[0];
+    let rows = data.rows.filter(r=> tab === 'all' || r.sourceType === tab);
+    const q = String(query || '').trim().toLowerCase();
+    if(q){
+      rows = rows.filter(r=>{
+        const siteText = (r.site || '').toLowerCase();
+        const typeText = (REVENUE_TYPE_LABEL[r.sourceType] || r.sourceType || '').toLowerCase();
+        return siteText.includes(q) || typeText.includes(q);
+      });
+    }
+    rows = rows.slice().sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+    const subtotalHtml = tab === 'all' ? '' : `
+      <div class="revenue-detail-subtotal">
+        <span>${esc(tabDef.label)} 매출</span>
+        <span>총 ${esc(fmtKrwCompact(data.byType[tab] || 0))} · ${rows.length}건</span>
+      </div>`;
+    wrap.innerHTML = `
+      ${subtotalHtml}
+      ${rows.length ? `
+        <table class="pi-sample-table" style="margin-top:8px;">
+          <thead><tr>${tab === 'all' ? '<th>구분</th>' : ''}<th>현장</th><th>날짜</th><th>금액</th></tr></thead>
+          <tbody>
+            ${rows.map(r=> `
+              <tr>
+                ${tab === 'all' ? `<td>${esc(REVENUE_TYPE_LABEL[r.sourceType] || r.sourceType)}</td>` : ''}
+                <td>${r.site ? esc(r.site) : '—'}</td>
+                <td>${r.date ? esc(fmtDate(r.date)) : '—'}</td>
+                <td>${esc(fmtKrwCompact(r.amount))}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="pi-note" style="margin-top:10px;">표시할 매출 내역이 없습니다.</div>`}
+    `;
   }
 
   const RECEIVABLE_TYPE_LABEL = { consultingReceivable:'컨설팅', patentReceivable:'특허료', solutionReceivable:'솔루션 현장', materialReceivable:'자재판매' };
