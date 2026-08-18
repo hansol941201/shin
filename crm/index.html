@@ -1773,6 +1773,10 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
           <div class="update-menu" id="crmUpdateMenu">
             <button type="button" id="crmPartnerImportBtn">협력사 데이터 업데이트</button>
             <button type="button" id="crmPourImportBtn">POUR 시공실적 업데이트</button>
+            <!-- §협력사 동기화 라운드: 위 "협력사 데이터 업데이트"(엑셀 파일을 사람이 직접
+                 첨부해야 하는 수동 가져오기, openPartnerImportModal)와 다르다 — partner-
+                 dashboard(pourservice.github.io)의 최신 데이터를 자동으로 fetch해서 온다. -->
+            <button type="button" id="crmPartnerSyncBtn">협력사 동기화</button>
           </div>
         </div>
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
@@ -1846,6 +1850,8 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   <!-- §관리필요 업체 라운드 §2: "관리필요 N" 버튼이 여는 중앙 모달 전용 root — 같은
        .pi-overlay/.pi-panel 패턴, 새 디자인 시스템 없음. -->
   <div id="managementNeedModalRoot"></div>
+  <!-- §협력사 동기화 라운드: partner-dashboard 동기화 미리보기/결과 중앙 모달 전용 root. -->
+  <div id="partnerSyncModalRoot"></div>
   <div id="sideDrawerRoot"></div>
   <div id="memoPanelRoot"></div>
   <!-- §총 매출 Popover 전환 라운드: 전용 root — sideDrawerRoot(전체 높이 오른쪽 패널,
@@ -3532,6 +3538,314 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   }
 
   /* ==========================================================================
+     §협력사 동기화 라운드 — partner-dashboard(https://pourservice.github.io/partner-dashboard/)의
+     "지금 실제로 보이는" 최신 상태를 가져와 CRM companies에 patch/merge한다.
+
+     [조사 결과 — §12] partner-dashboard는 index.html에 박제된 `const DATA`(마지막으로
+     재생성됐을 때의 스냅샷 — CRM의 SHIN2_PARTNER_SNAPSHOT과 같은 성격)와, 실제 사용자가
+     편집한 내용을 담은 Firebase Realtime Database override 레이어(mouOverrides/
+     newMouAdds/mouDeleted, partner-dashboard 전용 Firebase 프로젝트 — CRM/한솔
+     업무페이지가 쓰는 Firebase 프로젝트와는 완전히 다른 별도 프로젝트) 두 개를 그 페이지가
+     로드될 때 applyOverrides()로 병합해서 화면에 보여준다. DATA만 가져오면 또 하나의
+     과거 스냅샷일 뿐이라(실제로 ㈜태림이앤씨는 DATA 안에 아예 없다 — 회신 이후 담당자가
+     RTDB로만 편집한 사례로 확인됨) 이 기능은 두 소스를 모두 읽어 partner-dashboard와
+     똑같은 방식으로 병합한다(§ 방법 A/B 검토 — 이 CRM은 GitHub Pages 정적 호스팅이라
+     자체 백엔드가 없으므로, DATA는 raw.githubusercontent.com에서, override는 partner-
+     dashboard가 쓰는 것과 동일한 Firebase RTDB REST 엔드포인트에서 각각 fetch한다 —
+     "방법 B"의 확장판. 새 백엔드/Firebase 프로젝트를 만들지 않는다).
+     ========================================================================== */
+  const PD_RAW_URL = 'https://raw.githubusercontent.com/pourservice/partner-dashboard/main/index.html';
+  const PD_RTDB_BASE = 'https://pour-partner-dashboard-default-rtdb.asia-southeast1.firebasedatabase.app';
+  // partner-dashboard의 fbSafeKey/이스케이프 규칙을 그대로 재구현했다(그 페이지 소스에서
+  // 확인한 FB_KEY_ESCAPES 표 그대로) — RTDB에 실제로 저장된 override 객체의 키(업체명 등)가
+  // Firebase 금지문자(. # $ / [ ]) 때문에 이스케이프되어 있으므로, 원래 업체명으로 되돌려야
+  // CRM 쪽 업체명과 비교할 수 있다.
+  const PD_FB_KEY_ESCAPES = [['.', '%2E'], ['#', '%23'], ['$', '%24'], ['/', '%2F'], ['[', '%5B'], [']', '%5D']];
+  function pdUnescapeKey(k){
+    let real = k;
+    PD_FB_KEY_ESCAPES.forEach(([ch, esc])=>{ real = real.split(esc).join(ch); });
+    return real;
+  }
+  // partner-dashboard index.html의 `const DATA = {...};`는 단순 정규식으로는 안전하게
+  // 못 자른다(객체 안 문자열 값에 "};" 패턴이 우연히 들어있을 수 있음) — 여는 중괄호부터
+  // 문자열 리터럴을 건너뛰며 괄호 깊이를 세어 정확히 짝이 맞는 지점까지만 잘라낸다.
+  function pdExtractDataObjectLiteral(html){
+    const marker = 'const DATA = ';
+    const start = html.indexOf(marker);
+    if(start === -1) throw new Error('partner-dashboard 소스에서 DATA 정의를 찾지 못했습니다');
+    let i = start + marker.length;
+    let depth = 0, inStr = false, esc = false;
+    const from = i;
+    for(; i < html.length; i++){
+      const ch = html[i];
+      if(inStr){
+        if(esc) esc = false;
+        else if(ch === '\\') esc = true;
+        else if(ch === '"') inStr = false;
+      } else {
+        if(ch === '"') inStr = true;
+        else if(ch === '{') depth++;
+        else if(ch === '}'){ depth--; if(depth === 0){ i++; break; } }
+      }
+    }
+    if(depth !== 0) throw new Error('partner-dashboard DATA 객체를 끝까지 읽지 못했습니다(형식 변경 가능성)');
+    return html.slice(from, i);
+  }
+  async function pdFetchBaselineData(){
+    const res = await fetch(PD_RAW_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('partner-dashboard 원본을 가져오지 못했습니다 (HTTP ' + res.status + ')');
+    const html = await res.text();
+    const literal = pdExtractDataObjectLiteral(html);
+    return JSON.parse(literal);
+  }
+  // RTDB REST(.json) — Firebase SDK 없이 공개 read 규칙을 그대로 이용한다(partner-dashboard
+  // 자체도 같은 DB에 이 방식으로 클라이언트에서 직접 접근한다, §12). 세 키만 필요하다:
+  // mouOverrides(기존 항목 수정분), newMouAdds(새 협력업체), mouDeleted(제외 목록) — 그
+  // 외(gradeOverrides/partnerList_* 등)는 이번 1차 범위 밖이라 읽지 않는다.
+  async function pdFetchOverrides(){
+    const keys = ['mouOverrides', 'newMouAdds', 'mouDeleted'];
+    const out = {};
+    for(const k of keys){
+      try{
+        const res = await fetch(PD_RTDB_BASE + '/partner/' + encodeURIComponent(k) + '.json', { cache: 'no-store' });
+        out[k] = res.ok ? await res.json() : null;
+      }catch(e){
+        out[k] = null; // 네트워크/CORS로 실패해도 전체 동기화를 막지 않는다 — DATA 베이스라인만으로 계속 진행(§ 아래 usedOverrides 플래그로 사용자에게 알림)
+      }
+    }
+    return out;
+  }
+  // applyOverrides()와 동일한 규칙으로 병합한다 — DATA.newMou 각 행에 mouOverrides를
+  // 얹고, mouDeleted에 있는 업체는 제외하고, newMouAdds(원본에 없던 신규 협력업체)를
+  // 뒤에 추가한다. 여기서 만드는 배열은 새 값을 "지어내는" 게 아니라 partner-dashboard가
+  // 화면에 보여주는 것과 완전히 같은 결과를 CRM 쪽에서 재현하는 것뿐이다.
+  function pdBuildEffectiveRows(baseline, overrides){
+    const rows = (baseline.newMou || []).map(c=> Object.assign({}, c));
+    const rawOverrides = (overrides && overrides.mouOverrides) || {};
+    const overrideMap = {};
+    Object.keys(rawOverrides).forEach(k=> { overrideMap[pdUnescapeKey(k)] = rawOverrides[k]; });
+    let overrideCount = 0;
+    rows.forEach(c=>{
+      const patch = overrideMap[c.company];
+      if(patch){ Object.assign(c, patch); overrideCount++; }
+    });
+    const deletedSet = new Set((overrides && overrides.mouDeleted) || []);
+    const adds = ((overrides && overrides.newMouAdds) || []).filter(c=> c && c.company && !deletedSet.has(c.company));
+    const merged = rows.filter(c=> !deletedSet.has(c.company)).concat(adds);
+    return { rows: merged, overrideCount, addCount: adds.length, deletedCount: deletedSet.size };
+  }
+  // partnerList(internal/contractor/external)에서 업체명으로 사업자번호/대표자/연락처를
+  // 찾는다 — 셋 중 하나라도 있으면 채택(internal 우선), §3 매칭 2순위(사업자번호)와 신규
+  // 업체 생성(§4)에 쓴다.
+  function pdBuildContactIndex(baseline){
+    const idx = new Map();
+    ['internal','contractor','external'].forEach(cat=>{
+      const list = (baseline.partnerList && baseline.partnerList[cat]) || [];
+      list.forEach(r=>{
+        if(!r || !r.company) return;
+        if(!idx.has(r.company)) idx.set(r.company, r);
+      });
+    });
+    return idx;
+  }
+  // 기존 co.partnerDashboard.newMou(이미 CRM이 갖고 있던 값) 위에, partner-dashboard에서
+  // 새로 가져온 행(freshRow)을 필드 단위로 얹는다 — freshRow 쪽 값이 null/undefined인
+  // 필드는 기존 값을 그대로 두고(§13 "빈 값으로 덮어쓰지 않는다"), 값이 있는 필드만
+  // 최신값으로 갱신한다. newMou는 CRM 사용자가 직접 입력하는 필드가 아니라 전량
+  // partner-dashboard 출처라서, 값이 "있으면" 항상 최신(partner-dashboard)이 이긴다.
+  function pdMergeNewMou(oldNm, freshRow){
+    const merged = Object.assign({}, oldNm || {});
+    Object.keys(freshRow).forEach(k=>{
+      const v = freshRow[k];
+      if(v !== null && v !== undefined) merged[k] = v;
+    });
+    return merged;
+  }
+  // 업체 매칭(§3): 1순위 사업자등록번호(정확히 같을 때만), 2순위 정규화 업체명 완전일치
+  // (이 데이터 레이어 스크립트에 이미 있는 normCompanyName 재사용 — 렌더 스크립트의
+  // normCompanyNameForPartnerMatch와 완전히 같은 규칙, 부분/유사일치 절대 금지 — "㈜태림건설"과
+  // "㈜태림이앤씨"가 자동으로 합쳐지지 않는 이유가 이 함수). companyId는 partner-dashboard
+  // 쪽에 애초에 존재하지 않는 개념이라(두 시스템이 공유하는 식별자가 없음) 1순위에서
+  // 제외했다 — 이미 co.partnerDashboard.newMou가 있는 업체는 그 자체가 "이전에 이 방식으로
+  // 연결된 적 있음"의 증거이므로 이름이 정확히 같은 한 그대로 재매칭된다.
+  function pdMatchCompany(row, companies, bizIndex, nameIndex, contactIndex){
+    const contact = contactIndex.get(row.company);
+    const bizno = contact && contact.bizno ? String(contact.bizno).trim() : '';
+    if(bizno){
+      const hits = bizIndex.get(bizno);
+      if(hits && hits.length === 1) return { co: hits[0], via: 'bizno' };
+      if(hits && hits.length > 1) return { co: null, via: 'ambiguous-bizno' };
+    }
+    const norm = normCompanyName(row.company);
+    const nameHits = norm ? (nameIndex.get(norm) || []) : [];
+    if(nameHits.length === 1) return { co: nameHits[0], via: 'name' };
+    if(nameHits.length > 1) return { co: null, via: 'ambiguous-name' };
+    return { co: null, via: 'none' };
+  }
+  // 진행상황 변경 여부(미리보기 카운트용) — 실제로 달라지는 필드가 하나라도 있을 때만 센다.
+  function pdRowChangedFromExisting(oldNm, row){
+    const keys = ['qSentLabel','qSentDone','qReplyLabel','qReplyDone','m1Label','m1Done','m1Scheduled','m1ScheduledLabel','m1Owner','m2Label','m2Done','m2Scheduled','m2ScheduledLabel','m2Owner','mouLabel','mouDone','stage','note'];
+    const o = oldNm || {};
+    return keys.some(k=> row[k] !== undefined && row[k] !== null && o[k] !== row[k]);
+  }
+  // §7/§8/§9 — 진행 이벤트/메모를 customerActivities/memos에 "누적"으로 반영한다. 새 값을
+  // 만들지 않고 실제로 바뀐 필드만 문장으로 옮긴다. 중복 방지(§9/§10)는 기존
+  // applyPourTrackImport와 같은 패턴(sourceRecordId 존재 여부로 스킵)을 그대로 따르되,
+  // activities/memos에는 원래 그 필드가 없어 이번에 source/sourceRecordId 두 필드만
+  // 최소로 추가한다(§13 "필요한 partner 관련 필드만 추가" 원칙에 해당 — 기존 필드 의미는
+  // 안 바꿈, activityText/category 등은 addActivity와 완전히 동일하게 채운다).
+  function pdBuildEventsForCompany(oldNm, row){
+    const o = oldNm || {};
+    const events = []; // { text, sourceRecordId }
+    const id = (key, label)=> 'pd_' + normCompanyName(row.company) + '_' + key + '_' + (label || '');
+    if(row.qReplyDone && !o.qReplyDone) events.push({ text: `질문서 회신 완료${row.qReplyLabel ? ' (' + row.qReplyLabel + ')' : ''}`, sourceRecordId: id('qReply', row.qReplyLabel) });
+    if(row.m1Scheduled && !row.m1Done && row.m1Scheduled !== o.m1Scheduled) events.push({ text: `1차미팅 예정 · ${row.m1ScheduledLabel || row.m1Scheduled}${row.m1Owner ? ' · 담당 ' + row.m1Owner : ''}`, sourceRecordId: id('m1sched', row.m1Scheduled) });
+    if(row.m1Done && !o.m1Done) events.push({ text: `1차미팅 완료${row.m1Label ? ' (' + row.m1Label + ')' : ''}${row.m1Owner ? ' · 담당 ' + row.m1Owner : ''}`, sourceRecordId: id('m1done', row.m1Label) });
+    if(row.m2Scheduled && !row.m2Done && row.m2Scheduled !== o.m2Scheduled) events.push({ text: `2차미팅 예정 · ${row.m2ScheduledLabel || row.m2Scheduled}${row.m2Owner ? ' · 담당 ' + row.m2Owner : ''}`, sourceRecordId: id('m2sched', row.m2Scheduled) });
+    if(row.m2Done && !o.m2Done) events.push({ text: `2차미팅 완료${row.m2Label ? ' (' + row.m2Label + ')' : ''}${row.m2Owner ? ' · 담당 ' + row.m2Owner : ''}`, sourceRecordId: id('m2done', row.m2Label) });
+    if(row.mouDone && !o.mouDone) events.push({ text: `MOU 체결 완료${row.mouLabel ? ' (' + row.mouLabel + ')' : ''}`, sourceRecordId: id('mou', row.mouLabel) });
+    return events;
+  }
+  function pdBuildMemoForCompany(oldNm, row){
+    // note는 partner-dashboard에서 담당자가 자유 텍스트로 적는 메모다(§9) — 값이 있고
+    // 기존에 CRM이 알던 값과 다를 때만 새 메모로 추가한다(누적, §9 "절대 삭제하지 않는다").
+    if(!row.note || row.note === (oldNm && oldNm.note)) return null;
+    return { text: `[partner-dashboard] ${row.note}`, sourceRecordId: 'pd_' + normCompanyName(row.company) + '_note_' + row.note.length + '_' + row.note.slice(0,20) };
+  }
+  // previewPartnerSync: 아무것도 저장하지 않는 순수 분석(§4 미리보기 패턴, 기존
+  // previewPartnerImport/previewPourTrackImport와 같은 원칙) — fetch만 하고 계산 결과를
+  // 반환한다.
+  async function previewPartnerSync(){
+    const baseline = await pdFetchBaselineData();
+    const overrides = await pdFetchOverrides();
+    const usedOverrides = !!(overrides.mouOverrides || overrides.newMouAdds || overrides.mouDeleted);
+    const merge = pdBuildEffectiveRows(baseline, overrides);
+    const contactIndex = pdBuildContactIndex(baseline);
+    const companies = loadCompanies();
+    const bizIndex = new Map();
+    companies.forEach(c=>{ if(c.bizRegNo){ const k=String(c.bizRegNo).trim(); if(!bizIndex.has(k)) bizIndex.set(k, []); bizIndex.get(k).push(c); } });
+    const nameIndex = new Map();
+    companies.forEach(c=>{ const n = normCompanyName(c.name); if(!n) return; if(!nameIndex.has(n)) nameIndex.set(n, []); nameIndex.get(n).push(c); });
+
+    const updates = []; // { co, row, contact, events, memo, progressChanged }
+    const newCompanies = []; // { row, contact }
+    const review = []; // { row, reason }
+    let progressChangedCount = 0, eventCount = 0, memoCount = 0;
+
+    merge.rows.forEach(row=>{
+      if(!row || !row.company) return;
+      const m = pdMatchCompany(row, companies, bizIndex, nameIndex, contactIndex);
+      if(m.via === 'ambiguous-bizno' || m.via === 'ambiguous-name'){
+        review.push({ row, reason: m.via === 'ambiguous-bizno' ? '동일 사업자번호의 CRM 업체가 여러 건' : '동일 정규화 업체명의 CRM 업체가 여러 건' });
+        return;
+      }
+      const contact = contactIndex.get(row.company) || null;
+      if(!m.co){
+        newCompanies.push({ row, contact });
+        return;
+      }
+      const oldNm = (m.co.partnerDashboard && m.co.partnerDashboard.newMou) || null;
+      const changed = pdRowChangedFromExisting(oldNm, row);
+      const events = pdBuildEventsForCompany(oldNm, row);
+      const memo = pdBuildMemoForCompany(oldNm, row);
+      if(changed) progressChangedCount++;
+      eventCount += events.length;
+      if(memo) memoCount++;
+      if(changed || events.length || memo || !m.co.partnerDashboard || !m.co.partnerDashboard.newMou){
+        updates.push({ co: m.co, row, contact, events, memo, progressChanged: changed });
+      }
+    });
+
+    return {
+      baseline, overrides, usedOverrides,
+      updates, newCompanies, review,
+      counts: {
+        existingUpdate: updates.length,
+        newCompany: newCompanies.length,
+        progressChanged: progressChangedCount,
+        newActivity: eventCount + memoCount,
+        review: review.length
+      }
+    };
+  }
+  // applyPartnerSync: preview()가 이미 분류한 것만 저장한다(review는 절대 자동 처리하지
+  // 않음, §3 "검토 대상으로 남긴다"). 업체 목록을 한 번만 불러와 메모리에서 처리한 뒤
+  // 한 번만 저장한다(applyPourTrackImport와 동일한 성능 원칙, §15 "O(N²) 금지").
+  function applyPartnerSync(preview){
+    const companies = loadCompanies();
+    const byId = new Map(companies.map(c=> [c.id, c]));
+    const activities = loadActivities();
+    const existingActivitySourceIds = new Set(activities.filter(a=> a.source === 'partner-dashboard').map(a=> a.sourceRecordId));
+    const memos = readArr(MEMO_KEY);
+    const existingMemoSourceIds = new Set(memos.filter(m=> m.source === 'partner-dashboard').map(m=> m.sourceRecordId));
+    const now = nowIso();
+    let updatedCount = 0, newCount = 0, activityAdded = 0, memoAdded = 0;
+
+    preview.updates.forEach(u=>{
+      const co = byId.get(u.co.id);
+      if(!co) return;
+      const oldNm = (co.partnerDashboard && co.partnerDashboard.newMou) || null;
+      const mergedNm = pdMergeNewMou(oldNm, u.row);
+      co.partnerDashboard = Object.assign({}, co.partnerDashboard, { newMou: mergedNm });
+      // §13: CRM에 이미 값이 있는 연락처 필드는 절대 덮어쓰지 않는다 — applyPatchToRecord의
+      // onlyFillEmpty와 완전히 같은 규칙을 여기서도 그대로 쓴다(빈 칸일 때만 채움).
+      if(u.contact) applyPatchToRecord(co, { repName: u.contact.ceo || '', phone: u.contact.phone || '', fax: u.contact.fax || '', address: u.contact.address || '', bizRegNo: u.contact.bizno || '' }, true);
+      updatedCount++;
+      u.events.forEach(ev=>{
+        if(existingActivitySourceIds.has(ev.sourceRecordId)) return; // §9/§10 중복 방지
+        activities.push({ id: genId('act'), companyId: co.id, originalText: ev.text, activityText: ev.text, category: classifyActivity(ev.text), source: 'partner-dashboard', sourceRecordId: ev.sourceRecordId, createdAt: now, updatedAt: now });
+        existingActivitySourceIds.add(ev.sourceRecordId);
+        activityAdded++;
+      });
+      if(u.memo && !existingMemoSourceIds.has(u.memo.sourceRecordId)){
+        memos.push({ id: genId('memo'), targetType:'company', targetId:String(co.id), text: u.memo.text, source: 'partner-dashboard', sourceRecordId: u.memo.sourceRecordId, createdAt: now, updatedAt: now });
+        existingMemoSourceIds.add(u.memo.sourceRecordId);
+        memoAdded++;
+      }
+    });
+
+    // §렉 수정 라운드에서 확인된 것과 같은 함정: addCompany()는 그 자체로 load+save를 한 번
+    // 더 하는 독립 함수라서, 이 함수가 이미 메모리에 들고 있는 companies 배열과 다른
+    // "그 순간의 최신 목록"을 저장한다 — 루프 끝에서 saveCompanies(companies)로 다시
+    // 저장하면 방금 addCompany가 추가한 신규 업체가 오래된 스냅샷에 없어 통째로 사라진다
+    // (실제로 재현/확인한 버그). addCompany를 호출하지 않고 같은 배치 패턴(위
+    // applyPourTrackImport와 동일 — 레코드를 메모리에서 만들어 companies에 push, 저장은
+    // 맨 끝에 saveCompanies(companies) 한 번만)을 그대로 따른다.
+    preview.newCompanies.forEach(n=>{
+      const contact = n.contact || {};
+      const rec = Object.assign({ id: genId('co'), name:'', repName:'', contactName:'', position:'', phone:'', mobile:'', fax:'', email:'', bizRegNo:'', address:'', website:'', memo:'', createdAt: now }, {
+        name: n.row.company,
+        repName: contact.ceo || '',
+        phone: contact.phone || '',
+        fax: contact.fax || '',
+        address: contact.address || '',
+        bizRegNo: contact.bizno || '',
+        partnerDashboard: { newMou: pdMergeNewMou(null, n.row) }
+      });
+      companies.push(rec);
+      byId.set(rec.id, rec);
+      newCount++;
+      pdBuildEventsForCompany(null, n.row).forEach(ev=>{
+        if(existingActivitySourceIds.has(ev.sourceRecordId)) return;
+        activities.push({ id: genId('act'), companyId: rec.id, originalText: ev.text, activityText: ev.text, category: classifyActivity(ev.text), source: 'partner-dashboard', sourceRecordId: ev.sourceRecordId, createdAt: now, updatedAt: now });
+        existingActivitySourceIds.add(ev.sourceRecordId);
+        activityAdded++;
+      });
+      const memo = pdBuildMemoForCompany(null, n.row);
+      if(memo && !existingMemoSourceIds.has(memo.sourceRecordId)){
+        memos.push({ id: genId('memo'), targetType:'company', targetId:String(rec.id), text: memo.text, source: 'partner-dashboard', sourceRecordId: memo.sourceRecordId, createdAt: now, updatedAt: now });
+        existingMemoSourceIds.add(memo.sourceRecordId);
+        memoAdded++;
+      }
+    });
+
+    saveCompanies(companies);
+    saveActivities(activities);
+    writeArr(MEMO_KEY, memos);
+    return { updatedCount, newCount, activityAdded, memoAdded, reviewCount: preview.review.length };
+  }
+
+  /* ==========================================================================
      미등록 업체 관리(§미등록 업체 관리 라운드) — 2025년 매출 스냅샷(SHIN2_REVENUE_2025_SNAPSHOT,
      위에서 embed)과 현재 CRM companies를 정규화된 업체명으로만 비교한다. 유사 이름이라는
      이유로 자동 연결하지 않는다(§매칭 기준, 기존 Partner/POUR 가져오기와 동일한 원칙). 이
@@ -3988,7 +4302,8 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     buildRevenue2026Index, getCompany2026Revenue, buildUnregisteredCompanies2026,
     getCompanyReceivable, buildReceivableCompanies,
     getLatestPourRecordForCompany, getAllPourRecordsForCompany, buildPourLatestIndex,
-    buildRequestHistory, buildRequestHistoryIndex
+    buildRequestHistory, buildRequestHistoryIndex,
+    previewPartnerSync, applyPartnerSync
   };
 })();
 </script>
@@ -5390,8 +5705,13 @@ window.SHIN2_CRM_APP_INIT = function(){
       if(sent) return { state:'waiting', dateDisplay: sent.display, ts: sent.ts }; // 발송만 되고 회신 대기
       return { state:'waiting', dateDisplay:'—', ts:null };
     })();
-    const m1 = dateState(nm.m1Label);
-    const m2 = dateState(nm.m2Label);
+    // §협력사 동기화 라운드 §6: m1Scheduled/m2Scheduled(예정일, 완료일 m1Label/m2Label과는
+    // 별도 필드 — partner-dashboard 실제 구조 확인)이 있으면 state/dateDisplay/ts는 전혀
+    // 안 바꾸고 scheduledLabel/owner만 얹는다(기존 stage 객체 읽던 코드는 그대로 동작,
+    // "이미 일정이 잡혀 있는데 다시 제안이라고 표시" 방지는 computeNextActionLabel에서만
+    // 추가로 처리).
+    const m1 = Object.assign(dateState(nm.m1Label), { scheduledLabel: nm.m1ScheduledLabel || null, owner: nm.m1Owner || null });
+    const m2 = Object.assign(dateState(nm.m2Label), { scheduledLabel: nm.m2ScheduledLabel || null, owner: nm.m2Owner || null });
     const mou = (()=>{
       if(nm.mouDone){
         const p = parsePartnerDateLabel(nm.mouLabel);
@@ -5460,8 +5780,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 유지").
     if(byKey.mou.state === 'done') return null;
     if(byKey.q.state !== 'done') return null; // §10: 질문서 회신 전 확정 로직 없음
-    if(byKey.m1.state !== 'done') return '1차 미팅 제안'; // §8-A
-    if(byKey.m2.state !== 'done') return '2차 미팅 제안'; // §8-B
+    // §협력사 동기화 라운드 §6: 이미 예정일이 잡혀 있는데 "미팅 제안"이라고 다시 표시하지
+    // 않는다 — 실제 m1Scheduled/m2Scheduled(§ buildProgressStages에서 얹은 scheduledLabel)가
+    // 있을 때만 "예정 · 날짜"로 바꾼다. 우선순위(mou→q→m1→m2) 자체는 전혀 안 바꿨다.
+    if(byKey.m1.state !== 'done') return byKey.m1.scheduledLabel ? `1차미팅 예정 · ${byKey.m1.scheduledLabel}` : '1차 미팅 제안'; // §8-A
+    if(byKey.m2.state !== 'done') return byKey.m2.scheduledLabel ? `2차미팅 예정 · ${byKey.m2.scheduledLabel}` : '2차 미팅 제안'; // §8-B
     return 'MOU 체결 진행'; // §8-C (mou.state는 이미 위에서 'done'이 아님을 확인함)
   }
   function buildNextActionCellHtml(progress){
@@ -6849,6 +7172,108 @@ window.SHIN2_CRM_APP_INIT = function(){
         </tbody>
       </table>
     `;
+  }
+
+  /* ==========================================================================
+     §협력사 동기화 라운드 §2/§4 — 중앙 모달(.pi-overlay/.pi-panel, openConstructionModal과
+     같은 디자인). 단계: 로딩 → 미리보기(적용 전, 아무것도 저장 안 함) → [동기화 적용] →
+     결과. [취소]/X/바깥 클릭으로 언제든 닫을 수 있다 — 미리보기 단계에서 닫으면 아무 것도
+     저장되지 않는다(§4 "가능하면 바로 저장하지 말고"). 실제 fetch/병합/매칭/저장 로직은
+     D.previewPartnerSync()/D.applyPartnerSync()(데이터 레이어 쪽 함수, §12 조사 결과에
+     따라 작성)를 그대로 호출만 한다 — 여기는 순수 UI다.
+     ========================================================================== */
+  let partnerSyncState = { step: 'idle', preview: null, result: null, error: null };
+  function closePartnerSyncModal(){
+    const root = document.getElementById('partnerSyncModalRoot');
+    if(root) root.innerHTML = '';
+    partnerSyncState = { step: 'idle', preview: null, result: null, error: null };
+  }
+  async function openPartnerSyncModal(){
+    partnerSyncState = { step: 'loading', preview: null, result: null, error: null };
+    renderPartnerSyncModal();
+    try{
+      const preview = await D.previewPartnerSync();
+      partnerSyncState = { step: 'preview', preview, result: null, error: null };
+    }catch(e){
+      partnerSyncState = { step: 'error', preview: null, result: null, error: String((e && e.message) || e) };
+    }
+    renderPartnerSyncModal();
+  }
+  function renderPartnerSyncModal(){
+    const root = document.getElementById('partnerSyncModalRoot');
+    if(!root) return;
+    const s = partnerSyncState;
+    let bodyHtml, actionsHtml;
+    if(s.step === 'loading'){
+      bodyHtml = `<div class="pi-note">partner-dashboard 최신 데이터를 가져오는 중입니다...</div>`;
+      actionsHtml = `<button type="button" class="co-text-action" id="pdSyncCancelBtn">취소</button>`;
+    } else if(s.step === 'error'){
+      bodyHtml = `<div class="pi-note">가져오기에 실패했습니다.<br/><span style="color:#B91C1C;">${esc(s.error)}</span><br/><br/>이 브라우저의 네트워크/CORS 정책에 따라 다를 수 있습니다 — 잠시 후 다시 시도해 주세요.</div>`;
+      actionsHtml = `<button type="button" class="co-text-action primary" id="pdSyncCloseBtn">닫기</button>`;
+    } else if(s.step === 'preview'){
+      const c = s.preview.counts;
+      bodyHtml = `
+        <div class="cat-dist-total">${s.preview.usedOverrides ? 'partner-dashboard 최신 데이터(실시간 편집분 포함) 확인됨' : 'partner-dashboard 기본 데이터만 확인됨(실시간 편집분을 가져오지 못했습니다 — 결과가 최신이 아닐 수 있습니다)'}</div>
+        <table class="pi-sample-table"><tbody>
+          <tr><td>기존 업체 업데이트</td><td>${esc(c.existingUpdate)}개</td></tr>
+          <tr><td>신규 업체</td><td>${esc(c.newCompany)}개</td></tr>
+          <tr><td>진행상황 변경</td><td>${esc(c.progressChanged)}개</td></tr>
+          <tr><td>새 메모/활동</td><td>${esc(c.newActivity)}건</td></tr>
+          <tr><td>검토 필요</td><td>${esc(c.review)}개</td></tr>
+        </table>
+        ${s.preview.newCompanies.length ? `<div class="pi-note" style="margin-top:10px;">신규 업체: ${s.preview.newCompanies.slice(0,10).map(n=> esc(n.row.company)).join(', ')}${s.preview.newCompanies.length>10 ? ' 외 ' + (s.preview.newCompanies.length-10) + '개' : ''}</div>` : ''}
+        ${s.preview.review.length ? `<div class="pi-note" style="margin-top:6px;color:#B45309;">검토 필요(자동 반영 안 됨): ${s.preview.review.slice(0,10).map(r=> esc(r.row.company) + '(' + esc(r.reason) + ')').join(', ')}</div>` : ''}
+      `;
+      actionsHtml = `
+        <button type="button" class="co-text-action" id="pdSyncCancelBtn">취소</button>
+        <button type="button" class="co-text-action primary" id="pdSyncApplyBtn">동기화 적용</button>
+      `;
+    } else if(s.step === 'applying'){
+      bodyHtml = `<div class="pi-note">동기화 적용 중...</div>`;
+      actionsHtml = `<button type="button" class="co-text-action" disabled>적용 중...</button>`;
+    } else if(s.step === 'result'){
+      const r = s.result;
+      bodyHtml = `
+        <div class="cat-dist-total">협력사 동기화 완료</div>
+        <table class="pi-sample-table"><tbody>
+          <tr><td>기존 업체 업데이트</td><td>${esc(r.updatedCount)}개</td></tr>
+          <tr><td>신규 업체</td><td>${esc(r.newCount)}개</td></tr>
+          <tr><td>새 활동 기록</td><td>${esc(r.activityAdded)}건</td></tr>
+          <tr><td>새 메모</td><td>${esc(r.memoAdded)}건</td></tr>
+          <tr><td>검토 필요</td><td>${esc(r.reviewCount)}개</td></tr>
+        </table>
+      `;
+      actionsHtml = `<button type="button" class="co-text-action primary" id="pdSyncCloseBtn">닫기</button>`;
+    }
+    root.innerHTML = `
+      <div class="pi-overlay" id="pdSyncOverlay">
+        <div class="pi-panel" style="max-width:640px;">
+          <div class="pi-head">
+            <div class="pi-title">협력사 동기화</div>
+            <button type="button" class="chart-close-btn" id="pdSyncXBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body">${bodyHtml}</div>
+          <div class="pi-actions">${actionsHtml}</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('pdSyncXBtn').addEventListener('click', closePartnerSyncModal);
+    document.getElementById('pdSyncOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'pdSyncOverlay') closePartnerSyncModal(); });
+    const cancelBtn = document.getElementById('pdSyncCancelBtn');
+    if(cancelBtn) cancelBtn.addEventListener('click', closePartnerSyncModal);
+    const closeBtn = document.getElementById('pdSyncCloseBtn');
+    if(closeBtn) closeBtn.addEventListener('click', ()=>{ closePartnerSyncModal(); renderList(); });
+    const applyBtn = document.getElementById('pdSyncApplyBtn');
+    if(applyBtn) applyBtn.addEventListener('click', ()=>{
+      // §15: 중복 클릭 방지 — "적용 중..."으로 즉시 바꾸고 버튼을 비활성화한다.
+      partnerSyncState.step = 'applying';
+      renderPartnerSyncModal();
+      setTimeout(()=>{
+        const result = D.applyPartnerSync(partnerSyncState.preview);
+        partnerSyncState = { step: 'result', preview: partnerSyncState.preview, result, error: null };
+        renderPartnerSyncModal();
+      }, 0);
+    });
   }
 
   /* ==========================================================================
@@ -9501,6 +9926,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 항목을 눌렀을 때 각각 그대로 호출한다 — 메뉴 클릭 후에는 메뉴를 닫는다.
   document.getElementById('crmPartnerImportBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPartnerImportModal(); });
   document.getElementById('crmPourImportBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPourImportModal(); });
+  document.getElementById('crmPartnerSyncBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPartnerSyncModal(); });
   function closeUpdateMenu(){ document.getElementById('crmUpdateMenu').classList.remove('is-open'); }
   document.getElementById('crmDataUpdateBtn').addEventListener('click', (e)=>{
     e.stopPropagation();
