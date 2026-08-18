@@ -226,6 +226,14 @@
   .request-drawer-labels{ font-size:13px; font-weight:600; color:var(--text); margin:4px 0; }
   .request-drawer-labels div{ padding:1px 0; }
   .request-drawer-text{ font-size:12px; color:var(--text-muted); font-style:italic; margin-bottom:4px; }
+  /* §주요 공종 데이터 소스 독립화 라운드: 주요 공종 Drawer 전용 — 공종별 건수 분포를
+     보여주는 단순 목록(클릭 불가, 배지 없이 텍스트만, §15와 같은 절제된 톤 유지). */
+  .cat-dist-total{ font-size:13px; color:var(--text-muted); margin-bottom:12px; }
+  .cat-dist-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #EDF1F5; }
+  .cat-dist-row:last-child{ border-bottom:none; }
+  .cat-dist-name{ font-size:13px; font-weight:600; color:var(--text); }
+  .cat-dist-count{ font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; }
+  .cat-cell{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
   .col-cat{ flex:1 1 110px; min-width:0; font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-contrib{ flex:0 0 128px; font-size:11px; line-height:1.4; }
   .col-trend{ flex:0 0 70px; font-size:12px; text-align:center; }
@@ -4161,7 +4169,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       // buildProgressStages() 결과를 그대로 재사용한다(중복 계산 금지, §26과 같은 원칙).
       const stageInfo = stageDurationFromProgress(r.progress);
       const catText = buildTopCategoriesText(co, 2);
-      const catHtml = catText ? esc(catText) : '<span class="data-none">데이터 없음</span>';
+      // §8: "주요 공종" 클릭 -> 전체 공종 분포 Drawer(신규). 업체명 클릭(고객카드)과
+      // 분리하기 위해 button으로 감싸고 stopPropagation으로 처리한다(다른 컬럼과 동일 패턴).
+      const catHtml = catText
+        ? `<button type="button" class="cat-cell" data-cat-detail="${esc(co.id)}">${esc(catText)}</button>`
+        : '<span class="data-none">데이터 없음</span>';
       // §8/§9: "실적↔매출"은 기본 화면엔 한 줄(높음/보통/낮음/데이터 부족)만 보이고,
       // 클릭하면 기존 buildRevenueContribution() 결과(detail/sub)를 popover로 보여준다 —
       // 계산 로직은 그대로, 표시 방식만 "3줄 상시노출"→"1줄+클릭 시 근거"로 바꿨다.
@@ -4255,6 +4267,14 @@ window.SHIN2_CRM_APP_INIT = function(){
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-yr-detail'));
         if(co) openYearPourDrawer(co);
+      });
+    });
+    // §주요 공종 데이터 소스 독립화 라운드 §8: "주요 공종" 클릭 -> 전체 공종 분포 Drawer.
+    listEl.querySelectorAll('[data-cat-detail]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const co = D.findCompany(btn.getAttribute('data-cat-detail'));
+        if(co) openCategoryDrawer(co);
       });
     });
     renderPagination(totalPages);
@@ -5328,17 +5348,33 @@ window.SHIN2_CRM_APP_INIT = function(){
     const categories = String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean);
     return { year: r.year, category: categories[0] || null, site: r.client || null };
   }
-  function buildTopCategoriesText(co, n){
-    const records = co.pourTrackRecords || [];
-    if(!records.length) return null;
+  // §주요 공종 데이터 소스 독립화 라운드: "주요 공종"이 co.pourTrackRecords(="POUR 시공실적
+  // 업데이트" 버튼을 눌러야만 채워지는 상태값)에서만 집계되고 있었다 — "최근 실적" 컬럼은
+  // 이미 D.getAllPourRecordsForCompany(co)(매번 전체 POUR 스냅샷을 정규화 업체명으로 새로
+  // 매칭)로 바뀌어 있는데 "주요 공종"만 안 바뀌어서, 업데이트 버튼을 한 번도 안 누른 업체는
+  // "최근 실적"엔 실제 실적이 보이는데 "주요 공종"은 "데이터 없음"으로 보이는 모순이 생겼다
+  // (실제 조사 사례: ㈜석민이앤씨). "주요 공종"은 "몇 년 몇 월에 했는가"가 아니라 "무슨
+  // 공사를 주로 했는가"라 정확한 월/일이 필요 없으므로, "1년 실적"(getThisYearPourCount, 이
+  // 함수는 전혀 안 바꿈)과 다르게 전체 POUR 실적(연도·공종만 있으면 충분)에서 집계하도록
+  // 데이터 소스를 "최근 실적"과 통일했다. 별도의 공종명 정규화 규칙은 코드 어디에도 없어서
+  // (전체 파일 재확인) 새로 만들지 않고 원본 문자열을 그대로 쓴다.
+  function buildTopCategoryBreakdown(co){
+    const records = D.getAllPourRecordsForCompany(co);
+    if(!records.length) return [];
     const catCount = new Map();
     records.forEach(r=>{
       String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean).forEach(c=>{
         catCount.set(c, (catCount.get(c) || 0) + 1);
       });
     });
-    if(!catCount.size) return null;
-    return Array.from(catCount.entries()).sort((a,b)=> b[1]-a[1]).slice(0, n || 2).map(([c])=> c).join(', ');
+    // Array.sort는 안정 정렬(stable)이라 동률일 때는 catCount에 먼저 등록된 순서(=records
+    // 순서, 즉 연도·원본행 최신순)가 그대로 유지된다 — 별도 동률 규칙을 새로 만들지 않았다.
+    return Array.from(catCount.entries()).sort((a,b)=> b[1]-a[1]).map(([category,count])=> ({ category, count }));
+  }
+  function buildTopCategoriesText(co, n){
+    const breakdown = buildTopCategoryBreakdown(co);
+    if(!breakdown.length) return null;
+    return breakdown.slice(0, n || 2).map(x=> x.category).join(', ');
   }
   function getTotalRevenue(co){
     const gs = co.partnerDashboard && co.partnerDashboard.gradeSales;
@@ -5951,6 +5987,39 @@ window.SHIN2_CRM_APP_INIT = function(){
                   <div class="receivable-site-source">원본: ${esc(r.sourceSheet)} · ${esc(r.sourceRow)}행</div>
                 </div>`;
             }).join('') : `<div class="pi-note">올해(${new Date().getFullYear()}년) POUR 실적이 없습니다.</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
+    document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
+  }
+
+  // §주요 공종 데이터 소스 독립화 라운드 §8: "주요 공종" 클릭 -> 전체 공종 분포 Drawer(신규).
+  // buildTopCategoryBreakdown()은 목록에 보이는 buildTopCategoriesText()와 완전히 같은
+  // 집계(전체 POUR 실적을 공종별로 카운트) 결과를 그대로 펼쳐 보여준다.
+  function openCategoryDrawer(co){
+    const root = document.getElementById('sideDrawerRoot');
+    if(!root) return;
+    const breakdown = buildTopCategoryBreakdown(co);
+    const totalCount = D.getAllPourRecordsForCompany(co).length;
+    root.innerHTML = `
+      <div class="side-drawer-overlay" id="sideDrawerOverlay">
+        <div class="side-drawer-panel">
+          <div class="side-drawer-head">
+            <div class="side-drawer-title">주요 공종 — ${esc(co.name)}</div>
+            <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
+          </div>
+          <div class="side-drawer-body">
+            ${breakdown.length ? `
+              <div class="cat-dist-total">전체 실적 ${esc(totalCount)}건</div>
+              ${breakdown.map(b=> `
+                <div class="cat-dist-row">
+                  <span class="cat-dist-name">${esc(b.category)}</span>
+                  <span class="cat-dist-count">${esc(b.count)}건</span>
+                </div>
+              `).join('')}
+            ` : `<div class="pi-note">공종 데이터가 없습니다.</div>`}
           </div>
         </div>
       </div>
