@@ -4866,18 +4866,18 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div class="cdash-col" id="cdashDocStatusBlock"></div>
             </div>
 
-            <div class="cdash-tab-row">
-              <button type="button" class="cdash-tab" id="cdashBtnMeeting">진행상황</button>
-              <button type="button" class="cdash-tab" id="cdashBtnPour">POUR 시공실적</button>
-              <button type="button" class="cdash-tab" id="cdashBtnMemo">요청자료</button>
-              <button type="button" class="cdash-tab" id="cdashBtnDocs">서류함</button>
-              <button type="button" class="cdash-tab" id="cdashBtnInfo">업체정보</button>
-            </div>
-
-            <div class="cdash-panel-wrap" id="cdashInfoWrap" style="display:none;">
-              <div id="crmBasicInfo"></div>
-            </div>
-            <div class="cdash-panel-wrap" id="cdashDocsWrap" style="display:none;">
+            <!-- §하단 탭 제거 라운드: 진행상황/POUR 시공실적/요청자료/서류함/업체정보 5개
+                 탭 버튼(cdash-tab-row)을 없앴다. 진행상황·POUR 시공실적은 이미 위쪽에 항상
+                 보이는 섹션이라 탭이 스크롤만 시켜주던 것이었고(§1), 요청자료는 "최근 요청 /
+                 고객 메모" 블록의 [전체 기록 보기] 버튼이 이미 같은 openMemoPanel(co)를 여니
+                 기능 손실이 없다(§2). 업체정보(crmBasicInfo)는 "고객 정보"(cdashReactionsCol)
+                 안으로 옮겼고(요청사항), 서류함(crmDocsSection — 실제 파일 업로드/목록 UI)은
+                 버튼 뒤에 숨기지 않고 이 자리에 항상 펼쳐서 보여준다(탭이 없으면 유일한
+                 진입점이 사라지므로 §"기존 기능은 그대로 유지" 원칙에 따라 보존). 렌더
+                 함수/데이터는 전혀 바꾸지 않았다(renderBasicInfoView/Form → #crmBasicInfo,
+                 renderDocsSection → #crmDocsSection, renderDocCounts → #chartDocCounts, 전부
+                 그대로). -->
+            <div class="cdash-panel-wrap" id="cdashDocsWrap">
               <div class="chart-section-title">서류</div>
               <div id="chartDocCounts"></div>
               <div id="crmDocsSection"></div>
@@ -4911,35 +4911,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderDocCounts(co);
     renderDocsSection(co);
 
-    const panelBtns = [
-      ['cdashBtnInfo','cdashInfoWrap'], ['cdashBtnDocs','cdashDocsWrap']
-    ];
-    panelBtns.forEach(([btnId, wrapId])=>{
-      const btn = document.getElementById(btnId);
-      const wrap = document.getElementById(wrapId);
-      const label = btn.textContent;
-      btn.addEventListener('click', ()=>{
-        const showing = wrap.style.display !== 'none';
-        wrap.classList.toggle('cdash-tab-active', !showing);
-        wrap.style.display = showing ? 'none' : 'block';
-      });
-    });
-    const memoBtn = document.getElementById('cdashBtnMemo');
-    const reqCount = buildRequestListItems(co).length;
-    memoBtn.textContent = reqCount ? `요청자료 ${reqCount}` : '요청자료';
-    memoBtn.addEventListener('click', ()=> openMemoPanel(co));
-    // §카드 재구성 라운드: 하단 탭 중 진행 기록/POUR 시공실적은 이미 화면에 늘 보이는
-    // 섹션으로 스크롤만 시켜준다(새 팝업/토글 패널 아님) — §요청자료 정리 라운드에서 만든
-    // 패턴 그대로 재사용.
-    const scrollTabs = [['cdashBtnMeeting','cdashMeetingBlock'], ['cdashBtnPour','cdashPourTrackBlock']];
-    scrollTabs.forEach(([btnId, blockId])=>{
-      const btn = document.getElementById(btnId);
-      if(!btn) return;
-      btn.addEventListener('click', ()=>{
-        const block = document.getElementById(blockId);
-        if(block) block.scrollIntoView({ behavior:'smooth', block:'center' });
-      });
-    });
+    // §하단 탭 제거 라운드: cdash-tab-row(진행상황/POUR 시공실적/요청자료/서류함/업체정보)를
+    // DOM에서 없앴으므로, 그 버튼들에 붙어있던 토글/스크롤/openMemoPanel 리스너 등록 코드도
+    // 함께 제거했다(§ 존재하지 않는 요소에 리스너를 붙이지 않는다). openMemoPanel(co) 자체는
+    // renderReqPreview의 [전체 기록 보기] 버튼에서 여전히 호출된다(§2, 기능 보존).
   }
 
   // ---- 상단 헤더(§1~5) — 업체명만 크게, "고객관리카드" 문구/개별 복사버튼 삭제. X는 카드
@@ -7477,6 +7452,12 @@ window.SHIN2_CRM_APP_INIT = function(){
         : `<div class="cdash-field-value is-muted">—</div>`}
       ${st.text ? `<div class="chart-evidence-line" style="margin-top:6px;font-size:12px;color:var(--text);">성향: ${esc(st.text)}</div>` : ''}
     `;
+    // §하단 탭 제거 라운드: 원래 "업체정보" 탭(cdashBtnInfo/cdashInfoWrap) 뒤에 숨어있던
+    // #crmBasicInfo(renderBasicInfoView/renderBasicInfoForm이 그리는 대표전화/이메일/주소 등
+    // 필드 + 기본메모)를 이 "고객 정보" 칼럼 안으로 옮겼다(요청사항). 렌더 함수/데이터/저장
+    // 로직은 전혀 바꾸지 않았다 — #crmBasicInfo가 그려질 DOM 위치만 옮겼고,
+    // renderChart()에서 renderReactionsCol(co) 다음에 renderBasicInfoView/Form(co)을
+    // 그대로 호출하므로 채워지는 순서도 문제없다.
     wrap.innerHTML = `
       <div class="cdash-bcol-title-row">
         <div class="cdash-bcol-title">고객 정보</div>
@@ -7495,6 +7476,8 @@ window.SHIN2_CRM_APP_INIT = function(){
           <div class="cdash-mini-form-actions"><button type="button" class="co-text-action primary" id="cdashTendencySaveBtn">성향 저장</button></div>
         </div>
       ` : ''}
+      <div class="cdash-col-subtitle" style="margin-top:12px;">업체 정보</div>
+      <div id="crmBasicInfo"></div>
     `;
     document.getElementById('cdashReactionsToggle').addEventListener('click', ()=>{
       cardState.sectionEdit.reactions = !editing;
