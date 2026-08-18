@@ -15,6 +15,8 @@ import traceback
 
 from app.engine.pipeline import STAGES_V2 as STAGES
 from app.engine.pipeline import run_pipeline_v2 as run_pipeline
+from app.engine.pipeline import STAGES_V3 as STAGES_PHOTO  # noqa: F401 (GUI에서 사용)
+from app.engine.pipeline import run_pipeline_photo  # noqa: F401 (GUI/CLI v3 흐름에서 사용)
 from app.utils.pdf_tools import build_preview_image, convert_to_pdf  # noqa: F401 (engine/GUI에서 재사용)
 
 

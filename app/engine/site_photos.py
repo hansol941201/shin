@@ -21,8 +21,13 @@ from app.utils.models import ImageAsset
 
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 # 최대 3페이지까지만 생성한다는 원칙에 맞춰, 지나치게 많은 현장사진이 선택돼도
-# 상한을 둔다(그 이상은 지면 제한으로 생략하고 로그에 남긴다).
+# 상한을 둔다(그 이상은 지면 제한으로 생략하고 로그에 남긴다). 이 상한은
+# load_site_photos()(레거시: 사진을 그대로 갤러리에 배치)에만 적용된다.
 MAX_SITE_PHOTOS = 12
+# [v3 엔진] load_and_analyze_site_photos()는 "현장사진만 자유롭게 업로드"가 목표이므로
+# (요청사항 1), 페이지 수와 무관한 별도의 훨씬 넉넉한 상한을 둔다. 분석/분류 자체는
+# 사진이 많아도 문제 없고, 실제 페이지 배분은 이후 Story Engine이 담당한다.
+MAX_ANALYZED_SITE_PHOTOS = 60
 
 
 def validate_site_photo_paths(paths: List[str]) -> None:
@@ -70,4 +75,69 @@ def load_site_photos(paths: List[str], work_dir: str, logs: List[str] = None) ->
     if logs is not None:
         logs.append(f"[현장사진] source_type=current_site 로 {len(out)}장 등록 완료 "
                      f"(기존 PPT 추출 사진과 별도 관리, 분류/진단 없음)")
+    return out
+
+
+# ------------------------------------------------------------------
+# [v3 엔진] 사진 기반 자동 생성 흐름 전용. 위 load_site_photos()와 달리, 이 함수는
+# "사용자가 이미 공종을 알고 선택했다"는 기존 전제가 없다 - 오히려 사진에서 공종/역할을
+# 자동으로 판정하는 것이 v3 흐름의 핵심 기능이므로, 여기서는 OCR/분류를 의도적으로
+# 수행한다(요청사항 2~5). 다만 확정적 전문 진단 문구를 만들지 않는다는 원칙(요청사항 13)은
+# 그대로 유지 - photo_analyzer가 붙이는 caption은 시각적으로 관찰 가능한 상태 서술뿐이다.
+# 기존 load_site_photos()는 레거시(기존 PPT 입력) 흐름에서 계속 그대로 사용된다.
+# ------------------------------------------------------------------
+def load_and_analyze_site_photos(paths: List[str], work_dir: str, logs: List[str] = None):
+    """현장사진을 복사 + OCR + 카테고리/공종/역할 자동분석까지 마친 ImageAsset 목록을 만든다."""
+    import imagehash as _imagehash
+
+    from app.engine.captions import apply_captions
+    from app.image_classifier.classifier import classify_all, dedupe_images
+    from app.image_extractor.extractor import _ocr_text
+    from app.photo_analyzer.analyzer import analyze_all_photos
+
+    os.makedirs(work_dir, exist_ok=True)
+    use_paths = paths[:MAX_ANALYZED_SITE_PHOTOS]
+    if logs is not None and len(paths) > MAX_ANALYZED_SITE_PHOTOS:
+        logs.append(f"[현장사진] 선택 {len(paths)}장 중 상한({MAX_ANALYZED_SITE_PHOTOS}장)을 초과한 "
+                     f"{len(paths) - MAX_ANALYZED_SITE_PHOTOS}장은 생략됩니다.")
+    out: List[ImageAsset] = []
+    for idx, src in enumerate(use_paths):
+        ext = os.path.splitext(src)[1].lower()
+        dst = os.path.join(work_dir, f"site_{uuid.uuid4().hex[:8]}{ext}")
+        shutil.copy2(src, dst)
+        try:
+            with Image.open(dst) as im:
+                w, h = im.size
+                phash = str(_imagehash.phash(im.convert("RGB")))
+        except Exception:
+            w, h = 1600, 1200
+            phash = None
+        ocr_text = ""
+        try:
+            with Image.open(dst) as im:
+                ocr_text = _ocr_text(im.convert("RGB"))
+        except Exception:
+            ocr_text = ""
+        out.append(ImageAsset(
+            id=f"site_{idx}_{uuid.uuid4().hex[:6]}",
+            source_file="현장사진", slide_index=idx, shape_name=os.path.basename(src),
+            path=dst, width=w, height=h, phash=phash, ocr_text=ocr_text,
+            nearby_text="", source_type="current_site",
+        ))
+
+    classify_all(out)
+    dedupe_images(out)
+    analyze_all_photos(out)
+    apply_captions([i for i in out if not i.is_duplicate_of])
+
+    if logs is not None:
+        dup = sum(1 for i in out if i.is_duplicate_of)
+        unk = sum(1 for i in out if i.photo_role == "unknown")
+        logs.append(f"[현장사진 자동분석] {len(out)}장 로드 - 중복 {dup}장, 미분류(unknown) {unk}장 "
+                     f"(source_type=current_site, 삭제 없이 모두 보존)")
+        for img in out:
+            logs.append(f"  · {img.shape_name}: work_type={img.work_type or '미판정'}, "
+                         f"role={img.photo_role}, defect_type={img.defect_type or '-'}, "
+                         f"process_type={img.process_type or '-'}, confidence={img.confidence:.2f} "
+                         f"| {img.analysis_reason}")
     return out

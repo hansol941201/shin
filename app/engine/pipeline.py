@@ -8,7 +8,7 @@ v2 콘텐츠 중심 파이프라인 오케스트레이터.
 import datetime
 import json
 import os
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from app.anonymizer.anonymizer import build_blacklist, evaluate_image
 from app.content_selector import selector as cs
@@ -26,8 +26,12 @@ from app.engine.story import build_pages
 from app.engine import site_photos as site_photos_module
 from app.image_classifier.classifier import classify_all, dedupe_images, detect_before_after_pairs
 from app.image_extractor.extractor import extract_images
+from app.knowledge.library import build_knowledge_index
+from app.knowledge import matcher as km
+from app.photo_analyzer.analyzer import aggregate_roles, aggregate_work_types, build_analysis_summary
 from app.ppt_parser.parser import make_workcopy, parse_presentation
 from app.utils import debug_dump as dd
+from app.utils.config import WORK_TYPE_CODE, work_type_label
 from app.utils.input_validation import inspect_file, resolve_input_file, validate_input_paths
 from app.utils.paths import make_session_temp_dir
 from app.utils.pdf_tools import convert_to_pdf
@@ -453,6 +457,339 @@ def run_pipeline_v2(apartment_name: str, work_type: str, input_paths: List[str],
         raise
     except Exception as e:
         _log(logs, f"[오류] 파이프라인이 '{current_stage}' 단계에서 예외로 종료되었습니다: "
+                   f"{type(e).__name__}: {e}")
+        _write_log_now(f"[파이프라인] 종료 단계: {current_stage} (예외 발생: {type(e).__name__})")
+        raise PptGenerationFailedError(
+            f"'{current_stage}' 단계에서 오류가 발생해 PPT 생성이 실패했습니다.\n"
+            f"  - 오류 내용: {type(e).__name__}: {e}\n"
+            f"  - 처리 로그: {log_path}"
+        ) from e
+
+
+PIPELINE_NAME_PHOTO = "run_pipeline_photo_v3"
+
+STAGES_V3 = [
+    "현장사진 로드 중", "사진 자동분석 중", "공종 자동판별 중", "회사 지식자료 검색 중",
+    "스토리 구성 중", "PowerPoint 생성 중", "검수 중", "품질 평가 중", "시각 검증 중", "완료",
+]
+
+
+def _build_knowledge_content_library(entries, primary_work_type: str,
+                                       photo_terms: set) -> Dict[str, List[str]]:
+    """요청사항 9: 사진 분석 결과(work_type + 사진에서 감지된 하자/공정 유형)로
+    지식자료를 검색해 문구 라이브러리를 만든다. 같은 카테고리 안에서는 실제 사진에서
+    확인된 유형과 관련된 문구를 우선 배치한다(요청사항 10: 회사 기존 자료 근거만 사용,
+    새 사실을 만들지 않음 - 여기서는 순서만 조정하고 문구 자체는 원문 그대로)."""
+    library: Dict[str, List[str]] = {}
+    for e in entries:
+        if e.work_type != primary_work_type:
+            continue
+        bucket = library.setdefault(e.category, [])
+        if e.text and e.text not in bucket and len(bucket) < 20:
+            bucket.append(e.text)
+
+    def _priority(text: str) -> int:
+        return 0 if any(term in text for term in photo_terms) else 1
+
+    for cat in library:
+        library[cat].sort(key=_priority)
+    return library
+
+
+def run_pipeline_photo(apartment_name: str, site_photo_paths: List[str], knowledge_dir: str,
+                        output_dir: str, work_type_override: Optional[str] = None,
+                        progress_cb: Optional[Callable[[str], None]] = None,
+                        extra_logs: Optional[List[str]] = None) -> dict:
+    """[v3 엔진] 현장사진만으로 입주민 설명자료를 자동 생성한다.
+
+    기존 run_pipeline_v2()(사용자가 기존 PPT 2~3개를 매번 선택)와 달리, 이 함수는
+    현장사진만 입력받아 (1) 사진 자동분석 -> (2) 공종 자동판별 -> (3) 회사 지식자료
+    자동검색/매칭 -> (4) Story 자동구성 -> (5) 기존 Template Engine(변경 없음)으로
+    PPTX를 생성한다. Template/Placeholder 엔진과 최종 PPTX 저장/검수/품질평가 로직은
+    run_pipeline_v2와 완전히 동일한 모듈(generator3/validator/quality)을 그대로 재사용한다 -
+    "AI가 슬라이드를 새로 디자인하지 않는다"는 원칙을 그대로 지킨다.
+    """
+    logs: List[str] = []
+    if extra_logs:
+        logs.extend(extra_logs)
+    commit = _current_commit()
+    _log(logs, f"[파이프라인] 사용 파이프라인: {PIPELINE_NAME_PHOTO}")
+    _log(logs, f"[파이프라인] 최신 커밋 번호: {commit}")
+    _log(logs, f"[v3 엔진] 입력 검증 - 아파트명='{apartment_name}', 현장사진수={len(site_photo_paths or [])}, "
+               f"공종 수동지정={work_type_override or '자동분석'}")
+
+    if not apartment_name or not apartment_name.strip():
+        raise ValueError("새 아파트명을 입력해야 합니다.")
+    if not site_photo_paths:
+        raise ValueError("현장사진을 1장 이상 업로드해야 합니다.")
+
+    site_photos_module.validate_site_photo_paths(site_photo_paths)
+    for p in site_photo_paths:
+        info = inspect_file(p)
+        _log(logs, f"[집계] 현장사진 확인 - {os.path.basename(p)}: "
+                   f"확장자={info['ext']}, 크기={info['size_bytes']:,} bytes")
+
+    os.makedirs(output_dir, exist_ok=True)
+    temp_root = make_session_temp_dir()
+    _log(logs, f"[집계] 작업 임시 폴더: {temp_root}")
+    safe_name = "".join(c for c in apartment_name if c not in '\\/:*?"<>|').strip() or "새아파트"
+
+    log_path = os.path.join(output_dir, f"{safe_name}_처리로그.txt")
+
+    def _write_log_now(final_line: str = None):
+        lines = list(logs)
+        if final_line:
+            lines.append(final_line)
+        try:
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+        except Exception:
+            pass
+
+    current_stage = "현장사진 로드/자동분석"
+    try:
+        # ---------- 1~2. 현장사진 로드 + 사진 자동분석(요청사항 2/5) ----------
+        _report(progress_cb, STAGES_V3[0])
+        site_dir = os.path.join(temp_root, "site_photos")
+        site_images = site_photos_module.load_and_analyze_site_photos(site_photo_paths, site_dir, logs=logs)
+
+        _report(progress_cb, STAGES_V3[1])
+        # 현장사진에도 민감정보(전화번호/사업자번호/로고 문구 등)가 찍혀 있을 수 있으므로
+        # 기존 PPT와 동일한 익명화 검증을 적용한다(요청사항에는 없지만 기존 안전장치를
+        # 약화시키지 않기 위함 - 요청사항 22 "회귀 방지").
+        blacklist = build_blacklist([], site_images, apartment_name)
+        banned_count = 0
+        for img in site_images:
+            evaluate_image(img, blacklist)
+            if img.banned:
+                banned_count += 1
+        if banned_count:
+            _log(logs, f"[집계] 민감정보로 배제된 현장사진: {banned_count}장")
+
+        # ---------- 3. 공종 자동판별(요청사항 3/4) ----------
+        _report(progress_cb, STAGES_V3[2])
+        primary_code, percentages, wt_counts = aggregate_work_types(site_images)
+        if work_type_override:
+            primary_label = work_type_override
+            primary_code = WORK_TYPE_CODE.get(work_type_override, primary_code)
+            _log(logs, f"[공종판별] 사용자가 '{work_type_override}'로 수동 지정(자동판정 결과는 참고용으로만 기록)")
+        else:
+            primary_label = work_type_label(primary_code) if primary_code else "기타"
+        secondary = [(work_type_label(wt), pct) for wt, pct in percentages
+                     if wt != primary_code and pct >= 15.0]
+        _log(logs, f"[공종판별] 주 공종 = {primary_label}"
+                   + (f" (보조 공종: {', '.join(f'{n} {p}%' for n, p in secondary)})" if secondary else ""))
+        for wt, pct in percentages:
+            _log(logs, f"  · {work_type_label(wt)}: {pct}%  ({wt_counts.get(wt, 0)}장)")
+
+        analysis_summary = build_analysis_summary(site_images)
+        _log(logs, f"[사진분석 요약] 전체 {analysis_summary['total_photos']}장 / "
+                   f"중복 {analysis_summary['duplicate_photos']}장 / 미분류(unknown) "
+                   f"{analysis_summary['unknown_photos']}장 (삭제 없이 보존)")
+        role_counts = aggregate_roles(site_images)
+        _log(logs, f"[사진분석 요약] 역할별: {role_counts}")
+
+        # ---------- 4. 회사 지식자료 자동 검색/매칭(요청사항 7~10) ----------
+        _report(progress_cb, STAGES_V3[3])
+        knowledge_entries, knowledge_images = build_knowledge_index(knowledge_dir, logs=logs)
+        photo_terms = set()
+        for img in site_images:
+            photo_terms.update(km.search_terms_for_photo(img))
+        content_library = _build_knowledge_content_library(knowledge_entries, primary_code, photo_terms)
+        _log(logs, f"[Knowledge 매칭] 주 공종='{primary_label}' 기준 검색된 문구 카테고리: "
+                   f"{list(content_library.keys())} (총 {sum(len(v) for v in content_library.values())}건)")
+
+        # ---------- 5. Story 자동구성(요청사항 11, story.py의 build_pages를 그대로 재사용) ----------
+        _report(progress_cb, STAGES_V3[4])
+        overview_images = [i for i in site_images if i.photo_role == "site_overview"
+                            and not i.banned and not i.is_duplicate_of]
+        non_overview = [i for i in site_images if i not in overview_images]
+
+        cover_pool = overview_images or [i for i in non_overview if not i.banned and not i.is_duplicate_of]
+        cover_image = max(cover_pool, key=lambda i: i.quality_score) if cover_pool else None
+        gallery_images = [i for i in overview_images if i is not cover_image]
+        groups_pool = [i for i in non_overview if i is not cover_image]
+
+        a_list, b_list, c_list = grade_all(groups_pool, family_of)
+        usable_for_story = [i for i in groups_pool if i.grade in ("A", "B")]
+        groups = build_groups(usable_for_story, [])
+        _log(logs, f"[집계] 콘텐츠 그룹 수(현장사진 기준): {len(groups)}개, "
+                   f"등급 A {len(a_list)}장/B {len(b_list)}장/C(제외) {len(c_list)}장")
+        for img in c_list:
+            _log(logs, f"  · C등급 제외: {img.shape_name} - {img.grade_reason}")
+
+        ba_pool = [i for i in knowledge_images if i.work_type == primary_code]
+        ba_pairs = cs.build_before_after_cases(ba_pool, max_cases=10)
+        _log(logs, f"[Knowledge 매칭] '{primary_label}' 지식자료 전후사진 쌍: {len(ba_pairs)}건 "
+                   f"(source_type=reference_ppt로 '기존 유사 시공 사례'에만 사용, 현장사진과 분리)")
+
+        images_by_id = {i.id: i for i in site_images}
+        images_by_id.update({i.id: i for i in knowledge_images})
+
+        out_pptx = os.path.join(output_dir, f"{safe_name}_{primary_label}_입주민설명자료.pptx")
+
+        attempt = 0
+        settings = {}
+        quality_report = None
+        pages = None
+        while attempt < 3:
+            attempt += 1
+            current_stage = f"스토리 구성/PPT 생성(시도 {attempt})"
+            for img in site_images + knowledge_images:
+                img.selected = False
+                img.selected_slide = None
+                img.caption_is_original = False
+            used_ids = set()
+            pages = build_pages(apartment_name, primary_label, groups, content_library, ba_pairs,
+                                  cover_image, used_ids, images_by_id, settings=settings,
+                                  site_photos=gallery_images or None)
+            _log(logs, f"[시도 {attempt}] 스토리 구성 완료 - 총 {len(pages)}페이지 (설정: {settings or '기본값'})")
+
+            template_stats = None
+            try:
+                template_stats = generate_pptx_v3(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
+            except Exception as e:
+                _log(logs, f"[파이프라인] 템플릿 엔진(generator3) 실패({type(e).__name__}: {e}) - "
+                           "generator2(코드 렌더러)로 재시도합니다.")
+                generate_pptx_v2(pages, images_by_id, out_pptx, log_fn=lambda m: _log(logs, m))
+
+            current_stage = f"검수(시도 {attempt})"
+            report = validate_and_fix(out_pptx, blacklist, apartment_name)
+
+            current_stage = f"품질 평가(시도 {attempt})"
+            used_original_phrases = {b for p in pages for b in p.get("bullets", [])}
+            quality_report = qmod.compute_quality(site_images + knowledge_images, pages, content_library,
+                                                    used_original_phrases, report)
+            _log(logs, f"[시도 {attempt}] 품질 점수: {quality_report.total}/100 "
+                       f"({'PASS' if quality_report.passed else 'FAIL'})")
+            if quality_report.passed or attempt >= 3:
+                break
+            _log(logs, f"[시도 {attempt}] 기준 미달 사유: {', '.join(quality_report.fail_reasons)}")
+            settings = _adjust_settings_for_retry(settings, quality_report, content_library, logs)
+
+        _report(progress_cb, STAGES_V3[5])
+
+        current_stage = "최종 검수"
+        _report(progress_cb, STAGES_V3[6])
+        final_validation = validate_and_fix(out_pptx, blacklist, apartment_name)
+
+        current_stage = "품질평가/인벤토리 저장"
+        _report(progress_cb, STAGES_V3[7])
+        debug_dir = os.path.join(output_dir, f"{safe_name}_중간산출물")
+        os.makedirs(debug_dir, exist_ok=True)
+        dd.dump_image_extraction_folder(site_images + knowledge_images, debug_dir)
+        dd.dump_image_classification_csv(site_images + knowledge_images,
+                                           os.path.join(debug_dir, "이미지분류.csv"))
+        inv.dump_content_groups_json(groups_to_json(groups), os.path.join(debug_dir, "content_groups.json"))
+        inv.dump_slide_content_mapping_csv(pages, os.path.join(debug_dir, "slide_content_mapping.csv"))
+        unused = [i for i in site_images if not i.selected]
+        for i in unused:
+            if not i.unused_reason:
+                if i.banned:
+                    i.unused_reason = "민감정보 추정으로 제외"
+                elif i.is_duplicate_of:
+                    i.unused_reason = f"중복 사진(대표: {i.is_duplicate_of})"
+                elif i.grade == "C":
+                    i.unused_reason = i.grade_reason or "저해상도/품질 미달"
+                else:
+                    i.unused_reason = "페이지 구성 시 사용되지 않음(자료는 보존됨, 삭제 아님)"
+        with open(os.path.join(debug_dir, "photo_analysis_summary.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "summary": analysis_summary,
+                "photos": [{
+                    "photo_id": i.photo_id, "source_path": i.path, "work_type": i.work_type,
+                    "photo_role": i.photo_role, "defect_type": i.defect_type,
+                    "process_type": i.process_type, "confidence": round(i.confidence, 3),
+                    "reason": i.analysis_reason, "content_status": i.content_status,
+                    "used": bool(i.selected), "unused_reason": "" if i.selected else i.unused_reason,
+                } for i in site_images],
+            }, f, ensure_ascii=False, indent=2)
+
+        quality_json_path = os.path.join(output_dir, f"{safe_name}_품질평가.json")
+        with open(quality_json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "total": quality_report.total, "passed": quality_report.passed,
+                "scores": quality_report.scores, "metrics": quality_report.metrics,
+                "fail_reasons": quality_report.fail_reasons, "attempts": attempt,
+            }, f, ensure_ascii=False, indent=2)
+        with open(os.path.join(debug_dir, "품질점수.txt"), "w", encoding="utf-8") as f:
+            f.write(qmod.report_text(quality_report))
+
+        current_stage = "PDF/시각 검증"
+        _report(progress_cb, STAGES_V3[8])
+        pdf_path = convert_to_pdf(out_pptx, output_dir)
+        contact_sheet_path, slide_png_paths = (None, [])
+        visual = None
+        if pdf_path:
+            wanted_pdf = os.path.join(output_dir, f"{safe_name}_{primary_label}_입주민설명자료.pdf")
+            if pdf_path != wanted_pdf:
+                os.replace(pdf_path, wanted_pdf)
+                pdf_path = wanted_pdf
+            render_dir = os.path.join(debug_dir, "슬라이드렌더링")
+            os.makedirs(render_dir, exist_ok=True)
+            contact_sheet_path, slide_png_paths = rc.render_slides_and_contact_sheet(pdf_path, render_dir, safe_name)
+            visual = rc.visual_validation(out_pptx)
+            rc.dump_visual_validation_json(visual, os.path.join(debug_dir, "visual_validation.json"))
+            wanted_contact_sheet = os.path.join(output_dir, f"{safe_name}_contact_sheet.png")
+            if contact_sheet_path and os.path.exists(contact_sheet_path):
+                import shutil
+                shutil.copy2(contact_sheet_path, wanted_contact_sheet)
+                contact_sheet_path = wanted_contact_sheet
+        else:
+            _log(logs, "LibreOffice를 찾을 수 없어 PDF/시각 검증을 건너뛰었습니다.")
+
+        current_stage = "결과 취합 및 로그 저장"
+        inserted_count = sum(s["picture_count"] for s in visual["slides"]) if visual else \
+            sum(1 for i in site_images if i.selected)
+        total_ab = len(a_list) + len(b_list)
+        _log(logs, f"[집계] 최종 페이지 수: {len(pages) - 1}")
+        _log(logs, f"[집계] 최종 품질 점수: {quality_report.total}/100 "
+                   f"({'PASS' if quality_report.passed else 'FAIL'}) - 총 {attempt}회 시도")
+
+        report_path = os.path.join(output_dir, f"{safe_name}_검수결과.txt")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(final_validation.as_text())
+            f.write("\n\n")
+            f.write(qmod.report_text(quality_report))
+
+        pptx_exists = os.path.exists(out_pptx)
+        pptx_size = os.path.getsize(out_pptx) if pptx_exists else 0
+        _log(logs, f"[최종 확인] 최종 PPT 존재 여부={pptx_exists}, 경로={out_pptx}, 크기={pptx_size:,} bytes")
+        if not pptx_exists or pptx_size == 0:
+            current_stage = "최종 PPT 존재 확인"
+            _write_log_now(f"[파이프라인] 종료 단계: {current_stage} 실패 - 최종 PPT 파일이 존재하지 않음")
+            raise PptGenerationFailedError(
+                f"파이프라인의 모든 단계는 완료됐지만 최종 PPT 파일이 존재하지 않습니다: {out_pptx}\n"
+                f"(처리 로그: {log_path})"
+            )
+
+        _write_log_now("[파이프라인] 종료 단계: 완료(정상) - 최종 PPT 확인됨 "
+                        f"(경로={out_pptx}, 크기={pptx_size:,} bytes)")
+        _report(progress_cb, STAGES_V3[9])
+
+        warnings = list(quality_report.fail_reasons)
+        if c_list:
+            warnings.append(f"등급 C(민감정보/중복/저해상도)로 제외된 현장사진 {len(c_list)}장")
+
+        return {
+            "pptx": out_pptx, "pdf": pdf_path, "preview_png": contact_sheet_path,
+            "log": log_path, "validation_report": report_path, "quality_json": quality_json_path,
+            "debug_dir": debug_dir, "inserted_image_count": inserted_count,
+            "total_usable_image_count": total_ab, "a_grade_count": len(a_list),
+            "b_grade_count": len(b_list), "c_grade_count": len(c_list),
+            "quality_score": quality_report.total, "quality_passed": quality_report.passed,
+            "attempts": attempt, "warnings": warnings, "validation": final_validation,
+            "temp_dir": temp_root, "page_count": len(pages) - 1, "pipeline": PIPELINE_NAME_PHOTO,
+            "commit": commit, "template_engine_stats": template_stats,
+            "work_type_detected": primary_label, "work_type_code": primary_code,
+            "work_type_percentages": [(work_type_label(wt), pct) for wt, pct in percentages],
+            "analysis_summary": analysis_summary,
+            "knowledge_entry_count": len(knowledge_entries), "knowledge_image_count": len(knowledge_images),
+        }
+    except PptGenerationFailedError:
+        raise
+    except Exception as e:
+        _log(logs, f"[오류] v3 파이프라인이 '{current_stage}' 단계에서 예외로 종료되었습니다: "
                    f"{type(e).__name__}: {e}")
         _write_log_now(f"[파이프라인] 종료 단계: {current_stage} (예외 발생: {type(e).__name__})")
         raise PptGenerationFailedError(

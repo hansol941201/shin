@@ -44,6 +44,17 @@ class ImageAsset:
     grade_reason: str = ""      # v2 엔진: C등급 판정 사유(로그/CSV 기록용)
     source_type: str = "reference_ppt"  # "reference_ppt"(기존 회사 PPT 추출) / "current_site"(사용자가 추가한 현재 아파트 현장사진)
 
+    # ---------------- v3 엔진(사진 기반 자동 제안서): 사진 자동분석 결과 ----------------
+    photo_id: str = ""          # v3: 사용자용 식별자(= id 와 동일 값을 담되 로그/JSON 표기용)
+    work_type: str = ""         # v3: 이 사진에서 추정된 공종 코드(repainting/waterproof/... / "" =판정불가)
+    work_type_confidence: float = 0.0  # v3: work_type 판정 신뢰도(0~1)
+    photo_role: str = "unknown"  # v3: site_overview/defect/repair/process/material/before/after/completed/reference/unknown
+    defect_type: str = ""       # v3: photo_role=defect 일 때 하자 유형 코드(crack/peeling/...)
+    process_type: str = ""      # v3: photo_role=process/repair 일 때 공정 유형 코드
+    analysis_reason: str = ""   # v3: 판정 근거(매칭된 키워드 등, 로그/사용자 확인용 - 진단 문구 아님)
+    content_status: str = "unknown"  # v3: classified/reference/unknown/unused_with_reason
+    unused_reason: str = ""     # v3: content_status=unused_with_reason 일 때 사유
+
 
 @dataclass
 class SlideRecord:
@@ -73,6 +84,23 @@ class BeforeAfterPair:
     source_file: str
     slide_index: int
     process_image_ids: List[str] = field(default_factory=list)
+
+
+@dataclass
+class KnowledgeEntry:
+    """v3 엔진: 회사가 기존에 보유한 PPT에서 추출해 축적한 지식자료 한 건.
+    photo_analyzer가 판정한 사진(work_type/photo_role/defect_type/process_type)과
+    매칭해 결과물에 넣을 문구/사진을 찾아오는 데 사용한다."""
+    id: str
+    work_type: str               # repainting/waterproof/parking/repair/asphalt/metal_roof
+    category: str                # 필요성/하자_현상/하자_원인/공법_설명/공법_특징/자재_설명/시공_순서/기대_효과/사례_설명 등
+    keywords: List[str] = field(default_factory=list)
+    title: str = ""
+    text: str = ""
+    source_file: str = ""
+    source_slide: int = 0
+    image_path: Optional[str] = None     # 사례/전후 사진 등 이미지가 딸린 지식자료의 경우
+    image_role: Optional[str] = None     # before/after/completed 등
 
 
 @dataclass

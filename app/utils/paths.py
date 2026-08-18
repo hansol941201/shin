@@ -76,6 +76,19 @@ def logs_dir() -> str:
     return path
 
 
+def knowledge_library_dir() -> str:
+    """[v3 엔진] 회사 지식자료(Knowledge Library) 최상위 폴더.
+    EXE 업데이트(새 버전 ZIP 재설치)에도 회사가 등록한 자료가 사라지지 않도록,
+    항상 stable_app_data_dir() 아래에 둔다(개발/스크립트 모드에서는 저장소 안의
+    knowledge_library/ 폴더를 사용해 테스트 픽스처와 함께 관리하기 쉽게 한다)."""
+    if getattr(sys, "frozen", False):
+        path = os.path.join(stable_app_data_dir(), "knowledge_library")
+    else:
+        path = os.path.join(base_dir(), "knowledge_library")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
 def default_output_dir() -> str:
     """GUI 기본 출력 폴더. os.getcwd()는 EXE가 어디서 실행됐는지에 따라 예상 밖의
     위치(백신 샌드박스 등)일 수 있으므로 사용하지 않는다. 항상 사용자 문서 폴더
