@@ -5634,7 +5634,18 @@
     }
     // 로컬 저장이 실패해도 클라우드 push는 그대로 시도한다 — 로그인된 기기라면 여기서 데이터가
     // 살아남는다(기존 동작과 동일한 경로/키를 그대로 사용).
-    if(window.__shin2CloudSync) window.__shin2CloudSync.push('knowledge', kbSnapshot);
+    // push 호출 자체도 감싼다: 이 줄은 로컬 저장이 성공한 뒤에 실행되는데, 여기서 예외가 나면
+    // (동기화 객체는 있는데 push가 아직 함수가 아닌 타이밍, push 내부 예외 등) 로컬에는 이미
+    // 저장이 끝났는데도 호출부의 모달 닫기/목록 갱신이 통째로 중단돼 "저장이 안 된 것처럼"
+    // 보였다. typeof 검사는 이 파일의 다른 호출부(§클라우드 동기화 시작, §자료실)가 이미
+    // 쓰고 있는 방식과 동일하다.
+    try{
+      if(window.__shin2CloudSync && typeof window.__shin2CloudSync.push === 'function'){
+        window.__shin2CloudSync.push('knowledge', kbSnapshot);
+      }
+    }catch(e){
+      console.error('[지식] 클라우드 동기화 전달 실패(로컬 저장 결과에는 영향 없음)', e);
+    }
     return ok;
   }
 
@@ -6561,12 +6572,27 @@
     function closeOverlay(){ overlay.remove(); }
     overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeOverlay(); });
 
+    // 저장 흐름 전체를 감싼다. 지금까지는 이 안의 어느 한 줄이 예외를 던지면 그 뒤의
+    // closeOverlay()/renderKbList()가 통째로 실행되지 않아 "버튼을 눌러도 아무 반응이 없는"
+    // 증상이 됐다(예외 종류와 무관하게 증상이 똑같았다). 단계 이름을 남겨두면 실패했을 때
+    // 어느 단계에서 끊겼는지 콘솔과 안내 문구로 바로 확인할 수 있다.
     function handleSave(){
+      let step = 'init';
+      try{
+        handleSaveInner(function(s){ step = s; });
+      }catch(err){
+        console.error('[지식] 저장 실패 — 단계: ' + step, err);
+        alert('지식을 저장하지 못했습니다.\n실패 단계: ' + step + '\n오류: ' + ((err && err.message) || err) + '\n(입력하신 내용은 그대로 남아 있습니다)');
+      }
+    }
+    function handleSaveInner(mark){
+      mark('validation');
       const titleEl = overlay.querySelector('#kbFTitle');
       const title = titleEl.value.trim();
       const errEl = overlay.querySelector('#kbFTitleErr');
       if(!title){ errEl.style.display = 'block'; titleEl.focus(); return; }
       errEl.style.display = 'none';
+      mark('payload');
       const cat = catSelect.value;
       const keywords = overlay.querySelector('#kbFKeywords').value.split(',').map(s=> s.trim()).filter(Boolean);
       const payload = { title, category: cat, keywords };
@@ -6595,12 +6621,15 @@
       // 저장에 실패했다면 아무 일도 없었던 것처럼 조용히 넘어가지 않는다 — 방금 추가한 항목만
       // 메모리에서 되돌리고(기존 항목은 건드리지 않는다), 입력 내용을 잃지 않도록 모달을 열어둔
       // 채로 이유를 알려준다. 예전에는 여기서 예외가 나면서 아래 두 줄이 실행되지 않았다.
+      mark('save');
       if(!saveKb()){
         if(isNew) kbState.items.pop();
         alert('이 브라우저의 저장 공간이 가득 차 지식을 저장하지 못했습니다.\n자료실의 파일을 정리하거나 클라우드 로그인 후 다시 시도해주세요.\n(입력하신 내용은 그대로 남아 있습니다)');
         return;
       }
+      mark('close');
       closeOverlay();
+      mark('render');
       renderKbList();
     }
 
