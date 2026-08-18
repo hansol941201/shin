@@ -330,6 +330,28 @@
   .pour-count:hover{ text-decoration:underline; }
   .pour-none{ font-size:13px; color:var(--text-faint); }
 
+  /* §단계 진행상황/다음 행동 컬럼 라운드 §4/§12: 4단계 가로 stepper + 다음 행동 chip 1개.
+     행 높이(min-height 50px)를 넘지 않도록 원 14px+라벨 9px로 작게 유지한다. */
+  .col-stage-progress{ flex:0 0 168px; min-width:0; }
+  .col-next-action{ flex:0 0 106px; min-width:0; text-align:left; }
+  .stage-stepper{ display:flex; align-items:flex-start; width:100%; }
+  .stage-step{ position:relative; flex:1 1 0; display:flex; flex-direction:column; align-items:center; min-width:0; }
+  .stage-step-line{ position:absolute; top:6px; left:-50%; width:100%; height:2px; background:#E2E8F0; z-index:0; }
+  .stage-step:first-child .stage-step-line{ display:none; }
+  .stage-step-dot{
+    position:relative; z-index:1; width:14px; height:14px; flex:none; box-sizing:border-box; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; background:#fff; border:2px solid #D7DEE8;
+    font-size:8px; line-height:1; color:#fff;
+  }
+  .stage-step-dot.done{ background:#079455; border-color:#079455; } /* 완료 — 초록 원 + 체크(§4) */
+  .stage-step-dot.current{ background:#fff; border-color:#F59E0B; } /* 현재 진행 단계 — 주황 테두리 + 흰 내부(§4) */
+  .stage-step-dot.pending{ background:#fff; border-color:#D7DEE8; } /* 미도달 — 회색 빈 원(§4) */
+  .stage-step-label{ margin-top:2px; font-size:9px; color:var(--text-faint); white-space:nowrap; }
+  .next-action-chip{
+    display:inline-flex; align-items:center; height:22px; padding:0 8px; font-size:10.5px; font-weight:600;
+    color:#fff; background:var(--navy); border:none; border-radius:5px; cursor:pointer; white-space:nowrap;
+  } /* §12: 작은 버튼, 기존 남색(var(--navy)) 계열, 그림자 없음, 행 높이 증가 최소화 */
+
   /* 매출 기여 셀(§10) — 아이콘 없이 텍스트+옅은 배경색만 사용. */
   .contrib-cell{ display:inline-block; padding:4px 7px; border-radius:6px; }
   .contrib-cell .contrib-level{ font-weight:700; }
@@ -1590,7 +1612,7 @@ html,body{background:#F7F9FC;font-size:13px}
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
    흐름, §3). 제거한 최근 실적 활동/전체 실적/토탈 매출 컬럼의 grid-template-columns 슬롯도
    같이 뺐다 — 다른 CSS 규칙/색상 토큰은 그대로 둔다(§ 디자인 단순화, 로직 변경 아님). */
-.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(150px,1fr) 150px 62px 150px 90px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
+.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(150px,1fr) 150px 62px 150px 90px 90px 100px 78px 150px 100px!important;gap:10px!important;align-items:center!important}
 .co-table-head{margin-top:8px;padding:8px 12px!important;background:#FBFCFE;border:1px solid var(--line);border-bottom-color:#DDE4ED;border-radius:7px 7px 0 0;font-size:10.5px;color:#596A82;text-align:left}
 .co-list{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 7px 7px;overflow:hidden}
 .co-row{padding:5px 12px!important;min-height:42px!important;border-bottom:1px solid #EDF1F5!important;background:#fff}.co-row:last-child{border-bottom:0!important}.co-row:hover{background:#F8FAFD!important}
@@ -1613,12 +1635,12 @@ html,body{background:#F7F9FC;font-size:13px}
 #cardView .section,#cardView .card-section,#cardView .detail-section{border-color:#E4EAF1!important;box-shadow:none!important}
 #cardView table{border-collapse:collapse}#cardView th{color:#66758D!important;font-size:10.5px!important;font-weight:650!important}#cardView td{font-size:11px!important}#cardView tr{border-color:#E9EEF4!important}
 
-@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 50px 120px 74px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:900px}.co-list{overflow:visible}#listView{overflow-x:auto}}
-@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:900px}.co-row{grid-template-columns:140px 130px 50px 120px 74px 74px 90px 100px 62px!important}}
+@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 50px 120px 74px 74px 90px 62px 130px 90px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:1060px}.co-list{overflow:visible}#listView{overflow-x:auto}}
+@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:1060px}.co-row{grid-template-columns:140px 130px 50px 120px 74px 74px 90px 62px 130px 90px!important}}
 
 /* HANSOL CRM corporate visual override */
 :root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.brand-wrap{display:flex!important;align-items:center!important;gap:10px!important}.brand-logo{display:block!important;height:30px!important;width:auto!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 68px 160px 92px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.brand-wrap{display:flex!important;align-items:center!important;gap:10px!important}.brand-logo{display:block!important;height:30px!important;width:auto!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 68px 160px 92px 92px 140px 82px 168px 106px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
 </style>
 </head>
 <body>
@@ -1709,9 +1731,12 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
          등급/업체명/미수금 배지만 남는다(§5). §업체명 왼쪽 금액 이동 라운드: 업체명 옆에
          붙어있던 2025년 매출 금액을 "총 매출" 독립 컬럼(2026 매출 바로 왼쪽)으로 옮겼다.
          §시공실적 컬럼 재배치/Drawer 완전통일 라운드: "최근 실적"과 "총 실적"이 같은 POUR
-         실적을 보여주는 한 세트라 "총 실적"을 "최근 실적" 바로 오른쪽으로 옮겼다(§1). 최종
-         컬럼 순서: 협력사/최근 실적/총 실적/최근 요청/총 매출/2026 매출/실적↔매출/주요
-         공종/최근 흐름. -->
+         실적을 보여주는 한 세트라 "총 실적"을 "최근 실적" 바로 오른쪽으로 옮겼다(§1).
+         §단계 진행상황/다음 행동 컬럼 라운드: "주요 공종"은 메인 목록에서 숨겼다(§1, 계산
+         함수/Drawer/원본 데이터는 그대로 — buildTopCategoriesText/openConstructionDrawer
+         호출부는 지우지 않았다) — 그 자리에 "단계 진행상황"(4단계 stepper)과 "다음
+         행동"(1개만 표시)을 새로 추가했다(§2/§7). 최종 컬럼 순서: 협력사/최근 실적/총
+         실적/최근 요청/총 매출/2026 매출/실적↔매출/최근 흐름/단계 진행상황/다음 행동. -->
     <div class="co-table-head">
       <div class="col-name">협력사</div>
       <div class="col-pour">최근 실적</div>
@@ -1720,8 +1745,9 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
       <div class="col-total-revenue col-total-revenue-head" id="totalRevenueSortHeader">총 매출 <span class="total-revenue-sort-arrow" id="totalRevenueSortArrow"></span></div>
       <div class="col-yr-revenue">2026 매출</div>
       <div class="col-contrib">실적↔매출</div>
-      <div class="col-cat">주요 공종</div>
       <div class="col-trend">최근 흐름</div>
+      <div class="col-stage-progress">단계 진행상황</div>
+      <div class="col-next-action">다음 행동</div>
     </div>
     <div class="co-list" id="crmList"></div>
     <div class="list-pagination" id="crmPagination"></div>
@@ -4413,12 +4439,15 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 자체는 그대로 둔다 — r.progress도 위 enriched에서 이미 계산된
       // buildProgressStages() 결과를 그대로 재사용한다(중복 계산 금지, §26과 같은 원칙).
       const stageInfo = stageDurationFromProgress(r.progress);
+      // §단계 진행상황/다음 행동 컬럼 라운드 §1: "주요 공종"은 메인 목록에서 더 이상
+      // 렌더링하지 않지만, 계산(buildTopCategoriesText)은 그대로 호출해 둔다 — 다른 화면이
+      // 나중에 다시 필요로 할 수 있어 값 자체는 계속 살아있다(§ "데이터 제거가 아니라 숨김").
       const catText = buildTopCategoriesText(co, 2);
-      // §8: "주요 공종" 클릭 -> 전체 공종 분포 Drawer(신규). 업체명 클릭(고객카드)과
-      // 분리하기 위해 button으로 감싸고 stopPropagation으로 처리한다(다른 컬럼과 동일 패턴).
-      const catHtml = catText
-        ? `<button type="button" class="cat-cell" data-cat-detail="${esc(co.id)}">${esc(catText)}</button>`
-        : '<span class="data-none">데이터 없음</span>';
+      // §단계 진행상황/다음 행동 컬럼 라운드 §2~6: 새 상태 계산 없이 이미 계산된 r.progress
+      // (buildProgressStages 결과, 위 stageInfo와 같은 소스 — §3 "중복 계산 금지")를 그대로
+      // 읽어서 stepper와 다음 행동 chip을 만든다.
+      const stageStepperHtml = buildStageStepperHtml(r.progress);
+      const nextActionHtml = buildNextActionCellHtml(r.progress);
       // §실적↔매출 실제 구현 라운드: "실적↔매출"은 이제 실제로 계산된다(총 매출 ÷ 총
       // 실적 = 실적 1건당 평균 매출, 상대 등급은 buildRevenueContributionIndex가 전체
       // 업체 분포로 미리 계산해 둔 값을 조회만 한다). 기본 화면엔 등급 한 단어(높음/보통/
@@ -4447,8 +4476,9 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="col-total-revenue">${totalRevenueHtml}</div>
         <div class="col-yr-revenue">${yrRevenueHtml}</div>
         <div class="col-contrib">${contribHtml}</div>
-        <div class="col-cat">${catHtml}</div>
         <div class="col-trend">${trendHtml}</div>
+        <div class="col-stage-progress">${stageStepperHtml}</div>
+        <div class="col-next-action">${nextActionHtml}</div>
       </div>`;
     }).join('');
     // §실적↔매출 실제 구현 라운드: "실적↔매출" 클릭 -> 실적·매출 분석 Drawer(다른 컬럼과
@@ -5100,6 +5130,57 @@ window.SHIN2_CRM_APP_INIT = function(){
     return { stages, currentIdx, hasAny: !!(co.partnerDashboard && co.partnerDashboard.newMou) };
   }
   const PROGRESS_STATUS_LABEL = { done:'완료', scheduled:'예정', waiting:'대기' };
+
+  /* ==========================================================================
+     §단계 진행상황(stepper)/다음 행동 컬럼 라운드
+
+     둘 다 새 상태 계산을 하지 않고 위 buildProgressStages()가 이미 만들어 둔 progress
+     (stages/currentIdx/hasAny)만 읽는다(§3 "실제 필드 재사용", 같은 상태 계산을 두 곳에
+     중복 구현하지 않는다) — 메인 목록 renderList()가 각 행마다 이미 계산해 둔 r.progress를
+     그대로 넘겨받는다.
+
+     [단계 stepper] 완료(state==='done')=초록 원+체크, 그 다음(index===currentIdx이고
+     미완료)=주황 테두리 원(현재 단계), 나머지=회색 빈 원(§4/§5). 원 사이 선은 항상 얇은
+     연회색 하나로 고정 — 완료 여부로 선 색을 바꾸지 않는다(요청 문구 그대로 "얇은 연회색
+     선").
+
+     [다음 행동] §8/§9 우선순위를 그대로 따른다 — 질문서 회신 완료 AND 1차미팅 미완료만
+     "1차 미팅 제안", 1차미팅 완료 AND 2차미팅 미완료만 "2차 미팅 제안", 2차미팅 완료 AND
+     MOU 미체결만 "MOU 체결 진행", MOU 완료면 행동 없음(§11). 질문서 자체가 미완료인
+     업체는(§10) — 이 흐름과 무관한 별도의 "다음 행동" 확정 데이터가 현재 프로젝트 어디에도
+     없어(co.nextActions는 담당자가 직접 쓰는 자유 텍스트 할 일 목록으로 이 stepper와 다른
+     개념, autoStageTodosForCompany도 m1/m2 일정 알림용이라 "질문서 회신 전" 행동을 정의하지
+     않는다 — 확인 완료) 임의로 새 문구를 만들지 않고 화면의 기존 빈 상태 표현(data-none,
+     "—")을 그대로 쓴다.
+     ========================================================================== */
+  function buildStageStepperHtml(progress){
+    if(!progress.hasAny) return '<span class="data-none">데이터 없음</span>';
+    const stepsHtml = progress.stages.map((s,i)=>{
+      const cls = s.state === 'done' ? 'done' : (i === progress.currentIdx ? 'current' : 'pending');
+      const dotContent = cls === 'done' ? '✓' : '';
+      return `<div class="stage-step">
+          <span class="stage-step-line"></span>
+          <span class="stage-step-dot ${cls}">${dotContent}</span>
+          <span class="stage-step-label">${esc(s.label)}</span>
+        </div>`;
+    }).join('');
+    return `<div class="stage-stepper">${stepsHtml}</div>`;
+  }
+  function computeNextActionLabel(progress){
+    if(!progress.hasAny) return null;
+    const byKey = {}; progress.stages.forEach(s=>{ byKey[s.key] = s; });
+    if(byKey.q.state !== 'done') return null; // §10: 질문서 회신 전 확정 로직 없음
+    if(byKey.m1.state !== 'done') return '1차 미팅 제안'; // §8-A
+    if(byKey.m2.state !== 'done') return '2차 미팅 제안'; // §8-B
+    if(byKey.mou.state !== 'done') return 'MOU 체결 진행'; // §8-C
+    return null; // §8-D/§11: MOU 완료 -> 다음 행동 없음
+  }
+  function buildNextActionCellHtml(progress){
+    const label = computeNextActionLabel(progress);
+    return label
+      ? `<button type="button" class="next-action-chip">${esc(label)}</button>`
+      : '<span class="data-none">—</span>';
+  }
 
   /* ==========================================================================
      §단계 체류기간(D+N) 및 단계별 관리기한 라운드
