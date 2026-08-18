@@ -68,6 +68,12 @@
   .brand{ font-size:19px; font-weight:600; color:var(--navy); }
   .brand-sub{ font-size:12px; color:var(--text-muted); font-weight:400; margin-left:8px; }
   .topbar-actions{ display:flex; align-items:center; gap:8px; }
+  /* §업무관리 탭 1차 구축 라운드 §16: 기존 필터 칩과 비슷하거나 더 작은 높이, 화려한 대형
+     탭 금지 — .list-filter-chip과 같은 크기 감각으로 맞췄다. */
+  .top-tab-row{ display:flex; gap:4px; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:3px; }
+  .top-tab{ height:28px; padding:0 14px; font-size:12.5px; font-weight:600; color:var(--text-muted); background:transparent; border:none; border-radius:6px; cursor:pointer; }
+  .top-tab:hover{ color:var(--navy); }
+  .top-tab.is-active{ background:#fff; color:var(--navy); box-shadow:0 1px 2px rgba(15,23,42,.08); }
   .tb-btn{
     height:30px; padding:0 12px; font-size:12.5px; color:var(--text-muted); background:var(--surface);
     border:1px solid var(--line); border-radius:6px; cursor:pointer;
@@ -294,6 +300,28 @@
      한 줄만(높이 과도 증가 금지) — 관리필요 아닌 업체는 이 div 자체가 비어 있어 공간을
      차지하지 않는다. */
   .cdash-mgmt-need-banner{ font-size:12px; font-weight:700; color:#B45309; background:#FFF7ED; border:1px solid #FDE1BD; border-radius:6px; padding:5px 10px; margin-bottom:10px; }
+
+  /* §업무관리 탭 1차 구축 라운드 §4/§5/§8/§13/§16 — 정보 밀도 높게, 큰 카드/아이콘/차트
+     금지, 화면 대부분을 컴팩트한 표가 차지하게 한다. 색/테두리/여백은 기존 NETFORM 팔레트
+     (--navy/--line/--bg)만 재사용 — 새 디자인 시스템 없음. */
+  .workq-header{ margin-bottom:10px; }
+  .workq-title{ font-size:16px; font-weight:700; color:var(--navy); }
+  .workq-subtitle{ font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .workq-today-line{ font-size:12px; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 10px; margin:10px 0; }
+  .workq-today-line b{ color:var(--navy); }
+  .workq-filter-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .workq-table{ width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .workq-table th{ text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); background:#F9FBFD; padding:7px 10px; border-bottom:1px solid var(--line); }
+  .workq-table td{ padding:7px 10px; border-bottom:1px solid #EEF1F5; vertical-align:top; color:var(--text); }
+  .workq-table tr:last-child td{ border-bottom:none; }
+  .workq-table tr:hover td{ background:#F7FBFF; }
+  .workq-co-link{ background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--navy); cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  .workq-co-link:hover{ text-decoration-style:solid; }
+  .workq-reason{ color:var(--text-muted); font-size:12px; }
+  .workq-days{ white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .workq-delay-badge{ display:inline-block; font-size:10px; font-weight:700; color:#B45309; background:#FFF3E0; border-radius:4px; padding:1px 5px; margin-left:5px; }
+  .workq-action{ font-size:12px; font-weight:700; color:var(--navy); }
+  .workq-empty{ padding:24px; text-align:center; color:var(--text-muted); font-size:13px; background:#fff; border:1px solid var(--line); border-radius:8px; }
   .constr-list-title{ font-size:13px; font-weight:700; color:var(--text); margin:4px 0 8px; }
   .constr-list-row{
     display:grid; grid-template-columns:40px 1fr auto; gap:10px; align-items:center;
@@ -1740,6 +1768,14 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
          왼쪽에 자연스럽게 남는다, 새 CSS 불필요). NETFORM 로고/고객 수/미등록 업체/미수금
          업체/데이터 업데이트/+고객 등록은 전부 다른 위치(.list-title-row 등)에 있어 전혀
          영향받지 않는다. -->
+    <!-- §업무관리 탭 1차 구축 라운드 §1: [고객관리]/[업무관리] 전환 탭 — .topbar가 이미
+         justify-content:space-between이라 brand-wrap 옆(오른쪽)에 자연스럽게 붙는다. 새
+         URL/HTML 없이 같은 페이지 안에서 view만 전환한다(§1 "새 HTML 페이지를 만들 필요
+         없다"). -->
+    <div class="top-tab-row" id="crmTopTabs">
+      <button type="button" class="top-tab is-active" id="crmTabCustomer" data-tab="customer">고객관리</button>
+      <button type="button" class="top-tab" id="crmTabWorkQueue" data-tab="workqueue">업무관리</button>
+    </div>
   </div>
 
   <!-- §첫 화면 최종 수정 라운드: 고객 수 → 상태 필터 → 검색/정렬 → 고객 목록 순서로만
@@ -1834,6 +1870,9 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   </div>
 
   <div id="cardView" style="display:none;"></div>
+  <!-- §업무관리 탭 1차 구축 라운드 §1/§15: listView/cardView와 완전히 별개인 세 번째 최상위
+       view — 읽기 전용, companies/activities를 매번 새로 조회만 한다(별도 저장소 없음). -->
+  <div id="workQueueView" style="display:none;"></div>
   <div id="chartMemoModalRoot"></div>
   <div id="partnerImportModalRoot"></div>
   <div id="pourImportModalRoot"></div>
@@ -6329,6 +6368,187 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(result.type === 'reuse') return `최근 활용 후 ${result.days}일 / 신규 L2 없음`;
     return '';
   }
+
+  /* ==========================================================================
+     §업무관리 탭 1차 구축 라운드 §6/§7 — "오늘 내가 챙겨야 할 업체" 판정.
+
+     새 판정 로직을 따로 만들지 않고 이미 검증된 두 계산을 그대로 재사용한다:
+     - 미팅/MOU(유형 A/B, §6): buildProgressStages(co)가 이미 만들어 둔 stages를
+       computeNextActionLabel과 완전히 같은 순서(질문서→1차미팅→2차미팅→MOU)로 다시
+       확인한다 — computeNextActionLabel 자체를 고치지 않고 병렬로 같은 규칙을 쓰는
+       이유는, 그 함수는 "예정 · 날짜" 같은 목록 화면 전용 문구를 반환해 이 화면이 필요로
+       하는 type 키(m1/m2/mou)와 앵커 날짜를 얻을 수 없기 때문이다. 이미 일정이 잡혀
+       있으면(scheduledLabel 존재) "잡기" 대상에서 제외한다(§6 "일정이 있는데 다시 잡으라고
+       하면 안 된다"와 같은 원칙, 이전 라운드에서 이미 검증한 필드 재사용).
+     - L2·L3/재사용(유형 C/D, §6): §관리필요 업체 라운드에서 만든 classifyManagementNeed를
+       그대로 재사용한다 — 그 함수는 이미 mouDone을 전제조건으로 하므로(§ "MOU/협약 완료
+       뒤" 전제), 위 미팅/MOU 판정(MOU 미완료일 때만 성립)과 절대 동시에 성립하지 않는다.
+       그래서 "더 뒤 단계 업체를 이전 단계로 되돌리지 않는다"(§7)는 요구가 두 계산의
+       전제조건이 서로 배타적인 것만으로 자동으로 만족된다.
+     ========================================================================== */
+  function classifyWorkQueueMeeting(progress){
+    if(!progress.hasAny) return null;
+    const byKey = {}; progress.stages.forEach(s=> byKey[s.key] = s);
+    if(byKey.mou.state === 'done') return null; // MOU 완료 업체는 미팅/MOU 행동 없음(§7 예시)
+    if(byKey.q.state !== 'done') return null; // 질문서 회신 전은 이 화면 판정 대상 아님(§6 전제조건)
+    if(byKey.m1.state !== 'done'){
+      if(byKey.m1.scheduledLabel) return null; // 이미 1차미팅 예정이 잡혀 있음 — "잡기" 대상 아님
+      return { type:'m1', label:'1차미팅 잡기', anchor: byKey.q, stageLabel:'질문서 완료' };
+    }
+    if(byKey.m2.state !== 'done'){
+      if(byKey.m2.scheduledLabel) return null;
+      return { type:'m2', label:'2차미팅 잡기', anchor: byKey.m1, stageLabel:'1차미팅 완료' };
+    }
+    return { type:'mou', label:'MOU 진행', anchor: byKey.m2, stageLabel:'2차미팅 완료' };
+  }
+  // §9: 앵커 날짜가 없으면(ts===null, 파싱 불가) 임의 경과일을 만들지 않는다 — days를 null로
+  // 두고 문구에서도 "N일" 부분을 아예 뺀다.
+  function buildMeetingReasonText(type, days){
+    if(type === 'm1') return days === null ? '질문서 회신 완료 · 1차미팅 일정 없음' : `질문서 회신 후 ${days}일 · 1차미팅 일정 없음`;
+    if(type === 'm2') return days === null ? '1차미팅 완료 · 2차미팅 일정 없음' : `1차미팅 후 ${days}일 · 2차미팅 일정 없음`;
+    return days === null ? '2차미팅 완료 · MOU 미체결' : `2차미팅 완료 후 ${days}일 · MOU 미체결`;
+  }
+  const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'첫 L2 필요', l2Stall:'L3 전환 필요' };
+  function buildWorkQueueItem(co, acts, progress, hasPour){
+    const meeting = classifyWorkQueueMeeting(progress);
+    if(meeting){
+      const days = meeting.anchor && typeof meeting.anchor.ts === 'number' ? Math.floor((Date.now() - meeting.anchor.ts) / 86400000) : null;
+      // §10: 세 유형(1차미팅 잡기/2차미팅 잡기/MOU 진행)만 7일 이상이면 "지연" — 날짜가
+      // 실제로 있을 때만 계산한다.
+      return {
+        co, type: meeting.type, category: meeting.type === 'mou' ? 'mou' : 'meeting',
+        currentStateLabel: meeting.stageLabel, reasonText: buildMeetingReasonText(meeting.type, days),
+        days, actionLabel: meeting.label, isDelayed: days !== null && days >= 7
+      };
+    }
+    const mgmt = classifyManagementNeed(co, acts, progress, hasPour);
+    if(mgmt.type === 'firstActivity' || mgmt.type === 'l2Stall'){
+      return {
+        co, type: mgmt.type, category: 'l2l3',
+        currentStateLabel: mgmtNeedStageLabel(mgmt), reasonText: mgmtNeedReasonText(mgmt),
+        days: mgmt.days, actionLabel: WORKQ_L2L3_ACTION_LABEL[mgmt.type], isDelayed: false
+      };
+    }
+    if(mgmt.type === 'reuse'){
+      return {
+        co, type: 'reuse', category: 'reuse',
+        currentStateLabel: mgmtNeedStageLabel(mgmt), reasonText: mgmtNeedReasonText(mgmt),
+        days: mgmt.days, actionLabel: '재사용 필요', isDelayed: false
+      };
+    }
+    return null; // 정상 진행 중이거나(판정 대상 아님) 판정불가(mgmt.type==='unknown') — 억지로 만들지 않는다(§6)
+  }
+  // computeWorkQueue: companies/activities/POUR 인덱스를 매번 새로 읽기만 하는 순수 계산 —
+  // 별도 저장소 없음(§14 READ-ONLY). "오래된 업체가 위로"(§9) — days가 클수록 위(내림차순),
+  // 날짜 없는 업체(days===null)는 순서를 지어낼 수 없으므로 맨 아래로 보낸다.
+  function computeWorkQueue(){
+    const companies = D.loadCompanies();
+    const pourLatestIndex = D.buildPourLatestIndex();
+    const list = [];
+    companies.forEach(co=>{
+      const acts = D.activitiesForCompany(co.id);
+      const progress = buildProgressStages(co);
+      const hasPour = pourLatestIndex.get(co.id) != null;
+      const item = buildWorkQueueItem(co, acts, progress, hasPour);
+      if(item) list.push(item);
+    });
+    list.sort((a,b)=>{
+      if(a.days === null && b.days === null) return 0;
+      if(a.days === null) return 1;
+      if(b.days === null) return -1;
+      return b.days - a.days;
+    });
+    const counts = { all: list.length, meeting: 0, mou: 0, l2l3: 0, reuse: 0 };
+    list.forEach(it=>{ counts[it.category] = (counts[it.category] || 0) + 1; });
+    return { list, counts };
+  }
+
+  const WORKQ_FILTER_DEFS = [
+    ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['l2l3','L2·L3'], ['reuse','재사용']
+  ];
+  let workQueueFilter = 'all';
+  // §업무관리 탭 1차 구축 라운드 §4/§8/§13 — 작은 제목 한 줄 + 컴팩트 필터 칩 + 표 + "오늘
+  // 먼저 확인" 한 줄. 큰 배너/카드/차트 없음(§3/§4/§16). 업체명 클릭은 openCardFromWorkQueue로
+  // 기존 openCard(companyId)를 그대로 연다(§11, 새 상세화면/신규 업체 생성 없음).
+  function renderWorkQueueView(){
+    const wrap = document.getElementById('workQueueView');
+    if(!wrap) return;
+    const { list, counts } = computeWorkQueue();
+    const filtered = workQueueFilter === 'all' ? list : list.filter(it=> it.category === workQueueFilter);
+    const todaySummary = [
+      list.filter(it=> it.type==='m1').length ? `1차미팅 잡기 ${list.filter(it=> it.type==='m1').length}` : null,
+      list.filter(it=> it.type==='m2').length ? `2차미팅 잡기 ${list.filter(it=> it.type==='m2').length}` : null,
+      list.filter(it=> it.type==='mou').length ? `MOU 진행 ${list.filter(it=> it.type==='mou').length}` : null
+    ].filter(Boolean).join(' · ');
+    wrap.innerHTML = `
+      <div class="workq-header">
+        <div class="workq-title">업무관리</div>
+        <div class="workq-subtitle">오늘 확인해야 할 업체를 단계별로 확인합니다.</div>
+      </div>
+      ${todaySummary ? `<div class="workq-today-line"><b>오늘 먼저 확인</b> — ${esc(todaySummary)}</div>` : ''}
+      <div class="workq-filter-row" id="workqFilterRow">
+        ${WORKQ_FILTER_DEFS.map(([key,label])=> `<button type="button" class="list-filter-chip${workQueueFilter===key?' is-active':''}" data-workq-filter="${esc(key)}">${esc(label)} ${esc(counts[key]||0)}</button>`).join('')}
+      </div>
+      ${filtered.length ? `
+        <table class="workq-table">
+          <thead><tr><th>업체명</th><th>현재 상태</th><th>관리 이유</th><th>경과</th><th>해야 할 일</th></tr></thead>
+          <tbody>
+            ${filtered.map(it=> `<tr>
+              <td><button type="button" class="workq-co-link" data-workq-open-co="${esc(it.co.id)}">${esc(it.co.name)}</button></td>
+              <td>${esc(it.currentStateLabel)}</td>
+              <td class="workq-reason">${esc(it.reasonText)}</td>
+              <td class="workq-days">${it.days === null ? '—' : esc(it.days) + '일'}${it.isDelayed ? '<span class="workq-delay-badge">지연</span>' : ''}</td>
+              <td class="workq-action">${esc(it.actionLabel)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="workq-empty">해당 조건의 업체가 없습니다.</div>`}
+    `;
+    wrap.querySelectorAll('[data-workq-filter]').forEach(btn=> btn.addEventListener('click', ()=>{
+      workQueueFilter = btn.getAttribute('data-workq-filter');
+      renderWorkQueueView();
+    }));
+    wrap.querySelectorAll('[data-workq-open-co]').forEach(btn=> btn.addEventListener('click', ()=>{
+      openCardFromWorkQueue(btn.getAttribute('data-workq-open-co'));
+    }));
+  }
+  // §업무관리 탭 1차 구축 라운드 §1/§2 — 세 최상위 view(listView/cardView/workQueueView)
+  // 중 하나만 보이게 한다. 고객관리 쪽으로 돌아갈 때는 currentCompanyId가 남아있으면(카드를
+  // 보다가 업무관리로 넘어온 경우) 카드로, 아니면 목록으로 복귀한다 — listView/cardView
+  // 전환 로직 자체(openList/openCard)는 전혀 건드리지 않았다(§2 "기존 고객관리 화면 절대
+  // 변경 금지").
+  function showCustomerTab(){
+    document.getElementById('workQueueView').style.display = 'none';
+    if(currentCompanyId && D.findCompany(currentCompanyId)){
+      cardView.style.display = 'block';
+      listView.style.display = 'none';
+    } else {
+      listView.style.display = 'block';
+      cardView.style.display = 'none';
+    }
+    updateTopTabsUI('customer');
+  }
+  function showWorkQueueTab(){
+    listView.style.display = 'none';
+    cardView.style.display = 'none';
+    document.getElementById('workQueueView').style.display = 'block';
+    renderWorkQueueView();
+    updateTopTabsUI('workqueue');
+  }
+  function updateTopTabsUI(tab){
+    const custBtn = document.getElementById('crmTabCustomer');
+    const wqBtn = document.getElementById('crmTabWorkQueue');
+    if(custBtn) custBtn.classList.toggle('is-active', tab === 'customer');
+    if(wqBtn) wqBtn.classList.toggle('is-active', tab === 'workqueue');
+  }
+  // §11: 업무관리 목록에서 업체명 클릭 -> 새 상세화면을 만들지 않고 기존 openCard(companyId)를
+  // 그대로 연다. workQueueView를 먼저 숨기고 탭 UI만 "고객관리"로 되돌린 뒤 openCard를
+  // 호출한다(openCard 자체는 전혀 수정하지 않음).
+  function openCardFromWorkQueue(id){
+    document.getElementById('workQueueView').style.display = 'none';
+    updateTopTabsUI('customer');
+    openCard(id);
+  }
   // §최근 활동 컬럼: firstActivity는 앵커가 된 MOU 완료일 + "MOU" 라벨, l2Stall/reuse는
   // 앵커가 된 실제 활동의 날짜 + 그 활동의 실제 category(classifyActivity 결과, 지어낸
   // 텍스트 아님)를 그대로 이어붙인다(§6 예시 "2026.07.04 현장등록"과 같은 형태).
@@ -9938,6 +10158,10 @@ window.SHIN2_CRM_APP_INIT = function(){
   });
   // §한솔 업무페이지 버튼 제거 라운드: hansolLinkBtn 클릭 리스너를 없앴다(버튼 자체를
   // 지웠으므로 이 리스너가 붙을 대상도 없다) — 링크/클릭 이벤트를 함께 제거한다는 요구사항.
+  // §업무관리 탭 1차 구축 라운드 §1: 탭 클릭 리스너 — 여기서만 새로 추가, 기존
+  // searchInput/필터/정렬 등 리스너는 전혀 건드리지 않았다.
+  document.getElementById('crmTabCustomer').addEventListener('click', showCustomerTab);
+  document.getElementById('crmTabWorkQueue').addEventListener('click', showWorkQueueTab);
   searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim(); currentPage = 1; renderList(); });
   const sortSelect = document.getElementById('crmSortSelect');
   if(sortSelect){
