@@ -154,7 +154,12 @@
   }
   .co-row:hover{ background:var(--bg); }
   .col-name{ flex:1.1 1 140px; min-width:0; display:flex; flex-direction:column; gap:2px; font-weight:600; color:var(--text); font-size:13px; }
-  .col-name-top{ display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* §최근 시공 위치 변경 라운드: col-name-top은 이제 "이름+배지" 묶음과 최근 시공을 같은
+     줄에 나란히 놓는 flex-wrap 컨테이너다 — 공간이 부족할 때만(§7) 최근 시공이 자연스럽게
+     다음 줄로 내려간다(개별 강제 줄바꿈 없이 flex-wrap만으로 처리, 새 로직 아님). */
+  .col-name-top{ display:flex; flex-wrap:wrap; align-items:baseline; column-gap:12px; row-gap:1px; min-width:0; }
+  .co-name-badges{ display:flex; align-items:center; gap:5px; min-width:0; max-width:100%; }
+  .co-name-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
   .col-recent{ flex:1.4 1 150px; min-width:0; color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-recent .recent-date{ color:var(--text-faint); margin-right:4px; }
   .col-yr, .col-total{ flex:0 0 62px; font-size:12.5px; color:var(--text); text-align:right; }
@@ -233,15 +238,22 @@
      가장 최근 실적 1건에서 연도/공종/현장명을 함께 보여준다(§3~9, buildLatestPourDisplay).
      현장명이 길면 말줄임표 처리하고 title 속성으로 전체 텍스트를 볼 수 있게 한다(§12). */
   /* §최근 요청 라운드: "최근 시공"을 협력사 컬럼 안으로 옮겨서 버튼으로 만들었다(§2/§3
-     클릭 분리) — 배경/테두리 없는 텍스트 버튼, hover 시에만 살짝 강조. */
+     클릭 분리) — 배경/테두리 없는 텍스트 버튼, hover 시에만 살짝 강조.
+     §최근 시공 위치 변경 라운드: 업체명 아래(세로 배치) 대신 업체명 오른쪽(같은 줄, 가로
+     배치)으로 옮겼다 — 값 계산/선정 로직은 전혀 안 바꾸고 표시 위치와 레이아웃만 바꿨다.
+     한 줄 기본(§6), 공간 부족 시에만 부모(.col-name-top)의 flex-wrap으로 다음 줄로
+     내려간다(§7). 업체명보다 작은 글씨(§4), 연도·공종은 진하게/현장명은 연한 회색으로
+     구분한다(§5). */
   .lastpour-cell{
-    display:flex; flex-direction:column; gap:1px; line-height:1.3; min-width:0; text-align:left;
-    background:none; border:none; padding:0; margin-top:1px; cursor:pointer; font-family:inherit; width:100%;
+    display:inline-block; min-width:0; max-width:100%; text-align:left; vertical-align:baseline;
+    background:none; border:none; padding:0; cursor:pointer; font-family:inherit;
+    font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .lastpour-cell.lastpour-empty{ cursor:default; }
-  .lastpour-cell .lastpour-main{ font-weight:600; color:var(--text); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lastpour-cell .lastpour-main{ font-weight:700; color:var(--text-muted); }
   .lastpour-cell:hover:not(.lastpour-empty) .lastpour-main{ text-decoration:underline; }
-  .lastpour-cell .lastpour-site{ color:var(--text-faint); font-size:10.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lastpour-cell .lastpour-sep{ color:var(--text-faint); }
+  .lastpour-cell .lastpour-site{ color:var(--text-faint); font-weight:400; }
   .col-stage{ flex:0 0 112px; font-size:12px; white-space:nowrap; } /* 더 이상 목록에 렌더링하지 않지만 클래스는 남겨둔다 */
   /* "최근 요청" 컬럼 — 첫 줄(작은 날짜)/둘째 줄(요청 내용), §10. */
   .col-request{ flex:0 0 150px; min-width:0; font-size:12px; }
@@ -1534,7 +1546,7 @@ html,body{background:#F7F9FC;font-size:13px}
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
    흐름, §3). 제거한 최근 실적 활동/전체 실적/토탈 매출 컬럼의 grid-template-columns 슬롯도
    같이 뺐다 — 다른 CSS 규칙/색상 토큰은 그대로 둔다(§ 디자인 단순화, 로직 변경 아님). */
-.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(170px,1fr) 150px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
+.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(260px,1.4fr) 150px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
 .co-table-head{margin-top:8px;padding:8px 12px!important;background:#FBFCFE;border:1px solid var(--line);border-bottom-color:#DDE4ED;border-radius:7px 7px 0 0;font-size:10.5px;color:#596A82;text-align:left}
 .co-list{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 7px 7px;overflow:hidden}
 .co-row{padding:5px 12px!important;min-height:42px!important;border-bottom:1px solid #EDF1F5!important;background:#fff}.co-row:last-child{border-bottom:0!important}.co-row:hover{background:#F8FAFD!important}
@@ -1557,12 +1569,12 @@ html,body{background:#F7F9FC;font-size:13px}
 #cardView .section,#cardView .card-section,#cardView .detail-section{border-color:#E4EAF1!important;box-shadow:none!important}
 #cardView table{border-collapse:collapse}#cardView th{color:#66758D!important;font-size:10.5px!important;font-weight:650!important}#cardView td{font-size:11px!important}#cardView tr{border-color:#E9EEF4!important}
 
-@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:780px}.co-list{overflow:visible}#listView{overflow-x:auto}}
-@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:780px}.co-row{grid-template-columns:140px 130px 50px 74px 90px 100px 62px!important}}
+@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:190px 130px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:780px}.co-list{overflow:visible}#listView{overflow-x:auto}}
+@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:780px}.co-row{grid-template-columns:190px 130px 50px 74px 90px 100px 62px!important}}
 
 /* HANSOL CRM corporate visual override */
 :root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(170px,1fr) 160px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:58px!important;padding:7px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:flex-start!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(260px,1.4fr) 160px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:44px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
 </style>
 </head>
 <body>
@@ -4106,16 +4118,18 @@ window.SHIN2_CRM_APP_INIT = function(){
       const receivableBadgeHtml = (receivable && receivable.total > 0)
         ? `<button type="button" class="receivable-inline-badge" data-receivable-detail="${esc(co.id)}">미수금 ${esc(fmtKrwCompact(receivable.total))}</button>`
         : '';
-      // §최근 요청 라운드: "최근 시공"을 협력사 컬럼 안(업체명 아래)으로 옮겼다(§1/§2) —
-      // 값 계산은 그대로 pourLatestIndex(위에서 한 번만 계산) 조회일 뿐, 새 계산이 아니다.
-      // 업체명 클릭과 분리해서 클릭 가능하게 button으로 감싼다(§3) — 클릭하면 최근 시공
-      // Drawer가 열린다. 현장명이 길면 CSS로 말줄임표 처리하고 title로 전체를 볼 수 있다(§12).
+      // §최근 요청 라운드: "최근 시공"을 협력사 컬럼 안으로 옮겼다(§1/§2) — 값 계산은
+      // 그대로 pourLatestIndex(위에서 한 번만 계산) 조회일 뿐, 새 계산이 아니다. 업체명
+      // 클릭과 분리해서 클릭 가능하게 button으로 감싼다(§3) — 클릭하면 최근 시공 Drawer가
+      // 열린다. 현장명이 길면 CSS로 말줄임표 처리하고 title로 전체를 볼 수 있다(§12).
+      // §최근 시공 위치 변경 라운드: 업체명 아래 별도 줄이 아니라 업체명 오른쪽, 같은 줄에
+      // "연도 · 공종 · 현장명" 한 줄로 이어 붙인다(§ 최종 형태) — 계산/선정 로직 불변, 표시
+      // 위치·형식만 변경.
       const latestPourRec = pourLatestIndex.get(co.id);
       const latestPourCats = latestPourRec ? String(latestPourRec.category || '').split('\n').map(s=> s.trim()).filter(Boolean) : [];
       const lastActHtml = latestPourRec
-        ? `<button type="button" class="lastpour-cell" data-pour-detail="${esc(co.id)}">
-            <span class="lastpour-main">${esc(latestPourRec.year)}${latestPourCats[0] ? ' · ' + esc(latestPourCats[0]) : ''}</span>
-            ${latestPourRec.client ? `<span class="lastpour-site" title="${esc(latestPourRec.client)}">${esc(latestPourRec.client)}</span>` : ''}
+        ? `<button type="button" class="lastpour-cell" data-pour-detail="${esc(co.id)}" title="${esc(latestPourRec.year)}${latestPourCats[0] ? ' · ' + latestPourCats[0] : ''}${latestPourRec.client ? ' · ' + latestPourRec.client : ''}">
+            <span class="lastpour-main">${esc(latestPourRec.year)}${latestPourCats[0] ? ' · ' + esc(latestPourCats[0]) : ''}</span>${latestPourRec.client ? `<span class="lastpour-sep"> · </span><span class="lastpour-site">${esc(latestPourRec.client)}</span>` : ''}
           </button>`
         : '<span class="lastpour-cell lastpour-empty data-none">—</span>';
       // §4~13: "최근 요청" 컬럼 — requestHistoryIndex(전체 업무기록을 한 번만 훑어 미리
@@ -4165,8 +4179,10 @@ window.SHIN2_CRM_APP_INIT = function(){
       return `
       <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">
-          <div class="col-name-top">${gradeHtml}${partnerGlyphHtml(co)}${esc(co.name)}${receivableBadgeHtml}</div>
-          ${lastActHtml}
+          <div class="col-name-top">
+            <span class="co-name-badges">${gradeHtml}${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
+            ${lastActHtml}
+          </div>
         </div>
         <div class="col-request">${requestHtml}</div>
         <div class="col-yr">${yrHtml}</div>
