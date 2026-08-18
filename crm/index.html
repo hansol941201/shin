@@ -163,7 +163,13 @@
   .col-recent{ flex:1.4 1 150px; min-width:0; color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-recent .recent-date{ color:var(--text-faint); margin-right:4px; }
   .col-yr, .col-total{ flex:0 0 62px; font-size:12.5px; color:var(--text); text-align:right; }
-  .col-revenue, .col-yr-revenue{ flex:0 0 90px; font-size:12.5px; color:var(--text); text-align:right; white-space:nowrap; }
+  .col-revenue, .col-yr-revenue, .col-total-revenue{ flex:0 0 90px; font-size:12.5px; color:var(--text); text-align:right; white-space:nowrap; }
+  /* §업체명 왼쪽 금액 이동 라운드: "총 매출"(2025년 매출, D.getCompany2025Revenue 그대로)
+     헤더는 클릭해서 정렬할 수 있다 — 기존 select 정렬과 별개의 토글(내림차순<->오름차순)이라
+     화살표로 상태를 보여준다. */
+  .col-total-revenue-head{ cursor:pointer; user-select:none; display:flex; align-items:center; justify-content:flex-end; gap:3px; }
+  .col-total-revenue-head:hover{ color:var(--navy); }
+  .total-revenue-sort-arrow{ font-size:9px; }
   /* §2026 매출/자재판매/미수금 라운드: 2026 매출 셀(클릭 가능) + 업체명 옆 미수금 인라인
      배지(§15 "행 전체를 빨간색으로 칠하지 마세요" — 작은 배지만). */
   .revenue-cell-btn{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
@@ -1303,7 +1309,7 @@
   .co-row:hover{ background:#F7FAFD; }
   .col-name{ font-size:13.2px; color:#17233A; }
   .col-recent{ font-size:12px; color:#506078; }
-  .col-yr,.col-total,.col-revenue,.col-yr-revenue{ font-weight:600; }
+  .col-yr,.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue{ font-weight:600; }
   .col-cat{ color:#43546B; }
   .pour-count{ color:#1768D7; font-weight:700; }
   .grade-badge{
@@ -1561,11 +1567,11 @@ html,body{background:#F7F9FC;font-size:13px}
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
    흐름, §3). 제거한 최근 실적 활동/전체 실적/토탈 매출 컬럼의 grid-template-columns 슬롯도
    같이 뺐다 — 다른 CSS 규칙/색상 토큰은 그대로 둔다(§ 디자인 단순화, 로직 변경 아님). */
-.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(150px,1fr) 150px 150px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
+.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(150px,1fr) 150px 150px 62px 90px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
 .co-table-head{margin-top:8px;padding:8px 12px!important;background:#FBFCFE;border:1px solid var(--line);border-bottom-color:#DDE4ED;border-radius:7px 7px 0 0;font-size:10.5px;color:#596A82;text-align:left}
 .co-list{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 7px 7px;overflow:hidden}
 .co-row{padding:5px 12px!important;min-height:42px!important;border-bottom:1px solid #EDF1F5!important;background:#fff}.co-row:last-child{border-bottom:0!important}.co-row:hover{background:#F8FAFD!important}
-.col-name,.col-recent,.col-pour,.col-yr,.col-total,.col-revenue,.col-yr-revenue,.col-cat,.col-contrib,.col-trend{min-width:0!important;flex:none!important;text-align:left!important}
+.col-name,.col-recent,.col-pour,.col-yr,.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue,.col-cat,.col-contrib,.col-trend{min-width:0!important;flex:none!important;text-align:left!important}
 .col-name{font-size:11.5px!important;font-weight:700!important;gap:6px!important}.col-recent{font-size:10.5px!important;line-height:1.3!important;color:#53637A!important;white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.col-recent .recent-date{display:block;color:#7D8A9C;font-size:9.5px;margin:0}
 .col-yr{font-size:12px!important;font-weight:750!important;color:#2E78D2!important}.col-total{font-size:12px!important;font-weight:700!important;color:#26364D!important}.col-revenue,.col-yr-revenue{font-size:11.5px!important;font-weight:700!important;color:#24324A!important;white-space:nowrap}.col-cat{font-size:10.5px!important;color:#46566E!important;white-space:normal!important;line-height:1.3}
 /* 실적↔매출 근거 popover(§9) — 클릭/포커스 시에만 보인다, 기본은 숨김. */
@@ -1584,12 +1590,12 @@ html,body{background:#F7F9FC;font-size:13px}
 #cardView .section,#cardView .card-section,#cardView .detail-section{border-color:#E4EAF1!important;box-shadow:none!important}
 #cardView table{border-collapse:collapse}#cardView th{color:#66758D!important;font-size:10.5px!important;font-weight:650!important}#cardView td{font-size:11px!important}#cardView tr{border-color:#E9EEF4!important}
 
-@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 120px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:900px}.co-list{overflow:visible}#listView{overflow-x:auto}}
-@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:900px}.co-row{grid-template-columns:140px 130px 120px 50px 74px 90px 100px 62px!important}}
+@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 120px 50px 74px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:900px}.co-list{overflow:visible}#listView{overflow-x:auto}}
+@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:900px}.co-row{grid-template-columns:140px 130px 120px 50px 74px 74px 90px 100px 62px!important}}
 
 /* HANSOL CRM corporate visual override */
 :root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 160px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 160px 68px 92px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
 </style>
 </head>
 <body>
@@ -1668,13 +1674,16 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
     </div>
     <!-- §최근 실적 독립 컬럼 복원 라운드: "최근 시공"을 업체명 옆에 붙이던 걸 취소하고
          독립 컬럼(라벨은 "최근 실적"으로 변경)으로 되돌렸다(§1/§2/§3) — 협력사 컬럼에는
-         등급/업체명/미수금 배지만 남는다(§5). 최종 컬럼 순서: 협력사/최근 실적/최근 요청/
-         1년 실적/2026 매출/실적↔매출/주요 공종/최근 흐름(§2). -->
+         등급/업체명/미수금 배지만 남는다(§5). §업체명 왼쪽 금액 이동 라운드: 업체명 옆에
+         붙어있던 2025년 매출 금액을 "총 매출" 독립 컬럼(2026 매출 바로 왼쪽)으로 옮겼다.
+         최종 컬럼 순서: 협력사/최근 실적/최근 요청/총 실적/총 매출/2026 매출/실적↔매출/
+         주요 공종/최근 흐름. -->
     <div class="co-table-head">
       <div class="col-name">협력사</div>
       <div class="col-pour">최근 실적</div>
       <div class="col-request">최근 요청</div>
       <div class="col-yr">총 실적</div>
+      <div class="col-total-revenue col-total-revenue-head" id="totalRevenueSortHeader">총 매출 <span class="total-revenue-sort-arrow" id="totalRevenueSortArrow"></span></div>
       <div class="col-yr-revenue">2026 매출</div>
       <div class="col-contrib">실적↔매출</div>
       <div class="col-cat">주요 공종</div>
@@ -4006,6 +4015,21 @@ window.SHIN2_CRM_APP_INIT = function(){
       });
     } else if(sortMode === 'name'){
       rows.sort((a,b)=> String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko'));
+    } else if(sortMode === 'totalRevDesc' || sortMode === 'totalRevAsc'){
+      // §업체명 왼쪽 금액 이동 라운드 §6: "총 매출" 헤더 클릭 정렬. sortGroup(0=실제 값
+      // 있음(0원 포함), 1=매출자료 없음/중복 후보)을 먼저 비교해 데이터 없는 업체를 항상
+      // 맨 뒤로 보낸다(§6 "데이터가 없는 업체는 정렬 시 마지막에 배치"). 같은 그룹 안에서만
+      // 방향에 따라 금액을 비교한다.
+      const dir = sortMode === 'totalRevDesc' ? -1 : 1;
+      rows.sort((a,b)=>{
+        const ra = D.getCompany2025Revenue(a.co); const rb = D.getCompany2025Revenue(b.co);
+        const va = (ra && !ra.ambiguous && typeof ra.total === 'number') ? ra.total : null;
+        const vb = (rb && !rb.ambiguous && typeof rb.total === 'number') ? rb.total : null;
+        const ga = va == null ? 1 : 0, gb = vb == null ? 1 : 0;
+        if(ga !== gb) return ga - gb;
+        if(ga === 1) return String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+        return dir * (va - vb) || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko');
+      });
     } else if(sortMode === 'stage'){
       const order = { q:0, m1:1, m2:2, mou:3 };
       rows.sort((a,b)=>{
@@ -4030,6 +4054,16 @@ window.SHIN2_CRM_APP_INIT = function(){
       currentPage = 1;
       renderList();
     }));
+  }
+  // §업체명 왼쪽 금액 이동 라운드 §6: "총 매출" 헤더 옆 화살표를 현재 sortMode에 맞춰
+  // 갱신한다 — renderList()가 헤더 자체를 다시 그리지 않아서(정적 HTML) 화살표만 별도로
+  // 갱신하면 된다.
+  function updateTotalRevenueSortArrow(){
+    const el = document.getElementById('totalRevenueSortArrow');
+    if(!el) return;
+    if(sortMode === 'totalRevDesc') el.textContent = '▼';
+    else if(sortMode === 'totalRevAsc') el.textContent = '▲';
+    else el.textContent = '';
   }
   function renderPagination(totalPages){
     const wrap = document.getElementById('crmPagination');
@@ -4136,17 +4170,21 @@ window.SHIN2_CRM_APP_INIT = function(){
     listEl.innerHTML = pageRows.map(r=>{
       const co = r.co;
       // §등급 제거/2025년 매출 반영 라운드: 등급 배지를 없애고 그 자리에 2025년 매출을
-      // 표시한다(§1/§2). getCompanyGrade()/GRADE_LABEL/GRADE_BADGE_CLASS 함수 자체는
+      // 표시했었다(§1/§2). getCompanyGrade()/GRADE_LABEL/GRADE_BADGE_CLASS 함수 자체는
       // 지우지 않았다(co.partnerDashboard.grade 원본 데이터도 그대로) — 화면에서만 안 쓴다.
-      // 매출자료가 없는 업체(엑셀에 없음)는 기존 등급-없음과 같은 규칙으로 배지 자체를 비운다
-      // — 258개 중 매칭 안 되는 업체마다 "매출자료 없음" 배지를 전부 띄우면 목록이 지저분해
-      // 지므로, 실제 값(0원 포함)이 있거나 중복 후보로 확인이 필요한 경우에만 배지를 보여준다.
+      // §업체명 왼쪽 금액 이동 라운드: 업체명 옆(col-name-top)에 있던 이 금액 배지를 없애고
+      // "총 매출" 독립 컬럼으로 옮겼다(아래 totalRevenueHtml) — 데이터 출처(D.getCompany2025
+      // Revenue, "협력업체 등급" 시트의 "25년 매출" 컬럼)와 계산은 전혀 바꾸지 않았다. 원본
+      // 필드명이 "25년 매출"(2025년 단일 연도 값)이라 엄밀히는 "여러 해 누적 총매출"이
+      // 아니지만, 요청받은 컬럼명 "총 매출"을 그대로 썼다 — 이 사실은 완료 보고에 명시한다.
       const rev2025 = D.getCompany2025Revenue(co);
-      let sales2025Html = '';
+      let totalRevenueHtml;
       if(rev2025 && rev2025.ambiguous){
-        sales2025Html = `<span class="sales2025-badge sales2025-ambiguous" title="정규화된 업체명이 CRM에 2건 이상과 일치해 자동 반영하지 않았습니다">중복 후보</span>`;
+        totalRevenueHtml = `<span class="data-none" title="정규화된 업체명이 CRM에 2건 이상과 일치해 자동 반영하지 않았습니다">중복 후보</span>`;
       } else if(rev2025 && typeof rev2025.total === 'number'){
-        sales2025Html = `<span class="sales2025-badge">${esc(rev2025.total.toLocaleString('ko-KR'))}원</span>`;
+        totalRevenueHtml = `<button type="button" class="revenue-cell-btn" data-total-revenue-detail="${esc(co.id)}">${esc(fmtKrwCompact(rev2025.total))}</button>`;
+      } else {
+        totalRevenueHtml = '<span class="data-none">매출자료 없음</span>';
       }
       // §'1년 실적'->'총 실적' 전환 라운드: "1년 실적"(올해만 세던 getThisYearPourCount)을
       // 기간 제한 없는 "총 실적"(getTotalPourCountForCompany — "최근 실적"과 같은 원본에서
@@ -4238,12 +4276,13 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">
           <div class="col-name-top">
-            <span class="co-name-badges">${sales2025Html}${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
+            <span class="co-name-badges">${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
           </div>
         </div>
         <div class="col-pour">${lastActHtml}</div>
         <div class="col-request">${requestHtml}</div>
         <div class="col-yr">${yrHtml}</div>
+        <div class="col-total-revenue">${totalRevenueHtml}</div>
         <div class="col-yr-revenue">${yrRevenueHtml}</div>
         <div class="col-contrib">${contribHtml}</div>
         <div class="col-cat">${catHtml}</div>
@@ -4276,6 +4315,14 @@ window.SHIN2_CRM_APP_INIT = function(){
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-revenue-detail'));
         if(co) openRevenueDetailModal(co);
+      });
+    });
+    // §업체명 왼쪽 금액 이동 라운드 §4: "총 매출" 클릭 -> 원 단위 금액 확인용 Drawer.
+    listEl.querySelectorAll('[data-total-revenue-detail]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const co = D.findCompany(btn.getAttribute('data-total-revenue-detail'));
+        if(co) openTotalRevenueDrawer(co);
       });
     });
     // §16: 미수금 배지 클릭 -> 미수금 상세 팝업.
@@ -6106,6 +6153,40 @@ window.SHIN2_CRM_APP_INIT = function(){
               `).join('')}
             ` : `<div class="pi-note">공종 데이터가 없습니다.</div>`}
           </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
+    document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
+  }
+
+  // §업체명 왼쪽 금액 이동 라운드 §4: "총 매출" 클릭 -> 원 단위 정확한 금액을 보여주는
+  // Drawer(신규). D.getCompany2025Revenue()가 이미 계산해 둔 값(2025년 매출, "협력업체 등급"
+  // 시트 "25년 매출" 컬럼) 그대로 원 단위(comma)로 보여준다 — 목록의 축약 표시(fmtKrwCompact)
+  // 는 화면 표시용일 뿐 원본 숫자를 반올림/변경하지 않는다는 걸 여기서 확인할 수 있다.
+  function openTotalRevenueDrawer(co){
+    const root = document.getElementById('sideDrawerRoot');
+    if(!root) return;
+    const rev2025 = D.getCompany2025Revenue(co);
+    let bodyHtml;
+    if(rev2025 && rev2025.ambiguous){
+      bodyHtml = `<div class="pi-note">정규화된 업체명이 CRM에 2건 이상과 일치해 자동으로 반영하지 않았습니다("중복 후보") — 수동으로 확인이 필요합니다.</div>`;
+    } else if(rev2025 && typeof rev2025.total === 'number'){
+      bodyHtml = `
+        <div class="receivable-drawer-total" style="color:var(--text)">${esc(rev2025.total.toLocaleString('ko-KR'))}원</div>
+        <div class="receivable-drawer-total-sub">출처: 협력업체 등급 시트 "25년 매출"(2025년 매출 기준, 여러 해 누적 합계가 아닙니다)</div>
+      `;
+    } else {
+      bodyHtml = `<div class="pi-note">매출자료가 없습니다.</div>`;
+    }
+    root.innerHTML = `
+      <div class="side-drawer-overlay" id="sideDrawerOverlay">
+        <div class="side-drawer-panel">
+          <div class="side-drawer-head">
+            <div class="side-drawer-title">총 매출 — ${esc(co.name)}</div>
+            <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
+          </div>
+          <div class="side-drawer-body">${bodyHtml}</div>
         </div>
       </div>
     `;
@@ -8416,8 +8497,21 @@ window.SHIN2_CRM_APP_INIT = function(){
   const sortSelect = document.getElementById('crmSortSelect');
   if(sortSelect){
     sortSelect.value = sortMode;
-    sortSelect.addEventListener('change', ()=>{ sortMode = sortSelect.value; currentPage = 1; renderList(); });
+    sortSelect.addEventListener('change', ()=>{ sortMode = sortSelect.value; currentPage = 1; renderList(); updateTotalRevenueSortArrow(); });
   }
+  // §업체명 왼쪽 금액 이동 라운드 §6: "총 매출" 헤더 클릭 -> 내림차순/오름차순 토글 정렬.
+  // 기존 select 정렬과는 별도 진입점이지만 같은 sortMode 변수를 공유한다 — 헤더를 클릭하면
+  // sortMode가 'totalRevDesc'/'totalRevAsc'로 바뀌고, select를 다시 바꾸면 그 쪽 값으로
+  // 돌아간다(sortSelect.value가 'totalRevDesc' 등과 매치되는 <option>이 없으므로 select
+  // 표시는 자동으로 빈 값이 된다 — 별 문제 없음, 화살표가 활성 상태를 보여준다).
+  const totalRevenueSortHeader = document.getElementById('totalRevenueSortHeader');
+  if(totalRevenueSortHeader){
+    totalRevenueSortHeader.addEventListener('click', ()=>{
+      sortMode = (sortMode === 'totalRevDesc') ? 'totalRevAsc' : 'totalRevDesc';
+      currentPage = 1; renderList(); updateTotalRevenueSortArrow();
+    });
+  }
+  updateTotalRevenueSortArrow();
 
   // 다른 탭(v2 또는 CRM의 다른 탭)에서 shin2-companies-staging을 바꾸면 native storage
   // 이벤트가 이 탭에 도착한다(자기 자신이 쓴 변경에는 절대 발생하지 않음 — 브라우저 표준
