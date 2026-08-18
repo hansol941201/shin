@@ -1929,15 +1929,14 @@
       </button>
     </nav>
 
-    <!-- 좌측 사이드바 하단 빠른메뉴(§좌측 사이드바 하단 통합 라운드) — 고객관리카드/일정/Q&A.
-         기능을 새로 만들지 않고 기존 버튼 3개(shin2CrmLinkBtn/calFabBtn/qaFabBtn)를 여기로
-         옮겨 같은 id·같은 클릭 리스너를 그대로 재사용한다(§17 기존 기능 보호). -->
+    <!-- 좌측 사이드바 하단 빠른메뉴(§좌측 사이드바 하단 통합 라운드) — 일정/Q&A.
+         기능을 새로 만들지 않고 기존 버튼(calFabBtn/qaFabBtn)을 여기로 옮겨 같은 id·같은
+         클릭 리스너를 그대로 재사용한다(§17 기존 기능 보호).
+         고객관리카드 진입 버튼(shin2CrmLinkBtn)은 요청에 따라 제거했다 — crm/index.html
+         페이지와 CRM 데이터(shin2-companies-staging 등)는 그대로 남아 있고, 이 사이드바에서
+         들어가는 입구만 없앤 것이다. -->
     <div class="nav-bottom">
       <div class="nav-divider"></div>
-      <button type="button" class="nav-item" id="shin2CrmLinkBtn" title="고객업무관리 카드(CRM)를 새 탭에서 엽니다">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 14h4"/></svg>
-        <span>고객관리카드</span>
-      </button>
       <button type="button" class="nav-item" id="calFabBtn" title="일정관리" aria-label="일정관리">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
         <span>일정</span>
@@ -5357,11 +5356,8 @@
   var restoreFile = document.getElementById('shin2RestoreFile');
   var cloudBtn = document.getElementById('shin2CloudSyncBtn');
   var statusEl = document.getElementById('shin2SyncStatus');
-  var crmLinkBtn = document.getElementById('shin2CrmLinkBtn');
-  // §28: 새 탭으로 연다 — 현재 탭(한솔2)은 그대로 유지된다.
-  crmLinkBtn && crmLinkBtn.addEventListener('click', function(){
-    window.open('../crm/', '_blank', 'noopener');
-  });
+  // 고객관리카드 진입 버튼(shin2CrmLinkBtn)은 사이드바에서 제거됐다 — 그 버튼에만 달려 있던
+  // 클릭 리스너(window.open('../crm/'))도 함께 제거한다. crm 페이지 자체는 그대로 남아 있다.
 
   function setStatus(msg){ if(statusEl) statusEl.textContent = msg || ''; }
 
