@@ -1808,6 +1808,10 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   <div id="receivableModalRoot"></div>
   <div id="revenueDetailModalRoot"></div>
   <div id="receivableDetailModalRoot"></div>
+  <!-- §시공실적 중앙 모달 전환 라운드: "최근 실적"/"총 실적" 클릭이 열던 오른쪽 Drawer
+       (sideDrawerRoot)를 대신해서 "2026 매출 상세"와 같은 .pi-overlay/.pi-panel 중앙 모달
+       패턴을 쓴다 — 전용 root. -->
+  <div id="constructionModalRoot"></div>
   <div id="sideDrawerRoot"></div>
   <div id="memoPanelRoot"></div>
   <!-- §총 매출 Popover 전환 라운드: 전용 root — sideDrawerRoot(전체 높이 오른쪽 패널,
@@ -4583,7 +4587,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-pour-detail'));
-        if(co) openConstructionDrawer(co, null);
+        if(co) openConstructionModal(co, null);
       });
     });
     // §13: 최근 요청 클릭 -> 최근 요청 Drawer.
@@ -4600,7 +4604,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         const co = D.findCompany(btn.getAttribute('data-yr-detail'));
-        if(co) openConstructionDrawer(co, null);
+        if(co) openConstructionModal(co, null);
       });
     });
     // §주요 공종 데이터 소스 독립화 라운드 §8 → §시공실적 Drawer 통합 라운드 §10: "주요
@@ -6563,6 +6567,85 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(summary.total) renderConstructionDrawerBody(co, summary, initialFilter || null);
     document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
     document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
+  }
+
+  // §시공실적 중앙 모달 전환 라운드: "최근 실적"/"총 실적" 클릭이 열던 오른쪽 Drawer
+  // (openConstructionDrawer, 함수는 그대로 남겨두되 더 이상 호출하지 않음) 대신 "2026 매출
+  // 상세"(openRevenueDetailModal)와 완전히 같은 .pi-overlay/.pi-panel 중앙 모달 패턴을 쓴다.
+  // 데이터는 buildConstructionSummary/filterConstructionRecords를 그대로 재사용하고, 목록은
+  // 고객카드 POUR 표(renderPourTrackSection)와 동일한 연도|공종|지역/아파트|세대수|특허번호
+  // 표 형식(fmtLocation/fmtHouseholds/fmtCategoryDisplay/fmtPatentDisplay 재사용)으로 보여준다.
+  let constructionModalState = { co: null, summary: null, filter: null };
+  function closeConstructionModal(){
+    const root = document.getElementById('constructionModalRoot');
+    if(root) root.innerHTML = '';
+    constructionModalState = { co: null, summary: null, filter: null };
+  }
+  function openConstructionModal(co, initialFilter){
+    const root = document.getElementById('constructionModalRoot');
+    if(!root) return;
+    const summary = buildConstructionSummary(co);
+    constructionModalState = { co, summary, filter: initialFilter || null };
+    root.innerHTML = `
+      <div class="pi-overlay" id="constructionModalOverlay">
+        <div class="pi-panel">
+          <div class="pi-head">
+            <div class="pi-title">시공실적 — ${esc(co.name)}</div>
+            <button type="button" class="chart-close-btn" id="constructionModalCloseBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body">
+            <div class="cat-dist-total">전체 ${esc(summary.total)}건</div>
+            ${summary.total ? `
+              <div class="constr-filter-row" id="constrModalFilterRow"></div>
+              <div id="constrModalTableWrap"></div>
+            ` : `<div class="pi-note">등록된 시공실적이 없습니다.</div>`}
+          </div>
+          <div class="pi-actions">
+            <button type="button" class="co-text-action primary" id="constructionModalCloseBtn2">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    if(summary.total) renderConstructionModalBody();
+    document.getElementById('constructionModalCloseBtn').addEventListener('click', closeConstructionModal);
+    document.getElementById('constructionModalCloseBtn2').addEventListener('click', closeConstructionModal);
+    document.getElementById('constructionModalOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'constructionModalOverlay') closeConstructionModal(); });
+  }
+  // 필터 칩은 renderConstructionDrawerBody와 같은 chips 구성 로직을 그대로 쓰되, 목록만
+  // .receivable-site-card 카드 대신 고객카드 POUR 표와 같은 <table>로 그린다(§3: 연도/공종/
+  // 지역·아파트/세대수/특허번호 5열, 새 계산 없이 원본 필드를 그대로 표시).
+  function renderConstructionModalBody(){
+    const { co, summary, filter } = constructionModalState;
+    const filterRow = document.getElementById('constrModalFilterRow');
+    const tableWrap = document.getElementById('constrModalTableWrap');
+    if(!filterRow || !tableWrap) return;
+    const chips = [{ key: null, label: '전체', count: summary.total }]
+      .concat(summary.topCats.map(b=> ({ key: b.category, label: b.category, count: b.count })));
+    if(summary.otherTotal > 0) chips.push({ key: '__other__', label: '기타', count: summary.otherTotal });
+    filterRow.innerHTML = chips.map(c=>
+      `<button type="button" class="constr-filter-chip${filter===c.key?' is-active':''}" data-constr-modal-filter="${c.key===null?'':esc(c.key)}">${esc(c.label)} ${esc(c.count)}</button>`
+    ).join('');
+    filterRow.querySelectorAll('[data-constr-modal-filter]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const raw = btn.getAttribute('data-constr-modal-filter');
+        constructionModalState.filter = raw === '' ? null : raw;
+        renderConstructionModalBody();
+      });
+    });
+    const filtered = filterConstructionRecords(summary.records, filter, summary.otherCatNames);
+    tableWrap.innerHTML = `
+      <table class="cdash-pour-table"><thead><tr><th>년도</th><th>공종</th><th>지역 / 아파트</th><th>세대수</th><th>특허번호</th></tr></thead>
+        <tbody>
+          ${filtered.map(r=> `<tr>
+            <td>${esc(r.year)}</td>
+            <td>${esc(fmtCategoryDisplay(r.category))}</td>
+            <td>${esc(fmtLocation(r.region, r.city, r.client))}</td>
+            <td>${esc(fmtHouseholds(r.households))}</td>
+            <td>${esc(fmtPatentDisplay(r.patentNo))}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
   }
 
   const REQUEST_HISTORY_SOURCE_LABEL = { '전화':'시공사 전화기록' }; // 그 외 카테고리는 category 값을 그대로 출처 라벨로 쓴다(§15, 지어내지 않음)
