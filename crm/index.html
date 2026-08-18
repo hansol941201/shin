@@ -175,13 +175,18 @@
   .empty-note{ font-size:12.5px; color:var(--text-muted); padding:24px 4px; text-align:center; }
   .data-none{ color:var(--text-faint); }
 
-  /* §최근 활동일/단계 D+N 복원 라운드 → §최근 활동일 정정 라운드: "최근 시공일"(co.
-     pourTrackRecords 기준 최근 시공 연도, §정정 요청) + "현재 단계 · D+N"(단계 체류기간
-     관리) 컬럼. 값 계산은 getLatestPourYear(기존 POUR 시공실적 데이터 그대로)와
-     buildProgressStages(기존 진행 기록 로직 그대로)만 쓰고 새 계산 기준을 만들지 않는다
-     (§11/§17). */
-  .col-lastact{ flex:0 0 58px; font-size:12px; color:var(--text-muted); text-align:right; white-space:nowrap; }
-  .col-stage{ flex:0 0 112px; font-size:12px; white-space:nowrap; }
+  /* §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N"은 메인 목록 컬럼(.col-stage)
+     에서는 뺐다(§1 "메인 고객목록 표에서만 숨김") — .stage-dn-cell류 클래스와
+     buildStageCellHtml()은 지우지 않고 그대로 뒀다(값이 필요한 다른 화면이 생기면 그대로
+     재사용 가능). .co-row.is-overdue(행 왼쪽 3px 빨간 라인)는 기한 초과 표시로 계속 쓴다.
+     "최근 시공"(구 "최근 시공일") 컬럼은 이제 연도만이 아니라 실제 POUR 시공실적 원본의
+     가장 최근 실적 1건에서 연도/공종/현장명을 함께 보여준다(§3~9, buildLatestPourDisplay).
+     현장명이 길면 말줄임표 처리하고 title 속성으로 전체 텍스트를 볼 수 있게 한다(§12). */
+  .col-lastact{ flex:0 0 140px; min-width:0; font-size:12px; }
+  .lastpour-cell{ display:flex; flex-direction:column; gap:1px; line-height:1.3; min-width:0; }
+  .lastpour-cell .lastpour-main{ font-weight:600; color:var(--text); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lastpour-cell .lastpour-site{ color:var(--text-faint); font-size:10.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col-stage{ flex:0 0 112px; font-size:12px; white-space:nowrap; } /* 더 이상 목록에 렌더링하지 않지만 클래스는 남겨둔다 */
   .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
   .stage-dn-cell.st-normal{ color:var(--text); }
   .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
@@ -1467,7 +1472,7 @@ html,body{background:#F7F9FC;font-size:13px}
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
    흐름, §3). 제거한 최근 실적 활동/전체 실적/토탈 매출 컬럼의 grid-template-columns 슬롯도
    같이 뺐다 — 다른 CSS 규칙/색상 토큰은 그대로 둔다(§ 디자인 단순화, 로직 변경 아님). */
-.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(140px,1fr) 70px 128px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
+.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(140px,1fr) 150px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
 .co-table-head{margin-top:8px;padding:8px 12px!important;background:#FBFCFE;border:1px solid var(--line);border-bottom-color:#DDE4ED;border-radius:7px 7px 0 0;font-size:10.5px;color:#596A82;text-align:left}
 .co-list{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 7px 7px;overflow:hidden}
 .co-row{padding:5px 12px!important;min-height:42px!important;border-bottom:1px solid #EDF1F5!important;background:#fff}.co-row:last-child{border-bottom:0!important}.co-row:hover{background:#F8FAFD!important}
@@ -1490,12 +1495,12 @@ html,body{background:#F7F9FC;font-size:13px}
 #cardView .section,#cardView .card-section,#cardView .detail-section{border-color:#E4EAF1!important;box-shadow:none!important}
 #cardView table{border-collapse:collapse}#cardView th{color:#66758D!important;font-size:10.5px!important;font-weight:650!important}#cardView td{font-size:11px!important}#cardView tr{border-color:#E9EEF4!important}
 
-@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:120px 58px 108px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:780px}.co-list{overflow:visible}#listView{overflow-x:auto}}
-@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:780px}.co-row{grid-template-columns:120px 58px 108px 50px 74px 90px 100px 62px!important}}
+@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:120px 130px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:780px}.co-list{overflow:visible}#listView{overflow-x:auto}}
+@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:780px}.co-row{grid-template-columns:120px 130px 50px 74px 90px 100px 62px!important}}
 
 /* HANSOL CRM corporate visual override */
 :root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(140px,1fr) 74px 132px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:54px!important;padding:7px 14px!important;border-bottom:1px solid #e8eef5!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(140px,1fr) 160px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:54px!important;padding:7px 14px!important;border-bottom:1px solid #e8eef5!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
 </style>
 </head>
 <body>
@@ -1570,16 +1575,19 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
         <option value="name">업체명순</option>
       </select>
     </div>
-    <!-- §최근 활동일/단계 D+N 복원 라운드: "최근 활동일"(기존에 있다가 §첫화면 단순화
-         라운드에서 화면에서만 빠졌던 컬럼, §복원 요청)과 "현재 단계 · D+N"(신규, 단계 체류
-         기간 관리)을 복원/추가한다. §2026 매출/자재판매/미수금 라운드에서 "2025 매출" →
-         "2026 매출"로 바꿨다(§19 "이 파일이 2026년 매출현황이므로") — getCompany2026Revenue
-         (컨설팅+기술자문료+특허료+자재판매 합계)로 값을 채운다. 최근 실적 활동/전체 실적/
-         토탈 매출은 계속 화면에서 뺀 채로 둔다(§4, 상세 고객관리카드에서 그대로 볼 수 있음). -->
+    <!-- §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N" 컬럼은 메인 목록에서만
+         숨긴다(§1) — buildProgressStages/stageDurationFromProgress/getStageDurationInfo/
+         D+N/기한 초과 계산은 전혀 지우지 않았고, 상단 "⏱ 기한 초과 N" 배지·패널과 고객
+         상세카드는 그대로 이 값을 쓴다(§ 데이터/기능 삭제 아님, 화면 표시만 뺌). "최근 시공"
+         (구 "최근 시공일")은 연도만 보여주던 것을 실제 POUR 시공실적 원본에서 해당 업체의
+         가장 최근 실적 1건을 찾아 연도(+월, 있는 경우만)·공종·현장명으로 강화했다(§3~9).
+         §2026 매출/자재판매/미수금 라운드에서 "2025 매출" → "2026 매출"로 바꿨다(§19) —
+         getCompany2026Revenue(컨설팅+기술자문료+특허료+자재판매 합계)로 값을 채운다. 최근
+         실적 활동/전체 실적/토탈 매출은 계속 화면에서 뺀 채로 둔다(§4, 상세 고객관리카드에서
+         그대로 볼 수 있음). -->
     <div class="co-table-head">
       <div class="col-name">협력사</div>
-      <div class="col-lastact">최근 시공일</div>
-      <div class="col-stage">현재 단계</div>
+      <div class="col-lastact">최근 시공</div>
       <div class="col-yr">1년 실적</div>
       <div class="col-yr-revenue">2026 매출</div>
       <div class="col-contrib">실적↔매출</div>
@@ -3837,9 +3845,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       return;
     }
     // §최근 활동일/단계 D+N 복원 라운드(→§최근 활동일 정정 라운드→§2026 매출/자재판매/
-    // 미수금 라운드): 8개 컬럼(협력사/최근 시공일/현재 단계·D+N/1년 실적/2026 매출/
-    // 실적↔매출/주요 공종/최근 흐름)을 렌더링한다. 최근 실적 활동/전체 실적/토탈
-    // 매출은 여전히 목록에서 뺐지만 계산 함수(buildRecentPourActivity/getTotalPourCount/
+    // 미수금 라운드→§최근 시공 강화/현재 단계 숨김 라운드): 7개 컬럼(협력사/최근 시공/
+    // 1년 실적/2026 매출/실적↔매출/주요 공종/최근 흐름)을 렌더링한다. "현재 단계·D+N"은
+    // 메인 목록에서만 뺐다(§1, 데이터/계산 자체는 그대로 — 상단 "기한 초과" 배지·패널과
+    // 상세 고객관리카드에서 계속 쓴다). 최근 실적 활동/전체 실적/토탈 매출도 여전히
+    // 목록에서 뺐지만 계산 함수(buildRecentPourActivity/getTotalPourCount/
     // getTotalRevenue)는 그대로 두고 부르지 않을 뿐이다 — 상세 고객관리카드(renderChart의
     // 글랜스행·POUR 시공실적 섹션)에서 그대로 볼 수 있다(§4/§18, 데이터 삭제 아님).
     listEl.innerHTML = pageRows.map(r=>{
@@ -3863,16 +3873,22 @@ window.SHIN2_CRM_APP_INIT = function(){
       const receivableBadgeHtml = (receivable && receivable.total > 0)
         ? `<button type="button" class="receivable-inline-badge" data-receivable-detail="${esc(co.id)}">미수금 ${esc(fmtKrwCompact(receivable.total))}</button>`
         : '';
-      // §최근 활동일 정정 라운드: "최근 활동일" 컬럼은 CRM 활동기록이 아니라 co.pourTrackRecords
-      // 기준 "최근 시공일"을 보여달라는 것이었다(§사용자 정정). 실제 데이터에는 연도만 있고
-      // 월/일이 없어(getLatestPourYear 주석 참고) "YYYY년"까지만 표시한다 — 없는 날짜를
-      // 지어내지 않는다.
-      const latestPourYear = getLatestPourYear(co);
-      const lastActHtml = latestPourYear != null ? `${latestPourYear}년` : '<span class="data-none">—</span>';
-      // §단계 체류기간(D+N) — r.progress도 위 enriched에서 이미 계산된 buildProgressStages()
-      // 결과를 그대로 재사용한다(중복 계산 금지, §26과 같은 원칙).
+      // §최근 시공 강화 라운드: "최근 시공" 컬럼 — 연도만 보여주던 것을 실제 POUR
+      // 시공실적 원본의 가장 최근 실적 1건에서 연도·공종·현장명으로 강화했다(§3~9).
+      // 두 줄로: 첫 줄(진한 글씨)에 연도·공종, 둘째 줄(작고 회색)에 현장명 — 현장명이
+      // 길면 CSS로 말줄임표 처리하고 title 속성으로 전체 텍스트를 볼 수 있게 한다(§12).
+      const latestPour = buildLatestPourDisplay(co);
+      const lastActHtml = latestPour
+        ? `<span class="lastpour-cell">
+            <span class="lastpour-main">${esc(latestPour.year)}${latestPour.category ? ' · ' + esc(latestPour.category) : ''}</span>
+            ${latestPour.site ? `<span class="lastpour-site" title="${esc(latestPour.site)}">${esc(latestPour.site)}</span>` : ''}
+          </span>`
+        : '<span class="data-none">—</span>';
+      // §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N"은 메인 목록에서 뺐지만
+      // (§1), 기한 초과 여부(rowOverdueClass, 행 왼쪽 빨간 라인)는 계속 필요해서 계산
+      // 자체는 그대로 둔다 — r.progress도 위 enriched에서 이미 계산된
+      // buildProgressStages() 결과를 그대로 재사용한다(중복 계산 금지, §26과 같은 원칙).
       const stageInfo = stageDurationFromProgress(r.progress);
-      const stageHtml = buildStageCellHtml(stageInfo);
       const catText = buildTopCategoriesText(co, 2);
       const catHtml = catText ? esc(catText) : '<span class="data-none">데이터 없음</span>';
       // §8/§9: "실적↔매출"은 기본 화면엔 한 줄(높음/보통/낮음/데이터 부족)만 보이고,
@@ -3898,7 +3914,6 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">${gradeHtml}${partnerGlyphHtml(co)}${esc(co.name)}${receivableBadgeHtml}</div>
         <div class="col-lastact">${lastActHtml}</div>
-        <div class="col-stage">${stageHtml}</div>
         <div class="col-yr">${yrHtml}</div>
         <div class="col-yr-revenue">${yrRevenueHtml}</div>
         <div class="col-contrib">${contribHtml}</div>
@@ -4972,6 +4987,36 @@ window.SHIN2_CRM_APP_INIT = function(){
     let maxYear = null;
     records.forEach(r=>{ if(typeof r.year === 'number' && (maxYear == null || r.year > maxYear)) maxYear = r.year; });
     return maxYear;
+  }
+  // §최근 시공 강화 라운드: "최근 시공"에 연도만이 아니라 실제 POUR 시공실적 원본의 가장
+  // 최근 실적 1건에서 공종/현장명까지 함께 보여달라는 요청 — 구현 전 실제 데이터를 다시
+  // 확인했다: co.pourTrackRecords[].year는 여전히 연도만 있고 월/일 필드는 원본 어디에도
+  // 없다(§고객관리 CRM 첫화면 대시보드 개편 라운드 "데이터 출처/한계" 주석과 동일 — 이번에
+  // 재확인해도 결과가 같다). 그래서 월은 항상 표시하지 않는다(§6 "월을 추측해서 만들면
+  // 안 됩니다"). "가장 최근 실적"은 연도가 가장 큰 레코드이고, 같은 연도에 여러 건이면
+  // 원본 시트의 나중 행(sourceRow가 큰 쪽)을 최신으로 본다 — 새 규칙이 아니라
+  // buildSiteHistoryData가 이미 쓰는 "원문 기록 순서 = 최신 순서" 관례(§ 그 함수 주석
+  // "날짜에 연도가 없어 실제 날짜 비교로 정렬하면 오히려 잘못될 수 있어 원문 기록 순서를
+  // 신뢰한다")를 그대로 적용한 것이다. 현장명은 원본에 실제로 있는 필드 중 시공현장을
+  // 가리키는 client(발주처/현장명, 예: "평택비전지웰푸르지오")를 쓴다 — region/city는
+  // 지역이지 현장명이 아니라서 쓰지 않는다(§7 "현장명을 새로 생성하지 마세요"). 공종은
+  // category 필드의 첫 줄만 쓴다(한 레코드에 "슬라브\n재도장\n에폭시"처럼 여러 줄이 있을
+  // 수 있어 §8 "너무 길어지지 않게"에 맞춰 대표 공종 하나만 보여준다 — 목록 전체 나열은
+  // 이미 "주요 공종" 컬럼(buildTopCategoriesText)이 따로 하고 있다).
+  function getLatestPourRecord(co){
+    const records = co.pourTrackRecords || [];
+    let best = null;
+    records.forEach(r=>{
+      if(typeof r.year !== 'number') return;
+      if(!best || r.year > best.year || (r.year === best.year && (r.sourceRow||0) > (best.sourceRow||0))) best = r;
+    });
+    return best;
+  }
+  function buildLatestPourDisplay(co){
+    const r = getLatestPourRecord(co);
+    if(!r) return null;
+    const categories = String(r.category || '').split('\n').map(s=> s.trim()).filter(Boolean);
+    return { year: r.year, category: categories[0] || null, site: r.client || null };
   }
   function buildTopCategoriesText(co, n){
     const records = co.pourTrackRecords || [];
