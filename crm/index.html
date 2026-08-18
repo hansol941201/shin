@@ -4247,6 +4247,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     // "최근 요청"은 여기서 딱 한 번만 인덱스로 계산해 두고 아래 각 행에서는 조회만 한다.
     const pourLatestIndex = D.buildPourLatestIndex();
     const requestHistoryIndex = D.buildRequestHistoryIndex();
+    // §실적↔매출 실제 구현 라운드: "실적 1건당 평균 매출" 상대 등급(상위/중간/하위 30·40·30%)은
+    // 전체 업체의 분포를 알아야 계산할 수 있어서, 업체마다 다시 정렬할 수 없다 — 렌더링당
+    // 한 번만 전체를 계산해 둔다(§11 "같은 공통 소스 재사용" + §성능 원칙과 동일).
+    const contribIndex = buildRevenueContributionIndex();
     // 파생 데이터는 매번 다시 계산만 한다(§26 — companyId 기준 실제 POUR/진행 데이터에서
     // 집계, 회사명 텍스트로 새 데이터를 만들지 않음. 별도 저장 없음).
     const enriched = companies.map(co=>{
@@ -4375,18 +4379,14 @@ window.SHIN2_CRM_APP_INIT = function(){
       const catHtml = catText
         ? `<button type="button" class="cat-cell" data-cat-detail="${esc(co.id)}">${esc(catText)}</button>`
         : '<span class="data-none">데이터 없음</span>';
-      // §8/§9: "실적↔매출"은 기본 화면엔 한 줄(높음/보통/낮음/데이터 부족)만 보이고,
-      // 클릭하면 기존 buildRevenueContribution() 결과(detail/sub)를 popover로 보여준다 —
-      // 계산 로직은 그대로, 표시 방식만 "3줄 상시노출"→"1줄+클릭 시 근거"로 바꿨다.
-      const contrib = buildRevenueContribution(co);
+      // §실적↔매출 실제 구현 라운드: "실적↔매출"은 이제 실제로 계산된다(총 매출 ÷ 총
+      // 실적 = 실적 1건당 평균 매출, 상대 등급은 buildRevenueContributionIndex가 전체
+      // 업체 분포로 미리 계산해 둔 값을 조회만 한다). 기본 화면엔 등급 한 단어(높음/보통/
+      // 낮음/데이터 부족)만 보이고, 클릭하면 오른쪽 Drawer로 상세 근거를 보여준다(§5,
+      // 기존 팝오버 방식은 없앰 — 다른 컬럼들과 같은 Drawer 패턴으로 통일).
+      const contrib = contribIndex.get(co.id) || { level:'insufficient', label:'데이터 부족' };
       const contribLevelClass = { high:'lv-high', mid:'lv-mid', low:'lv-low', insufficient:'lv-insufficient' }[contrib.level] || 'lv-insufficient';
-      const contribHtml = `<span class="contrib-cell ${contribLevelClass}">
-          <button type="button" class="contrib-trigger" data-contrib-toggle="${esc(co.id)}">${esc(contrib.label)}</button>
-          <div class="contrib-popover" data-contrib-popover="${esc(co.id)}">
-            <div>${esc(contrib.detail)}</div>
-            <div>${esc(contrib.sub)}</div>
-          </div>
-        </span>`;
+      const contribHtml = `<button type="button" class="contrib-trigger contrib-cell ${contribLevelClass}" data-contrib-detail="${esc(co.id)}"><span class="contrib-level">${esc(contrib.label)}</span></button>`;
       const trend = buildRecentTrend(co);
       // §최근 흐름 재수정 라운드: 첫 화면에서는 퍼센트를 완전히 뺀다(요청사항) — trend.pct는
       // 함수 안에 그대로 남아있고(나중에 필요하면 다시 씀), 화면 렌더링에서만 안 쓴다.
@@ -4411,25 +4411,16 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="col-trend">${trendHtml}</div>
       </div>`;
     }).join('');
-    // 실적↔매출 popover — 클릭으로 열고 닫는다(§9 "마우스를 올리거나 클릭하면"). 한 번에
-    // 하나만 열리게 하고, 바깥을 클릭하면 닫는다. 행 클릭(고객카드 열기)으로 전파되지
-    // 않도록 stopPropagation.
-    listEl.querySelectorAll('[data-contrib-toggle]').forEach(btn=>{
+    // §실적↔매출 실제 구현 라운드: "실적↔매출" 클릭 -> 실적·매출 분석 Drawer(다른 컬럼과
+    // 같은 패턴, 옛 popover 방식은 없앰). 행 클릭(고객카드 열기)으로 전파되지 않도록
+    // stopPropagation.
+    listEl.querySelectorAll('[data-contrib-detail]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
-        const id = btn.getAttribute('data-contrib-toggle');
-        const pop = listEl.querySelector(`[data-contrib-popover="${CSS.escape(id)}"]`);
-        const wasOpen = pop && pop.classList.contains('is-open');
-        listEl.querySelectorAll('.contrib-popover.is-open').forEach(p=> p.classList.remove('is-open'));
-        if(pop && !wasOpen) pop.classList.add('is-open');
+        const co = D.findCompany(btn.getAttribute('data-contrib-detail'));
+        if(co) openContributionDrawer(co);
       });
     });
-    if(!listEl.dataset.contribOutsideBound){
-      listEl.dataset.contribOutsideBound = '1';
-      document.addEventListener('click', ()=>{
-        listEl.querySelectorAll('.contrib-popover.is-open').forEach(p=> p.classList.remove('is-open'));
-      });
-    }
     // §20: 2026 매출 금액 클릭 -> 상세 매출내역 모달. 행 클릭(고객카드 열기)으로 전파되지
     // 않도록 stopPropagation.
     listEl.querySelectorAll('[data-revenue-detail]').forEach(btn=>{
@@ -5666,26 +5657,57 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(withDate.status) parts.push(withDate.status);
     return { date: withDate.date, text: parts.join(' ') };
   }
-  // 매출 기여(§10) — 위 3)의 이유로 현재는 항상 "데이터 부족"이다. 나중에 매출이 시계열로
-  // (연/월별) 쌓이면 이 함수 하나만 실제 로직으로 바꾸면 되도록 구조를 만들어 둔다.
-  function buildRevenueContribution(co){
-    return { level: 'insufficient', label: '데이터 부족', detail: '1년 매출 데이터 없음', sub: '산정 기준 필요' };
+  /* ==========================================================================
+     §실적↔매출 실제 구현 라운드 — buildRevenueContribution()은 co를 전혀 읽지 않는
+     스텁이었다(항상 "데이터 부족"). "실적이 실제 매출로 얼마나 연결되는가"를 실제로
+     계산하도록 바꿨다: 총 실적(getTotalPourRecordsForCompany — 메인 목록 "총 실적"과
+     완전히 같은 소스) ÷ 총 매출(D.getCompanyTotalRevenueAllYears — 메인 목록 "총 매출"과
+     완전히 같은 소스) = 실적 1건당 평균 매출. 절대 기준(예: "1천만원 이상=높음")을
+     하드코딩하지 않고, 실적·매출이 둘 다 있는 업체들의 이 비율 분포에서 상대적으로
+     상위 30%=높음/중간 40%=보통/하위 30%=낮음으로 나눈다(§6) — 그래서 업체 하나만으로는
+     계산할 수 없고 전체를 한 번에 봐야 한다. 렌더링당 한 번만 계산해서 Map으로 캐싱한다
+     (§성능 원칙, pourLatestIndex와 같은 패턴).
+     ========================================================================== */
+  function buildRevenueContributionIndex(){
+    const companies = D.loadCompanies();
+    const result = new Map();
+    const candidates = []; // {id, ratio, totalPerf, totalRev}
+    companies.forEach(co=>{
+      const perfRecords = getTotalPourRecordsForCompany(co); // "총 실적"과 완전히 같은 소스
+      const totalPerf = perfRecords.length;
+      if(!totalPerf){
+        result.set(co.id, { level:'insufficient', label:'데이터 부족', totalPerf: null, totalRev: null, perUnit: null });
+        return;
+      }
+      const revAll = D.getCompanyTotalRevenueAllYears(co); // "총 매출"과 완전히 같은 소스
+      if(!revAll || revAll.ambiguous || typeof revAll.total !== 'number'){
+        result.set(co.id, { level:'insufficient', label:'데이터 부족', totalPerf, totalRev: null, perUnit: null });
+        return;
+      }
+      candidates.push({ id: co.id, ratio: revAll.total / totalPerf, totalPerf, totalRev: revAll.total });
+    });
+    // 상위 30%(높음)/중간 40%(보통)/하위 30%(낮음) — 실제 값 0원(매칭됐지만 매출 0)도
+    // ratio=0으로 후보에 포함되어 자연스럽게 최하위로 정렬된다(§6 "0원과 매출자료 없음
+    // 구분").
+    candidates.sort((a,b)=> a.ratio - b.ratio);
+    const n = candidates.length;
+    const lowCut = Math.ceil(n * 0.3);
+    const highCut = n - Math.ceil(n * 0.3);
+    candidates.forEach((c, idx)=>{
+      let level, label;
+      if(idx < lowCut){ level='low'; label='낮음'; }
+      else if(idx >= highCut){ level='high'; label='높음'; }
+      else { level='mid'; label='보통'; }
+      result.set(c.id, { level, label, totalPerf: c.totalPerf, totalRev: c.totalRev, perUnit: c.ratio });
+    });
+    return result;
   }
-  // 최근 흐름(§11) — "최근 1년 실적 + 최근 매출 변화" 중 매출 변화는 위 3)의 이유로 계산
-  // 불가하므로 실적만으로 판단한다. 진짜 최근 1년 롤링 비교가 아니라 "올해 누적 vs 작년
-  // 누적"(달력 연도) 비교라는 한계를 명시한다. 기준(코드로 명시, §10과 동일 원칙): 작년
-  // 실적이 0건이면 비율 계산이 무의미하므로 데이터 부족. 그 외에는 증감률 10%를 경계로
-  // 상승/유지/감소를 나눈다 — 이 10% 기준은 이 라운드에서 정한 값이며, 필요시 조정 가능.
-  // §최근 흐름 재수정 라운드: 실제로 확인해보니 "올해(진행 중, 불완전) vs 작년(1년 전체)"을
-  // 비교하는 예전 방식은 구조적으로 편향되어 있었다 — 오늘이 몇 월이든 "올해 누적 실적"은
-  // 아직 한 해가 다 안 지났으니 "작년 전체 실적"보다 작게 나올 수밖에 없고, 그러면 실제
-  // 흐름과 무관하게 거의 모든 업체가 "감소"로 잘못 표시된다(사용자가 실제로 이 문제를
-  // 확인함). 이 문제를 근본적으로 없애기 위해, 이미 완전히 끝난 두 해(작년 vs 재작년)만
-  // 비교한다 — 둘 다 이미 지난 해라 "얼마나 지났는지"를 따질 필요 없이 공정하게 비교
-  // 가능하다. 올해(불완전한 진행 중인 해) 데이터는 흐름 판정에 아예 쓰지 않는다 — 실제
-  // 날짜(월/일) 없이 부분 연도를 억지로 비교하면 추정이 섞이기 때문이다(§12 원칙).
+  // §최근 흐름 데이터 소스 통일 라운드 — co.pourTrackRecords(상태값) 의존을 없애고
+  // getTotalPourRecordsForCompany(co)("총 실적" 컬럼과 완전히 같은 소스, 매번 전체 POUR
+  // 스냅샷을 정규화 업체명으로 새로 매칭)로 바꿨다. 판정 기준(작년 vs 재작년, 10% 경계,
+  // 재작년 0건이면 판단불가, 작년 0->상승세)은 전혀 안 바꿨다 — 데이터 소스만 바꿨다.
   function buildRecentTrend(co){
-    const records = co.pourTrackRecords || [];
+    const records = getTotalPourRecordsForCompany(co);
     if(!records.length) return { state: 'insufficient', label: '판단불가', pct: null };
     const y = new Date().getFullYear();
     const lastYear = records.filter(r=> r.year === y - 1).length;      // 완결된 해
@@ -5698,11 +5720,28 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(pct < -10) return { state: 'down', label: '하락세', pct };
     return { state: 'flat', label: '유지', pct };
   }
-  // 최근 상승 업체 TOP5(§2) — 위 1)의 이유로 "최근 30일 vs 직전 30일" 계산이 현재 데이터로
-  // 불가능하다. 가짜 TOP5를 만들지 않고 정직하게 "데이터 부족" 상태를 반환한다. 실적 데이터에
-  // 일자가 추가되면 이 함수 내부만 실제 30일 윈도우 비교 로직으로 바꾸면 된다.
+  // §실적 상승 업체 라운드 — "최근 30일 vs 직전 30일"(날짜/월/일 필요, 원본에 없음)을
+  // 포기하고 "최근 흐름"과 같은 연 단위 비교(2025 vs 2024, getTotalPourRecordsForCompany
+  // 동일 소스)로 바꿨다. 2024=0/2025>0인 업체는 증감률(0으로 나누기)을 만들 수 없어
+  // "신규 증가"로 별도 표시하고 가짜 퍼센트를 만들지 않는다(§8).
   function buildRisingCompaniesTop5(companies){
-    return { available: false, items: [] };
+    const rising = [];
+    companies.forEach(co=>{
+      const records = getTotalPourRecordsForCompany(co);
+      if(!records.length) return;
+      const y2025 = records.filter(r=> r.year === 2025).length;
+      const y2024 = records.filter(r=> r.year === 2024).length;
+      if(y2024 > 0){
+        const pct = Math.round(((y2025 - y2024) / y2024) * 100);
+        if(pct > 0) rising.push({ co, y2024, y2025, pct, isNew: false });
+      } else if(y2025 > 0){
+        rising.push({ co, y2024: 0, y2025, pct: null, isNew: true });
+      }
+    });
+    const numeric = rising.filter(r=> !r.isNew).sort((a,b)=> b.pct - a.pct);
+    const newOnes = rising.filter(r=> r.isNew).sort((a,b)=> b.y2025 - a.y2025);
+    const combined = numeric.concat(newOnes);
+    return { available: combined.length > 0, items: combined.slice(0, 5), totalComparable: rising.length, newCount: newOnes.length };
   }
   function renderRisingSection(companies){
     const root = document.getElementById('crmRisingSection');
@@ -5711,22 +5750,22 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!data.available){
       root.innerHTML = `
         <div class="rising-head">
-          <div class="rising-title"><span class="rising-arrow">▲</span> 최근 상승 업체 <span class="rising-sub">(최근 30일 POUR 실적 기준)</span></div>
+          <div class="rising-title"><span class="rising-arrow">▲</span> 실적 상승 업체 <span class="rising-sub">(2025년 vs 2024년 POUR 실적 기준)</span></div>
         </div>
-        <div class="rising-empty">데이터 부족 — POUR 실적 데이터에 연도만 있고 날짜(월/일)가 없어 최근 30일 비교를 계산할 수 없습니다.</div>
+        <div class="rising-empty">비교 가능한 실적 데이터가 없습니다.</div>
       `;
       return;
     }
     root.innerHTML = `
       <div class="rising-head">
-        <div class="rising-title"><span class="rising-arrow">▲</span> 최근 상승 업체 <span class="rising-sub">(최근 30일 POUR 실적 기준)</span></div>
+        <div class="rising-title"><span class="rising-arrow">▲</span> 실적 상승 업체 <span class="rising-sub">(2025년 vs 2024년 POUR 실적 기준)</span></div>
       </div>
       <div class="rising-grid">${data.items.map((it, i)=> `
         <div class="rising-card" data-id="${esc(it.co.id)}">
           <div class="rising-card-top"><span class="rising-rank">${i+1}</span><span class="rising-name">${esc(it.co.name)}</span></div>
-          <div class="rising-row"><span>직전 30일</span><span>최근 30일</span><span>증가</span></div>
-          <div class="rising-nums">${it.prev}건 → ${it.recent}건 <span class="rising-up">▲ ${it.diff}건</span></div>
-          <div class="rising-bar"><div class="rising-bar-fill" style="width:${Math.min(100, it.barPct)}%"></div></div>
+          <div class="rising-row"><span>2024</span><span>2025</span><span>증감</span></div>
+          <div class="rising-nums">${it.y2024}건 → ${it.y2025}건 <span class="rising-up">${it.isNew ? '신규 증가' : '▲ ' + it.pct + '%'}</span></div>
+          <div class="rising-bar"><div class="rising-bar-fill" style="width:${it.isNew ? 100 : Math.min(100, it.pct)}%"></div></div>
         </div>`).join('')}</div>
     `;
     root.querySelectorAll('.rising-card').forEach(card=>{
@@ -6285,6 +6324,37 @@ window.SHIN2_CRM_APP_INIT = function(){
                 <div class="receivable-site-source">출처: ${esc(REQUEST_HISTORY_SOURCE_LABEL[h.category] || h.category || '업무입력')}</div>
               </div>
             `).join('') : `<div class="pi-note">확인되는 요청 이력이 없습니다.</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('sideDrawerClose').addEventListener('click', closeSideDrawer);
+    document.getElementById('sideDrawerOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'sideDrawerOverlay') closeSideDrawer(); });
+  }
+
+  // §실적↔매출 실제 구현 라운드 §5: "실적↔매출" 클릭 -> 실적·매출 분석 Drawer. 목록에
+  // 이미 보이는 등급(높음/보통/낮음/데이터 부족)의 근거를 그대로 펼쳐 보여준다 — 여기서
+  // 다시 계산하지 않고 buildRevenueContributionIndex()(다른 업체들과의 상대 분포까지
+  // 이미 계산해 둔 결과)에서 조회만 한다.
+  function openContributionDrawer(co){
+    const root = document.getElementById('sideDrawerRoot');
+    if(!root) return;
+    const contrib = buildRevenueContributionIndex().get(co.id) || { level:'insufficient', label:'데이터 부족', totalPerf:null, totalRev:null, perUnit:null };
+    const hasData = contrib.totalPerf != null && contrib.totalRev != null;
+    root.innerHTML = `
+      <div class="side-drawer-overlay" id="sideDrawerOverlay">
+        <div class="side-drawer-panel">
+          <div class="side-drawer-head">
+            <div class="side-drawer-title">실적 · 매출 분석 — ${esc(co.name)}</div>
+            <button type="button" class="side-drawer-close" id="sideDrawerClose" aria-label="닫기">&times;</button>
+          </div>
+          <div class="side-drawer-body">
+            ${hasData ? `
+              <div class="cat-dist-row"><span class="cat-dist-name">총 실적</span><span class="cat-dist-count">${esc(contrib.totalPerf)}건</span></div>
+              <div class="cat-dist-row"><span class="cat-dist-name">총 매출</span><span class="cat-dist-count">${esc(fmtKrwCompact(contrib.totalRev))}</span></div>
+              <div class="cat-dist-row"><span class="cat-dist-name">실적 1건당 매출</span><span class="cat-dist-count">약 ${esc(fmtKrwCompact(contrib.perUnit))}</span></div>
+              <div class="cat-dist-row"><span class="cat-dist-name">평가</span><span class="cat-dist-count">${esc(contrib.label)}</span></div>
+            ` : `<div class="pi-note">${esc(contrib.totalPerf == null ? '총 실적 데이터가 없어 분석할 수 없습니다.' : '총 매출 데이터가 없어 분석할 수 없습니다.')}</div>`}
           </div>
         </div>
       </div>
