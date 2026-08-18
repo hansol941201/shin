@@ -87,6 +87,15 @@
   }
   .unreg-badge:hover{ background:#FEE2E2; }
   .unreg-badge .unreg-badge-mark{ color:#DC2626; }
+  /* §최근 활동일/단계 D+N 복원 라운드: 기한 초과 배지 — 미등록 업체 배지와 같은 절제된
+     시각 언어(옅은 빨강 배경/진한 빨강 글자)를 그대로 재사용한다(§5 "과하게 빨갛게 만들지
+     마세요"). */
+  .overdue-badge{
+    display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 8px; font-size:12px; font-weight:700;
+    color:#B91C1C; background:#FEF2F2; border:1px solid #FCD5D5; border-radius:11px; cursor:pointer; font-family:inherit;
+  }
+  .overdue-badge:hover{ background:#FEE2E2; }
+  .overdue-badge .overdue-badge-mark{ color:#DC2626; }
   .list-add-btn{
     height:32px; padding:0 14px; font-size:13px; font-weight:600; color:#fff; background:var(--navy);
     border:none; border-radius:6px; cursor:pointer;
@@ -154,6 +163,22 @@
   .col-trend{ flex:0 0 70px; font-size:12px; text-align:center; }
   .empty-note{ font-size:12.5px; color:var(--text-muted); padding:24px 4px; text-align:center; }
   .data-none{ color:var(--text-faint); }
+
+  /* §최근 활동일/단계 D+N 복원 라운드: "최근 활동일"(기존 co-list에서 빠졌던 컬럼, §복원
+     요청) + "현재 단계 · D+N"(신규, 단계 체류기간 관리) 컬럼. 값 계산은 D.activitiesForCompany
+     (기존 최근 활동일 로직 그대로)와 buildProgressStages(기존 진행 기록 로직 그대로)만 쓰고
+     새 계산 기준을 만들지 않는다(§11/§17). */
+  .col-lastact{ flex:0 0 58px; font-size:12px; color:var(--text-muted); text-align:right; white-space:nowrap; }
+  .col-stage{ flex:0 0 112px; font-size:12px; white-space:nowrap; }
+  .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
+  .stage-dn-cell.st-normal{ color:var(--text); }
+  .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
+  .stage-dn-cell.st-overdue{ color:#B91C1C; background:#FEF2F2; padding:2px 6px; border-radius:5px; } /* 연한 빨강 배경(§5) */
+  .stage-dn-cell.st-unknown{ color:var(--text-faint); }
+  .stage-overdue-tag{ font-size:10px; font-weight:700; color:#B91C1C; }
+  /* 행 전체를 빨갛게 칠하지 않고 왼쪽 3px 라인만 표시한다(§5/§9 "화면 전체 행을 진한
+     빨간색으로 칠하지 마세요"). */
+  .co-row.is-overdue{ border-left:3px solid #DC2626; }
 
   /* 협력사 등급 배지(§4) — 별표 금지, 색상+텍스트 배지만 사용. */
   /* §등급 표시 재확인 라운드: 등급의 실제 우열 의미가 확인되지 않아, 색으로 "좋다/나쁘다"를
@@ -1430,7 +1455,7 @@ html,body{background:#F7F9FC;font-size:13px}
 /* §첫화면 단순화 라운드: 8컬럼 → 6컬럼(협력사/1년 실적/1년 매출/실적↔매출/주요 공종/최근
    흐름, §3). 제거한 최근 실적 활동/전체 실적/토탈 매출 컬럼의 grid-template-columns 슬롯도
    같이 뺐다 — 다른 CSS 규칙/색상 토큰은 그대로 둔다(§ 디자인 단순화, 로직 변경 아님). */
-.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1.3fr) 80px 100px 110px minmax(140px,1fr) 90px!important;gap:10px!important;align-items:center!important}
+.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(140px,1fr) 70px 128px 62px 90px 100px minmax(110px,.8fr) 78px!important;gap:10px!important;align-items:center!important}
 .co-table-head{margin-top:8px;padding:8px 12px!important;background:#FBFCFE;border:1px solid var(--line);border-bottom-color:#DDE4ED;border-radius:7px 7px 0 0;font-size:10.5px;color:#596A82;text-align:left}
 .co-list{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 7px 7px;overflow:hidden}
 .co-row{padding:5px 12px!important;min-height:42px!important;border-bottom:1px solid #EDF1F5!important;background:#fff}.co-row:last-child{border-bottom:0!important}.co-row:hover{background:#F8FAFD!important}
@@ -1453,12 +1478,12 @@ html,body{background:#F7F9FC;font-size:13px}
 #cardView .section,#cardView .card-section,#cardView .detail-section{border-color:#E4EAF1!important;box-shadow:none!important}
 #cardView table{border-collapse:collapse}#cardView th{color:#66758D!important;font-size:10.5px!important;font-weight:650!important}#cardView td{font-size:11px!important}#cardView tr{border-color:#E9EEF4!important}
 
-@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:160px 68px 88px 100px 130px 78px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:640px}.co-list{overflow:visible}#listView{overflow-x:auto}}
-@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:640px}.co-row{grid-template-columns:160px 68px 88px 100px 130px 78px!important}}
+@media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:120px 58px 108px 50px 74px 90px 100px 62px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:780px}.co-list{overflow:visible}#listView{overflow-x:auto}}
+@media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:780px}.co-row{grid-template-columns:120px 58px 108px 50px 74px 90px 100px 62px!important}}
 
 /* HANSOL CRM corporate visual override */
 :root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(185px,1.28fr) 82px 118px 172px minmax(110px,.9fr) 102px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:54px!important;padding:7px 14px!important;border-bottom:1px solid #e8eef5!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1080px!important}#listView{overflow-x:auto!important}}
+html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(140px,1fr) 74px 132px 68px 92px 140px minmax(90px,.7fr) 82px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:54px!important;padding:7px 14px!important;border-bottom:1px solid #e8eef5!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
 </style>
 </head>
 <body>
@@ -1495,6 +1520,9 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
         <!-- §미등록 업체 관리 라운드: 매출자료-CRM 비교 결과 미등록 업체가 있을 때만 보이는
              작은 경고 배지. 0건이면 아예 렌더링하지 않는다(§ "0개면 표시 안 해도 됨"). -->
         <button type="button" class="unreg-badge" id="crmUnregBadge" style="display:none;"></button>
+        <!-- §최근 활동일/단계 D+N 복원 라운드: 기한 초과 업체 알림 배지 — 미등록 업체 배지와
+             같은 규칙(0건이면 렌더링 안 함, 클릭 시 목록 패널). -->
+        <button type="button" class="overdue-badge" id="crmOverdueBadge" style="display:none;"></button>
       </div>
       <div class="list-secondary-actions">
         <!-- §데이터 가져오기 버튼 통합 라운드: 평소에 늘 보이던 큰 버튼 2개를 작은 [데이터
@@ -1527,13 +1555,20 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
         <option value="name">업체명순</option>
       </select>
     </div>
-    <!-- §첫화면 단순화 라운드: 6개 컬럼만 남긴다(§3) — 최근 실적 활동/전체 실적/토탈 매출은
-         제거하되 데이터 자체는 지우지 않고 업체 클릭 시 상세 고객관리카드에서 그대로 볼 수
-         있게 옮긴다(§4, renderChart의 글랜스행/POUR 시공실적 섹션). -->
+    <!-- §최근 활동일/단계 D+N 복원 라운드: "최근 활동일"(기존에 있다가 §첫화면 단순화
+         라운드에서 화면에서만 빠졌던 컬럼, §복원 요청)과 "현재 단계 · D+N"(신규, 단계 체류
+         기간 관리)을 복원/추가한다. "1년 매출"은 실제 연도별 시계열이 없어 항상 "데이터
+         부족"만 표시하던 자리였는데, 이번에 요청받은 실제 2025 매출 데이터(§미등록 업체
+         관리 라운드에서 이미 검증된 getCompany2025Revenue)로 값을 채운다(§ "2025 매출"
+         컬럼 요청) — 계산식을 새로 만든 게 아니라 이미 준비되어 있던 함수를 목록에 연결한
+         것뿐이다. 최근 실적 활동/전체 실적/토탈 매출은 계속 화면에서 뺀 채로 둔다(§4, 상세
+         고객관리카드에서 그대로 볼 수 있음). -->
     <div class="co-table-head">
       <div class="col-name">협력사</div>
+      <div class="col-lastact">최근 활동일</div>
+      <div class="col-stage">현재 단계</div>
       <div class="col-yr">1년 실적</div>
-      <div class="col-yr-revenue">1년 매출</div>
+      <div class="col-yr-revenue">2025 매출</div>
       <div class="col-contrib">실적↔매출</div>
       <div class="col-cat">주요 공종</div>
       <div class="col-trend">최근 흐름</div>
@@ -1548,6 +1583,7 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   <div id="pourImportModalRoot"></div>
   <div id="siteHistoryModalRoot"></div>
   <div id="unregModalRoot"></div>
+  <div id="overdueModalRoot"></div>
   <div id="memoPanelRoot"></div>
 </div>
 
@@ -3386,6 +3422,22 @@ window.SHIN2_CRM_APP_INIT = function(){
     const p = n=> String(n).padStart(2,'0');
     return p(d.getHours()) + ':' + p(d.getMinutes());
   }
+  // §최근 활동일 복원 라운드: 고객목록에서만 쓰는 상대 표시 포맷 — 원본 날짜값(createdAt)은
+  // 절대 바꾸지 않고 화면 표시만 오늘/어제/올해(MM.DD)/이전 연도(YYYY.MM.DD)로 줄인다
+  // (§ "내부 원본 날짜값은 변경하지 않습니다"). 다른 곳에서 쓰는 fmtDate()는 그대로 둔다.
+  function fmtRelativeActivityDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    const now = new Date();
+    const startOfDay = x=> new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+    const p = n=> String(n).padStart(2,'0');
+    if(diffDays === 0) return '오늘';
+    if(diffDays === 1) return '어제';
+    if(d.getFullYear() === now.getFullYear()) return p(d.getMonth()+1) + '.' + p(d.getDate());
+    return d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate());
+  }
   // 협력사 여부 표시(§파트너 대시보드 연동 준비, 신규) — dealStage(협약 진행 단계)와는 다른
   // 별개 개념이다. v2/index.html 업체관리와 동일한 규칙(값은 shin2-companies-staging의
   // co.partnerStatus를 그대로 읽기만 하고, CRM 쪽에 별도로 복제 저장하지 않는다):
@@ -3551,6 +3603,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     // §미등록 업체 관리 라운드: 별도 저장소 없이 매번 다시 계산한다(§ "등록 후" 요구사항 —
     // 사용자가 업체를 등록하면 다음 renderList()에서 자동으로 줄어든다).
     renderUnregisteredBadge();
+    // §최근 활동일/단계 D+N 복원 라운드: 위 미등록 업체 배지와 같은 규칙 — 별도 저장소 없이
+    // 매번 다시 계산하고, 0건이면 배지 자체를 숨긴다.
+    renderOverdueBadge();
     // 파생 데이터는 매번 다시 계산만 한다(§26 — companyId 기준 실제 POUR/진행 데이터에서
     // 집계, 회사명 텍스트로 새 데이터를 만들지 않음. 별도 저장 없음).
     const enriched = companies.map(co=>{
@@ -3583,8 +3638,9 @@ window.SHIN2_CRM_APP_INIT = function(){
       renderPagination(0);
       return;
     }
-    // §첫화면 단순화 라운드: 6개 컬럼만 렌더링한다(§3/§20) — 최근 실적 활동/전체 실적/토탈
-    // 매출은 목록에서 뺐지만 계산 함수(buildRecentPourActivity/getTotalPourCount/
+    // §최근 활동일/단계 D+N 복원 라운드: 8개 컬럼(협력사/최근 활동일/현재 단계·D+N/1년 실적/
+    // 2025 매출/실적↔매출/주요 공종/최근 흐름)을 렌더링한다. 최근 실적 활동/전체 실적/토탈
+    // 매출은 여전히 목록에서 뺐지만 계산 함수(buildRecentPourActivity/getTotalPourCount/
     // getTotalRevenue)는 그대로 두고 부르지 않을 뿐이다 — 상세 고객관리카드(renderChart의
     // 글랜스행·POUR 시공실적 섹션)에서 그대로 볼 수 있다(§4/§18, 데이터 삭제 아님).
     listEl.innerHTML = pageRows.map(r=>{
@@ -3593,10 +3649,20 @@ window.SHIN2_CRM_APP_INIT = function(){
       const gradeHtml = grade ? `<span class="grade-badge ${grade.badgeClass}">${esc(grade.label)}</span>` : '';
       const yr = getThisYearPourCount(co);
       const yrHtml = yr == null ? '<span class="data-none">데이터 없음</span>' : `${yr}`;
-      // §7: "1년 매출"은 getThisYearRevenue()가 항상 null을 반환하므로(실제 연도별 매출
-      // 시계열이 없어서, §7 주석 참고) 항상 정직하게 "데이터 부족"으로 표시한다.
-      const yrRevenue = getThisYearRevenue(co);
-      const yrRevenueHtml = yrRevenue == null ? '<span class="data-none">데이터 부족</span>' : esc(fmtKrwCompact(yrRevenue));
+      // §최근 활동일/단계 D+N 복원 라운드: "2025 매출" 컬럼 — 실제 연도별 시계열이 없어 항상
+      // "데이터 부족"만 표시하던 getThisYearRevenue() 대신, §미등록 업체 관리 라운드에서 이미
+      // 검증해 둔 getCompany2025Revenue()(2025 매출 파일 실측치)를 쓴다. null=매출자료 없음,
+      // 0=실제 0원을 그대로 구분해서 보여준다(§ "0원 ≠ 매출자료 없음").
+      const yrRevenue = D.getCompany2025Revenue(co);
+      const yrRevenueHtml = yrRevenue == null ? '<span class="data-none">매출자료 없음</span>' : esc(fmtKrwCompact(yrRevenue));
+      // §최근 활동일 복원 라운드: r.summary는 기존 companySummary()/정렬(sortMode==='recent')과
+      // 동일하게 D.activitiesForCompany()로 이미 계산해 둔 값(§renderList 상단 enriched)을
+      // 그대로 재사용한다 — 새 "최근 활동일" 계산 기준을 만들지 않는다(§11).
+      const lastActHtml = r.summary ? esc(fmtRelativeActivityDate(r.summary.createdAt)) : '<span class="data-none">—</span>';
+      // §단계 체류기간(D+N) — r.progress도 위 enriched에서 이미 계산된 buildProgressStages()
+      // 결과를 그대로 재사용한다(중복 계산 금지, §26과 같은 원칙).
+      const stageInfo = stageDurationFromProgress(r.progress);
+      const stageHtml = buildStageCellHtml(stageInfo);
       const catText = buildTopCategoriesText(co, 2);
       const catHtml = catText ? esc(catText) : '<span class="data-none">데이터 없음</span>';
       // §8/§9: "실적↔매출"은 기본 화면엔 한 줄(높음/보통/낮음/데이터 부족)만 보이고,
@@ -3617,9 +3683,12 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 기호도 ↑/↓/→/—(큰 화살표 느낌)에서 ▲/―/▼(작은 기호, 텍스트 위주)로 바꿨다.
       const trendMark = { up:'▲', flat:'―', down:'▼', insufficient:'―' }[trend.state];
       const trendHtml = `<span class="trend-cell tr-${trend.state}">${trendMark} ${esc(trend.label)}</span>`;
+      const rowOverdueClass = (stageInfo && stageInfo.status === 'overdue') ? ' is-overdue' : '';
       return `
-      <div class="co-row" data-id="${esc(co.id)}">
+      <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">${gradeHtml}${partnerGlyphHtml(co)}${esc(co.name)}</div>
+        <div class="col-lastact">${lastActHtml}</div>
+        <div class="col-stage">${stageHtml}</div>
         <div class="col-yr">${yrHtml}</div>
         <div class="col-yr-revenue">${yrRevenueHtml}</div>
         <div class="col-contrib">${contribHtml}</div>
@@ -4225,6 +4294,93 @@ window.SHIN2_CRM_APP_INIT = function(){
   const PROGRESS_STATUS_LABEL = { done:'완료', scheduled:'예정', waiting:'대기' };
 
   /* ==========================================================================
+     §단계 체류기간(D+N) 및 단계별 관리기한 라운드
+
+     [조사 결과 — 구현 전 확인한 실제 데이터 구조]
+     1) "현재 단계"는 co.dealStage(자유 텍스트 필드, 별개 개념)가 아니라 위 buildProgressStages()
+        가 이미 co.partnerDashboard.newMou(Partner Dashboard 협력사 스냅샷에서 가져온 값)의
+        날짜 라벨(qSentLabel/qReplyLabel/m1Label/m2Label/mouLabel/mouDone)로부터 매번 다시
+        계산하는 값이다 — 화면의 "질문서/1차미팅/2차미팅/MOU" 필터·배지가 이미 이 값을 쓰고
+        있다(§ FILTER_DEFS/matchesFilter). 이번 라운드도 이 값을 그대로 재사용하고 새 단계
+        명칭(L1~L5 등)을 만들지 않는다(§17 금지).
+     2) "단계 변경일"을 담당자가 직접 입력해 저장하는 별도 필드나 stageHistory 배열은 현재
+        어디에도 없다. 다만 각 단계 자체의 날짜 라벨(예: m1Label="25.03.10")이 "그 단계가
+        언제 처리됐는지"를 이미 담고 있다 — buildProgressStages()가 이미 이 라벨을
+        parsePartnerDateLabel()로 파싱해 stages[i].ts(단계별 완료/예정일 timestamp)로
+        계산해 둔다. "현재 단계에 언제 진입했는지"는 곧 "바로 이전 단계가 언제 완료됐는지"와
+        같으므로, 새 날짜를 만들지 않고 이전 단계의 ts를 그대로 가져다 쓴다(getStageEntryTs).
+        이전 단계가 없거나(첫 단계) 완료일을 알 수 없으면 null — 이 경우 "기한 계산 불가"로만
+        표시하고 날짜를 추측하지 않는다(§11/§17).
+     3) "최근 활동일"은 co.id 기준 D.activitiesForCompany()(전화기록/메모 등 실제 활동 기록,
+        createdAt 내림차순 정렬)의 첫 항목이다 — 이미 companySummary()/정렬(recent 모드)이
+        쓰던 바로 그 값이고, 이번 라운드에서 새로 만들지 않았다. 단계 진입일과는 완전히 다른
+        값이다(§16 "서로 다른 개념").
+     4) 앞으로 담당자가 화면에서 직접 "단계 변경"을 저장하는 기능이 생기면, 그때는 새 변경
+        시점을 co.partnerDashboard.newMou의 해당 라벨에 기록하는 것만으로 이미 위 로직이
+        자동으로 "새 진입일"을 인식한다 — 별도 stageHistory 배열을 새로 만들지 않고 기존
+        구조(단계별 날짜 라벨)를 그대로 재사용하는 최소 변경 설계다(§12).
+
+     [단계별 목표기한 — 한 곳에서만 관리, §13]
+     현재 확정된 값은 "1차미팅 진입 후 2차미팅까지 30일"(§4/§14, 사용자가 "L2→L3 30일"로 지칭한
+     요구사항을 이 시스템의 실제 단계 순서 — 질문서(1번째)→1차미팅(2번째)→2차미팅(3번째)→
+     MOU(4번째) — 에 대입하면 "2번째 단계(1차미팅) 체류"에 해당한다)뿐이다. 나머지 단계는
+     사용자가 아직 확정하지 않았으므로 null로 비워 경고 계산 대상에서 제외한다(§14) — 이후
+     실제 목표기한이 정해지면 이 객체의 값만 바꾸면 전체 경고 기준이 함께 바뀐다(§13/§15).
+     ========================================================================== */
+  const STAGE_DEADLINE_DAYS = { q: null, m1: 30, m2: null, mou: null };
+
+  // getStageEntryTs: "현재 단계에 언제 진입했는지" — 바로 이전 단계가 실제로 'done' 처리된
+  // 날짜(ts)만 쓴다. 이전 단계가 없거나(idx=0, 첫 단계) 완료일을 모르면 null(§11 "임의의
+  // 날짜를 생성하지 마세요").
+  function getStageEntryTs(progress){
+    if(!progress || !progress.hasAny) return null;
+    const idx = progress.currentIdx;
+    if(idx <= 0) return null;
+    const prev = progress.stages[idx - 1];
+    return (prev && prev.state === 'done' && prev.ts) ? prev.ts : null;
+  }
+
+  // stageDurationFromProgress: 이미 계산된 buildProgressStages() 결과를 받아 D+N/기한 상태를
+  // 구한다(§26과 같은 원칙 — 같은 progress를 필터/정렬/렌더링에서 중복 계산하지 않는다).
+  // status: normal(정상) / warning(기한 임박, 목표기한의 마지막 20%부터 §6) /
+  //         overdue(기한 초과) / unknown(진입일을 몰라 계산 불가, §11).
+  function stageDurationFromProgress(progress){
+    if(!progress || !progress.hasAny) return null;
+    const stage = progress.stages[progress.currentIdx];
+    const entryTs = getStageEntryTs(progress);
+    const deadlineDays = STAGE_DEADLINE_DAYS[stage.key];
+    if(entryTs == null){
+      return { stageKey: stage.key, stageLabel: stage.label, entryTs: null, days: null, deadlineDays, status: 'unknown' };
+    }
+    const startOfDay = ts=> new Date(ts).setHours(0,0,0,0);
+    const days = Math.round((startOfDay(Date.now()) - startOfDay(entryTs)) / 86400000);
+    let status = 'normal';
+    if(deadlineDays != null){
+      const warnStartDays = Math.ceil(deadlineDays * 0.8);
+      if(days > deadlineDays) status = 'overdue';
+      else if(days >= warnStartDays) status = 'warning';
+    }
+    return { stageKey: stage.key, stageLabel: stage.label, entryTs, days, deadlineDays, status };
+  }
+  // getStageDurationInfo: co만 있고 progress를 아직 계산하지 않은 호출부(예: 기한 초과 목록)
+  // 를 위한 얇은 래퍼 — 계산 로직은 stageDurationFromProgress 하나뿐이다.
+  function getStageDurationInfo(co){ return stageDurationFromProgress(buildProgressStages(co)); }
+
+  // buildStageCellHtml: 목록 셀 하나에 "현재 단계 · D+N"을 넣는다(§1, 한 컬럼으로 병합).
+  // 화면 전체를 진하게 칠하지 않고, 기한 초과일 때만 옅은 빨강 배경 + 작은 "기한 초과"
+  // 텍스트를 덧붙인다(§5).
+  function buildStageCellHtml(info){
+    if(!info) return '<span class="data-none">미확인</span>';
+    const stageLabelText = esc(info.stageLabel);
+    if(info.days == null){
+      return `<span class="stage-dn-cell st-unknown">${stageLabelText} · 기한 계산 불가</span>`;
+    }
+    const cls = { normal:'st-normal', warning:'st-warning', overdue:'st-overdue' }[info.status] || 'st-normal';
+    const overdueTag = info.status === 'overdue' ? '<span class="stage-overdue-tag">기한 초과</span>' : '';
+    return `<span class="stage-dn-cell ${cls}">${stageLabelText} · D+${info.days}${overdueTag}</span>`;
+  }
+
+  /* ==========================================================================
      고객 진행단계 → 개인 할 일 자동 생성(§고객 진행단계 연동 라운드)
 
      저장 위치: v2(v2/index.html)의 "내 할 일"이 이미 쓰는 바로 그 localStorage
@@ -4748,6 +4904,88 @@ window.SHIN2_CRM_APP_INIT = function(){
         const name = row.getAttribute('data-name');
         closeUnregisteredPanel();
         openAddCompanyForm(name);
+      });
+    });
+  }
+
+  // §단계 체류기간(D+N) 라운드: 기한 초과 업체 — 미등록 업체 배지와 같은 규칙으로 별도 저장
+  // 없이 매번 현재 CRM 데이터에서 다시 계산한다(단계가 바뀌거나 활동이 갱신되면 다음
+  // renderList()에서 자동으로 반영된다).
+  function buildOverdueCompanies(){
+    const companies = D.loadCompanies();
+    const result = [];
+    companies.forEach(co=>{
+      const info = getStageDurationInfo(co);
+      if(!info || info.status !== 'overdue') return;
+      const summary = companySummary(co);
+      result.push({
+        co, stageLabel: info.stageLabel, entryTs: info.entryTs, days: info.days,
+        deadlineDays: info.deadlineDays, overdueDays: info.days - info.deadlineDays,
+        lastActivityIso: summary.last ? summary.last.createdAt : null
+      });
+    });
+    // 초과일이 큰 업체부터(§8 "초과일이 큰 업체부터 정렬").
+    result.sort((a,b)=> b.overdueDays - a.overdueDays || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko'));
+    return result;
+  }
+  function renderOverdueBadge(){
+    const btn = document.getElementById('crmOverdueBadge');
+    if(!btn) return;
+    const list = buildOverdueCompanies();
+    if(!list.length){ btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.innerHTML = `<span class="overdue-badge-mark">⏱</span> 기한 초과 ${list.length}`;
+    btn.onclick = openOverduePanel;
+  }
+  function closeOverduePanel(){
+    const root = document.getElementById('overdueModalRoot');
+    if(root) root.innerHTML = '';
+  }
+  function openOverduePanel(){
+    const root = document.getElementById('overdueModalRoot');
+    if(!root) return;
+    const list = buildOverdueCompanies();
+    root.innerHTML = `
+      <div class="pi-overlay" id="overdueOverlay">
+        <div class="pi-panel" role="dialog" aria-modal="true" aria-label="기한 초과 업체">
+          <div class="pi-head">
+            <div class="pi-title">기한 초과 업체</div>
+            <button type="button" class="chart-close-btn" id="overdueCloseBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body">
+            <div class="pi-note">현재 단계에서 목표기한을 넘긴 업체입니다. 초과일이 큰 업체부터 정렬됩니다. 업체명을 클릭하면 고객관리카드가 열립니다.</div>
+            ${list.length ? `
+              <table class="pi-sample-table" style="margin-top:10px;">
+                <thead><tr><th>업체명</th><th>현재 단계</th><th>단계 진입일</th><th>경과일</th><th>목표기한</th><th>초과일</th><th>최근 활동일</th></tr></thead>
+                <tbody>
+                  ${list.map(x=> `
+                    <tr class="overdue-row" data-id="${esc(x.co.id)}" style="cursor:pointer;">
+                      <td>${esc(x.co.name)}</td>
+                      <td>${esc(x.stageLabel)}</td>
+                      <td>${esc(fmtDate(x.entryTs))}</td>
+                      <td>D+${x.days}</td>
+                      <td>목표 ${x.deadlineDays}일</td>
+                      <td><span style="color:#B91C1C;font-weight:600;">${x.overdueDays}일 초과</span></td>
+                      <td>${esc(fmtRelativeActivityDate(x.lastActivityIso))}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            ` : `<div class="pi-note" style="margin-top:10px;">기한 초과 업체가 없습니다.</div>`}
+          </div>
+          <div class="pi-actions">
+            <button type="button" class="co-text-action primary" id="overdueCloseBtn2">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('overdueCloseBtn').addEventListener('click', closeOverduePanel);
+    document.getElementById('overdueCloseBtn2').addEventListener('click', closeOverduePanel);
+    document.getElementById('overdueOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'overdueOverlay') closeOverduePanel(); });
+    root.querySelectorAll('.overdue-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        const id = row.getAttribute('data-id');
+        closeOverduePanel();
+        openCard(id);
       });
     });
   }
