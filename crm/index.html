@@ -372,7 +372,10 @@
   } /* §12: 작은 버튼, 기존 남색(var(--navy)) 계열, 그림자 없음, 행 높이 증가 최소화 */
 
   /* 매출 기여 셀(§10) — 아이콘 없이 텍스트+옅은 배경색만 사용. */
-  .contrib-cell{ display:inline-block; padding:4px 7px; border-radius:6px; }
+  .contrib-cell{ display:inline-block; padding:4px 7px; border-radius:6px; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  /* §실적↔매출 건당 매출 표시 라운드: 등급 옆에 붙는 "· 건당 OOO만원" — 한 줄 유지를 위해
+     등급보다 살짝 작고 옅은 색으로 구분만 하고, 셀 자체 폭/행 높이는 건드리지 않는다. */
+  .contrib-perunit{ font-weight:500; font-size:10.5px; color:var(--text-muted); margin-left:3px; }
   .contrib-cell .contrib-level{ font-weight:700; }
   .contrib-cell .contrib-sub{ display:block; color:var(--text-muted); font-weight:400; margin-top:1px; }
   .contrib-cell.lv-high{ background:var(--up-bg); }
@@ -4485,7 +4488,14 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 기존 팝오버 방식은 없앰 — 다른 컬럼들과 같은 Drawer 패턴으로 통일).
       const contrib = contribIndex.get(co.id) || { level:'insufficient', label:'데이터 부족' };
       const contribLevelClass = { high:'lv-high', mid:'lv-mid', low:'lv-low', insufficient:'lv-insufficient' }[contrib.level] || 'lv-insufficient';
-      const contribHtml = `<button type="button" class="contrib-trigger contrib-cell ${contribLevelClass}" data-contrib-detail="${esc(co.id)}"><span class="contrib-level">${esc(contrib.label)}</span></button>`;
+      // §실적↔매출 건당 매출 표시 라운드: 판정(높음/보통/낮음) 로직과 등급 계산은 전혀
+      // 안 바꿨다 — buildRevenueContributionIndex가 이미 계산해 둔 perUnit(총 매출 ÷ 총
+      // 실적, "데이터 부족"이면 null)을 조회만 해서 등급 옆에 작게 덧붙인다(새 계산 없음,
+      // §요청사항). perUnit이 null인 업체(데이터 부족)는 건당 매출을 지어내지 않고 등급
+      // 텍스트만 그대로 보여준다.
+      const contribPerUnitHtml = (typeof contrib.perUnit === 'number')
+        ? `<span class="contrib-perunit">· 건당 ${esc(fmtKrwCompact(contrib.perUnit))}</span>` : '';
+      const contribHtml = `<button type="button" class="contrib-trigger contrib-cell ${contribLevelClass}" data-contrib-detail="${esc(co.id)}"><span class="contrib-level">${esc(contrib.label)}</span>${contribPerUnitHtml}</button>`;
       const trend = buildRecentTrend(co);
       // §최근 흐름 재수정 라운드: 첫 화면에서는 퍼센트를 완전히 뺀다(요청사항) — trend.pct는
       // 함수 안에 그대로 남아있고(나중에 필요하면 다시 씀), 화면 렌더링에서만 안 쓴다.
