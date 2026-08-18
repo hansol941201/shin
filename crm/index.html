@@ -126,6 +126,11 @@
   }
   .list-filter-chip:hover{ background:var(--bg); }
   .list-filter-chip.is-active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  /* §관리필요 업체 라운드 §1: 기존 필터 칩과 크기/폰트는 완전히 같고(list-filter-chip
+     클래스 그대로 상속), 색만 연한 빨강/주황 포인트를 준다 — 필터가 아니라 클릭 시 모달을
+     여는 버튼이라 FILTER_DEFS/data-filter에는 넣지 않았다(§2). */
+  .list-filter-chip.mgmt-need-chip{ margin-left:auto; color:#B91C1C; background:#FEF2F2; border-color:#FCA5A5; font-weight:700; }
+  .list-filter-chip.mgmt-need-chip:hover{ background:#FEE2E2; }
 
   .list-search-row{ display:flex; gap:8px; margin-bottom:8px; }
   .search-box{
@@ -277,6 +282,18 @@
   }
   .constr-filter-chip:hover{ background:var(--bg); }
   .constr-filter-chip.is-active{ background:#EAF2FF; color:var(--navy); border-color:#CFE0FA; }
+  /* §관리필요 업체 라운드 §6 — 한 업체당 한 줄 표. cdash-pour-table(고객카드 POUR 표)과
+     같은 표 스타일을 재사용하고, 셀 내용에 필요한 최소한의 텍스트/버튼 스타일만 추가한다. */
+  .mgmt-need-table td{ vertical-align:top; }
+  .mgmt-need-co-link{ background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--navy); cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  .mgmt-need-co-link:hover{ text-decoration-style:solid; }
+  .mgmt-need-reason{ font-weight:700; color:#B91C1C; }
+  .mgmt-need-reason-detail{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .mgmt-need-action-btn{ white-space:nowrap; }
+  /* §관리필요 업체 라운드 §9 — 고객카드 상단의 작은 한 줄 안내. 대형 카드/아이콘 없이 얇은
+     한 줄만(높이 과도 증가 금지) — 관리필요 아닌 업체는 이 div 자체가 비어 있어 공간을
+     차지하지 않는다. */
+  .cdash-mgmt-need-banner{ font-size:12px; font-weight:700; color:#B45309; background:#FFF7ED; border:1px solid #FDE1BD; border-radius:6px; padding:5px 10px; margin-bottom:10px; }
   .constr-list-title{ font-size:13px; font-weight:700; color:var(--text); margin:4px 0 8px; }
   .constr-list-row{
     display:grid; grid-template-columns:40px 1fr auto; gap:10px; align-items:center;
@@ -1826,6 +1843,9 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
        (sideDrawerRoot)를 대신해서 "2026 매출 상세"와 같은 .pi-overlay/.pi-panel 중앙 모달
        패턴을 쓴다 — 전용 root. -->
   <div id="constructionModalRoot"></div>
+  <!-- §관리필요 업체 라운드 §2: "관리필요 N" 버튼이 여는 중앙 모달 전용 root — 같은
+       .pi-overlay/.pi-panel 패턴, 새 디자인 시스템 없음. -->
+  <div id="managementNeedModalRoot"></div>
   <div id="sideDrawerRoot"></div>
   <div id="memoPanelRoot"></div>
   <!-- §총 매출 Popover 전환 라운드: 전용 root — sideDrawerRoot(전체 높이 오른쪽 패널,
@@ -4188,6 +4208,26 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!progress.hasAny) return false;
     return progress.stages[progress.currentIdx].key === key;
   }
+  // §관리필요 업체 라운드: renderList()가 매번 계산해서 채워 넣는 캐시 — 관리필요 팝업과
+  // 고객카드 배너가 이 캐시만 조회한다(별도 저장소 아님, 새로고침/재계산 시 항상 다시
+  // 채워진다). list: [{co, type, anchorTs, days, activity?, hasPour?}], counts: {total,
+  // firstActivity, l2Stall, reuse, unknown}.
+  let managementNeedCache = { list: [], counts: { total:0, firstActivity:0, l2Stall:0, reuse:0, unknown:0 } };
+  function computeManagementNeedList(enrichedRows){
+    const list = [];
+    const counts = { total:0, firstActivity:0, l2Stall:0, reuse:0, unknown:0 };
+    enrichedRows.forEach(r=>{
+      const result = classifyManagementNeed(r.co, r.acts, r.progress);
+      if(result.type === 'unknown'){ counts.unknown++; return; } // §4: 판정불가는 기본 관리필요 숫자에 포함하지 않는다
+      if(result.type === 'none') return;
+      counts.total++; counts[result.type] = (counts[result.type] || 0) + 1;
+      list.push(Object.assign({ co: r.co }, result));
+    });
+    return { list, counts };
+  }
+  function findManagementNeedForCompany(companyId){
+    return managementNeedCache.list.find(m=> m.co.id === companyId) || null;
+  }
   function buildStageBadgeHtml(progress){
     if(!progress.hasAny) return `<span class="stage-badge st-none">미확인</span>`;
     const stage = progress.stages[progress.currentIdx];
@@ -4298,14 +4338,20 @@ window.SHIN2_CRM_APP_INIT = function(){
   function renderFilterChips(counts){
     const wrap = document.getElementById('crmFilterRow');
     if(!wrap) return;
+    // §관리필요 업체 라운드 §1: 기존 7개 필터 칩은 전혀 안 바꿨다 — 가장 오른쪽에 "관리필요
+    // N" 버튼만 추가(margin-left:auto로 오른쪽 정렬, §mgmt-need-chip CSS). 이 버튼은
+    // FILTER_DEFS/data-filter 목록에 없으므로 목록을 필터링하지 않고 클릭 시 중앙 모달만
+    // 연다(§2).
     wrap.innerHTML = FILTER_DEFS.map(([key,label])=>
       `<button type="button" class="list-filter-chip${filterKey===key?' is-active':''}" data-filter="${esc(key)}">${esc(label)} ${counts[key]||0}</button>`
-    ).join('');
+    ).join('') + `<button type="button" class="list-filter-chip mgmt-need-chip" id="mgmtNeedBtn">관리필요 ${counts.manageNeeded||0}</button>`;
     wrap.querySelectorAll('[data-filter]').forEach(btn=> btn.addEventListener('click', ()=>{
       filterKey = btn.getAttribute('data-filter');
       currentPage = 1;
       renderList();
     }));
+    const mgmtBtn = document.getElementById('mgmtNeedBtn');
+    if(mgmtBtn) mgmtBtn.addEventListener('click', ()=> openManagementNeedModal());
   }
   // §업체명 왼쪽 금액 이동 라운드 §6: "총 매출" 헤더 옆 화살표를 현재 sortMode에 맞춰
   // 갱신한다 — renderList()가 헤더 자체를 다시 그리지 않아서(정적 HTML) 화살표만 별도로
@@ -4403,6 +4449,11 @@ window.SHIN2_CRM_APP_INIT = function(){
 
     const filterCounts = {};
     FILTER_DEFS.forEach(([key])=>{ filterCounts[key] = enriched.filter(r=> matchesFilter(r.co, r.progress, key)).length; });
+    // §관리필요 업체 라운드: renderList()가 이미 매번 계산해 둔 enriched(co/acts/progress)를
+    // 그대로 재사용해 관리필요 목록을 한 번만 계산하고, 모달/버튼/고객카드 배너가 모두 이
+    // 캐시(managementNeedCache)만 조회한다(§ "같은 계산을 여러 곳에서 반복하지 않는다").
+    managementNeedCache = computeManagementNeedList(enriched);
+    filterCounts.manageNeeded = managementNeedCache.counts.total;
     renderFilterChips(filterCounts);
 
     const rows = enriched
@@ -4844,6 +4895,10 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="chart-panel" role="dialog" aria-modal="true" aria-label="고객 차트">
           <div class="cdash-body" id="chartBody">
             <div id="chartHeader"></div>
+            <!-- §관리필요 업체 라운드 §9: 관리필요 업체의 카드를 열었을 때만 상단 요약영역에
+                 작은 한 줄 안내를 추가한다(주황/빨강 계열, 대형 카드 아님) — 관리필요가
+                 아닌 업체는 renderMgmtNeedBanner가 아무것도 그리지 않는다. -->
+            <div id="cdashMgmtNeedBanner"></div>
 
             <!-- §고객카드 레이아웃 재배치 라운드 §2/§3: 상단 네이비 헤더는 그대로(chartHeader),
                  바로 아래 "핵심 현황"을 한 줄(현재단계|주요시공|총실적|총매출|2026매출|미수금
@@ -4891,6 +4946,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
     document.body.classList.add('chart-lock');
     renderChartHeader(co);
+    renderMgmtNeedBanner(co);
     renderBasicInfoCol(co);
     // renderInterestCol(co); — §중복정보 제거 라운드: "POUR 활용현황" 칸을 화면에서
     // 제거하면서 이 호출도 뺐다. 함수 자체(및 co.interestFields 데이터/D.addInterestField/
@@ -4918,6 +4974,22 @@ window.SHIN2_CRM_APP_INIT = function(){
     // DOM에서 없앴으므로, 그 버튼들에 붙어있던 토글/스크롤/openMemoPanel 리스너 등록 코드도
     // 함께 제거했다(§ 존재하지 않는 요소에 리스너를 붙이지 않는다). openMemoPanel(co) 자체는
     // renderReqPreview의 [전체 기록 보기] 버튼에서 여전히 호출된다(§2, 기능 보존).
+  }
+
+  // §관리필요 업체 라운드 §9: 카드 상단 요약영역의 작은 안내 한 줄. managementNeedCache(목록
+  // 화면에서만 채워짐)에 의존하지 않고 이 업체 하나만 즉시 다시 판정한다 — URL의
+  // ?company=id로 목록 화면을 거치지 않고 바로 카드가 열리는 경우에도(§9467 initialCompanyId
+  // 경로) 정확한 값을 보여주기 위해서다. 판정 로직 자체는 classifyManagementNeed 그대로
+  // 재사용(§ 같은 계산을 새로 만들지 않음).
+  function renderMgmtNeedBanner(co){
+    const wrap = document.getElementById('cdashMgmtNeedBanner');
+    if(!wrap) return;
+    const result = classifyManagementNeed(co, D.activitiesForCompany(co.id), buildProgressStages(co));
+    if(result.type !== 'firstActivity' && result.type !== 'l2Stall' && result.type !== 'reuse'){
+      wrap.innerHTML = '';
+      return;
+    }
+    wrap.innerHTML = `<div class="cdash-mgmt-need-banner">관리 필요 · ${esc(mgmtNeedBannerText(result))}</div>`;
   }
 
   // ---- 상단 헤더(§1~5) — 업체명만 크게, "고객관리카드" 문구/개별 복사버튼 삭제. X는 카드
@@ -5790,6 +5862,102 @@ window.SHIN2_CRM_APP_INIT = function(){
     });
     return result;
   }
+
+  /* ==========================================================================
+     §관리필요 업체 라운드 — 실제 사용한 필드 정리(§12 조사 결과):
+
+     - MOU/협약 완료일: buildProgressStages(co)가 이미 계산해 둔 stages 중 key==='mou'
+       (co.partnerDashboard.newMou.mouDone===true일 때만 상태 done, 날짜는
+       parsePartnerDateLabel(newMou.mouLabel)) — 새 계산 없이 그대로 조회만 한다.
+     - L2(첫 활동): 이 프로젝트에 "L2"라는 이름의 필드는 없다. MOU 완료 이후 실제로 남은
+       첫 activitiesForCompany 레코드(D.activitiesForCompany, createdAt 실제 ISO 타임스탬프)를
+       "첫 활동"으로 본다 — 활동은 사람이 CRM에 직접 남긴 실제 기록만 존재한다(별도 스냅샷
+       임포트 없음).
+     - L3(진전 활동): 같은 activitiesForCompany에서 L2 이후에 실제로 남은 추가 기록이 있는지로
+       판단한다 — "L3"라는 별도 필드가 없어 카테고리를 임의로 나누지 않고 "L2 이후 활동이
+       더 있었는가"만 본다.
+     - L4/실사용 경험: getTotalPourRecordsForCompany(co) — 실제 시공이 이뤄진 POUR 실적
+       원본(연도만 있고 월/일은 없음). 존재 자체를 "L3/L4 수준 실사용 경험"의 증거로만 쓰고,
+       연도만으로 날짜 계산(30일/60일)은 하지 않는다(§10 "날짜를 추정하지 마라").
+     - 활동일: activitiesForCompany의 createdAt(Invalid Date는 필터링하여 제외, §10).
+
+     판정 우선순위(§6)는 A(첫 활동 없음) → B(L2 정체) → C(재사용 필요) 순으로 확인하되,
+     "L3/L4 실사용 증거"(hasPour 또는 MOU 이후 활동 2건 이상)가 이미 있는 업체는 A/B 판정
+     대상에서 아예 제외한다 — 활동 기록이 뜸하다는 이유만으로 이미 실사용까지 간 업체를
+     "첫 활동 없음/L2 정체"로 되돌려 잘못 판정하지 않기 위해서다(§6 "이전 단계 정체 업체로
+     잘못 판정하지 않도록").
+
+     반환 type: 'none'(관리필요 아님/판정 대상 아님) | 'firstActivity' | 'l2Stall' | 'reuse'
+     | 'unknown'(판정불가 — L3/L4 실사용 증거가 POUR 실적뿐이고 정확한 날짜를 가진 활동
+     기록이 하나도 없어 "마지막 관련 활동" 날짜를 계산할 수 없는 경우, §4).
+     ========================================================================== */
+  function classifyManagementNeed(co, acts, progress){
+    const mouStage = progress.hasAny ? progress.stages.find(s=> s.key === 'mou') : null;
+    const mouDoneTs = (mouStage && mouStage.state === 'done' && typeof mouStage.ts === 'number') ? mouStage.ts : null;
+    if(mouDoneTs == null) return { type:'none' }; // MOU/협약 자체가 완료되지 않은 업체는 이 기능의 판정 대상이 아니다(§3 전제조건)
+
+    const now = Date.now();
+    const DAY = 86400000;
+    const daysSince = ts => Math.floor((now - ts) / DAY);
+
+    const actsWithTs = (acts || [])
+      .map(a=> ({ activity: a, ts: new Date(a.createdAt).getTime() }))
+      .filter(a=> !isNaN(a.ts)) // §10: Invalid Date는 판정에서 제외(억지 판정 금지)
+      .sort((a,b)=> a.ts - b.ts); // 오래된 순
+
+    const hasPour = getTotalPourRecordsForCompany(co).length > 0;
+    const actsAfterMou = actsWithTs.filter(a=> a.ts > mouDoneTs);
+    const hasAdvancedEvidence = hasPour || actsAfterMou.length >= 2;
+
+    if(!hasAdvancedEvidence){
+      if(actsAfterMou.length === 0){
+        // 유형 A — 첫 활동 없음
+        if(daysSince(mouDoneTs) >= 30) return { type:'firstActivity', anchorTs: mouDoneTs, days: daysSince(mouDoneTs) };
+        return { type:'none' };
+      }
+      // 유형 B — L2 정체(첫 활동은 있지만 그 뒤로 추가 활동/POUR 실적이 없음)
+      const l2 = actsAfterMou[0];
+      if(daysSince(l2.ts) >= 30) return { type:'l2Stall', anchorTs: l2.ts, days: daysSince(l2.ts), activity: l2.activity };
+      return { type:'none' };
+    }
+
+    // 유형 C — 재사용 필요(L3/L4 실사용 증거가 있는 업체만 대상)
+    if(actsWithTs.length === 0) return { type:'unknown' }; // POUR 실적만 있고 날짜를 가진 활동 기록이 전혀 없음 → 판정불가
+    const last = actsWithTs[actsWithTs.length - 1];
+    if(daysSince(last.ts) >= 60) return { type:'reuse', anchorTs: last.ts, days: daysSince(last.ts), activity: last.activity, hasPour };
+    return { type:'none' };
+  }
+  const MGMT_NEED_REASON_LABEL = { firstActivity:'첫 활동 없음', l2Stall:'L2 정체', reuse:'재사용 필요' };
+  const MGMT_NEED_NEXT_ACTION = { firstActivity:'영업 시작 지원', l2Stall:'L3 지원 제안', reuse:'재사용 지원' };
+  function mgmtNeedStageLabel(result){
+    if(result.type === 'firstActivity') return '협약';
+    if(result.type === 'l2Stall') return 'L2';
+    if(result.type === 'reuse') return result.hasPour ? 'L4' : 'L3';
+    return '';
+  }
+  function mgmtNeedReasonText(result){
+    if(result.type === 'firstActivity') return `협약 후 ${result.days}일 이상 · 첫 L2 없음`;
+    if(result.type === 'l2Stall') return `L2 후 ${result.days}일 이상 · L3 없음`;
+    if(result.type === 'reuse') return `최근 활용 후 ${result.days}일 이상 · 신규 L2 없음`;
+    return '';
+  }
+  // §9 고객카드 배너 전용 문구 — 팝업 표(mgmtNeedReasonText)와 값은 완전히 같은 days/type을
+  // 쓰지만, §9 예시 문구("L2 등록 후 41일 / L3 요청 없음" 등)를 그대로 따른다.
+  function mgmtNeedBannerText(result){
+    if(result.type === 'firstActivity') return `협약 후 ${result.days}일 / 첫 L2 없음`;
+    if(result.type === 'l2Stall') return `L2 등록 후 ${result.days}일 / L3 요청 없음`;
+    if(result.type === 'reuse') return `최근 활용 후 ${result.days}일 / 신규 L2 없음`;
+    return '';
+  }
+  // §최근 활동 컬럼: firstActivity는 앵커가 된 MOU 완료일 + "MOU" 라벨, l2Stall/reuse는
+  // 앵커가 된 실제 활동의 날짜 + 그 활동의 실제 category(classifyActivity 결과, 지어낸
+  // 텍스트 아님)를 그대로 이어붙인다(§6 예시 "2026.07.04 현장등록"과 같은 형태).
+  function mgmtNeedRecentActivityText(result){
+    const dateText = fmtDate(result.anchorTs);
+    if(result.type === 'firstActivity') return `${dateText} MOU`;
+    if(result.activity) return `${dateText} ${result.activity.category || result.activity.activityText || ''}`.trim();
+    return dateText;
+  }
   // §7: 매칭된 POUR 실적이 실제로 0건이거나(업체명 매칭 성공, 레코드 없음) 업체명 매칭
   // 자체가 실패한 경우 모두 null(데이터 없음)을 반환한다 — 두 경우 다 D.getAllPourRecordsFor
   // Company(co)가 빈 배열을 돌려주는 것으로 동일하게 나타난다(매칭 실패 시 빈 배열, §3576).
@@ -6624,6 +6792,102 @@ window.SHIN2_CRM_APP_INIT = function(){
         </tbody>
       </table>
     `;
+  }
+
+  /* ==========================================================================
+     §관리필요 업체 라운드 §2/§5/§6/§7/§8 — "관리필요 N" 버튼이 여는 중앙 모달.
+     openConstructionModal/openRevenueDetailModal과 완전히 같은 .pi-overlay/.pi-panel
+     디자인을 재사용한다(새 디자인 시스템 없음). 데이터는 managementNeedCache(renderList가
+     이미 계산해 둔 결과)만 조회 — 이 모달을 여는 시점에 새로 계산하지 않는다.
+     ========================================================================== */
+  let mgmtNeedModalState = { filter: null };
+  function closeManagementNeedModal(){
+    const root = document.getElementById('managementNeedModalRoot');
+    if(root) root.innerHTML = '';
+    mgmtNeedModalState = { filter: null };
+    document.removeEventListener('keydown', mgmtNeedModalEscHandler);
+  }
+  function mgmtNeedModalEscHandler(e){ if(e.key === 'Escape') closeManagementNeedModal(); }
+  function openManagementNeedModal(){
+    const root = document.getElementById('managementNeedModalRoot');
+    if(!root) return;
+    mgmtNeedModalState = { filter: null };
+    const counts = managementNeedCache.counts;
+    root.innerHTML = `
+      <div class="pi-overlay" id="mgmtNeedModalOverlay">
+        <div class="pi-panel" style="max-width:820px;">
+          <div class="pi-head">
+            <div class="pi-title">관리 필요 업체</div>
+            <button type="button" class="chart-close-btn" id="mgmtNeedModalCloseBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body">
+            <div class="cat-dist-total">총 ${esc(counts.total)}개 업체</div>
+            <div class="constr-filter-row" id="mgmtNeedFilterRow"></div>
+            <div id="mgmtNeedTableWrap"></div>
+          </div>
+          <div class="pi-actions">
+            <button type="button" class="co-text-action primary" id="mgmtNeedModalCloseBtn2">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    renderManagementNeedModalBody();
+    document.getElementById('mgmtNeedModalCloseBtn').addEventListener('click', closeManagementNeedModal);
+    document.getElementById('mgmtNeedModalCloseBtn2').addEventListener('click', closeManagementNeedModal);
+    document.getElementById('mgmtNeedModalOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'mgmtNeedModalOverlay') closeManagementNeedModal(); });
+    document.addEventListener('keydown', mgmtNeedModalEscHandler);
+  }
+  // §6 업체 목록 — 한 업체당 한 줄, 업체명 | 현재 상태 | 관리 필요 이유 | 최근 활동 | 다음
+  // 행동. §7: 업체당 버튼은 [다음 행동] 하나만, 눌러도 데이터/단계를 바꾸지 않는다(행동
+  // 안내만). §8: 업체명 클릭 -> 모달을 닫고 기존 openCard(co.id)로 실제 고객관리카드를
+  // 그대로 연다(이름 문자열로 새 업체를 만들지 않음, companyId 그대로 사용).
+  function renderManagementNeedModalBody(){
+    const filterRow = document.getElementById('mgmtNeedFilterRow');
+    const tableWrap = document.getElementById('mgmtNeedTableWrap');
+    if(!filterRow || !tableWrap) return;
+    const { list, counts } = managementNeedCache;
+    const chips = [
+      { key: null, label: '전체', count: counts.total },
+      { key: 'firstActivity', label: '첫 활동 없음', count: counts.firstActivity },
+      { key: 'l2Stall', label: 'L2 정체', count: counts.l2Stall },
+      { key: 'reuse', label: '재사용 필요', count: counts.reuse }
+    ];
+    const filter = mgmtNeedModalState.filter;
+    filterRow.innerHTML = chips.map(c=>
+      `<button type="button" class="constr-filter-chip${filter===c.key?' is-active':''}" data-mgmt-filter="${c.key===null?'':esc(c.key)}">${esc(c.label)} ${esc(c.count)}</button>`
+    ).join('');
+    filterRow.querySelectorAll('[data-mgmt-filter]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const raw = btn.getAttribute('data-mgmt-filter');
+        mgmtNeedModalState.filter = raw === '' ? null : raw;
+        renderManagementNeedModalBody();
+      });
+    });
+    const filtered = filter ? list.filter(m=> m.type === filter) : list;
+    tableWrap.innerHTML = filtered.length ? `
+      <table class="cdash-pour-table mgmt-need-table">
+        <thead><tr><th>업체명</th><th>현재 상태</th><th>관리 필요 이유</th><th>최근 활동</th><th>다음 행동</th></tr></thead>
+        <tbody>
+          ${filtered.map(m=> `<tr>
+            <td><button type="button" class="mgmt-need-co-link" data-mgmt-open-co="${esc(m.co.id)}">${esc(m.co.name)}</button></td>
+            <td>${esc(mgmtNeedStageLabel(m))}</td>
+            <td>
+              <div class="mgmt-need-reason">${esc(MGMT_NEED_REASON_LABEL[m.type] || '')}</div>
+              <div class="mgmt-need-reason-detail">${esc(mgmtNeedReasonText(m))}</div>
+            </td>
+            <td>${esc(mgmtNeedRecentActivityText(m))}</td>
+            <td><button type="button" class="co-text-action primary mgmt-need-action-btn" data-mgmt-open-co="${esc(m.co.id)}">${esc(MGMT_NEED_NEXT_ACTION[m.type] || '')}</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    ` : `<div class="pi-note">해당 조건의 업체가 없습니다.</div>`;
+    tableWrap.querySelectorAll('[data-mgmt-open-co]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-mgmt-open-co');
+        closeManagementNeedModal();
+        openCard(id); // §8: 새 상세화면을 만들지 않고 기존 고객관리카드를 그대로 연다
+      });
+    });
   }
 
   const REQUEST_HISTORY_SOURCE_LABEL = { '전화':'시공사 전화기록' }; // 그 외 카테고리는 category 값을 그대로 출처 라벨로 쓴다(§15, 지어내지 않음)
