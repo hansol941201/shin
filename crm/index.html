@@ -2398,7 +2398,18 @@ window.SHIN2_CRM_OCR = (function(){
       // push/subscribe를 켠다. (한때 CRM 전용 키로 분리하면서 이 가드를 없앴는데, 로컬에
       // 옛 공유 키 값이 없던 기기 — 클라우드에만 데이터가 있던 기기 — 에서 고객 목록이 0건
       // 으로 보이는 실제 장애가 발생해 원상복구했다.)
-      const SHARED_ARRAY_KEYS = { companies: CO_KEY, customerActivities: ACT_KEY, memos: MEMO_KEY };
+      // §샤인하우징 진단 라운드 — CO_KEY/ACT_KEY/MEMO_KEY는 이 <script type="module"> 블록과
+      // 완전히 다른 <script> 블록(데이터 레이어, 아래쪽에 별도로 있음)의 지역 const라서 여기서
+      // 참조할 수 없다 — 실제로 브라우저 콘솔에서 "ReferenceError: CO_KEY is not defined"로
+      // 확인된 버그다. 이 한 줄이 던지는 예외가 이 try 블록 전체를 중단시켜(아래 catch가
+      // "네트워크 차단 등"으로 잘못 표시하지만 실제로는 이 ReferenceError였다),
+      // window.SHIN2_CRM_SHARED_SYNC 자체가 한 번도 만들어지지 못했다 — 즉 companies/
+      // customerActivities/memos가 이 함수가 도입된 이후 단 한 번도 클라우드로 실시간
+      // 동기화된 적이 없다(로컬 저장은 항상 정상이었지만 다른 기기로는 절대 안 갔다).
+      // 협력사 동기화로 새로 생긴 업체가 다른 기기/화면에서 안 보이던 실제 원인이다. 저장 key
+      // 값 자체는 전혀 안 바꾼다 — 문자열 리터럴로 그대로 옮겨 이 스코프에서도 쓸 수 있게만
+      // 한다(데이터 레이어의 CO_KEY/ACT_KEY/MEMO_KEY 정의와 반드시 같은 값이어야 한다).
+      const SHARED_ARRAY_KEYS = { companies: 'shin2-companies-staging', customerActivities: 'shin2-customer-activities-v1', memos: 'shin2-memos-v1' };
       const sharedSyncStarted = {};
       const sharedPushTimers = {};
       function sharedLocalRevKey(storageKey){ return 'shin2-sync-rev-' + storageKey; }
