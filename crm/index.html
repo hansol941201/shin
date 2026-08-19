@@ -399,6 +399,10 @@
   .workq-btn.muted{ color:var(--text-muted); }
   .workq-hold-row{ display:flex; align-items:center; gap:8px; margin-top:8px; }
   .workq-saved-note{ font-size:11.5px; color:#0F7A3D; font-weight:700; margin-top:6px; }
+  /* §partner-dashboard 진행정보 동기화 라운드 §6/§8 — "예정된 미팅" 패널의 하위 영역
+     (완료 처리/일정 변경)도 보류 패널과 같은 톤: 기본 상태는 숨김(JS로 display:block 토글),
+     열렸을 때만 약한 배경으로 구분한다. */
+  .workq-mark-done-panel, .workq-reschedule-panel{ margin-top:8px; padding:8px 10px; background:var(--bg); border-radius:6px; }
   .constr-list-title{ font-size:13px; font-weight:700; color:var(--text); margin:4px 0 8px; }
   .constr-list-row{
     display:grid; grid-template-columns:40px 1fr auto; gap:10px; align-items:center;
@@ -1071,9 +1075,20 @@
   .cdash-progress-stage-status{ font-size:11px; color:var(--text-muted); }
   .cdash-progress-stage-date{ font-size:11px; color:var(--text-muted); }
   .cdash-progress-connector{ flex:0 0 18px; align-self:center; height:1px; background:var(--line); }
-  .cdash-progress-detail{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
   .cdash-progress-detail-row{ display:flex; gap:10px; font-size:12.5px; padding:2px 0; }
   .cdash-progress-detail-row span:first-child{ flex:none; width:56px; color:var(--text-muted); }
+  /* §partner-dashboard 진행정보 동기화 라운드 §1/§6 — 현재 단계 상세 한 줄(라벨/상태뱃지/
+     날짜/담당). 완료=초록, 예정=주황, 대기=회색 — 기존 상태 배지(stage-badge) 색 규칙과
+     같은 계열만 재사용한다. */
+  .cdash-progress-detail{ margin:14px 20px 0; padding:10px 12px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; background:var(--bg); border-radius:8px; }
+  .cdash-progress-detail-label{ font-size:12.5px; font-weight:700; color:var(--text); }
+  .cdash-progress-detail-status{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
+  .cdash-progress-detail.done .cdash-progress-detail-status{ color:#079455; background:#E7F7EF; }
+  .cdash-progress-detail.scheduled .cdash-progress-detail-status{ color:#B45309; background:#FFF3E0; }
+  .cdash-progress-detail.waiting .cdash-progress-detail-status{ color:var(--text-muted); background:#EEF1F5; }
+  .cdash-progress-detail-date{ font-size:12.5px; color:var(--text); font-variant-numeric:tabular-nums; }
+  .cdash-progress-detail-owner{ font-size:12px; color:var(--text-muted); }
+  .cdash-progress-detail-next{ flex-basis:100%; font-size:12px; font-weight:700; color:var(--navy); }
 
   /* ---- 현장 이력(§진행 기록 라운드 — 현장 이력 정리) ---- */
   .cdash-site-log{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
@@ -5826,8 +5841,25 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 안 바꾸고 scheduledLabel/owner만 얹는다(기존 stage 객체 읽던 코드는 그대로 동작,
     // "이미 일정이 잡혀 있는데 다시 제안이라고 표시" 방지는 computeNextActionLabel에서만
     // 추가로 처리).
-    const m1 = Object.assign(dateState(nm.m1Label), { scheduledLabel: nm.m1ScheduledLabel || null, owner: nm.m1Owner || null });
-    const m2 = Object.assign(dateState(nm.m2Label), { scheduledLabel: nm.m2ScheduledLabel || null, owner: nm.m2Owner || null });
+    // §partner-dashboard 진행정보 동기화 라운드 §1/§2/§4 — 실제 조사 결과: m1Label/m2Label은
+    // "완료일"이고, "예정일"은 별도 필드(m1Scheduled/m1ScheduledLabel, §협력사 동기화
+    // 라운드에서 이미 확인)다. 지금까지는 이 예정 필드를 stage.state에는 전혀 반영하지 않고
+    // scheduledLabel/owner로만 얹어놨었다(computeNextActionLabel만 별도로 읽던 상태) — 그
+    // 결과 완료일이 없는데 예정일만 있는 업체가 카드/목록 어디서나 "대기 —"로 보이는 실제
+    // 버그가 있었다(고객카드는 stage.state만 읽지 scheduledLabel을 안 읽었다). 이제 완료가
+    // 아니면서 예정일이 있으면 state를 'scheduled'로, dateDisplay/ts도 예정일 기준으로
+    // 바꾼다 — buildProgressStages 하나만 고치면 이걸 읽는 모든 화면(고객카드/목록 배지/
+    // 다음 행동/업무관리)이 자동으로 같은 값을 쓴다(§4 "공통 함수로 source of truth 통일").
+    function withScheduleOverride(base, scheduledLabel, owner){
+      const result = Object.assign({}, base, { scheduledLabel: scheduledLabel || null, owner: owner || null });
+      if(result.state !== 'done' && scheduledLabel){
+        const p = parsePartnerDateLabel(scheduledLabel);
+        if(p){ result.state = 'scheduled'; result.dateDisplay = p.display; result.ts = p.ts; }
+      }
+      return result;
+    }
+    const m1 = withScheduleOverride(dateState(nm.m1Label), nm.m1ScheduledLabel, nm.m1Owner);
+    const m2 = withScheduleOverride(dateState(nm.m2Label), nm.m2ScheduledLabel, nm.m2Owner);
     const mou = (()=>{
       if(nm.mouDone){
         const p = parsePartnerDateLabel(nm.mouLabel);
@@ -6201,6 +6233,31 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 이력 요약 링크는 이 박스에서는 뺐다(§ "가로 진행바" 요구사항에 명시된 것만 표시) —
   // 데이터 자체(co.partnerDashboard.newMou.site 등)와 openSiteHistoryModal 함수는 그대로
   // 있다.
+  // §partner-dashboard 진행정보 동기화 라운드 §1/§6 — stepper(원+라벨)만으로는 "예정/완료
+  // 날짜·담당자"가 전혀 안 보였다(§ 실제 조사로 확인 — buildStageStepperHtml은 원 색만
+  // 그린다). 새 계산 없이 progress.stages[currentIdx](위 buildProgressStages가 이미 만든
+  // state/dateDisplay/scheduledLabel/owner)만 그대로 읽어 한 줄 상세를 stepper 밑에 덧붙인다.
+  // MOU까지 전부 완료면(currentIdx가 mou이고 done) 굳이 상세를 반복하지 않는다.
+  function buildProgressCurrentStageDetailHtml(progress){
+    if(!progress.hasAny) return '';
+    const stage = progress.stages[progress.currentIdx];
+    if(stage.key === 'mou' && stage.state === 'done') return '';
+    const statusCls = stage.state === 'done' ? 'done' : (stage.state === 'scheduled' ? 'scheduled' : 'waiting');
+    const ownerLine = (stage.owner) ? `<div class="cdash-progress-detail-owner">담당 ${esc(stage.owner)}</div>` : '';
+    // §3: 카드의 "다음 행동"도 같은 progress를 다시 계산하지 않고 목록에서 이미 쓰던
+    // computeNextActionLabel(progress)을 그대로 재사용한다(§4 "하나의 source of truth").
+    const nextAction = computeNextActionLabel(progress);
+    const nextActionLine = nextAction ? `<div class="cdash-progress-detail-next">다음 행동 · ${esc(nextAction)}</div>` : '';
+    return `
+      <div class="cdash-progress-detail ${statusCls}">
+        <span class="cdash-progress-detail-label">${esc(stage.label)}</span>
+        <span class="cdash-progress-detail-status">${esc(PROGRESS_STATUS_LABEL[stage.state])}</span>
+        <span class="cdash-progress-detail-date">${esc(stage.dateDisplay)}</span>
+        ${ownerLine}
+        ${nextActionLine}
+      </div>
+    `;
+  }
   function renderMeetingRecordSection(co){
     const wrap = document.getElementById('cdashMeetingBlock');
     if(!wrap) return;
@@ -6208,6 +6265,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     wrap.innerHTML = `
       <div class="cdash-col-title-row"><div class="cdash-col-title">진행상황</div></div>
       <div class="cdash-progress-stepper-wrap">${buildStageStepperHtml(progress)}</div>
+      ${buildProgressCurrentStageDetailHtml(progress)}
     `;
   }
 
@@ -6469,11 +6527,16 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(byKey.mou.state === 'done') return null; // MOU 완료 업체는 미팅/MOU 행동 없음(§7 예시)
     if(byKey.q.state !== 'done') return null; // 질문서 회신 전은 이 화면 판정 대상 아님(§6 전제조건)
     if(byKey.m1.state !== 'done'){
-      if(byKey.m1.scheduledLabel) return null; // 이미 1차미팅 예정이 잡혀 있음 — "잡기" 대상 아님
+      // §partner-dashboard 진행정보 동기화 라운드 §6 — 예전엔 예정일이 있으면 그냥 목록에서
+      // 빠졌다(§ "1차미팅 잡기" 대상만 아님). 그러면 일정을 잡아둔 업체가 업무관리 어디에도
+      // 안 보이는 실제 문제(㈜제일도장 사례)가 있어, "예정된 미팅"이라는 별도 type으로
+      // 계속 보여준다 — 새 날짜/담당 데이터가 아니라 byKey.m1.scheduledLabel/owner(이미
+      // buildProgressStages가 계산해 둔 값)만 그대로 넘긴다.
+      if(byKey.m1.scheduledLabel) return { type:'m1Scheduled', label:'일정 확인', anchor: byKey.m1, stageLabel:'1차미팅 예정', scheduledLabel: byKey.m1.scheduledLabel, owner: byKey.m1.owner };
       return { type:'m1', label:'1차미팅 잡기', anchor: byKey.q, stageLabel:'질문서 완료' };
     }
     if(byKey.m2.state !== 'done'){
-      if(byKey.m2.scheduledLabel) return null;
+      if(byKey.m2.scheduledLabel) return { type:'m2Scheduled', label:'일정 확인', anchor: byKey.m2, stageLabel:'2차미팅 예정', scheduledLabel: byKey.m2.scheduledLabel, owner: byKey.m2.owner };
       return { type:'m2', label:'2차미팅 잡기', anchor: byKey.m1, stageLabel:'1차미팅 완료' };
     }
     return { type:'mou', label:'MOU 진행', anchor: byKey.m2, stageLabel:'2차미팅 완료' };
@@ -6483,12 +6546,13 @@ window.SHIN2_CRM_APP_INIT = function(){
   function buildMeetingReasonText(type, days){
     if(type === 'm1') return days === null ? '질문서 회신 완료 · 1차미팅 일정 없음' : `질문서 회신 후 ${days}일 · 1차미팅 일정 없음`;
     if(type === 'm2') return days === null ? '1차미팅 완료 · 2차미팅 일정 없음' : `1차미팅 후 ${days}일 · 2차미팅 일정 없음`;
+    if(type === 'm1Scheduled' || type === 'm2Scheduled') return '일정 잡힘 · 완료 확인 필요';
     return days === null ? '2차미팅 완료 · MOU 미체결' : `2차미팅 완료 후 ${days}일 · MOU 미체결`;
   }
   // §고객 단계 전환관리 라운드 §5/§8 — 표의 "해야 할 일" 버튼 문구만 스펙 표현("[L2 전환]"/
   // "[L3 전환]")에 맞춰 바꾼다. 판정값(firstActivity/l2Stall) 자체는 그대로다.
   const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'L2 전환', l2Stall:'L3 전환' };
-  const WORKQ_TYPE_PRIORITY = { m1:0, m2:1, mou:2, firstActivity:3, l2Stall:4, reuse:5 };
+  const WORKQ_TYPE_PRIORITY = { m1:0, m1Scheduled:0, m2:1, m2Scheduled:1, mou:2, firstActivity:3, l2Stall:4, reuse:5 };
   // §업무관리 제외 조건 추가: "질문서 발송/회신 기록도, 1차·2차미팅 기록도 전혀 없이
   // MOU만 체결완료"된 업체(기존협약업체를 곧바로 MOU 완료 상태로 들여온 실제 사례 —
   // ㈜종명건설 등, 첫 라운드의 "1·2차 미팅 없이 MOU 체결" 예외와 같은 부류)는 업무관리에서
@@ -6505,6 +6569,21 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(hasNoFunnelHistoryBeforeMou(progress)) return null; // 질문서/미팅 기록 없이 바로 MOU 체결된 업체는 제외
     const meeting = classifyWorkQueueMeeting(progress);
     if(meeting){
+      const isScheduled = meeting.type === 'm1Scheduled' || meeting.type === 'm2Scheduled';
+      if(isScheduled){
+        // §partner-dashboard 진행정보 동기화 라운드 §6 — "예정된 미팅"은 anchor.ts가 예정일
+        // 그 자체(미래일 수 있음)라 "완료 후 경과일"과 같은 의미로 쓰면 안 된다. 예정일이
+        // 이미 지났는데 아직도 완료 처리가 안 됐을 때만 "지연"으로 표시한다.
+        const ts = meeting.anchor && typeof meeting.anchor.ts === 'number' ? meeting.anchor.ts : null;
+        const daysUntil = ts != null ? Math.floor((ts - Date.now()) / 86400000) : null;
+        const ownerText = meeting.owner ? ` · 담당 ${meeting.owner}` : '';
+        const reasonText = `${meeting.scheduledLabel || ''} 예정${ownerText}`.trim();
+        return {
+          co, type: meeting.type, category: 'meeting',
+          currentStateLabel: meeting.stageLabel, reasonText,
+          days: daysUntil, actionLabel: meeting.label, isDelayed: daysUntil !== null && daysUntil < 0
+        };
+      }
       const days = meeting.anchor && typeof meeting.anchor.ts === 'number' ? Math.floor((Date.now() - meeting.anchor.ts) / 86400000) : null;
       // §10: 세 유형(1차미팅 잡기/2차미팅 잡기/MOU 진행)만 7일 이상이면 "지연" — 날짜가
       // 실제로 있을 때만 계산한다.
@@ -6639,7 +6718,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   function workqSaveMeetingSchedule(item, dateStr, timeStr, owner, memo){
     const label = workqDateInputToLabel(dateStr);
     if(!label) return false;
-    const isM1 = item.type === 'm1';
+    const isM1 = item.type === 'm1' || item.type === 'm1Scheduled';
     const patch = isM1
       ? { m1Scheduled: dateStr, m1ScheduledLabel: label, m1Owner: owner || null }
       : { m2Scheduled: dateStr, m2ScheduledLabel: label, m2Owner: owner || null };
@@ -6648,6 +6727,22 @@ window.SHIN2_CRM_APP_INIT = function(){
     const timeText = timeStr ? ` ${timeStr}` : '';
     const ownerText = owner ? ` · 담당 ${owner}` : '';
     workqLogEvent(item.co.id, `${stageName} 일정 조율 — ${label}${timeText} 예정${ownerText}`);
+    workqLogMemo(item.co.id, memo);
+    return true;
+  }
+  // §partner-dashboard 진행정보 동기화 라운드 §6/§8 — "예정된 미팅"의 실제 다음 단계는
+  // 완료 확정이다. m1Done/m1Label(또는 m2)만 채운다 — 예정 필드(m1Scheduled 등)는 그대로
+  // 남겨 원본을 지우지 않는다(§7 "MERGE/PATCH만, 기존 필드 삭제 금지"). 날짜를 안 고르면
+  // 오늘 날짜로 완료 처리한다(실제 미팅이 방금 끝났을 때 바로 누르는 버튼이라 §7의 다른
+  // 버튼들과 달리 완료일 입력을 필수로 요구하지 않는다).
+  function workqSaveMeetingDone(item, dateStr, memo){
+    const isM1 = item.type === 'm1' || item.type === 'm1Scheduled';
+    const label = dateStr ? workqDateInputToLabel(dateStr) : workqTodayLabel();
+    if(!label) return false;
+    const patch = isM1 ? { m1Done: true, m1Label: label } : { m2Done: true, m2Label: label };
+    workqMergeNewMou(item.co, patch);
+    const stageName = isM1 ? '1차미팅' : '2차미팅';
+    workqLogEvent(item.co.id, `${stageName} 완료 (${label})`);
     workqLogMemo(item.co.id, memo);
     return true;
   }
@@ -6733,6 +6828,55 @@ window.SHIN2_CRM_APP_INIT = function(){
           <button type="button" class="workq-btn primary" data-workq-do="save-schedule">일정 저장</button>
           <button type="button" class="workq-btn" data-workq-do="uncertain">연락했지만 미확정</button>
           <button type="button" class="workq-btn muted" data-workq-do="hold-open">보류</button>
+        </div>
+        <div class="workq-hold-panel" style="display:none;">
+          <div class="workq-hold-row">
+            <span class="workq-expand-label">다시 확인일</span>
+            <input type="date" class="workq-field-input is-date" id="workqHoldDate_${esc(item.type)}_${esc(co.id)}" />
+            <button type="button" class="workq-btn primary" data-workq-do="hold-save">보류 저장</button>
+          </div>
+        </div>
+        <div class="workq-saved-note" style="display:none;">저장되었습니다.</div>
+      `;
+    }
+    if(item.type === 'm1Scheduled' || item.type === 'm2Scheduled'){
+      // §partner-dashboard 진행정보 동기화 라운드 §3/§6/§8 — "예정된 미팅" 전용 패널. 이미
+      // 잡혀 있는 예정일/담당(scheduledLabel/owner, byKey.m1|m2에서 그대로 옴)을 보여주고,
+      // 실제 다음 행동인 "완료 처리"를 추가한다. "일정 변경"은 m1/m2 패널과 같은 저장
+      // 함수(workqSaveMeetingSchedule)를 그대로 재사용한다.
+      const isM1 = item.type === 'm1Scheduled';
+      const stageName = isM1 ? '1차미팅' : '2차미팅';
+      return `
+        <div class="workq-expand-title">${esc(co.name)} · ${esc(stageName)} 일정 확인</div>
+        ${contact}
+        <div class="workq-expand-grid">
+          <div class="workq-expand-label">예정일</div><div class="workq-expand-value">${esc(item.co.partnerDashboard && item.co.partnerDashboard.newMou ? (isM1 ? item.co.partnerDashboard.newMou.m1ScheduledLabel : item.co.partnerDashboard.newMou.m2ScheduledLabel) || '—' : '—')}</div>
+          <div class="workq-expand-label">담당</div><div class="workq-expand-value">${item.co.partnerDashboard && item.co.partnerDashboard.newMou && (isM1 ? item.co.partnerDashboard.newMou.m1Owner : item.co.partnerDashboard.newMou.m2Owner) ? esc(isM1 ? item.co.partnerDashboard.newMou.m1Owner : item.co.partnerDashboard.newMou.m2Owner) : '—'}</div>
+        </div>
+        <div class="workq-btn-row">
+          <button type="button" class="workq-btn primary" data-workq-do="mark-done-open">미팅 완료 처리</button>
+          <button type="button" class="workq-btn" data-workq-do="reschedule-open">일정 변경</button>
+          <button type="button" class="workq-btn muted" data-workq-do="hold-open">보류</button>
+        </div>
+        <div class="workq-mark-done-panel" style="display:none;">
+          <div class="workq-expand-grid">
+            <div class="workq-expand-label">완료일</div>
+            <div class="workq-expand-value"><input type="date" class="workq-field-input is-date" id="workqDoneDate_${esc(item.type)}_${esc(co.id)}" /></div>
+          </div>
+          <textarea class="workq-memo-input" id="workqMemo_${esc(item.type)}_${esc(co.id)}" placeholder="메모"></textarea>
+          <div class="workq-btn-row"><button type="button" class="workq-btn primary" data-workq-do="mark-done-save">완료 저장(오늘 날짜, 미입력 시)</button></div>
+        </div>
+        <div class="workq-reschedule-panel" style="display:none;">
+          <div class="workq-expand-grid">
+            <div class="workq-expand-label">새 일정</div>
+            <div class="workq-expand-value">
+              <input type="date" class="workq-field-input is-date" id="workqDate_${esc(item.type)}_${esc(co.id)}" />
+              <input type="time" class="workq-field-input is-time" id="workqTime_${esc(item.type)}_${esc(co.id)}" />
+            </div>
+            <div class="workq-expand-label">담당</div>
+            <div class="workq-expand-value"><input type="text" class="workq-field-input is-owner" id="workqOwner_${esc(item.type)}_${esc(co.id)}" placeholder="담당자명" /></div>
+          </div>
+          <div class="workq-btn-row"><button type="button" class="workq-btn primary" data-workq-do="save-schedule">일정 변경 저장</button></div>
         </div>
         <div class="workq-hold-panel" style="display:none;">
           <div class="workq-hold-row">
@@ -6931,6 +7075,16 @@ window.SHIN2_CRM_APP_INIT = function(){
         const stageName = item.type === 'm1' ? '1차미팅' : '2차미팅';
         workqLogSimpleAction(item, `${stageName} 일정 조율 연락 — 일정 미확정`, memoVal);
         finishAndClose(); // §12: 상태 변경 없이 업무는 그대로 유지 — 목록 재계산해도 이 업체는 계속 남는다(재계산이 상태를 안 바꿨으므로)
+      } else if(action === 'mark-done-open'){
+        const p = root.querySelector('.workq-mark-done-panel');
+        if(p) p.style.display = 'block';
+      } else if(action === 'mark-done-save'){
+        const doneDateEl = document.getElementById(`workqDoneDate_${item.type}_${item.co.id}`);
+        workqSaveMeetingDone(item, doneDateEl ? doneDateEl.value : '', memoVal);
+        finishAndClose();
+      } else if(action === 'reschedule-open'){
+        const p = root.querySelector('.workq-reschedule-panel');
+        if(p) p.style.display = 'block';
       } else if(action === 'hold-open'){
         const p = root.querySelector('.workq-hold-panel');
         if(p) p.style.display = 'block';
@@ -7937,6 +8091,15 @@ window.SHIN2_CRM_APP_INIT = function(){
         const result = D.applyPartnerSync(partnerSyncState.preview);
         partnerSyncState = { step: 'result', preview: partnerSyncState.preview, result, error: null };
         renderPartnerSyncModal();
+        // §partner-dashboard 진행정보 동기화 라운드 §5 — "닫기"를 눌러야만 목록이
+        // 새로고침되던 것을 적용 즉시로 당긴다. 세 화면 모두 같은 buildProgressStages를
+        // 다시 읽을 뿐 별도 재계산 로직은 없다: 목록(renderList)은 항상, 고객카드는 지금
+        // 열려 있을 때만(refreshChart — openCard와 달리 아코디언/스크롤 등 화면 상태를
+        // 안 건드리고 다시 그린다), 업무관리는 지금 그 탭이 보일 때만(renderWorkQueueView).
+        renderList();
+        if(currentCompanyId && cardView.style.display === 'block') refreshChart();
+        const wq = document.getElementById('workQueueView');
+        if(wq && wq.style.display === 'block') renderWorkQueueView();
       }, 0);
     });
   }
