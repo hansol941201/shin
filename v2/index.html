@@ -186,12 +186,13 @@
   }
 
   /* ---------- Home content column (search + AI 문구정리 share the same left edge) ---------- */
+  /* 좌측 사이드바·우측 투두가 사라진 만큼 본문 컬럼도 넓게 쓰고 왼쪽 기준으로 정렬한다 */
   .home-col{
-    max-width:800px;
-    margin:0 auto;
+    max-width:1180px;
+    margin:0;
   }
   .search-wrap{ justify-content:flex-start; }
-  .search-box{ max-width:680px; }
+  .search-box{ max-width:980px; }
   .hint{ text-align:left; font-size:11.5px; color:#9AA1AE; }
 
   /* ---------- AI 문구정리 ---------- */
@@ -1441,277 +1442,149 @@
   .user-select-item:hover{ background:#F0F1F4; }
   .user-select-item.active{ background:#EAF0FA; color:var(--navy); }
 
-  /* ================================================================================
-     오늘의 투두 우측 레일 (§오른쪽 빈 공간 활용 라운드) — 신규 블록.
-     기존 .app/.sidebar/.main 규칙은 한 줄도 고치지 않는다. .app이 이미 display:flex라
-     <main> 뒤에 형제로 <aside>를 하나 더 두기만 하면 자연스럽게 3단이 된다 —
-     .main은 flex:1이라 남는 폭만큼 알아서 줄어들고, .main-inner의 max-width:1160px
-     가운데 정렬도 그대로 유지된다(중앙 콘텐츠를 강제로 좁히는 규칙 없음).
-     ================================================================================ */
-  :root{ --todo-w: 440px; }
-  .todo-rail{
-    flex:0 0 var(--todo-w); width:var(--todo-w); min-width:300px;
-    align-self:stretch;
-    position:sticky; top:58px; height:calc(100vh - 108px);
-    display:flex; flex-direction:column;
-    background:var(--surface); border-left:1px solid var(--line);
-    padding:0;
-  }
-  .todo-rail-head{
-    display:flex; align-items:center; gap:8px;
-    padding:12px 18px 12px 20px; border-bottom:1px solid var(--line); flex:none;
-  }
-  .todo-rail-title{
-    display:flex; align-items:center; gap:8px;
-    font-size:16.5px; font-weight:800; color:var(--text); letter-spacing:-0.3px;
-  }
-  .todo-rail-title svg{ color:var(--navy); flex:none; }
-  /* 미완료 개수 배지 — 사이드바 .nav-badge와 같은 톤(네이비/연한 남색 배경)을 그대로 따른다 */
-  /* 미완료 개수 pill — 아주 연한 핑크. 톤만 얹고 채도는 낮게 유지한다. */
-  /* 미완료 개수 — 담백한 회색 pill */
-  .todo-rail-badge{
-    flex:none; padding:2px 9px; border-radius:10px;
-    font-size:11px; font-weight:700; line-height:16px;
-    color:var(--navy); background:#EDF0F6; white-space:nowrap;
-  }
-  .todo-rail-badge.zero{ color:var(--text-muted); background:#F2F4F7; }
-  .todo-rail-collapse{
-    margin-left:auto; flex:none;
-    width:24px; height:24px; line-height:1;
-    border:1px solid var(--line); background:var(--surface); border-radius:6px;
-    color:var(--text-muted); font-size:13px; font-family:inherit; cursor:pointer;
-  }
-  .todo-rail-collapse:hover{ background:#F0F1F4; color:var(--text); }
 
-  .todo-rail-add{ display:flex; gap:6px; padding:12px 18px 10px; flex:none; }
-  .todo-rail-add-wrap{
-    flex:1; min-width:0; display:flex; align-items:center; gap:6px;
-    height:34px; padding:0 6px 0 11px;
+
+  /* ================================================================================
+     상단 통합 투두 (§오른쪽 레일 폐기 라운드)
+     빠른 입력 + 날짜별 업무 카드 4개 + 전체 할 일 모달. 저장소는 기존 shin2-todos 그대로.
+     ================================================================================ */
+  .qadd{ display:flex; align-items:center; gap:8px; margin:2px 0 10px; }
+  .qadd-box{
+    flex:1; min-width:0; display:flex; align-items:center; gap:8px;
+    height:38px; padding:0 10px 0 14px;
     background:var(--surface); border:1px solid var(--line); border-radius:8px;
   }
-  .todo-rail-add-wrap:focus-within{ border-color:#C7CEDB; }
-  .todo-rail-add input{
-    flex:1; min-width:0; height:100%; padding:0; border:none; outline:none;
-    font-size:13px; font-family:inherit; color:var(--text); background:transparent;
+  .qadd-box:focus-within{ border-color:#C7CEDB; }
+  .qadd-box input{
+    flex:1; min-width:0; height:100%; border:none; outline:none; background:transparent;
+    font-size:13.5px; font-family:inherit; color:var(--text);
   }
-  .todo-rail-datebtn{
-    flex:none; border:none; background:transparent; cursor:pointer;
-    color:#AEB3BD; padding:3px; line-height:1; border-radius:5px;
-  }
-  .todo-rail-datebtn:hover, .todo-rail-datebtn.on{ color:var(--navy); }
-  .todo-rail-add > button{
-    flex:none; height:34px; padding:0 13px; white-space:nowrap;
-    font-size:12.5px; font-family:inherit; font-weight:600; color:#fff;
+  .qadd-cal{ flex:none; border:none; background:transparent; cursor:pointer; color:#AEB3BD; padding:3px; line-height:1; border-radius:5px; }
+  .qadd-cal:hover, .qadd-cal.on{ color:var(--navy); }
+  .qadd-btn{
+    flex:none; height:38px; padding:0 18px; white-space:nowrap;
+    font-size:13px; font-family:inherit; font-weight:600; color:#fff;
     background:var(--navy); border:1px solid var(--navy); border-radius:8px; cursor:pointer;
   }
-  .todo-rail-add > button:hover{ opacity:0.92; }
-
-  .todo-rail-daterow{ display:none; align-items:center; gap:7px; padding:0 18px 10px; flex:none; }
-  .todo-rail-daterow.open{ display:flex; }
-  .todo-rail-daterow input[type="date"]{
-    height:28px; padding:0 8px; font-size:12px; font-family:inherit; color:var(--text);
+  .qadd-btn:hover{ opacity:0.92; }
+  .qadd-all{
+    flex:none; height:38px; padding:0 14px; white-space:nowrap;
+    font-size:12.5px; font-family:inherit; font-weight:500; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; cursor:pointer;
+  }
+  .qadd-all:hover{ background:#F2F4F7; color:var(--text); }
+  .qadd-daterow{ display:none; align-items:center; gap:8px; margin:0 0 10px; }
+  .qadd-daterow.open{ display:flex; }
+  .qadd-daterow input[type="date"]{
+    height:30px; padding:0 8px; font-size:12px; font-family:inherit; color:var(--text);
     background:var(--surface); border:1px solid var(--line); border-radius:6px; outline:none;
   }
-  .todo-rail-daterow input[type="date"]:focus{ border-color:#C7CEDB; }
-  .todo-rail-duepick{
-    padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;
-    color:var(--navy); background:#EDF0F6; white-space:nowrap;
-  }
-  .todo-rail-dateclear{
-    border:none; background:transparent; cursor:pointer; padding:2px 4px;
-    font-size:11px; font-family:inherit; color:var(--text-muted); border-radius:5px;
-  }
-  .todo-rail-dateclear:hover{ color:#B91C1C; }
+  .qadd-pick{ padding:2px 9px; border-radius:10px; font-size:11px; font-weight:700; color:var(--navy); background:#EDF0F6; }
+  .qadd-clear{ border:none; background:transparent; cursor:pointer; padding:2px 4px; font-size:11.5px; font-family:inherit; color:var(--text-muted); }
+  .qadd-clear:hover{ color:#B91C1C; }
 
-  .todo-rail-list{ flex:1; min-height:0; overflow-y:auto; padding:0 14px 12px; }
-  .todo-rail-empty{ font-size:12.5px; color:var(--text-muted); padding:16px 4px; }
-
-  /* 날짜 구역 */
-  .todo-sec{ padding-top:8px; margin-top:8px; }
-  .todo-sec:first-child{ margin-top:0; padding-top:4px; }
-  .todo-sec-head{
-    display:flex; align-items:center; gap:8px; padding:0 2px 8px;
-    font-size:12px; font-weight:700; color:var(--text);
-  }
-  .todo-sec-head .n{
-    flex:none; margin-left:auto; padding:0 6px; border-radius:9px;
-    font-size:10.5px; font-weight:700; line-height:16px;
-    color:var(--text-muted); background:#F2F4F7;
-  }
-  .todo-sec.today .todo-sec-head{ color:var(--navy); }
-  .todo-sec.today .todo-sec-head .n{ color:#fff; background:var(--navy); }
-  .todo-sec.over .todo-sec-head{ color:#B3283C; }
-  .todo-sec.over .todo-sec-head .n{ color:#B3283C; background:#FBE9EB; }
-  .todo-sec.done .todo-sec-head{ color:var(--text-muted); }
-  .todo-sec-toggle{
-    flex:none; border:none; background:transparent; cursor:pointer;
-    font-size:11px; font-family:inherit; font-weight:500; color:var(--text-muted);
-    padding:2px 4px; border-radius:5px;
-  }
-  .todo-sec-toggle:hover{ color:var(--navy); background:#F2F4F7; }
-
-  .todo-sec.imp .todo-sec-head{ color:#8A6410; }
-  .todo-sec.imp .todo-sec-head .n{ color:#8A6410; background:#F7F1E3; }
-
-  /* 행 */
-  /* 투두 하나마다 카드를 두지 않는다 — 얇은 divider가 있는 행 리스트 */
-  .todo-rail-row{
-    display:flex; align-items:center; gap:10px;
-    padding:9px 6px; margin:0;
-    background:transparent; border:none; border-bottom:1px solid #F0F1F4; border-radius:0;
-  }
-  .todo-rail-row:last-child{ border-bottom:none; }
-  .todo-rail-row:hover{ background:#F7F8FA; }
-  .todo-rail-row input[type="checkbox"]{
-    flex:none; width:16px; height:16px; margin:0; accent-color:var(--navy); cursor:pointer;
-  }
-  .todo-rail-text{
-    flex:1; min-width:0; font-size:13.5px; line-height:1.45; font-weight:500;
-    color:var(--text); word-break:break-word;
-  }
-  .todo-rail-row.important .todo-rail-text{ font-weight:600; }
-
-  .todo-rail-row.b-today .todo-rail-text{ font-weight:600; }
-  .todo-rail-row.done .todo-rail-text{ text-decoration:line-through; color:#A3A8B4; font-weight:400; }
-
-  /* 날짜 pill */
-  .todo-due{
-    flex:none; padding:1px 7px; border-radius:9px;
-    font-size:10.5px; font-weight:700; line-height:16px; white-space:nowrap;
-    color:var(--text-muted); background:#F2F4F7;
-  }
-  .todo-due.d-today{ color:#fff; background:#C0392F; }
-  .todo-due.d-over{ color:#A93B48; background:#FBEDEE; }
-  .todo-due.d-tomorrow{ color:#3F5A86; background:#EAF0F9; }
-  .todo-due.d-future{ color:#6B7280; background:#F2F4F7; }
-  .todo-rail-row.done .todo-due{ opacity:0.55; }
-
-  /* 중요 별 */
-  .todo-rail-star{
-    flex:none; border:none; background:transparent; cursor:pointer;
-    color:#D8DBE1; padding:2px; line-height:1; border-radius:5px;
-  }
-  .todo-rail-row:hover .todo-rail-star{ color:#B9BEC7; }
-  .todo-rail-star:hover{ color:var(--navy); }
-  .todo-rail-star.on,
-  .todo-rail-row:hover .todo-rail-star.on{ color:var(--navy); }
-  .todo-rail-star.on svg{ fill:currentColor; }
-
-  /* 삭제 — 평소 거의 안 보이게 */
-  .todo-rail-del{
-    flex:none; border:none; background:transparent; cursor:pointer;
-    color:#EBEDF0; padding:2px 3px; line-height:1; border-radius:5px;
-  }
-  .todo-rail-row:hover .todo-rail-del{ color:#B3B8C2; }
-  .todo-rail-del:hover{ color:#B91C1C; }
-
-  .todo-rail-foot{
-    display:flex; align-items:center; gap:8px;
-    padding:9px 18px; border-top:1px solid var(--line); flex:none;
-    font-size:11.5px; color:var(--text-muted);
-  }
-  .todo-rail-clear{
-    margin-left:auto; flex:none;
-    border:none; background:transparent; cursor:pointer;
-    font-size:11.5px; font-family:inherit; color:var(--text-muted); padding:2px 0;
-  }
-  .todo-rail-clear:hover{ color:var(--navy); }
-  .todo-rail-clear:disabled{ opacity:0.4; cursor:default; }
-  .todo-rail-clear:disabled:hover{ color:var(--text-muted); }
-
-  /* ---------- 상단 업무 카드 (§업무판 라운드) ----------
-     숫자 대시보드가 아니라 "지금 해야 하는 일 제목"을 바로 읽는 판.
-     오른쪽 투두(shin2-todos)를 그대로 읽는 요약 뷰이며 별도 저장소가 없다. */
-  /* 오른쪽 투두 패널(약 440px)이 폭을 쓰기 때문에, 일반 데스크톱에서 한 줄 4개는 카드가
-     208px까지 좁아져 제목이 잘린다. 기본은 2×2로 두어 제목을 넉넉히 읽히게 하고,
-     아주 넓은 화면에서만 한 줄 4개로 편다. */
-  .wcards{
-    display:grid; grid-template-columns:repeat(3, minmax(0, 1fr));
-    gap:14px; margin:2px 0 18px;
-  }
+  /* 날짜별 업무 카드 4개 */
+  .wcards{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; margin:2px 0 10px; }
   .wcard{
-    display:flex; flex-direction:column;
-    min-height:140px; padding:12px 14px;
+    display:flex; flex-direction:column; min-height:112px; padding:16px;
     background:var(--surface); border:1px solid var(--line); border-radius:11px;
   }
   .wcard-head{
     display:flex; align-items:center; gap:6px; flex:none;
-    padding-bottom:8px; margin-bottom:7px; border-bottom:1px solid rgba(0,0,0,0.05);
+    padding-bottom:9px; margin-bottom:5px; border-bottom:1px solid rgba(0,0,0,0.06);
     font-size:12.5px; font-weight:700; color:var(--text);
   }
   .wcard-head .n{ font-size:10.5px; font-weight:700; color:var(--text-muted); }
-  .wcard-list{ flex:1; min-height:0; display:flex; flex-direction:column; gap:1px; }
+  .wcard-list{ flex:1; min-height:0; display:flex; flex-direction:column; }
   .wcard-item{
-    display:flex; align-items:flex-start; gap:8px;
-    padding:4px 3px; border-radius:5px; font-size:12.5px; color:var(--text);
+    display:flex; align-items:center; gap:8px; min-height:34px;
+    padding:4px 2px; border-radius:5px; font-size:12.5px; color:var(--text);
   }
   .wcard-item:hover{ background:rgba(0,0,0,0.03); }
-  .wcard-item input[type="checkbox"]{
-    flex:none; width:14px; height:14px; margin:2px 0 0; accent-color:var(--navy); cursor:pointer;
-  }
-  .wcard-item .star{ flex:none; color:#C79A2E; font-size:11px; line-height:1; }
-  .wcard-item .t{
-    flex:1; min-width:0; font-weight:500; line-height:1.4;
-    white-space:normal; word-break:break-word;   /* 말줄임 대신 줄바꿈 — 제목을 자르지 않는다 */
-  }
-  .wcard-item .d{ margin-top:1px; }
+  .wcard-item input[type="checkbox"]{ flex:none; width:14px; height:14px; margin:0; accent-color:var(--navy); cursor:pointer; }
+  .wcard-item .t{ flex:1; min-width:0; font-weight:500; line-height:1.4; white-space:normal; word-break:break-word; }
   .wcard-item .d{ flex:none; font-size:10.5px; font-weight:700; color:var(--text-muted); }
-  .wcard-empty{ font-size:11.5px; color:#A8AEB9; padding:6px 3px; }
+  .wcard-star{ flex:none; border:none; background:transparent; cursor:pointer; color:#DDE0E5; padding:2px; line-height:1; border-radius:4px; }
+  .wcard-item:hover .wcard-star{ color:#BFC4CC; }
+  .wcard-star:hover{ color:#C79A2E; }
+  .wcard-star.on, .wcard-item:hover .wcard-star.on{ color:#C79A2E; }
+  .wcard-star.on svg{ fill:currentColor; }
+  .wcard-empty{ font-size:11.5px; color:#A8AEB9; padding:6px 2px; }
   .wcard-more{
-    flex:none; margin-top:6px; align-self:flex-start;
-    border:none; background:transparent; cursor:pointer;
-    font-size:11px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
+    flex:none; margin-top:4px; align-self:flex-start; border:none; background:transparent;
+    cursor:pointer; font-size:11px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
   }
   .wcard-more:hover{ color:var(--navy); }
 
-  /* 배경은 거의 흰색 수준으로만 — 가독성이 먼저 */
-  /* 오늘 = 가장 먼저 눈에 들어와야 한다. 카드 전체를 진한 빨강으로 칠하지 않고
-     제목/배지/왼쪽 accent에만 red를 쓰고 배경은 아주 옅은 tint만. */
+  /* 오늘 = RED (카드 전체를 진하게 칠하지 않고 accent/제목/badge에만) */
   .wcard.k-today{ background:#FEF8F8; border-color:#F0DADD; border-left:3px solid #C0392F; }
   .wcard.k-today .wcard-head{ color:#B3283C; }
-  .wcard.k-today .wcard-head .n{ color:#fff; background:#C0392F; }
+  .wcard.k-today .wcard-head .n{ color:#fff; background:#C0392F; padding:0 6px; border-radius:9px; }
   .wcard.k-today .wcard-item .d{ color:#fff; background:#C0392F; padding:1px 7px; border-radius:9px; }
-  /* 기한 지남 = 오늘과 경쟁하지 않게 더 담백하게. 배경은 거의 흰색, "N일 지남"만 red. */
+  /* 기한 지남 = 거의 흰색, "N일 지남"만 muted red */
   .wcard.k-over{ background:var(--surface); border-color:var(--line); }
   .wcard.k-over .wcard-head{ color:#4B5563; }
   .wcard.k-over .wcard-item .d{ color:#B3283C; }
-  /* 내일 = 네이비/블루 포인트 */
+  /* 내일 = 네이비/블루 */
   .wcard.k-tomorrow{ background:#FAFCFE; border-color:#E1E8F2; }
   .wcard.k-tomorrow .wcard-head{ color:var(--navy); }
   .wcard.k-tomorrow .wcard-item .d{ color:#3F5A86; background:#EAF0F9; padding:1px 7px; border-radius:9px; }
+  /* 예정 = 담백한 회색/블루 */
+  .wcard.k-future .wcard-head{ color:#4A6285; }
+  .wcard.k-future .wcard-item .d{ color:#5C6B8A; background:#F2F4F8; padding:1px 7px; border-radius:9px; }
 
-  @media (max-width:1000px){ .wcards{ grid-template-columns:1fr; } }
-
-  /* 상단에서 항목을 클릭했을 때 레일 행을 잠깐 강조 */
-  @keyframes todoRowFlash{ 0%{ background:#FFF6D8; } 100%{ background:transparent; } }
-  .todo-rail-row.flash{ animation:todoRowFlash 1.6s ease; }
-
-  /* 접힘: 레일을 감추고 오른쪽 끝에 체크 아이콘 버튼만 남긴다 */
-  .todo-rail.collapsed{ display:none; }
-  /* 접힌 상태의 재열기 탭 — 예전에는 30px 아이콘 하나라 "투두가 사라졌다"로 오해하기 쉬웠다.
-     오른쪽 가장자리에 세로 라벨 탭으로 붙여 항상 눈에 띄게 한다. */
-  .todo-rail-reopen{
-    display:none;
-    position:fixed; top:50%; right:0; transform:translateY(-50%); z-index:49;
-    flex-direction:column; align-items:center; gap:7px;
-    padding:14px 7px; min-height:120px;
-    background:var(--navy); border:none; border-radius:8px 0 0 8px;
-    color:#fff; cursor:pointer; box-shadow:0 2px 10px rgba(17,24,39,0.14);
+  .wcards-foot{ display:flex; justify-content:flex-end; margin:0 0 16px; }
+  .wcards-nodate{
+    border:none; background:transparent; cursor:pointer;
+    font-size:11.5px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
   }
-  .todo-rail-reopen:hover{ opacity:0.92; }
-  .todo-rail-reopen.show{ display:flex; }
-  .todo-rail-reopen .lbl{
-    writing-mode:vertical-rl; font-size:11.5px; font-weight:700; letter-spacing:1px;
-  }
-  .todo-rail-reopen .cnt{
-    flex:none; min-width:18px; padding:0 5px; border-radius:9px;
-    background:rgba(255,255,255,0.18); font-size:10.5px; font-weight:700; line-height:18px;
-  }
+  .wcards-nodate:hover{ color:var(--navy); }
 
-  /* 반응형 — 큰 모니터는 넓게, 노트북은 축소, 좁으면 기본 접힘(스크립트에서 처리) */
-  @media (min-width:1700px){ :root{ --todo-w: 480px; } }
-  @media (max-width:1500px){ :root{ --todo-w: 400px; } }
-  @media (max-width:1280px){ :root{ --todo-w: 340px; } }
+  /* 전체 할 일 모달 — 평소에는 닫혀 있다 */
+  .tall-overlay{
+    position:fixed; inset:0; z-index:120; background:rgba(17,24,39,0.35);
+    display:none; align-items:flex-start; justify-content:center; padding:60px 20px;
+  }
+  .tall-overlay.open{ display:flex; }
+  .tall-modal{
+    width:100%; max-width:640px; max-height:calc(100vh - 120px);
+    display:flex; flex-direction:column;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  }
+  .tall-head{ display:flex; align-items:center; gap:12px; flex:none; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .tall-title{ font-size:14.5px; font-weight:700; color:var(--text); }
+  .tall-tabs{ display:flex; gap:4px; margin-left:6px; }
+  .tall-tab{
+    height:26px; padding:0 12px; border:none; background:transparent; border-radius:13px;
+    font-size:12.5px; font-family:inherit; font-weight:600; color:var(--text-muted); cursor:pointer;
+  }
+  .tall-tab:hover{ background:#F2F4F7; }
+  .tall-tab.active{ color:var(--navy); background:#EEF1F7; }
+  .tall-close{ margin-left:auto; border:none; background:transparent; cursor:pointer; font-size:20px; line-height:1; color:var(--text-muted); padding:0 4px; }
+  .tall-close:hover{ color:var(--text); }
+  .tall-list{ flex:1; min-height:0; overflow-y:auto; padding:6px 10px 12px; }
+  .tall-row{ display:flex; align-items:center; gap:9px; padding:8px 6px; border-bottom:1px solid #F0F1F4; }
+  .tall-row:last-child{ border-bottom:none; }
+  .tall-row:hover{ background:#F7F8FA; }
+  .tall-row input[type="checkbox"]{ flex:none; width:15px; height:15px; margin:0; accent-color:var(--navy); cursor:pointer; }
+  .tall-row .t{ flex:1; min-width:0; font-size:13px; font-weight:500; color:var(--text); word-break:break-word; }
+  .tall-row.done .t{ text-decoration:line-through; color:#A3A8B4; font-weight:400; }
+  .tall-row input[type="date"]{
+    flex:none; width:126px; height:26px; padding:0 6px;
+    font-size:11.5px; font-family:inherit; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; outline:none;
+  }
+  .tall-star{ flex:none; border:none; background:transparent; cursor:pointer; color:#D8DBE1; padding:2px; line-height:1; }
+  .tall-star:hover{ color:#C79A2E; }
+  .tall-star.on{ color:#C79A2E; }
+  .tall-star.on svg{ fill:currentColor; }
+  .tall-del{ flex:none; border:none; background:transparent; cursor:pointer; color:#DDE0E5; padding:2px 3px; line-height:1; }
+  .tall-row:hover .tall-del{ color:#B3B8C2; }
+  .tall-del:hover{ color:#B91C1C; }
+  .tall-empty{ font-size:12.5px; color:var(--text-muted); padding:18px 8px; }
+
+  @media (max-width:1500px){ .wcards{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  @media (max-width:900px){ .wcards{ grid-template-columns:1fr; } }
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
@@ -2348,13 +2221,30 @@
     </div>
   </div>
 
-  <div class="workrow">
   <main class="main">
     <div class="main-inner">
 
       <!-- 업무 알림 바(§상단 알림 라운드) — 오른쪽 투두 데이터를 그대로 읽어 개수만 보여준다.
            별도 저장소 없음. 렌더/갱신은 투두 레일 스크립트가 함께 담당한다. -->
+      <div class="qadd">
+        <div class="qadd-box">
+          <input type="text" id="qaddInput" autocomplete="off"
+                 placeholder="할 일을 입력하세요. 예: 오늘 예보 전화하기 / 내일 자료 보내기 / 8.20 질문서 회신" />
+          <button type="button" class="qadd-cal" id="qaddCal" title="마감일 선택" aria-label="마감일 선택">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          </button>
+        </div>
+        <button type="button" class="qadd-btn" id="qaddBtn">추가</button>
+        <button type="button" class="qadd-all" id="todoAllBtn">전체 할 일</button>
+      </div>
+      <div class="qadd-daterow" id="qaddDateRow">
+        <input type="date" id="qaddDate" aria-label="마감일" />
+        <span class="qadd-pick" id="qaddPick" style="display:none;"></span>
+        <button type="button" class="qadd-clear" id="qaddClear">지우기</button>
+      </div>
+
       <div class="wcards" id="workCards"></div>
+      <div class="wcards-foot"><button type="button" class="wcards-nodate" id="todoNoDate" style="display:none;"></button></div>
 
       <div class="home-col" id="homeView">
         <div class="search-wrap">
@@ -2596,37 +2486,21 @@
        .main 안쪽에서만 일어나므로, 어떤 메뉴로 이동해도 이 레일은 그대로 남는다.
        체크 아이콘은 사이드바 "내 할 일" 아이콘(#todoIconBtn)과 같은 path를 그대로 썼다.
        ================================================================================ -->
-  <aside class="todo-rail" id="todoRail">
-    <div class="todo-rail-head">
-      <div class="todo-rail-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12.5 2.3 2.3L16 9.5"/></svg>
-        <span>오늘의 투두</span>
-        <span class="todo-rail-badge" id="todoRailBadge">미완료 0</span>
-      </div>
-      <button type="button" class="todo-rail-collapse" id="todoRailCollapse" title="투두 접기" aria-label="투두 접기">&lsaquo;</button>
-    </div>
-    <div class="todo-rail-add">
-      <div class="todo-rail-add-wrap">
-        <input type="text" id="todoRailInput" placeholder="할 일을 입력하세요" autocomplete="off" />
-        <button type="button" class="todo-rail-datebtn" id="todoRailDateBtn" title="마감일 선택" aria-label="마감일 선택">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        </button>
-      </div>
-      <button type="button" id="todoRailAddBtn">+ 추가</button>
-    </div>
-    <div class="todo-rail-daterow" id="todoRailDateRow">
-      <input type="date" id="todoRailDate" aria-label="마감일" />
-      <span class="todo-rail-duepick" id="todoRailDuePick" style="display:none;"></span>
-      <button type="button" class="todo-rail-dateclear" id="todoRailDateClear">지우기</button>
-    </div>
-    <div class="todo-rail-list" id="todoRailList"></div>
-    <div class="todo-rail-foot">
-      <span id="todoRailCount">전체 0개 · 완료 0개</span>
-      <button type="button" class="todo-rail-clear" id="todoRailClearDone" title="체크한 항목을 목록에서 치웁니다. 처리완료 이력은 기존 [내 할 일]에 그대로 남습니다.">완료 항목 치우기</button>
-    </div>
-  </aside>
   </div>
 
+  <div class="tall-overlay" id="tallOverlay">
+    <div class="tall-modal">
+      <div class="tall-head">
+        <span class="tall-title">전체 할 일</span>
+        <div class="tall-tabs">
+          <button type="button" class="tall-tab active" data-tall-tab="active">미완료</button>
+          <button type="button" class="tall-tab" data-tall-tab="done">완료</button>
+        </div>
+        <button type="button" class="tall-close" id="tallClose" aria-label="닫기">&times;</button>
+      </div>
+      <div class="tall-list" id="tallList"></div>
+    </div>
+  </div>
   <nav class="botnav">
     <button type="button" class="nav-item" id="navCompanies">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-4h6v4M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg>
@@ -2655,11 +2529,6 @@
       </a>
     <button type="button" class="nav-approval-row" id="calApprovalPill" style="display:none;" title="팀장 일정 승인대기"></button>
   </nav>
-  <button type="button" class="todo-rail-reopen" id="todoRailReopen" title="오늘의 투두 열기" aria-label="오늘의 투두 열기">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12.5 2.3 2.3L16 9.5"/></svg>
-    <span class="lbl">오늘의 투두</span>
-    <span class="cnt" id="todoRailReopenCnt">0</span>
-  </button>
 </div>
 
 <script>
@@ -12342,58 +12211,43 @@ ${text}
 <script>
 (function(){
   // ================================================================================
-  // 오늘의 투두 (우측 레일) — 마감 날짜 기준 자동 분류
-  //
-  // 저장: localStorage[ SHIN2_USER.nsKey('shin2-todos') ]  ← 기존 키/구조 그대로.
-  // 항목: { id, text, done, completedAt, important?, dueDate? }
-  //   - important / dueDate는 값이 있을 때만 붙는 선택 필드다. 기존 항목엔 없으므로
-  //     각각 false / null로 취급한다(마이그레이션·초기화·재생성·ID 변경 없음).
-  // 기존 "내 할 일"(사이드바 슬라이드 패널)과 같은 배열을 공유하며, 그쪽 코드는 고치지
-  // 않는다 — 저장 후 'shin2-cloud-update'({key:'todos'})를 쏘면 그쪽 기존 리스너가
-  // 알아서 다시 읽어 다시 그린다.
-  //
-  // 분류는 저장값이 아니라 "오늘 날짜"로 매번 새로 계산한다. 그래서 자정이 지나면
-  // 사용자가 아무것도 안 해도 내일 → 오늘 → 1일 지남으로 저절로 이동한다.
+  // 상단 통합 투두 (§오른쪽 레일 폐기 라운드)
+  //   빠른 입력(자연어 날짜 + 달력) → 날짜별 업무 카드 4개 → 전체 할 일 모달.
+  // 저장소는 기존 그대로: localStorage[ SHIN2_USER.nsKey('shin2-todos') ]
+  //   항목 { id, text, done, completedAt, important?, dueDate? } — 구조/ID 변경 없음.
+  //   새 키에 복사본을 만들지 않는다(용량 문제 재발 방지). 기존 "내 할 일" 슬라이드 패널과
+  //   같은 배열을 공유하며, 저장 후 'shin2-cloud-update'({key:'todos'})로 그쪽을 갱신시킨다.
   // ================================================================================
   var TODO_KEY = window.SHIN2_USER ? window.SHIN2_USER.nsKey('shin2-todos') : 'shin2-todos';
-  var COLLAPSE_KEY = 'netform_todo_collapsed_v1';
-  var DONE_FOLD_KEY = 'netform_todo_donefold_v1';
-  var LEGACY_KEY = 'netform_todo_v1';
-  var LEGACY_FLAG = 'netform_todo_merged_v1';
 
-  var railEl = document.getElementById('todoRail');
-  var listEl = document.getElementById('todoRailList');
-  var badgeEl = document.getElementById('todoRailBadge');
-  var inputEl = document.getElementById('todoRailInput');
-  var addBtn = document.getElementById('todoRailAddBtn');
-  var countEl = document.getElementById('todoRailCount');
-  var clearBtn = document.getElementById('todoRailClearDone');
-  var collapseBtn = document.getElementById('todoRailCollapse');
-  var reopenBtn = document.getElementById('todoRailReopen');
-  var dateBtn = document.getElementById('todoRailDateBtn');
-  var dateRow = document.getElementById('todoRailDateRow');
-  var dateInput = document.getElementById('todoRailDate');
-  var duePick = document.getElementById('todoRailDuePick');
-  var dateClear = document.getElementById('todoRailDateClear');
-  if(!railEl || !listEl) return;
+  var qInput = document.getElementById('qaddInput');
+  var qBtn   = document.getElementById('qaddBtn');
+  var qCal   = document.getElementById('qaddCal');
+  var qRow   = document.getElementById('qaddDateRow');
+  var qDate  = document.getElementById('qaddDate');
+  var qPick  = document.getElementById('qaddPick');
+  var qClear = document.getElementById('qaddClear');
+  var cardsEl = document.getElementById('workCards');
+  var noDateBtn = document.getElementById('todoNoDate');
+  var allBtn = document.getElementById('todoAllBtn');
+  var tallOverlay = document.getElementById('tallOverlay');
+  var tallList = document.getElementById('tallList');
+  var tallClose = document.getElementById('tallClose');
+  if(!cardsEl) return;
 
-  var justDone = Object.create(null);   // 이 화면에서 방금 완료한 항목(취소선으로 잠시 유지)
-  var pendingDue = '';                  // 입력 중인 마감일
-  var doneFolded = false;
-  try{ doneFolded = localStorage.getItem(DONE_FOLD_KEY) === '1'; }catch(e){}
+  var pendingDue = '';
+  var cardExpanded = Object.create(null);
+  var tallTab = 'active';
+  var CARD_MAX = 4;
 
   function esc(v){
     return String(v == null ? '' : v)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
-  function genId(){
-    return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
-  }
+  function genId(){ return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
 
-  // ---- 로컬(한국) 날짜 기준 계산 ----
-  // new Date('YYYY-MM-DD')는 UTC로 해석돼 한국에서 하루가 밀리므로 절대 쓰지 않는다.
-  // 연/월/일을 쪼개 로컬 자정 Date를 만들고, 오늘도 로컬 자정으로 정규화해서 뺀다.
+  // ---- 로컬(한국) 날짜 기준 ----
   function parseDue(v){
     if(!v || typeof v !== 'string') return null;
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
@@ -12401,117 +12255,19 @@ ${text}
     var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
     return isNaN(d.getTime()) ? null : d;
   }
-  function todayMid(){
-    var n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
-  }
-  function dayKey(){
-    var n = new Date();
-    return n.getFullYear() + '-' + (n.getMonth() + 1) + '-' + n.getDate();
-  }
-  // 양수 = 지난 일수, 0 = 오늘, -1 = 내일, null = 마감일 없음
-  function dueDiff(v){
-    var d = parseDue(v);
-    if(!d) return null;
-    return Math.round((todayMid().getTime() - d.getTime()) / 86400000);
-  }
+  function todayMid(){ var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function dayKey(){ var n = new Date(); return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate(); }
+  function dueDiff(v){ var d = parseDue(v); return d ? Math.round((todayMid().getTime()-d.getTime())/86400000) : null; }
   function dueOf(t){ return (t && t.dueDate) ? t.dueDate : null; }
   function isImportant(t){ return !!(t && t.important); }
-
   function dueText(v){
     var n = dueDiff(v);
     if(n === null) return '';
     if(n === 0) return '오늘';
     if(n > 0) return n + '일 지남';
     var d = parseDue(v);
-    return (d.getMonth() + 1) + '/' + d.getDate();
+    return (d.getMonth()+1) + '/' + d.getDate();
   }
-  // ================================================================
-  // 자연어 날짜 인식 — "전화하기 내일", "자료 보내기 8.20" 처럼 그냥 써도 마감일이 잡힌다.
-  // 인식하면 제목에서 그 표현만 잘라내고 나머지를 할 일 제목으로 쓴다.
-  // 전부 로컬 날짜 기준이라 UTC로 하루가 밀리지 않는다.
-  // ================================================================
-  function ymd(dt){
-    return dt.getFullYear() + '-' +
-      String(dt.getMonth() + 1).padStart(2, '0') + '-' +
-      String(dt.getDate()).padStart(2, '0');
-  }
-  function addDays(base, n){
-    return new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
-  }
-  var WD_IDX = { '월':0, '화':1, '수':2, '목':3, '금':4, '토':5, '일':6 };
-
-  // 뒤쪽(문장 끝)에 있는 표현을 우선으로 잡는다 — "예보 전화받기 8.20" 형태가 가장 흔하다.
-  var NL_RULES = [
-    // 2026.8.20 / 2026-08-20 / 2026/8/20
-    { re: /(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\s*\.?/g,
-      make: function(m){ return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])); } },
-    // 8월20일 / 8월 20
-    { re: /(\d{1,2})\s*월\s*(\d{1,2})\s*일?/g,
-      make: function(m, today){ return mdThisYear(Number(m[1]), Number(m[2]), today); } },
-    // 8.20 / 8/20  (앞뒤에 다른 숫자가 붙지 않을 때만)
-    { re: /(?:^|[^\d])(\d{1,2})\s*[.\/]\s*(\d{1,2})(?![\d])\.?/g,
-      make: function(m, today){ return mdThisYear(Number(m[1]), Number(m[2]), today); },
-      trimLead: true },
-    // 이번주 금요일 / 다음주 월요일
-    { re: /(이번\s*주|금주|다음\s*주|담주)\s*([월화수목금토일])\s*요일?/g,
-      make: function(m, today){
-        var idx = WD_IDX[m[2]];
-        var cur = (today.getDay() + 6) % 7;             // 월=0 기준
-        var monday = addDays(today, -cur);
-        var next = /다음|담/.test(m[1]);
-        return addDays(monday, (next ? 7 : 0) + idx);
-      } },
-    // 오늘 / 내일 / 모레 / 내일모레 / 글피
-    { re: /(내일\s*모레|내일모레|모레|내일|오늘|글피)/g,
-      make: function(m, today){
-        var w = m[1].replace(/\s+/g, '');
-        if(w === '오늘') return today;
-        if(w === '내일') return addDays(today, 1);
-        if(w === '글피') return addDays(today, 3);
-        return addDays(today, 2);                        // 모레 / 내일모레
-      } }
-  ];
-  // 연도 없는 월/일은 우선 올해로 본다.
-  function mdThisYear(mo, dy, today){
-    if(mo < 1 || mo > 12 || dy < 1 || dy > 31) return null;
-    var d = new Date(today.getFullYear(), mo - 1, dy);
-    if(d.getMonth() !== mo - 1) return null;             // 2/30 같은 값 걸러내기
-    return d;
-  }
-
-  // 반환: { title, dueDate } — 인식 실패면 dueDate가 null이고 title은 원문 그대로.
-  function parseNatural(raw){
-    var text = String(raw == null ? '' : raw);
-    var today = todayMid();
-    var best = null;   // 문장에서 가장 뒤에 있는 매치를 채택
-    NL_RULES.forEach(function(rule){
-      rule.re.lastIndex = 0;
-      var m;
-      while((m = rule.re.exec(text)) !== null){
-        var d = null;
-        try{ d = rule.make(m, today); }catch(e){ d = null; }
-        if(!d || isNaN(d.getTime())) continue;
-        var start = m.index, matched = m[0];
-        if(rule.trimLead){                                // 앞 구분자 한 글자는 잘라내지 않는다
-          var lead = matched.match(/^[^\d]*/)[0];
-          start += lead.length;
-          matched = matched.slice(lead.length);
-        }
-        var cand = { start: start, len: matched.length, date: d };
-        if(!best){ best = cand; }
-        else if(cand.start >= best.start + best.len){ best = cand; }        // 겹치지 않으면 뒤쪽 우선
-        else if(cand.len > best.len){ best = cand; }                        // 겹치면 더 긴(구체적인) 쪽
-      }
-    });
-    if(!best) return { title: text.trim(), dueDate: null };
-    var title = (text.slice(0, best.start) + ' ' + text.slice(best.start + best.len))
-                  .replace(/\s+/g, ' ').trim();
-    if(!title) return { title: text.trim(), dueDate: null };   // 제목이 통째로 날짜면 무시
-    return { title: title, dueDate: ymd(best.date) };
-  }
-
-  // 미완료 항목의 구역: over / today / tomorrow / future / plain
   function bucketOf(t){
     var n = dueDiff(dueOf(t));
     if(n === null) return 'plain';
@@ -12521,6 +12277,71 @@ ${text}
     return 'future';
   }
 
+  // ---- 자연어 날짜 ----
+  function ymd(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+  function addDays(base, n){ return new Date(base.getFullYear(), base.getMonth(), base.getDate()+n); }
+  var WD_IDX = { '월':0,'화':1,'수':2,'목':3,'금':4,'토':5,'일':6 };
+  function mdThisYear(mo, dy, today){
+    if(mo < 1 || mo > 12 || dy < 1 || dy > 31) return null;
+    var d = new Date(today.getFullYear(), mo-1, dy);
+    return d.getMonth() === mo-1 ? d : null;
+  }
+  var NL_RULES = [
+    { re:/(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\s*\.?/g,
+      make:function(m){ return new Date(Number(m[1]), Number(m[2])-1, Number(m[3])); } },
+    { re:/(\d{1,2})\s*월\s*(\d{1,2})\s*일?/g,
+      make:function(m,t){ return mdThisYear(Number(m[1]), Number(m[2]), t); } },
+    { re:/(?:^|[^\d])(\d{1,2})\s*[.\/]\s*(\d{1,2})(?![\d])\.?/g,
+      make:function(m,t){ return mdThisYear(Number(m[1]), Number(m[2]), t); }, trimLead:true },
+    { re:/(이번\s*주|금주|다음\s*주|담주)\s*([월화수목금토일])\s*요일?/g,
+      make:function(m,t){
+        var idx = WD_IDX[m[2]], cur = (t.getDay()+6)%7, monday = addDays(t, -cur);
+        return addDays(monday, (/다음|담/.test(m[1]) ? 7 : 0) + idx);
+      } },
+    // "금요일"처럼 요일만 쓰면 오늘 이후로 가장 가까운 그 요일
+    { re:/(?:^|[^가-힣])([월화수목금토일])\s*요일/g,
+      make:function(m,t){
+        var idx = WD_IDX[m[1]], cur = (t.getDay()+6)%7;
+        var diff = idx - cur; if(diff <= 0) diff += 7;
+        return addDays(t, diff);
+      }, trimLead:true },
+    { re:/(내일\s*모레|내일모레|모레|내일|오늘|글피)/g,
+      make:function(m,t){
+        var w = m[1].replace(/\s+/g,'');
+        if(w === '오늘') return t;
+        if(w === '내일') return addDays(t,1);
+        if(w === '글피') return addDays(t,3);
+        return addDays(t,2);
+      } }
+  ];
+  // 문장 어디에 있든(앞/뒤) 인식하고, 인식한 표현은 제목에서 잘라낸다.
+  function parseNatural(raw){
+    var text = String(raw == null ? '' : raw), today = todayMid(), best = null;
+    NL_RULES.forEach(function(rule){
+      rule.re.lastIndex = 0;
+      var m;
+      while((m = rule.re.exec(text)) !== null){
+        var d = null;
+        try{ d = rule.make(m, today); }catch(e){ d = null; }
+        if(!d || isNaN(d.getTime())) continue;
+        var start = m.index, matched = m[0];
+        if(rule.trimLead){
+          var lead = matched.match(/^[^\d가-힣]*/)[0];
+          start += lead.length; matched = matched.slice(lead.length);
+        }
+        var cand = { start:start, len:matched.length, date:d };
+        if(!best) best = cand;
+        else if(cand.start >= best.start + best.len) best = cand;   // 겹치지 않으면 뒤쪽 우선
+        else if(cand.len > best.len) best = cand;                   // 겹치면 더 구체적인 쪽
+      }
+    });
+    if(!best) return { title:text.trim(), dueDate:null };
+    var title = (text.slice(0,best.start) + ' ' + text.slice(best.start+best.len)).replace(/\s+/g,' ').trim();
+    if(!title) return { title:text.trim(), dueDate:null };
+    return { title:title, dueDate:ymd(best.date) };
+  }
+
+  // ---- 저장소 ----
   function load(){
     try{
       var raw = localStorage.getItem(TODO_KEY);
@@ -12528,41 +12349,30 @@ ${text}
       return Array.isArray(arr) ? arr : [];
     }catch(e){ return []; }
   }
-
-  // 저장 실패 시 "무엇이 공간을 쓰고 있는지"까지 함께 알려준다 — 그냥 "부족합니다"만 뜨면
-  // 사용자가 다음에 뭘 해야 할지 알 수 없어서, 할 일이 화면에 안 나오는 것으로만 보인다.
-  // 읽기 전용이며 어떤 항목도 지우지 않는다.
   function storageReport(){
     var rows = [], total = 0;
     try{
-      for(var i = 0; i < localStorage.length; i++){
-        var k = localStorage.key(i);
-        var v = localStorage.getItem(k) || '';
-        var bytes = (k.length + v.length) * 2;   // localStorage는 UTF-16으로 센다
-        total += bytes;
-        rows.push([k, bytes]);
+      for(var i=0;i<localStorage.length;i++){
+        var k = localStorage.key(i), v = localStorage.getItem(k) || '';
+        var bytes = (k.length + v.length) * 2;
+        total += bytes; rows.push([k, bytes]);
       }
     }catch(e){ return ''; }
-    rows.sort(function(a, b){ return b[1] - a[1]; });
-    var lines = rows.slice(0, 5).map(function(r){
-      return '  ' + (r[1] / 1048576).toFixed(2) + 'MB  ' + r[0];
-    });
-    return '\n\n이 브라우저가 쓰는 총 용량: ' + (total / 1048576).toFixed(2) + 'MB'
-         + '\n가장 많이 차지하는 항목\n' + lines.join('\n');
+    rows.sort(function(a,b){ return b[1]-a[1]; });
+    return '\n\n이 브라우저가 쓰는 총 용량: ' + (total/1048576).toFixed(2) + 'MB\n가장 많이 차지하는 항목\n'
+      + rows.slice(0,5).map(function(r){ return '  ' + (r[1]/1048576).toFixed(2) + 'MB  ' + r[0]; }).join('\n');
   }
-
   var quotaWarned = false;
   function save(todos){
     try{
       localStorage.setItem(TODO_KEY, JSON.stringify(todos));
       quotaWarned = false;
     }catch(e){
-      console.error('[오늘의 투두] 저장 실패', e);
+      console.error('[할 일] 저장 실패', e);
       if(!quotaWarned){
         quotaWarned = true;
         alert('저장 공간이 가득 차서 할 일을 저장하지 못했습니다.\n그래서 방금 입력한 항목이 목록에 나타나지 않습니다.'
-            + storageReport()
-            + '\n\n위 항목을 정리하면 정상 저장됩니다. (입력하신 내용은 그대로 남아 있습니다)');
+            + storageReport() + '\n\n위 항목을 정리하면 정상 저장됩니다.');
       }
       return false;
     }
@@ -12570,161 +12380,59 @@ ${text}
       if(window.__shin2CloudSync && typeof window.__shin2CloudSync.push === 'function'){
         window.__shin2CloudSync.push('todos', todos);
       }
-    }catch(e){ console.error('[오늘의 투두] 클라우드 전달 실패', e); }
-    try{
-      window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail: { key: 'todos' } }));
-    }catch(e){}
+    }catch(e){ console.error('[할 일] 클라우드 전달 실패', e); }
+    try{ window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail:{ key:'todos' } })); }catch(e){}
     return true;
   }
-
-  // 통합 전 독립 저장소에 남아있던 항목을 1회만 합친다(원본 키는 지우지 않는다).
-  function mergeLegacyOnce(){
-    try{ if(localStorage.getItem(LEGACY_FLAG) === '1') return; }catch(e){ return; }
-    var legacy = [];
-    try{
-      var raw = localStorage.getItem(LEGACY_KEY);
-      legacy = raw ? JSON.parse(raw) : [];
-    }catch(e){ legacy = []; }
-    if(!Array.isArray(legacy)) legacy = [];
+  function mutate(id, fn){
     var todos = load();
-    var added = 0;
-    legacy.forEach(function(x){
-      if(!x || x.text == null) return;
-      var text = String(x.text).trim();
-      if(!text) return;
-      if(todos.some(function(t){ return String(t.text == null ? '' : t.text).trim() === text; })) return;
-      todos.push({ id: genId(), text: text, done: !!x.completed, completedAt: x.completed ? Date.now() : null });
-      added++;
-    });
-    if(added) save(todos);
-    try{ localStorage.setItem(LEGACY_FLAG, '1'); }catch(e){}
+    var t = todos.find(function(x){ return x.id === id; });
+    if(!t){ render(); return; }
+    fn(t, todos);
+    save(todos);
+    render();
   }
 
-  function rowHtml(it){
-    var star = isImportant(it);
-    var due = dueOf(it);
-    // 구역이 미완료/완료로 단순해졌으므로, 색은 구역이 아니라 각 항목의 실제 마감 상태로 정한다.
-    var bucket = it.done ? 'done' : bucketOf(it);
-    return '<div class="todo-rail-row ' + (it.done ? 'done' : 'b-' + bucket) + (star ? ' important' : '') + '" data-id="' + esc(it.id) + '">' +
-      '<input type="checkbox" data-act="toggle"' + (it.done ? ' checked' : '') + ' />' +
-      '<span class="todo-rail-text">' + esc(it.text) + '</span>' +
-      (due ? '<span class="todo-due d-' + bucket + '">' + esc(dueText(due)) + '</span>' : '') +
-      '<button type="button" class="todo-rail-star' + (star ? ' on' : '') + '" data-act="star" title="' + (star ? '중요 해제' : '중요 표시') + '" aria-label="중요 표시" aria-pressed="' + (star ? 'true' : 'false') + '">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>' +
-      '</button>' +
-      '<button type="button" class="todo-rail-del" data-act="del" title="삭제" aria-label="삭제">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>' +
-      '</button>' +
-    '</div>';
-  }
-
-  // 구역 안 정렬: 중요 먼저 → 마감일 빠른 순 → 기존 배열 순서
-  function sortInSection(rows){
-    return rows.map(function(t, i){ return { t: t, i: i }; })
-      .sort(function(a, b){
-        var ia = isImportant(a.t) ? 0 : 1, ib = isImportant(b.t) ? 0 : 1;
+  // ---- 정렬: 중요 먼저 → 이른 마감일 → 기존 순서 ----
+  function sortRows(rows){
+    return rows.map(function(t,i){ return {t:t,i:i}; })
+      .sort(function(a,b){
+        var ia = isImportant(a.t)?0:1, ib = isImportant(b.t)?0:1;
         if(ia !== ib) return ia - ib;
         var da = parseDue(dueOf(a.t)), db = parseDue(dueOf(b.t));
         if(da && db && da.getTime() !== db.getTime()) return da - db;
         return a.i - b.i;
-      })
-      .map(function(x){ return x.t; });
+      }).map(function(x){ return x.t; });
   }
 
-  function secHtml(kind, label, rows, extraHead){
-    if(rows.length === 0) return '';
-    return '<div class="todo-sec ' + kind + '">' +
-      '<div class="todo-sec-head"><span>' + label + '</span>' +
-        (extraHead || '') +
-        '<span class="n">' + rows.length + '</span>' +
-      '</div>' +
-      (kind === 'done' && doneFolded ? '' : rows.map(rowHtml).join('')) +
+  var STAR_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>';
+  var TRASH_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+
+  var CARD_KINDS = [
+    { key:'today',    label:'오늘 해야 할 일', empty:'오늘 예정된 일이 없습니다.' },
+    { key:'over',     label:'기한 지난 일',    empty:'기한 지난 일이 없습니다.' },
+    { key:'tomorrow', label:'내일 해야 할 일', empty:'내일 예정된 일이 없습니다.' },
+    { key:'future',   label:'예정된 일',       empty:'예정된 일이 없습니다.' }
+  ];
+
+  function cardItemHtml(t, kind){
+    var due = dueOf(t), star = isImportant(t);
+    return '<div class="wcard-item" data-id="' + esc(t.id) + '">' +
+      '<input type="checkbox" data-act="done" />' +
+      '<span class="t">' + esc(t.text) + '</span>' +
+      (due ? '<span class="d">' + esc(dueText(due)) + '</span>' : '') +
+      '<button type="button" class="wcard-star' + (star ? ' on' : '') + '" data-act="star" title="' + (star ? '중요 해제' : '중요 표시') + '" aria-pressed="' + (star?'true':'false') + '">' + STAR_SVG + '</button>' +
     '</div>';
-  }
-
-  // 미완료 정렬: 급한 순(기한 지남 → 오늘 → 내일 → 예정 → 날짜 없음), 같으면 중요 먼저,
-  // 그 다음 이른 마감일, 마지막으로 기존 배열 순서(수동 순서변경 보존).
-  var BUCKET_RANK = { over:0, today:1, tomorrow:2, future:3, plain:4 };
-  function sortActive(rows){
-    return rows.map(function(t, i){ return { t: t, i: i }; })
-      .sort(function(x, y){
-        var ra = BUCKET_RANK[bucketOf(x.t)], rb = BUCKET_RANK[bucketOf(y.t)];
-        if(ra !== rb) return ra - rb;
-        var ia = isImportant(x.t) ? 0 : 1, ib = isImportant(y.t) ? 0 : 1;
-        if(ia !== ib) return ia - ib;
-        var da = parseDue(dueOf(x.t)), db = parseDue(dueOf(y.t));
-        if(da && db && da.getTime() !== db.getTime()) return da - db;
-        return x.i - y.i;
-      })
-      .map(function(z){ return z.t; });
   }
 
   function render(){
     var todos = load();
-    var visible = todos.filter(function(t){ return !t.done || justDone[t.id]; });
-    // 중요(미완료) → 일반 미완료 → 완료 순. 중요도 관리는 이 레일에서만 한다.
-    var actAll = visible.filter(function(t){ return !t.done; });
-    var imp = sortActive(actAll.filter(isImportant));
-    var active = sortActive(actAll.filter(function(t){ return !isImportant(t); }));
-    var done = visible.filter(function(t){ return t.done; });
+    var active = todos.filter(function(t){ return !t.done; });
+    var g = { today:[], over:[], tomorrow:[], future:[], plain:[] };
+    active.forEach(function(t){ g[bucketOf(t)].push(t); });
 
-    if(visible.length === 0){
-      listEl.innerHTML = '<div class="todo-rail-empty">할 일이 없습니다. 위에서 추가해보세요.</div>';
-    } else {
-      listEl.innerHTML =
-        secHtml('imp', '★ 중요', imp) +
-        secHtml('active', '미완료', active) +
-        secHtml('done', '완료', done,
-          '<button type="button" class="todo-sec-toggle" data-act="foldDone">' + (doneFolded ? '펼치기' : '접기') + '</button>');
-    }
-
-    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + done.length + '개';
-    clearBtn.disabled = done.length === 0;
-    var activeCount = todos.filter(function(t){ return !t.done; }).length;
-    badgeEl.textContent = '미완료 ' + activeCount;
-    badgeEl.classList.toggle('zero', activeCount === 0);
-    var reopenCnt = document.getElementById('todoRailReopenCnt');
-    if(reopenCnt) reopenCnt.textContent = String(activeCount);
-    renderWorkCards(todos);
-  }
-
-  // ================================================================
-  // 상단 업무 카드 — 오른쪽 투두(shin2-todos)를 그대로 읽는 요약 뷰.
-  // 별도 저장소/중복 저장 없음. 카드에서 체크하면 같은 todo id를 고치므로 오른쪽 레일에도
-  // 즉시 반영되고, 반대로 레일에서 바꾸면 render()가 카드까지 함께 다시 그린다.
-  // 같은 항목이 "오늘"과 "중요"에 동시에 나올 수 있고, 어느 쪽에서 체크해도 양쪽에서 빠진다.
-  // ================================================================
-  var cardsEl = document.getElementById('workCards');
-  var CARD_MAX = 5;                    // 기본 노출 개수
-  var cardExpanded = Object.create(null);
-
-  var CARD_KINDS = [
-    { key:'today',     label:'오늘 해야 할 일',  empty:'오늘 예정된 일이 없습니다.',
-      pick:function(t){ return !t.done && bucketOf(t) === 'today'; } },
-    { key:'over',      label:'기한 지난 일',     empty:'기한 지난 일이 없습니다.',
-      pick:function(t){ return !t.done && bucketOf(t) === 'over'; } },
-    { key:'tomorrow',  label:'내일 해야 할 일',  empty:'내일 예정된 일이 없습니다.',
-      pick:function(t){ return !t.done && bucketOf(t) === 'tomorrow'; } }
-  ];
-  // 상단 카드는 중요 여부와 무관하게 오직 날짜만 본다 — 중요 항목이라도 오늘 마감이면
-  // "오늘 해야 할 일"에 정상으로 들어간다. 중요도(★) 관리는 오른쪽 레일에서만 한다.
-
-  function cardItemHtml(t, kind){
-    var due = dueOf(t);
-    var right = '';
-    if(kind === 'over') right = dueText(due);                  // "1일 지남"
-    else if(due && kind !== 'today') right = dueText(due);      // 내일은 날짜
-    return '<label class="wcard-item">' +
-      '<input type="checkbox" data-card-id="' + esc(t.id) + '" />' +
-      '<span class="t" title="' + esc(t.text) + '">' + esc(t.text) + '</span>' +
-      (right ? '<span class="d">' + esc(right) + '</span>' : '') +
-    '</label>';
-  }
-
-  function renderWorkCards(todos){
-    if(!cardsEl) return;
     cardsEl.innerHTML = CARD_KINDS.map(function(k){
-      var rows = sortActive(todos.filter(k.pick));
+      var rows = sortRows(g[k.key]);
       var open = !!cardExpanded[k.key];
       var shown = open ? rows : rows.slice(0, CARD_MAX);
       var rest = rows.length - shown.length;
@@ -12732,196 +12440,162 @@ ${text}
         ? '<div class="wcard-empty">' + k.empty + '</div>'
         : shown.map(function(t){ return cardItemHtml(t, k.key); }).join('');
       var more = '';
-      if(rest > 0) more = '<button type="button" class="wcard-more" data-card-more="' + k.key + '">+ ' + rest + '개 더 보기</button>';
-      else if(open && rows.length > CARD_MAX) more = '<button type="button" class="wcard-more" data-card-more="' + k.key + '">접기</button>';
+      if(rest > 0) more = '<button type="button" class="wcard-more" data-more="' + k.key + '">+ ' + rest + '개 더 보기</button>';
+      else if(open && rows.length > CARD_MAX) more = '<button type="button" class="wcard-more" data-more="' + k.key + '">접기</button>';
       return '<div class="wcard k-' + k.key + '">' +
-        '<div class="wcard-head"><span>' + k.label + '</span>' +
-          (rows.length ? '<span class="n">' + rows.length + '</span>' : '') +
-        '</div>' +
+        '<div class="wcard-head"><span>' + k.label + '</span>' + (rows.length ? '<span class="n">' + rows.length + '</span>' : '') + '</div>' +
         '<div class="wcard-list">' + body + '</div>' + more +
       '</div>';
     }).join('');
-  }
 
-  if(cardsEl){
-    // 카드에서 체크 → 기존 todo를 그대로 완료 처리(같은 id, 같은 저장 경로).
-    cardsEl.addEventListener('change', function(e){
-      var box = e.target.closest('[data-card-id]');
-      if(!box) return;
-      var id = box.getAttribute('data-card-id');
-      var todos = load();
-      var t = todos.find(function(x){ return x.id === id; });
-      if(!t){ render(); return; }
-      t.done = true;
-      t.completedAt = Date.now();
-      justDone[id] = true;      // 오른쪽 레일에서는 취소선 상태로 잠시 남겨 되돌릴 수 있게
-      save(todos);
-      render();
-    });
-    cardsEl.addEventListener('click', function(e){
-      var more = e.target.closest('[data-card-more]');
-      if(!more) return;
-      var k = more.getAttribute('data-card-more');
-      cardExpanded[k] = !cardExpanded[k];
-      render();
-    });
-  }
-
-  // ---- 마감일 입력 ----
-  function renderDuePick(){
-    if(pendingDue){
-      duePick.textContent = dueText(pendingDue);
-      duePick.style.display = '';
-      dateBtn.classList.add('on');
+    // 날짜 없는 할 일은 카드로 만들지 않고 작은 링크로만 알린다
+    if(g.plain.length){
+      noDateBtn.textContent = '날짜 없는 할 일 ' + g.plain.length + '개';
+      noDateBtn.style.display = '';
     } else {
-      duePick.style.display = 'none';
-      dateBtn.classList.remove('on');
+      noDateBtn.style.display = 'none';
+    }
+    if(tallOverlay.classList.contains('open')) renderTall();
+  }
+
+  cardsEl.addEventListener('change', function(e){
+    var box = e.target.closest('[data-act="done"]');
+    if(!box) return;
+    var row = box.closest('.wcard-item');
+    if(!row) return;
+    mutate(row.getAttribute('data-id'), function(t){ t.done = true; t.completedAt = Date.now(); });
+  });
+  cardsEl.addEventListener('click', function(e){
+    var more = e.target.closest('[data-more]');
+    if(more){ var k = more.getAttribute('data-more'); cardExpanded[k] = !cardExpanded[k]; render(); return; }
+    var star = e.target.closest('[data-act="star"]');
+    if(!star) return;
+    var row = star.closest('.wcard-item');
+    if(!row) return;
+    mutate(row.getAttribute('data-id'), function(t){ t.important = !isImportant(t); });
+  });
+
+  // ---- 빠른 입력 ----
+  function renderPick(){
+    if(pendingDue){
+      qPick.textContent = dueText(pendingDue) || pendingDue;
+      qPick.style.display = ''; qCal.classList.add('on');
+    } else {
+      qPick.style.display = 'none'; qCal.classList.remove('on');
     }
   }
-  dateBtn.addEventListener('click', function(){
-    var open = !dateRow.classList.contains('open');
-    dateRow.classList.toggle('open', open);
-    if(open){
-      try{ if(dateInput.showPicker) dateInput.showPicker(); else dateInput.focus(); }catch(e){ dateInput.focus(); }
-    }
+  qCal.addEventListener('click', function(){
+    var open = !qRow.classList.contains('open');
+    qRow.classList.toggle('open', open);
+    if(open){ try{ if(qDate.showPicker) qDate.showPicker(); else qDate.focus(); }catch(e){ qDate.focus(); } }
   });
-  dateInput.addEventListener('change', function(){
-    pendingDue = dateInput.value || '';
-    renderDuePick();
-    // 네이티브 달력이 포커스를 물고 있으면 Enter가 날짜쪽으로 먹히므로 입력창으로 돌려준다.
-    try{ inputEl.focus(); }catch(e){}
+  qDate.addEventListener('change', function(){
+    pendingDue = qDate.value || '';
+    renderPick();
+    try{ qInput.focus(); }catch(e){}
   });
-  dateClear.addEventListener('click', function(){
-    pendingDue = '';
-    dateInput.value = '';
-    renderDuePick();
-  });
+  qClear.addEventListener('click', function(){ pendingDue = ''; qDate.value = ''; renderPick(); });
 
   function addItem(){
-    var raw = inputEl.value.trim();
+    var raw = qInput.value.trim();
     if(!raw) return;
-    // 우선순위: 1) 달력에서 직접 고른 날짜  2) 입력문 안의 자연어 날짜  3) 없음
     var nl = parseNatural(raw);
-    var text = pendingDue ? raw : nl.title;     // 달력을 썼으면 제목을 건드리지 않는다
+    // 우선순위: 달력에서 고른 날짜 > 문장에서 인식한 날짜 > 없음
+    var text = pendingDue ? raw : nl.title;
     var due = pendingDue || nl.dueDate;
     if(!text) return;
     var todos = load();
     var item = { id: genId(), text: text };
-    if(due) item.dueDate = due;                 // 날짜가 있을 때만 필드를 넣는다
+    if(due) item.dueDate = due;
     todos.push(item);
     if(save(todos)){
-      inputEl.value = '';
-      pendingDue = '';
-      dateInput.value = '';
-      renderDuePick();
+      qInput.value = ''; pendingDue = ''; qDate.value = ''; renderPick();
+      qRow.classList.remove('open');
     }
     render();
   }
-  addBtn.addEventListener('click', addItem);
-  inputEl.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ e.preventDefault(); addItem(); }
-  });
+  qBtn.addEventListener('click', addItem);
+  qInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); addItem(); } });
 
-  // 목록은 매번 다시 그리므로 개별 리스너 대신 위임을 쓴다.
-  listEl.addEventListener('click', function(e){
-    var foldBtn = e.target.closest('[data-act="foldDone"]');
-    if(foldBtn){
-      doneFolded = !doneFolded;
-      try{ localStorage.setItem(DONE_FOLD_KEY, doneFolded ? '1' : '0'); }catch(err){}
-      render();
-      return;
-    }
-    var starBtn = e.target.closest('[data-act="star"]');
-    if(starBtn){
-      var srow = starBtn.closest('.todo-rail-row');
-      if(!srow) return;
-      var sid = srow.getAttribute('data-id');
-      var list = load();
-      var st = list.find(function(x){ return x.id === sid; });
-      if(!st){ render(); return; }
-      st.important = !isImportant(st);
-      save(list);
-      render();
-      return;
-    }
-    var btn = e.target.closest('[data-act="del"]');
-    if(!btn) return;
-    var row = btn.closest('.todo-rail-row');
-    if(!row) return;
-    var id = row.getAttribute('data-id');
-    var todos = load().filter(function(x){ return x.id !== id; });
-    delete justDone[id];
-    save(todos);
-    render();
-  });
-  listEl.addEventListener('change', function(e){
-    var box = e.target.closest('[data-act="toggle"]');
-    if(!box) return;
-    var row = box.closest('.todo-rail-row');
-    if(!row) return;
-    var id = row.getAttribute('data-id');
+  // ---- 전체 할 일 모달 ----
+  function tallRowHtml(t){
+    var star = isImportant(t);
+    return '<div class="tall-row' + (t.done ? ' done' : '') + '" data-id="' + esc(t.id) + '">' +
+      '<input type="checkbox" data-act="done"' + (t.done ? ' checked' : '') + ' />' +
+      '<span class="t">' + esc(t.text) + '</span>' +
+      '<input type="date" data-act="date" value="' + esc(dueOf(t) || '') + '" />' +
+      '<button type="button" class="tall-star' + (star ? ' on' : '') + '" data-act="star" aria-pressed="' + (star?'true':'false') + '">' + STAR_SVG + '</button>' +
+      '<button type="button" class="tall-del" data-act="del" title="삭제" aria-label="삭제">' + TRASH_SVG + '</button>' +
+    '</div>';
+  }
+  function renderTall(){
     var todos = load();
-    var t = todos.find(function(x){ return x.id === id; });
-    if(!t){ render(); return; }
-    // 기존 "내 할 일"과 같은 완료 처리(done/completedAt) — 이력을 지우지 않는다.
-    t.done = !!box.checked;
-    t.completedAt = t.done ? Date.now() : null;
-    // 완료 해제 시에는 표식을 지운다 → 다음 render에서 오늘 날짜로 다시 계산돼
-    // 정확한 구역(기한 지남/오늘/내일/일반)으로 돌아간다.
-    if(t.done) justDone[id] = true; else delete justDone[id];
-    save(todos);
-    render();
+    var rows = tallTab === 'done'
+      ? todos.filter(function(t){ return t.done; })
+      : sortRows(todos.filter(function(t){ return !t.done; }));
+    tallList.innerHTML = rows.length
+      ? rows.map(tallRowHtml).join('')
+      : '<div class="tall-empty">' + (tallTab === 'done' ? '완료한 할 일이 없습니다.' : '미완료 할 일이 없습니다.') + '</div>';
+    tallOverlay.querySelectorAll('.tall-tab').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-tall-tab') === tallTab);
+    });
+  }
+  function openTall(tab){
+    tallTab = tab || 'active';
+    tallOverlay.classList.add('open');
+    renderTall();
+  }
+  allBtn.addEventListener('click', function(){ openTall('active'); });
+  noDateBtn.addEventListener('click', function(){ openTall('active'); });
+  tallClose.addEventListener('click', function(){ tallOverlay.classList.remove('open'); });
+  tallOverlay.addEventListener('click', function(e){ if(e.target === tallOverlay) tallOverlay.classList.remove('open'); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && tallOverlay.classList.contains('open')) tallOverlay.classList.remove('open');
+  });
+  tallOverlay.addEventListener('click', function(e){
+    var tab = e.target.closest('[data-tall-tab]');
+    if(tab){ tallTab = tab.getAttribute('data-tall-tab'); renderTall(); return; }
+    var row = e.target.closest('.tall-row');
+    if(!row) return;
+    var id = row.getAttribute('data-id');
+    if(e.target.closest('[data-act="star"]')){ mutate(id, function(t){ t.important = !isImportant(t); }); return; }
+    if(e.target.closest('[data-act="del"]')){
+      var todos = load().filter(function(x){ return x.id !== id; });
+      save(todos); render(); return;
+    }
+  });
+  tallOverlay.addEventListener('change', function(e){
+    var row = e.target.closest('.tall-row');
+    if(!row) return;
+    var id = row.getAttribute('data-id');
+    if(e.target.matches('[data-act="done"]')){
+      var checked = e.target.checked;
+      mutate(id, function(t){ t.done = checked; t.completedAt = checked ? Date.now() : null; });
+      return;
+    }
+    if(e.target.matches('[data-act="date"]')){
+      var v = e.target.value;
+      mutate(id, function(t){ if(v) t.dueDate = v; else delete t.dueDate; });
+    }
   });
 
-  clearBtn.addEventListener('click', function(){
-    justDone = Object.create(null);
-    render();
-  });
-
-  // ---- 접기/펼치기 ----
-  function applyCollapsed(collapsed){
-    railEl.classList.toggle('collapsed', collapsed);
-    reopenBtn.classList.toggle('show', collapsed);
-  }
-  function setCollapsed(collapsed){
-    applyCollapsed(collapsed);
-    try{ localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); }catch(e){}
-  }
-  collapseBtn.addEventListener('click', function(){ setCollapsed(true); });
-  reopenBtn.addEventListener('click', function(){ setCollapsed(false); });
-  var stored = null;
-  try{ stored = localStorage.getItem(COLLAPSE_KEY); }catch(e){}
-  applyCollapsed(stored === null ? window.innerWidth < 1100 : stored === '1');
-
-  // ---- 외부 변경 반영 ----
+  // ---- 외부 변경 / 자정 재계산 ----
   window.addEventListener('storage', function(e){ if(e.key === TODO_KEY) render(); });
-  window.addEventListener('shin2-cloud-update', function(e){
-    if(e && e.detail && e.detail.key === 'todos') render();
-  });
+  window.addEventListener('shin2-cloud-update', function(e){ if(e && e.detail && e.detail.key === 'todos') render(); });
   var oldPanel = document.getElementById('todoPanel');
   if(oldPanel){
     oldPanel.addEventListener('click', function(){ setTimeout(render, 0); });
     oldPanel.addEventListener('focusout', function(){ setTimeout(render, 0); });
   }
   window.addEventListener('focus', function(){ render(); });
-
-  // ---- 자정이 지나면 자동 재분류 ----
-  // 분류를 저장하지 않고 매 render마다 오늘 날짜로 다시 계산하므로, 날짜가 바뀐 것만
-  // 감지해 다시 그려주면 된다. 탭을 며칠 켜둬도 내일 → 오늘 → N일 지남으로 저절로 넘어간다.
   var lastDay = dayKey();
-  setInterval(function(){
-    var k = dayKey();
-    if(k !== lastDay){ lastDay = k; render(); }
-  }, 30000);
+  setInterval(function(){ var k = dayKey(); if(k !== lastDay){ lastDay = k; render(); } }, 30000);
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState !== 'visible') return;
-    var k = dayKey();
-    if(k !== lastDay) lastDay = k;
-    render();
+    lastDay = dayKey(); render();
   });
 
-  mergeLegacyOnce();
-  renderDuePick();
+  renderPick();
   render();
 })();
 </script>
