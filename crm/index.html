@@ -314,32 +314,29 @@
   /* §업무관리 상단 재구성 라운드 §1~§10 — 제목줄(좌:제목/설명, 우:정렬). */
   .workq-header-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
 
-  /* §업무요약 패널 축소 라운드 — 예전 "오늘 먼저 확인"/"전환관리" 두 개의 큰 카드(각각
-     체크 아이콘 + 3줄짜리 항목 + "바로가기 >")를 하나의 흰 카드, 두 줄짜리 컨트롤 바로
-     합쳤다. 두 행(.workq-summary-row)은 각각 독립된 grid지만 grid-template-columns 값을
-     JS에서 동일하게 계산해 넣어(130px + 항목 수만큼 1fr, §8) 위아래 열 위치가 항상 맞는다.
-     항목 개수(§15 "예정된 미팅" 추가 대비)는 하드코딩하지 않고 heroItems/transitionItems
-     중 더 긴 쪽 길이로 매 렌더링마다 계산한다 — 항목이 늘어나도 CSS를 다시 손볼 필요가
-     없다. 숫자/필터 데이터는 여전히 computeWorkQueue()가 계산한 값을 그대로 쓴다(§16, 새
-     판정 로직 없음). */
-  .workq-summary-panel{ background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:10px; }
-  .workq-summary-row{ display:grid; }
-  .workq-summary-row + .workq-summary-row{ border-top:1px solid #E5EAF1; }
-  .workq-summary-row-title{ display:flex; align-items:center; padding:0 14px; font-size:13px; font-weight:800; color:var(--navy); background:#F9FBFD; border-right:1px solid #E5EAF1; min-height:68px; }
-  .workq-summary-cell{ display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0; padding:10px 16px; background:none; border:none; cursor:pointer; text-align:left; font-family:inherit; transition:background .1s ease; }
-  .workq-summary-cell:hover{ background:#F5F8FC; }
-  .workq-summary-cell-label{ font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; }
-  .workq-summary-cell-num{ font-size:24px; font-weight:800; line-height:1.2; color:var(--navy); font-variant-numeric:tabular-nums; }
-  .workq-summary-cell-num.is-zero{ color:var(--text-muted); font-weight:700; }
-  .workq-summary-cell-num.c-navy{ color:var(--navy); }
-  .workq-summary-cell-num.c-orange{ color:#C2540A; }
-  .workq-summary-cell-num.c-green{ color:#1E7A3D; }
-  .workq-summary-cell-unit{ font-size:11px; font-weight:700; margin-left:2px; }
-  .workq-summary-cell-sub{ font-size:10.5px; font-weight:600; color:var(--text-muted); }
-  @media (max-width: 720px){
-    .workq-summary-row{ grid-template-columns:96px 1fr !important; grid-auto-rows:auto; }
-    .workq-summary-row-title{ min-height:0; padding:8px 10px; grid-column:1 / -1; border-right:none; border-bottom:1px solid #E5EAF1; }
-    .workq-summary-cell{ padding:8px 10px; grid-column:1 / -1; }
+  /* §네모형 업무 카드 라운드 — "오늘 할 일"/"전환 관리" 표 형태(왼쪽 제목 열 + 가로로 이어진
+     항목들)를 버리고, 업무마다 독립된 정사각에 가까운 카드로 확실히 구분한다. 섹션 제목
+     ("지금 해야 할 업무"/"다음 단계로 전환") 아래 3개씩 카드를 균등 배치(grid 3열)하는
+     구조라 위/아래 열을 맞출 필요가 없어졌다(§8 이전 라운드의 grid 정렬 요구는 이번
+     레이아웃 자체에 해당 없음). 숫자/필터 데이터는 여전히 computeWorkQueue()가 계산한 값을
+     그대로 쓰고(§12, 새 판정 로직 없음), 카드 클릭도 기존 data-workq-filter 전역 바인딩을
+     그대로 재사용한다(§7, 새 클릭 로직 없음). */
+  .workq-task-section{ margin-bottom:14px; }
+  .workq-task-section-title{ font-size:14px; font-weight:700; color:var(--navy); margin-bottom:8px; }
+  .workq-task-row{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+  .workq-task-card{ display:flex; flex-direction:column; justify-content:center; gap:2px; min-height:85px; max-height:100px; padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:7px; cursor:pointer; text-align:left; font-family:inherit; transition:background .1s ease, border-color .1s ease; }
+  .workq-task-card:hover{ background:#F5F8FC; border-color:#AEBFD2; }
+  .workq-task-card-num{ font-size:26px; font-weight:800; line-height:1.15; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .workq-task-card-num.is-zero{ color:var(--text-muted); }
+  .workq-task-card-num.c-navy{ color:var(--navy); }
+  .workq-task-card-num.c-orange{ color:#C2540A; }
+  .workq-task-card-num.c-green{ color:#1E7A3D; }
+  .workq-task-card-unit{ font-size:12px; font-weight:700; margin-left:2px; }
+  .workq-task-card-label{ font-size:13.5px; font-weight:700; color:var(--navy); }
+  .workq-task-card-stage{ font-size:11px; font-weight:600; color:var(--text-muted); }
+  .workq-task-card-sub{ font-size:11.5px; color:var(--text-muted); }
+  @media (max-width: 640px){
+    .workq-task-row{ grid-template-columns:1fr; }
   }
   .workq-table{ width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
   .workq-table th{ text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); background:#F9FBFD; padding:7px 10px; border-bottom:1px solid var(--line); }
@@ -6958,34 +6955,35 @@ window.SHIN2_CRM_APP_INIT = function(){
     const mouCount = list.filter(it=> it.type==='mou').length;
     // §업무관리 상단 재구성 라운드 §1/§2 — 숫자는 전부 위에서 이미 계산된 list를 그대로
     // 세기만 한다(§5 "새 숫자를 하드코딩하지 마세요") — 새 판정 로직 없음.
+    // §네모형 업무 카드 라운드 §4 — 보조문구(sub)는 표시용 문구일 뿐 새 계산이 아니다.
+    // 숫자(count)는 여전히 위에서 이미 계산된 m1Count/m2Count/mouCount 그대로.
     const heroItems = [
-      { key:'m1', cls:'c-navy', label:'1차미팅 잡기', count:m1Count },
-      { key:'m2', cls:'c-orange', label:'2차미팅 잡기', count:m2Count },
-      { key:'mou', cls:'c-green', label:'MOU 진행', count:mouCount }
+      { key:'m1', cls:'c-navy', label:'1차미팅 잡기', sub:'일정 미등록', count:m1Count },
+      { key:'m2', cls:'c-orange', label:'2차미팅 잡기', sub:'후속미팅 필요', count:m2Count },
+      { key:'mou', cls:'c-green', label:'MOU 진행', sub:'체결 후속', count:mouCount }
     ];
     // §고객 단계 전환관리 라운드 §4/§6/§9 — 숫자는 computeWorkQueue()가 이미 계산해 둔
     // counts.firstActivity/counts.l2Stall/counts.reuse를 그대로 읽는다(§5 하드코딩 금지).
     // 클릭 시 data-workq-filter로 넘기는 값도 classifyManagementNeed의 실제 type 값이라
-    // 기존 필터 처리 로직을 그대로 재사용한다(새 판정/필터 로직 없음). §업무요약 패널 축소
-    // 라운드 §7: 문구만 줄였다("현장등록 필요"→"현장등록" 등, 판정/카운트는 무변경).
+    // 기존 필터 처리 로직을 그대로 재사용한다(새 판정/필터 로직 없음). §네모형 업무 카드
+    // 라운드 §5: "L1→L2" 같은 내부 단계명보다 실제 행동(action)을 먼저 보여준다 — action/
+    // stage/need 전부 표시 문구일 뿐 판정값(key)은 그대로다.
     const transitionItems = [
-      { key:'firstActivity', label:'L1 → L2', need:'현장등록', count: counts.firstActivity||0 },
-      { key:'l2Stall', label:'L2 → L3', need:'후속요청', count: counts.l2Stall||0 },
-      { key:'reuse', label:'재사용', need:'새 현장', count: counts.reuse||0 }
+      { key:'firstActivity', action:'첫 현장 만들기', stage:'L1 → L2', need:'현장등록 필요', count: counts.firstActivity||0 },
+      { key:'l2Stall', action:'후속요청 만들기', stage:'L2 → L3', need:'후속요청 필요', count: counts.l2Stall||0 },
+      { key:'reuse', action:'다시 연락하기', stage:'재사용', need:'새 현장 필요', count: counts.reuse||0 }
     ];
-    // §업무요약 패널 축소 라운드 §8/§15 — 두 행의 열 폭을 동일하게 맞추기 위한 공유
-    // grid-template-columns. 항목 수가 늘어도(예: "예정된 미팅" 추가) 이 한 줄만 자동으로
-    // 넓어진다 — 3/4 어느 쪽으로 하드코딩하지 않는다.
-    const workqSummaryCols = Math.max(heroItems.length, transitionItems.length);
-    const workqSummaryColsCss = `130px repeat(${workqSummaryCols}, 1fr)`;
-    function workqSummaryCell(item, isRow2){
+    function workqTaskCard(item, isRow2){
       const numCls = isRow2 ? (item.count === 0 ? 'is-zero' : 'c-orange') : (item.cls || '');
-      const sub = isRow2 ? `<span class="workq-summary-cell-sub">${esc(item.need)}</span>` : '';
+      const label = isRow2 ? item.action : item.label;
+      const sub = isRow2 ? item.need : item.sub;
+      const stageLine = isRow2 ? `<div class="workq-task-card-stage">${esc(item.stage)}</div>` : '';
       return `
-        <button type="button" class="workq-summary-cell" data-workq-filter="${esc(item.key)}">
-          <span class="workq-summary-cell-label">${esc(item.label)}</span>
-          <span class="workq-summary-cell-num ${numCls}">${esc(item.count)}<span class="workq-summary-cell-unit">건</span></span>
-          ${sub}
+        <button type="button" class="workq-task-card" data-workq-filter="${esc(item.key)}">
+          <div class="workq-task-card-num ${numCls}">${esc(item.count)}<span class="workq-task-card-unit">건</span></div>
+          <div class="workq-task-card-label">${esc(label)}</div>
+          ${stageLine}
+          <div class="workq-task-card-sub">${esc(sub)}</div>
         </button>`;
     }
     wrap.innerHTML = `
@@ -6996,14 +6994,16 @@ window.SHIN2_CRM_APP_INIT = function(){
         </div>
         <button type="button" class="list-filter-chip" id="workqSortToggle">${workQueueSortAsc ? '경과일 적은 순 ▾' : '경과일 많은 순 ▾'}</button>
       </div>
-      <div class="workq-summary-panel">
-        <div class="workq-summary-row" style="grid-template-columns:${esc(workqSummaryColsCss)};">
-          <div class="workq-summary-row-title">오늘 할 일</div>
-          ${heroItems.map(h=> workqSummaryCell(h, false)).join('')}
+      <div class="workq-task-section">
+        <div class="workq-task-section-title">지금 해야 할 업무</div>
+        <div class="workq-task-row">
+          ${heroItems.map(h=> workqTaskCard(h, false)).join('')}
         </div>
-        <div class="workq-summary-row" style="grid-template-columns:${esc(workqSummaryColsCss)};">
-          <div class="workq-summary-row-title">전환 관리</div>
-          ${transitionItems.map(t=> workqSummaryCell(t, true)).join('')}
+      </div>
+      <div class="workq-task-section">
+        <div class="workq-task-section-title">다음 단계로 전환</div>
+        <div class="workq-task-row">
+          ${transitionItems.map(t=> workqTaskCard(t, true)).join('')}
         </div>
       </div>
       <div class="list-search-row workq-search-row">
