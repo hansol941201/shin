@@ -6498,6 +6498,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     // §실행형 업무관리 라운드 §14: 단순 "경과일 오래된 순"만 쓰지 않고, 실제 행동
     // 우선순위(1차미팅 잡기→2차미팅 잡기→MOU 진행→첫 L2 필요→L3 전환 필요→재사용 필요)를
     // 먼저 적용한 뒤, 같은 행동 안에서만 오래된 업체가 위로 오게 한다.
+    // §경과일 짧은 업체 분리 보기 라운드: "막 5일" 같은 경과일이 적은(=이제 막 발생한) 건을
+    // 오래된 업체들 사이에서 따로 찾기 어렵다는 요청 — 같은 행동 우선순위 안에서 정렬
+    // 방향만 뒤집는 workQueueSortAsc 토글을 추가했다(기본은 기존과 동일하게 오래된 순).
+    // 날짜 없는 업체(days===null)는 어느 방향으로 봐도 "얼마나 지났는지 알 수 없다"는
+    // 사실 자체가 바뀌지 않으므로 항상 맨 아래로 보낸다(§9 원칙 유지).
     list.sort((a,b)=>{
       const pa = WORKQ_TYPE_PRIORITY[a.type] != null ? WORKQ_TYPE_PRIORITY[a.type] : 99;
       const pb = WORKQ_TYPE_PRIORITY[b.type] != null ? WORKQ_TYPE_PRIORITY[b.type] : 99;
@@ -6505,7 +6510,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       if(a.days === null && b.days === null) return 0;
       if(a.days === null) return 1;
       if(b.days === null) return -1;
-      return b.days - a.days;
+      return workQueueSortAsc ? (a.days - b.days) : (b.days - a.days);
     });
     const counts = { all: list.length, meeting: 0, mou: 0, l2l3: 0, reuse: 0 };
     list.forEach(it=>{ counts[it.category] = (counts[it.category] || 0) + 1; });
@@ -6721,6 +6726,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['l2l3','L2·L3'], ['reuse','재사용']
   ];
   let workQueueFilter = 'all';
+  // §경과일 짧은 업체 분리 보기 라운드: false=기존 그대로(오래된 순), true=경과일 적은
+  // 업체가 위로(같은 행동 우선순위 안에서만 방향이 바뀐다 — 우선순위 자체는 안 바뀜).
+  let workQueueSortAsc = false;
   // §실행형 업무관리 라운드 §3: 한 번에 하나의 행만 펼쳐진다 — companyId 기준(같은 업체가
   // 필터 전환으로 다시 나타나도 펼침 상태가 이어지게, type도 함께 저장해 어떤 업무의
   // 작업영역인지 구분).
@@ -6752,6 +6760,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       ${todayParts.length ? `<div class="workq-today-line"><b>오늘 먼저 확인</b> — ${todayParts.join(' · ')}</div>` : ''}
       <div class="workq-filter-row" id="workqFilterRow">
         ${WORKQ_FILTER_DEFS.map(([key,label])=> `<button type="button" class="list-filter-chip${workQueueFilter===key?' is-active':''}" data-workq-filter="${esc(key)}">${esc(label)} ${esc(counts[key]||0)}</button>`).join('')}
+        <button type="button" class="list-filter-chip" id="workqSortToggle" style="margin-left:auto;">${workQueueSortAsc ? '경과일 적은 순 ▲' : '경과일 많은 순 ▼'}</button>
       </div>
       ${filtered.length ? `
         <table class="workq-table">
@@ -6775,6 +6784,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       workQueueFilter = btn.getAttribute('data-workq-filter');
       renderWorkQueueView();
     }));
+    const sortToggle = document.getElementById('workqSortToggle');
+    if(sortToggle) sortToggle.addEventListener('click', ()=>{
+      workQueueSortAsc = !workQueueSortAsc;
+      renderWorkQueueView();
+    });
     wrap.querySelectorAll('[data-workq-open-co]').forEach(btn=> btn.addEventListener('click', ()=>{
       openCardFromWorkQueue(btn.getAttribute('data-workq-open-co'));
     }));
