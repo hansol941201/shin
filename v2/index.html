@@ -1575,44 +1575,60 @@
   .todo-rail-clear:disabled{ opacity:0.4; cursor:default; }
   .todo-rail-clear:disabled:hover{ color:var(--text-muted); }
 
-  /* ---------- 상단 업무 알림 바 ---------- */
-  .wbar{ position:relative; margin:2px 0 14px; }
-  .wbar-chips{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-  .wbar-chip{
-    display:inline-flex; align-items:center; gap:6px;
-    height:26px; padding:0 11px;
-    border:1px solid var(--line); background:var(--surface); border-radius:13px;
-    font-size:12px; font-family:inherit; font-weight:600; color:var(--text-muted);
-    cursor:pointer; white-space:nowrap;
+  /* ---------- 상단 업무 카드 (§업무판 라운드) ----------
+     숫자 대시보드가 아니라 "지금 해야 하는 일 제목"을 바로 읽는 판.
+     오른쪽 투두(shin2-todos)를 그대로 읽는 요약 뷰이며 별도 저장소가 없다. */
+  .wcards{
+    display:grid; grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:14px; margin:2px 0 18px;
   }
-  .wbar-chip:hover{ background:#F3F5F8; }
-  .wbar-chip .c{ font-weight:800; }
-  .wbar-chip.zero{ opacity:0.45; cursor:default; }
-  .wbar-chip.zero:hover{ background:var(--surface); }
-  .wbar-chip.k-today{ color:var(--navy); border-color:#D3DAE8; background:#F4F6FB; }
-  .wbar-chip.k-over{ color:#B3283C; border-color:#F0D3D8; background:#FDF4F5; }
-  .wbar-chip.k-tomorrow{ color:#4A6285; border-color:#DCE3EE; background:#F6F9FD; }
-  .wbar-chip.k-important{ color:#8A6410; border-color:#EDE0C4; background:#FCF8EF; }
-  .wbar-chip.active{ box-shadow:0 0 0 2px rgba(30,42,74,0.08); }
-
-  .wbar-pop{
-    position:absolute; top:32px; left:0; z-index:45;
-    min-width:260px; max-width:400px; padding:11px 13px;
-    background:var(--surface); border:1px solid var(--line); border-radius:9px;
-    box-shadow:0 4px 14px rgba(17,24,39,0.08);
+  .wcard{
+    display:flex; flex-direction:column;
+    min-height:168px; padding:13px 14px;
+    background:var(--surface); border:1px solid var(--line); border-radius:13px;
   }
-  .wbar-pop-title{ font-size:11.5px; font-weight:700; color:var(--text-muted); margin-bottom:7px; }
-  .wbar-pop-list{ max-height:230px; overflow-y:auto; }
-  .wbar-pop-item{
+  .wcard-head{
+    display:flex; align-items:center; gap:6px; flex:none;
+    padding-bottom:8px; margin-bottom:7px; border-bottom:1px solid rgba(0,0,0,0.05);
+    font-size:12.5px; font-weight:700; color:var(--text);
+  }
+  .wcard-head .n{ font-size:10.5px; font-weight:700; color:var(--text-muted); }
+  .wcard-list{ flex:1; min-height:0; display:flex; flex-direction:column; gap:1px; }
+  .wcard-item{
     display:flex; align-items:center; gap:8px;
-    padding:6px 8px; border-radius:6px; cursor:pointer;
-    font-size:12.5px; color:var(--text);
+    padding:4px 3px; border-radius:5px; font-size:12.5px; color:var(--text);
   }
-  .wbar-pop-item:hover{ background:#F3F5F8; }
-  .wbar-pop-item .t{ flex:1; min-width:0; font-weight:500; word-break:break-word; }
-  .wbar-pop-item .d{ flex:none; font-size:10.5px; font-weight:700; color:var(--text-muted); }
-  .wbar-pop-item .d.over{ color:#B3283C; }
-  .wbar-pop-empty{ font-size:12px; color:var(--text-muted); padding:6px 8px; }
+  .wcard-item:hover{ background:rgba(0,0,0,0.03); }
+  .wcard-item input[type="checkbox"]{
+    flex:none; width:14px; height:14px; margin:0; accent-color:var(--navy); cursor:pointer;
+  }
+  .wcard-item .star{ flex:none; color:#C79A2E; font-size:11px; line-height:1; }
+  .wcard-item .t{
+    flex:1; min-width:0; font-weight:500;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .wcard-item .d{ flex:none; font-size:10.5px; font-weight:700; color:var(--text-muted); }
+  .wcard-empty{ font-size:11.5px; color:#A8AEB9; padding:6px 3px; }
+  .wcard-more{
+    flex:none; margin-top:6px; align-self:flex-start;
+    border:none; background:transparent; cursor:pointer;
+    font-size:11px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
+  }
+  .wcard-more:hover{ color:var(--navy); }
+
+  /* 배경은 거의 흰색 수준으로만 — 가독성이 먼저 */
+  .wcard.k-today{ background:#F8FAFE; border-color:#DCE3F0; }
+  .wcard.k-today .wcard-head{ color:var(--navy); }
+  .wcard.k-over{ background:#FDF7F7; border-color:#EFDCDF; }
+  .wcard.k-over .wcard-head{ color:#B3283C; }
+  .wcard.k-over .wcard-item .d{ color:#B3283C; }
+  .wcard.k-tomorrow{ background:#F8FBFE; border-color:#DEE6F1; }
+  .wcard.k-tomorrow .wcard-head{ color:#4A6285; }
+  .wcard.k-important{ background:#FCFAF4; border-color:#EBE3D2; }
+  .wcard.k-important .wcard-head{ color:#8A6410; }
+
+  @media (max-width:1400px){ .wcards{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  @media (max-width:820px){ .wcards{ grid-template-columns:1fr; } }
 
   /* 상단에서 항목을 클릭했을 때 레일 행을 잠깐 강조 */
   @keyframes todoRowFlash{ 0%{ background:#FFF6D8; } 100%{ background:transparent; } }
@@ -2326,13 +2342,7 @@
 
       <!-- 업무 알림 바(§상단 알림 라운드) — 오른쪽 투두 데이터를 그대로 읽어 개수만 보여준다.
            별도 저장소 없음. 렌더/갱신은 투두 레일 스크립트가 함께 담당한다. -->
-      <div class="wbar" id="workBar" style="display:none;">
-        <div class="wbar-chips" id="workBarChips"></div>
-        <div class="wbar-pop" id="workBarPop" style="display:none;">
-          <div class="wbar-pop-title" id="workBarPopTitle"></div>
-          <div class="wbar-pop-list" id="workBarPopList"></div>
-        </div>
-      </div>
+      <div class="wcards" id="workCards"></div>
 
       <div class="home-col" id="homeView">
         <div class="search-wrap">
@@ -12634,96 +12644,86 @@ ${text}
     badgeEl.classList.toggle('zero', activeCount === 0);
     var reopenCnt = document.getElementById('todoRailReopenCnt');
     if(reopenCnt) reopenCnt.textContent = String(activeCount);
-    renderWorkBar(todos);
+    renderWorkCards(todos);
   }
 
   // ================================================================
-  // 상단 업무 알림 바 — 같은 투두 배열을 읽어 개수만 보여준다(별도 저장소 없음).
-  // render()에서 함께 갱신되므로 추가/완료/삭제/날짜변경/중요설정에 즉시 반응한다.
+  // 상단 업무 카드 — 오른쪽 투두(shin2-todos)를 그대로 읽는 요약 뷰.
+  // 별도 저장소/중복 저장 없음. 카드에서 체크하면 같은 todo id를 고치므로 오른쪽 레일에도
+  // 즉시 반영되고, 반대로 레일에서 바꾸면 render()가 카드까지 함께 다시 그린다.
+  // 같은 항목이 "오늘"과 "중요"에 동시에 나올 수 있고, 어느 쪽에서 체크해도 양쪽에서 빠진다.
   // ================================================================
-  var barEl = document.getElementById('workBar');
-  var barChips = document.getElementById('workBarChips');
-  var barPop = document.getElementById('workBarPop');
-  var barPopTitle = document.getElementById('workBarPopTitle');
-  var barPopList = document.getElementById('workBarPopList');
-  var barOpenKind = null;
+  var cardsEl = document.getElementById('workCards');
+  var CARD_MAX = 5;                    // 기본 노출 개수
+  var cardExpanded = Object.create(null);
 
-  var BAR_KINDS = [
-    { key:'today',     label:'오늘',      pick:function(t){ return !t.done && bucketOf(t) === 'today'; } },
-    { key:'over',      label:'기한 지남', pick:function(t){ return !t.done && bucketOf(t) === 'over'; } },
-    { key:'tomorrow',  label:'내일',      pick:function(t){ return !t.done && bucketOf(t) === 'tomorrow'; } },
-    { key:'important', label:'중요',      pick:function(t){ return !t.done && isImportant(t); } }
+  var CARD_KINDS = [
+    { key:'today',     label:'오늘 해야 할 일',  empty:'오늘 예정된 일이 없습니다.',
+      pick:function(t){ return !t.done && bucketOf(t) === 'today'; } },
+    { key:'over',      label:'기한 지난 일',     empty:'기한 지난 일이 없습니다.',
+      pick:function(t){ return !t.done && bucketOf(t) === 'over'; } },
+    { key:'tomorrow',  label:'내일 해야 할 일',  empty:'내일 예정된 일이 없습니다.',
+      pick:function(t){ return !t.done && bucketOf(t) === 'tomorrow'; } },
+    { key:'important', label:'중요 업무',        empty:'중요 표시한 일이 없습니다.',
+      pick:function(t){ return !t.done && isImportant(t); } }
   ];
-  function barItems(kind, todos){
-    var k = BAR_KINDS.find(function(x){ return x.key === kind; });
-    if(!k) return [];
-    return sortActive((todos || load()).filter(k.pick));
+
+  function cardItemHtml(t, kind){
+    var due = dueOf(t);
+    var right = '';
+    if(kind === 'over') right = dueText(due);                  // "1일 지남"
+    else if(due && kind !== 'today') right = dueText(due);      // 내일/중요는 날짜
+    return '<label class="wcard-item">' +
+      '<input type="checkbox" data-card-id="' + esc(t.id) + '" />' +
+      (kind === 'important' ? '<span class="star">★</span>' : '') +
+      '<span class="t" title="' + esc(t.text) + '">' + esc(t.text) + '</span>' +
+      (right ? '<span class="d">' + esc(right) + '</span>' : '') +
+    '</label>';
   }
-  function renderWorkBar(todos){
-    if(!barEl) return;
-    var any = false;
-    barChips.innerHTML = BAR_KINDS.map(function(k){
-      var n = todos.filter(k.pick).length;
-      if(n > 0) any = true;
-      return '<button type="button" class="wbar-chip k-' + k.key + (n === 0 ? ' zero' : '') +
-        (barOpenKind === k.key ? ' active' : '') + '" data-kind="' + k.key + '"' + (n === 0 ? ' disabled' : '') + '>' +
-        '<span>' + k.label + '</span><span class="c">' + n + '</span></button>';
-    }).join('');
-    barEl.style.display = any ? '' : 'none';
-    if(barOpenKind){
-      var items = barItems(barOpenKind, todos);
-      if(items.length === 0){ closeBarPop(); }
-      else { paintBarPop(barOpenKind, items); }
-    }
-  }
-  function paintBarPop(kind, items){
-    var k = BAR_KINDS.find(function(x){ return x.key === kind; });
-    barPopTitle.textContent = k ? k.label + ' — ' + items.length + '건' : '';
-    barPopList.innerHTML = items.map(function(t){
-      var d = dueOf(t);
-      var over = d && dueDiff(d) > 0;
-      return '<div class="wbar-pop-item" data-id="' + esc(t.id) + '">' +
-        '<span class="t">' + esc(t.text) + '</span>' +
-        (d ? '<span class="d' + (over ? ' over' : '') + '">' + esc(dueText(d)) + '</span>' : '') +
+
+  function renderWorkCards(todos){
+    if(!cardsEl) return;
+    cardsEl.innerHTML = CARD_KINDS.map(function(k){
+      var rows = sortActive(todos.filter(k.pick));
+      var open = !!cardExpanded[k.key];
+      var shown = open ? rows : rows.slice(0, CARD_MAX);
+      var rest = rows.length - shown.length;
+      var body = rows.length === 0
+        ? '<div class="wcard-empty">' + k.empty + '</div>'
+        : shown.map(function(t){ return cardItemHtml(t, k.key); }).join('');
+      var more = '';
+      if(rest > 0) more = '<button type="button" class="wcard-more" data-card-more="' + k.key + '">+ ' + rest + '개 더 보기</button>';
+      else if(open && rows.length > CARD_MAX) more = '<button type="button" class="wcard-more" data-card-more="' + k.key + '">접기</button>';
+      return '<div class="wcard k-' + k.key + '">' +
+        '<div class="wcard-head"><span>' + k.label + '</span>' +
+          (rows.length ? '<span class="n">' + rows.length + '</span>' : '') +
+        '</div>' +
+        '<div class="wcard-list">' + body + '</div>' + more +
       '</div>';
-    }).join('') || '<div class="wbar-pop-empty">항목이 없습니다.</div>';
-    barPop.style.display = '';
+    }).join('');
   }
-  function closeBarPop(){
-    barOpenKind = null;
-    barPop.style.display = 'none';
-    barChips.querySelectorAll('.wbar-chip').forEach(function(c){ c.classList.remove('active'); });
-  }
-  if(barChips){
-    barChips.addEventListener('click', function(e){
-      var chip = e.target.closest('.wbar-chip');
-      if(!chip || chip.disabled) return;
-      var kind = chip.getAttribute('data-kind');
-      if(barOpenKind === kind){ closeBarPop(); return; }
-      barOpenKind = kind;
-      var items = barItems(kind);
-      paintBarPop(kind, items);
-      barChips.querySelectorAll('.wbar-chip').forEach(function(c){ c.classList.toggle('active', c === chip); });
+
+  if(cardsEl){
+    // 카드에서 체크 → 기존 todo를 그대로 완료 처리(같은 id, 같은 저장 경로).
+    cardsEl.addEventListener('change', function(e){
+      var box = e.target.closest('[data-card-id]');
+      if(!box) return;
+      var id = box.getAttribute('data-card-id');
+      var todos = load();
+      var t = todos.find(function(x){ return x.id === id; });
+      if(!t){ render(); return; }
+      t.done = true;
+      t.completedAt = Date.now();
+      justDone[id] = true;      // 오른쪽 레일에서는 취소선 상태로 잠시 남겨 되돌릴 수 있게
+      save(todos);
+      render();
     });
-    barPopList.addEventListener('click', function(e){
-      var item = e.target.closest('.wbar-pop-item');
-      if(!item) return;
-      var id = item.getAttribute('data-id');
-      closeBarPop();
-      if(railEl.classList.contains('collapsed')) setCollapsed(false);
-      var row = listEl.querySelector('.todo-rail-row[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
-      if(row){
-        row.scrollIntoView({ block:'center' });
-        row.classList.remove('flash');
-        void row.offsetWidth;
-        row.classList.add('flash');
-        setTimeout(function(){ row.classList.remove('flash'); }, 1700);
-      }
-    });
-    document.addEventListener('click', function(e){
-      if(!barOpenKind) return;
-      if(barEl.contains(e.target)) return;
-      closeBarPop();
+    cardsEl.addEventListener('click', function(e){
+      var more = e.target.closest('[data-card-more]');
+      if(!more) return;
+      var k = more.getAttribute('data-card-more');
+      cardExpanded[k] = !cardExpanded[k];
+      render();
     });
   }
 
