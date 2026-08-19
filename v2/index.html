@@ -67,6 +67,10 @@
     content:''; position:absolute; left:12px; right:12px; top:-8px; height:2px;
     background:var(--navy); border-radius:1px;
   }
+  /* §업체·자료실 제거 라운드 — 메뉴와 진입로만 없앤다. 버튼 DOM 자체는 남겨둔다:
+     showView/검색 등 여러 스크립트가 이 id를 null 가드 없이 잡고 있어서, 노드를 지우면
+     그 블록 전체가 죽는다. 데이터(shin2-companies-staging / shin2-library-*)는 손대지 않는다. */
+  #navCompanies, #navLibrary{ display:none !important; }
   .botnav .nav-approval-row{ width:auto; padding:0 10px; }
   .botnav .nav-badge{ margin-left:2px; }
 
@@ -6156,8 +6160,9 @@
       score: kbScoreAccount,
       render: kbRenderAccountCard
     },
-    // 업체관리(shin2-companies-staging) — 실제 업체관리 화면이 읽고 쓰는 저장소와 동일한 키.
-    { type:'company', getRecords: getCompanyStaging, score: kbScoreCompany, render: kbRenderCompanyCard },
+    // 업체관리 — §업체·자료실 제거 라운드에서 검색 대상에서 뺐다(화면 진입로가 없어져
+    // 결과를 눌러도 갈 곳이 없기 때문). 저장소(shin2-companies-staging)와 getCompanyStaging()
+    // 자체는 그대로 남아 업무/전화기록/메모의 업체명 표시에 계속 쓰인다.
     // 아파트(§1/§16, 신규) — shin2-companies-staging과 완전히 분리된 별도 엔티티. 저장소는
     // shin2-call-entries-v1 그대로이며, window.SHIN2_CALLS.getApartmentGroups()가 정규화 키
     // 기준으로 그룹핑한 결과만 조회한다(업체 목록에는 절대 등록되지 않는다).
@@ -6188,14 +6193,8 @@
       score: kbScoreMemo,
       render: kbRenderMemoCard
     },
-    // 자료실(shin2-library-documents-v1, 신규 §11) — 메타데이터만 조회한다(getSearchable이
-    // 파일 바이너리/blob 저장소는 아예 참조하지 않는다).
-    {
-      type:'library',
-      getRecords: ()=> (window.SHIN2_LIBRARY ? window.SHIN2_LIBRARY.getSearchable() : []),
-      score: kbScoreLibrary,
-      render: kbRenderLibraryCard
-    }
+    // 자료실 — 위와 같은 이유로 검색 대상에서 제외. 저장소(shin2-library-documents-v1/
+    // shin2-library-blobs-v1)와 SHIN2_LIBRARY 모듈은 그대로 남겨둔다.
   ];
 
   function kbSearchAll(query){
