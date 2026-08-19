@@ -358,17 +358,32 @@
   .workq-transition-item-num{ font-size:20px; font-weight:800; color:var(--navy); line-height:1.2; font-variant-numeric:tabular-nums; }
   .workq-transition-item-need{ font-size:11px; font-weight:700; color:#C2540A; white-space:nowrap; }
   .workq-transition-item:hover .workq-hero-item-go{ color:var(--navy); text-decoration:underline; }
-  .workq-table{ width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-  .workq-table th{ text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); background:#F9FBFD; padding:7px 10px; border-bottom:1px solid var(--line); }
-  .workq-table td{ padding:7px 10px; border-bottom:1px solid #EEF1F5; vertical-align:top; color:var(--text); }
-  .workq-table tr:last-child td{ border-bottom:none; }
-  .workq-table tr:hover td{ background:#F7FBFF; }
+  /* §업무관리 카드형 재배치 라운드 — 한 줄짜리 표 대신 업체당 작은 카드 하나. 화면 폭에 맞춰
+     자동으로 여러 열(auto-fill)로 배치돼, 표보다 오히려 한 화면에 더 많은 업체가 들어간다
+     (컴팩트 카드 하나당 목표 높이 ~80px). 색은 기존 배지 규칙(1차=네이비/2차=주황/MOU=초록)에
+     전환관리 계열 청록 하나만 추가 — 새 팔레트 없음, 큰 아이콘/장식 없음. */
+  .workq-card-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:8px; }
+  .workq-card{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:9px 12px; display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .workq-card:hover{ border-color:#C7D7EA; }
+  .workq-card.is-expanded{ grid-column:1 / -1; border-color:var(--navy); }
+  .workq-card-top{ display:flex; align-items:center; gap:7px; min-width:0; }
+  .workq-card-badge{ flex:none; display:inline-block; font-size:10px; font-weight:800; color:#fff; padding:2px 7px; border-radius:10px; }
+  .workq-card-badge.m1{ background:var(--navy); }
+  .workq-card-badge.m2{ background:#C2540A; }
+  .workq-card-badge.mou{ background:#1E7A3D; }
+  .workq-card-badge.trans{ background:#0F7A8C; }
+  .workq-card-name{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .workq-card-meta{ font-size:12px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .workq-card-bottom{ display:flex; align-items:center; justify-content:space-between; margin-top:2px; }
   .workq-co-link{ background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--navy); cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
   .workq-co-link:hover{ text-decoration-style:solid; }
-  .workq-reason{ color:var(--text-muted); font-size:12px; }
-  .workq-days{ white-space:nowrap; font-variant-numeric:tabular-nums; }
-  .workq-delay-badge{ display:inline-block; font-size:10px; font-weight:700; color:#B45309; background:#FFF3E0; border-radius:4px; padding:1px 5px; margin-left:5px; }
+  .workq-reason{ color:var(--text-muted); }
+  .workq-days{ white-space:nowrap; font-variant-numeric:tabular-nums; font-size:12px; color:var(--text-muted); }
+  .workq-delay-badge{ display:inline-block; font-size:10px; font-weight:700; color:#B45309; background:#FFF3E0; border-radius:4px; padding:1px 5px; flex:none; }
   .workq-empty{ padding:24px; text-align:center; color:var(--text-muted); font-size:13px; background:#fff; border:1px solid var(--line); border-radius:8px; }
+  @media (max-width: 640px){
+    .workq-card-grid{ grid-template-columns:1fr; }
+  }
   .workq-today-line .workq-today-link{ background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--navy); cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
   .workq-today-line .workq-today-link:hover{ text-decoration-style:solid; }
 
@@ -378,8 +393,7 @@
   .workq-action-btn{ height:24px; padding:0 10px; font-size:11.5px; font-weight:700; color:#fff; background:var(--navy); border:none; border-radius:5px; cursor:pointer; white-space:nowrap; }
   .workq-action-btn:hover{ background:#0a2d5c; }
   .workq-action-btn.is-open{ background:#0a2d5c; box-shadow:inset 0 0 0 2px #C7D7EA; }
-  .workq-expand-row td{ background:#F9FBFD; padding:10px 14px 12px; }
-  .workq-expand{ font-size:12px; color:var(--text); }
+  .workq-expand{ font-size:12px; color:var(--text); background:#F9FBFD; margin:4px -12px -9px; padding:10px 12px 12px; border-top:1px solid var(--line); border-radius:0 0 8px 8px; }
   .workq-expand-title{ font-weight:700; color:var(--navy); margin-bottom:8px; }
   .workq-expand-grid{ display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; margin-bottom:8px; max-width:520px; }
   .workq-expand-label{ font-size:11px; color:var(--text-muted); font-weight:600; }
@@ -6942,6 +6956,16 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 필터 전환으로 다시 나타나도 펼침 상태가 이어지게, type도 함께 저장해 어떤 업무의
   // 작업영역인지 구분).
   let workQueueExpanded = null; // { companyId, type } | null
+  // §업무관리 카드형 재배치 라운드 — 표의 "현재 상태/관리 이유"를 대신할 작은 유형 배지.
+  // 새 분류가 아니라 이미 있는 it.type 값을 그대로 라벨/색으로만 매핑한다 — 색은 기존에
+  // 이미 쓰던 3색(1차=네이비, 2차=주황, MOU=초록)에 전환관리 계열(L1→L2/L2→L3/재사용)만
+  // 청록 하나를 더해 총 4색으로 제한한다(§ 기존 라운드 "색 과하게 쓰지 않는다" 원칙 유지).
+  const WORKQ_CARD_BADGE = {
+    m1:{ label:'1차', cls:'m1' }, m1Scheduled:{ label:'1차 예정', cls:'m1' },
+    m2:{ label:'2차', cls:'m2' }, m2Scheduled:{ label:'2차 예정', cls:'m2' },
+    mou:{ label:'MOU', cls:'mou' },
+    firstActivity:{ label:'L1→L2', cls:'trans' }, l2Stall:{ label:'L2→L3', cls:'trans' }, reuse:{ label:'재사용', cls:'trans' }
+  };
   // §업무관리 탭 1차 구축 라운드 §4/§8/§13 — 작은 제목 한 줄 + 컴팩트 필터 칩 + 표 + "오늘
   // 먼저 확인" 한 줄. 큰 배너/카드/차트 없음(§3/§4/§16). 업체명 클릭은 openCardFromWorkQueue로
   // 기존 openCard(companyId)를 그대로 연다(§11, 새 상세화면/신규 업체 생성 없음).
@@ -7010,21 +7034,27 @@ window.SHIN2_CRM_APP_INIT = function(){
         ${WORKQ_FILTER_DEFS.map(([key,label])=> `<button type="button" class="list-filter-chip${workQueueFilter===key?' is-active':''}" data-workq-filter="${esc(key)}">${esc(label)} ${esc(counts[key]||0)}</button>`).join('')}
       </div>
       ${filtered.length ? `
-        <table class="workq-table">
-          <thead><tr><th>업체명</th><th>현재 상태</th><th>관리 이유</th><th>경과</th><th>해야 할 일</th></tr></thead>
-          <tbody>
-            ${filtered.map(it=> {
-              const isOpen = workQueueExpanded && workQueueExpanded.companyId === it.co.id && workQueueExpanded.type === it.type;
-              return `<tr>
-                <td><button type="button" class="workq-co-link" data-workq-open-co="${esc(it.co.id)}">${esc(it.co.name)}</button></td>
-                <td>${esc(it.currentStateLabel)}</td>
-                <td class="workq-reason">${esc(it.reasonText)}</td>
-                <td class="workq-days">${it.days === null ? '—' : esc(it.days) + '일'}${it.isDelayed ? '<span class="workq-delay-badge">지연</span>' : ''}</td>
-                <td><button type="button" class="workq-action-btn${isOpen ? ' is-open' : ''}" data-workq-toggle="${esc(it.co.id)}" data-workq-toggle-type="${esc(it.type)}">${esc(it.actionLabel)}</button></td>
-              </tr>${isOpen ? `<tr class="workq-expand-row"><td colspan="5"><div class="workq-expand">${renderWorkqExpandBody(it)}</div></td></tr>` : ''}`;
-            }).join('')}
-          </tbody>
-        </table>
+        <div class="workq-card-grid">
+          ${filtered.map(it=> {
+            const isOpen = workQueueExpanded && workQueueExpanded.companyId === it.co.id && workQueueExpanded.type === it.type;
+            const badge = WORKQ_CARD_BADGE[it.type] || { label:it.type, cls:'trans' };
+            return `
+              <div class="workq-card${isOpen ? ' is-expanded' : ''}">
+                <div class="workq-card-top">
+                  <span class="workq-card-badge ${esc(badge.cls)}">${esc(badge.label)}</span>
+                  <button type="button" class="workq-co-link workq-card-name" data-workq-open-co="${esc(it.co.id)}">${esc(it.co.name)}</button>
+                  ${it.isDelayed ? '<span class="workq-delay-badge">지연</span>' : ''}
+                </div>
+                <div class="workq-card-meta">${esc(it.currentStateLabel)} · <span class="workq-reason">${esc(it.reasonText)}</span></div>
+                <div class="workq-card-bottom">
+                  <span class="workq-days">${it.days === null ? '—' : esc(it.days) + '일'}</span>
+                  <button type="button" class="workq-action-btn${isOpen ? ' is-open' : ''}" data-workq-toggle="${esc(it.co.id)}" data-workq-toggle-type="${esc(it.type)}">${esc(it.actionLabel)}</button>
+                </div>
+                ${isOpen ? `<div class="workq-expand">${renderWorkqExpandBody(it)}</div>` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
       ` : `<div class="workq-empty">해당 조건의 업체가 없습니다.</div>`}
     `;
     wrap.querySelectorAll('[data-workq-filter]').forEach(btn=> btn.addEventListener('click', ()=>{
@@ -7053,11 +7083,13 @@ window.SHIN2_CRM_APP_INIT = function(){
   // computeWorkQueue()가 companies/activities를 다시 읽어 목록/상단 건수가 바로 갱신된다
   // (별도 diff 로직 불필요, 이미 매번 새로 계산하는 순수 함수라서).
   function bindWorkqExpandHandlers(wrap, list){
-    const panel = wrap.querySelector('.workq-expand-row');
-    if(!panel || !workQueueExpanded) return;
+    // §업무관리 카드형 재배치 라운드 — 펼침 영역이 더는 별도의 <tr class="workq-expand-row">가
+    // 아니라 열린 카드(.workq-card.is-expanded) 안에 바로 들어있다. 한 번에 하나만 펼쳐지므로
+    // (workQueueExpanded는 단일 값) .workq-expand를 바로 찾아도 이전과 동일하게 동작한다.
+    const root = wrap.querySelector('.workq-expand');
+    if(!root || !workQueueExpanded) return;
     const item = list.find(it=> it.co.id === workQueueExpanded.companyId && it.type === workQueueExpanded.type);
     if(!item) return;
-    const root = panel.querySelector('.workq-expand');
     const savedNote = root.querySelector('.workq-saved-note');
     const finishAndClose = ()=>{ workQueueExpanded = null; renderWorkQueueView(); };
     root.querySelectorAll('[data-workq-do]').forEach(btn=> btn.addEventListener('click', ()=>{
