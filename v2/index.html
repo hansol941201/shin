@@ -1421,116 +1421,142 @@
   .todo-rail-title svg{ color:var(--navy); flex:none; }
   /* 미완료 개수 배지 — 사이드바 .nav-badge와 같은 톤(네이비/연한 남색 배경)을 그대로 따른다 */
   /* 미완료 개수 pill — 아주 연한 핑크. 톤만 얹고 채도는 낮게 유지한다. */
+  /* 미완료 개수 — 담백한 회색 pill */
   .todo-rail-badge{
-    flex:none; padding:2px 9px; border-radius:11px;
+    flex:none; padding:2px 9px; border-radius:10px;
     font-size:11px; font-weight:700; line-height:16px;
-    color:#9B5B72; background:#FBEEF2; border:1px solid #F5DCE3; white-space:nowrap;
+    color:var(--navy); background:#EDF0F6; white-space:nowrap;
   }
-  .todo-rail-badge.zero{ color:var(--text-muted); background:#F2F4F7; border-color:var(--line); }
-  /* 작은 라인 캐릭터(토끼) — 제목보다 눈에 띄면 안 되므로 아주 옅은 선으로만 */
-  .todo-rail-mascot{ flex:none; color:#D8C2CA; margin-left:2px; }
+  .todo-rail-badge.zero{ color:var(--text-muted); background:#F2F4F7; }
   .todo-rail-collapse{
     margin-left:auto; flex:none;
     width:24px; height:24px; line-height:1;
-    border:1px solid var(--line); background:var(--surface); border-radius:7px;
+    border:1px solid var(--line); background:var(--surface); border-radius:6px;
     color:var(--text-muted); font-size:13px; font-family:inherit; cursor:pointer;
   }
   .todo-rail-collapse:hover{ background:#F0F1F4; color:var(--text); }
 
   .todo-rail-add{ display:flex; gap:6px; padding:12px 18px 10px; flex:none; }
   .todo-rail-add-wrap{
-    flex:1; min-width:0; display:flex; align-items:center; gap:7px;
-    height:34px; padding:0 12px;
-    background:#FAFBFD; border:1px solid var(--line); border-radius:17px;
+    flex:1; min-width:0; display:flex; align-items:center; gap:6px;
+    height:34px; padding:0 6px 0 11px;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
   }
-  .todo-rail-add-wrap:focus-within{ border-color:#C7CEDB; background:var(--surface); }
-  .todo-rail-add-wrap svg{ flex:none; color:#C3B0B7; }
+  .todo-rail-add-wrap:focus-within{ border-color:#C7CEDB; }
   .todo-rail-add input{
     flex:1; min-width:0; height:100%; padding:0; border:none; outline:none;
     font-size:13px; font-family:inherit; color:var(--text); background:transparent;
   }
+  .todo-rail-datebtn{
+    flex:none; border:none; background:transparent; cursor:pointer;
+    color:#AEB3BD; padding:3px; line-height:1; border-radius:5px;
+  }
+  .todo-rail-datebtn:hover, .todo-rail-datebtn.on{ color:var(--navy); }
   .todo-rail-add > button{
     flex:none; height:34px; padding:0 13px; white-space:nowrap;
     font-size:12.5px; font-family:inherit; font-weight:600; color:#fff;
-    background:var(--navy); border:1px solid var(--navy); border-radius:17px; cursor:pointer;
+    background:var(--navy); border:1px solid var(--navy); border-radius:8px; cursor:pointer;
   }
   .todo-rail-add > button:hover{ opacity:0.92; }
 
-  .todo-rail-list{ flex:1; min-height:0; overflow-y:auto; padding:2px 12px 10px; }
-  .todo-rail-empty{ font-size:12.5px; color:var(--text-muted); padding:16px 8px; }
-
-  /* 구역 제목(중요 / 해야 할 일 / 완료) */
-  .todo-sec{ margin-top:12px; }
-  .todo-sec:first-child{ margin-top:2px; }
-  .todo-sec-head{
-    display:flex; align-items:center; gap:6px;
-    padding:4px 6px 7px; font-size:11.5px; font-weight:700; color:var(--text-muted);
-    letter-spacing:0.1px;
+  .todo-rail-daterow{ display:none; align-items:center; gap:7px; padding:0 18px 10px; flex:none; }
+  .todo-rail-daterow.open{ display:flex; }
+  .todo-rail-daterow input[type="date"]{
+    height:28px; padding:0 8px; font-size:12px; font-family:inherit; color:var(--text);
+    background:var(--surface); border:1px solid var(--line); border-radius:6px; outline:none;
   }
-  .todo-sec-head .dot{ flex:none; width:7px; height:7px; border-radius:50%; }
+  .todo-rail-daterow input[type="date"]:focus{ border-color:#C7CEDB; }
+  .todo-rail-duepick{
+    padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;
+    color:var(--navy); background:#EDF0F6; white-space:nowrap;
+  }
+  .todo-rail-dateclear{
+    border:none; background:transparent; cursor:pointer; padding:2px 4px;
+    font-size:11px; font-family:inherit; color:var(--text-muted); border-radius:5px;
+  }
+  .todo-rail-dateclear:hover{ color:#B91C1C; }
+
+  .todo-rail-list{ flex:1; min-height:0; overflow-y:auto; padding:2px 14px 12px; }
+  .todo-rail-empty{ font-size:12.5px; color:var(--text-muted); padding:16px 4px; }
+
+  /* 날짜 구역 */
+  .todo-sec{ padding-top:12px; margin-top:12px; border-top:1px solid var(--line); }
+  .todo-sec:first-child{ margin-top:0; padding-top:4px; border-top:none; }
+  .todo-sec-head{
+    display:flex; align-items:center; gap:8px; padding:0 2px 8px;
+    font-size:12px; font-weight:700; color:var(--text);
+  }
   .todo-sec-head .n{
-    flex:none; margin-left:2px; padding:0 6px; border-radius:9px;
+    flex:none; margin-left:auto; padding:0 6px; border-radius:9px;
     font-size:10.5px; font-weight:700; line-height:16px;
     color:var(--text-muted); background:#F2F4F7;
   }
-  .todo-sec-star{ flex:none; color:#E0A93A; }
-  .todo-sec.imp .dot{ background:#EDB6C6; }
-  .todo-sec.act .dot{ background:#9FB4DA; }
-  .todo-sec.don .dot{ background:#D5D8DE; }
+  .todo-sec.today .todo-sec-head{ color:var(--navy); }
+  .todo-sec.today .todo-sec-head .n{ color:#fff; background:var(--navy); }
+  .todo-sec.over .todo-sec-head{ color:#B3283C; }
+  .todo-sec.over .todo-sec-head .n{ color:#B3283C; background:#FBE9EB; }
+  .todo-sec.done .todo-sec-head{ color:var(--text-muted); }
   .todo-sec-toggle{
-    margin-left:auto; flex:none; border:none; background:transparent; cursor:pointer;
-    font-size:11px; font-family:inherit; color:var(--text-muted); padding:2px 4px; border-radius:5px;
+    flex:none; border:none; background:transparent; cursor:pointer;
+    font-size:11px; font-family:inherit; font-weight:500; color:var(--text-muted);
+    padding:2px 4px; border-radius:5px;
   }
   .todo-sec-toggle:hover{ color:var(--navy); background:#F2F4F7; }
 
-  /* 행: 아주 약하게 둥근 카드. 그림자 없음, 테두리 한 겹만. */
+  /* 행 */
   .todo-rail-row{
-    display:flex; align-items:center; gap:11px;
-    padding:11px 12px; margin-bottom:6px;
-    background:var(--surface); border:1px solid #ECEEF2; border-radius:10px;
-    transition:background .12s ease, border-color .12s ease;
+    display:flex; align-items:center; gap:10px;
+    padding:9px 11px; margin-bottom:5px;
+    background:var(--surface); border:1px solid #E8EAEF; border-radius:7px;
   }
-  .todo-rail-row:hover{ background:#F7F9FC; border-color:#DFE3EA; }
+  .todo-rail-row:hover{ background:#F7F8FA; border-color:#D9DDE4; }
   .todo-rail-row input[type="checkbox"]{
-    flex:none; width:17px; height:17px; margin:0; accent-color:var(--navy); cursor:pointer;
-    transition:transform .18s ease;
+    flex:none; width:16px; height:16px; margin:0; accent-color:var(--navy); cursor:pointer;
   }
   .todo-rail-text{
-    flex:1; min-width:0; font-size:13.5px; line-height:1.5; font-weight:500;
+    flex:1; min-width:0; font-size:13.5px; line-height:1.45; font-weight:500;
     color:var(--text); word-break:break-word;
   }
-
-  /* 중요: 아주 연한 핑크 배경 + 핑크 테두리 */
-  .todo-rail-row.important{ background:#FDF6F8; border-color:#F2DDE4; }
-  .todo-rail-row.important:hover{ background:#FCF1F5; border-color:#EBCFD9; }
   .todo-rail-row.important .todo-rail-text{ font-weight:600; }
 
-  /* 완료: 전체적으로 연하게 */
-  .todo-rail-row.done{ background:#FBFCFD; border-color:#F0F1F4; }
-  .todo-rail-row.done:hover{ background:#F7F8FA; }
-  .todo-rail-row.done .todo-rail-text{ text-decoration:line-through; color:#A9AEB9; font-weight:400; }
+  /* 오늘 — 네이비로 가장 명확하게 */
+  .todo-rail-row.b-today{ border-left:3px solid var(--navy); border-color:#D5DBE7; border-left-color:var(--navy); }
+  .todo-rail-row.b-today .todo-rail-text{ font-weight:600; color:var(--navy); }
+  /* 기한 지남 — 아주 연한 빨강 */
+  .todo-rail-row.b-over{ background:#FDF4F5; border-color:#F2DADD; }
+  .todo-rail-row.b-over:hover{ background:#FBEEF0; }
+  /* 내일/예정 — 아주 연한 블루 */
+  .todo-rail-row.b-tomorrow, .todo-rail-row.b-future{ background:#F8FAFD; border-color:#E3E8F0; }
+  /* 완료 */
+  .todo-rail-row.done{ background:#FAFBFC; border-color:#EDEEF1; }
+  .todo-rail-row.done .todo-rail-text{ text-decoration:line-through; color:#A3A8B4; font-weight:400; }
 
-  /* 완료 순간의 아주 짧은 팝(0.2s) — 폭죽 없음 */
-  @keyframes todoPop{ 0%{ transform:scale(1); } 45%{ transform:scale(1.28); } 100%{ transform:scale(1); } }
-  .todo-rail-row.pop input[type="checkbox"]{ animation:todoPop .2s ease; }
+  /* 날짜 pill */
+  .todo-due{
+    flex:none; padding:1px 7px; border-radius:9px;
+    font-size:10.5px; font-weight:700; line-height:16px; white-space:nowrap;
+    color:var(--text-muted); background:#F2F4F7;
+  }
+  .todo-due.d-today{ color:#fff; background:var(--navy); }
+  .todo-due.d-over{ color:#B3283C; background:#FBE9EB; }
+  .todo-due.d-tomorrow, .todo-due.d-future{ color:#5C6B8A; background:#EEF2F8; }
+  .todo-rail-row.done .todo-due{ opacity:0.55; }
 
-  /* 중요(☆/★) */
+  /* 중요 별 */
   .todo-rail-star{
     flex:none; border:none; background:transparent; cursor:pointer;
     color:#D8DBE1; padding:2px; line-height:1; border-radius:5px;
-    transition:color .12s ease, transform .12s ease;
   }
   .todo-rail-row:hover .todo-rail-star{ color:#B9BEC7; }
-  .todo-rail-star:hover{ color:#E0A93A; transform:scale(1.12); }
+  .todo-rail-star:hover{ color:var(--navy); }
   .todo-rail-star.on,
-  .todo-rail-row:hover .todo-rail-star.on{ color:#E0A93A; }
+  .todo-rail-row:hover .todo-rail-star.on{ color:var(--navy); }
   .todo-rail-star.on svg{ fill:currentColor; }
 
-  /* 삭제는 평소 거의 안 보이게 */
+  /* 삭제 — 평소 거의 안 보이게 */
   .todo-rail-del{
     flex:none; border:none; background:transparent; cursor:pointer;
     color:#EBEDF0; padding:2px 3px; line-height:1; border-radius:5px;
-    transition:color .12s ease;
   }
   .todo-rail-row:hover .todo-rail-del{ color:#B3B8C2; }
   .todo-rail-del:hover{ color:#B91C1C; }
@@ -1540,7 +1566,6 @@
     padding:9px 18px; border-top:1px solid var(--line); flex:none;
     font-size:11.5px; color:var(--text-muted);
   }
-  .todo-rail-cheer{ flex:none; color:#9B5B72; font-weight:600; }
   .todo-rail-clear{
     margin-left:auto; flex:none;
     border:none; background:transparent; cursor:pointer;
@@ -1549,117 +1574,6 @@
   .todo-rail-clear:hover{ color:var(--navy); }
   .todo-rail-clear:disabled{ opacity:0.4; cursor:default; }
   .todo-rail-clear:disabled:hover{ color:var(--text-muted); }
-
-  /* ---------- 마감일 + 알림 (§마감일 라운드) ---------- */
-  .todo-rail-datebtn{
-    flex:none; border:none; background:transparent; cursor:pointer;
-    color:#B9BEC7; padding:2px; line-height:1; border-radius:5px;
-  }
-  .todo-rail-datebtn:hover, .todo-rail-datebtn.on{ color:var(--navy); }
-  .todo-rail-daterow{
-    display:none; align-items:center; gap:7px;
-    padding:0 18px 10px; flex:none;
-  }
-  .todo-rail-daterow.open{ display:flex; }
-  .todo-rail-daterow input[type="date"]{
-    height:28px; padding:0 8px; font-size:12px; font-family:inherit; color:var(--text);
-    background:var(--surface); border:1px solid var(--line); border-radius:8px; outline:none;
-  }
-  .todo-rail-daterow input[type="date"]:focus{ border-color:#C7CEDB; }
-  .todo-rail-duepick{
-    padding:2px 9px; border-radius:11px; font-size:11px; font-weight:700;
-    color:#4A5A80; background:#EEF2FA; border:1px solid #DCE4F2; white-space:nowrap;
-  }
-  .todo-rail-dateclear{
-    border:none; background:transparent; cursor:pointer; padding:2px 4px;
-    font-size:11px; font-family:inherit; color:var(--text-muted); border-radius:5px;
-  }
-  .todo-rail-dateclear:hover{ color:#B91C1C; }
-
-  /* 행 안의 마감일 pill */
-  .todo-due{
-    flex:none; padding:2px 8px; border-radius:10px;
-    font-size:10.5px; font-weight:700; line-height:16px; white-space:nowrap;
-  }
-  .todo-due.future{ color:#5C6B8A; background:#EEF2FA; border:1px solid #DEE5F1; }
-  .todo-due.today{ color:#9B5B72; background:#FBEEF2; border:1px solid #F2D8E0; }
-  .todo-due.over{ color:#A33B4E; background:#FBE7EA; border:1px solid #F0CBD2; font-weight:800; }
-  .todo-rail-row.done .todo-due{ opacity:0.5; }
-
-  /* 알림 설정(작은 팝오버) */
-  .todo-rail-bell{
-    flex:none; border:none; background:transparent; cursor:pointer;
-    color:#B9BEC7; padding:2px; line-height:1; border-radius:5px;
-  }
-  .todo-rail-bell:hover, .todo-rail-bell.on{ color:var(--navy); }
-  .todo-rail-setwrap{ position:relative; flex:none; }
-  .todo-rail-settings{
-    display:none; position:absolute; top:26px; right:0; z-index:60;
-    width:196px; padding:10px 12px;
-    background:var(--surface); border:1px solid var(--line); border-radius:10px;
-    box-shadow:0 4px 14px rgba(17,24,39,0.08);
-  }
-  .todo-rail-settings.open{ display:block; }
-  .todo-rail-settings .lbl{ font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:5px; }
-  .todo-rail-settings select{
-    width:100%; height:28px; padding:0 6px; margin-bottom:10px;
-    font-size:12px; font-family:inherit; color:var(--text);
-    background:var(--surface); border:1px solid var(--line); border-radius:7px; outline:none;
-  }
-  .todo-rail-settings .chk{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text); cursor:pointer; }
-  .todo-rail-settings .chk input{ width:14px; height:14px; margin:0; accent-color:var(--navy); }
-  .todo-rail-settings .note{ font-size:10.5px; color:var(--text-muted); margin-top:7px; line-height:1.45; }
-
-  /* 접속 시 중앙 알림 팝업 */
-  .todo-alert-overlay{
-    position:fixed; inset:0; z-index:120;
-    background:rgba(17,24,39,0.35);
-    display:none; align-items:center; justify-content:center; padding:20px;
-  }
-  .todo-alert-overlay.open{ display:flex; }
-  .todo-alert{
-    width:100%; max-width:380px; padding:22px 22px 18px;
-    background:var(--surface); border:1px solid var(--line); border-radius:14px;
-  }
-  .todo-alert-top{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-  .todo-alert-bell{ font-size:18px; line-height:1; }
-  .todo-alert-title{ font-size:14.5px; font-weight:800; color:var(--text); }
-  .todo-alert-sub{ font-size:12px; color:var(--text-muted); margin-bottom:14px; }
-  .todo-alert-list{ max-height:210px; overflow-y:auto; margin-bottom:16px; }
-  .todo-alert-item{
-    display:flex; align-items:center; gap:8px;
-    padding:7px 10px; margin-bottom:5px;
-    background:#FDF6F8; border:1px solid #F2DDE4; border-radius:9px;
-    font-size:12.5px; color:var(--text);
-  }
-  .todo-alert-item .t{ flex:1; min-width:0; font-weight:500; word-break:break-word; }
-  .todo-alert-item .d{ flex:none; font-size:10.5px; font-weight:800; color:#A33B4E; }
-  .todo-alert-item.today .d{ color:#9B5B72; }
-  .todo-alert-actions{ display:flex; justify-content:flex-end; gap:8px; }
-  .todo-alert-actions button{
-    height:32px; padding:0 14px; font-size:12.5px; font-family:inherit; font-weight:600;
-    border-radius:16px; cursor:pointer;
-  }
-  .todo-alert-later{ color:var(--text-muted); background:var(--surface); border:1px solid var(--line); }
-  .todo-alert-later:hover{ background:#F0F1F4; color:var(--text); }
-  .todo-alert-go{ color:#fff; background:var(--navy); border:1px solid var(--navy); }
-  .todo-alert-go:hover{ opacity:0.92; }
-
-  /* 사용 중 작은 우하단 알림 */
-  .todo-toastlet{
-    position:fixed; right:18px; bottom:18px; z-index:119;
-    display:none; align-items:center; gap:8px;
-    padding:10px 14px; max-width:280px;
-    background:var(--surface); border:1px solid #F2DDE4; border-radius:12px;
-    box-shadow:0 4px 16px rgba(17,24,39,0.10);
-    font-size:12.5px; font-weight:600; color:var(--text); cursor:pointer;
-  }
-  .todo-toastlet.show{ display:flex; }
-  .todo-toastlet .n{ flex:none; color:#9B5B72; font-weight:800; }
-
-  /* 확인하기 시 레일을 잠깐 강조 */
-  @keyframes todoRailFlash{ 0%{ box-shadow:inset 3px 0 0 #EDB6C6; } 100%{ box-shadow:inset 3px 0 0 rgba(237,182,198,0); } }
-  .todo-rail.flash{ animation:todoRailFlash 1.2s ease; }
 
   /* 접힘: 레일을 감추고 오른쪽 끝에 체크 아이콘 버튼만 남긴다 */
   .todo-rail.collapsed{ display:none; }
@@ -2603,32 +2517,14 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12.5 2.3 2.3L16 9.5"/></svg>
         <span>오늘의 투두</span>
         <span class="todo-rail-badge" id="todoRailBadge">미완료 0</span>
-        <svg class="todo-rail-mascot" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9.2C8.5 7 8.1 4.4 8.9 3.6c.8-.7 1.8 1.2 2.3 3.4"/><path d="M15 9.2c.5-2.2.9-4.8.1-5.6-.8-.7-1.8 1.2-2.3 3.4"/><path d="M12 9.4c2.7 0 4.8 2 4.8 4.6 0 2.7-2.1 4.6-4.8 4.6s-4.8-1.9-4.8-4.6c0-2.6 2.1-4.6 4.8-4.6Z"/><path d="M10.4 13.4h.01M13.6 13.4h.01"/></svg>
-      </div>
-      <div class="todo-rail-setwrap">
-        <button type="button" class="todo-rail-bell" id="todoRailBell" title="알림 설정" aria-label="알림 설정">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>
-        </button>
-        <div class="todo-rail-settings" id="todoRailSettings">
-          <div class="lbl">알림 반복 간격</div>
-          <select id="todoRailInterval">
-            <option value="30">30분</option>
-            <option value="60">1시간</option>
-            <option value="120">2시간</option>
-            <option value="0">알림 끄기</option>
-          </select>
-          <label class="chk"><input type="checkbox" id="todoRailWebNotify" /> 브라우저 알림 사용</label>
-          <div class="note" id="todoRailNotifyNote">켜면 브라우저에 알림 권한을 요청합니다.</div>
-        </div>
       </div>
       <button type="button" class="todo-rail-collapse" id="todoRailCollapse" title="투두 접기" aria-label="투두 접기">&lsaquo;</button>
     </div>
     <div class="todo-rail-add">
       <div class="todo-rail-add-wrap">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.6 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
         <input type="text" id="todoRailInput" placeholder="할 일을 입력하세요" autocomplete="off" />
         <button type="button" class="todo-rail-datebtn" id="todoRailDateBtn" title="마감일 선택" aria-label="마감일 선택">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
         </button>
       </div>
       <button type="button" id="todoRailAddBtn">+ 추가</button>
@@ -2641,28 +2537,9 @@
     <div class="todo-rail-list" id="todoRailList"></div>
     <div class="todo-rail-foot">
       <span id="todoRailCount">전체 0개 · 완료 0개</span>
-      <span class="todo-rail-cheer" id="todoRailCheer" style="display:none;"></span>
       <button type="button" class="todo-rail-clear" id="todoRailClearDone" title="체크한 항목을 목록에서 치웁니다. 처리완료 이력은 기존 [내 할 일]에 그대로 남습니다.">완료 항목 치우기</button>
     </div>
   </aside>
-  <!-- 마감일 알림: 접속 시 중앙 팝업 / 사용 중 우하단 작은 알림 -->
-  <div class="todo-alert-overlay" id="todoAlertOverlay">
-    <div class="todo-alert">
-      <div class="todo-alert-top">
-        <span class="todo-alert-bell">🔔</span>
-        <span class="todo-alert-title">기한이 오늘이거나 지난 할 일이 있어요!</span>
-      </div>
-      <div class="todo-alert-sub">지금 확인하고 완료해보세요.</div>
-      <div class="todo-alert-list" id="todoAlertList"></div>
-      <div class="todo-alert-actions">
-        <button type="button" class="todo-alert-later" id="todoAlertLater">나중에</button>
-        <button type="button" class="todo-alert-go" id="todoAlertGo">확인하기</button>
-      </div>
-    </div>
-  </div>
-  <div class="todo-toastlet" id="todoToastlet">
-    <span>🔔 오늘이거나 지난 할 일이 있어요!</span><span class="n" id="todoToastletN">0건</span>
-  </div>
   <button type="button" class="todo-rail-reopen" id="todoRailReopen" title="오늘의 투두 열기" aria-label="오늘의 투두 열기">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12.5 2.3 2.3L16 9.5"/></svg>
   </button>
@@ -12353,43 +12230,58 @@ ${text}
 <script>
 (function(){
   // ================================================================================
-  // 오늘의 투두 (우측 레일) — §기존 투두와 통합 라운드
+  // 오늘의 투두 (우측 레일) — 마감 날짜 기준 자동 분류
   //
-  // [중요] 이 레일은 더 이상 별도 저장소를 쓰지 않는다. 기존 "내 할 일"(사이드바 체크
-  // 아이콘 → 슬라이드 패널)과 **같은 배열을 그대로 읽고 쓴다** — 목록이 하나뿐이라 어느
-  // 쪽에서 고쳐도 둘 다 반영되고, 기존 클라우드 동기화('todos')도 그대로 유지된다.
+  // 저장: localStorage[ SHIN2_USER.nsKey('shin2-todos') ]  ← 기존 키/구조 그대로.
+  // 항목: { id, text, done, completedAt, important?, dueDate? }
+  //   - important / dueDate는 값이 있을 때만 붙는 선택 필드다. 기존 항목엔 없으므로
+  //     각각 false / null로 취급한다(마이그레이션·초기화·재생성·ID 변경 없음).
+  // 기존 "내 할 일"(사이드바 슬라이드 패널)과 같은 배열을 공유하며, 그쪽 코드는 고치지
+  // 않는다 — 저장 후 'shin2-cloud-update'({key:'todos'})를 쏘면 그쪽 기존 리스너가
+  // 알아서 다시 읽어 다시 그린다.
   //
-  //   저장: localStorage[ SHIN2_USER.nsKey('shin2-todos') ]  ← 기존 키 그대로. 신규 키 없음.
-  //   항목: { id, text, done, completedAt, ... }             ← 기존 구조 그대로. 필드 추가 없음.
-  //
-  // 기존 "내 할 일" 모듈의 코드는 한 줄도 고치지 않았다. 저장 후 이 모듈이
-  // 'shin2-cloud-update'({key:'todos'}) 이벤트를 쏘면, 그쪽이 이미 갖고 있던 리스너가
-  // 알아서 다시 읽어 다시 그린다(§클라우드 동기화 라운드에서 만들어진 기존 경로 재사용).
-  //
-  // 표시 규칙: 미완료 항목만 보여준다(완료 이력으로 목록이 길어지지 않게). 다만 이 화면에서
-  // 방금 체크한 항목은 취소선 상태로 남겨둬서 바로 체크를 해제할 수 있게 한다.
+  // 분류는 저장값이 아니라 "오늘 날짜"로 매번 새로 계산한다. 그래서 자정이 지나면
+  // 사용자가 아무것도 안 해도 내일 → 오늘 → 1일 지남으로 저절로 이동한다.
   // ================================================================================
   var TODO_KEY = window.SHIN2_USER ? window.SHIN2_USER.nsKey('shin2-todos') : 'shin2-todos';
   var COLLAPSE_KEY = 'netform_todo_collapsed_v1';
-  // 통합 전(이 레일이 잠깐 독립 저장소를 쓰던 버전)에 여기에 적어둔 할 일이 있으면 잃지
-  // 않도록 기존 목록으로 1회만 합쳐준다. 원본 키는 절대 지우지 않는다.
+  var DONE_FOLD_KEY = 'netform_todo_donefold_v1';
   var LEGACY_KEY = 'netform_todo_v1';
   var LEGACY_FLAG = 'netform_todo_merged_v1';
 
   var railEl = document.getElementById('todoRail');
   var listEl = document.getElementById('todoRailList');
   var badgeEl = document.getElementById('todoRailBadge');
-  var cheerEl = document.getElementById('todoRailCheer');
-  var DONE_FOLD_KEY = 'netform_todo_donefold_v1';
+  var inputEl = document.getElementById('todoRailInput');
+  var addBtn = document.getElementById('todoRailAddBtn');
+  var countEl = document.getElementById('todoRailCount');
+  var clearBtn = document.getElementById('todoRailClearDone');
+  var collapseBtn = document.getElementById('todoRailCollapse');
+  var reopenBtn = document.getElementById('todoRailReopen');
+  var dateBtn = document.getElementById('todoRailDateBtn');
+  var dateRow = document.getElementById('todoRailDateRow');
+  var dateInput = document.getElementById('todoRailDate');
+  var duePick = document.getElementById('todoRailDuePick');
+  var dateClear = document.getElementById('todoRailDateClear');
+  if(!railEl || !listEl) return;
+
+  var justDone = Object.create(null);   // 이 화면에서 방금 완료한 항목(취소선으로 잠시 유지)
+  var pendingDue = '';                  // 입력 중인 마감일
   var doneFolded = false;
   try{ doneFolded = localStorage.getItem(DONE_FOLD_KEY) === '1'; }catch(e){}
-  var popId = null;   // 방금 완료 처리한 항목(짧은 팝 효과용)
-  var ALARM_KEY = 'netform_todo_alarm_v1';   // { interval:분, web:bool } — 알림 설정만. 투두 데이터와 무관.
-  var pendingDue = '';                        // 입력 중인 마감일(아직 추가 전)
 
-  // ---- 로컬 날짜 기준 계산 (UTC 밀림 방지) ----
-  // 마감일은 'YYYY-MM-DD' 문자열이고 시간 개념이 없다. new Date('YYYY-MM-DD')는 UTC로
-  // 해석돼 한국에서 하루가 밀리므로 절대 쓰지 않고, 연/월/일을 쪼개 로컬 자정으로 만든다.
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function genId(){
+    return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+
+  // ---- 로컬(한국) 날짜 기준 계산 ----
+  // new Date('YYYY-MM-DD')는 UTC로 해석돼 한국에서 하루가 밀리므로 절대 쓰지 않는다.
+  // 연/월/일을 쪼개 로컬 자정 Date를 만들고, 오늘도 로컬 자정으로 정규화해서 뺀다.
   function parseDue(v){
     if(!v || typeof v !== 'string') return null;
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
@@ -12401,57 +12293,37 @@ ${text}
     var n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   }
-  // 양수 = 지난 일수, 0 = 오늘 마감, 음수 = 아직 남음, null = 마감일 없음
+  function dayKey(){
+    var n = new Date();
+    return n.getFullYear() + '-' + (n.getMonth() + 1) + '-' + n.getDate();
+  }
+  // 양수 = 지난 일수, 0 = 오늘, -1 = 내일, null = 마감일 없음
   function dueDiff(v){
     var d = parseDue(v);
     if(!d) return null;
     return Math.round((todayMid().getTime() - d.getTime()) / 86400000);
   }
-  var WD = ['일','월','화','수','목','금','토'];
+  function dueOf(t){ return (t && t.dueDate) ? t.dueDate : null; }
+  function isImportant(t){ return !!(t && t.important); }
+
   function dueText(v){
     var n = dueDiff(v);
     if(n === null) return '';
     if(n === 0) return '오늘';
     if(n > 0) return n + '일 지남';
     var d = parseDue(v);
-    return '~ ' + (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')';
+    return (d.getMonth() + 1) + '/' + d.getDate();
   }
-  function dueKind(v){
-    var n = dueDiff(v);
-    if(n === null) return '';
-    return n > 0 ? 'over' : (n === 0 ? 'today' : 'future');
-  }
-  // 기존 항목에는 dueDate가 없다 — 없으면 null로 본다(하위 호환).
-  function dueOf(t){ return (t && t.dueDate) ? t.dueDate : null; }
-  // 알림 대상: 마감일이 있고 && 오늘이거나 지났고 && 완료되지 않음
-  function isAlarming(t){
-    if(!t || t.done) return false;
+  // 미완료 항목의 구역: over / today / tomorrow / future / plain
+  function bucketOf(t){
     var n = dueDiff(dueOf(t));
-    return n !== null && n >= 0;
-  }
-  var inputEl = document.getElementById('todoRailInput');
-  var addBtn = document.getElementById('todoRailAddBtn');
-  var countEl = document.getElementById('todoRailCount');
-  var clearBtn = document.getElementById('todoRailClearDone');
-  var collapseBtn = document.getElementById('todoRailCollapse');
-  var reopenBtn = document.getElementById('todoRailReopen');
-  if(!railEl || !listEl) return;
-
-  // 이 화면에서 방금 완료 처리한 id들 — 취소선 상태로 잠시 남겨두기 위한 화면 전용 상태.
-  // 저장되지 않으며, [완료 항목 치우기]를 누르거나 새로고침하면 비워진다(데이터는 그대로).
-  var justDone = Object.create(null);
-
-  function esc(v){
-    return String(v == null ? '' : v)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-  function genId(){
-    return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    if(n === null) return 'plain';
+    if(n > 0) return 'over';
+    if(n === 0) return 'today';
+    if(n === -1) return 'tomorrow';
+    return 'future';
   }
 
-  // 항상 localStorage에서 새로 읽는다 — 인메모리 배열을 오래 들고 있다가 기존 패널/CRM/
-  // 클라우드가 바꾼 최신 상태를 덮어쓰는 사고를 원천 차단한다(§기존 데이터 보호).
   function load(){
     try{
       var raw = localStorage.getItem(TODO_KEY);
@@ -12473,20 +12345,18 @@ ${text}
       }
       return false;
     }
-    // 기존 "내 할 일"과 완전히 같은 동기화 경로/키를 그대로 탄다.
     try{
       if(window.__shin2CloudSync && typeof window.__shin2CloudSync.push === 'function'){
         window.__shin2CloudSync.push('todos', todos);
       }
     }catch(e){ console.error('[오늘의 투두] 클라우드 전달 실패', e); }
-    // 같은 페이지의 기존 "내 할 일" 패널이 다시 읽도록 알린다(기존 리스너 재사용).
     try{
       window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail: { key: 'todos' } }));
     }catch(e){}
     return true;
   }
 
-  // 예전 독립 저장소에 남아있던 항목을 기존 목록으로 1회만 합친다(원본은 보존).
+  // 통합 전 독립 저장소에 남아있던 항목을 1회만 합친다(원본 키는 지우지 않는다).
   function mergeLegacyOnce(){
     try{ if(localStorage.getItem(LEGACY_FLAG) === '1') return; }catch(e){ return; }
     var legacy = [];
@@ -12509,48 +12379,13 @@ ${text}
     try{ localStorage.setItem(LEGACY_FLAG, '1'); }catch(e){}
   }
 
-  // 중요 여부는 기존 항목에 없을 수 있다 — 값이 없으면 "일반"으로 본다(backward compatible).
-  function isImportant(t){ return !!(t && t.important); }
-
-  // 마감일 급한 순: 0=기한지남, 1=오늘, 2=미래, 3=날짜 없음
-  function dueRank(t){
-    var n = dueDiff(dueOf(t));
-    if(n === null) return 3;
-    return n > 0 ? 0 : (n === 0 ? 1 : 2);
-  }
-
-  // 표시 순서: 1) 중요+미완료  2) 일반+미완료  3) 완료
-  // 저장된 배열 자체는 절대 재정렬하지 않는다(기존 패널의 수동 순서변경 ↑↓ 결과를 지키기
-  // 위해, 화면에 그릴 복사본만 정렬한다).
-  function visibleOf(todos){
-    var visible = todos.filter(function(t){ return !t.done || justDone[t.id]; });
-    return visible
-      .map(function(t, i){ return { t: t, i: i }; })
-      .sort(function(a, b){
-        var ra = a.t.done ? 2 : (isImportant(a.t) ? 0 : 1);
-        var rb = b.t.done ? 2 : (isImportant(b.t) ? 0 : 1);
-        if(ra !== rb) return ra - rb;
-        // 같은 중요도 안에서는 마감일이 급한 순서로: 기한 지남 → 오늘 → 미래 → 날짜 없음
-        if(!a.t.done && !b.t.done){
-          var ka = dueRank(a.t), kb = dueRank(b.t);
-          if(ka !== kb) return ka - kb;
-          if(ka !== 3){
-            var da = parseDue(dueOf(a.t)), db = parseDue(dueOf(b.t));
-            if(da && db && da.getTime() !== db.getTime()) return da - db;  // 이른 날짜가 위
-          }
-        }
-        return a.i - b.i;   // 그래도 같으면 기존 순서 그대로(안정 정렬)
-      })
-      .map(function(x){ return x.t; });
-  }
-
-  function rowHtml(it){
+  function rowHtml(it, bucket){
     var star = isImportant(it);
-    return '<div class="todo-rail-row' + (it.done ? ' done' : '') + (star && !it.done ? ' important' : '') +
-        (popId === it.id ? ' pop' : '') + '" data-id="' + esc(it.id) + '">' +
+    var due = dueOf(it);
+    return '<div class="todo-rail-row ' + (it.done ? 'done' : 'b-' + bucket) + (star ? ' important' : '') + '" data-id="' + esc(it.id) + '">' +
       '<input type="checkbox" data-act="toggle"' + (it.done ? ' checked' : '') + ' />' +
       '<span class="todo-rail-text">' + esc(it.text) + '</span>' +
-      (dueOf(it) ? '<span class="todo-due ' + dueKind(dueOf(it)) + '">' + esc(dueText(dueOf(it))) + '</span>' : '') +
+      (due ? '<span class="todo-due d-' + (it.done ? 'plain' : bucket) + '">' + esc(dueText(due)) + '</span>' : '') +
       '<button type="button" class="todo-rail-star' + (star ? ' on' : '') + '" data-act="star" title="' + (star ? '중요 해제' : '중요 표시') + '" aria-label="중요 표시" aria-pressed="' + (star ? 'true' : 'false') + '">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>' +
       '</button>' +
@@ -12560,69 +12395,98 @@ ${text}
     '</div>';
   }
 
+  // 구역 안 정렬: 중요 먼저 → 마감일 빠른 순 → 기존 배열 순서
+  function sortInSection(rows){
+    return rows.map(function(t, i){ return { t: t, i: i }; })
+      .sort(function(a, b){
+        var ia = isImportant(a.t) ? 0 : 1, ib = isImportant(b.t) ? 0 : 1;
+        if(ia !== ib) return ia - ib;
+        var da = parseDue(dueOf(a.t)), db = parseDue(dueOf(b.t));
+        if(da && db && da.getTime() !== db.getTime()) return da - db;
+        return a.i - b.i;
+      })
+      .map(function(x){ return x.t; });
+  }
+
   function secHtml(kind, label, rows, extraHead){
     if(rows.length === 0) return '';
     return '<div class="todo-sec ' + kind + '">' +
-      '<div class="todo-sec-head">' +
-        (kind === 'imp'
-          ? '<svg class="todo-sec-star" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>'
-          : '<span class="dot"></span>') +
-        '<span>' + label + '</span><span class="n">' + rows.length + '</span>' +
+      '<div class="todo-sec-head"><span>' + label + '</span>' +
         (extraHead || '') +
+        '<span class="n">' + rows.length + '</span>' +
       '</div>' +
-      (kind === 'don' && doneFolded ? '' : rows.map(rowHtml).join('')) +
+      (kind === 'done' && doneFolded ? '' : rows.map(function(t){ return rowHtml(t, kind); }).join('')) +
     '</div>';
   }
 
   function render(){
     var todos = load();
-    var visible = visibleOf(todos);
-    var imp = visible.filter(function(t){ return !t.done && isImportant(t); });
-    var act = visible.filter(function(t){ return !t.done && !isImportant(t); });
-    var don = visible.filter(function(t){ return t.done; });
+    // 완료 항목은 이 화면에서 방금 체크한 것만 "완료한 일"에 잠시 남긴다
+    // (기존 [처리완료] 이력 전체를 끌고 오면 목록이 길어져서).
+    var visible = todos.filter(function(t){ return !t.done || justDone[t.id]; });
+    var g = { today: [], over: [], tomorrow: [], future: [], plain: [], done: [] };
+    visible.forEach(function(t){
+      if(t.done){ g.done.push(t); return; }
+      g[bucketOf(t)].push(t);
+    });
+    Object.keys(g).forEach(function(k){ g[k] = sortInSection(g[k]); });
 
     if(visible.length === 0){
       listEl.innerHTML = '<div class="todo-rail-empty">할 일이 없습니다. 위에서 추가해보세요.</div>';
     } else {
       listEl.innerHTML =
-        secHtml('imp', '중요한 할 일', imp) +
-        secHtml('act', '해야 할 일', act) +
-        secHtml('don', '완료한 일', don,
+        secHtml('today', '오늘 해야 할 일', g.today) +
+        secHtml('over', '기한 지난 일', g.over) +
+        secHtml('tomorrow', '내일 해야 할 일', g.tomorrow) +
+        secHtml('future', '예정된 일', g.future) +
+        secHtml('plain', '일반 할 일', g.plain) +
+        secHtml('done', '완료한 일', g.done,
           '<button type="button" class="todo-sec-toggle" data-act="foldDone">' + (doneFolded ? '펼치기' : '접기') + '</button>');
     }
 
-    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + don.length + '개';
-    clearBtn.disabled = don.length === 0;
-
+    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + g.done.length + '개';
+    clearBtn.disabled = g.done.length === 0;
     var activeCount = todos.filter(function(t){ return !t.done; }).length;
     badgeEl.textContent = '미완료 ' + activeCount;
     badgeEl.classList.toggle('zero', activeCount === 0);
+  }
 
-    // 하단 응원 문구 — 완료가 하나라도 생겼을 때만, 아주 작게.
-    if(activeCount === 0 && todos.length > 0){
-      cheerEl.textContent = '오늘 할 일 끝! 🐰';
-      cheerEl.style.display = '';
-    } else if(don.length > 0){
-      cheerEl.textContent = '오늘도 화이팅!';
-      cheerEl.style.display = '';
+  // ---- 마감일 입력 ----
+  function renderDuePick(){
+    if(pendingDue){
+      duePick.textContent = dueText(pendingDue);
+      duePick.style.display = '';
+      dateBtn.classList.add('on');
     } else {
-      cheerEl.style.display = 'none';
-    }
-
-    // 팝 효과는 1회성 — 그린 뒤 바로 표식을 지운다.
-    if(popId){
-      var el = listEl.querySelector('.todo-rail-row.pop');
-      popId = null;
-      if(el) setTimeout(function(){ el.classList.remove('pop'); }, 260);
+      duePick.style.display = 'none';
+      dateBtn.classList.remove('on');
     }
   }
+  dateBtn.addEventListener('click', function(){
+    var open = !dateRow.classList.contains('open');
+    dateRow.classList.toggle('open', open);
+    if(open){
+      try{ if(dateInput.showPicker) dateInput.showPicker(); else dateInput.focus(); }catch(e){ dateInput.focus(); }
+    }
+  });
+  dateInput.addEventListener('change', function(){
+    pendingDue = dateInput.value || '';
+    renderDuePick();
+    // 네이티브 달력이 포커스를 물고 있으면 Enter가 날짜쪽으로 먹히므로 입력창으로 돌려준다.
+    try{ inputEl.focus(); }catch(e){}
+  });
+  dateClear.addEventListener('click', function(){
+    pendingDue = '';
+    dateInput.value = '';
+    renderDuePick();
+  });
 
   function addItem(){
     var text = inputEl.value.trim();
     if(!text) return;
     var todos = load();
     var item = { id: genId(), text: text };
-    if(pendingDue) item.dueDate = pendingDue;   // 선택했을 때만 필드를 넣는다
+    if(pendingDue) item.dueDate = pendingDue;   // 고른 경우에만 필드를 넣는다
     todos.push(item);
     if(save(todos)){
       inputEl.value = '';
@@ -12632,13 +12496,12 @@ ${text}
     }
     render();
   }
-
   addBtn.addEventListener('click', addItem);
   inputEl.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); addItem(); }
   });
 
-  // 목록은 매번 다시 그리므로 개별 리스너 대신 위임을 쓴다(리스너 유실 없음).
+  // 목록은 매번 다시 그리므로 개별 리스너 대신 위임을 쓴다.
   listEl.addEventListener('click', function(e){
     var foldBtn = e.target.closest('[data-act="foldDone"]');
     if(foldBtn){
@@ -12655,7 +12518,6 @@ ${text}
       var list = load();
       var st = list.find(function(x){ return x.id === sid; });
       if(!st){ render(); return; }
-      // 기존 구조에 important 한 필드만 얹는다(기존 필드는 그대로, 값이 없던 항목도 정상 동작).
       st.important = !isImportant(st);
       save(list);
       render();
@@ -12679,22 +12541,23 @@ ${text}
     var id = row.getAttribute('data-id');
     var todos = load();
     var t = todos.find(function(x){ return x.id === id; });
-    if(!t) { render(); return; }
-    // 기존 "내 할 일"과 완전히 같은 완료 처리 방식(done/completedAt) — 이력을 지우지 않는다.
+    if(!t){ render(); return; }
+    // 기존 "내 할 일"과 같은 완료 처리(done/completedAt) — 이력을 지우지 않는다.
     t.done = !!box.checked;
     t.completedAt = t.done ? Date.now() : null;
-    if(t.done){ justDone[id] = true; popId = id; } else { delete justDone[id]; }
+    // 완료 해제 시에는 표식을 지운다 → 다음 render에서 오늘 날짜로 다시 계산돼
+    // 정확한 구역(기한 지남/오늘/내일/일반)으로 돌아간다.
+    if(t.done) justDone[id] = true; else delete justDone[id];
     save(todos);
     render();
   });
 
-  // 완료 이력은 기존 [내 할 일]의 [처리완료]에 그대로 남겨두고, 이 목록에서만 치운다.
   clearBtn.addEventListener('click', function(){
     justDone = Object.create(null);
     render();
   });
 
-  // ---- 접기/펼치기 (상태 유지) ----
+  // ---- 접기/펼치기 ----
   function applyCollapsed(collapsed){
     railEl.classList.toggle('collapsed', collapsed);
     reopenBtn.classList.toggle('show', collapsed);
@@ -12705,216 +12568,36 @@ ${text}
   }
   collapseBtn.addEventListener('click', function(){ setCollapsed(true); });
   reopenBtn.addEventListener('click', function(){ setCollapsed(false); });
-
   var stored = null;
   try{ stored = localStorage.getItem(COLLAPSE_KEY); }catch(e){}
   applyCollapsed(stored === null ? window.innerWidth < 1100 : stored === '1');
 
-  // ---- 기존 패널/다른 탭/클라우드에서 바뀌면 이 레일도 따라 갱신 ----
-  window.addEventListener('storage', function(e){
-    if(e.key === TODO_KEY) render();
-  });
+  // ---- 외부 변경 반영 ----
+  window.addEventListener('storage', function(e){ if(e.key === TODO_KEY) render(); });
   window.addEventListener('shin2-cloud-update', function(e){
     if(e && e.detail && e.detail.key === 'todos') render();
   });
   var oldPanel = document.getElementById('todoPanel');
   if(oldPanel){
-    // 기존 패널에서 추가/체크/삭제/이름수정을 하면 그 직후 다시 읽어온다.
     oldPanel.addEventListener('click', function(){ setTimeout(render, 0); });
     oldPanel.addEventListener('focusout', function(){ setTimeout(render, 0); });
   }
   window.addEventListener('focus', function(){ render(); });
 
-  // ================================================================
-  // 마감일 입력 + 알림 (§마감일 라운드)
-  // ================================================================
-  var dateBtn = document.getElementById('todoRailDateBtn');
-  var dateRow = document.getElementById('todoRailDateRow');
-  var dateInput = document.getElementById('todoRailDate');
-  var duePick = document.getElementById('todoRailDuePick');
-  var dateClear = document.getElementById('todoRailDateClear');
-  var bellBtn = document.getElementById('todoRailBell');
-  var setBox = document.getElementById('todoRailSettings');
-  var intervalSel = document.getElementById('todoRailInterval');
-  var webChk = document.getElementById('todoRailWebNotify');
-  var notifyNote = document.getElementById('todoRailNotifyNote');
-  var alertOverlay = document.getElementById('todoAlertOverlay');
-  var alertList = document.getElementById('todoAlertList');
-  var alertLater = document.getElementById('todoAlertLater');
-  var alertGo = document.getElementById('todoAlertGo');
-  var toastlet = document.getElementById('todoToastlet');
-  var toastletN = document.getElementById('todoToastletN');
-
-  function renderDuePick(){
-    if(pendingDue){
-      duePick.textContent = dueText(pendingDue) === '오늘' ? '~ 오늘' : dueText(pendingDue);
-      duePick.style.display = '';
-      dateBtn.classList.add('on');
-    } else {
-      duePick.style.display = 'none';
-      dateBtn.classList.remove('on');
-    }
-  }
-  dateBtn.addEventListener('click', function(){
-    var open = !dateRow.classList.contains('open');
-    dateRow.classList.toggle('open', open);
-    if(open){
-      try{ if(dateInput.showPicker) dateInput.showPicker(); else dateInput.focus(); }catch(e){ dateInput.focus(); }
-    }
+  // ---- 자정이 지나면 자동 재분류 ----
+  // 분류를 저장하지 않고 매 render마다 오늘 날짜로 다시 계산하므로, 날짜가 바뀐 것만
+  // 감지해 다시 그려주면 된다. 탭을 며칠 켜둬도 내일 → 오늘 → N일 지남으로 저절로 넘어간다.
+  var lastDay = dayKey();
+  setInterval(function(){
+    var k = dayKey();
+    if(k !== lastDay){ lastDay = k; render(); }
+  }, 30000);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState !== 'visible') return;
+    var k = dayKey();
+    if(k !== lastDay) lastDay = k;
+    render();
   });
-  dateInput.addEventListener('change', function(){
-    pendingDue = dateInput.value || '';
-    renderDuePick();
-    // 날짜를 고르고 나면 곧바로 할 일 문구를 이어서 칠 수 있게 입력창으로 포커스를 돌려준다.
-    // (네이티브 달력이 열려 있으면 포커스를 계속 물고 있어서 Enter가 날짜쪽으로 먹힌다)
-    try{ inputEl.focus(); }catch(e){}
-  });
-  dateClear.addEventListener('click', function(){
-    pendingDue = '';
-    dateInput.value = '';
-    renderDuePick();
-  });
-
-  // ---- 알림 설정 (투두 데이터와 별개의 작은 키) ----
-  function loadAlarmCfg(){
-    var cfg = { interval: 60, web: false };
-    try{
-      var raw = localStorage.getItem(ALARM_KEY);
-      if(raw){
-        var o = JSON.parse(raw);
-        if(o && typeof o === 'object'){
-          if([0,30,60,120].indexOf(Number(o.interval)) !== -1) cfg.interval = Number(o.interval);
-          cfg.web = !!o.web;
-        }
-      }
-    }catch(e){}
-    return cfg;
-  }
-  function saveAlarmCfg(cfg){
-    try{ localStorage.setItem(ALARM_KEY, JSON.stringify(cfg)); }catch(e){}
-  }
-  var alarmCfg = loadAlarmCfg();
-  intervalSel.value = String(alarmCfg.interval);
-  webChk.checked = alarmCfg.web && (typeof Notification !== 'undefined' && Notification.permission === 'granted');
-
-  bellBtn.addEventListener('click', function(e){
-    e.stopPropagation();
-    setBox.classList.toggle('open');
-    bellBtn.classList.toggle('on', setBox.classList.contains('open'));
-  });
-  document.addEventListener('click', function(e){
-    if(!setBox.classList.contains('open')) return;
-    if(setBox.contains(e.target) || bellBtn.contains(e.target)) return;
-    setBox.classList.remove('open');
-    bellBtn.classList.remove('on');
-  });
-  intervalSel.addEventListener('change', function(){
-    alarmCfg.interval = Number(intervalSel.value);
-    saveAlarmCfg(alarmCfg);
-    restartTimer();
-  });
-  // 권한 요청은 사용자가 이 체크박스를 켰을 때만 — 접속 즉시 요청하지 않는다.
-  webChk.addEventListener('change', function(){
-    if(!webChk.checked){
-      alarmCfg.web = false; saveAlarmCfg(alarmCfg);
-      notifyNote.textContent = '브라우저 알림을 사용하지 않습니다.';
-      return;
-    }
-    if(typeof Notification === 'undefined'){
-      webChk.checked = false;
-      notifyNote.textContent = '이 브라우저는 알림을 지원하지 않습니다. 사이트 내 알림은 그대로 동작합니다.';
-      return;
-    }
-    Notification.requestPermission().then(function(perm){
-      if(perm === 'granted'){
-        alarmCfg.web = true; saveAlarmCfg(alarmCfg);
-        notifyNote.textContent = '브라우저 알림이 켜졌습니다.';
-      } else {
-        webChk.checked = false;
-        alarmCfg.web = false; saveAlarmCfg(alarmCfg);
-        notifyNote.textContent = '알림 권한이 거부되었습니다. 사이트 내 알림은 그대로 동작합니다.';
-      }
-    }).catch(function(){
-      webChk.checked = false;
-      notifyNote.textContent = '알림 권한을 요청하지 못했습니다. 사이트 내 알림은 그대로 동작합니다.';
-    });
-  });
-
-  // ---- 알림 대상 계산 ----
-  function alarmingItems(){
-    return load().filter(isAlarming).sort(function(a,b){
-      return dueDiff(dueOf(b)) - dueDiff(dueOf(a));   // 많이 지난 것부터
-    });
-  }
-
-  function showCenterAlert(items){
-    alertList.innerHTML = items.map(function(t){
-      var n = dueDiff(dueOf(t));
-      return '<div class="todo-alert-item' + (n === 0 ? ' today' : '') + '">' +
-        '<span class="t">' + esc(t.text) + '</span>' +
-        '<span class="d">' + esc(dueText(dueOf(t))) + '</span>' +
-      '</div>';
-    }).join('');
-    alertOverlay.classList.add('open');
-  }
-  alertLater.addEventListener('click', function(){ alertOverlay.classList.remove('open'); });
-  alertOverlay.addEventListener('click', function(e){ if(e.target === alertOverlay) alertOverlay.classList.remove('open'); });
-  alertGo.addEventListener('click', function(){
-    alertOverlay.classList.remove('open');
-    if(railEl.classList.contains('collapsed')) setCollapsed(false);
-    railEl.classList.remove('flash');
-    void railEl.offsetWidth;          // 애니메이션 재시작
-    railEl.classList.add('flash');
-    listEl.scrollTop = 0;
-    setTimeout(function(){ railEl.classList.remove('flash'); }, 1400);
-  });
-
-  var toastTimer = null;
-  function showToastlet(n){
-    toastletN.textContent = n + '건';
-    toastlet.classList.add('show');
-    if(toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastlet.classList.remove('show'); }, 5000);
-  }
-  toastlet.addEventListener('click', function(){
-    toastlet.classList.remove('show');
-    alertGo.click();
-  });
-
-  function webNotify(n){
-    if(!alarmCfg.web) return;
-    if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    try{
-      new Notification('NETFORM 업무 알림', {
-        body: '기한이 오늘이거나 지난 할 일이 있어요!\n' + n + '건의 할 일을 확인해 주세요.'
-      });
-    }catch(e){}
-  }
-
-  // 사용 중 반복 알림 — 기본 1시간. 큰 중앙 팝업은 접속 시 1회뿐이고, 이후엔 작은 알림만.
-  var alarmTimer = null;
-  function tick(){
-    var items = alarmingItems();
-    if(items.length === 0) return;
-    showToastlet(items.length);
-    webNotify(items.length);
-  }
-  function restartTimer(){
-    if(alarmTimer){ clearInterval(alarmTimer); alarmTimer = null; }
-    if(alarmCfg.interval > 0) alarmTimer = setInterval(tick, alarmCfg.interval * 60 * 1000);
-  }
-  restartTimer();
-
-  // 접속/새로고침 시 1회 중앙 팝업 — 완료하지 않았다면 다음 접속에도 다시 뜬다.
-  window.SHIN2_TODO_DUE = {
-    check: function(){ return alarmingItems(); },
-    openAlert: function(){ var it = alarmingItems(); if(it.length) showCenterAlert(it); return it.length; },
-    dueText: dueText, dueDiff: dueDiff
-  };
-  setTimeout(function(){
-    var items = alarmingItems();
-    if(items.length){ showCenterAlert(items); webNotify(items.length); }
-  }, 600);
 
   mergeLegacyOnce();
   renderDuePick();
