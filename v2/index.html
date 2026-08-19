@@ -1575,6 +1575,49 @@
   .todo-rail-clear:disabled{ opacity:0.4; cursor:default; }
   .todo-rail-clear:disabled:hover{ color:var(--text-muted); }
 
+  /* ---------- 상단 업무 알림 바 ---------- */
+  .wbar{ position:relative; margin:2px 0 14px; }
+  .wbar-chips{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .wbar-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    height:26px; padding:0 11px;
+    border:1px solid var(--line); background:var(--surface); border-radius:13px;
+    font-size:12px; font-family:inherit; font-weight:600; color:var(--text-muted);
+    cursor:pointer; white-space:nowrap;
+  }
+  .wbar-chip:hover{ background:#F3F5F8; }
+  .wbar-chip .c{ font-weight:800; }
+  .wbar-chip.zero{ opacity:0.45; cursor:default; }
+  .wbar-chip.zero:hover{ background:var(--surface); }
+  .wbar-chip.k-today{ color:var(--navy); border-color:#D3DAE8; background:#F4F6FB; }
+  .wbar-chip.k-over{ color:#B3283C; border-color:#F0D3D8; background:#FDF4F5; }
+  .wbar-chip.k-tomorrow{ color:#4A6285; border-color:#DCE3EE; background:#F6F9FD; }
+  .wbar-chip.k-important{ color:#8A6410; border-color:#EDE0C4; background:#FCF8EF; }
+  .wbar-chip.active{ box-shadow:0 0 0 2px rgba(30,42,74,0.08); }
+
+  .wbar-pop{
+    position:absolute; top:32px; left:0; z-index:45;
+    min-width:260px; max-width:400px; padding:11px 13px;
+    background:var(--surface); border:1px solid var(--line); border-radius:9px;
+    box-shadow:0 4px 14px rgba(17,24,39,0.08);
+  }
+  .wbar-pop-title{ font-size:11.5px; font-weight:700; color:var(--text-muted); margin-bottom:7px; }
+  .wbar-pop-list{ max-height:230px; overflow-y:auto; }
+  .wbar-pop-item{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 8px; border-radius:6px; cursor:pointer;
+    font-size:12.5px; color:var(--text);
+  }
+  .wbar-pop-item:hover{ background:#F3F5F8; }
+  .wbar-pop-item .t{ flex:1; min-width:0; font-weight:500; word-break:break-word; }
+  .wbar-pop-item .d{ flex:none; font-size:10.5px; font-weight:700; color:var(--text-muted); }
+  .wbar-pop-item .d.over{ color:#B3283C; }
+  .wbar-pop-empty{ font-size:12px; color:var(--text-muted); padding:6px 8px; }
+
+  /* 상단에서 항목을 클릭했을 때 레일 행을 잠깐 강조 */
+  @keyframes todoRowFlash{ 0%{ background:#FFF6D8; } 100%{ background:transparent; } }
+  .todo-rail-row.flash{ animation:todoRowFlash 1.6s ease; }
+
   /* 접힘: 레일을 감추고 오른쪽 끝에 체크 아이콘 버튼만 남긴다 */
   .todo-rail.collapsed{ display:none; }
   /* 접힌 상태의 재열기 탭 — 예전에는 30px 아이콘 하나라 "투두가 사라졌다"로 오해하기 쉬웠다.
@@ -2278,6 +2321,16 @@
         <div class="qlinks-controls">
           <button type="button" class="qlinks-edit-toggle" id="qlinksEditToggle">편집</button>
           <button type="button" class="qlinks-add-btn" id="qlinksAddBtn" title="바로가기 추가" aria-label="바로가기 추가">＋</button>
+        </div>
+      </div>
+
+      <!-- 업무 알림 바(§상단 알림 라운드) — 오른쪽 투두 데이터를 그대로 읽어 개수만 보여준다.
+           별도 저장소 없음. 렌더/갱신은 투두 레일 스크립트가 함께 담당한다. -->
+      <div class="wbar" id="workBar" style="display:none;">
+        <div class="wbar-chips" id="workBarChips"></div>
+        <div class="wbar-pop" id="workBarPop" style="display:none;">
+          <div class="wbar-pop-title" id="workBarPopTitle"></div>
+          <div class="wbar-pop-list" id="workBarPopList"></div>
         </div>
       </div>
 
@@ -12326,6 +12379,91 @@ ${text}
     var d = parseDue(v);
     return (d.getMonth() + 1) + '/' + d.getDate();
   }
+  // ================================================================
+  // 자연어 날짜 인식 — "전화하기 내일", "자료 보내기 8.20" 처럼 그냥 써도 마감일이 잡힌다.
+  // 인식하면 제목에서 그 표현만 잘라내고 나머지를 할 일 제목으로 쓴다.
+  // 전부 로컬 날짜 기준이라 UTC로 하루가 밀리지 않는다.
+  // ================================================================
+  function ymd(dt){
+    return dt.getFullYear() + '-' +
+      String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+      String(dt.getDate()).padStart(2, '0');
+  }
+  function addDays(base, n){
+    return new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
+  }
+  var WD_IDX = { '월':0, '화':1, '수':2, '목':3, '금':4, '토':5, '일':6 };
+
+  // 뒤쪽(문장 끝)에 있는 표현을 우선으로 잡는다 — "예보 전화받기 8.20" 형태가 가장 흔하다.
+  var NL_RULES = [
+    // 2026.8.20 / 2026-08-20 / 2026/8/20
+    { re: /(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\s*\.?/g,
+      make: function(m){ return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])); } },
+    // 8월20일 / 8월 20
+    { re: /(\d{1,2})\s*월\s*(\d{1,2})\s*일?/g,
+      make: function(m, today){ return mdThisYear(Number(m[1]), Number(m[2]), today); } },
+    // 8.20 / 8/20  (앞뒤에 다른 숫자가 붙지 않을 때만)
+    { re: /(?:^|[^\d])(\d{1,2})\s*[.\/]\s*(\d{1,2})(?![\d])\.?/g,
+      make: function(m, today){ return mdThisYear(Number(m[1]), Number(m[2]), today); },
+      trimLead: true },
+    // 이번주 금요일 / 다음주 월요일
+    { re: /(이번\s*주|금주|다음\s*주|담주)\s*([월화수목금토일])\s*요일?/g,
+      make: function(m, today){
+        var idx = WD_IDX[m[2]];
+        var cur = (today.getDay() + 6) % 7;             // 월=0 기준
+        var monday = addDays(today, -cur);
+        var next = /다음|담/.test(m[1]);
+        return addDays(monday, (next ? 7 : 0) + idx);
+      } },
+    // 오늘 / 내일 / 모레 / 내일모레 / 글피
+    { re: /(내일\s*모레|내일모레|모레|내일|오늘|글피)/g,
+      make: function(m, today){
+        var w = m[1].replace(/\s+/g, '');
+        if(w === '오늘') return today;
+        if(w === '내일') return addDays(today, 1);
+        if(w === '글피') return addDays(today, 3);
+        return addDays(today, 2);                        // 모레 / 내일모레
+      } }
+  ];
+  // 연도 없는 월/일은 우선 올해로 본다.
+  function mdThisYear(mo, dy, today){
+    if(mo < 1 || mo > 12 || dy < 1 || dy > 31) return null;
+    var d = new Date(today.getFullYear(), mo - 1, dy);
+    if(d.getMonth() !== mo - 1) return null;             // 2/30 같은 값 걸러내기
+    return d;
+  }
+
+  // 반환: { title, dueDate } — 인식 실패면 dueDate가 null이고 title은 원문 그대로.
+  function parseNatural(raw){
+    var text = String(raw == null ? '' : raw);
+    var today = todayMid();
+    var best = null;   // 문장에서 가장 뒤에 있는 매치를 채택
+    NL_RULES.forEach(function(rule){
+      rule.re.lastIndex = 0;
+      var m;
+      while((m = rule.re.exec(text)) !== null){
+        var d = null;
+        try{ d = rule.make(m, today); }catch(e){ d = null; }
+        if(!d || isNaN(d.getTime())) continue;
+        var start = m.index, matched = m[0];
+        if(rule.trimLead){                                // 앞 구분자 한 글자는 잘라내지 않는다
+          var lead = matched.match(/^[^\d]*/)[0];
+          start += lead.length;
+          matched = matched.slice(lead.length);
+        }
+        var cand = { start: start, len: matched.length, date: d };
+        if(!best){ best = cand; }
+        else if(cand.start >= best.start + best.len){ best = cand; }        // 겹치지 않으면 뒤쪽 우선
+        else if(cand.len > best.len){ best = cand; }                        // 겹치면 더 긴(구체적인) 쪽
+      }
+    });
+    if(!best) return { title: text.trim(), dueDate: null };
+    var title = (text.slice(0, best.start) + ' ' + text.slice(best.start + best.len))
+                  .replace(/\s+/g, ' ').trim();
+    if(!title) return { title: text.trim(), dueDate: null };   // 제목이 통째로 날짜면 무시
+    return { title: title, dueDate: ymd(best.date) };
+  }
+
   // 미완료 항목의 구역: over / today / tomorrow / future / plain
   function bucketOf(t){
     var n = dueDiff(dueOf(t));
@@ -12415,13 +12553,15 @@ ${text}
     try{ localStorage.setItem(LEGACY_FLAG, '1'); }catch(e){}
   }
 
-  function rowHtml(it, bucket){
+  function rowHtml(it){
     var star = isImportant(it);
     var due = dueOf(it);
+    // 구역이 미완료/완료로 단순해졌으므로, 색은 구역이 아니라 각 항목의 실제 마감 상태로 정한다.
+    var bucket = it.done ? 'done' : bucketOf(it);
     return '<div class="todo-rail-row ' + (it.done ? 'done' : 'b-' + bucket) + (star ? ' important' : '') + '" data-id="' + esc(it.id) + '">' +
       '<input type="checkbox" data-act="toggle"' + (it.done ? ' checked' : '') + ' />' +
       '<span class="todo-rail-text">' + esc(it.text) + '</span>' +
-      (due ? '<span class="todo-due d-' + (it.done ? 'plain' : bucket) + '">' + esc(dueText(due)) + '</span>' : '') +
+      (due ? '<span class="todo-due d-' + bucket + '">' + esc(dueText(due)) + '</span>' : '') +
       '<button type="button" class="todo-rail-star' + (star ? ' on' : '') + '" data-act="star" title="' + (star ? '중요 해제' : '중요 표시') + '" aria-label="중요 표시" aria-pressed="' + (star ? 'true' : 'false') + '">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>' +
       '</button>' +
@@ -12451,42 +12591,140 @@ ${text}
         (extraHead || '') +
         '<span class="n">' + rows.length + '</span>' +
       '</div>' +
-      (kind === 'done' && doneFolded ? '' : rows.map(function(t){ return rowHtml(t, kind); }).join('')) +
+      (kind === 'done' && doneFolded ? '' : rows.map(rowHtml).join('')) +
     '</div>';
+  }
+
+  // 미완료 정렬: 급한 순(기한 지남 → 오늘 → 내일 → 예정 → 날짜 없음), 같으면 중요 먼저,
+  // 그 다음 이른 마감일, 마지막으로 기존 배열 순서(수동 순서변경 보존).
+  var BUCKET_RANK = { over:0, today:1, tomorrow:2, future:3, plain:4 };
+  function sortActive(rows){
+    return rows.map(function(t, i){ return { t: t, i: i }; })
+      .sort(function(x, y){
+        var ra = BUCKET_RANK[bucketOf(x.t)], rb = BUCKET_RANK[bucketOf(y.t)];
+        if(ra !== rb) return ra - rb;
+        var ia = isImportant(x.t) ? 0 : 1, ib = isImportant(y.t) ? 0 : 1;
+        if(ia !== ib) return ia - ib;
+        var da = parseDue(dueOf(x.t)), db = parseDue(dueOf(y.t));
+        if(da && db && da.getTime() !== db.getTime()) return da - db;
+        return x.i - y.i;
+      })
+      .map(function(z){ return z.t; });
   }
 
   function render(){
     var todos = load();
-    // 완료 항목은 이 화면에서 방금 체크한 것만 "완료한 일"에 잠시 남긴다
-    // (기존 [처리완료] 이력 전체를 끌고 오면 목록이 길어져서).
     var visible = todos.filter(function(t){ return !t.done || justDone[t.id]; });
-    var g = { today: [], over: [], tomorrow: [], future: [], plain: [], done: [] };
-    visible.forEach(function(t){
-      if(t.done){ g.done.push(t); return; }
-      g[bucketOf(t)].push(t);
-    });
-    Object.keys(g).forEach(function(k){ g[k] = sortInSection(g[k]); });
+    var active = sortActive(visible.filter(function(t){ return !t.done; }));
+    var done = visible.filter(function(t){ return t.done; });
 
     if(visible.length === 0){
       listEl.innerHTML = '<div class="todo-rail-empty">할 일이 없습니다. 위에서 추가해보세요.</div>';
     } else {
       listEl.innerHTML =
-        secHtml('today', '오늘 해야 할 일', g.today) +
-        secHtml('over', '기한 지난 일', g.over) +
-        secHtml('tomorrow', '내일 해야 할 일', g.tomorrow) +
-        secHtml('future', '예정된 일', g.future) +
-        secHtml('plain', '일반 할 일', g.plain) +
-        secHtml('done', '완료한 일', g.done,
+        secHtml('active', '미완료', active) +
+        secHtml('done', '완료', done,
           '<button type="button" class="todo-sec-toggle" data-act="foldDone">' + (doneFolded ? '펼치기' : '접기') + '</button>');
     }
 
-    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + g.done.length + '개';
-    clearBtn.disabled = g.done.length === 0;
+    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + done.length + '개';
+    clearBtn.disabled = done.length === 0;
     var activeCount = todos.filter(function(t){ return !t.done; }).length;
     badgeEl.textContent = '미완료 ' + activeCount;
     badgeEl.classList.toggle('zero', activeCount === 0);
     var reopenCnt = document.getElementById('todoRailReopenCnt');
     if(reopenCnt) reopenCnt.textContent = String(activeCount);
+    renderWorkBar(todos);
+  }
+
+  // ================================================================
+  // 상단 업무 알림 바 — 같은 투두 배열을 읽어 개수만 보여준다(별도 저장소 없음).
+  // render()에서 함께 갱신되므로 추가/완료/삭제/날짜변경/중요설정에 즉시 반응한다.
+  // ================================================================
+  var barEl = document.getElementById('workBar');
+  var barChips = document.getElementById('workBarChips');
+  var barPop = document.getElementById('workBarPop');
+  var barPopTitle = document.getElementById('workBarPopTitle');
+  var barPopList = document.getElementById('workBarPopList');
+  var barOpenKind = null;
+
+  var BAR_KINDS = [
+    { key:'today',     label:'오늘',      pick:function(t){ return !t.done && bucketOf(t) === 'today'; } },
+    { key:'over',      label:'기한 지남', pick:function(t){ return !t.done && bucketOf(t) === 'over'; } },
+    { key:'tomorrow',  label:'내일',      pick:function(t){ return !t.done && bucketOf(t) === 'tomorrow'; } },
+    { key:'important', label:'중요',      pick:function(t){ return !t.done && isImportant(t); } }
+  ];
+  function barItems(kind, todos){
+    var k = BAR_KINDS.find(function(x){ return x.key === kind; });
+    if(!k) return [];
+    return sortActive((todos || load()).filter(k.pick));
+  }
+  function renderWorkBar(todos){
+    if(!barEl) return;
+    var any = false;
+    barChips.innerHTML = BAR_KINDS.map(function(k){
+      var n = todos.filter(k.pick).length;
+      if(n > 0) any = true;
+      return '<button type="button" class="wbar-chip k-' + k.key + (n === 0 ? ' zero' : '') +
+        (barOpenKind === k.key ? ' active' : '') + '" data-kind="' + k.key + '"' + (n === 0 ? ' disabled' : '') + '>' +
+        '<span>' + k.label + '</span><span class="c">' + n + '</span></button>';
+    }).join('');
+    barEl.style.display = any ? '' : 'none';
+    if(barOpenKind){
+      var items = barItems(barOpenKind, todos);
+      if(items.length === 0){ closeBarPop(); }
+      else { paintBarPop(barOpenKind, items); }
+    }
+  }
+  function paintBarPop(kind, items){
+    var k = BAR_KINDS.find(function(x){ return x.key === kind; });
+    barPopTitle.textContent = k ? k.label + ' — ' + items.length + '건' : '';
+    barPopList.innerHTML = items.map(function(t){
+      var d = dueOf(t);
+      var over = d && dueDiff(d) > 0;
+      return '<div class="wbar-pop-item" data-id="' + esc(t.id) + '">' +
+        '<span class="t">' + esc(t.text) + '</span>' +
+        (d ? '<span class="d' + (over ? ' over' : '') + '">' + esc(dueText(d)) + '</span>' : '') +
+      '</div>';
+    }).join('') || '<div class="wbar-pop-empty">항목이 없습니다.</div>';
+    barPop.style.display = '';
+  }
+  function closeBarPop(){
+    barOpenKind = null;
+    barPop.style.display = 'none';
+    barChips.querySelectorAll('.wbar-chip').forEach(function(c){ c.classList.remove('active'); });
+  }
+  if(barChips){
+    barChips.addEventListener('click', function(e){
+      var chip = e.target.closest('.wbar-chip');
+      if(!chip || chip.disabled) return;
+      var kind = chip.getAttribute('data-kind');
+      if(barOpenKind === kind){ closeBarPop(); return; }
+      barOpenKind = kind;
+      var items = barItems(kind);
+      paintBarPop(kind, items);
+      barChips.querySelectorAll('.wbar-chip').forEach(function(c){ c.classList.toggle('active', c === chip); });
+    });
+    barPopList.addEventListener('click', function(e){
+      var item = e.target.closest('.wbar-pop-item');
+      if(!item) return;
+      var id = item.getAttribute('data-id');
+      closeBarPop();
+      if(railEl.classList.contains('collapsed')) setCollapsed(false);
+      var row = listEl.querySelector('.todo-rail-row[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+      if(row){
+        row.scrollIntoView({ block:'center' });
+        row.classList.remove('flash');
+        void row.offsetWidth;
+        row.classList.add('flash');
+        setTimeout(function(){ row.classList.remove('flash'); }, 1700);
+      }
+    });
+    document.addEventListener('click', function(e){
+      if(!barOpenKind) return;
+      if(barEl.contains(e.target)) return;
+      closeBarPop();
+    });
   }
 
   // ---- 마감일 입력 ----
@@ -12520,11 +12758,16 @@ ${text}
   });
 
   function addItem(){
-    var text = inputEl.value.trim();
+    var raw = inputEl.value.trim();
+    if(!raw) return;
+    // 우선순위: 1) 달력에서 직접 고른 날짜  2) 입력문 안의 자연어 날짜  3) 없음
+    var nl = parseNatural(raw);
+    var text = pendingDue ? raw : nl.title;     // 달력을 썼으면 제목을 건드리지 않는다
+    var due = pendingDue || nl.dueDate;
     if(!text) return;
     var todos = load();
     var item = { id: genId(), text: text };
-    if(pendingDue) item.dueDate = pendingDue;   // 고른 경우에만 필드를 넣는다
+    if(due) item.dueDate = due;                 // 날짜가 있을 때만 필드를 넣는다
     todos.push(item);
     if(save(todos)){
       inputEl.value = '';
