@@ -339,7 +339,25 @@
     .workq-hero-divider{ display:none; }
     .workq-hero-item{ flex-direction:row; justify-content:space-between; padding:8px 2px; }
     .workq-header-row{ flex-direction:column; align-items:stretch; }
+    .workq-transition-hero{ flex-direction:column; align-items:stretch; }
+    .workq-transition-hero-left{ border-right:none; border-bottom:1px solid var(--line); padding:0 0 8px; }
+    .workq-transition-hero-items{ flex-direction:column; }
+    .workq-transition-item{ flex-direction:row; flex-wrap:wrap; justify-content:space-between; padding:6px 2px; }
   }
+
+  /* §고객 단계 전환관리 라운드 §2/§17 — "오늘 먼저 확인"과 같은 계열이지만 한 단계 더
+     작게(높이 자동, ~90px 안팎) 만들어 시각적 우선순위를 낮춘다(1순위=오늘 먼저 확인,
+     2순위=전환관리). 색은 §17 규칙대로 기본 네이비 + "필요" 문구만 주황 포인트, 새 색
+     추가 없음. */
+  .workq-transition-hero{ display:flex; align-items:stretch; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 18px; gap:16px; margin-bottom:10px; }
+  .workq-transition-hero-left{ display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:var(--navy); padding-right:16px; border-right:1px solid var(--line); flex:0 0 auto; min-width:64px; text-align:center; }
+  .workq-transition-hero-items{ flex:1 1 auto; display:flex; align-items:stretch; min-width:0; }
+  .workq-transition-item{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; background:none; border:none; padding:2px 8px; cursor:pointer; border-radius:8px; }
+  .workq-transition-item:hover{ background:var(--bg); }
+  .workq-transition-item-label{ font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; }
+  .workq-transition-item-num{ font-size:20px; font-weight:800; color:var(--navy); line-height:1.2; font-variant-numeric:tabular-nums; }
+  .workq-transition-item-need{ font-size:11px; font-weight:700; color:#C2540A; white-space:nowrap; }
+  .workq-transition-item:hover .workq-hero-item-go{ color:var(--navy); text-decoration:underline; }
   .workq-table{ width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
   .workq-table th{ text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); background:#F9FBFD; padding:7px 10px; border-bottom:1px solid var(--line); }
   .workq-table td{ padding:7px 10px; border-bottom:1px solid #EEF1F5; vertical-align:top; color:var(--text); }
@@ -6467,7 +6485,9 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(type === 'm2') return days === null ? '1차미팅 완료 · 2차미팅 일정 없음' : `1차미팅 후 ${days}일 · 2차미팅 일정 없음`;
     return days === null ? '2차미팅 완료 · MOU 미체결' : `2차미팅 완료 후 ${days}일 · MOU 미체결`;
   }
-  const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'첫 L2 필요', l2Stall:'L3 전환 필요' };
+  // §고객 단계 전환관리 라운드 §5/§8 — 표의 "해야 할 일" 버튼 문구만 스펙 표현("[L2 전환]"/
+  // "[L3 전환]")에 맞춰 바꾼다. 판정값(firstActivity/l2Stall) 자체는 그대로다.
+  const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'L2 전환', l2Stall:'L3 전환' };
   const WORKQ_TYPE_PRIORITY = { m1:0, m2:1, mou:2, firstActivity:3, l2Stall:4, reuse:5 };
   // §업무관리 제외 조건 추가: "질문서 발송/회신 기록도, 1차·2차미팅 기록도 전혀 없이
   // MOU만 체결완료"된 업체(기존협약업체를 곧바로 MOU 완료 상태로 들여온 실제 사례 —
@@ -6506,7 +6526,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       return {
         co, type: 'reuse', category: 'reuse',
         currentStateLabel: mgmtNeedStageLabel(mgmt), reasonText: mgmtNeedReasonText(mgmt),
-        days: mgmt.days, actionLabel: '재사용 필요', isDelayed: false
+        days: mgmt.days, actionLabel: '재사용', isDelayed: false
       };
     }
     return null; // 정상 진행 중이거나(판정 대상 아님) 판정불가(mgmt.type==='unknown') — 억지로 만들지 않는다(§6)
@@ -6542,8 +6562,17 @@ window.SHIN2_CRM_APP_INIT = function(){
       if(b.days === null) return -1;
       return workQueueSortAsc ? (a.days - b.days) : (b.days - a.days);
     });
-    const counts = { all: list.length, meeting: 0, mou: 0, l2l3: 0, reuse: 0 };
-    list.forEach(it=>{ counts[it.category] = (counts[it.category] || 0) + 1; });
+    // §고객 단계 전환관리 라운드 §12 — 기존 category(l2l3) 집계는 그대로 두고, 새 필터/
+    // 히어로가 L1→L2와 L2→L3를 따로 세도록 type(firstActivity/l2Stall) 기준 집계만
+    // 추가한다. 새 판정 로직이 아니라 이미 계산된 it.type을 다른 키로도 세는 것뿐이다.
+    const counts = { all: list.length, meeting: 0, mou: 0, l2l3: 0, reuse: 0, firstActivity: 0, l2Stall: 0 };
+    list.forEach(it=>{
+      counts[it.category] = (counts[it.category] || 0) + 1;
+      // firstActivity/l2Stall만 별도 키로 추가 집계(§고객 단계 전환관리 라운드 §12) —
+      // 이 둘은 category('l2l3')와 이름이 겹치지 않아 이중 집계가 안 된다. mou/reuse는
+      // category와 type이 같은 문자열이라 위 category 집계로 이미 반영돼 있다.
+      if(it.type === 'firstActivity' || it.type === 'l2Stall') counts[it.type] = (counts[it.type] || 0) + 1;
+    });
     return { list, counts };
   }
 
@@ -6658,10 +6687,12 @@ window.SHIN2_CRM_APP_INIT = function(){
 
   // 유형별 인라인 작업영역 정의 — 필드/버튼 구성만 다르고 저장 함수는 위 write 함수들을
   // 그대로 부른다.
+  // §고객 단계 전환관리 라운드 §5/§8/§10 — 버튼 구성을 스펙 목록에 맞춘다. 셋 다 '보류'가
+  // 추가돼(§10) 아래 renderWorkqExpandBody에서 hold-panel도 세 유형 모두에 렌더링한다.
   const WORKQ_L2L3_BUTTONS = {
-    firstActivity: ['현장등록 요청', '연락했지만 미확정', '보류'],
-    l2Stall: ['견적 제안', 'PT 제안', '현장검토 제안', '자료 안내', '전화 확인'],
-    reuse: ['새 현장 확인', '다른 공종 제안', '자료 재안내', '전화 확인']
+    firstActivity: ['현장등록 요청', '전화 확인', '자료 안내', '보류'],
+    l2Stall: ['견적 제안', 'PT 제안', '현장검토 제안', '자료 안내', '전화 확인', '보류'],
+    reuse: ['새 현장 확인', '다른 공종 제안', '자료 재안내', '전화 확인', '보류']
   };
   function workqContactBlockHtml(co){
     return `
@@ -6740,7 +6771,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="workq-btn-row">
         ${buttons.map(b=> `<button type="button" class="workq-btn${b==='보류'?' muted':''}" data-workq-do="log" data-workq-label="${esc(b)}">${esc(b)}</button>`).join('')}
       </div>
-      ${item.type === 'firstActivity' ? `
+      ${(item.type === 'firstActivity' || item.type === 'l2Stall' || item.type === 'reuse') ? `
       <div class="workq-hold-panel" style="display:none;">
         <div class="workq-hold-row">
           <span class="workq-expand-label">다시 확인일</span>
@@ -6752,8 +6783,12 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
   }
 
+  // §고객 단계 전환관리 라운드 §12 — 기존 "L2·L3" 합산 칩을 L1→L2/L2→L3로 분리한다.
+  // 필터 값은 새로 만들지 않고 classifyManagementNeed가 이미 반환하는 type 값
+  // (firstActivity/l2Stall)을 그대로 키로 쓴다 — filtered 계산의
+  // `it.type === workQueueFilter` 조건이 이미 이 값을 처리하므로 로직 추가 없음.
   const WORKQ_FILTER_DEFS = [
-    ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['l2l3','L2·L3'], ['reuse','재사용']
+    ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['firstActivity','L1→L2'], ['l2Stall','L2→L3'], ['reuse','재사용']
   ];
   let workQueueFilter = 'all';
   // §경과일 짧은 업체 분리 보기 라운드: false=기존 그대로(오래된 순), true=경과일 적은
@@ -6784,6 +6819,15 @@ window.SHIN2_CRM_APP_INIT = function(){
       { key:'m2', cls:'hero-m2', label:'2차미팅 잡기', count:m2Count },
       { key:'mou', cls:'hero-mou', label:'MOU 진행', count:mouCount }
     ];
+    // §고객 단계 전환관리 라운드 §4/§6/§9 — 숫자는 computeWorkQueue()가 이미 계산해 둔
+    // counts.firstActivity/counts.l2Stall/counts.reuse를 그대로 읽는다(§5 하드코딩 금지).
+    // 클릭 시 data-workq-filter로 넘기는 값도 classifyManagementNeed의 실제 type 값이라
+    // 기존 필터 처리 로직을 그대로 재사용한다(새 판정/필터 로직 없음).
+    const transitionItems = [
+      { key:'firstActivity', label:'L1 → L2', need:'현장등록 필요', count: counts.firstActivity||0 },
+      { key:'l2Stall', label:'L2 → L3', need:'후속 요청 필요', count: counts.l2Stall||0 },
+      { key:'reuse', label:'재사용', need:'새 현장 필요', count: counts.reuse||0 }
+    ];
     wrap.innerHTML = `
       <div class="workq-header-row">
         <div class="workq-header">
@@ -6803,6 +6847,18 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div class="workq-hero-item-label">${esc(h.label)}</div>
               <div class="workq-hero-item-num">${esc(h.count)}<span class="workq-hero-item-unit">건</span></div>
               <div class="workq-hero-item-go">바로가기 &gt;</div>
+            </button>`).join('')}
+        </div>
+      </div>
+      <div class="workq-transition-hero">
+        <div class="workq-transition-hero-left">전환관리</div>
+        <div class="workq-transition-hero-items">
+          ${transitionItems.map((t,i)=> `${i>0 ? '<div class="workq-hero-divider"></div>' : ''}
+            <button type="button" class="workq-transition-item" data-workq-filter="${esc(t.key)}">
+              <div class="workq-transition-item-label">${esc(t.label)}</div>
+              <div class="workq-transition-item-num">${esc(t.count)}<span class="workq-hero-item-unit">건</span></div>
+              <div class="workq-transition-item-need">${esc(t.need)}</div>
+              <div class="workq-hero-item-go">대상 보기 &gt;</div>
             </button>`).join('')}
         </div>
       </div>
