@@ -1416,84 +1416,131 @@
   }
   .todo-rail-title{
     display:flex; align-items:center; gap:8px;
-    font-size:16px; font-weight:800; color:var(--text); letter-spacing:-0.2px;
+    font-size:16.5px; font-weight:800; color:var(--text); letter-spacing:-0.3px;
   }
   .todo-rail-title svg{ color:var(--navy); flex:none; }
   /* 미완료 개수 배지 — 사이드바 .nav-badge와 같은 톤(네이비/연한 남색 배경)을 그대로 따른다 */
+  /* 미완료 개수 pill — 아주 연한 핑크. 톤만 얹고 채도는 낮게 유지한다. */
   .todo-rail-badge{
-    flex:none; padding:2px 8px; border-radius:10px;
+    flex:none; padding:2px 9px; border-radius:11px;
     font-size:11px; font-weight:700; line-height:16px;
-    color:var(--navy); background:#E7EAF3; white-space:nowrap;
+    color:#9B5B72; background:#FBEEF2; border:1px solid #F5DCE3; white-space:nowrap;
   }
-  .todo-rail-badge.zero{ color:var(--text-muted); background:#F0F1F4; }
+  .todo-rail-badge.zero{ color:var(--text-muted); background:#F2F4F7; border-color:var(--line); }
+  /* 작은 라인 캐릭터(토끼) — 제목보다 눈에 띄면 안 되므로 아주 옅은 선으로만 */
+  .todo-rail-mascot{ flex:none; color:#D8C2CA; margin-left:2px; }
   .todo-rail-collapse{
     margin-left:auto; flex:none;
     width:24px; height:24px; line-height:1;
-    border:1px solid var(--line); background:var(--surface); border-radius:5px;
+    border:1px solid var(--line); background:var(--surface); border-radius:7px;
     color:var(--text-muted); font-size:13px; font-family:inherit; cursor:pointer;
   }
   .todo-rail-collapse:hover{ background:#F0F1F4; color:var(--text); }
 
-  .todo-rail-add{ display:flex; gap:6px; padding:12px 20px; flex:none; }
-  .todo-rail-add input{
-    flex:1; min-width:0; height:32px; padding:0 10px;
-    font-size:13px; font-family:inherit; color:var(--text);
-    background:var(--surface); border:1px solid var(--line); border-radius:6px; outline:none;
+  .todo-rail-add{ display:flex; gap:6px; padding:12px 18px 10px; flex:none; }
+  .todo-rail-add-wrap{
+    flex:1; min-width:0; display:flex; align-items:center; gap:7px;
+    height:34px; padding:0 12px;
+    background:#FAFBFD; border:1px solid var(--line); border-radius:17px;
   }
-  .todo-rail-add input:focus{ border-color:#C7CEDB; }
+  .todo-rail-add-wrap:focus-within{ border-color:#C7CEDB; background:var(--surface); }
+  .todo-rail-add-wrap svg{ flex:none; color:#C3B0B7; }
+  .todo-rail-add input{
+    flex:1; min-width:0; height:100%; padding:0; border:none; outline:none;
+    font-size:13px; font-family:inherit; color:var(--text); background:transparent;
+  }
   .todo-rail-add button{
-    flex:none; height:32px; padding:0 12px; white-space:nowrap;
-    font-size:12.5px; font-family:inherit; color:#fff;
-    background:var(--navy); border:1px solid var(--navy); border-radius:6px; cursor:pointer;
+    flex:none; height:34px; padding:0 13px; white-space:nowrap;
+    font-size:12.5px; font-family:inherit; font-weight:600; color:#fff;
+    background:var(--navy); border:1px solid var(--navy); border-radius:17px; cursor:pointer;
   }
   .todo-rail-add button:hover{ opacity:0.92; }
 
-  /* 목록: 카드가 아니라 얇은 구분선 리스트 */
-  .todo-rail-list{ flex:1; min-height:0; overflow-y:auto; padding:0 8px 8px; }
-  .todo-rail-empty{ font-size:12.5px; color:var(--text-muted); padding:14px 12px; }
-  /* 행 높이/여백 상향(기존 7px 10px → 10px 12px, 약 35% 증가) + 항목 사이 연한 구분선 */
+  .todo-rail-list{ flex:1; min-height:0; overflow-y:auto; padding:2px 12px 10px; }
+  .todo-rail-empty{ font-size:12.5px; color:var(--text-muted); padding:16px 8px; }
+
+  /* 구역 제목(중요 / 해야 할 일 / 완료) */
+  .todo-sec{ margin-top:12px; }
+  .todo-sec:first-child{ margin-top:2px; }
+  .todo-sec-head{
+    display:flex; align-items:center; gap:6px;
+    padding:4px 6px 7px; font-size:11.5px; font-weight:700; color:var(--text-muted);
+    letter-spacing:0.1px;
+  }
+  .todo-sec-head .dot{ flex:none; width:7px; height:7px; border-radius:50%; }
+  .todo-sec-head .n{
+    flex:none; margin-left:2px; padding:0 6px; border-radius:9px;
+    font-size:10.5px; font-weight:700; line-height:16px;
+    color:var(--text-muted); background:#F2F4F7;
+  }
+  .todo-sec-star{ flex:none; color:#E0A93A; }
+  .todo-sec.imp .dot{ background:#EDB6C6; }
+  .todo-sec.act .dot{ background:#9FB4DA; }
+  .todo-sec.don .dot{ background:#D5D8DE; }
+  .todo-sec-toggle{
+    margin-left:auto; flex:none; border:none; background:transparent; cursor:pointer;
+    font-size:11px; font-family:inherit; color:var(--text-muted); padding:2px 4px; border-radius:5px;
+  }
+  .todo-sec-toggle:hover{ color:var(--navy); background:#F2F4F7; }
+
+  /* 행: 아주 약하게 둥근 카드. 그림자 없음, 테두리 한 겹만. */
   .todo-rail-row{
     display:flex; align-items:center; gap:11px;
-    padding:10px 12px; border-bottom:1px solid #EDEEF2;
+    padding:11px 12px; margin-bottom:6px;
+    background:var(--surface); border:1px solid #ECEEF2; border-radius:10px;
+    transition:background .12s ease, border-color .12s ease;
   }
-  .todo-rail-row:last-child{ border-bottom:none; }
-  .todo-rail-row:hover{ background:#F5F7FA; }
+  .todo-rail-row:hover{ background:#F7F9FC; border-color:#DFE3EA; }
   .todo-rail-row input[type="checkbox"]{
-    flex:none; width:16px; height:16px; margin:0; accent-color:var(--navy); cursor:pointer;
+    flex:none; width:17px; height:17px; margin:0; accent-color:var(--navy); cursor:pointer;
+    transition:transform .18s ease;
   }
-  /* 미완료 텍스트는 진하고 굵게 — 목록을 훑을 때 제일 먼저 읽히는 요소 */
   .todo-rail-text{
     flex:1; min-width:0; font-size:13.5px; line-height:1.5; font-weight:500;
     color:var(--text); word-break:break-word;
   }
-  .todo-rail-row.important .todo-rail-text{ font-weight:600; }
-  /* 완료 항목은 흐리게 + 취소선(정렬상 미완료 아래로 내려간다) */
-  .todo-rail-row.done .todo-rail-text{ text-decoration:line-through; color:#A3A8B4; font-weight:400; }
 
-  /* 중요(★) — 평소엔 아주 옅은 외곽선, 지정하면 네이비로 채운다 */
+  /* 중요: 아주 연한 핑크 배경 + 핑크 테두리 */
+  .todo-rail-row.important{ background:#FDF6F8; border-color:#F2DDE4; }
+  .todo-rail-row.important:hover{ background:#FCF1F5; border-color:#EBCFD9; }
+  .todo-rail-row.important .todo-rail-text{ font-weight:600; }
+
+  /* 완료: 전체적으로 연하게 */
+  .todo-rail-row.done{ background:#FBFCFD; border-color:#F0F1F4; }
+  .todo-rail-row.done:hover{ background:#F7F8FA; }
+  .todo-rail-row.done .todo-rail-text{ text-decoration:line-through; color:#A9AEB9; font-weight:400; }
+
+  /* 완료 순간의 아주 짧은 팝(0.2s) — 폭죽 없음 */
+  @keyframes todoPop{ 0%{ transform:scale(1); } 45%{ transform:scale(1.28); } 100%{ transform:scale(1); } }
+  .todo-rail-row.pop input[type="checkbox"]{ animation:todoPop .2s ease; }
+
+  /* 중요(☆/★) */
   .todo-rail-star{
     flex:none; border:none; background:transparent; cursor:pointer;
-    color:#D3D6DD; padding:2px; line-height:1; border-radius:4px;
+    color:#D8DBE1; padding:2px; line-height:1; border-radius:5px;
+    transition:color .12s ease, transform .12s ease;
   }
-  .todo-rail-row:hover .todo-rail-star{ color:#AEB3BD; }
-  .todo-rail-star:hover{ color:var(--navy); }
+  .todo-rail-row:hover .todo-rail-star{ color:#B9BEC7; }
+  .todo-rail-star:hover{ color:#E0A93A; transform:scale(1.12); }
   .todo-rail-star.on,
-  .todo-rail-row:hover .todo-rail-star.on{ color:var(--navy); }
+  .todo-rail-row:hover .todo-rail-star.on{ color:#E0A93A; }
   .todo-rail-star.on svg{ fill:currentColor; }
 
-  /* 삭제는 유지하되 평소에는 거의 드러나지 않게 — 행에 올렸을 때만 또렷해진다 */
+  /* 삭제는 평소 거의 안 보이게 */
   .todo-rail-del{
     flex:none; border:none; background:transparent; cursor:pointer;
-    color:#E1E3E8; padding:2px 3px; line-height:1; border-radius:4px;
+    color:#EBEDF0; padding:2px 3px; line-height:1; border-radius:5px;
+    transition:color .12s ease;
   }
-  .todo-rail-row:hover .todo-rail-del{ color:#AEB3BD; }
+  .todo-rail-row:hover .todo-rail-del{ color:#B3B8C2; }
   .todo-rail-del:hover{ color:#B91C1C; }
 
   .todo-rail-foot{
     display:flex; align-items:center; gap:8px;
-    padding:9px 20px; border-top:1px solid var(--line); flex:none;
+    padding:9px 18px; border-top:1px solid var(--line); flex:none;
     font-size:11.5px; color:var(--text-muted);
   }
+  .todo-rail-cheer{ flex:none; color:#9B5B72; font-weight:600; }
   .todo-rail-clear{
     margin-left:auto; flex:none;
     border:none; background:transparent; cursor:pointer;
@@ -2445,16 +2492,21 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12.5 2.3 2.3L16 9.5"/></svg>
         <span>오늘의 투두</span>
         <span class="todo-rail-badge" id="todoRailBadge">미완료 0</span>
+        <svg class="todo-rail-mascot" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9.2C8.5 7 8.1 4.4 8.9 3.6c.8-.7 1.8 1.2 2.3 3.4"/><path d="M15 9.2c.5-2.2.9-4.8.1-5.6-.8-.7-1.8 1.2-2.3 3.4"/><path d="M12 9.4c2.7 0 4.8 2 4.8 4.6 0 2.7-2.1 4.6-4.8 4.6s-4.8-1.9-4.8-4.6c0-2.6 2.1-4.6 4.8-4.6Z"/><path d="M10.4 13.4h.01M13.6 13.4h.01"/></svg>
       </div>
       <button type="button" class="todo-rail-collapse" id="todoRailCollapse" title="투두 접기" aria-label="투두 접기">&lsaquo;</button>
     </div>
     <div class="todo-rail-add">
-      <input type="text" id="todoRailInput" placeholder="할 일을 입력하세요" autocomplete="off" />
+      <div class="todo-rail-add-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.6 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
+        <input type="text" id="todoRailInput" placeholder="할 일을 입력하세요" autocomplete="off" />
+      </div>
       <button type="button" id="todoRailAddBtn">+ 추가</button>
     </div>
     <div class="todo-rail-list" id="todoRailList"></div>
     <div class="todo-rail-foot">
       <span id="todoRailCount">전체 0개 · 완료 0개</span>
+      <span class="todo-rail-cheer" id="todoRailCheer" style="display:none;"></span>
       <button type="button" class="todo-rail-clear" id="todoRailClearDone" title="체크한 항목을 목록에서 치웁니다. 처리완료 이력은 기존 [내 할 일]에 그대로 남습니다.">완료 항목 치우기</button>
     </div>
   </aside>
@@ -12174,6 +12226,11 @@ ${text}
   var railEl = document.getElementById('todoRail');
   var listEl = document.getElementById('todoRailList');
   var badgeEl = document.getElementById('todoRailBadge');
+  var cheerEl = document.getElementById('todoRailCheer');
+  var DONE_FOLD_KEY = 'netform_todo_donefold_v1';
+  var doneFolded = false;
+  try{ doneFolded = localStorage.getItem(DONE_FOLD_KEY) === '1'; }catch(e){}
+  var popId = null;   // 방금 완료 처리한 항목(짧은 팝 효과용)
   var inputEl = document.getElementById('todoRailInput');
   var addBtn = document.getElementById('todoRailAddBtn');
   var countEl = document.getElementById('todoRailCount');
@@ -12273,33 +12330,76 @@ ${text}
       .map(function(x){ return x.t; });
   }
 
+  function rowHtml(it){
+    var star = isImportant(it);
+    return '<div class="todo-rail-row' + (it.done ? ' done' : '') + (star && !it.done ? ' important' : '') +
+        (popId === it.id ? ' pop' : '') + '" data-id="' + esc(it.id) + '">' +
+      '<input type="checkbox" data-act="toggle"' + (it.done ? ' checked' : '') + ' />' +
+      '<span class="todo-rail-text">' + esc(it.text) + '</span>' +
+      '<button type="button" class="todo-rail-star' + (star ? ' on' : '') + '" data-act="star" title="' + (star ? '중요 해제' : '중요 표시') + '" aria-label="중요 표시" aria-pressed="' + (star ? 'true' : 'false') + '">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>' +
+      '</button>' +
+      '<button type="button" class="todo-rail-del" data-act="del" title="삭제" aria-label="삭제">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>' +
+      '</button>' +
+    '</div>';
+  }
+
+  function secHtml(kind, label, rows, extraHead){
+    if(rows.length === 0) return '';
+    return '<div class="todo-sec ' + kind + '">' +
+      '<div class="todo-sec-head">' +
+        (kind === 'imp'
+          ? '<svg class="todo-sec-star" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>'
+          : '<span class="dot"></span>') +
+        '<span>' + label + '</span><span class="n">' + rows.length + '</span>' +
+        (extraHead || '') +
+      '</div>' +
+      (kind === 'don' && doneFolded ? '' : rows.map(rowHtml).join('')) +
+    '</div>';
+  }
+
   function render(){
     var todos = load();
     var visible = visibleOf(todos);
+    var imp = visible.filter(function(t){ return !t.done && isImportant(t); });
+    var act = visible.filter(function(t){ return !t.done && !isImportant(t); });
+    var don = visible.filter(function(t){ return t.done; });
+
     if(visible.length === 0){
       listEl.innerHTML = '<div class="todo-rail-empty">할 일이 없습니다. 위에서 추가해보세요.</div>';
     } else {
-      listEl.innerHTML = visible.map(function(it){
-        var star = isImportant(it);
-        return '<div class="todo-rail-row' + (it.done ? ' done' : '') + (star ? ' important' : '') + '" data-id="' + esc(it.id) + '">' +
-          '<input type="checkbox" data-act="toggle"' + (it.done ? ' checked' : '') + ' />' +
-          '<span class="todo-rail-text">' + esc(it.text) + '</span>' +
-          '<button type="button" class="todo-rail-star' + (star ? ' on' : '') + '" data-act="star" title="' + (star ? '중요 해제' : '중요 표시') + '" aria-label="중요 표시" aria-pressed="' + (star ? 'true' : 'false') + '">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8Z"/></svg>' +
-          '</button>' +
-          '<button type="button" class="todo-rail-del" data-act="del" title="삭제" aria-label="삭제">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>' +
-          '</button>' +
-        '</div>';
-      }).join('');
+      listEl.innerHTML =
+        secHtml('imp', '중요한 할 일', imp) +
+        secHtml('act', '해야 할 일', act) +
+        secHtml('don', '완료한 일', don,
+          '<button type="button" class="todo-sec-toggle" data-act="foldDone">' + (doneFolded ? '펼치기' : '접기') + '</button>');
     }
-    var doneCount = visible.filter(function(x){ return x.done; }).length;
-    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + doneCount + '개';
-    clearBtn.disabled = doneCount === 0;
-    // 제목 옆 배지는 "화면에 보이는 것"이 아니라 실제 미완료 전체 건수를 센다.
+
+    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + don.length + '개';
+    clearBtn.disabled = don.length === 0;
+
     var activeCount = todos.filter(function(t){ return !t.done; }).length;
     badgeEl.textContent = '미완료 ' + activeCount;
     badgeEl.classList.toggle('zero', activeCount === 0);
+
+    // 하단 응원 문구 — 완료가 하나라도 생겼을 때만, 아주 작게.
+    if(activeCount === 0 && todos.length > 0){
+      cheerEl.textContent = '오늘 할 일 끝! 🐰';
+      cheerEl.style.display = '';
+    } else if(don.length > 0){
+      cheerEl.textContent = '오늘도 화이팅!';
+      cheerEl.style.display = '';
+    } else {
+      cheerEl.style.display = 'none';
+    }
+
+    // 팝 효과는 1회성 — 그린 뒤 바로 표식을 지운다.
+    if(popId){
+      var el = listEl.querySelector('.todo-rail-row.pop');
+      popId = null;
+      if(el) setTimeout(function(){ el.classList.remove('pop'); }, 260);
+    }
   }
 
   function addItem(){
@@ -12318,6 +12418,13 @@ ${text}
 
   // 목록은 매번 다시 그리므로 개별 리스너 대신 위임을 쓴다(리스너 유실 없음).
   listEl.addEventListener('click', function(e){
+    var foldBtn = e.target.closest('[data-act="foldDone"]');
+    if(foldBtn){
+      doneFolded = !doneFolded;
+      try{ localStorage.setItem(DONE_FOLD_KEY, doneFolded ? '1' : '0'); }catch(err){}
+      render();
+      return;
+    }
     var starBtn = e.target.closest('[data-act="star"]');
     if(starBtn){
       var srow = starBtn.closest('.todo-rail-row');
@@ -12354,7 +12461,7 @@ ${text}
     // 기존 "내 할 일"과 완전히 같은 완료 처리 방식(done/completedAt) — 이력을 지우지 않는다.
     t.done = !!box.checked;
     t.completedAt = t.done ? Date.now() : null;
-    if(t.done) justDone[id] = true; else delete justDone[id];
+    if(t.done){ justDone[id] = true; popId = id; } else { delete justDone[id]; }
     save(todos);
     render();
   });
