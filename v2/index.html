@@ -138,12 +138,14 @@
   .main{
     flex:1;
     min-width:0;
-    padding:24px 28px 32px;
+    padding:24px 28px 40px;
     overflow-y:auto;
   }
+  /* 상단 카드부터 아래 입력 영역까지 하나의 컬럼 폭을 공유한다 — 요소마다 폭이
+     제각각 보이지 않게 하는 것이 목적이다. 넓은 모니터에서는 좌우 여백을 두고 중앙 배치. */
   .main-inner{
-    max-width:none;      /* 사이드바가 사라진 만큼 작업 공간을 넓게 쓴다 */
-    margin:0;
+    max-width:1560px;
+    margin:0 auto;
   }
 
   .search-wrap{
@@ -186,14 +188,14 @@
   }
 
   /* ---------- Home content column (search + AI 문구정리 share the same left edge) ---------- */
-  /* 좌측 사이드바·우측 투두가 사라진 만큼 본문 컬럼도 넓게 쓰고 왼쪽 기준으로 정렬한다 */
+  /* 본문 컬럼은 main-inner 폭을 그대로 따른다(카드와 같은 좌우 기준선) */
   .home-col{
-    max-width:1180px;
+    max-width:none;
     margin:0;
   }
-  .search-wrap{ justify-content:flex-start; }
-  .search-box{ max-width:980px; }
-  .hint{ text-align:left; font-size:11.5px; color:#9AA1AE; }
+  .search-wrap{ justify-content:flex-start; margin-top:0; }
+  .search-box{ max-width:none; }
+  .hint{ text-align:left; font-size:11.5px; color:#9AA1AE; margin-top:7px; margin-bottom:20px; }
 
   /* ---------- AI 문구정리 ---------- */
   .ai-section{
@@ -1444,6 +1446,9 @@
 
 
 
+  /* §UI 정리 라운드 — 화면에서만 감춘다. 백업/복원/잠금 로직과 데이터는 그대로 남아 있다. */
+  #shin2BackupBtn, #shin2RestoreBtn, #siteLockBtn{ display:none !important; }
+
   /* ================================================================================
      상단 통합 투두 (§오른쪽 레일 폐기 라운드)
      빠른 입력 + 날짜별 업무 카드 4개 + 전체 할 일 모달. 저장소는 기존 shin2-todos 그대로.
@@ -1484,22 +1489,28 @@
   .qadd-clear:hover{ color:#B91C1C; }
 
   /* 날짜별 업무 카드 4개 */
-  .wcards{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; margin:2px 0 10px; }
+  .wcards{
+    display:grid; grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:13px; margin:2px 0 8px;
+    align-items:stretch;              /* 4개 카드 높이를 항상 같게 */
+  }
   .wcard{
-    display:flex; flex-direction:column; min-height:112px; padding:16px;
-    background:var(--surface); border:1px solid var(--line); border-radius:11px;
+    display:flex; flex-direction:column; min-height:150px; padding:16px;
+    background:var(--surface); border:1px solid #D8DCE3; border-radius:10px;
   }
   .wcard-head{
     display:flex; align-items:center; gap:6px; flex:none;
-    padding-bottom:9px; margin-bottom:5px; border-bottom:1px solid rgba(0,0,0,0.06);
-    font-size:12.5px; font-weight:700; color:var(--text);
+    padding-bottom:10px; margin-bottom:6px; border-bottom:1px solid #E3E6EB;
+    font-size:13px; font-weight:700; color:var(--text);
   }
   .wcard-head .n{ font-size:10.5px; font-weight:700; color:var(--text-muted); }
   .wcard-list{ flex:1; min-height:0; display:flex; flex-direction:column; }
   .wcard-item{
     display:flex; align-items:center; gap:8px; min-height:34px;
-    padding:4px 2px; border-radius:5px; font-size:12.5px; color:var(--text);
+    padding:5px 2px; border-bottom:1px solid #F2F3F6;
+    font-size:12.5px; color:var(--text);
   }
+  .wcard-item:last-child{ border-bottom:none; }
   .wcard-item:hover{ background:rgba(0,0,0,0.03); }
   .wcard-item input[type="checkbox"]{ flex:none; width:14px; height:14px; margin:0; accent-color:var(--navy); cursor:pointer; }
   .wcard-item .t{ flex:1; min-width:0; font-weight:500; line-height:1.4; white-space:normal; word-break:break-word; }
@@ -1509,7 +1520,7 @@
   .wcard-star:hover{ color:#C79A2E; }
   .wcard-star.on, .wcard-item:hover .wcard-star.on{ color:#C79A2E; }
   .wcard-star.on svg{ fill:currentColor; }
-  .wcard-empty{ font-size:11.5px; color:#A8AEB9; padding:6px 2px; }
+  .wcard-empty{ font-size:11px; color:#B2B8C2; padding:8px 2px; }
   .wcard-more{
     flex:none; margin-top:4px; align-self:flex-start; border:none; background:transparent;
     cursor:pointer; font-size:11px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
@@ -1517,23 +1528,26 @@
   .wcard-more:hover{ color:var(--navy); }
 
   /* 오늘 = RED (카드 전체를 진하게 칠하지 않고 accent/제목/badge에만) */
-  .wcard.k-today{ background:#FEF8F8; border-color:#F0DADD; border-left:3px solid #C0392F; }
-  .wcard.k-today .wcard-head{ color:#B3283C; }
+  /* 오늘 = 가장 먼저 눈에 들어오게. 카드 전체를 빨갛게 칠하지는 않는다. */
+  .wcard.k-today{ background:#FEF7F7; border-color:#E9C4C8; border-left:3px solid #C0392F; }
+  .wcard.k-today .wcard-head{ color:#B3283C; border-bottom-color:#F0D8DA; }
   .wcard.k-today .wcard-head .n{ color:#fff; background:#C0392F; padding:0 6px; border-radius:9px; }
+  .wcard.k-today .wcard-item{ border-bottom-color:#F5E3E4; }
   .wcard.k-today .wcard-item .d{ color:#fff; background:#C0392F; padding:1px 7px; border-radius:9px; }
-  /* 기한 지남 = 거의 흰색, "N일 지남"만 muted red */
-  .wcard.k-over{ background:var(--surface); border-color:var(--line); }
+  /* 기한 지남 = 오늘과 경쟁하지 않게 차분하게. 상태 문구만 muted red. */
+  .wcard.k-over{ background:#FCFBFA; border-color:#DDD9D5; }
   .wcard.k-over .wcard-head{ color:#4B5563; }
-  .wcard.k-over .wcard-item .d{ color:#B3283C; }
-  /* 내일 = 네이비/블루 */
-  .wcard.k-tomorrow{ background:#FAFCFE; border-color:#E1E8F2; }
+  .wcard.k-over .wcard-item .d{ color:#A93B48; }
+  /* 내일 = 네이비 제목 + 아주 연한 blue tint */
+  .wcard.k-tomorrow{ background:#FAFCFF; border-color:#CFD9E8; }
   .wcard.k-tomorrow .wcard-head{ color:var(--navy); }
-  .wcard.k-tomorrow .wcard-item .d{ color:#3F5A86; background:#EAF0F9; padding:1px 7px; border-radius:9px; }
-  /* 예정 = 담백한 회색/블루 */
-  .wcard.k-future .wcard-head{ color:#4A6285; }
-  .wcard.k-future .wcard-item .d{ color:#5C6B8A; background:#F2F4F8; padding:1px 7px; border-radius:9px; }
+  .wcard.k-tomorrow .wcard-item .d{ color:#3F5A86; }
+  /* 예정 = 흰색 중심 */
+  .wcard.k-future{ background:var(--surface); border-color:#D8DCE3; }
+  .wcard.k-future .wcard-head{ color:#3D4A5C; }
+  .wcard.k-future .wcard-item .d{ color:#6B7280; }
 
-  .wcards-foot{ display:flex; justify-content:flex-end; margin:0 0 16px; }
+  .wcards-foot{ display:flex; justify-content:flex-end; margin:0 0 26px; }
   .wcards-nodate{
     border:none; background:transparent; cursor:pointer;
     font-size:11.5px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
@@ -1582,6 +1596,11 @@
   .tall-row:hover .tall-del{ color:#B3B8C2; }
   .tall-del:hover{ color:#B91C1C; }
   .tall-empty{ font-size:12.5px; color:var(--text-muted); padding:18px 8px; }
+
+  /* §UI 정리 라운드 — 검색창 / 탭 / 입력 영역이 카드와 같은 좌우 기준선을 쓰게 한다. */
+  .home-tabs-panel{ max-width:none; }
+  .home-tab-content .qr-block, .home-tab-content .home-task-block, .home-tab-content .ai-section,
+  .home-tab-content .shin2-memo-block{ max-width:none; }
 
   @media (max-width:1500px){ .wcards{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
   @media (max-width:900px){ .wcards{ grid-template-columns:1fr; } }
@@ -2371,7 +2390,6 @@
              두 소스(D.pendingActivitiesForCompany/D.tasksForCompany와 동일한 필터 조건)다. -->
         <div id="homeCustomerTaskSlot"></div>
 
-        <div id="homeMemoSlot"></div>
       </div>
 
       <div class="kb-view" id="knowledgeView" style="display:none;">
