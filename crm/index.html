@@ -6409,7 +6409,20 @@ window.SHIN2_CRM_APP_INIT = function(){
     return days === null ? '2차미팅 완료 · MOU 미체결' : `2차미팅 완료 후 ${days}일 · MOU 미체결`;
   }
   const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'첫 L2 필요', l2Stall:'L3 전환 필요' };
+  // §업무관리 제외 조건 추가: "질문서 발송/회신 기록도, 1차·2차미팅 기록도 전혀 없이
+  // MOU만 체결완료"된 업체(기존협약업체를 곧바로 MOU 완료 상태로 들여온 실제 사례 —
+  // ㈜종명건설 등, 첫 라운드의 "1·2차 미팅 없이 MOU 체결" 예외와 같은 부류)는 업무관리에서
+  // 제외한다. buildProgressStages가 이미 계산해 둔 stages의 ts(질문서/1차/2차미팅 날짜
+  // 파싱 결과)가 셋 다 null일 때만 "기록이 아예 없음"으로 본다 — 하나라도 실제 날짜가
+  // 있으면(즉 어떤 형태로든 절차를 거쳤으면) 이 제외 규칙을 적용하지 않는다.
+  function hasNoFunnelHistoryBeforeMou(progress){
+    if(!progress.hasAny) return false;
+    const byKey = {}; progress.stages.forEach(s=> byKey[s.key] = s);
+    if(byKey.mou.state !== 'done') return false;
+    return byKey.q.ts == null && byKey.m1.ts == null && byKey.m2.ts == null;
+  }
   function buildWorkQueueItem(co, acts, progress, hasPour){
+    if(hasNoFunnelHistoryBeforeMou(progress)) return null; // 질문서/미팅 기록 없이 바로 MOU 체결된 업체는 제외
     const meeting = classifyWorkQueueMeeting(progress);
     if(meeting){
       const days = meeting.anchor && typeof meeting.anchor.ts === 'number' ? Math.floor((Date.now() - meeting.anchor.ts) / 86400000) : null;
