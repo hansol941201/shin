@@ -7056,7 +7056,25 @@ window.SHIN2_CRM_APP_INIT = function(){
     wrap.querySelectorAll('[data-workq-copy]').forEach(btn=> btn.addEventListener('click', ()=> copyText(btn.getAttribute('data-workq-copy'), btn)));
     const searchInput = document.getElementById('workqSearchInput');
     if(searchInput){
-      searchInput.addEventListener('input', ()=>{ workQueueSearch = searchInput.value; renderWorkQueueView(); });
+      // §업무관리 검색 한글 조합 깨짐 수정 — 한글은 IME로 자모를 조합해 한 음절을 만드는데,
+      // 'input' 이벤트마다 renderWorkQueueView()가 wrap.innerHTML을 통째로 다시 그려 입력창
+      // DOM 자체를 새로 만들어버리면 조합 중이던 음절이 끊겨 "사이노"가 아니라
+      // "ㅅㅏㅇㅣㄴㅗ"처럼 자모가 낱개로 따로 찍힌다(실제 스크린샷으로 확인된 버그). 조합 중
+      // (compositionstart~compositionend 사이)에는 재렌더링을 미루고, 조합이 끝난 뒤에만
+      // 검색을 반영한다 — 영문/숫자처럼 조합이 필요 없는 입력은 기존처럼 매 타이핑마다 바로
+      // 반영된다.
+      let isComposing = false;
+      searchInput.addEventListener('compositionstart', ()=>{ isComposing = true; });
+      searchInput.addEventListener('compositionend', ()=>{
+        isComposing = false;
+        workQueueSearch = searchInput.value;
+        renderWorkQueueView();
+      });
+      searchInput.addEventListener('input', ()=>{
+        if(isComposing) return; // 조합 중인 입력은 compositionend에서 한 번에 반영
+        workQueueSearch = searchInput.value;
+        renderWorkQueueView();
+      });
       // §업무관리 검색창 라운드 — 위에서 기억해 둔 포커스/커서 위치를 새로 그려진 입력창에
       // 그대로 되돌려 준다(재렌더링마다 포커스가 풀리지 않게).
       if(searchHadFocus){
