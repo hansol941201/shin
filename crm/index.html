@@ -3793,6 +3793,20 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     if(nameHits.length > 1) return { co: null, via: 'ambiguous-name' };
     return { co: null, via: 'none' };
   }
+  // §협력사 동기화 연락처 갱신 라운드 — 업체 기본정보(연락처)가 바뀌었는지 여부. 진행상황
+  // (newMou)과 완전히 독립된 별도 소스라서 pdRowChangedFromExisting과 따로 확인해야 한다 —
+  // 그렇지 않으면 "진행상황은 그대로인데 이메일만 바뀐" 업체가 애초에 updates에 안 들어가서
+  // 아래 patch 로직이 아무리 고쳐져도 실행조차 안 되는 문제가 있었다(실제 ㈜샤인하우징
+  // 사례로 확인 — 이 업체는 다른 이유로 updates에 포함돼 있어 patch만 고쳐도 됐지만, 진행
+  // 상황 변화 없이 연락처만 바뀌는 업체는 이 체크가 없으면 여전히 누락된다).
+  const PD_CONTACT_FIELD_MAP = [['ceo','repName'], ['phone','phone'], ['fax','fax'], ['email','email'], ['address','address'], ['bizno','bizRegNo']];
+  function pdContactChanged(co, contact){
+    if(!contact) return false;
+    return PD_CONTACT_FIELD_MAP.some(([ck, coKey])=>{
+      const v = contact[ck];
+      return v && String(v).trim() && String(v).trim() !== String(co[coKey] || '').trim();
+    });
+  }
   // 진행상황 변경 여부(미리보기 카운트용) — 실제로 달라지는 필드가 하나라도 있을 때만 센다.
   function pdRowChangedFromExisting(oldNm, row){
     const keys = ['qSentLabel','qSentDone','qReplyLabel','qReplyDone','m1Label','m1Done','m1Scheduled','m1ScheduledLabel','m1Owner','m2Label','m2Done','m2Scheduled','m2ScheduledLabel','m2Owner','mouLabel','mouDone','stage','note'];
@@ -3857,13 +3871,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       }
       const oldNm = (m.co.partnerDashboard && m.co.partnerDashboard.newMou) || null;
       const changed = pdRowChangedFromExisting(oldNm, row);
+      const contactChanged = pdContactChanged(m.co, contact);
       const events = pdBuildEventsForCompany(oldNm, row);
       const memo = pdBuildMemoForCompany(oldNm, row);
       if(changed) progressChangedCount++;
       eventCount += events.length;
       if(memo) memoCount++;
-      if(changed || events.length || memo || !m.co.partnerDashboard || !m.co.partnerDashboard.newMou){
-        updates.push({ co: m.co, row, contact, events, memo, progressChanged: changed });
+      if(changed || contactChanged || events.length || memo || !m.co.partnerDashboard || !m.co.partnerDashboard.newMou){
+        updates.push({ co: m.co, row, contact, events, memo, progressChanged: changed, contactChanged });
       }
     });
 
@@ -3898,9 +3913,26 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       const oldNm = (co.partnerDashboard && co.partnerDashboard.newMou) || null;
       const mergedNm = pdMergeNewMou(oldNm, u.row);
       co.partnerDashboard = Object.assign({}, co.partnerDashboard, { newMou: mergedNm });
-      // §13: CRM에 이미 값이 있는 연락처 필드는 절대 덮어쓰지 않는다 — applyPatchToRecord의
-      // onlyFillEmpty와 완전히 같은 규칙을 여기서도 그대로 쓴다(빈 칸일 때만 채움).
-      if(u.contact) applyPatchToRecord(co, { repName: u.contact.ceo || '', phone: u.contact.phone || '', fax: u.contact.fax || '', address: u.contact.address || '', bizRegNo: u.contact.bizno || '' }, true);
+      // §협력사 동기화 연락처 갱신 라운드 — 예전엔 onlyFillEmpty(빈 칸일 때만 채움)라 CRM에
+      // 이미 값이 있으면 partner-dashboard가 최신값으로 바뀌어도 절대 반영되지 않았다
+      // (실제 버그: ㈜샤인하우징 이메일이 옛 값 그대로 남아 있었음 — 게다가 email 필드 자체가
+      // 이 patch 대상에 빠져 있기도 했다). partner-dashboard 쪽 연락처는 CRM 사용자가 직접
+      // 입력하는 필드가 아니라 전량 partner-dashboard 출처이므로, pdMergeNewMou와 같은
+      // source-of-truth 정책("비어있지 않은 값이 있으면 항상 최신이 이긴다")을 그대로
+      // 적용한다 — truthy한 필드만 patch에 넣고 강제 덮어쓰기(onlyFillEmpty=false)한다.
+      // partner-dashboard 값이 없는(null/undefined/빈 문자열) 필드는 patch에 아예 들어가지
+      // 않아 CRM 기존 값이 그대로 보존된다.
+      if(u.contact){
+        const c = u.contact;
+        const contactPatch = {};
+        if(c.ceo) contactPatch.repName = c.ceo;
+        if(c.phone) contactPatch.phone = c.phone;
+        if(c.fax) contactPatch.fax = c.fax;
+        if(c.email) contactPatch.email = c.email;
+        if(c.address) contactPatch.address = c.address;
+        if(c.bizno) contactPatch.bizRegNo = c.bizno;
+        if(Object.keys(contactPatch).length) applyPatchToRecord(co, contactPatch, false);
+      }
       updatedCount++;
       u.events.forEach(ev=>{
         if(existingActivitySourceIds.has(ev.sourceRecordId)) return; // §9/§10 중복 방지
@@ -3929,6 +3961,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
         repName: contact.ceo || '',
         phone: contact.phone || '',
         fax: contact.fax || '',
+        email: contact.email || '', // §협력사 동기화 연락처 갱신 라운드 — 신규 업체 생성 시에도 email이 누락돼 있었다
         address: contact.address || '',
         bizRegNo: contact.bizno || '',
         partnerDashboard: { newMou: pdMergeNewMou(null, n.row) }
