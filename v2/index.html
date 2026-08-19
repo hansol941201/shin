@@ -1690,7 +1690,13 @@
     // 가드)만 그대로 따른다. [클라우드 동기화 시작] 버튼을 눌렀을 때만 최초 동기화되고,
     // 그 외에는 기존 실시간 push 경로(각 모듈의 saveAll → window.__shin2CloudSync.push)만
     // 탄다 — 새 동기화 메커니즘을 만들지 않았다.
-    calendar: _ns('shin2-calendar-events-v1')
+    calendar: _ns('shin2-calendar-events-v1'),
+    // §자동 동기화 라운드: 계정함(암호문 그대로)도 동기화 대상에 넣는다. 브라우저가 사이트
+    // 데이터를 비웠을 때 계정만 복구 수단이 전혀 없었던 문제(실제 발생) 때문이다.
+    // 올라가는 값은 지금까지와 똑같이 AES-GCM 암호문 + salt이며 평문 비밀번호가 아니다.
+    // salt가 다른 두 계정함을 섞으면 복호화가 깨지므로, 병합 규칙은 아래 mergeValues에서
+    // "salt가 같을 때만 병합, 다르면 로컬 유지"로 따로 정의한다.
+    accountsVault: 'shin2-accounts-vault'
   };
   // crm/index.html은 별도 페이지지만 같은 origin이라 localStorage를 직접 공유한다(§4/§37) —
   // 다만 그쪽 탭에서 쓴 값은 이 탭의 인메모리 push 경로를 거치지 않으므로, 이 탭이 이미
@@ -1736,6 +1742,11 @@
       return order.map(function(k){ return map[k]; });
     }
     function isEmptyVal(key, v){
+      if(key === 'accountsVault'){
+        // 계정함은 배열이 아니라 { salt, check, records[] } 객체다.
+        if(!v || typeof v !== 'object') return true;
+        return !Array.isArray(v.records) || v.records.length === 0;
+      }
       if(key === 'knowledge'){
         if(!v || typeof v !== 'object') return true;
         var items = Array.isArray(v.items) ? v.items : [];
@@ -1745,6 +1756,20 @@
       return !Array.isArray(v) || v.length === 0;
     }
     function mergeValues(key, localV, cloudV){
+      if(key === 'accountsVault'){
+        // salt/check는 이 계정함의 복호화 파라미터다. 서로 다른 salt로 암호화된 레코드를
+        // 한 통에 섞으면 그 순간 복호화가 깨진다 — 그래서 salt가 같을 때만 records를 병합하고,
+        // 다르면 아무것도 하지 않고 이 기기 값을 그대로 둔다.
+        var lv = (localV && typeof localV === 'object') ? localV : null;
+        var cv = (cloudV && typeof cloudV === 'object') ? cloudV : null;
+        if(!lv) return cv;
+        if(!cv) return lv;
+        if(lv.salt !== cv.salt){
+          console.warn('[한솔2] 계정함 salt가 서로 달라 병합하지 않고 이 기기 값을 유지합니다.');
+          return lv;
+        }
+        return { salt: lv.salt, check: lv.check, records: mergeArrays(lv.records, cv.records) };
+      }
       if(key === 'knowledge'){
         var lo = (localV && typeof localV === 'object') ? localV : {};
         var cl = (cloudV && typeof cloudV === 'object') ? cloudV : {};
@@ -1974,7 +1999,13 @@
           const now = new Date();
           const pad = (n) => String(n).padStart(2, '0');
           const snapKey = `shin2-pre-firebase-backup-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-          try{ localStorage.setItem(snapKey, JSON.stringify({ takenAt: now.toISOString(), data: snapshot })); }catch(e){}
+          // §자동 동기화 라운드: 이 스냅샷은 "합치기 전 로컬 상태"를 보존하려는 안전장치인데,
+          // 로컬이 통째로 비어 있으면 보존할 것이 없는 빈 껍데기만 저장공간을 잡아먹는다.
+          // 저장공간 초과가 실제 사고 원인이었으므로, 실제로 지킬 데이터가 있을 때만 남긴다.
+          const hasAnyLocal = Object.keys(snapshot).some(function(k){ return !isEmptyVal(k, snapshot[k]); });
+          if(hasAnyLocal){
+            try{ localStorage.setItem(snapKey, JSON.stringify({ takenAt: now.toISOString(), data: snapshot })); }catch(e){}
+          }
 
           const results = [];
           for(const key of Object.keys(SHIN2_SYNC_KEYS)){
@@ -2041,7 +2072,25 @@
           // 실행되지 않는다 — 자동 최초 동기화가 아니다.
           if(localStorage.getItem('shin2-cloud-sync-enabled') === '1'){
             enableLiveSync();
+            return;
           }
+          // §자동 동기화 라운드 — 동작 변경(사용자 요청).
+          // 예전에는 여기서 아무것도 하지 않고 [클라우드 동기화 시작] 버튼을 기다렸다. 그 결과
+          // 브라우저가 사이트 데이터를 비웠을 때 한솔1(자동 동기화)은 스스로 복구됐지만 한솔2는
+          // 빈 상태로 남았다 — 실제로 계정/지식/투두가 전부 사라진 사고가 났다.
+          // 이제는 로그인 직후 최초 동기화를 자동으로 한 번 돌린다. 안전 규칙(CASE A/B/C,
+          // 빈 값 가드)은 버튼 경로와 완전히 동일한 함수를 그대로 쓰므로 새로 만든 병합 로직이
+          // 없다 — 호출하는 시점만 "버튼 클릭"에서 "로그인 직후"로 바뀐 것이다.
+          startInitialSync().then(function(results){
+            var restored = results.filter(function(r){ return r.case === 'B'; }).map(function(r){ return r.key; });
+            if(restored.length){
+              console.info('[한솔2/Firebase] 클라우드에서 복구: ' + restored.join(', '));
+              window.dispatchEvent(new CustomEvent('shin2-cloud-restored', { detail: { keys: restored } }));
+            }
+          }).catch(function(err){
+            // 실패해도 로컬 데이터는 그대로다 — 조용히 로그만 남기고 기존 동작을 유지한다.
+            console.error('[한솔2/Firebase] 자동 최초 동기화 실패 — 로컬 데이터는 그대로입니다', err);
+          });
         });
 
         // 사이트 잠금 해제 시점에 그 비밀번호로 Firebase 로그인을 시도한다(비밀번호는 여기서만
@@ -4993,6 +5042,14 @@
     if(!vaultMeta) return;
     const vault = { salt: vaultMeta.salt, check: vaultMeta.check, records: acctState.records };
     localStorage.setItem(ACCT_STORAGE_KEY, JSON.stringify(vault));
+    // §자동 동기화 라운드: 다른 모듈(메모/업무/전화기록)과 완전히 같은 기존 push 경로를 그대로
+    // 탄다. 올라가는 값은 이미 암호화된 vault 객체 그대로이고, 평문 비밀번호는 이 함수 어디에도
+    // 없다. 동기화가 켜지기 전에는 push가 noop이라 아무 것도 나가지 않는다.
+    try{
+      if(window.__shin2CloudSync && typeof window.__shin2CloudSync.push === 'function'){
+        window.__shin2CloudSync.push('accountsVault', vault);
+      }
+    }catch(e){ console.error('[한솔2] 계정함 동기화 전달 실패(로컬 저장은 완료됨)', e); }
   }
 
   function maskUsername(u){
@@ -5743,6 +5800,8 @@
     var keys = window.SHIN2_SYNC_KEYS || {};
     var data = {};
     Object.keys(keys).forEach(function(k){
+      // 계정함은 아래 accountsVaultEncrypted 항목으로 따로 담기므로 여기서 또 담지 않는다.
+      if(k === 'accountsVault') return;
       try{ var raw = localStorage.getItem(keys[k]); data[k] = raw ? JSON.parse(raw) : null; }catch(e){ data[k] = null; }
     });
     // 계정 비밀번호는 민감정보라 절대 복호화해서 넣지 않는다 — shin2-accounts-vault에 저장된
@@ -5799,6 +5858,9 @@
         var keys = window.SHIN2_SYNC_KEYS || {};
         var touched = [];
         Object.keys(keys).forEach(function(key){
+          // 계정함은 이 일반 병합 루프를 절대 타지 않는다 — salt가 다르면 복호화가 깨지므로,
+          // 아래의 전용 분기(로컬 계정함이 아예 없을 때만 통째로 복원)에서만 다룬다.
+          if(key === 'accountsVault') return;
           if(!(key in parsed.data)) return; // 백업에 이 키가 아예 없으면 손대지 않는다
           var incoming = parsed.data[key];
           var storageKey = keys[key];
