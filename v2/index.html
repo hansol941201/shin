@@ -1578,13 +1578,16 @@
   /* ---------- 상단 업무 카드 (§업무판 라운드) ----------
      숫자 대시보드가 아니라 "지금 해야 하는 일 제목"을 바로 읽는 판.
      오른쪽 투두(shin2-todos)를 그대로 읽는 요약 뷰이며 별도 저장소가 없다. */
+  /* 오른쪽 투두 패널(약 440px)이 폭을 쓰기 때문에, 일반 데스크톱에서 한 줄 4개는 카드가
+     208px까지 좁아져 제목이 잘린다. 기본은 2×2로 두어 제목을 넉넉히 읽히게 하고,
+     아주 넓은 화면에서만 한 줄 4개로 편다. */
   .wcards{
-    display:grid; grid-template-columns:repeat(4, minmax(0, 1fr));
+    display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
     gap:14px; margin:2px 0 18px;
   }
   .wcard{
     display:flex; flex-direction:column;
-    min-height:168px; padding:13px 14px;
+    min-height:152px; padding:13px 15px;
     background:var(--surface); border:1px solid var(--line); border-radius:13px;
   }
   .wcard-head{
@@ -1627,7 +1630,7 @@
   .wcard.k-important{ background:#FCFAF4; border-color:#EBE3D2; }
   .wcard.k-important .wcard-head{ color:#8A6410; }
 
-  @media (max-width:1400px){ .wcards{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  @media (min-width:1900px){ .wcards{ grid-template-columns:repeat(4, minmax(0, 1fr)); } }
   @media (max-width:820px){ .wcards{ grid-template-columns:1fr; } }
 
   /* 상단에서 항목을 클릭했을 때 레일 행을 잠깐 강조 */
