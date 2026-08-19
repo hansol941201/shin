@@ -320,8 +320,37 @@
   .workq-reason{ color:var(--text-muted); font-size:12px; }
   .workq-days{ white-space:nowrap; font-variant-numeric:tabular-nums; }
   .workq-delay-badge{ display:inline-block; font-size:10px; font-weight:700; color:#B45309; background:#FFF3E0; border-radius:4px; padding:1px 5px; margin-left:5px; }
-  .workq-action{ font-size:12px; font-weight:700; color:var(--navy); }
   .workq-empty{ padding:24px; text-align:center; color:var(--text-muted); font-size:13px; background:#fff; border:1px solid var(--line); border-radius:8px; }
+  .workq-today-line .workq-today-link{ background:none; border:none; padding:0; font:inherit; font-weight:700; color:var(--navy); cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  .workq-today-line .workq-today-link:hover{ text-decoration-style:solid; }
+
+  /* §업무관리 실행형 UI 라운드 §2/§21 — "해야 할 일"을 텍스트에서 실행 버튼으로. 네이비=실행,
+     주황=현재/지연, 초록=저장 완료, 회색=보조(요청 색상 규칙 그대로). 큰 아이콘/대형 팝업/
+     Drawer 없음 — 버튼 클릭 시 그 행 바로 아래에 컴팩트한 인라인 영역만 펼친다. */
+  .workq-action-btn{ height:24px; padding:0 10px; font-size:11.5px; font-weight:700; color:#fff; background:var(--navy); border:none; border-radius:5px; cursor:pointer; white-space:nowrap; }
+  .workq-action-btn:hover{ background:#0a2d5c; }
+  .workq-action-btn.is-open{ background:#0a2d5c; box-shadow:inset 0 0 0 2px #C7D7EA; }
+  .workq-expand-row td{ background:#F9FBFD; padding:10px 14px 12px; }
+  .workq-expand{ font-size:12px; color:var(--text); }
+  .workq-expand-title{ font-weight:700; color:var(--navy); margin-bottom:8px; }
+  .workq-expand-grid{ display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; margin-bottom:8px; max-width:520px; }
+  .workq-expand-label{ font-size:11px; color:var(--text-muted); font-weight:600; }
+  .workq-expand-value{ font-size:12px; color:var(--text); }
+  .workq-copy-btn{ height:20px; padding:0 7px; font-size:10.5px; color:var(--text-muted); background:#fff; border:1px solid var(--line); border-radius:4px; cursor:pointer; margin-left:6px; }
+  .workq-copy-btn:hover{ background:var(--bg); }
+  .workq-field-input{ height:26px; padding:0 8px; font-size:12px; border:1px solid var(--line); border-radius:5px; font-family:inherit; }
+  .workq-field-input.is-date{ width:130px; }
+  .workq-field-input.is-time{ width:90px; }
+  .workq-field-input.is-owner{ width:140px; }
+  .workq-memo-input{ width:100%; max-width:520px; min-height:44px; padding:6px 8px; font-size:12px; border:1px solid var(--line); border-radius:5px; font-family:inherit; resize:vertical; box-sizing:border-box; }
+  .workq-btn-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .workq-btn{ height:26px; padding:0 11px; font-size:11.5px; font-weight:600; border-radius:5px; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--text); }
+  .workq-btn:hover{ background:var(--bg); }
+  .workq-btn.primary{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .workq-btn.primary:hover{ background:#0a2d5c; }
+  .workq-btn.muted{ color:var(--text-muted); }
+  .workq-hold-row{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .workq-saved-note{ font-size:11.5px; color:#0F7A3D; font-weight:700; margin-top:6px; }
   .constr-list-title{ font-size:13px; font-weight:700; color:var(--text); margin:4px 0 8px; }
   .constr-list-row{
     display:grid; grid-template-columns:40px 1fr auto; gap:10px; align-items:center;
@@ -6409,6 +6438,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     return days === null ? '2차미팅 완료 · MOU 미체결' : `2차미팅 완료 후 ${days}일 · MOU 미체결`;
   }
   const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'첫 L2 필요', l2Stall:'L3 전환 필요' };
+  const WORKQ_TYPE_PRIORITY = { m1:0, m2:1, mou:2, firstActivity:3, l2Stall:4, reuse:5 };
   // §업무관리 제외 조건 추가: "질문서 발송/회신 기록도, 1차·2차미팅 기록도 전혀 없이
   // MOU만 체결완료"된 업체(기존협약업체를 곧바로 MOU 완료 상태로 들여온 실제 사례 —
   // ㈜종명건설 등, 첫 라운드의 "1·2차 미팅 없이 MOU 체결" 예외와 같은 부류)는 업무관리에서
@@ -6465,7 +6495,13 @@ window.SHIN2_CRM_APP_INIT = function(){
       const item = buildWorkQueueItem(co, acts, progress, hasPour);
       if(item) list.push(item);
     });
+    // §실행형 업무관리 라운드 §14: 단순 "경과일 오래된 순"만 쓰지 않고, 실제 행동
+    // 우선순위(1차미팅 잡기→2차미팅 잡기→MOU 진행→첫 L2 필요→L3 전환 필요→재사용 필요)를
+    // 먼저 적용한 뒤, 같은 행동 안에서만 오래된 업체가 위로 오게 한다.
     list.sort((a,b)=>{
+      const pa = WORKQ_TYPE_PRIORITY[a.type] != null ? WORKQ_TYPE_PRIORITY[a.type] : 99;
+      const pb = WORKQ_TYPE_PRIORITY[b.type] != null ? WORKQ_TYPE_PRIORITY[b.type] : 99;
+      if(pa !== pb) return pa - pb;
       if(a.days === null && b.days === null) return 0;
       if(a.days === null) return 1;
       if(b.days === null) return -1;
@@ -6476,10 +6512,219 @@ window.SHIN2_CRM_APP_INIT = function(){
     return { list, counts };
   }
 
+  /* ==========================================================================
+     §실행형 업무관리 라운드 §18 — 데이터 출처 조사 결과.
+
+     질문서/1차미팅/2차미팅/MOU의 실제 저장 위치: co.partnerDashboard.newMou
+     (§협력사 동기화 라운드에서 이미 확정 — qSentLabel/qReplyLabel/m1Label/m1Done/
+     m1Scheduled/m1ScheduledLabel/m1Owner/m2Label/m2Done/m2Scheduled/m2ScheduledLabel/
+     m2Owner/mouLabel/mouDone). partner-dashboard 동기화든, 예전 Partner Dashboard
+     스냅샷 가져오기든 전부 이 같은 구조에 쓴다 — 그래서 여기서 쓰는 값도 정확히 같은
+     필드에, 정확히 같은 라벨 포맷("YY.MM.DD", parsePartnerDateLabel이 읽는 형식)으로
+     써야 buildProgressStages/computeNextActionLabel 등 기존 계산이 즉시 이어받는다.
+     새 meeting1/meeting2 필드를 만들지 않는다(§5/§6 명시).
+
+     활동기록/메모: D.addActivity(companyId, text)(customerActivities) /
+     D.addMemo(companyId, text)(memos) — 둘 다 §관리필요·협력사 동기화 라운드에서도
+     쓴 기존 함수 그대로. "최근 요청"(buildRequestListItems)과 고객카드의 "고객 정보"
+     자동 요약(buildCustomerInfoFacts)이 이미 activities를 읽으므로, 여기서 activities에
+     남기면 고객카드에서 별도 연결 코드 없이 그대로 보인다(§11/§17).
+
+     보류(§13): "다음 확인일"을 안전하게 저장할 기존 필드가 없어(co.nextActions는
+     done/completedAt만 있는 체크리스트라 "특정 날짜에 다시 보기"와 다른 개념) 최소한의
+     CRM 전용 필드 co.workQueueHold({type,until,note,createdAt})를 새로 추가했다 —
+     partner-dashboard 원본(newMou)은 전혀 건드리지 않는다(§13 "원본 진행데이터를 보류
+     데이터로 덮어쓰지 않는다").
+     ========================================================================== */
+  function workqTodayLabel(){
+    const d = new Date();
+    return String(d.getFullYear()).slice(2) + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+  }
+  // <input type="date"> 값("YYYY-MM-DD")을 partner-dashboard 라벨 규칙과 같은 "YY.MM.DD"로.
+  function workqDateInputToLabel(dateStr){
+    if(!dateStr) return null;
+    const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return null;
+    return m[1].slice(2) + '.' + m[2] + '.' + m[3];
+  }
+  function workqMergeNewMou(co, patch){
+    const current = (co.partnerDashboard && co.partnerDashboard.newMou) || {};
+    const merged = Object.assign({}, current, patch);
+    D.updateCompany(co.id, { partnerDashboard: Object.assign({}, co.partnerDashboard, { newMou: merged }) });
+  }
+  function workqLogActivity(companyId, text){ if(text) D.addActivity(companyId, text); }
+  function workqLogMemo(companyId, text){ const t = (text||'').trim(); if(t) D.addMemo(companyId, t); }
+  // §11/§17 조사 결과: 고객카드의 "최근 요청 / 고객 메모"(cdashReqPreviewBlock)는
+  // buildRequestListItems가 그리는데, 이 함수는 customerActivities를 직접 읽지 않고
+  // D.memosFor(메모)와 co.requestedMaterials(활동 텍스트에서 키워드로 추출된 것)만 합쳐서
+  // 보여준다 — 그래서 순수 활동기록만 남기면 "최근 요청"에 나타나지 않는다(실제
+  // Playwright로 재현/확인). 업무관리에서 남긴 행동 요약은 customerActivities(활동
+  // 이력 — §11 "가능하면 기존 customerActivities/memos 구조를 그대로 재사용")와 memos
+  // (카드에 바로 보이도록) 양쪽에 함께 남긴다.
+  function workqLogEvent(companyId, text){
+    workqLogActivity(companyId, text);
+    if(text) D.addMemo(companyId, text);
+  }
+
+  // §5/§6: 1차/2차미팅 일정 저장 — m1Scheduled/m1ScheduledLabel/m1Owner(또는 m2 쪽)만
+  // 채운다. m1Done/m2Done(완료 여부)은 절대 여기서 true로 바꾸지 않는다 — "일정을 잡았다"와
+  // "미팅을 완료했다"는 다른 사실이고, 완료 처리는 이번 1차 범위 밖(§18 "실제 원본 데이터와
+  // 상태가 불일치하게 만들지 않는다")이다. 저장 즉시 buildProgressStages가 scheduledLabel을
+  // 인식해 classifyWorkQueueMeeting이 이 업체를 "잡기" 대상에서 자동으로 뺀다(§16, 새 재계산
+  // 로직 불필요 — 이미 있는 판정이 새 데이터를 보고 스스로 다시 판단할 뿐).
+  function workqSaveMeetingSchedule(item, dateStr, timeStr, owner, memo){
+    const label = workqDateInputToLabel(dateStr);
+    if(!label) return false;
+    const isM1 = item.type === 'm1';
+    const patch = isM1
+      ? { m1Scheduled: dateStr, m1ScheduledLabel: label, m1Owner: owner || null }
+      : { m2Scheduled: dateStr, m2ScheduledLabel: label, m2Owner: owner || null };
+    workqMergeNewMou(item.co, patch);
+    const stageName = isM1 ? '1차미팅' : '2차미팅';
+    const timeText = timeStr ? ` ${timeStr}` : '';
+    const ownerText = owner ? ` · 담당 ${owner}` : '';
+    workqLogEvent(item.co.id, `${stageName} 일정 조율 — ${label}${timeText} 예정${ownerText}`);
+    workqLogMemo(item.co.id, memo);
+    return true;
+  }
+  // §7: MOU 상태 — "체결 완료"만 실제 mouDone/mouLabel을 바꾼다. "체결 협의"/"서류 요청"은
+  // 기존 newMou 구조에 대응하는 중간상태 필드가 없어(있는 필드는 완료 여부뿐) 원본을 억지로
+  // 바꾸지 않고 활동기록만 남긴다(§18 "실제 원본과 상태가 불일치하게 만들지 않는다").
+  function workqSaveMouStatus(item, kind, memo){
+    if(kind === 'done'){
+      workqMergeNewMou(item.co, { mouDone: true, mouLabel: workqTodayLabel() });
+      workqLogEvent(item.co.id, `MOU 체결 완료 (${workqTodayLabel()})`);
+    } else if(kind === 'negotiating'){
+      workqLogEvent(item.co.id, 'MOU 체결 협의 진행 중');
+    } else if(kind === 'docRequested'){
+      workqLogEvent(item.co.id, 'MOU 서류 요청');
+    }
+    workqLogMemo(item.co.id, memo);
+  }
+  // §8/§9/§10/§12: L2/L3/재사용 후속 버튼 — 전부 활동기록만 남기고 진행상태는 절대 바꾸지
+  // 않는다(§8 "실제 L2는 실제 현장등록 데이터가 들어왔을 때만 인정", §9 "실제 L3 데이터가
+  // 생기기 전에는 임의 변경하지 않는다"). "연락했지만 미확정"도 같은 원칙(§12) — 상태
+  // 불변, 활동기록만.
+  function workqLogSimpleAction(item, actionLabel, memo){
+    workqLogEvent(item.co.id, actionLabel);
+    workqLogMemo(item.co.id, memo);
+  }
+  // §13: 보류 — 진행단계/원본 partner-dashboard 데이터는 전혀 건드리지 않고, 최소한의
+  // CRM 전용 필드(workQueueHold)에 다음 확인일만 기록한다. 활동기록도 함께 남겨 고객카드
+  // "최근 요청"에서도 보인다(§17).
+  function workqSaveHold(item, dateStr, memo){
+    const label = workqDateInputToLabel(dateStr);
+    if(!label) return false;
+    D.updateCompany(item.co.id, { workQueueHold: { type: item.type, until: dateStr, untilLabel: label, note: (memo||'').trim(), createdAt: new Date().toISOString() } });
+    workqLogEvent(item.co.id, `보류 처리 — 다음 확인일 ${label}`);
+    workqLogMemo(item.co.id, memo);
+    return true;
+  }
+
+  // 유형별 인라인 작업영역 정의 — 필드/버튼 구성만 다르고 저장 함수는 위 write 함수들을
+  // 그대로 부른다.
+  const WORKQ_L2L3_BUTTONS = {
+    firstActivity: ['현장등록 요청', '연락했지만 미확정', '보류'],
+    l2Stall: ['견적 제안', 'PT 제안', '현장검토 제안', '자료 안내', '전화 확인'],
+    reuse: ['새 현장 확인', '다른 공종 제안', '자료 재안내', '전화 확인']
+  };
+  function workqContactBlockHtml(co){
+    return `
+      <div class="workq-expand-grid">
+        <div class="workq-expand-label">담당자</div><div class="workq-expand-value">${co.contactName ? esc(co.contactName) : '—'}</div>
+        <div class="workq-expand-label">전화번호</div><div class="workq-expand-value">${co.phone ? esc(co.phone) : '—'}${co.phone ? `<button type="button" class="workq-copy-btn" data-workq-copy="${esc(co.phone)}">복사</button>` : ''}</div>
+      </div>
+    `;
+  }
+  function renderWorkqExpandBody(item){
+    const co = item.co;
+    const contact = workqContactBlockHtml(co);
+    if(item.type === 'm1' || item.type === 'm2'){
+      const isM1 = item.type === 'm1';
+      const stageName = isM1 ? '1차미팅' : '2차미팅';
+      // §6: "1차미팅 완료일: 실제 기존 날짜 표시" — buildProgressStages가 이미 계산해 둔
+      // m1 stage의 dateDisplay를 그대로 읽는다(새 계산 없음).
+      const priorDoneLine = !isM1 ? (()=>{
+        const pg = buildProgressStages(co);
+        const m1s = pg.stages.find(s=> s.key === 'm1');
+        return `<div class="workq-expand-label">1차미팅 완료일</div><div class="workq-expand-value">${esc(m1s && m1s.dateDisplay ? m1s.dateDisplay : '—')}</div>`;
+      })() : '';
+      return `
+        <div class="workq-expand-title">${esc(co.name)} · ${esc(stageName)} 후속</div>
+        ${contact}
+        <div class="workq-expand-grid">
+          ${priorDoneLine}
+          <div class="workq-expand-label">일정</div>
+          <div class="workq-expand-value">
+            <input type="date" class="workq-field-input is-date" id="workqDate_${esc(item.type)}_${esc(co.id)}" />
+            <input type="time" class="workq-field-input is-time" id="workqTime_${esc(item.type)}_${esc(co.id)}" />
+          </div>
+          <div class="workq-expand-label">담당</div>
+          <div class="workq-expand-value"><input type="text" class="workq-field-input is-owner" id="workqOwner_${esc(item.type)}_${esc(co.id)}" placeholder="담당자명" /></div>
+        </div>
+        <textarea class="workq-memo-input" id="workqMemo_${esc(item.type)}_${esc(co.id)}" placeholder="메모"></textarea>
+        <div class="workq-btn-row">
+          <button type="button" class="workq-btn primary" data-workq-do="save-schedule">일정 저장</button>
+          <button type="button" class="workq-btn" data-workq-do="uncertain">연락했지만 미확정</button>
+          <button type="button" class="workq-btn muted" data-workq-do="hold-open">보류</button>
+        </div>
+        <div class="workq-hold-panel" style="display:none;">
+          <div class="workq-hold-row">
+            <span class="workq-expand-label">다시 확인일</span>
+            <input type="date" class="workq-field-input is-date" id="workqHoldDate_${esc(item.type)}_${esc(co.id)}" />
+            <button type="button" class="workq-btn primary" data-workq-do="hold-save">보류 저장</button>
+          </div>
+        </div>
+        <div class="workq-saved-note" style="display:none;">저장되었습니다.</div>
+      `;
+    }
+    if(item.type === 'mou'){
+      return `
+        <div class="workq-expand-title">${esc(co.name)} · MOU 진행</div>
+        ${contact}
+        <textarea class="workq-memo-input" id="workqMemo_mou_${esc(co.id)}" placeholder="메모"></textarea>
+        <div class="workq-btn-row">
+          <button type="button" class="workq-btn" data-workq-do="mou-negotiating">체결 협의</button>
+          <button type="button" class="workq-btn" data-workq-do="mou-doc">서류 요청</button>
+          <button type="button" class="workq-btn primary" data-workq-do="mou-done">체결 완료</button>
+        </div>
+        <div class="workq-saved-note" style="display:none;">저장되었습니다.</div>
+      `;
+    }
+    // firstActivity / l2Stall / reuse — 전부 활동기록 버튼 + 메모
+    const buttons = WORKQ_L2L3_BUTTONS[item.type] || [];
+    const recentAct = (D.activitiesForCompany(co.id)[0] || null);
+    return `
+      <div class="workq-expand-title">${esc(co.name)} · ${esc(item.actionLabel)}</div>
+      ${contact}
+      <div class="workq-expand-grid">
+        <div class="workq-expand-label">최근 활동</div>
+        <div class="workq-expand-value">${recentAct ? esc(fmtDate(recentAct.createdAt)) + ' ' + esc(recentAct.activityText) : '기록 없음'}</div>
+      </div>
+      <textarea class="workq-memo-input" id="workqMemo_${esc(item.type)}_${esc(co.id)}" placeholder="메모"></textarea>
+      <div class="workq-btn-row">
+        ${buttons.map(b=> `<button type="button" class="workq-btn${b==='보류'?' muted':''}" data-workq-do="log" data-workq-label="${esc(b)}">${esc(b)}</button>`).join('')}
+      </div>
+      ${item.type === 'firstActivity' ? `
+      <div class="workq-hold-panel" style="display:none;">
+        <div class="workq-hold-row">
+          <span class="workq-expand-label">다시 확인일</span>
+          <input type="date" class="workq-field-input is-date" id="workqHoldDate_${esc(item.type)}_${esc(co.id)}" />
+          <button type="button" class="workq-btn primary" data-workq-do="hold-save">보류 저장</button>
+        </div>
+      </div>` : ''}
+      <div class="workq-saved-note" style="display:none;">저장되었습니다.</div>
+    `;
+  }
+
   const WORKQ_FILTER_DEFS = [
     ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['l2l3','L2·L3'], ['reuse','재사용']
   ];
   let workQueueFilter = 'all';
+  // §실행형 업무관리 라운드 §3: 한 번에 하나의 행만 펼쳐진다 — companyId 기준(같은 업체가
+  // 필터 전환으로 다시 나타나도 펼침 상태가 이어지게, type도 함께 저장해 어떤 업무의
+  // 작업영역인지 구분).
+  let workQueueExpanded = null; // { companyId, type } | null
   // §업무관리 탭 1차 구축 라운드 §4/§8/§13 — 작은 제목 한 줄 + 컴팩트 필터 칩 + 표 + "오늘
   // 먼저 확인" 한 줄. 큰 배너/카드/차트 없음(§3/§4/§16). 업체명 클릭은 openCardFromWorkQueue로
   // 기존 openCard(companyId)를 그대로 연다(§11, 새 상세화면/신규 업체 생성 없음).
@@ -6487,18 +6732,24 @@ window.SHIN2_CRM_APP_INIT = function(){
     const wrap = document.getElementById('workQueueView');
     if(!wrap) return;
     const { list, counts } = computeWorkQueue();
-    const filtered = workQueueFilter === 'all' ? list : list.filter(it=> it.category === workQueueFilter);
-    const todaySummary = [
-      list.filter(it=> it.type==='m1').length ? `1차미팅 잡기 ${list.filter(it=> it.type==='m1').length}` : null,
-      list.filter(it=> it.type==='m2').length ? `2차미팅 잡기 ${list.filter(it=> it.type==='m2').length}` : null,
-      list.filter(it=> it.type==='mou').length ? `MOU 진행 ${list.filter(it=> it.type==='mou').length}` : null
-    ].filter(Boolean).join(' · ');
+    // §15: today-line 숫자도 필터로 쓸 수 있게 workQueueFilter가 category뿐 아니라 type
+    // 값(m1/m2/mou)도 받을 수 있게 한다 — 기존 category 필터 칩 로직은 그대로 두고
+    // 조건만 넓힌다.
+    const filtered = workQueueFilter === 'all' ? list : list.filter(it=> it.category === workQueueFilter || it.type === workQueueFilter);
+    const m1Count = list.filter(it=> it.type==='m1').length;
+    const m2Count = list.filter(it=> it.type==='m2').length;
+    const mouCount = list.filter(it=> it.type==='mou').length;
+    const todayParts = [
+      m1Count ? `<button type="button" class="workq-today-link" data-workq-filter="m1">1차미팅 잡기 ${m1Count}</button>` : null,
+      m2Count ? `<button type="button" class="workq-today-link" data-workq-filter="m2">2차미팅 잡기 ${m2Count}</button>` : null,
+      mouCount ? `<button type="button" class="workq-today-link" data-workq-filter="mou">MOU 진행 ${mouCount}</button>` : null
+    ].filter(Boolean);
     wrap.innerHTML = `
       <div class="workq-header">
         <div class="workq-title">업무관리</div>
         <div class="workq-subtitle">오늘 확인해야 할 업체를 단계별로 확인합니다.</div>
       </div>
-      ${todaySummary ? `<div class="workq-today-line"><b>오늘 먼저 확인</b> — ${esc(todaySummary)}</div>` : ''}
+      ${todayParts.length ? `<div class="workq-today-line"><b>오늘 먼저 확인</b> — ${todayParts.join(' · ')}</div>` : ''}
       <div class="workq-filter-row" id="workqFilterRow">
         ${WORKQ_FILTER_DEFS.map(([key,label])=> `<button type="button" class="list-filter-chip${workQueueFilter===key?' is-active':''}" data-workq-filter="${esc(key)}">${esc(label)} ${esc(counts[key]||0)}</button>`).join('')}
       </div>
@@ -6506,13 +6757,16 @@ window.SHIN2_CRM_APP_INIT = function(){
         <table class="workq-table">
           <thead><tr><th>업체명</th><th>현재 상태</th><th>관리 이유</th><th>경과</th><th>해야 할 일</th></tr></thead>
           <tbody>
-            ${filtered.map(it=> `<tr>
-              <td><button type="button" class="workq-co-link" data-workq-open-co="${esc(it.co.id)}">${esc(it.co.name)}</button></td>
-              <td>${esc(it.currentStateLabel)}</td>
-              <td class="workq-reason">${esc(it.reasonText)}</td>
-              <td class="workq-days">${it.days === null ? '—' : esc(it.days) + '일'}${it.isDelayed ? '<span class="workq-delay-badge">지연</span>' : ''}</td>
-              <td class="workq-action">${esc(it.actionLabel)}</td>
-            </tr>`).join('')}
+            ${filtered.map(it=> {
+              const isOpen = workQueueExpanded && workQueueExpanded.companyId === it.co.id && workQueueExpanded.type === it.type;
+              return `<tr>
+                <td><button type="button" class="workq-co-link" data-workq-open-co="${esc(it.co.id)}">${esc(it.co.name)}</button></td>
+                <td>${esc(it.currentStateLabel)}</td>
+                <td class="workq-reason">${esc(it.reasonText)}</td>
+                <td class="workq-days">${it.days === null ? '—' : esc(it.days) + '일'}${it.isDelayed ? '<span class="workq-delay-badge">지연</span>' : ''}</td>
+                <td><button type="button" class="workq-action-btn${isOpen ? ' is-open' : ''}" data-workq-toggle="${esc(it.co.id)}" data-workq-toggle-type="${esc(it.type)}">${esc(it.actionLabel)}</button></td>
+              </tr>${isOpen ? `<tr class="workq-expand-row"><td colspan="5"><div class="workq-expand">${renderWorkqExpandBody(it)}</div></td></tr>` : ''}`;
+            }).join('')}
           </tbody>
         </table>
       ` : `<div class="workq-empty">해당 조건의 업체가 없습니다.</div>`}
@@ -6523,6 +6777,67 @@ window.SHIN2_CRM_APP_INIT = function(){
     }));
     wrap.querySelectorAll('[data-workq-open-co]').forEach(btn=> btn.addEventListener('click', ()=>{
       openCardFromWorkQueue(btn.getAttribute('data-workq-open-co'));
+    }));
+    wrap.querySelectorAll('[data-workq-toggle]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const companyId = btn.getAttribute('data-workq-toggle');
+      const type = btn.getAttribute('data-workq-toggle-type');
+      const isSame = workQueueExpanded && workQueueExpanded.companyId === companyId && workQueueExpanded.type === type;
+      workQueueExpanded = isSame ? null : { companyId, type }; // §3: 하나를 열면 기존 열린 영역은 닫힘(같은 것을 다시 누르면 닫기)
+      renderWorkQueueView();
+    }));
+    bindWorkqExpandHandlers(wrap, list);
+    wrap.querySelectorAll('[data-workq-copy]').forEach(btn=> btn.addEventListener('click', ()=> copyText(btn.getAttribute('data-workq-copy'), btn)));
+  }
+  // §16: 처리 후 즉시 재계산 — 새로고침 없이 renderWorkQueueView()를 다시 부르기만 하면
+  // computeWorkQueue()가 companies/activities를 다시 읽어 목록/상단 건수가 바로 갱신된다
+  // (별도 diff 로직 불필요, 이미 매번 새로 계산하는 순수 함수라서).
+  function bindWorkqExpandHandlers(wrap, list){
+    const panel = wrap.querySelector('.workq-expand-row');
+    if(!panel || !workQueueExpanded) return;
+    const item = list.find(it=> it.co.id === workQueueExpanded.companyId && it.type === workQueueExpanded.type);
+    if(!item) return;
+    const root = panel.querySelector('.workq-expand');
+    const savedNote = root.querySelector('.workq-saved-note');
+    const finishAndClose = ()=>{ workQueueExpanded = null; renderWorkQueueView(); };
+    root.querySelectorAll('[data-workq-do]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const action = btn.getAttribute('data-workq-do');
+      const memo = root.querySelector('.workq-memo-input');
+      const memoVal = memo ? memo.value : '';
+      if(action === 'save-schedule'){
+        const dateEl = document.getElementById(`workqDate_${item.type}_${item.co.id}`);
+        const timeEl = document.getElementById(`workqTime_${item.type}_${item.co.id}`);
+        const ownerEl = document.getElementById(`workqOwner_${item.type}_${item.co.id}`);
+        if(!dateEl || !dateEl.value){ dateEl && dateEl.focus(); return; }
+        workqSaveMeetingSchedule(item, dateEl.value, timeEl ? timeEl.value : '', ownerEl ? ownerEl.value.trim() : '', memoVal);
+        finishAndClose();
+      } else if(action === 'uncertain'){
+        const stageName = item.type === 'm1' ? '1차미팅' : '2차미팅';
+        workqLogSimpleAction(item, `${stageName} 일정 조율 연락 — 일정 미확정`, memoVal);
+        finishAndClose(); // §12: 상태 변경 없이 업무는 그대로 유지 — 목록 재계산해도 이 업체는 계속 남는다(재계산이 상태를 안 바꿨으므로)
+      } else if(action === 'hold-open'){
+        const p = root.querySelector('.workq-hold-panel');
+        if(p) p.style.display = 'block';
+      } else if(action === 'hold-save'){
+        const holdDateEl = document.getElementById(`workqHoldDate_${item.type}_${item.co.id}`);
+        if(!holdDateEl || !holdDateEl.value){ holdDateEl && holdDateEl.focus(); return; }
+        workqSaveHold(item, holdDateEl.value, memoVal);
+        finishAndClose();
+      } else if(action === 'mou-negotiating'){
+        workqSaveMouStatus(item, 'negotiating', memoVal); finishAndClose();
+      } else if(action === 'mou-doc'){
+        workqSaveMouStatus(item, 'docRequested', memoVal); finishAndClose();
+      } else if(action === 'mou-done'){
+        workqSaveMouStatus(item, 'done', memoVal); finishAndClose();
+      } else if(action === 'log'){
+        const label = btn.getAttribute('data-workq-label');
+        if(label === '보류'){
+          const p = root.querySelector('.workq-hold-panel');
+          if(p) p.style.display = 'block';
+          return;
+        }
+        workqLogSimpleAction(item, label, memoVal);
+        finishAndClose();
+      }
     }));
   }
   // §업무관리 탭 1차 구축 라운드 §1/§2 — 세 최상위 view(listView/cardView/workQueueView)
