@@ -2429,7 +2429,7 @@
     <div class="todo-rail-list" id="todoRailList"></div>
     <div class="todo-rail-foot">
       <span id="todoRailCount">전체 0개 · 완료 0개</span>
-      <button type="button" class="todo-rail-clear" id="todoRailClearDone">완료 항목 삭제</button>
+      <button type="button" class="todo-rail-clear" id="todoRailClearDone" title="체크한 항목을 목록에서 치웁니다. 처리완료 이력은 기존 [내 할 일]에 그대로 남습니다.">완료 항목 치우기</button>
     </div>
   </aside>
   <button type="button" class="todo-rail-reopen" id="todoRailReopen" title="오늘의 투두 열기" aria-label="오늘의 투두 열기">
@@ -12122,19 +12122,28 @@ ${text}
 <script>
 (function(){
   // ================================================================================
-  // 오늘의 투두 (우측 레일) — §오른쪽 빈 공간 활용 라운드, 신규 독립 모듈.
+  // 오늘의 투두 (우측 레일) — §기존 투두와 통합 라운드
   //
-  // 기존 "내 할 일"(사이드바 체크 아이콘 → 슬라이드 패널, localStorage['shin2-todos'])과는
-  // 완전히 별개다. 저장 키/배열/렌더 함수를 하나도 공유하지 않으므로 그쪽 기능/데이터에
-  // 영향을 주지 않는다(요청 §5 "충돌하지 않는 별도 key", §10 "기존 기능 보호").
+  // [중요] 이 레일은 더 이상 별도 저장소를 쓰지 않는다. 기존 "내 할 일"(사이드바 체크
+  // 아이콘 → 슬라이드 패널)과 **같은 배열을 그대로 읽고 쓴다** — 목록이 하나뿐이라 어느
+  // 쪽에서 고쳐도 둘 다 반영되고, 기존 클라우드 동기화('todos')도 그대로 유지된다.
   //
-  // 저장: localStorage['netform_todo_v1'] = [{ id, text, completed }]  ← 최소 필드만.
-  //       접힘 상태만 localStorage['netform_todo_collapsed_v1'] = '1' | '0'.
-  // 클라우드 동기화(SHIN2_SYNC_KEYS)에는 일부러 넣지 않았다 — 동기화 대상 키 집합을 바꾸면
-  // 기존 백업/복원/최초 동기화 판단에 영향이 가기 때문(§10). 이 기기 로컬 전용이다.
+  //   저장: localStorage[ SHIN2_USER.nsKey('shin2-todos') ]  ← 기존 키 그대로. 신규 키 없음.
+  //   항목: { id, text, done, completedAt, ... }             ← 기존 구조 그대로. 필드 추가 없음.
+  //
+  // 기존 "내 할 일" 모듈의 코드는 한 줄도 고치지 않았다. 저장 후 이 모듈이
+  // 'shin2-cloud-update'({key:'todos'}) 이벤트를 쏘면, 그쪽이 이미 갖고 있던 리스너가
+  // 알아서 다시 읽어 다시 그린다(§클라우드 동기화 라운드에서 만들어진 기존 경로 재사용).
+  //
+  // 표시 규칙: 미완료 항목만 보여준다(완료 이력으로 목록이 길어지지 않게). 다만 이 화면에서
+  // 방금 체크한 항목은 취소선 상태로 남겨둬서 바로 체크를 해제할 수 있게 한다.
   // ================================================================================
-  var STORE_KEY = 'netform_todo_v1';
+  var TODO_KEY = window.SHIN2_USER ? window.SHIN2_USER.nsKey('shin2-todos') : 'shin2-todos';
   var COLLAPSE_KEY = 'netform_todo_collapsed_v1';
+  // 통합 전(이 레일이 잠깐 독립 저장소를 쓰던 버전)에 여기에 적어둔 할 일이 있으면 잃지
+  // 않도록 기존 목록으로 1회만 합쳐준다. 원본 키는 절대 지우지 않는다.
+  var LEGACY_KEY = 'netform_todo_v1';
+  var LEGACY_FLAG = 'netform_todo_merged_v1';
 
   var railEl = document.getElementById('todoRail');
   var listEl = document.getElementById('todoRailList');
@@ -12146,7 +12155,9 @@ ${text}
   var reopenBtn = document.getElementById('todoRailReopen');
   if(!railEl || !listEl) return;
 
-  var items = [];
+  // 이 화면에서 방금 완료 처리한 id들 — 취소선 상태로 잠시 남겨두기 위한 화면 전용 상태.
+  // 저장되지 않으며, [완료 항목 치우기]를 누르거나 새로고침하면 비워진다(데이터는 그대로).
+  var justDone = Object.create(null);
 
   function esc(v){
     return String(v == null ? '' : v)
@@ -12154,29 +12165,24 @@ ${text}
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function genId(){
-    return 'ntd_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    return 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
   }
 
+  // 항상 localStorage에서 새로 읽는다 — 인메모리 배열을 오래 들고 있다가 기존 패널/CRM/
+  // 클라우드가 바꾼 최신 상태를 덮어쓰는 사고를 원천 차단한다(§기존 데이터 보호).
   function load(){
     try{
-      var raw = localStorage.getItem(STORE_KEY);
+      var raw = localStorage.getItem(TODO_KEY);
       var arr = raw ? JSON.parse(raw) : [];
-      if(!Array.isArray(arr)) return [];
-      // 방어적 정규화 — 이 모듈이 쓴 값만 들어오지만, 손상된 값이 있어도 화면이 죽지 않게.
-      return arr.filter(function(x){ return x && typeof x === 'object'; }).map(function(x){
-        return { id: x.id || genId(), text: String(x.text == null ? '' : x.text), completed: !!x.completed };
-      });
+      return Array.isArray(arr) ? arr : [];
     }catch(e){ return []; }
   }
 
-  // 저장 실패(용량 초과 등)해도 사이트 전체 JS가 멈추면 안 된다(§11). 기존 데이터를 지워서
-  // 공간을 확보하는 코드는 절대 넣지 않는다 — 실패는 실패로 알리고 끝낸다.
   var quotaWarned = false;
-  function save(){
+  function save(todos){
     try{
-      localStorage.setItem(STORE_KEY, JSON.stringify(items));
+      localStorage.setItem(TODO_KEY, JSON.stringify(todos));
       quotaWarned = false;
-      return true;
     }catch(e){
       console.error('[오늘의 투두] 저장 실패', e);
       if(!quotaWarned){
@@ -12185,15 +12191,55 @@ ${text}
       }
       return false;
     }
+    // 기존 "내 할 일"과 완전히 같은 동기화 경로/키를 그대로 탄다.
+    try{
+      if(window.__shin2CloudSync && typeof window.__shin2CloudSync.push === 'function'){
+        window.__shin2CloudSync.push('todos', todos);
+      }
+    }catch(e){ console.error('[오늘의 투두] 클라우드 전달 실패', e); }
+    // 같은 페이지의 기존 "내 할 일" 패널이 다시 읽도록 알린다(기존 리스너 재사용).
+    try{
+      window.dispatchEvent(new CustomEvent('shin2-cloud-update', { detail: { key: 'todos' } }));
+    }catch(e){}
+    return true;
+  }
+
+  // 예전 독립 저장소에 남아있던 항목을 기존 목록으로 1회만 합친다(원본은 보존).
+  function mergeLegacyOnce(){
+    try{ if(localStorage.getItem(LEGACY_FLAG) === '1') return; }catch(e){ return; }
+    var legacy = [];
+    try{
+      var raw = localStorage.getItem(LEGACY_KEY);
+      legacy = raw ? JSON.parse(raw) : [];
+    }catch(e){ legacy = []; }
+    if(!Array.isArray(legacy)) legacy = [];
+    var todos = load();
+    var added = 0;
+    legacy.forEach(function(x){
+      if(!x || x.text == null) return;
+      var text = String(x.text).trim();
+      if(!text) return;
+      if(todos.some(function(t){ return String(t.text == null ? '' : t.text).trim() === text; })) return;
+      todos.push({ id: genId(), text: text, done: !!x.completed, completedAt: x.completed ? Date.now() : null });
+      added++;
+    });
+    if(added) save(todos);
+    try{ localStorage.setItem(LEGACY_FLAG, '1'); }catch(e){}
+  }
+
+  function visibleOf(todos){
+    return todos.filter(function(t){ return !t.done || justDone[t.id]; });
   }
 
   function render(){
-    if(items.length === 0){
+    var todos = load();
+    var visible = visibleOf(todos);
+    if(visible.length === 0){
       listEl.innerHTML = '<div class="todo-rail-empty">할 일이 없습니다. 위에서 추가해보세요.</div>';
     } else {
-      listEl.innerHTML = items.map(function(it, i){
-        return '<div class="todo-rail-row' + (it.completed ? ' done' : '') + '" data-i="' + i + '">' +
-          '<input type="checkbox" data-act="toggle"' + (it.completed ? ' checked' : '') + ' />' +
+      listEl.innerHTML = visible.map(function(it){
+        return '<div class="todo-rail-row' + (it.done ? ' done' : '') + '" data-id="' + esc(it.id) + '">' +
+          '<input type="checkbox" data-act="toggle"' + (it.done ? ' checked' : '') + ' />' +
           '<span class="todo-rail-text">' + esc(it.text) + '</span>' +
           '<button type="button" class="todo-rail-del" data-act="del" title="삭제" aria-label="삭제">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>' +
@@ -12201,16 +12247,17 @@ ${text}
         '</div>';
       }).join('');
     }
-    var doneCount = items.filter(function(x){ return x.completed; }).length;
-    countEl.textContent = '전체 ' + items.length + '개 · 완료 ' + doneCount + '개';
+    var doneCount = visible.filter(function(x){ return x.done; }).length;
+    countEl.textContent = '전체 ' + visible.length + '개 · 완료 ' + doneCount + '개';
     clearBtn.disabled = doneCount === 0;
   }
 
   function addItem(){
     var text = inputEl.value.trim();
     if(!text) return;
-    items.push({ id: genId(), text: text, completed: false });
-    if(save()){ inputEl.value = ''; }
+    var todos = load();
+    todos.push({ id: genId(), text: text });
+    if(save(todos)) inputEl.value = '';
     render();
   }
 
@@ -12219,16 +12266,16 @@ ${text}
     if(e.key === 'Enter'){ e.preventDefault(); addItem(); }
   });
 
-  // 목록은 매번 innerHTML로 다시 그리므로 개별 리스너 대신 위임을 쓴다(리스너 유실 없음).
+  // 목록은 매번 다시 그리므로 개별 리스너 대신 위임을 쓴다(리스너 유실 없음).
   listEl.addEventListener('click', function(e){
     var btn = e.target.closest('[data-act="del"]');
     if(!btn) return;
     var row = btn.closest('.todo-rail-row');
     if(!row) return;
-    var i = parseInt(row.getAttribute('data-i'), 10);
-    if(isNaN(i) || !items[i]) return;
-    items.splice(i, 1);
-    save();
+    var id = row.getAttribute('data-id');
+    var todos = load().filter(function(x){ return x.id !== id; });
+    delete justDone[id];
+    save(todos);
     render();
   });
   listEl.addEventListener('change', function(e){
@@ -12236,17 +12283,21 @@ ${text}
     if(!box) return;
     var row = box.closest('.todo-rail-row');
     if(!row) return;
-    var i = parseInt(row.getAttribute('data-i'), 10);
-    if(isNaN(i) || !items[i]) return;
-    items[i].completed = !!box.checked;
-    save();
+    var id = row.getAttribute('data-id');
+    var todos = load();
+    var t = todos.find(function(x){ return x.id === id; });
+    if(!t) { render(); return; }
+    // 기존 "내 할 일"과 완전히 같은 완료 처리 방식(done/completedAt) — 이력을 지우지 않는다.
+    t.done = !!box.checked;
+    t.completedAt = t.done ? Date.now() : null;
+    if(t.done) justDone[id] = true; else delete justDone[id];
+    save(todos);
     render();
   });
 
+  // 완료 이력은 기존 [내 할 일]의 [처리완료]에 그대로 남겨두고, 이 목록에서만 치운다.
   clearBtn.addEventListener('click', function(){
-    if(!items.some(function(x){ return x.completed; })) return;
-    items = items.filter(function(x){ return !x.completed; });
-    save();
+    justDone = Object.create(null);
     render();
   });
 
@@ -12264,10 +12315,24 @@ ${text}
 
   var stored = null;
   try{ stored = localStorage.getItem(COLLAPSE_KEY); }catch(e){}
-  // 저장된 선택이 없을 때만 화면 폭으로 기본값을 정한다(좁은 화면은 접힌 채로 시작).
   applyCollapsed(stored === null ? window.innerWidth < 1100 : stored === '1');
 
-  items = load();
+  // ---- 기존 패널/다른 탭/클라우드에서 바뀌면 이 레일도 따라 갱신 ----
+  window.addEventListener('storage', function(e){
+    if(e.key === TODO_KEY) render();
+  });
+  window.addEventListener('shin2-cloud-update', function(e){
+    if(e && e.detail && e.detail.key === 'todos') render();
+  });
+  var oldPanel = document.getElementById('todoPanel');
+  if(oldPanel){
+    // 기존 패널에서 추가/체크/삭제/이름수정을 하면 그 직후 다시 읽어온다.
+    oldPanel.addEventListener('click', function(){ setTimeout(render, 0); });
+    oldPanel.addEventListener('focusout', function(){ setTimeout(render, 0); });
+  }
+  window.addEventListener('focus', function(){ render(); });
+
+  mergeLegacyOnce();
   render();
 })();
 </script>
