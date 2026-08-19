@@ -304,12 +304,42 @@
   /* §업무관리 탭 1차 구축 라운드 §4/§5/§8/§13/§16 — 정보 밀도 높게, 큰 카드/아이콘/차트
      금지, 화면 대부분을 컴팩트한 표가 차지하게 한다. 색/테두리/여백은 기존 NETFORM 팔레트
      (--navy/--line/--bg)만 재사용 — 새 디자인 시스템 없음. */
-  .workq-header{ margin-bottom:10px; }
-  .workq-title{ font-size:16px; font-weight:700; color:var(--navy); }
-  .workq-subtitle{ font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .workq-header{ margin-bottom:0; }
+  .workq-title{ font-size:22px; font-weight:800; color:var(--navy); line-height:1.2; }
+  .workq-subtitle{ font-size:12px; color:var(--text-muted); margin-top:3px; }
   .workq-today-line{ font-size:12px; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 10px; margin:10px 0; }
   .workq-today-line b{ color:var(--navy); }
-  .workq-filter-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .workq-filter-row{ display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 10px; }
+
+  /* §업무관리 상단 재구성 라운드 §1~§10 — 제목줄(좌:제목/설명, 우:정렬)과 "오늘 먼저 확인"
+     히어로 박스만 새로 추가. 높이는 130~160px 범위로 고정하고, 데스크톱 폭에서는 4영역이
+     한 줄에 나란히 보이도록 flex를 쓴다. 숫자/필터 데이터는 기존 계산값을 그대로 재사용
+     한다 — 이 CSS 블록에는 어떤 판정/계산 로직도 없다. */
+  .workq-header-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .workq-today-hero{ display:flex; align-items:stretch; min-height:130px; max-height:160px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 18px; gap:18px; }
+  .workq-today-hero-left{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding-right:18px; border-right:1px solid var(--line); flex:0 0 auto; min-width:88px; }
+  .workq-today-hero-icon{ display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:var(--bg); border:1.5px solid var(--navy); color:var(--navy); font-size:17px; font-weight:800; }
+  .workq-today-hero-label{ font-size:14px; font-weight:800; color:var(--navy); text-align:center; line-height:1.35; }
+  .workq-today-hero-items{ flex:1 1 auto; display:flex; align-items:stretch; min-width:0; }
+  .workq-hero-divider{ width:1px; align-self:stretch; margin:6px 4px; background:var(--line); flex:0 0 auto; }
+  .workq-hero-item{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:none; border:none; padding:4px 8px; cursor:pointer; border-radius:8px; }
+  .workq-hero-item:hover{ background:var(--bg); }
+  .workq-hero-item-label{ font-size:12.5px; font-weight:700; color:var(--text); white-space:nowrap; }
+  .workq-hero-item-num{ font-size:30px; font-weight:800; line-height:1.15; font-variant-numeric:tabular-nums; }
+  .workq-hero-item-num .workq-hero-item-unit{ font-size:13px; font-weight:700; margin-left:2px; }
+  .workq-hero-item.hero-m1 .workq-hero-item-num{ color:var(--navy); }
+  .workq-hero-item.hero-m2 .workq-hero-item-num{ color:#C2540A; }
+  .workq-hero-item.hero-mou .workq-hero-item-num{ color:#1E7A3D; }
+  .workq-hero-item-go{ font-size:11px; font-weight:700; color:var(--text-muted); }
+  .workq-hero-item:hover .workq-hero-item-go{ color:var(--navy); text-decoration:underline; }
+  @media (max-width: 720px){
+    .workq-today-hero{ flex-direction:column; align-items:stretch; min-height:0; max-height:none; }
+    .workq-today-hero-left{ flex-direction:row; justify-content:flex-start; border-right:none; border-bottom:1px solid var(--line); padding:0 0 10px; min-width:0; }
+    .workq-today-hero-items{ flex-direction:column; }
+    .workq-hero-divider{ display:none; }
+    .workq-hero-item{ flex-direction:row; justify-content:space-between; padding:8px 2px; }
+    .workq-header-row{ flex-direction:column; align-items:stretch; }
+  }
   .workq-table{ width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
   .workq-table th{ text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); background:#F9FBFD; padding:7px 10px; border-bottom:1px solid var(--line); }
   .workq-table td{ padding:7px 10px; border-bottom:1px solid #EEF1F5; vertical-align:top; color:var(--text); }
@@ -6747,20 +6777,37 @@ window.SHIN2_CRM_APP_INIT = function(){
     const m1Count = list.filter(it=> it.type==='m1').length;
     const m2Count = list.filter(it=> it.type==='m2').length;
     const mouCount = list.filter(it=> it.type==='mou').length;
-    const todayParts = [
-      m1Count ? `<button type="button" class="workq-today-link" data-workq-filter="m1">1차미팅 잡기 ${m1Count}</button>` : null,
-      m2Count ? `<button type="button" class="workq-today-link" data-workq-filter="m2">2차미팅 잡기 ${m2Count}</button>` : null,
-      mouCount ? `<button type="button" class="workq-today-link" data-workq-filter="mou">MOU 진행 ${mouCount}</button>` : null
-    ].filter(Boolean);
+    // §업무관리 상단 재구성 라운드 §1/§2 — 숫자는 전부 위에서 이미 계산된 list를 그대로
+    // 세기만 한다(§5 "새 숫자를 하드코딩하지 마세요") — 새 판정 로직 없음.
+    const heroItems = [
+      { key:'m1', cls:'hero-m1', label:'1차미팅 잡기', count:m1Count },
+      { key:'m2', cls:'hero-m2', label:'2차미팅 잡기', count:m2Count },
+      { key:'mou', cls:'hero-mou', label:'MOU 진행', count:mouCount }
+    ];
     wrap.innerHTML = `
-      <div class="workq-header">
-        <div class="workq-title">업무관리</div>
-        <div class="workq-subtitle">오늘 확인해야 할 업체를 단계별로 확인합니다.</div>
+      <div class="workq-header-row">
+        <div class="workq-header">
+          <div class="workq-title">업무관리</div>
+          <div class="workq-subtitle">오늘 확인해야 할 업체를 단계별로 확인합니다.</div>
+        </div>
+        <button type="button" class="list-filter-chip" id="workqSortToggle">${workQueueSortAsc ? '경과일 적은 순 ▾' : '경과일 많은 순 ▾'}</button>
       </div>
-      ${todayParts.length ? `<div class="workq-today-line"><b>오늘 먼저 확인</b> — ${todayParts.join(' · ')}</div>` : ''}
+      <div class="workq-today-hero">
+        <div class="workq-today-hero-left">
+          <span class="workq-today-hero-icon">✓</span>
+          <span class="workq-today-hero-label">오늘<br/>먼저 확인</span>
+        </div>
+        <div class="workq-today-hero-items">
+          ${heroItems.map((h,i)=> `${i>0 ? '<div class="workq-hero-divider"></div>' : ''}
+            <button type="button" class="workq-hero-item ${h.cls}" data-workq-filter="${esc(h.key)}">
+              <div class="workq-hero-item-label">${esc(h.label)}</div>
+              <div class="workq-hero-item-num">${esc(h.count)}<span class="workq-hero-item-unit">건</span></div>
+              <div class="workq-hero-item-go">바로가기 &gt;</div>
+            </button>`).join('')}
+        </div>
+      </div>
       <div class="workq-filter-row" id="workqFilterRow">
         ${WORKQ_FILTER_DEFS.map(([key,label])=> `<button type="button" class="list-filter-chip${workQueueFilter===key?' is-active':''}" data-workq-filter="${esc(key)}">${esc(label)} ${esc(counts[key]||0)}</button>`).join('')}
-        <button type="button" class="list-filter-chip" id="workqSortToggle" style="margin-left:auto;">${workQueueSortAsc ? '경과일 적은 순 ▲' : '경과일 많은 순 ▼'}</button>
       </div>
       ${filtered.length ? `
         <table class="workq-table">
