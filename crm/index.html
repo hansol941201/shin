@@ -3710,11 +3710,27 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     return JSON.parse(literal);
   }
   // RTDB REST(.json) — Firebase SDK 없이 공개 read 규칙을 그대로 이용한다(partner-dashboard
-  // 자체도 같은 DB에 이 방식으로 클라이언트에서 직접 접근한다, §12). 세 키만 필요하다:
-  // mouOverrides(기존 항목 수정분), newMouAdds(새 협력업체), mouDeleted(제외 목록) — 그
-  // 외(gradeOverrides/partnerList_* 등)는 이번 1차 범위 밖이라 읽지 않는다.
+  // 자체도 같은 DB에 이 방식으로 클라이언트에서 직접 접근한다, §12).
+  // §협력사 동기화 근본 원인 조사 라운드 — 예전엔 mouOverrides/newMouAdds/mouDeleted 세
+  // 키만 읽었다(§"1차 범위 밖" 주석 그대로 남아있던 의도적 스코프 축소). 그런데 실제
+  // partner-dashboard 소스(로컬 클론) 조사 결과, 업체 "기본정보"(대표자/전화/팩스/이메일/
+  // 주소/사업자번호)는 newMou가 아니라 partnerList에 있고, 그 편집분은
+  // partnerList_{internal,contractor,external}_{overrides,adds,deletes}라는 별도의 9개
+  // RTDB 키로 동기화된다(fbShouldSync: "k.startsWith('partnerList_')면 무조건 동기화" —
+  // partner-dashboard 소스 10082줄에서 직접 확인). 이 9개를 안 읽으면, 신규 협력업체가
+  // "MOU 체결로 등록됨"으로 자동 추가될 때 partnerList 항목이 빈 값(ceo:''/phone:''/...)
+  // 으로 먼저 생기고(3425~3437줄) 사용자가 나중에 UI로 직접 채운 실제 값은
+  // partnerList_internal_overrides에만 있는데, CRM은 그 키를 아예 안 봐서 정적 baseline의
+  // 옛/빈 값만 계속 쓰게 된다 — 이게 실제 ㈜샤인하우징 이메일이 최신으로 안 바뀌던 진짜
+  // 근본 원인이다(지난 라운드에서 고친 "onlyFillEmpty" 정책 문제는 반드시 필요했지만
+  // 충분하지 않았다 — 애초에 최신 이메일 자체를 가져오지 못하고 있었다).
   async function pdFetchOverrides(){
-    const keys = ['mouOverrides', 'newMouAdds', 'mouDeleted'];
+    const keys = [
+      'mouOverrides', 'newMouAdds', 'mouDeleted',
+      'partnerList_internal_overrides', 'partnerList_internal_adds', 'partnerList_internal_deletes',
+      'partnerList_contractor_overrides', 'partnerList_contractor_adds', 'partnerList_contractor_deletes',
+      'partnerList_external_overrides', 'partnerList_external_adds', 'partnerList_external_deletes'
+    ];
     const out = {};
     for(const k of keys){
       try{
@@ -3725,6 +3741,29 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       }
     }
     return out;
+  }
+  // §협력사 동기화 근본 원인 조사 라운드 — partner-dashboard의 getPartnerListData(view)와
+  // 완전히 같은 규칙으로 병합한다(로컬 클론 8031~8056줄에서 그대로 확인): base에서
+  // deletes 제외 → 각 항목에 overrides[회사명] 있으면 얹기 → adds(신규 추가분)에도 같은
+  // overrides를 얹어서 뒤에 붙인다. 새 병합 규칙을 지어낸 게 아니라 원본 로직을 그대로
+  // 재현한 것뿐이다.
+  function pdBuildEffectivePartnerList(baseline, overrides, view){
+    const base = (baseline.partnerList && baseline.partnerList[view]) || [];
+    const rawOverrides = (overrides && overrides['partnerList_' + view + '_overrides']) || {};
+    const overrideMap = {};
+    Object.keys(rawOverrides).forEach(k=> { overrideMap[pdUnescapeKey(k)] = rawOverrides[k]; });
+    const deletedSet = new Set((overrides && overrides['partnerList_' + view + '_deletes']) || []);
+    const rows = base.filter(c=> c && c.company && !deletedSet.has(c.company)).map(c=>{
+      const patch = overrideMap[c.company];
+      return patch ? Object.assign({}, c, patch) : c;
+    });
+    const adds = ((overrides && overrides['partnerList_' + view + '_adds']) || [])
+      .filter(c=> c && c.company)
+      .map(c=>{
+        const patch = overrideMap[c.company];
+        return patch ? Object.assign({}, c, patch) : c;
+      });
+    return rows.concat(adds);
   }
   // applyOverrides()와 동일한 규칙으로 병합한다 — DATA.newMou 각 행에 mouOverrides를
   // 얹고, mouDeleted에 있는 업체는 제외하고, newMouAdds(원본에 없던 신규 협력업체)를
@@ -3748,10 +3787,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // partnerList(internal/contractor/external)에서 업체명으로 사업자번호/대표자/연락처를
   // 찾는다 — 셋 중 하나라도 있으면 채택(internal 우선), §3 매칭 2순위(사업자번호)와 신규
   // 업체 생성(§4)에 쓴다.
-  function pdBuildContactIndex(baseline){
+  // §협력사 동기화 근본 원인 조사 라운드 — overrides(9개 partnerList_* 키)가 있으면
+  // pdBuildEffectivePartnerList로 실시간 편집분(추가/수정/삭제)까지 반영한 목록을 쓰고,
+  // 없으면(overrides 인자를 안 넘기거나 fetch 실패) 예전처럼 정적 baseline만 쓴다 — 호출부
+  // 하위호환 유지.
+  function pdBuildContactIndex(baseline, overrides){
     const idx = new Map();
     ['internal','contractor','external'].forEach(cat=>{
-      const list = (baseline.partnerList && baseline.partnerList[cat]) || [];
+      const list = overrides ? pdBuildEffectivePartnerList(baseline, overrides, cat) : ((baseline.partnerList && baseline.partnerList[cat]) || []);
       list.forEach(r=>{
         if(!r || !r.company) return;
         if(!idx.has(r.company)) idx.set(r.company, r);
@@ -3813,6 +3856,19 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     const o = oldNm || {};
     return keys.some(k=> row[k] !== undefined && row[k] !== null && o[k] !== row[k]);
   }
+  // §협력사 동기화 결과 세분화 라운드 §11 — "기본정보/질문서/1차미팅/2차미팅/MOU 변경"을
+  // 따로 세기 위한 필드 그룹. pdRowChangedFromExisting과 같은 "값 존재 + 실제로 다름" 판정을
+  // 재사용하되(새 비교 로직 아님), 어떤 단계가 바뀌었는지만 구분한다.
+  const PD_FIELD_GROUPS = {
+    q: ['qSentLabel','qSentDone','qReplyLabel','qReplyDone'],
+    m1: ['m1Label','m1Done','m1Scheduled','m1ScheduledLabel','m1Owner'],
+    m2: ['m2Label','m2Done','m2Scheduled','m2ScheduledLabel','m2Owner'],
+    mou: ['mouLabel','mouDone','stage']
+  };
+  function pdGroupChanged(oldNm, row, keys){
+    const o = oldNm || {};
+    return keys.some(k=> row[k] !== undefined && row[k] !== null && o[k] !== row[k]);
+  }
   // §7/§8/§9 — 진행 이벤트/메모를 customerActivities/memos에 "누적"으로 반영한다. 새 값을
   // 만들지 않고 실제로 바뀐 필드만 문장으로 옮긴다. 중복 방지(§9/§10)는 기존
   // applyPourTrackImport와 같은 패턴(sourceRecordId 존재 여부로 스킵)을 그대로 따르되,
@@ -3843,9 +3899,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   async function previewPartnerSync(){
     const baseline = await pdFetchBaselineData();
     const overrides = await pdFetchOverrides();
-    const usedOverrides = !!(overrides.mouOverrides || overrides.newMouAdds || overrides.mouDeleted);
+    // §협력사 동기화 근본 원인 조사 라운드 — "실시간 편집분을 확인했다" 배지가 partnerList
+    // 쪽 편집(연락처 수정 등)도 정직하게 반영하도록 9개 키도 함께 검사한다.
+    const usedOverrides = !!(overrides.mouOverrides || overrides.newMouAdds || overrides.mouDeleted
+      || overrides.partnerList_internal_overrides || overrides.partnerList_internal_adds || overrides.partnerList_internal_deletes
+      || overrides.partnerList_contractor_overrides || overrides.partnerList_contractor_adds || overrides.partnerList_contractor_deletes
+      || overrides.partnerList_external_overrides || overrides.partnerList_external_adds || overrides.partnerList_external_deletes);
     const merge = pdBuildEffectiveRows(baseline, overrides);
-    const contactIndex = pdBuildContactIndex(baseline);
+    const contactIndex = pdBuildContactIndex(baseline, overrides);
     const companies = loadCompanies();
     const bizIndex = new Map();
     companies.forEach(c=>{ if(c.bizRegNo){ const k=String(c.bizRegNo).trim(); if(!bizIndex.has(k)) bizIndex.set(k, []); bizIndex.get(k).push(c); } });
@@ -3906,11 +3967,20 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     const existingMemoSourceIds = new Set(memos.filter(m=> m.source === 'partner-dashboard').map(m=> m.sourceRecordId));
     const now = nowIso();
     let updatedCount = 0, newCount = 0, activityAdded = 0, memoAdded = 0;
+    // §협력사 동기화 결과 세분화 라운드 §11 — "기본정보/질문서/1차/2차/MOU 몇 건 바뀌었는지"를
+    // 따로 센다. 판정 로직은 그대로 재사용(pdGroupChanged/pdContactChanged)하고, merge 직전
+    // "옛 값"과 merge에 쓸 row를 그대로 넘겨 세기만 한다 — 새 비교를 만들지 않는다.
+    let contactChangedCount = 0, qChangedCount = 0, m1ChangedCount = 0, m2ChangedCount = 0, mouChangedCount = 0;
 
     preview.updates.forEach(u=>{
       const co = byId.get(u.co.id);
       if(!co) return;
       const oldNm = (co.partnerDashboard && co.partnerDashboard.newMou) || null;
+      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.q)) qChangedCount++;
+      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m1)) m1ChangedCount++;
+      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m2)) m2ChangedCount++;
+      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.mou)) mouChangedCount++;
+      if(pdContactChanged(co, u.contact)) contactChangedCount++;
       const mergedNm = pdMergeNewMou(oldNm, u.row);
       co.partnerDashboard = Object.assign({}, co.partnerDashboard, { newMou: mergedNm });
       // §협력사 동기화 연락처 갱신 라운드 — 예전엔 onlyFillEmpty(빈 칸일 때만 채움)라 CRM에
@@ -3986,7 +4056,10 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     saveCompanies(companies);
     saveActivities(activities);
     writeArr(MEMO_KEY, memos);
-    return { updatedCount, newCount, activityAdded, memoAdded, reviewCount: preview.review.length };
+    return {
+      updatedCount, newCount, activityAdded, memoAdded, reviewCount: preview.review.length,
+      contactChangedCount, qChangedCount, m1ChangedCount, m2ChangedCount, mouChangedCount
+    };
   }
 
   /* ==========================================================================
@@ -8118,16 +8191,22 @@ window.SHIN2_CRM_APP_INIT = function(){
       bodyHtml = `<div class="pi-note">동기화 적용 중...</div>`;
       actionsHtml = `<button type="button" class="co-text-action" disabled>적용 중...</button>`;
     } else if(s.step === 'result'){
+      // §협력사 동기화 결과 세분화 라운드 §11 — "어떤 항목이 몇 건 바뀌었는지" 필드
+      // 그룹별로 보여준다. applyPartnerSync가 이미 계산해 둔 값을 그대로 표시만 한다.
       const r = s.result;
       bodyHtml = `
         <div class="cat-dist-total">협력사 동기화 완료</div>
         <table class="pi-sample-table"><tbody>
-          <tr><td>기존 업체 업데이트</td><td>${esc(r.updatedCount)}개</td></tr>
-          <tr><td>신규 업체</td><td>${esc(r.newCount)}개</td></tr>
-          <tr><td>새 활동 기록</td><td>${esc(r.activityAdded)}건</td></tr>
-          <tr><td>새 메모</td><td>${esc(r.memoAdded)}건</td></tr>
-          <tr><td>검토 필요</td><td>${esc(r.reviewCount)}개</td></tr>
+          <tr><td>신규 업체</td><td>${esc(r.newCount)}</td></tr>
+          <tr><td>기본정보 변경</td><td>${esc(r.contactChangedCount)}</td></tr>
+          <tr><td>질문서 변경</td><td>${esc(r.qChangedCount)}</td></tr>
+          <tr><td>1차미팅 변경</td><td>${esc(r.m1ChangedCount)}</td></tr>
+          <tr><td>2차미팅 변경</td><td>${esc(r.m2ChangedCount)}</td></tr>
+          <tr><td>MOU 변경</td><td>${esc(r.mouChangedCount)}</td></tr>
+          <tr><td>새 메모/활동</td><td>${esc(r.activityAdded + r.memoAdded)}건</td></tr>
+          <tr><td>검토 필요</td><td>${esc(r.reviewCount)}</td></tr>
         </table>
+        <div class="pi-note" style="margin-top:8px;">기존 업체 업데이트 ${esc(r.updatedCount)}개(위 항목 중 하나 이상 바뀌었거나 처음 연결된 업체) · 새 활동 ${esc(r.activityAdded)}건 · 새 메모 ${esc(r.memoAdded)}건</div>
       `;
       actionsHtml = `<button type="button" class="co-text-action primary" id="pdSyncCloseBtn">닫기</button>`;
     }
