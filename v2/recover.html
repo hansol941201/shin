@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>한솔2 — 데이터 진단(읽기 전용)</title>
+<style>
+  :root{ --navy:#1F3A63; --line:#E3E6EB; --text:#1F2733; --muted:#6B7280; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; padding:24px 16px 60px; background:#F5F6F8; color:var(--text);
+        font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
+  .wrap{ max-width:820px; margin:0 auto; }
+  h1{ font-size:19px; margin:0 0 4px; }
+  .sub{ font-size:13px; color:var(--muted); margin:0 0 18px; line-height:1.6; }
+  .safe{ display:inline-block; font-size:12px; font-weight:700; color:#1B6B43; background:#E7F5EC;
+         border:1px solid #BFE3CD; border-radius:6px; padding:4px 9px; margin-bottom:16px; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
+  .card h2{ font-size:14px; margin:0 0 10px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:7px 6px; border-bottom:1px solid #F0F1F4; vertical-align:top; }
+  th{ font-size:11.5px; color:var(--muted); font-weight:600; }
+  td.n{ text-align:right; white-space:nowrap; }
+  .ok{ color:#1B6B43; font-weight:700; }
+  .bad{ color:#B3283C; font-weight:700; }
+  .key{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; word-break:break-all; }
+  button{ font-family:inherit; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px;
+          border:1px solid var(--navy); background:var(--navy); color:#fff; cursor:pointer; }
+  button.ghost{ background:#fff; color:var(--navy); }
+  pre{ background:#F7F8FA; border:1px solid var(--line); border-radius:8px; padding:12px;
+       font-size:11.5px; line-height:1.55; white-space:pre-wrap; word-break:break-all; max-height:340px; overflow:auto; }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>데이터 진단 (읽기 전용)</h1>
+  <p class="sub">이 화면은 <b>브라우저에 무엇이 남아 있는지 보기만</b> 합니다. 저장·삭제·초기화를 전혀 하지 않습니다.<br>
+     아래 <b>진단 결과 복사</b>를 눌러 그대로 보내주시면 원인을 정확히 짚을 수 있습니다.</p>
+  <div class="safe">읽기 전용 — 이 페이지는 데이터를 절대 바꾸지 않습니다</div>
+
+  <div class="card">
+    <h2>1. 핵심 데이터</h2>
+    <table id="coreTbl"><thead><tr><th>항목</th><th>저장 키</th><th class="n">건수</th><th class="n">크기</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>2. 브라우저에 남아 있는 전체 키</h2>
+    <table id="allTbl"><thead><tr><th>키</th><th class="n">크기</th></tr></thead><tbody></tbody></table>
+    <p class="sub" id="totalLine" style="margin:10px 0 0;"></p>
+  </div>
+
+  <div class="card">
+    <h2>3. 환경</h2>
+    <table id="envTbl"><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>4. 진단 결과</h2>
+    <pre id="report">…</pre>
+    <div class="row">
+      <button id="copyBtn">진단 결과 복사</button>
+      <button class="ghost" id="backBtn">업무 페이지로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  function fmt(n){
+    if(n < 1024) return n + ' B';
+    if(n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+    return (n/1024/1024).toFixed(2) + ' MB';
+  }
+  function readRaw(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function parseJSON(raw){ try{ return raw ? JSON.parse(raw) : null; }catch(e){ return undefined; } }
+  // 활성 사용자에 따라 개인 데이터 키에 접미어가 붙는다(1은 접미어 없음).
+  var activeUser = readRaw('shin2-active-user-id') || '1';
+  function ns(k){ return (activeUser === '1' || ['1','2','3'].indexOf(activeUser) === -1) ? k : (k + '__u' + activeUser); }
+
+  var CORE = [
+    { label:'업무 지식',   key:'shin2-knowledge-v1',        count:function(v){ return v && Array.isArray(v.items) ? v.items.length : null; } },
+    { label:'투두',        key:ns('shin2-todos'),           count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'계정함',      key:'shin2-accounts-vault',      count:function(v){ return v && Array.isArray(v.records) ? v.records.length : null; } },
+    { label:'업체',        key:'shin2-companies-staging',   count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'전화기록',    key:'shin2-call-entries-v1',     count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'처리업무',    key:ns('shin2-tasks-v1'),        count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'메모',        key:ns('shin2-memos-v1'),        count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'일정',        key:ns('shin2-calendar-events-v1'), count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'자료실 메타', key:'shin2-library-documents-v1', count:function(v){ return Array.isArray(v) ? v.length : null; } }
+  ];
+
+  var lines = [];
+  var coreBody = document.querySelector('#coreTbl tbody');
+  var anyCore = false;
+  CORE.forEach(function(c){
+    var raw = readRaw(c.key);
+    var val = parseJSON(raw);
+    var n = (val === undefined) ? '읽기실패' : (raw === null ? '없음' : (c.count(val) === null ? '형식이상' : c.count(val)));
+    if(typeof n === 'number' && n > 0) anyCore = true;
+    var tr = document.createElement('tr');
+    var cls = (raw === null) ? 'bad' : (typeof n === 'number' && n > 0 ? 'ok' : '');
+    tr.innerHTML = '<td>' + c.label + '</td><td class="key">' + c.key + '</td>' +
+                   '<td class="n ' + cls + '">' + n + '</td>' +
+                   '<td class="n">' + (raw === null ? '-' : fmt(raw.length)) + '</td>';
+    coreBody.appendChild(tr);
+    lines.push('  ' + c.label + ' [' + c.key + '] = ' + n + (raw === null ? '' : ' (' + fmt(raw.length) + ')'));
+  });
+
+  var allBody = document.querySelector('#allTbl tbody');
+  var total = 0, keys = [];
+  try{
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      var raw = readRaw(k);
+      var size = (k ? k.length : 0) + (raw ? raw.length : 0);
+      total += size;
+      keys.push({ k:k, size:size });
+    }
+  }catch(e){ keys = []; }
+  keys.sort(function(a,b){ return b.size - a.size; });
+  if(!keys.length){
+    allBody.innerHTML = '<tr><td colspan="2" class="bad">이 브라우저에 저장된 키가 하나도 없습니다 — 사이트 데이터가 통째로 지워진 상태입니다.</td></tr>';
+  }
+  keys.forEach(function(o){
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="key">' + o.k + '</td><td class="n">' + fmt(o.size) + '</td>';
+    allBody.appendChild(tr);
+  });
+  document.getElementById('totalLine').textContent = '키 ' + keys.length + '개 / 합계 약 ' + fmt(total) +
+    ' (브라우저 한도는 보통 5MB 안팎입니다)';
+
+  var backupKeys = keys.filter(function(o){ return /pre-firebase-backup/.test(o.k); }).map(function(o){ return o.k; });
+
+  var ENV = [
+    ['주소(origin)', location.origin],
+    ['경로', location.pathname],
+    ['활성 사용자', activeUser + (activeUser === '1' ? ' (기본)' : ' ← 1번이 아니면 개인 데이터가 다른 칸에 있습니다')],
+    ['클라우드 동기화 켠 적', readRaw('shin2-cloud-sync-enabled') === '1' ? '있음 — 클라우드에 사본이 있을 가능성 높음' : '없음/기록 없음'],
+    ['계정함 세션키', readRaw('shin2-app-unlocked') ? '있음' : '없음'],
+    ['자동 스냅샷 백업', backupKeys.length ? backupKeys.join(', ') : '없음'],
+    ['저장소 접근', (function(){ try{ return localStorage.length >= 0 ? '읽기 가능' : '알 수 없음'; }catch(e){ return '차단됨(시크릿 창 또는 쿠키 차단 가능성)'; } })()],
+    ['브라우저', navigator.userAgent]
+  ];
+  var envBody = document.querySelector('#envTbl tbody');
+  ENV.forEach(function(p){
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="width:150px;color:#6B7280;font-size:12px;">' + p[0] + '</td><td class="key">' + p[1] + '</td>';
+    envBody.appendChild(tr);
+  });
+
+  var verdict;
+  if(!keys.length){
+    verdict = '판정: 이 브라우저의 사이트 데이터가 통째로 사라졌습니다(키 0개). 브라우저가 저장공간을 비웠거나, 방문 기록/사이트 데이터 삭제가 실행된 상태입니다.';
+  } else if(!anyCore){
+    verdict = '판정: 키는 남아 있는데 핵심 데이터만 비어 있습니다. 활성 사용자 번호가 바뀌었거나, 데이터가 다른 키로 옮겨간 경우입니다.';
+  } else {
+    verdict = '판정: 데이터가 일부 또는 전부 남아 있습니다. 화면에 안 보이는 것이라면 표시 쪽 문제입니다.';
+  }
+
+  var report = [
+    '=== 한솔2 데이터 진단 ===',
+    '시각: ' + new Date().toString(),
+    '주소: ' + location.origin + location.pathname,
+    '활성 사용자: ' + activeUser,
+    '클라우드 동기화 켠 적: ' + (readRaw('shin2-cloud-sync-enabled') === '1' ? '있음' : '없음'),
+    '자동 스냅샷 백업: ' + (backupKeys.length ? backupKeys.join(', ') : '없음'),
+    '',
+    '[핵심 데이터]',
+    lines.join('\n'),
+    '',
+    '[전체 키 ' + keys.length + '개 / 합계 ' + fmt(total) + ']',
+    keys.map(function(o){ return '  ' + o.k + '  ' + fmt(o.size); }).join('\n'),
+    '',
+    verdict,
+    '브라우저: ' + navigator.userAgent
+  ].join('\n');
+  document.getElementById('report').textContent = report;
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    var btn = this;
+    function done(){ btn.textContent = '복사했습니다'; setTimeout(function(){ btn.textContent = '진단 결과 복사'; }, 1800); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(report).then(done, fallback);
+    } else { fallback(); }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = report; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ btn.textContent = '복사 실패 — 위 내용을 직접 선택해 주세요'; }
+      ta.remove();
+    }
+  });
+  document.getElementById('backBtn').addEventListener('click', function(){ location.href = './index.html'; });
+})();
+</script>
+</body>
+</html>

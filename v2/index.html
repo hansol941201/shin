@@ -1446,8 +1446,9 @@
 
 
 
-  /* §UI 정리 라운드 — 화면에서만 감춘다. 백업/복원/잠금 로직과 데이터는 그대로 남아 있다. */
-  #shin2BackupBtn, #shin2RestoreBtn, #siteLockBtn{ display:none !important; }
+  /* §복구 라운드 — [데이터 백업] / [백업 복원]은 데이터 복구 수단이므로 다시 노출한다.
+     (직전 UI 정리 라운드에서 숨겼던 것을 되돌림) [잠금]만 계속 숨긴다. */
+  #siteLockBtn{ display:none !important; }
 
   /* ================================================================================
      상단 통합 투두 (§오른쪽 레일 폐기 라운드)
@@ -5817,9 +5818,27 @@
           }
           touched.push(key);
         });
-        // 계정함(비밀번호)은 기기마다 다른 salt로 암호화되어 있어 자동 병합 시 복호화 실패
-        // 위험이 있으므로, 복원 대상에서 의도적으로 제외한다(§8 보고 대상 — 안전을 위한 결정).
-        setStatus('복원 완료(' + touched.length + '개 항목 병합, 계정함 제외) — 잠시 후 새로고침됩니다.');
+        // 계정함(비밀번호): 기기마다 salt가 달라서 "기존 계정함이 있는 상태"에 백업본을 합치면
+        // 복호화가 깨질 수 있다 — 그래서 병합은 여전히 하지 않는다. 다만 §복구 라운드에서
+        // 예외를 하나 열었다: 이 브라우저에 계정함이 아예 없을 때(=잃을 데이터가 0)는
+        // 백업본의 암호문을 salt까지 통째로 그대로 되돌려 놓는다. 통째로 복원하므로 salt와
+        // cipher가 원래 짝 그대로 유지되고, 백업 당시 쓰던 비밀번호로 정상 복호화된다.
+        // 기존 계정함이 남아 있으면 예전과 똑같이 절대 건드리지 않는다.
+        var vaultNote = '계정함 제외';
+        try{
+          var curVaultRaw = localStorage.getItem(ACCT_KEY);
+          var curVault = curVaultRaw ? JSON.parse(curVaultRaw) : null;
+          var curEmpty = !curVault || !Array.isArray(curVault.records) || curVault.records.length === 0;
+          var inVault = parsed.accountsVaultEncrypted;
+          var inHas = inVault && typeof inVault === 'object' && Array.isArray(inVault.records) && inVault.records.length > 0;
+          if(curEmpty && inHas){
+            localStorage.setItem(ACCT_KEY, JSON.stringify(inVault));
+            vaultNote = '계정 ' + inVault.records.length + '건 복구 — 백업 당시 비밀번호로 열립니다';
+          } else if(!curEmpty && inHas){
+            vaultNote = '계정함은 이미 있어서 건드리지 않음';
+          }
+        }catch(e){ console.error('[한솔2] 계정함 복원 확인 실패', e); }
+        setStatus('복원 완료(' + touched.length + '개 항목 병합, ' + vaultNote + ') — 잠시 후 새로고침됩니다.');
         setTimeout(function(){ location.reload(); }, 1200);
       }catch(e){
         console.error('[한솔2] 복원 실패', e);
