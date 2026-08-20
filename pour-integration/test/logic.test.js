@@ -223,7 +223,7 @@ test("공고 상태에서는 시공사가 비어 있음", () => {
 test("낙찰로 바꿔도 새 행이 생기지 않고 같은 행이 갱신", () => {
   const before = PourRecords.list(recordStore).length;
   const res = PourRecords.award(site1.id, {
-    contractor: "코지건설㈜", awardDate: "2026-04-10",
+    contractor: "코지건설㈜", contractorPhone: "031-647-3158", awardDate: "2026-04-10",
     awardAmount: 1250000000, quality: "우수", remark: "낙찰 확정"
   }, recordStore);
   assert.strictEqual(res.ok, true);
@@ -235,10 +235,12 @@ test("낙찰로 바꿔도 새 행이 생기지 않고 같은 행이 갱신", () 
   assert.strictEqual(after.quality, "우수");
 });
 
-test("시공사 없이 낙찰 처리하면 거부", () => {
+test("시공사명·시공사 전화번호가 없으면 낙찰 저장 거부", () => {
   const res = PourRecords.award(site2.id, { contractor: "  " }, recordStore);
   assert.strictEqual(res.ok, false);
-  assert.ok(res.message.includes("시공사"));
+  assert.ok(res.message.includes("시공사명"), res.message);
+  assert.ok(res.fields.contractor, "시공사명 개별 안내");
+  assert.ok(res.fields.contractorPhone, "시공사 전화번호 개별 안내");
 });
 
 test("공사 품질은 값이 없으면 빈칸 (임의 생성 금지)", () => {
@@ -331,17 +333,17 @@ test("열 제목 정렬", () => {
 
 section("7. 실적표 열 순서");
 
-test("전체 실적표는 요청한 20개 열 순서를 따름", () => {
-  assert.deepStrictEqual(PourRecords.COLUMNS.map(c => c.title), [
-    "공종", "지역", "도시", "특허번호", "발주처(아파트명)", "공사명", "전화번호", "세대수",
-    "공사 품질", "시공사", "상태", "공고일", "개찰일", "낙찰일", "낙찰금액",
-    "협약서 발행번호", "특허명·공법명", "공사 범위", "주소", "비고"
+test("전체 실적표 열 순서 (요청한 20개 + 서류 마감일·시공사 전화번호)", () => {
+  assert.deepStrictEqual(PourRecords.COLUMNS.slice(0, 22).map(c => c.title), [
+    "공종", "지역", "도시", "POUR 특허번호", "발주처(아파트명)", "공사명", "발주처 전화번호", "세대수",
+    "공사 품질", "시공사", "시공사 전화번호", "상태", "공고일", "서류 마감일", "개찰일", "낙찰일",
+    "낙찰금액", "협약서 발행번호", "POUR 특허명·공법명", "공사 범위", "주소", "비고"
   ]);
 });
 
 test("특허 탭 표는 순번부터 세대수까지 핵심 열이 앞에", () => {
   assert.deepStrictEqual(PourRecords.PATENT_TAB_COLUMNS.slice(0, 8).map(c => c.title), [
-    "순번", "지역", "도시", "특허번호", "발주처(아파트명)", "공사명", "전화번호", "세대수"
+    "순번", "지역", "도시", "특허번호", "발주처(아파트명)", "공사명", "발주처 전화번호", "세대수"
   ]);
 });
 

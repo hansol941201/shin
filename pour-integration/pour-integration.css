@@ -12,8 +12,11 @@
 
 /* ------------------------------------------------------- 자동완성 */
 .pour-field{position:relative;}
+/* 드롭다운이 표·카드 뒤로 숨지 않도록 충분히 높은 z-index 를 준다.
+   부모에 overflow:hidden 이 걸려 있으면 잘리므로 .pour-field 는 overflow 를 풀어둔다. */
+.pour-field{overflow:visible;}
 .pour-suggest{
-  position:absolute; z-index:40; left:0; right:0; top:100%;
+  position:absolute; z-index:1000; left:0; right:0; top:100%;
   margin-top:2px; max-height:280px; overflow-y:auto;
   background:#fff; border:1px solid var(--pour-border); border-radius:6px;
   box-shadow:0 6px 20px rgba(15,23,42,.12); display:none;
@@ -115,3 +118,105 @@
   .pour-tab-search{width:110px;}
   .pour-table-wrap{max-height:60vh;}
 }
+
+/* ------------------------------------------ POUR / 타사 특허 입력기 */
+.pour-patent-editor{border:1px solid var(--pour-border); border-radius:6px; padding:10px 12px;}
+.pour-kind-tabs{display:flex; gap:4px; margin-bottom:10px;}
+.pour-kind-tab{
+  flex:1; padding:7px 10px; font-size:13px; cursor:pointer; font-weight:600;
+  background:#f3f5f8; border:1px solid var(--pour-border); border-radius:5px; color:var(--pour-muted);
+}
+.pour-kind-tab.is-active{background:var(--pour-accent); border-color:var(--pour-accent); color:#fff;}
+.pour-third-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px;}
+.pour-third-form label{display:block; font-size:12px; font-weight:600; margin-bottom:3px;}
+.pour-add-btn{
+  margin-top:8px; padding:6px 12px; font-size:13px; cursor:pointer; font-weight:600;
+  background:#fff; border:1px dashed var(--pour-accent); color:var(--pour-accent); border-radius:5px;
+}
+.pour-item-list{margin-top:10px; display:flex; flex-direction:column; gap:4px;}
+.pour-item-row{
+  display:flex; align-items:center; gap:6px; padding:6px 8px; font-size:13px;
+  background:#f8fafc; border:1px solid var(--pour-border); border-radius:5px;
+}
+.pour-item-no{
+  flex:0 0 20px; height:20px; line-height:20px; text-align:center; font-size:11px;
+  background:var(--pour-accent); color:#fff; border-radius:50%;
+}
+.pour-item-text{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pour-item-btn{
+  flex:0 0 auto; width:24px; height:24px; font-size:11px; cursor:pointer;
+  background:#fff; border:1px solid var(--pour-border); border-radius:4px;
+}
+.pour-item-btn:disabled{opacity:.35; cursor:not-allowed;}
+.pour-item-del{color:var(--pour-danger); border-color:#f3b1a8;}
+.pour-item-empty{padding:10px; text-align:center; color:var(--pour-muted); font-size:13px;}
+.pour-multi-check{display:block; margin-top:10px; font-size:13px; font-weight:400;}
+.pour-multi-check input{width:auto; margin-right:4px;}
+.pour-multi-badge{
+  display:inline-block; margin-top:8px; padding:3px 10px; font-size:12.5px;
+  font-weight:700; border-radius:999px; border:1px solid;
+}
+/* 배지 색상: POUR만 파랑 · 혼합 보라 · 타사만 회색 · 번호 미확인 주황 */
+.pour-multi-badge[data-badge="pour"]{background:#e8f0fe; border-color:#3b82f6; color:#1d4ed8;}
+.pour-multi-badge[data-badge="mixed"]{background:#f3e8ff; border-color:#a855f7; color:#7e22ce;}
+.pour-multi-badge[data-badge="third"]{background:#f4f4f5; border-color:#a1a1aa; color:#52525b;}
+.pour-multi-badge[data-badge="unknown"]{background:#fff7e6; border-color:#f0a92e; color:#92400e;}
+
+/* ------------------------------------------------- 공고 등록 카드 배치 */
+.pour-card-title{
+  display:flex; align-items:center; gap:14px;   /* 제목 바로 옆에 재공고 체크박스 */
+  flex-wrap:wrap;
+}
+.pour-renotice{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:13px; font-weight:400; cursor:pointer;
+  padding:6px 8px;                               /* 작게 보이되 누를 곳은 넉넉하게 */
+  margin:-6px 0;
+}
+.pour-renotice input{width:auto; margin:0; cursor:pointer;}
+.pour-required{color:var(--pour-danger);}
+
+.pour-row{display:grid; gap:12px; margin-bottom:12px;}
+.pour-row-1{grid-template-columns:minmax(0,1fr);}
+.pour-row-3{grid-template-columns:repeat(3, minmax(0, 1fr));}
+.pour-row-4{grid-template-columns:repeat(4, minmax(0, 1fr));}
+.pour-row > div{min-width:0;}                    /* 입력칸이 칸 너비를 넘지 않도록 */
+.pour-row input, .pour-row select, .pour-row textarea{width:100%;}
+
+.pour-bidtype{display:flex; gap:6px;}
+.pour-bidtype-btn{
+  flex:1; min-width:0; padding:7px 6px; font-size:13px; cursor:pointer;
+  background:#fff; border:1px solid var(--pour-border); border-radius:5px; color:var(--pour-muted);
+}
+.pour-bidtype-btn.is-active{
+  background:var(--pour-accent); border-color:var(--pour-accent); color:#fff; font-weight:600;
+}
+
+.pour-more{margin-bottom:12px;}
+.pour-more > summary{
+  cursor:pointer; font-size:13.5px; font-weight:600; color:var(--pour-accent);
+  padding:9px 12px; background:var(--pour-accent-soft);
+  border:1px solid var(--pour-accent); border-radius:6px; list-style:none;
+}
+.pour-more > summary::-webkit-details-marker{display:none;}
+.pour-more > summary::before{content:"▸ "; }
+.pour-more[open] > summary::before{content:"▾ "; }
+
+.pour-actions-right{justify-content:flex-end;}
+
+/* 태블릿: 2열 */
+@media (max-width:1024px){
+  .pour-row-3, .pour-row-4{grid-template-columns:repeat(2, minmax(0, 1fr));}
+}
+/* 모바일: 1열 */
+@media (max-width:640px){
+  .pour-row-3, .pour-row-4{grid-template-columns:minmax(0, 1fr);}
+  .pour-card-title{gap:6px;}
+  .pour-renotice{width:100%;}                    /* 제목 아래로 자연스럽게 내려간다 */
+}
+
+.pour-filter-label{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12.5px; font-weight:600; color:var(--pour-muted);
+}
+.pour-filter-label select{font-weight:400; color:var(--pour-text);}

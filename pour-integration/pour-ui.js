@@ -25,6 +25,7 @@
    * @param emptyText  결과가 없을 때 보여줄 문구 (없으면 목록을 닫음)
    */
   function attachSuggest(input, getItems, onPick, emptyText) {
+    // emptyText 는 문자열이거나, 그때그때 문구를 정하는 함수일 수 있다.
     var wrap = input.parentNode;
     if (!/pour-field/.test(wrap.className || "")) wrap.className = (wrap.className || "") + " pour-field";
     var list = el("div", "pour-suggest");
@@ -37,8 +38,9 @@
     function render() {
       list.innerHTML = "";
       if (!items.length) {
-        if (!emptyText) return close();
-        list.appendChild(el("div", "pour-suggest-empty", emptyText));
+        var message = typeof emptyText === "function" ? emptyText() : emptyText;
+        if (!message) return close();
+        list.appendChild(el("div", "pour-suggest-empty", message));
         list.classList.add("is-open");
         return;
       }
@@ -112,17 +114,21 @@
       null
     );
 
+    function report(r) {
+      if (r.status === "ambiguous" && opts.onAmbiguous) opts.onAmbiguous(r.candidates);
+      setResolved(r.status === "resolved" ? r : null);
+    }
+
     // 입력창을 벗어날 때 확정한다. 여러 시도에 같은 이름이 있으면 선택 목록을 띄운다.
     input.addEventListener("change", function () {
       var r = PourRegion.parse(input.value);
-      if (r.status === "resolved") { input.value = r.city; setResolved(r); }
-      else if (r.status === "ambiguous") { setResolved(null); suggest.refresh(); }
-      else setResolved(null);
+      if (r.status === "resolved") input.value = r.city;
+      else if (r.status === "ambiguous" && !opts.onAmbiguous) suggest.refresh();
+      report(r);
     });
 
     input.addEventListener("input", function () {
-      var r = PourRegion.parse(input.value);
-      setResolved(r.status === "resolved" ? r : null);
+      report(PourRegion.parse(input.value));
     });
 
     return {
@@ -213,7 +219,7 @@
         var q = String(query || "").trim();
         if (!q) { setNotice(""); return []; }
         var hits = PourPatents.search(q, 10, cfg.storage);
-        setNotice(hits.length ? "" : PourPatents.NOT_FOUND_MESSAGE);
+        setNotice(hits.length ? "" : PourPatents.emptyMessage(cfg.storage));
         return hits.map(function (h) {
           return {
             key: h.number, number: h.number, name: h.name, category: h.category,
@@ -227,7 +233,7 @@
         cfg.input.value = "";
         setNotice("");
       },
-      PourPatents.NOT_FOUND_MESSAGE
+      function () { return PourPatents.emptyMessage(cfg.storage); }
     );
 
     // 번호를 끝까지 직접 입력한 경우에도 우리 특허인지 검증한다.

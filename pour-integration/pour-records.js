@@ -26,23 +26,35 @@
     { key: "categories",     title: "공종",              type: "list",   width: 14 },
     { key: "region",         title: "지역",              type: "text",   width: 8 },
     { key: "city",           title: "도시",              type: "text",   width: 10 },
-    { key: "patentNumbers",  title: "특허번호",          type: "patent", width: 18 },
+    { key: "patentNumbers",  title: "POUR 특허번호",     type: "patent", width: 18 },
     { key: "client",         title: "발주처(아파트명)",  type: "text",   width: 24 },
     { key: "projectNames",   title: "공사명",            type: "list",   width: 34 },
-    { key: "phone",          title: "전화번호",          type: "phone",  width: 15 },
+    { key: "phone",          title: "발주처 전화번호",   type: "phone",  width: 16 },
     { key: "households",     title: "세대수",            type: "number", width: 9 },
     { key: "quality",        title: "공사 품질",         type: "text",   width: 10 },
     { key: "contractor",     title: "시공사",            type: "text",   width: 16 },
+    { key: "contractorPhone", title: "시공사 전화번호",   type: "phone",  width: 16 },
     { key: "status",         title: "상태",              type: "text",   width: 11 },
     { key: "noticeDate",     title: "공고일",            type: "date",   width: 12 },
+    { key: "documentDueDate", title: "서류 마감일",      type: "date",   width: 12 },
     { key: "bidDate",        title: "개찰일",            type: "date",   width: 12 },
     { key: "awardDate",      title: "낙찰일",            type: "date",   width: 12 },
     { key: "awardAmount",    title: "낙찰금액",          type: "money",  width: 14 },
     { key: "agreementNo",    title: "협약서 발행번호",   type: "text",   width: 16 },
-    { key: "patentNames",    title: "특허명·공법명",     type: "list",   width: 22 },
+    { key: "patentNames",    title: "POUR 특허명·공법명", type: "list",  width: 22 },
     { key: "scope",          title: "공사 범위",         type: "text",   width: 20 },
     { key: "address",        title: "주소",              type: "text",   width: 28 },
-    { key: "remark",         title: "비고",              type: "text",   width: 18 }
+    { key: "remark",         title: "비고",              type: "text",   width: 18 },
+    // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
+    { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
+    { key: "__thirdNames",       title: "타사 특허명·공법명",     type: "thirdNames",     width: 22 },
+    { key: "__thirdCompanies",   title: "타사 특허 보유 회사",    type: "thirdCompanies", width: 18 },
+    { key: "__patentKind",       title: "특허 구분",             type: "patentKind",     width: 12 },
+    { key: "__pourCount",        title: "POUR 특허 개수",        type: "statNumber",     width: 12 },
+    { key: "__thirdCount",       title: "타사 특허 개수",        type: "statNumber",     width: 12 },
+    { key: "__totalCount",       title: "전체 특허 개수",        type: "statNumber",     width: 12 },
+    { key: "__multi",            title: "다특허 여부",           type: "multiLabel",     width: 16 },
+    { key: "__patentStatus",     title: "특허 확인 상태",        type: "patentStatus",   width: 18 }
   ];
 
   // 특허별 실적 탭의 표. 순번이 맨 앞에 오고 핵심 열을 먼저 보여준다.
@@ -53,7 +65,7 @@
     { key: "patentNumbers", title: "특허번호",         type: "patent", width: 18 },
     { key: "client",        title: "발주처(아파트명)", type: "text",   width: 24 },
     { key: "projectNames",  title: "공사명",           type: "list",   width: 34 },
-    { key: "phone",         title: "전화번호",         type: "phone",  width: 15 },
+    { key: "phone",         title: "발주처 전화번호",  type: "phone",  width: 16 },
     { key: "households",    title: "세대수",           type: "number", width: 9 },
     { key: "categories",    title: "공종",             type: "list",   width: 14 },
     { key: "status",        title: "상태",             type: "text",   width: 11 },
@@ -84,16 +96,24 @@
 
   function normalize(input) {
     var r = input || {};
+    var items = buildPatentItems(r);
+    var pourItems = items.filter(function (it) { return it.kind === POUR; });
+    var thirdItems = items.filter(function (it) { return it.kind === THIRD; });
     return {
       id: r.id || createId(),
       categories: toList(r.categories),
       region: String(r.region || "").trim(),
       city: String(r.city || "").trim(),
-      patentNumbers: toList(r.patentNumbers).map(PourPatents.normalizeNumber).filter(Boolean),
-      patentNames: toList(r.patentNames),
+      patentItems: items,
+      patentNumbers: pourItems.map(function (it) { return it.number; }),
+      patentNames: pourItems.map(function (it) { return it.name; }).filter(Boolean),
+      thirdPatentNumbers: thirdItems.map(function (it) { return it.number; }),
+      noticeMultiFlag: r.noticeMultiFlag === true,
       noticePatentText: String(r.noticePatentText || "").trim(),
       agreementNoOnly: String(r.agreementNoOnly || "").trim(),
       bidType: String(r.bidType || "").trim(),
+      documentDueDate: String(r.documentDueDate || "").trim(),
+      isRenotice: r.isRenotice === true,
       expectedAmount: toNumber(r.expectedAmount),
       patentConfirmed: r.patentConfirmed === true,
       createdAt: r.createdAt || nowStamp(),
@@ -104,6 +124,16 @@
       households: toNumber(r.households),
       quality: String(r.quality || "").trim(),
       contractor: String(r.contractor || "").trim(),
+      contractorPhone: String(r.contractorPhone == null ? "" : r.contractorPhone).trim(),
+      contractorContactName: String(r.contractorContactName || "").trim(),
+      contractorMobile: String(r.contractorMobile == null ? "" : r.contractorMobile).trim(),
+      contractorAddress: String(r.contractorAddress || "").trim(),
+      contractorBusinessNo: String(r.contractorBusinessNo == null ? "" : r.contractorBusinessNo).trim(),
+      contractorNote: String(r.contractorNote || "").trim(),
+      resultEnteredAt: String(r.resultEnteredAt || "").trim(),
+      updatedAt: String(r.updatedAt || "").trim(),
+      renoticeRound: r.renoticeRound == null || r.renoticeRound === "" ? "" : Number(r.renoticeRound),
+      originalNoticeId: String(r.originalNoticeId || "").trim(),
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
@@ -114,6 +144,62 @@
       address: String(r.address || "").trim(),
       remark: String(r.remark || "").trim()
     };
+  }
+
+  var POUR = "POUR", THIRD = "THIRD_PARTY";
+
+  var itemSeq = 0;
+  function itemId() { itemSeq++; return "pat-" + Date.now().toString(36) + "-" + itemSeq.toString(36); }
+
+  /** 특허 한 건. POUR 특허와 타사 특허를 같은 모양으로 담되 kind 로 구분한다. */
+  function normalizePatentItem(input, kind) {
+    var it = input || {};
+    var number = PourPatents.normalizeNumber(it.number != null ? it.number : it);
+    if (!number) return null;
+    return {
+      id: it.id || itemId(),
+      recordId: it.recordId || "",
+      kind: it.kind === THIRD || kind === THIRD ? THIRD : POUR,
+      number: number,
+      display: PourPatents.formatNumber(number),
+      name: String(it.name || "").trim(),
+      method: String(it.method || "").trim(),
+      company: String(it.company || "").trim(),
+      category: String(it.category || "").trim(),
+      remark: String(it.remark || "").trim(),
+      createdAt: it.createdAt || nowStamp(),
+      updatedAt: nowStamp()
+    };
+  }
+
+  /**
+   * 입력에서 특허 항목 목록을 만든다.
+   * patentItems 가 있으면 그대로 쓰고, 없으면 기존 patentNumbers/patentNames 를 POUR 특허로 옮긴다.
+   * (기존 자료를 지우지 않고 새 구조로 옮기기 위한 경로)
+   */
+  function buildPatentItems(r) {
+    var out = [], seen = {};
+
+    function push(item) {
+      if (!item) return;
+      var key = item.kind + ":" + item.number;
+      if (seen[key]) return;            // 같은 구분 안에서 같은 번호는 한 번만
+      seen[key] = true;
+      out.push(item);
+    }
+
+    if (Array.isArray(r.patentItems) && r.patentItems.length) {
+      r.patentItems.forEach(function (it) { push(normalizePatentItem(it)); });
+    } else {
+      var names = toList(r.patentNames);
+      toList(r.patentNumbers).forEach(function (n, i) {
+        push(normalizePatentItem({ number: n, name: names[i] || "" }, POUR));
+      });
+      toList(r.thirdPatentNumbers).forEach(function (n) {
+        push(normalizePatentItem({ number: n }, THIRD));
+      });
+    }
+    return out;
   }
 
   function nowStamp() {
@@ -130,10 +216,15 @@
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
     quality: "공사 품질", contractor: "시공사", status: "상태",
-    noticeDate: "공고일", bidDate: "개찰일", awardDate: "낙찰일",
+    noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
+    isRenotice: "재공고 건",
     awardAmount: "낙찰금액", expectedAmount: "예상금액", bidType: "입찰 종류",
     agreementNo: "협약서 발행번호", scope: "공사 범위", address: "주소",
-    remark: "비고", patentConfirmed: "특허번호 직접 확인"
+    remark: "비고", patentConfirmed: "특허번호 직접 확인",
+    contractorPhone: "시공사 전화번호", contractorContactName: "시공사 담당자명",
+    contractorMobile: "담당자 휴대전화", contractorAddress: "시공사 주소",
+    contractorBusinessNo: "사업자등록번호", contractorNote: "시공사 비고",
+    thirdPatentNumbers: "타사 특허번호", noticeMultiFlag: "공고문 다특허 기재"
   };
 
   var idSeq = 0;
@@ -142,8 +233,43 @@
     return "rec-" + Date.now().toString(36) + "-" + idSeq.toString(36);
   }
 
+  // 특허 확인 상태를 계산할 때 참고할 특허 자료 저장소 (Node 테스트에서 갈아끼울 수 있게 둔다)
+  var patentStorageRef = null;
+  function usePatentStorage(storage) { patentStorageRef = storage || null; }
+
+  function itemsOfKind(record, kind) {
+    return ((record && record.patentItems) || []).filter(function (it) { return it.kind === kind; });
+  }
+
   /** 화면 표시용 문자열. 여러 값은 줄바꿈으로 잇는다 (쉼표로 길게 붙이지 않는다). */
   function displayValue(record, column, index) {
+    var stats;
+    switch (column.type) {
+      case "thirdNumbers":
+        return itemsOfKind(record, THIRD).map(function (it) { return it.display; }).join("\n");
+      case "thirdNames":
+        return itemsOfKind(record, THIRD)
+          .map(function (it) { return it.name || it.method; }).filter(Boolean).join("\n");
+      case "thirdCompanies":
+        return itemsOfKind(record, THIRD)
+          .map(function (it) { return it.company; }).filter(Boolean).join("\n");
+      case "patentKind": {
+        var pour = itemsOfKind(record, POUR).length, third = itemsOfKind(record, THIRD).length;
+        if (pour && third) return "POUR·타사";
+        if (pour) return "POUR";
+        if (third) return "타사";
+        return "";
+      }
+      case "statNumber":
+        stats = patentStats(record, patentStorageRef);
+        return String(column.key === "__pourCount" ? stats.pourCount
+          : column.key === "__thirdCount" ? stats.thirdCount : stats.totalCount);
+      case "multiLabel":
+        stats = patentStats(record, patentStorageRef);
+        return stats.label ? stats.label + (stats.isMulti ? " (" + stats.detail + ")" : "") : "";
+      case "patentStatus":
+        return patentStats(record, patentStorageRef).status;
+    }
     switch (column.type) {
       case "seq":    return String((index || 0) + 1);
       case "patent": return (record.patentNumbers || []).map(PourPatents.formatNumber).join("\n");
@@ -152,7 +278,7 @@
                        ? "" : Number(record[column.key]).toLocaleString("ko-KR");
       case "money":  return record[column.key] === "" || record[column.key] == null
                        ? "" : Number(record[column.key]).toLocaleString("ko-KR");
-      case "phone":  return String(record.phone || "");
+      case "phone":  return String(record[column.key] == null ? "" : record[column.key]);
       default:       return String(record[column.key] == null ? "" : record[column.key]);
     }
   }
@@ -164,7 +290,8 @@
       case "number":
       case "money":  return record[column.key] === "" || record[column.key] == null
                        ? null : Number(record[column.key]);
-      case "phone":  return String(record.phone || "");
+      case "statNumber": return Number(displayValue(record, column, index));
+      case "phone":  return String(record[column.key] == null ? "" : record[column.key]);
       default:       return displayValue(record, column, index);
     }
   }
@@ -224,12 +351,25 @@
       ? toNumber(data.awardAmount) : target.awardAmount;
     var categories = data.categories != null ? toList(data.categories) : target.categories;
 
-    if (!contractor) missing.push("시공사");
-    if (!awardDate) missing.push("낙찰일");
-    if (awardAmount === "" || awardAmount == null) missing.push("낙찰금액");
-    if (!categories.length) missing.push("최종 공종");
+    var contractorPhone = String(
+      data.contractorPhone != null ? data.contractorPhone : target.contractorPhone).trim();
+    var fields = {};
+    if (!contractor) { missing.push("시공사명"); fields.contractor = "시공사명을 입력해 주세요."; }
+    if (!contractorPhone) {
+      missing.push("시공사 전화번호");
+      fields.contractorPhone = "시공사 전화번호를 입력해 주세요.";
+    }
+    if (!awardDate) { missing.push("낙찰일"); fields.awardDate = "낙찰일을 입력해 주세요."; }
+    if (awardAmount === "" || awardAmount == null) {
+      missing.push("낙찰금액");
+      fields.awardAmount = "낙찰금액을 입력해 주세요.";
+    }
+    if (!categories.length) { missing.push("최종 공종"); fields.categories = "최종 공종을 입력해 주세요."; }
     if (missing.length) {
-      return { ok: false, message: "낙찰 저장에 다음 항목이 필요합니다: " + missing.join(", ") };
+      return {
+        ok: false, fields: fields,
+        message: "낙찰 등록을 위해 시공사명, 시공사 전화번호, 낙찰일, 낙찰금액 및 최종 공종을 입력해 주세요."
+      };
     }
 
     // POUR 적용 특허번호는 없어도 저장을 막지 않는다. 확인만 받는다.
@@ -248,6 +388,17 @@
     merged.status = data.status && STATUSES.indexOf(data.status) >= 0 ? data.status : "낙찰";
     merged.awardDate = awardDate;
     merged.contractor = contractor;
+    merged.contractorPhone = contractorPhone;
+    ["contractorContactName", "contractorMobile", "contractorAddress",
+     "contractorBusinessNo", "contractorNote", "scope", "agreementNo"].forEach(function (key) {
+      if (data[key] != null) merged[key] = String(data[key]).trim();
+    });
+    if (data.thirdPatentNumbers != null || data.patentItems != null) {
+      merged.patentItems = data.patentItems != null ? data.patentItems : merged.patentItems;
+      if (data.thirdPatentNumbers != null) merged.thirdPatentNumbers = data.thirdPatentNumbers;
+    }
+    merged.resultEnteredAt = nowStamp();       // 결과 입력일
+    merged.updatedAt = nowStamp();             // 최종 수정일
     merged.awardAmount = awardAmount;
     merged.categories = categories;
     merged.patentNumbers = patentNumbers;
@@ -328,6 +479,7 @@
     var after = normalize(draft);
     after.id = before.id;
     after.createdAt = before.createdAt;
+    after.updatedAt = nowStamp();
     after.history = before.history.concat(buildHistory(before, after, "자료 수정"));
 
     all[at] = after;
@@ -358,6 +510,163 @@
       if (rec.status !== "낙찰") return false;
       return !isPatentResolved(rec, patentStorage);
     });
+  }
+
+  /* ------------------------------------------- 다특허 · 특허 구분 */
+
+  var BADGE_COLORS = {
+    pour: "파란색",       // POUR 특허만 여러 개
+    mixed: "보라색",      // POUR와 타사 혼합
+    third: "회색",        // 타사 특허만 여러 개
+    unknown: "주황색"     // 번호 미확인 다특허
+  };
+
+  /**
+   * 한 현장의 특허 구성을 계산한다. 다특허 여부는 개수로 자동 판단한다.
+   * (사용자가 매번 직접 입력하지 않는다)
+   */
+  function patentStats(record, patentStorage) {
+    var items = (record && record.patentItems) || [];
+    var pour = items.filter(function (it) { return it.kind === POUR; });
+    var third = items.filter(function (it) { return it.kind === THIRD; });
+    var total = pour.length + third.length;
+    var noticeMulti = !!(record && record.noticeMultiFlag);
+    var isMulti = total >= 2;
+
+    var badge = "unknown";
+    if (isMulti) {
+      if (pour.length && third.length) badge = "mixed";
+      else if (pour.length) badge = "pour";
+      else badge = "third";
+    } else if (noticeMulti) badge = "unknown";
+
+    // 확인 상태
+    var status;
+    var unverified = pour.filter(function (it) { return !PourPatents.find(it.number, patentStorage); });
+    if (noticeMulti && total < 2) status = "다특허 번호 확인 필요";
+    else if (!pour.length) status = "POUR 특허번호 미기재";
+    else if (unverified.length && !(record && record.patentConfirmed)) status = "POUR 특허 검토 필요";
+    else status = "확정";
+
+    var label;
+    if (isMulti) label = "다특허 · 총 " + total + "개";
+    else if (noticeMulti) label = "다특허 번호 확인 필요";
+    else if (total === 1) label = "단일특허";
+    else label = "";
+
+    return {
+      pourCount: pour.length,
+      thirdCount: third.length,
+      totalCount: total,
+      isMulti: isMulti,
+      noticeMultiFlag: noticeMulti,
+      badge: badge,
+      badgeColor: BADGE_COLORS[badge],
+      label: label,
+      detail: "POUR " + pour.length + "개 · 타사 " + third.length + "개",
+      status: status,
+      unverified: unverified.map(function (it) { return it.number; })
+    };
+  }
+
+  /** POUR 특허와 타사 특허에 같은 번호가 들어갔는지 확인한다. */
+  function conflictingPatents(record) {
+    var items = (record && record.patentItems) || [];
+    var pour = {}, clash = [];
+    items.forEach(function (it) { if (it.kind === POUR) pour[it.number] = true; });
+    items.forEach(function (it) {
+      if (it.kind === THIRD && pour[it.number]) clash.push(it.number);
+    });
+    return clash;
+  }
+
+  var CONFLICT_MESSAGE =
+    "동일한 특허번호가 POUR 특허와 타사 특허에 모두 등록되어 있습니다. 특허 구분을 확인해 주세요.";
+
+  /* --------------------------------------------- 알림 묶음 */
+
+  /**
+   * 상단 알림 묶음. 타사 특허만 입력했다고 POUR 미기재 알림이 풀리지 않는다.
+   * (POUR 항목만 보고 판단하기 때문)
+   */
+  function alerts(records, patentStorage) {
+    var missing = [], multiUnknown = [], needsCheck = [];
+
+    (records || []).forEach(function (rec) {
+      var stats = patentStats(rec, patentStorage);
+      if (rec.status === "낙찰" && !isPatentResolved(rec, patentStorage)) missing.push(rec);
+      if (stats.noticeMultiFlag && stats.totalCount < 2) multiUnknown.push(rec);
+      if (conflictingPatents(rec).length ||
+          (stats.status === "POUR 특허 검토 필요")) needsCheck.push(rec);
+    });
+
+    var out = [];
+    if (missing.length) {
+      out.push({ key: "missingPour", label: "POUR 특허번호 미기재 낙찰 " + missing.length + "건",
+                 count: missing.length, records: missing });
+    }
+    if (multiUnknown.length) {
+      out.push({ key: "multiUnknown", label: "다특허 번호 확인 필요 " + multiUnknown.length + "건",
+                 count: multiUnknown.length, records: multiUnknown });
+    }
+    if (needsCheck.length) {
+      out.push({ key: "kindCheck", label: "POUR·타사 특허 구분 확인 필요 " + needsCheck.length + "건",
+                 count: needsCheck.length, records: needsCheck });
+    }
+    return out;
+  }
+
+  /* ------------------------------------------------ 자료 이전 */
+
+  var MIGRATION_KEY = "pour.records.migration.v1";
+
+  /**
+   * 기존 자료를 새 특허 구조로 옮긴다. 원본을 지우지 않고 스냅샷을 남겨 되돌릴 수 있다.
+   * 업로드된 POUR 특허 자료와 맞지 않는 번호는 자동 확정하지 않고 검토 대상으로 표시한다.
+   */
+  function migratePatentItems(storage, patentStorage) {
+    var s = store(storage);
+    var all = list(storage);
+    var snapshot = [], moved = 0, review = [];
+
+    all.forEach(function (rec) {
+      snapshot.push({ id: rec.id, patentNumbers: rec.patentNumbers.slice(), patentNames: rec.patentNames.slice() });
+      if (!rec.patentItems.length) return;
+      moved += rec.patentItems.filter(function (it) { return it.kind === POUR; }).length;
+      rec.patentItems.forEach(function (it) {
+        if (it.kind !== POUR) return;
+        if (!PourPatents.find(it.number, patentStorage)) {
+          review.push({ id: rec.id, client: rec.client, number: it.number });
+        }
+      });
+    });
+
+    writeAll(all, storage);
+    if (s) {
+      try { s.setItem(MIGRATION_KEY, JSON.stringify({ at: nowStamp(), snapshot: snapshot })); } catch (e) {}
+    }
+    return { records: all.length, movedPourPatents: moved, needsReview: review, reversible: !!s };
+  }
+
+  /** 이전 직전 상태로 되돌린다. */
+  function rollbackMigration(storage) {
+    var s = store(storage);
+    if (!s) return { ok: false, message: "저장소를 사용할 수 없습니다." };
+    var raw = s.getItem(MIGRATION_KEY);
+    if (!raw) return { ok: false, message: "되돌릴 이전 기록이 없습니다." };
+    var saved = JSON.parse(raw);
+    var all = list(storage);
+    var byId = {};
+    saved.snapshot.forEach(function (row) { byId[row.id] = row; });
+    all.forEach(function (rec, i) {
+      var row = byId[rec.id];
+      if (!row) return;
+      all[i] = normalize(Object.assign({}, rec, {
+        patentItems: [], patentNumbers: row.patentNumbers, patentNames: row.patentNames
+      }));
+    });
+    writeAll(all, storage);
+    return { ok: true, restored: saved.snapshot.length, at: saved.at };
   }
 
   function missingPatentMessage(count) {
@@ -441,6 +750,24 @@
     };
   }
 
+  /**
+   * 숫자만 입력했을 때 보기 좋게 하이픈을 넣어 준다. 저장된 원문은 바꾸지 않는다.
+   * 02-1234-5678 / 031-123-4567 / 010-1234-5678 / 1588-0000 형태를 지원한다.
+   */
+  function formatPhone(value) {
+    var raw = String(value == null ? "" : value).trim();
+    if (!raw || /[^0-9]/.test(raw)) return raw;      // 이미 하이픈 등이 있으면 그대로 둔다
+    var d = raw;
+    if (/^02/.test(d)) {
+      if (d.length === 9) return d.slice(0, 2) + "-" + d.slice(2, 5) + "-" + d.slice(5);
+      if (d.length === 10) return d.slice(0, 2) + "-" + d.slice(2, 6) + "-" + d.slice(6);
+    }
+    if (/^1[5-9]\d{2}/.test(d) && d.length === 8) return d.slice(0, 4) + "-" + d.slice(4);
+    if (d.length === 10) return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
+    if (d.length === 11) return d.slice(0, 3) + "-" + d.slice(3, 7) + "-" + d.slice(7);
+    return raw;
+  }
+
   /** "320억원" 처럼 읽기 쉬운 금액 표기. */
   function formatAmountShort(amount) {
     var n = Number(amount || 0);
@@ -510,6 +837,7 @@
     createId: createId,
     displayValue: displayValue,
     exportValue: exportValue,
+    usePatentStorage: usePatentStorage,
     list: list,
     save: save,
     award: award,
@@ -518,6 +846,7 @@
     summarize: summarize,
     summaryText: summaryText,
     formatAmountShort: formatAmountShort,
+    formatPhone: formatPhone,
     applyFilters: applyFilters,
     sortRecords: sortRecords,
     update: update,
@@ -525,6 +854,15 @@
     isPatentResolved: isPatentResolved,
     missingPatentRecords: missingPatentRecords,
     missingPatentMessage: missingPatentMessage,
+    POUR: POUR,
+    THIRD_PARTY: THIRD,
+    normalizePatentItem: normalizePatentItem,
+    patentStats: patentStats,
+    conflictingPatents: conflictingPatents,
+    CONFLICT_MESSAGE: CONFLICT_MESSAGE,
+    alerts: alerts,
+    migratePatentItems: migratePatentItems,
+    rollbackMigration: rollbackMigration,
     FIELD_LABELS: FIELD_LABELS,
     clear: function (storage) { writeAll([], storage); }
   };

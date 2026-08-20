@@ -242,6 +242,13 @@
   /* ------------------------------------------------------------- 검색 */
 
   var NOT_FOUND_MESSAGE = "업로드된 POUR 특허 자료에서 일치 항목을 찾지 못했습니다. 우리 특허인지 확인해 주세요.";
+  var NO_RESULT_MESSAGE = "등록된 POUR 특허가 없습니다";
+  var NEED_UPLOAD_MESSAGE = "먼저 특허 자료 관리에서 POUR 특허 엑셀을 업로드해 주세요.";
+
+  /** 드롭다운에 무엇을 보여줄지 정한다. 자료 자체가 없을 때와 결과가 없을 때를 구분한다. */
+  function emptyMessage(storage) {
+    return readStore(storage).length ? NO_RESULT_MESSAGE : NEED_UPLOAD_MESSAGE;
+  }
 
   /**
    * 숫자와 한글 모두로 검색한다.
@@ -323,6 +330,9 @@
   return {
     STORAGE_KEY: STORAGE_KEY,
     NOT_FOUND_MESSAGE: NOT_FOUND_MESSAGE,
+    NO_RESULT_MESSAGE: NO_RESULT_MESSAGE,
+    NEED_UPLOAD_MESSAGE: NEED_UPLOAD_MESSAGE,
+    emptyMessage: emptyMessage,
     normalizeNumber: normalizeNumber,
     formatNumber: formatNumber,
     tabLabel: tabLabel,

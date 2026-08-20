@@ -56,7 +56,7 @@ test("공고 자료는 미기재 알림에 포함되지 않음", () => {
 
 test("특허번호 없이 낙찰 저장하면 차단이 아니라 확인 경고", () => {
   const res = PourRecords.award(noPatent.id, {
-    contractor: "가나건설", awardDate: "2026-06-01",
+    contractor: "가나건설", contractorPhone: "031-000-1111", awardDate: "2026-06-01",
     awardAmount: 800000000, categories: ["재도장"]
   }, store);
   assert.strictEqual(res.ok, false);
@@ -66,7 +66,7 @@ test("특허번호 없이 낙찰 저장하면 차단이 아니라 확인 경고"
 
 test("확인하면 특허번호 없이 낙찰 저장 가능", () => {
   const res = PourRecords.award(noPatent.id, {
-    contractor: "가나건설", awardDate: "2026-06-01",
+    contractor: "가나건설", contractorPhone: "031-000-1111", awardDate: "2026-06-01",
     awardAmount: 800000000, categories: ["재도장"],
     confirmedWithoutPatent: true
   }, store);
@@ -79,7 +79,7 @@ test("낙찰 필수 항목(낙찰일·시공사·낙찰금액·최종 공종)은
   const tmp = PourRecords.save({ region: "경기", city: "하남", client: "임시", status: "공고" }, store);
   const res = PourRecords.award(tmp.id, { contractor: "", confirmedWithoutPatent: true }, store);
   assert.strictEqual(res.ok, false);
-  ["시공사", "낙찰일", "낙찰금액", "최종 공종"].forEach(f =>
+  ["시공사명", "시공사 전화번호", "낙찰일", "낙찰금액", "최종 공종"].forEach(f =>
     assert.ok(res.message.includes(f), f + " 안내 없음: " + res.message));
 });
 
@@ -89,7 +89,8 @@ section("2. 상단 알림 대상 판정");
 const store2 = memoryStorage();
 const mk = (over) => PourRecords.save(Object.assign({
   region: "경기", city: "하남", client: "테스트", categories: ["재도장"],
-  contractor: "가나건설", awardDate: "2026-06-01", awardAmount: 1000
+  contractor: "가나건설", contractorPhone: "031-000-1111",
+  awardDate: "2026-06-01", awardAmount: 1000
 }, over), store2);
 
 const awardedNoPatent = mk({ client: "미기재낙찰", status: "낙찰", patentNumbers: [] });
@@ -140,7 +141,7 @@ test("엑셀에 없는 번호만 넣으면 알림이 풀리지 않음", () => {
   const s = memoryStorage();
   const rec = PourRecords.save({
     client: "임의번호", status: "낙찰", categories: ["재도장"],
-    contractor: "가나", awardDate: "2026-06-01", awardAmount: 100,
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01", awardAmount: 100,
     patentNumbers: ["9999999"]
   }, s);
   assert.strictEqual(PourRecords.isPatentResolved(rec, patentStore), false);
@@ -151,7 +152,7 @@ test("직접 확인 완료로 저장하면 알림 해제", () => {
   const s = memoryStorage();
   const rec = PourRecords.save({
     client: "직접확인", status: "낙찰", categories: ["재도장"],
-    contractor: "가나", awardDate: "2026-06-01", awardAmount: 100,
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01", awardAmount: 100,
     patentNumbers: ["9999999"]
   }, s);
   PourRecords.update(rec.id, { patentConfirmed: true }, s);
@@ -233,7 +234,7 @@ test("특허번호를 나중에 넣으면 'POUR 적용 특허번호 추가' 이�
   const s = memoryStorage();
   const rec = PourRecords.save({
     client: "이력확인", status: "낙찰", categories: ["재도장"],
-    contractor: "가나", awardDate: "2026-06-01", awardAmount: 100
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01", awardAmount: 100
   }, s);
   PourRecords.update(rec.id, { patentNumbers: ["1935719"] }, s);
   const entry = PourRecords.list(s)[0].history.slice(-1)[0];

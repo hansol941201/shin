@@ -12,27 +12,46 @@
 
   /* ------------------------------------------------------ 입력 위젯 */
 
+  // 지역은 도시 입력에 따라 자동으로 채우고, 이름이 겹치면 직접 고를 수 있게 둔다.
+  function setRegionOptions(regions, selected) {
+    var select = $("regionSelect");
+    select.innerHTML = "";
+    if (!regions.length) { select.appendChild(new Option("—", "")); return; }
+    regions.forEach(function (r) { select.appendChild(new Option(r, r)); });
+    select.value = selected && regions.indexOf(selected) >= 0 ? selected : regions[0];
+  }
+
   var regionField = PourUI.attachRegionInput($("cityInput"), {
     onChange: function (value) {
-      $("regionResolved").textContent = value
-        ? "지역 " + value.region + " / 도시 " + value.city
-        : " ";
+      if (value) setRegionOptions([value.region], value.region);
+      else if (!$("cityInput").value.trim()) setRegionOptions([]);
+    },
+    onAmbiguous: function (candidates) {
+      var regions = [];
+      candidates.forEach(function (c) { if (regions.indexOf(c.region) < 0) regions.push(c.region); });
+      setRegionOptions(regions, $("regionSelect").value);
     }
   });
 
-  var patentField = PourUI.attachPatentInput({
-    input: $("patentSearch"),
-    chips: $("patentChips"),
-    categoryInput: $("categoryInput"),
-    notice: $("patentNotice"),
-    storage: storage
+  // 입찰종류 버튼 (서류접수 · 전자입찰)
+  var bidType = "";
+  Array.prototype.forEach.call(document.querySelectorAll("#bidTypeGroup .pour-bidtype-btn"), function (btn) {
+    btn.addEventListener("click", function () {
+      bidType = bidType === btn.getAttribute("data-bid") ? "" : btn.getAttribute("data-bid");
+      Array.prototype.forEach.call(document.querySelectorAll("#bidTypeGroup .pour-bidtype-btn"), function (b) {
+        b.className = "pour-bidtype-btn" + (b.getAttribute("data-bid") === bidType ? " is-active" : "");
+      });
+    });
+  });
+
+  var patentEditor = PourPatentEditor.create($("patentEditor"), {
+    storage: storage,
+    categoryInput: $("categoryInput")
   });
 
   PourRecords.STATUSES.forEach(function (s) {
     $("statusInput").appendChild(new Option(s, s));
-    $("awardStatus").appendChild(new Option(s, s));
   });
-  $("awardStatus").value = "낙찰";
   PourRecords.QUALITY_OPTIONS.forEach(function (q) {
     $("qualityOptions").appendChild(new Option(q, q));
   });
@@ -176,11 +195,15 @@
   function readForm() {
     var region = regionField.getValue();
     return {
-      region: region ? region.region : "",
+      // 지역은 선택칸의 값을 우선한다 (이름이 겹칠 때 사용자가 고른 값)
+      region: $("regionSelect").value || (region ? region.region : ""),
       city: region ? region.city : $("cityInput").value.trim(),
+      documentDueDate: $("documentDueDate").value,
+      bidType: bidType,
+      isRenotice: $("isRenotice").checked,
       noticePatentText: $("noticePatentText").value.trim(),
-      patentNumbers: patentField.getNumbers(),
-      patentNames: patentField.getNames(),
+      patentItems: patentEditor.getValue().patentItems,
+      noticeMultiFlag: patentEditor.getValue().noticeMultiFlag,
       categories: $("categoryInput").value,
       client: $("clientInput").value.trim(),
       projectNames: $("projectNames").value,
@@ -201,7 +224,9 @@
   $("saveBtn").addEventListener("click", function () {
     var data = readForm();
     var msg = $("saveMsg");
-    if (!data.city) { msg.textContent = "지역·도시를 입력해 주세요."; msg.className = "msg error"; return; }
+    if (!data.city) { msg.textContent = "도시를 입력해 주세요."; msg.className = "msg error"; return; }
+    // 공고일만 필수. 전화번호·세대수·서류 마감일·개찰일은 비워도 등록된다.
+    if (!data.noticeDate) { msg.textContent = "공고일을 입력해 주세요."; msg.className = "msg error"; return; }
     if (!data.region) {
       var parsed = PourRegion.parse($("cityInput").value);
       if (parsed.status === "ambiguous") {
@@ -223,48 +248,186 @@
 
   function resetForm() {
     ["noticePatentText", "categoryInput", "clientInput", "projectNames", "phoneInput",
-     "householdsInput", "qualityInput", "noticeDate", "bidDate", "contractorInput",
-     "agreementNo", "scopeInput", "addressInput", "remarkInput"].forEach(function (id) { $(id).value = ""; });
+     "householdsInput", "qualityInput", "noticeDate", "documentDueDate", "bidDate",
+     "contractorInput", "agreementNo", "scopeInput", "addressInput", "remarkInput"]
+      .forEach(function (id) { $(id).value = ""; });
+    $("isRenotice").checked = false;
+    bidType = "";
+    Array.prototype.forEach.call(document.querySelectorAll("#bidTypeGroup .pour-bidtype-btn"), function (b) {
+      b.className = "pour-bidtype-btn";
+    });
+    setRegionOptions([]);
     regionField.clear();
-    patentField.clear();
+    patentEditor.clear();
     $("statusInput").value = "공고";
   }
   $("resetFormBtn").addEventListener("click", function () { resetForm(); $("saveMsg").textContent = ""; });
 
-  /* ---------------------------------------------------- 낙찰 처리 */
+  /* ------------------------------------------- 낙찰 상세정보 입력 */
 
-  $("awardBtn").addEventListener("click", function () {
-    var msg = $("awardMsg");
-    var id = $("awardTarget").value;
-    if (!id) { msg.textContent = "대상 현장을 선택해 주세요."; msg.className = "msg error"; return; }
+  var AWARD_CONTRACTOR_FIELDS = [
+    { key: "contractor", label: "시공사명", required: true },
+    { key: "contractorPhone", label: "시공사 전화번호", required: true, phone: true,
+      placeholder: "02-1234-5678 / 010-1234-5678 / 1588-0000" },
+    { key: "contractorContactName", label: "담당자명" },
+    { key: "contractorMobile", label: "담당자 휴대전화", phone: true },
+    { key: "contractorAddress", label: "시공사 주소" },
+    { key: "contractorBusinessNo", label: "사업자등록번호" },
+    { key: "contractorNote", label: "시공사 비고" }
+  ];
 
-    var payload = {
-      contractor: $("awardContractor").value.trim(),
-      awardDate: $("awardDate").value,
-      awardAmount: $("awardAmount").value,
-      quality: $("awardQuality").value.trim(),
-      status: $("awardStatus").value,
-      remark: $("awardRemark").value.trim()
-    };
+  var AWARD_INFO_FIELDS = [
+    { key: "awardDate", label: "낙찰일", required: true, type: "date" },
+    { key: "awardAmount", label: "낙찰금액", required: true, money: true },
+    { key: "categories", label: "최종 공종", required: true },
+    { key: "status", label: "낙찰 결과 상태", type: "select", options: PourRecords.STATUSES },
+    { key: "agreementNo", label: "협약서 발행번호" },
+    { key: "scope", label: "최종 공사범위" },
+    { key: "quality", label: "공사 품질", list: "qualityOptions" },
+    { key: "remark", label: "낙찰 비고" }
+  ];
 
-    var result = PourRecords.award(id, payload, storage);
+  var awardingId = null, awardPatentEditor = null;
+
+  function buildAwardFields(container, fields, record) {
+    container.innerHTML = "";
+    fields.forEach(function (f) {
+      var wrap = document.createElement("div");
+      var label = document.createElement("label");
+      label.textContent = f.label;
+      if (f.required) {
+        var star = document.createElement("span");
+        star.className = "pour-required";
+        star.textContent = " *";
+        label.appendChild(star);
+      }
+      wrap.appendChild(label);
+
+      var input;
+      if (f.type === "select") {
+        input = document.createElement("select");
+        f.options.forEach(function (o) { input.appendChild(new Option(o, o)); });
+      } else {
+        input = document.createElement("input");
+        input.type = f.type || "text";
+        if (f.placeholder) input.placeholder = f.placeholder;
+        if (f.list) input.setAttribute("list", f.list);
+      }
+      input.id = "award-" + f.key;
+
+      var value = record[f.key];
+      if (Array.isArray(value)) value = value.join(", ");
+      input.value = f.key === "status" ? "낙찰" : (value == null ? "" : value);
+
+      // 전화번호는 숫자만 넣으면 보기 좋게 하이픈을 붙여 준다 (원문은 그대로 저장)
+      if (f.phone) {
+        input.addEventListener("blur", function () {
+          input.value = PourRecords.formatPhone(input.value);
+        });
+      }
+      // 낙찰금액은 화면에만 천 단위 쉼표를 보여 준다
+      if (f.money) {
+        input.addEventListener("blur", function () {
+          var n = Number(String(input.value).replace(/[^0-9.-]/g, ""));
+          if (isFinite(n) && input.value.trim()) input.value = n.toLocaleString("ko-KR");
+        });
+      }
+
+      wrap.appendChild(input);
+      var error = document.createElement("span");
+      error.className = "pour-fielderror";
+      error.id = "award-error-" + f.key;
+      error.style.display = "none";
+      wrap.appendChild(error);
+      container.appendChild(wrap);
+    });
+  }
+
+  function openAward(id) {
+    var record = PourRecords.list(storage).filter(function (r) { return r.id === id; })[0];
+    if (!record) return;
+    awardingId = id;
+
+    // 다른 공고를 잘못 고치지 않도록 기존 공고 내용을 먼저 보여 준다
+    $("awardSummary").innerHTML =
+      "<strong>" + (record.client || "이름 없음") + "</strong><br>" +
+      "공사명: " + (record.projectNames.join(" / ") || "—") + "<br>" +
+      "지역·도시: " + (PourRegion.format(record.region, record.city) || "—") + "<br>" +
+      "공고일: " + (record.noticeDate || "—") +
+      " · 서류 마감일: " + (record.documentDueDate || "—") +
+      " · 개찰일: " + (record.bidDate || "—") + "<br>" +
+      "공고문 특허·공법: " + (record.noticePatentText || "—") + "<br>" +
+      "현재 상태: " + record.status +
+      (record.renoticeRound ? " (재공고 " + record.renoticeRound + "차)" : "");
+
+    buildAwardFields($("awardContractorFields"), AWARD_CONTRACTOR_FIELDS, record);
+    buildAwardFields($("awardInfoFields"), AWARD_INFO_FIELDS, record);
+
+    $("awardPatentEditor").innerHTML = "";
+    awardPatentEditor = PourPatentEditor.create($("awardPatentEditor"), {
+      storage: storage,
+      categoryInput: $("award-categories")
+    });
+    awardPatentEditor.setValue(record);
+    if (record.categories.length) $("award-categories").value = record.categories.join(", ");
+
+    $("awardMsg").textContent = "";
+    $("awardSave").disabled = false;
+    $("awardBack").style.display = "flex";
+  }
+
+  function clearAwardErrors() {
+    AWARD_CONTRACTOR_FIELDS.concat(AWARD_INFO_FIELDS).forEach(function (f) {
+      var box = $("award-error-" + f.key);
+      if (box) { box.textContent = ""; box.style.display = "none"; }
+    });
+  }
+
+  $("awardCancel").addEventListener("click", function () {
+    $("awardBack").style.display = "none";
+    awardingId = null;
+  });
+
+  $("awardSave").addEventListener("click", function () {
+    if (!awardingId) return;
+    clearAwardErrors();
+
+    var payload = { confirmedWithoutPatent: false };
+    AWARD_CONTRACTOR_FIELDS.concat(AWARD_INFO_FIELDS).forEach(function (f) {
+      payload[f.key] = $("award-" + f.key).value;
+    });
+    var patentValue = awardPatentEditor.getValue();
+    payload.patentItems = patentValue.patentItems;
+    payload.noticeMultiFlag = patentValue.noticeMultiFlag;
+
+    $("awardSave").disabled = true;                 // 중복 요청 방지
+    var result = PourRecords.award(awardingId, payload, storage);
+
     if (!result.ok && result.needsConfirm) {
-      // 차단이 아니라 확인용 경고
       if (window.confirm(result.message)) {
         payload.confirmedWithoutPatent = true;
-        result = PourRecords.award(id, payload, storage);
+        result = PourRecords.award(awardingId, payload, storage);
       } else {
-        msg.textContent = "낙찰 저장을 취소했습니다.";
-        msg.className = "msg";
+        $("awardMsg").textContent = "낙찰 저장을 취소했습니다.";
+        $("awardMsg").className = "msg";
+        $("awardSave").disabled = false;
         return;
       }
     }
-    if (!result.ok) { msg.textContent = result.message; msg.className = "msg error"; return; }
 
-    msg.textContent = "낙찰 처리했습니다. (같은 행을 갱신)";
-    msg.className = "msg ok";
-    ["awardContractor", "awardDate", "awardAmount", "awardQuality", "awardRemark"]
-      .forEach(function (id) { $(id).value = ""; });
+    if (!result.ok) {
+      Object.keys(result.fields || {}).forEach(function (key) {
+        var box = $("award-error-" + key);
+        if (box) { box.textContent = result.fields[key]; box.style.display = ""; }
+      });
+      $("awardMsg").textContent = result.message;
+      $("awardMsg").className = "msg error";
+      $("awardSave").disabled = false;
+      return;
+    }
+
+    $("awardBack").style.display = "none";
+    awardingId = null;
     refreshAll();
   });
 
@@ -280,15 +443,14 @@
     { key: "phone", label: "전화번호" },
     { key: "households", label: "세대수" },
     { key: "noticeDate", label: "공고일", type: "date" },
+    { key: "documentDueDate", label: "서류 마감일", type: "date" },
     { key: "bidDate", label: "개찰일", type: "date" },
     { key: "awardDate", label: "낙찰일", type: "date" },
     { key: "bidType", label: "입찰 종류" },
     { key: "contractor", label: "시공사" },
-    { key: "expectedAmount", label: "예상금액" },
     { key: "awardAmount", label: "낙찰금액" },
     { key: "noticePatentText", label: "공고문 특허·공법 원문" },
     { key: "agreementNo", label: "협약서 발행번호" },
-    { key: "patentNames", label: "확정된 특허명·공법명" },
     { key: "scope", label: "공사 범위" },
     { key: "address", label: "주소" },
     { key: "quality", label: "공사 품질" },
@@ -332,21 +494,14 @@
       box.appendChild(wrap);
     });
 
-    // 특허번호는 자동검색 위젯으로 다시 붙인다
-    $("editPatentSearch").value = "";
-    $("editPatentChips").innerHTML = "";
+    // 특허는 POUR/타사 2탭 입력기로 다시 붙인다
     $("editConfirmed").checked = !!record.patentConfirmed;
-    editPatentField = PourUI.attachPatentInput({
-      input: $("editPatentSearch"),
-      chips: $("editPatentChips"),
-      categoryInput: $("edit-categories"),
-      notice: $("editPatentNotice"),
-      storage: storage
+    $("editPatentEditor").innerHTML = "";
+    editPatentField = PourPatentEditor.create($("editPatentEditor"), {
+      storage: storage,
+      categoryInput: $("edit-categories")
     });
-    record.patentNumbers.forEach(function (n) {
-      var found = PourPatents.find(n, storage);
-      editPatentField.add(found || { number: n, name: "", category: "" });
-    });
+    editPatentField.setValue(record);
 
     var history = $("editHistory");
     history.innerHTML = record.history.length
@@ -373,11 +528,16 @@
     EDIT_FIELDS.forEach(function (field) {
       changes[field.key] = $("edit-" + field.key).value;
     });
-    changes.patentNumbers = editPatentField.getNumbers();
+    var patentValue = editPatentField.getValue();
+    changes.patentItems = patentValue.patentItems;
+    changes.noticeMultiFlag = patentValue.noticeMultiFlag;
     changes.patentConfirmed = $("editConfirmed").checked;
 
-    // 엑셀에 없는 번호를 직접 넣었는지 확인한다
-    var unknown = changes.patentNumbers.filter(function (n) { return !PourPatents.find(n, storage); });
+    // 엑셀에 없는 POUR 번호를 직접 넣었는지 확인한다 (타사 번호는 대상이 아니다)
+    var unknown = patentValue.patentItems
+      .filter(function (it) { return it.kind === PourRecords.POUR; })
+      .map(function (it) { return it.number; })
+      .filter(function (n) { return !PourPatents.find(n, storage); });
     if (unknown.length && !changes.patentConfirmed) {
       $("editMsg").textContent = "업로드된 POUR 특허 자료에서 확인되지 않은 번호입니다: " +
         unknown.map(PourPatents.formatNumber).join(", ") + "\n계속하려면 “직접 확인 완료”를 체크해 주세요.";
@@ -396,16 +556,36 @@
 
   function renderMissing() {
     var records = PourRecords.list(storage);
-    var missing = PourRecords.missingPatentRecords(records, storage);
-    var alert = $("missingAlert");
+    var groups = PourRecords.alerts(records, storage);
+    var area = $("alertArea");
+    area.innerHTML = "";
 
-    if (!missing.length) {
-      alert.style.display = "none";
-      $("missingSection").style.display = "none";
-      return missing;
-    }
-    alert.style.display = "";
-    alert.textContent = PourRecords.missingPatentMessage(missing.length);
+    groups.forEach(function (group) {
+      var box = document.createElement("div");
+      box.className = "pour-alert";
+      box.id = "alert-" + group.key;
+      box.setAttribute("role", "button");
+      box.tabIndex = 0;
+      box.textContent = "⚠ " + group.label;
+      box.addEventListener("click", function () {
+        showMissingList(group.records, group.label);
+      });
+      area.appendChild(box);
+    });
+
+    var missing = PourRecords.missingPatentRecords(records, storage);
+    if (!missing.length) $("missingSection").style.display = "none";
+    return missing;
+  }
+
+  function showMissingList(records, title) {
+    renderMissingTable(records, title);
+    $("missingSection").style.display = "";
+    $("missingSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderMissingTable(missing, title) {
+    if (title) $("missingSection").querySelector("h2").firstChild.textContent = "⚠ " + title + " ";
 
     var columns = [
       { key: "client", title: "발주처(아파트명)", type: "text" },
@@ -422,7 +602,6 @@
     ];
     PourUI.renderTable($("missingTable"), missing, columns, {});
     addRowButtons($("missingTable"), missing, "특허번호 입력");
-    return missing;
   }
 
   // 표의 각 행 끝에 수정 버튼을 붙인다
@@ -442,14 +621,21 @@
       button.setAttribute("data-edit-id", records[i].id);
       button.addEventListener("click", function () { openEdit(records[i].id); });
       td.appendChild(button);
+
+      if (records[i].status === "공고" || records[i].status === "재공고") {
+        var award = document.createElement("button");
+        award.type = "button";
+        award.className = "pour-rowbtn";
+        award.style.marginLeft = "4px";
+        award.textContent = "낙찰로 변경";
+        award.setAttribute("data-award-id", records[i].id);
+        award.addEventListener("click", function () { openAward(records[i].id); });
+        td.appendChild(award);
+      }
       tr.appendChild(td);
     });
   }
 
-  $("missingAlert").addEventListener("click", function () {
-    $("missingSection").style.display = "";
-    $("missingSection").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
   $("missingClose").addEventListener("click", function (e) {
     e.stopPropagation();
     $("missingSection").style.display = "none";
@@ -470,15 +656,6 @@
     });
     addRowButtons($("allTable"), records, "수정");
 
-    var select = $("awardTarget");
-    var previous = select.value;
-    select.innerHTML = "";
-    select.appendChild(new Option("— 선택 —", ""));
-    records.forEach(function (r) {
-      select.appendChild(new Option(
-        (r.client || "이름 없음") + " / " + PourRegion.format(r.region, r.city) + " / " + r.status, r.id));
-    });
-    select.value = previous;
   }
 
   /* ------------------------------------------------- 특허별 실적 */
@@ -554,6 +731,109 @@
   });
   $("filterKeyword").addEventListener("input", renderPatentTable);
 
+  /* --------------------------------- 타사 특허별 현황 · 다특허 현황 */
+
+  var activeView = "pour";
+
+  Array.prototype.forEach.call(document.querySelectorAll("#viewTabs .pour-kind-tab"), function (tab) {
+    tab.addEventListener("click", function () {
+      activeView = tab.getAttribute("data-view");
+      Array.prototype.forEach.call(document.querySelectorAll("#viewTabs .pour-kind-tab"), function (t) {
+        t.className = "pour-kind-tab" + (t === tab ? " is-active" : "");
+      });
+      renderViews();
+    });
+  });
+
+  function renderViews() {
+    var isPour = activeView === "pour";
+    $("patentTabs").style.display = isPour ? "" : "none";
+    $("patentSummary").style.display = isPour ? "" : "none";
+    document.querySelector(".pour-filters").style.display = isPour ? "" : "none";
+    $("patentTable").style.display = isPour ? "" : "none";
+    $("thirdView").style.display = activeView === "third" ? "" : "none";
+    $("multiView").style.display = activeView === "multi" ? "" : "none";
+
+    if (isPour) renderPatentSection();
+    else if (activeView === "third") renderThirdView();
+    else renderMultiView();
+  }
+
+  var THIRD_COLUMNS = [
+    { key: "region", title: "지역", type: "text" },
+    { key: "city", title: "도시", type: "text" },
+    { key: "client", title: "발주처(아파트명)", type: "text" },
+    { key: "projectNames", title: "공사명", type: "list" },
+    { key: "status", title: "상태", type: "text" },
+    { key: "thirdPatentNumbers", title: "타사 특허번호", type: "thirdNumbers" },
+    { key: "__thirdNames", title: "타사 특허명·공법명", type: "thirdNames" },
+    { key: "__thirdCompanies", title: "타사 특허 보유 회사", type: "thirdCompanies" },
+    { key: "patentNumbers", title: "POUR 특허번호", type: "patent" },
+    { key: "remark", title: "비고", type: "text" }
+  ];
+
+  function renderThirdView() {
+    var records = PourRecords.list(storage).filter(function (r) { return r.thirdPatentNumbers.length; });
+    var box = $("thirdView");
+    box.innerHTML = "";
+
+    // 타사 특허번호별로 고를 수 있게 한다
+    var numbers = [];
+    records.forEach(function (r) {
+      r.thirdPatentNumbers.forEach(function (n) { if (numbers.indexOf(n) < 0) numbers.push(n); });
+    });
+
+    var bar = document.createElement("div");
+    bar.className = "pour-filters";
+    var select = document.createElement("select");
+    select.id = "thirdFilter";
+    select.appendChild(new Option("전체 타사 특허", ""));
+    numbers.forEach(function (n) { select.appendChild(new Option(PourPatents.formatNumber(n), n)); });
+    bar.appendChild(select);
+    box.appendChild(bar);
+
+    var tableBox = document.createElement("div");
+    box.appendChild(tableBox);
+
+    function paint() {
+      var picked = select.value;
+      var rows = picked
+        ? records.filter(function (r) { return r.thirdPatentNumbers.indexOf(picked) >= 0; })
+        : records;
+      PourUI.renderTable(tableBox, rows, THIRD_COLUMNS, {});
+      addRowButtons(tableBox, rows, "수정");
+    }
+    select.addEventListener("change", paint);
+    paint();
+  }
+
+  var MULTI_COLUMNS = [
+    { key: "region", title: "지역", type: "text" },
+    { key: "city", title: "도시", type: "text" },
+    { key: "client", title: "발주처(아파트명)", type: "text" },
+    { key: "projectNames", title: "공사명", type: "list" },
+    { key: "status", title: "상태", type: "text" },
+    { key: "__pourCount", title: "POUR 특허 개수", type: "statNumber" },
+    { key: "__thirdCount", title: "타사 특허 개수", type: "statNumber" },
+    { key: "__totalCount", title: "전체 특허 개수", type: "statNumber" },
+    { key: "patentNumbers", title: "POUR 특허번호", type: "patent" },
+    { key: "thirdPatentNumbers", title: "타사 특허번호", type: "thirdNumbers" },
+    { key: "__patentStatus", title: "특허 확인 상태", type: "patentStatus" }
+  ];
+
+  function renderMultiView() {
+    // 전체 특허가 2개 이상인 현장만 표시한다
+    var rows = PourRecords.list(storage).filter(function (r) {
+      return PourRecords.patentStats(r, storage).isMulti;
+    });
+    var box = $("multiView");
+    box.innerHTML = "";
+    var tableBox = document.createElement("div");
+    box.appendChild(tableBox);
+    PourUI.renderTable(tableBox, rows, MULTI_COLUMNS, {});
+    addRowButtons(tableBox, rows, "수정");
+  }
+
   /* ------------------------------------------------- 내려받기 */
 
   $("csvBtn").addEventListener("click", function () {
@@ -580,9 +860,9 @@
     renderMissing();
     renderPatentList();
     renderAll();
-    renderPatentSection();
+    renderViews();
   }
 
-  window.PourDemo = { refreshAll: refreshAll, openEdit: openEdit };
+  window.PourDemo = { refreshAll: refreshAll, openEdit: openEdit, openAward: openAward };
   refreshAll();
 })();
