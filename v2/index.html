@@ -10985,10 +10985,16 @@ ${text}
   }
   function isOpen(){ return popover.style.display !== 'none'; }
 
-  // §일정 바로가기 라운드: 팝오버를 열지 않고 팀장 일정(team-schedule-app)으로 바로 이동한다.
-  // 팝오버 자체(openPopover/closePopover)와 데이터는 그대로 남겨둔다 — 이 버튼의 클릭 대상만
-  // 바꿨다(향후 되돌릴 수 있게 로직 삭제 없음).
-  fabBtn.addEventListener('click', function(){ window.open('https://hansol941201.github.io/shin/team-schedule/', '_blank', 'noopener'); });
+  // §일정 복구 라운드 — [일정] 버튼을 원래대로 "내 일정" 팝오버를 여는 동작으로 되돌린다.
+  //
+  // 경위: §일정 바로가기 라운드에서 이 버튼의 클릭 대상을 팀장 일정(team-schedule 앱)
+  // 새 탭 열기로 바꿨다. 그 결과 내 일정(shin2-calendar-events-v1)에 들어가는 화면 진입로가
+  // 완전히 사라져서, 데이터는 그대로 남아 있는데도 "일정이 전부 없어졌다"로 보였다.
+  // 데이터는 한 건도 지워지지 않았다 — 보여줄 문이 닫혀 있었을 뿐이다.
+  //
+  // 팀장 일정으로 가는 길은 없애지 않는다: 팝오버 안의 [팀장 일정] 버튼(calTeamLinkBtn)이
+  // 예전과 똑같이 team-schedule 앱을 새 탭으로 연다. 두 경로가 모두 살아 있다.
+  fabBtn.addEventListener('click', function(){ isOpen() ? closePopover() : openPopover(); });
   popCloseBtn.addEventListener('click', closePopover);
   document.addEventListener('click', function(e){
     if(!isOpen()) return;
