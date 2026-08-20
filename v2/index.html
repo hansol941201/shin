@@ -1852,12 +1852,40 @@
     // 큐에 버퍼링해뒀다가 Firebase 준비가 끝나는 즉시 처리한다.
     let pendingPassword = null;
     let trySignInWithPassword = null; // 준비되면 실제 로그인 함수로 교체된다
+    let cloudSignedIn = false;        // onAuthStateChanged가 실제 사용자를 준 적이 있는가
     window.addEventListener('shin2-app-unlocked', (e) => {
       const pw = e.detail && e.detail.password;
-      if(!pw) return;
+      if(!pw){
+        // ★ 이번 라운드에서 찾은 실제 원인 ★
+        // 사이트 잠금은 "비밀번호 재입력 최소화"를 위해, 한 번 입력한 뒤로는 저장해둔
+        // 파생 키로 자동 해제된다(원본 비밀번호는 어디에도 저장하지 않는다 — 보안상 유지).
+        // 그런데 그 자동 해제 경로는 password 없이 이 이벤트를 쏘고, 여기서 그냥 return
+        // 해버렸다. 결과적으로 "처음 비밀번호를 친 그 한 번"을 빼면 Firebase 로그인이
+        // 단 한 번도 시도되지 않았고, 그래서 항상 로컬 전용으로 동작했다.
+        //
+        // Firebase Auth는 자체 세션을 브라우저에 유지하므로, 예전에 로그인한 적이 있으면
+        // onAuthStateChanged가 곧 사용자를 돌려준다. 그 유예 시간을 기다린 뒤에도 로그인이
+        // 없으면 "비밀번호 한 번만 더 필요"하다고 화면에 알린다(조용히 넘어가지 않는다).
+        setTimeout(() => {
+          if(cloudSignedIn) return;
+          try{
+            window.dispatchEvent(new CustomEvent('shin2-sync-failed', {
+              detail: { message: '클라우드 로그인 필요', code: 'need-password' }
+            }));
+          }catch(err){}
+        }, 7000);
+        return;
+      }
       if(trySignInWithPassword) trySignInWithPassword(pw);
       else pendingPassword = pw; // 아직 Firebase 모듈 로딩 중 — 로딩 완료 후 처리
     });
+    // 배지에서 "지금 연결하기"를 눌렀을 때 쓰는 진입점. 비밀번호는 여기서 한 번 쓰이고
+    // 어디에도 저장하지 않는다(기존 보안 원칙 그대로).
+    window.__shin2ConnectCloud = function(pw){
+      if(!pw) return false;
+      if(trySignInWithPassword){ trySignInWithPassword(pw); return true; }
+      pendingPassword = pw; return true;
+    };
 
     (async () => {
       try{
@@ -2133,6 +2161,7 @@
           // 여기서 auth/user 객체 자체를 통째로 노출하지 않고 getIdToken()만 노출한다.
           window.__shin2CloudSync.getIdToken = () => user.getIdToken();
           window.__shin2CloudSync.startInitialSync = startInitialSync;
+          cloudSignedIn = true;
           window.dispatchEvent(new CustomEvent('shin2-firebase-ready'));
           // 이 기기에서 예전에 이미 [클라우드 동기화 시작] 버튼을 눌러 최초 동기화를 마친 적이
           // 있다면(=이 localStorage 플래그가 있다면) 재접속 시마다 다시 버튼을 누르지 않아도
@@ -2170,8 +2199,22 @@
 
         // 사이트 잠금 해제 시점에 그 비밀번호로 Firebase 로그인을 시도한다(비밀번호는 여기서만
         // 잠깐 쓰이고 변수에도 남기지 않는다 — 클로저 밖으로 절대 전달하지 않음).
+        // §클라우드 연결 실패 진단 라운드 — 실패 사유를 화면으로 올린다.
+        // 지금까지는 모든 실패가 console.warn으로만 남아서, 사용자는 왜 동기화가 안 되는지
+        // 알 방법이 전혀 없었다. 실제 Firebase error code/message를 그대로 전달한다.
+        function reportAuthFailure(err, where){
+          const code = (err && err.code) ? err.code : '(코드 없음)';
+          const msg = (err && err.message) ? err.message : String(err);
+          console.error(`[한솔2/Firebase] ${where} 실패 — ${code}: ${msg}`, err);
+          try{
+            window.dispatchEvent(new CustomEvent('shin2-sync-failed', {
+              detail: { message: where + ' 실패 — ' + code, code: code, raw: msg }
+            }));
+          }catch(e){}
+        }
         trySignInWithPassword = (pw) => {
           signInWithEmailAndPassword(auth, HANSOL2_FIXED_EMAIL, pw).catch((err) => {
+            reportAuthFailure(err, '클라우드 로그인');
             if(err && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')){
               // 이 계정으로 처음 로그인하는 경우 — 지금 비밀번호로 새로 만든다(집/회사 중 먼저
               // 연 쪽이 계정을 만들고, 다른 쪽은 같은 비밀번호로 로그인만 하면 됨).
@@ -2201,6 +2244,17 @@
         }
       } catch(err){
         console.error('[한솔2/Firebase] 초기화 실패 — localStorage 전용 모드로 동작합니다.', err);
+        // SDK 자체를 못 불러온 경우(네트워크 차단, CDN 접근 불가 등)도 조용히 넘어가지
+        // 않는다. 이 상태에서는 무엇을 해도 클라우드에 저장되지 않으므로 반드시 보여야 한다.
+        try{
+          window.dispatchEvent(new CustomEvent('shin2-sync-failed', {
+            detail: {
+              message: 'Firebase 초기화 실패 — ' + ((err && err.code) ? err.code : 'SDK 로드 불가'),
+              code: 'init-failed',
+              raw: (err && err.message) ? err.message : String(err)
+            }
+          }));
+        }catch(e){}
       }
     })();
   }
@@ -6027,8 +6081,12 @@
     else { guardEl.className = 'shin2-guard shin2-guard-off'; guardEl.textContent = '! 오프라인 · 동기화 대기' + (n > 1 ? ' ' + n : ''); guardState = 'off';
            guardDetail = '인터넷 연결이 복구되면 자동으로 다시 보냅니다. 입력한 내용은 이 기기에 그대로 있습니다.'; }
   });
+  var guardCode = '';
   window.addEventListener('shin2-sync-failed', function(e){
-    setGuard('off', (e && e.detail && e.detail.message) ? e.detail.message : '');
+    var d = (e && e.detail) || {};
+    guardCode = d.code || '';
+    setGuard('off', (d.message || '') + (d.raw ? '\n' + d.raw : ''));
+    if(guardEl && guardCode === 'need-password') guardEl.textContent = '연결하려면 누르세요';
   });
   // firebaseConfig.js가 없거나 로그인이 끝내 되지 않는 경우에는 위 이벤트가 아예 오지 않는다.
   // 그 상태가 곧 "보호 안 됨"이므로, 잠시 뒤에도 확인 중이면 경고 상태로 되돌린다.
@@ -6039,6 +6097,16 @@
       alert('클라우드 보호 중입니다.\n\n'
         + '이 기기에서 추가·수정한 내용이 클라우드에도 함께 저장됩니다.\n'
         + '브라우저가 저장 데이터를 비우더라도, 같은 비밀번호로 다시 로그인하면 되돌아옵니다.');
+      return;
+    }
+    // 클라우드 로그인만 하면 되는 상태라면, 안내로 끝내지 말고 그 자리에서 연결한다.
+    if(guardCode === 'need-password' || guardCode === 'auth/invalid-credential' || guardCode === 'auth/wrong-password'){
+      var pw = prompt('클라우드 동기화를 켜려면 사이트 잠금 비밀번호를 한 번만 입력해주세요.\n'
+        + '(다른 PC에서도 같은 비밀번호를 쓰면 같은 데이터가 보입니다. 비밀번호는 저장하지 않습니다.)');
+      if(pw && window.__shin2ConnectCloud){
+        setGuard('wait', '');
+        window.__shin2ConnectCloud(pw);
+      }
       return;
     }
     alert('주의 — 지금 데이터는 이 브라우저 안에만 있습니다.\n\n'
