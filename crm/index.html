@@ -3924,6 +3924,31 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     });
     return merged;
   }
+  // §업무관리 협약체결 판정 누락 라운드 — (주)성일피앤씨 실사례 조사 결과: partner-dashboard의
+  // "협약체결" 정보는 두 군데에 따로 존재한다. ①"신규" 질문서→미팅→MOU 파이프라인
+  // (baseline.newMou/mouOverrides/newMouAdds, 위 pdBuildEffectiveRows가 만드는 row의
+  // mouLabel/mouDone) ②이미 정식 협력업체로 등록된 업체 목록인 partnerList(internal/
+  // contractor/external)의 자체 컬럼 'mou'(원본 필드 키 그대로 — partner-dashboard 소스
+  // 코드의 실제 컬럼 정의(COLS 배열 key:'mou', label:'협약체결', 내보내기 헤더 '협약체결',
+  // import 별칭표 '협약체결'/'협약체결일'/'협약일' → 'mou'까지 실제 확인)로, pdBuildContactIndex/
+  // pdBuildEffectivePartnerList가 이미 병합해서 만든 contact 레코드에 그대로 들어있다 — 임의로
+  // 지어낸 필드명이 아니다). 성일피앤씨처럼 예전부터 정식 협력업체였던 회사는 ①파이프라인에는
+  // 전혀 기록이 없거나(질문서만 있고 mouDone은 false/없음) ②partnerList의 mou 컬럼에만 실제
+  // 협약체결일이 있다 — 지금까지 CRM은 ①만 읽고 ②를 통째로 버렸다(PD_CONTACT_FIELD_MAP이
+  // ceo/phone/fax/email/address/bizno만 다뤘음, 위 참고). "최종 협약완료 = ①mouDone OR
+  // ②partnerList.mou 존재"를 실제 저장 시점(applyPartnerSync)에 계산해, 이미 있는
+  // newMou.mouDone/mouLabel 필드(새 필드를 만들지 않음)에 병합한다 — buildProgressStages를
+  // 포함한 화면 쪽은 전혀 안 건드려도 mouDone 신호 하나만 보고 자동으로 이전 라운드의 예외
+  // 처리(질문서/1차/2차 전부 done 간주)를 그대로 이어받는다(§ "공통 함수 하나 재사용").
+  // ①파이프라인 자체가 이미 mouDone=true면 이 함수는 아무것도 하지 않는다(더 구체적인 원본
+  // 신호를 partnerList 값으로 덮어쓰지 않음) — mouLabel도 마찬가지로 기존 값이 있으면 유지,
+  // 없을 때만 partnerList의 실제 협약체결일(contact.mou)을 그대로 옮긴다(§ "존재하지 않는
+  // 날짜를 만들지 않는다" — 이건 실제로 존재하는 값을 그대로 옮기는 것뿐, 지어내는 게 아님).
+  function pdResolveContactMouPatch(mergedNm, contact){
+    if(!contact || !contact.mou) return null;
+    if(mergedNm && mergedNm.mouDone) return null;
+    return { mouDone: true, mouLabel: (mergedNm && mergedNm.mouLabel) ? mergedNm.mouLabel : contact.mou };
+  }
   // 업체 매칭(§3): 1순위 사업자등록번호(정확히 같을 때만), 2순위 정규화 업체명 완전일치
   // (이 데이터 레이어 스크립트에 이미 있는 normCompanyName 재사용 — 렌더 스크립트의
   // normCompanyNameForPartnerMatch와 완전히 같은 규칙, 부분/유사일치 절대 금지 — "㈜태림건설"과
@@ -4044,10 +4069,16 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       const contactChanged = pdContactChanged(m.co, contact);
       const events = pdBuildEventsForCompany(oldNm, row);
       const memo = pdBuildMemoForCompany(oldNm, row);
+      // §업무관리 협약체결 판정 누락 라운드 — row(신규 파이프라인) 병합만으로는 mouDone이
+      // 그대로 false/없음일 수 있는데, partnerList 쪽 contact.mou(실제 협약체결일)가 이미
+      // 있으면 그것도 "이 업체는 바뀐다(포함 대상)"는 신호다 — 그렇지 않으면 이미 co에
+      // newMou가 저장돼 있어 위 조건들이 전부 false인 업체(성일피앤씨처럼 기본정보/진행상황
+      // 다 그대로인 업체)는 이 mou 보정 자체가 평가되지 못하고 계속 누락된다.
+      const mouSignalPatch = pdResolveContactMouPatch(pdMergeNewMou(oldNm, row), contact);
       if(changed) progressChangedCount++;
       eventCount += events.length;
       if(memo) memoCount++;
-      if(changed || contactChanged || events.length || memo || !m.co.partnerDashboard || !m.co.partnerDashboard.newMou){
+      if(changed || contactChanged || events.length || memo || mouSignalPatch || !m.co.partnerDashboard || !m.co.partnerDashboard.newMou){
         updates.push({ co: m.co, row, contact, events, memo, progressChanged: changed, contactChanged });
       }
     });
@@ -4077,7 +4108,11 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
         return;
       }
       const contactChanged = pdContactChanged(m.co, contact);
-      if(contactChanged){
+      // §업무관리 협약체결 판정 누락 라운드 — 이 루프의 업체는 newMou 계열 자체가 없으므로
+      // oldNm은 항상 co.partnerDashboard.newMou(있다면) 그대로 쓴다.
+      const oldNm2 = (m.co.partnerDashboard && m.co.partnerDashboard.newMou) || null;
+      const mouSignalPatch = pdResolveContactMouPatch(oldNm2, contact);
+      if(contactChanged || mouSignalPatch){
         updates.push({ co: m.co, row: fauxRow, contact, events: [], memo: null, progressChanged: false, contactChanged });
       }
     });
@@ -4118,9 +4153,16 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.q)) qChangedCount++;
       if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m1)) m1ChangedCount++;
       if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m2)) m2ChangedCount++;
-      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.mou)) mouChangedCount++;
+      const mouSignalPatch = pdResolveContactMouPatch(pdMergeNewMou(oldNm, u.row), u.contact);
+      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.mou) || mouSignalPatch) mouChangedCount++;
       if(pdContactChanged(co, u.contact)) contactChangedCount++;
-      const mergedNm = pdMergeNewMou(oldNm, u.row);
+      // §업무관리 협약체결 판정 누락 라운드 — row(신규 파이프라인) 병합 다음에, partnerList의
+      // 실제 협약체결일(mouSignalPatch)이 있으면 그 위에 한 번 더 얹는다. pdMergeNewMou는
+      // "값이 있으면 최신이 이긴다"는 원칙이라, 신규 파이프라인이 이미 mouDone:true를 갖고
+      // 있으면 pdResolveContactMouPatch가 null을 반환해 아무것도 안 바뀐다(더 구체적인 원본
+      // 신호를 덮어쓰지 않음, §).
+      let mergedNm = pdMergeNewMou(oldNm, u.row);
+      if(mouSignalPatch) mergedNm = pdMergeNewMou(mergedNm, mouSignalPatch);
       co.partnerDashboard = Object.assign({}, co.partnerDashboard, { newMou: mergedNm });
       // §협력사 동기화 연락처 갱신 라운드 — 예전엔 onlyFillEmpty(빈 칸일 때만 채움)라 CRM에
       // 이미 값이 있으면 partner-dashboard가 최신값으로 바뀌어도 절대 반영되지 않았다
@@ -4173,7 +4215,13 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
         email: contact.email || '', // §협력사 동기화 연락처 갱신 라운드 — 신규 업체 생성 시에도 email이 누락돼 있었다
         address: contact.address || '',
         bizRegNo: contact.bizno || '',
-        partnerDashboard: { newMou: pdMergeNewMou(null, n.row) }
+        // §업무관리 협약체결 판정 누락 라운드 — 신규 업체 생성 시에도 partnerList의 실제
+        // 협약체결일(contact.mou)이 있으면 처음부터 반영한다(위 updates 경로와 동일 규칙).
+        partnerDashboard: { newMou: (()=>{
+          const base = pdMergeNewMou(null, n.row);
+          const mouSignalPatch = pdResolveContactMouPatch(base, contact);
+          return mouSignalPatch ? pdMergeNewMou(base, mouSignalPatch) : base;
+        })() }
       });
       companies.push(rec);
       byId.set(rec.id, rec);
@@ -6035,6 +6083,26 @@ window.SHIN2_CRM_APP_INIT = function(){
     const rec = findPartnerRecordForCompany(co);
     return (rec && rec.newMou) || null;
   }
+  // §업무관리 협약체결 판정 누락 라운드 — (주)성일피앤씨 실사례 조사 결과: newMou(질문서→
+  // 1차→2차→MOU "신규" 파이프라인)와 완전히 별개로, partner-dashboard의 기존 협력업체
+  // 목록(internal partnerList) 자체에 '협약체결'이라는 실제 컬럼이 있고(원본 필드 키
+  // 'mou' — partner-dashboard 소스의 실제 컬럼 정의로 확인, 임의 하드코딩 아님), 이 값은
+  // 예전 "Partner Dashboard 이관" 라운드에서 co.partnerDashboard.mouDate로 이미 CRM에
+  // 저장돼 있다(buildPartnerDashboardMeta가 만드는 실제 기존 필드, §고객 니즈 기반 영업지원
+  // CRM 라운드 문서화된 필드 — 위 mouDate 주석 참고). 문제는 같은 임포트가 함께 저장한
+  // newMou.mouDone은 그 스냅샷 당시의(=협약 체결 이전) 신규 파이프라인 상태를 그대로 얼려서
+  // 저장한 값이라 여전히 false다 — 즉 한 회사 안에 "이미 협약체결됐다"는 진짜 신호
+  // (mouDate)와 "아직 MOU 안 끝났다"는 낡은 신호(newMou.mouDone=false)가 동시에 존재한다.
+  // 지금까지 buildProgressStages는 newMou.mouDone만 보고 mouDate를 완전히 무시했다(어디서도
+  // 안 읽힘 — 실제 확인). resolvePartnerAgreementDate는 co.partnerDashboard.mouDate가 있으면
+  // 그대로, 없으면(옛 임포트를 거치지 않은 업체) findPartnerRecordForCompany로 같은 스냅샷의
+  // mouDate를 실시간 조회해 반환한다 — resolveNewMouForCompany와 완전히 같은 패턴, co에는
+  // 다시 저장하지 않는다.
+  function resolvePartnerAgreementDate(co){
+    if(co.partnerDashboard && co.partnerDashboard.mouDate) return co.partnerDashboard.mouDate;
+    const rec = findPartnerRecordForCompany(co);
+    return (rec && rec.mouDate) || null;
+  }
 
   // ---- 진행 기록(§진행 기록 라운드) — 질문서→1차미팅→2차미팅→MOU 고정 순서의 진행바.
   // co.partnerDashboard.newMou에 이미 있는 값만 그대로 읽어서 상태를 "계산"할 뿐, 새 진행
@@ -6053,6 +6121,13 @@ window.SHIN2_CRM_APP_INIT = function(){
     const sourceNm = resolveNewMouForCompany(co);
     const nm = sourceNm || {};
     const now = Date.now();
+    // §업무관리 협약체결 판정 누락 라운드 §1/§2 — 최종 협약완료 = newMou.mouDone(①신규
+    // 파이프라인 자체 신호) OR partnerList의 실제 협약체결일(②resolvePartnerAgreementDate,
+    // 위 참고) 존재. ②만 있고 ①은 false/없음인 성일피앤씨 같은 "이미 정식 협력업체"가
+    // 실제 사례다. agreementDateLabel은 실제로 존재하는 값이라 지어내는 게 아니다(§ "협약일을
+    // 미팅일로 복사"는 여전히 금지 — 아래서 q/m1/m2에는 날짜를 절대 옮기지 않고 mou 단계
+    // 자신에게만 쓴다).
+    const agreementDateLabel = resolvePartnerAgreementDate(co);
     function dateState(label){
       const p = parsePartnerDateLabel(label);
       if(!p) return { state:'waiting', dateDisplay:'—', ts:null };
@@ -6094,6 +6169,14 @@ window.SHIN2_CRM_APP_INIT = function(){
         const p = parsePartnerDateLabel(nm.mouLabel);
         return { state:'done', dateDisplay: p ? p.display : '완료', ts: p ? p.ts : now };
       }
+      // §업무관리 협약체결 판정 누락 라운드 §2 — newMou 파이프라인 자체엔 mouDone 신호가
+      // 없어도(또는 false), partnerList의 실제 협약체결일이 있으면 그걸로 done 처리한다.
+      // mouLabel(신규 파이프라인 필드)에는 전혀 쓰지 않고 이 stage 객체의 dateDisplay/ts만
+      // agreementDateLabel 기준으로 채운다 — 원본 필드를 바꿔치기하지 않는다.
+      if(agreementDateLabel){
+        const p = parsePartnerDateLabel(agreementDateLabel);
+        return { state:'done', dateDisplay: p ? p.display : '완료', ts: p ? p.ts : now };
+      }
       return dateState(nm.mouLabel);
     })();
     // §MOU 체결 업체의 단계 판정 예외 처리 라운드 §1~§3: 1·2차 미팅 없이 바로 MOU를
@@ -6106,7 +6189,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 만들지 않기" — MOU 날짜를 앞 단계로 복사하지 않고, qSentLabel/m1Label/m2Label 같은
     // 원본 필드에도 전혀 쓰지 않는다. co에는 이 결과를 저장하지 않는다 — 매번 다시 계산하는
     // 화면 표시용 값일 뿐이다, §7).
-    const mouDoneFlag = !!nm.mouDone;
+    const mouDoneFlag = !!nm.mouDone || !!agreementDateLabel;
     function applyMouDoneException(stage){
       if(!mouDoneFlag || stage.state === 'done') return stage;
       return Object.assign({}, stage, { state:'done' });
@@ -6121,7 +6204,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     let lastDoneIdx = -1;
     stages.forEach((s,i)=>{ if(s.state === 'done') lastDoneIdx = i; });
     const currentIdx = lastDoneIdx === -1 ? 0 : Math.min(lastDoneIdx + 1, stages.length - 1);
-    return { stages, currentIdx, hasAny: !!sourceNm };
+    // §업무관리 협약체결 판정 누락 라운드: sourceNm(newMou)이 아예 없어도 agreementDateLabel
+    // (실제 협약체결일)만 있는 업체도 "데이터 없음"으로 취급하지 않는다 — 진행정보 자체가
+    // 존재하는데도 이 값 하나만으로 progress 전체가 무시되는 걸 막는다.
+    return { stages, currentIdx, hasAny: !!sourceNm || !!agreementDateLabel };
   }
   const PROGRESS_STATUS_LABEL = { done:'완료', scheduled:'예정', waiting:'대기' };
 
