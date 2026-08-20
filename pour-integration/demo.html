@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>POUR 공사실적 — 입력·실적표 모듈 시연</title>
+<link rel="stylesheet" href="pour-integration.css" />
+<style>
+  body{margin:0;padding:20px;background:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#1f2937;}
+  h1{font-size:19px;margin:0 0 4px;}
+  .lead{color:#6b7280;font-size:13px;margin:0 0 18px;}
+  section{background:#fff;border:1px solid #d7dee7;border-radius:8px;padding:16px 18px;margin-bottom:16px;}
+  h2{font-size:15px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #eef1f5;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+  label{display:block;font-size:12.5px;font-weight:600;margin-bottom:4px;}
+  .hint{font-weight:400;color:#6b7280;font-size:11.5px;}
+  input,select,textarea{width:100%;padding:7px 9px;font-size:13.5px;border:1px solid #c9d2dc;border-radius:5px;font-family:inherit;}
+  .btn{padding:8px 15px;font-size:13.5px;border-radius:5px;border:1px solid #1f9d55;background:#1f9d55;color:#fff;cursor:pointer;font-weight:600;}
+  .btn.secondary{background:#fff;color:#1f9d55;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .stats{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin:10px 0;}
+  .stats b{font-size:16px;display:block;}
+  .errors{font-size:12.5px;color:#d92d20;margin:8px 0 0;padding-left:18px;}
+  .msg{font-size:13px;margin-top:8px;white-space:pre-line;}
+  .msg.error{color:#d92d20;}
+  .msg.ok{color:#15803d;}
+  .pour-alert{
+    background:#fff7e6;border:1px solid #f0a92e;color:#92400e;border-radius:8px;
+    padding:12px 16px;margin-bottom:16px;font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .pour-alert:hover{background:#fdf0d5;}
+  .pour-modal-back{
+    position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;
+    display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;
+  }
+  .pour-modal{background:#fff;border-radius:10px;padding:20px 22px;max-width:900px;width:100%;}
+  .pour-modal h3{margin:0 0 14px;font-size:16px;}
+  .pour-history{margin-top:14px;font-size:12.5px;color:#6b7280;max-height:170px;overflow-y:auto;}
+  .pour-history div{padding:4px 0;border-bottom:1px solid #f1f4f8;}
+  .pour-rowbtn{padding:3px 9px;font-size:12px;border:1px solid #1f9d55;background:#fff;color:#1f9d55;border-radius:4px;cursor:pointer;white-space:nowrap;}
+</style>
+</head>
+<body class="pour-scope">
+
+<h1>POUR 공사실적 — 입력·실적표 모듈 시연</h1>
+<p class="lead">「한솔 공사실적 통합관리」에 붙일 모듈의 동작 확인용 화면입니다. 자료는 브라우저에 저장되어 새로고침해도 유지됩니다.</p>
+
+<div class="pour-alert" id="missingAlert" role="button" tabindex="0" style="display:none"></div>
+
+<section id="missingSection" style="display:none">
+  <h2>⚠ 특허번호 미기재 낙찰 목록 <button class="btn secondary" type="button" id="missingClose" style="float:right;padding:4px 10px">닫기</button></h2>
+  <div id="missingTable"></div>
+</section>
+
+<section>
+  <h2>① 특허 자료 관리 (관리자)</h2>
+  <div class="grid">
+    <div>
+      <label>특허 관리 엑셀 업로드 <span class="hint">.xlsx · .xls · .csv</span></label>
+      <input type="file" id="patentFile" accept=".xlsx,.xls,.csv" />
+    </div>
+    <div>
+      <label>등록된 특허 검색</label>
+      <input type="text" id="patentListSearch" placeholder="특허번호 · 특허명 · 공종" />
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn secondary" type="button" id="loadSampleBtn">예시 엑셀 자료 넣기</button>
+  </div>
+  <div class="stats" id="uploadStats"></div>
+  <ul class="errors" id="uploadErrors"></ul>
+  <div class="msg" id="uploadMsg"></div>
+  <div id="patentListWrap" style="margin-top:10px"></div>
+</section>
+
+<section>
+  <h2>② 공고 등록</h2>
+  <div class="grid">
+    <div class="pour-field">
+      <label>지역·도시 <span class="hint">도시만 입력하면 지역을 자동 판단</span></label>
+      <input type="text" id="cityInput" placeholder="예: 하남, 금산, 평택" autocomplete="off" />
+      <div class="hint" id="regionResolved" style="margin-top:4px">&nbsp;</div>
+    </div>
+    <div>
+      <label>특허번호 또는 특허명 <span class="hint">공고문 원문</span></label>
+      <input type="text" id="noticePatentText" placeholder="공고문에 적힌 특허번호, 특허명 또는 공법명을 입력하세요" />
+    </div>
+    <div class="pour-field">
+      <label>POUR 적용 특허번호 <span class="hint">숫자·한글 일부만 입력해도 검색</span></label>
+      <input type="text" id="patentSearch" placeholder="예: 193, POUR, 재도장" autocomplete="off" />
+      <div class="pour-chips" id="patentChips"></div>
+      <div class="pour-notice" id="patentNotice" style="display:none"></div>
+    </div>
+    <div>
+      <label>공종 <span class="hint">선택한 특허에서 자동 입력 · 수정 가능</span></label>
+      <input type="text" id="categoryInput" placeholder="예: 재도장, 옥상 방수" />
+    </div>
+    <div><label>발주처(아파트명)</label><input type="text" id="clientInput" /></div>
+    <div><label>공사명 <span class="hint">여러 건은 줄바꿈</span></label><textarea id="projectNames" rows="2"></textarea></div>
+    <div><label>전화번호</label><input type="text" id="phoneInput" placeholder="031-647-3158" /></div>
+    <div><label>세대수</label><input type="text" id="householdsInput" /></div>
+    <div>
+      <label>공사 품질</label>
+      <input type="text" id="qualityInput" list="qualityOptions" placeholder="비워두면 빈칸으로 저장" />
+      <datalist id="qualityOptions"></datalist>
+    </div>
+    <div><label>상태</label><select id="statusInput"></select></div>
+    <div><label>공고일</label><input type="date" id="noticeDate" /></div>
+    <div><label>개찰일</label><input type="date" id="bidDate" /></div>
+    <div><label>시공사 <span class="hint">공고 단계에서는 비워둠</span></label><input type="text" id="contractorInput" /></div>
+    <div><label>협약서 발행번호</label><input type="text" id="agreementNo" /></div>
+    <div><label>공사 범위</label><input type="text" id="scopeInput" /></div>
+    <div><label>주소</label><input type="text" id="addressInput" /></div>
+    <div><label>비고</label><input type="text" id="remarkInput" /></div>
+  </div>
+  <div class="actions">
+    <button class="btn" type="button" id="saveBtn">공고 등록</button>
+    <button class="btn secondary" type="button" id="resetFormBtn">입력 초기화</button>
+  </div>
+  <div class="msg" id="saveMsg"></div>
+</section>
+
+<section>
+  <h2>③ 낙찰 처리 <span class="hint">같은 행을 갱신합니다 (새 행을 만들지 않음)</span></h2>
+  <div class="grid">
+    <div><label>대상 현장</label><select id="awardTarget"></select></div>
+    <div><label>시공사 <span class="hint">필수</span></label><input type="text" id="awardContractor" /></div>
+    <div><label>낙찰일</label><input type="date" id="awardDate" /></div>
+    <div><label>낙찰금액</label><input type="text" id="awardAmount" placeholder="예: 1250000000" /></div>
+    <div><label>공사 품질</label><input type="text" id="awardQuality" list="qualityOptions" /></div>
+    <div><label>상태</label><select id="awardStatus"></select></div>
+    <div><label>비고</label><input type="text" id="awardRemark" /></div>
+  </div>
+  <div class="actions"><button class="btn" type="button" id="awardBtn">낙찰 처리</button></div>
+  <div class="msg" id="awardMsg"></div>
+</section>
+
+<section>
+  <h2>④ 전체 공사실적</h2>
+  <div class="actions" style="margin:0 0 12px">
+    <button class="btn secondary" type="button" id="csvBtn">CSV 내려받기</button>
+    <button class="btn secondary" type="button" id="xlsxBtn">엑셀 내려받기</button>
+  </div>
+  <div id="allTable"></div>
+</section>
+
+<section>
+  <h2>⑤ 특허별 실적</h2>
+  <div id="patentTabs"></div>
+  <div class="pour-summary" id="patentSummary"></div>
+  <div class="pour-filters">
+    <select id="filterStatus"></select>
+    <select id="filterRegion"><option>전체</option></select>
+    <select id="filterYear"><option>전체</option></select>
+    <input type="search" id="filterKeyword" placeholder="발주처·공사명 검색" />
+    <button class="btn secondary" type="button" id="patentXlsxBtn">특허별 실적 엑셀 내려받기</button>
+  </div>
+  <div id="patentTable"></div>
+</section>
+
+<div class="pour-modal-back" id="editBack" style="display:none">
+  <div class="pour-modal">
+    <h3 id="editTitle">자료 수정</h3>
+    <div class="grid" id="editFields"></div>
+    <div class="pour-field" style="margin-top:12px">
+      <label>POUR 적용 특허번호 검색 <span class="hint">숫자 일부 · 특허명 · 공법명</span></label>
+      <input type="text" id="editPatentSearch" placeholder="예: 193, POUR, 재도장" autocomplete="off" />
+      <div class="pour-chips" id="editPatentChips"></div>
+      <div class="pour-notice" id="editPatentNotice" style="display:none"></div>
+      <label style="margin-top:8px;font-weight:400">
+        <input type="checkbox" id="editConfirmed" style="width:auto" /> 직접 확인 완료 (엑셀에 없는 번호도 확정 처리)
+      </label>
+    </div>
+    <div id="editHistory" class="pour-history"></div>
+    <div class="actions">
+      <button class="btn" type="button" id="editSave">저장</button>
+      <button class="btn secondary" type="button" id="editCancel">취소</button>
+    </div>
+    <div class="msg" id="editMsg"></div>
+  </div>
+</div>
+
+<script src="vendor/exceljs.min.js"></script>
+<script src="regions.data.js"></script>
+<script src="pour-region.js"></script>
+<script src="pour-patents.js"></script>
+<script src="pour-records.js"></script>
+<script src="pour-export.js"></script>
+<script src="pour-ui.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+/* POUR 공고 입력 · 실적표 스타일 — 기존 사이트 색상에 맞추려면 아래 변수만 바꾸면 된다. */
+.pour-scope{
+  --pour-accent:#1f9d55;          /* 선택된 탭 강조색 (기존 사이트 강조색으로 교체 가능) */
+  --pour-accent-soft:#e7f7ee;
+  --pour-border:#c9d2dc;
+  --pour-head-bg:#eef2f7;
+  --pour-text:#1f2937;
+  --pour-muted:#6b7280;
+  --pour-danger:#d92d20;
+  color:var(--pour-text);
+}
+
+/* ------------------------------------------------------- 자동완성 */
+.pour-field{position:relative;}
+.pour-suggest{
+  position:absolute; z-index:40; left:0; right:0; top:100%;
+  margin-top:2px; max-height:280px; overflow-y:auto;
+  background:#fff; border:1px solid var(--pour-border); border-radius:6px;
+  box-shadow:0 6px 20px rgba(15,23,42,.12); display:none;
+}
+.pour-suggest.is-open{display:block;}
+.pour-suggest-item{
+  padding:9px 12px; cursor:pointer; font-size:14px; line-height:1.4;
+  border-bottom:1px solid #f1f4f8;
+}
+.pour-suggest-item:last-child{border-bottom:0;}
+.pour-suggest-item:hover,
+.pour-suggest-item.is-active{background:var(--pour-accent-soft);}
+.pour-suggest-item .pour-sub{color:var(--pour-muted); font-size:12.5px;}
+.pour-suggest-empty{padding:10px 12px; color:var(--pour-danger); font-size:13px;}
+
+/* 선택된 특허 칩 */
+.pour-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+.pour-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--pour-accent-soft); border:1px solid var(--pour-accent);
+  color:#14532d; border-radius:999px; padding:4px 8px 4px 11px; font-size:13px;
+}
+.pour-chip button{
+  border:0; background:transparent; cursor:pointer; color:#14532d;
+  font-size:14px; line-height:1; padding:2px 3px;
+}
+.pour-notice{margin-top:6px; font-size:13px; color:var(--pour-danger);}
+
+/* ------------------------------------------------------- 실적표 */
+.pour-table-wrap{
+  overflow:auto;                      /* 넓으면 좌우, 길면 세로 스크롤 */
+  max-height:65vh;
+  border:1px solid var(--pour-border);
+  border-radius:6px;
+  -webkit-overflow-scrolling:touch;   /* 모바일에서 손가락 스크롤 */
+}
+.pour-table{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px; background:#fff;}
+.pour-table th,
+.pour-table td{
+  border-right:1px solid var(--pour-border);
+  border-bottom:1px solid var(--pour-border);
+  padding:7px 10px; vertical-align:middle;
+}
+.pour-table th:last-child,
+.pour-table td:last-child{border-right:0;}
+.pour-table th{
+  position:sticky; top:0; z-index:2;              /* 세로 스크롤 시 열 제목 고정 */
+  background:var(--pour-head-bg);
+  font-weight:700; text-align:center; white-space:nowrap;
+  cursor:pointer; user-select:none;
+}
+.pour-table th .pour-sort{color:var(--pour-muted); font-size:11px; margin-left:3px;}
+.pour-table td{white-space:nowrap;}
+/* 공종·특허번호·공사명은 셀 안에서 줄바꿈 */
+.pour-table td.pour-wrap{white-space:pre-line; min-width:150px; max-width:340px;}
+.pour-table td.pour-num{text-align:right; font-variant-numeric:tabular-nums;}
+.pour-table td.pour-seq{text-align:center; color:var(--pour-muted);}
+.pour-table tbody tr:nth-child(even){background:#fbfcfe;}
+.pour-table tbody tr:hover{background:var(--pour-accent-soft);}
+.pour-empty{padding:26px; text-align:center; color:var(--pour-muted); font-size:14px;}
+
+.pour-status{display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; border:1px solid var(--pour-border);}
+.pour-status[data-status="낙찰"]{background:var(--pour-accent-soft); border-color:var(--pour-accent); color:#14532d;}
+.pour-status[data-status="유찰"]{background:#fef3f2; border-color:#f3b1a8; color:#912018;}
+.pour-status[data-status="타공법 낙찰"]{background:#f4f4f5; color:#52525b;}
+
+/* --------------------------------------------------- 특허 탭 */
+.pour-tabbar{display:flex; align-items:center; gap:6px; margin-bottom:10px;}
+.pour-tabbar-scroll{
+  display:flex; gap:4px; overflow-x:auto; scroll-behavior:smooth;
+  flex:1; padding-bottom:4px; -webkit-overflow-scrolling:touch;
+}
+.pour-tab{
+  flex:0 0 auto; padding:7px 14px; font-size:13px; cursor:pointer; white-space:nowrap;
+  background:#f3f5f8; border:1px solid var(--pour-border); border-bottom:0;
+  border-radius:6px 6px 0 0; color:var(--pour-muted);
+}
+.pour-tab:hover{background:#e9edf3;}
+.pour-tab.is-active{background:var(--pour-accent); border-color:var(--pour-accent); color:#fff; font-weight:700;}
+.pour-tab-nav{
+  flex:0 0 auto; width:30px; height:30px; border:1px solid var(--pour-border);
+  background:#fff; border-radius:6px; cursor:pointer; font-size:14px; line-height:1;
+}
+.pour-tab-search{
+  flex:0 0 auto; width:150px; padding:6px 9px; font-size:13px;
+  border:1px solid var(--pour-border); border-radius:6px;
+}
+.pour-summary{
+  padding:10px 14px; margin-bottom:10px; font-size:14px;
+  background:var(--pour-accent-soft); border:1px solid var(--pour-accent);
+  border-radius:6px; line-height:1.6;
+}
+.pour-summary strong{font-size:15px;}
+.pour-filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; align-items:center;}
+.pour-filters select,
+.pour-filters input{padding:6px 9px; font-size:13px; border:1px solid var(--pour-border); border-radius:6px;}
+
+@media (max-width:640px){
+  .pour-tab-search{width:110px;}
+  .pour-table-wrap{max-height:60vh;}
+}

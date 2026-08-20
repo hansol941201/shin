@@ -1,8 +1,10 @@
-# firebaseConfig.js는 GitHub Pages에서 정적으로 서빙되어야 하므로 의도적으로
-# 커밋합니다. Firebase 웹 apiKey는 비밀키가 아니라 프로젝트 식별용 공개 값이며,
-# 실제 접근 제어는 Firestore 보안 규칙이 담당합니다(firebaseConfig.example.js 참고).
-# ※ OpenAI API Key 등 실제 비밀값은 이 파일에 절대 포함하지 않고 localStorage에만 저장합니다.
 
+# firebaseConfig.js는 GitHub Pages에서 정적으로 서빙되어야 하므로 의도적으로
+# ※ OpenAI API Key 등 실제 비밀값은 이 파일에 절대 포함하지 않고 localStorage에만 저장합니다.
+# 실제 접근 제어는 Firestore 보안 규칙이 담당합니다(firebaseConfig.example.js 참고).
 # 이 프로젝트는 빌드 단계가 없는 정적 사이트입니다. node_modules는 브라우저에서
 # 직접 쓰이지 않으므로(Firebase는 CDN ESM으로 로드) 저장소에 포함하지 않습니다.
+# 커밋합니다. Firebase 웹 apiKey는 비밀키가 아니라 프로젝트 식별용 공개 값이며,
 node_modules/
+pour-integration/vendor/
+tmp-test-output/
