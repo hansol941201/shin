@@ -58,9 +58,14 @@
     <h2>4. 진단 결과</h2>
     <pre id="report">…</pre>
     <div class="row">
-      <button id="copyBtn">진단 결과 복사</button>
+      <button id="dumpBtn">전체 원본 백업 내려받기</button>
+      <button class="ghost" id="copyBtn">진단 결과 복사</button>
       <button class="ghost" id="backBtn">업무 페이지로</button>
     </div>
+    <p class="sub" style="margin:10px 0 0;">
+      <b>전체 원본 백업</b>은 이 브라우저에 남아 있는 모든 키를 <b>변환·삭제 없이 원본 그대로</b>
+      JSON 파일로 저장합니다. 코드 수정이나 복구를 시도하기 전에 먼저 받아두세요.
+    </p>
   </div>
 </div>
 
@@ -78,16 +83,24 @@
   var activeUser = readRaw('shin2-active-user-id') || '1';
   function ns(k){ return (activeUser === '1' || ['1','2','3'].indexOf(activeUser) === -1) ? k : (k + '__u' + activeUser); }
 
+  var arrLen = function(v){ return Array.isArray(v) ? v.length : null; };
+  var objLen = function(v){ return (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).length : null; };
   var CORE = [
     { label:'업무 지식',   key:'shin2-knowledge-v1',        count:function(v){ return v && Array.isArray(v.items) ? v.items.length : null; } },
-    { label:'투두',        key:ns('shin2-todos'),           count:function(v){ return Array.isArray(v) ? v.length : null; } },
+    { label:'투두',        key:ns('shin2-todos'),           count:arrLen },
     { label:'계정함',      key:'shin2-accounts-vault',      count:function(v){ return v && Array.isArray(v.records) ? v.records.length : null; } },
-    { label:'업체',        key:'shin2-companies-staging',   count:function(v){ return Array.isArray(v) ? v.length : null; } },
-    { label:'전화기록',    key:'shin2-call-entries-v1',     count:function(v){ return Array.isArray(v) ? v.length : null; } },
-    { label:'처리업무',    key:ns('shin2-tasks-v1'),        count:function(v){ return Array.isArray(v) ? v.length : null; } },
-    { label:'메모',        key:ns('shin2-memos-v1'),        count:function(v){ return Array.isArray(v) ? v.length : null; } },
-    { label:'일정',        key:ns('shin2-calendar-events-v1'), count:function(v){ return Array.isArray(v) ? v.length : null; } },
-    { label:'자료실 메타', key:'shin2-library-documents-v1', count:function(v){ return Array.isArray(v) ? v.length : null; } }
+    { label:'업체(고객)',  key:'shin2-companies-staging',   count:arrLen },
+    { label:'고객 활동',   key:'shin2-customer-activities-v1', count:arrLen },
+    { label:'고객 서류',   key:'shin2-customer-documents-v1',  count:arrLen },
+    { label:'고객 파일바이트', key:'shin2-customer-doc-blobs-v1', count:objLen },
+    { label:'전화기록',    key:'shin2-call-entries-v1',     count:arrLen },
+    { label:'처리업무',    key:ns('shin2-tasks-v1'),        count:arrLen },
+    { label:'메모',        key:ns('shin2-memos-v1'),        count:arrLen },
+    { label:'일정',        key:ns('shin2-calendar-events-v1'), count:arrLen },
+    { label:'즐겨찾기',    key:'shin2-quicklinks-v1',       count:arrLen },
+    { label:'자료실 메타', key:'shin2-library-documents-v1', count:arrLen },
+    { label:'자료실 파일바이트', key:'shin2-library-blobs-v1', count:objLen },
+    { label:'한솔1 원본',  key:'work-guide-state-v1',       count:function(v){ return v && typeof v === 'object' ? Object.keys(v).length + '개 항목' : null; } }
   ];
 
   var lines = [];
@@ -191,6 +204,41 @@
     }
   });
   document.getElementById('backBtn').addEventListener('click', function(){ location.href = './index.html'; });
+
+  // 전체 원본 백업 — 모든 키를 문자열 그대로 담는다. JSON.parse조차 하지 않으므로
+  // 값이 깨져 있어도 깨진 그대로 보존된다(파싱해서 정리하면 복구 단서를 잃는다).
+  document.getElementById('dumpBtn').addEventListener('click', function(){
+    var btn = this;
+    try{
+      var raw = {};
+      for(var i = 0; i < localStorage.length; i++){
+        var k = localStorage.key(i);
+        raw[k] = localStorage.getItem(k);
+      }
+      var payload = {
+        app: 'hansol-raw-backup',
+        note: '원본 문자열 그대로. 변환/삭제 없음.',
+        origin: location.origin,
+        exportedAt: new Date().toISOString(),
+        activeUser: activeUser,
+        keyCount: Object.keys(raw).length,
+        raw: raw
+      };
+      var blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var n = new Date(), pad = function(x){ return String(x).padStart(2,'0'); };
+      a.href = url;
+      a.download = 'hansol-RAW-backup-' + n.getFullYear() + pad(n.getMonth()+1) + pad(n.getDate())
+                 + '-' + pad(n.getHours()) + pad(n.getMinutes()) + pad(n.getSeconds()) + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+      btn.textContent = '백업 파일을 저장했습니다 (' + Object.keys(raw).length + '개 키)';
+      setTimeout(function(){ btn.textContent = '전체 원본 백업 내려받기'; }, 4000);
+    }catch(e){
+      btn.textContent = '백업 실패 — ' + (e && e.message ? e.message : e);
+    }
+  });
 })();
 </script>
 </body>

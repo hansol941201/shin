@@ -1891,7 +1891,20 @@
         let liveSyncStarted = false;
         let currentUid = null;
 
-        function noopPush(){ /* 아직 사용자가 동기화를 시작하지 않음 — 빈 값이든 아니든 아무것도 클라우드에 쓰지 않는다 */ }
+        // 아직 사용자가 동기화를 시작하지 않은 동안에도 클라우드에는 아무것도 쓰지 않는다.
+        // 다만 "이 기기가 이 시각에 로컬을 고쳤다"는 사실(localRev)은 반드시 남긴다.
+        // §데이터 보존 긴급 라운드에서 확인된 race: rev가 push 경로 안에서만 기록되던 탓에,
+        // 로그인/동기화가 붙기 전에 한 편집은 rev가 없었고 — 뒤늦게 도착한 클라우드 스냅샷이
+        // 그 편집을 그대로 되돌렸다("입력했는데 다시 열면 사라짐"의 원인 중 하나).
+        function noopPush(key, data){
+          // 빈 값일 때는 절대 rev를 남기지 않는다. 빈 로컬이 "내가 더 최신"이라고 주장하면
+          // 클라우드에 남아 있는 진짜 데이터의 복구를 막아버린다 — 보호가 아니라 유실이 된다.
+          try{
+            if(isEmptyVal(key, data)) return;
+            var sk = SHIN2_SYNC_KEYS[key];
+            if(sk) localStorage.setItem('shin2-sync-rev-' + sk, String(Date.now()));
+          }catch(e){}
+        }
 
         // ─────────────────────────────────────────────────────────────────
         // [신규] Firebase Storage 업로드/다운로드 공용 추상화. 공용 자료실(saveLibraryFile)과
