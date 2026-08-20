@@ -2758,9 +2758,76 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 절대 바꾸지 않는다(§29). 질문에 "제공자료"를 연결할 때 파일명을 보여주기 위한 참조 전용.
   const LIB_KEY = 'shin2-library-documents-v1';
 
+  // ============================================================================
+  // §데이터 보존 긴급 라운드 — 저장 실패 감지 + 덮어쓰기 차단
+  // ----------------------------------------------------------------------------
+  // 실제로 확인된 유실 경로 두 가지를 막는다.
+  //  (1) localStorage 용량 초과: setItem이 던진 예외를 catch가 삼켜서 화면만 성공처럼
+  //      보이고 실제로는 저장되지 않았다 → 새로고침하면 사라진다. 이제는 사용자에게
+  //      알리고, 기존 데이터는 손대지 않는다.
+  //  (2) 읽기 실패/부분 소실 후 전체 배열 교체: readArr가 조용히 []를 돌려주면
+  //      "1건 추가" 한 번으로 나머지 전부가 사라진다. 이제 디스크에 있는 건수보다
+  //      줄어드는 저장은 명시적 삭제(allowShrink)가 아니면 차단한다.
+  // 저장 키·데이터 구조·병합 규칙은 전혀 바꾸지 않는다. 차단만 추가한다.
+  // ============================================================================
+  var __storageAlerted = false;
+  function storageProblem(msg, detail){
+    console.error('[CRM/데이터보호] ' + msg, detail || '');
+    try{
+      var bar = document.getElementById('crmDataGuardBar');
+      if(!bar){
+        bar = document.createElement('div');
+        bar.id = 'crmDataGuardBar';
+        bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;padding:11px 16px;'
+          + 'background:#B3261E;color:#fff;font-size:13.5px;font-weight:700;line-height:1.5;'
+          + 'font-family:inherit;box-shadow:0 2px 10px rgba(0,0,0,0.25);cursor:pointer;';
+        bar.title = '눌러서 닫기';
+        bar.addEventListener('click', function(){ bar.remove(); });
+        document.body.appendChild(bar);
+      }
+      bar.textContent = '⚠ ' + msg + ' — 기존 데이터는 그대로 보호했습니다. (눌러서 닫기)';
+    }catch(e){}
+    if(!__storageAlerted){
+      __storageAlerted = true;
+      try{ alert('데이터 저장에 문제가 생겼습니다.\n\n' + msg
+        + '\n\n기존 데이터는 덮어쓰지 않고 그대로 두었습니다.\n'
+        + '한솔비서 화면의 [데이터 백업]으로 지금 상태를 파일로 저장해두시고,\n'
+        + '저장공간이 가득 찬 경우라면 자료실/고객서류의 큰 파일을 정리해주세요.'); }catch(e){}
+    }
+  }
+  // 디스크에 실제로 들어있는 배열 길이. 값이 없으면 0, 읽을 수 없으면 -1(=알 수 없음).
+  function diskArrLen(key){
+    var raw;
+    try{ raw = localStorage.getItem(key); }catch(e){ return -1; }
+    if(raw == null || raw === '') return 0;
+    try{ var a = JSON.parse(raw); return Array.isArray(a) ? a.length : -1; }catch(e){ return -1; }
+  }
   function readArr(key){ try{ const raw = localStorage.getItem(key); const a = raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-  function writeArr(key, arr){
-    try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(e){ console.error('저장 실패', key, e); }
+  function writeArr(key, arr, opts){
+    opts = opts || {};
+    if(!Array.isArray(arr)){ storageProblem('저장하려는 값이 목록 형식이 아닙니다(' + key + ')'); return false; }
+    var have = diskArrLen(key);
+    if(have === -1){
+      // 기존 값이 있는데 읽지 못하는 상태. 여기서 덮어쓰면 복구 단서까지 사라진다.
+      storageProblem('기존 데이터를 읽지 못해 덮어쓰기를 막았습니다(' + key + ')');
+      return false;
+    }
+    if(!opts.allowShrink && have > 0 && arr.length < have){
+      storageProblem('데이터 로드 이상으로 기존 데이터 보호됨 — ' + have + '건이 ' + arr.length
+        + '건으로 줄어드는 저장을 막았습니다(' + key + ')');
+      return false;
+    }
+    try{ localStorage.setItem(key, JSON.stringify(arr)); }
+    catch(e){
+      storageProblem('저장 공간이 가득 찼거나 저장이 거부되었습니다(' + key + ')', e);
+      return false;
+    }
+    // §race 차단: 지금까지 localRev는 클라우드 push 경로 안에서만 기록됐다. 그래서 로그인
+    // 전에 편집하면 rev가 남지 않았고, 뒤늦게 도착한 클라우드 스냅샷이 그 편집을 되돌렸다.
+    // 이제 로그인 여부와 무관하게 "로컬에 쓴 시각"을 항상 남긴다 — 스냅샷 비교의 기준값이다.
+    // 단, 빈 목록일 때는 rev를 남기지 않는다. 빈 로컬이 "내가 더 최신"이라고 주장하면
+    // 클라우드에 남아 있는 진짜 데이터의 복구를 막는다.
+    if(arr.length > 0){ try{ localStorage.setItem('shin2-sync-rev-' + key, String(Date.now())); }catch(e){} }
     // §shin/v2 전체 공용 동기화 라운드: companies/customerActivities/memos 세 키는 v2 탭 없이
     // CRM 단독으로 수정해도 클라우드로 나가도록, 저장 시점에 바로 push를 시도한다(§SHIN2_CRM_SHARED_SYNC,
     // 위 Firebase 모듈 정의). 아직 로그인 전이거나 이 기기에서 최초 병합이 안 끝났으면 함수 내부
@@ -2769,9 +2836,36 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     const SYNC_NAME_BY_KEY = { [CO_KEY]: 'companies', [ACT_KEY]: 'customerActivities', [MEMO_KEY]: 'memos' };
     const syncName = SYNC_NAME_BY_KEY[key];
     if(syncName){ try{ if(window.SHIN2_CRM_SHARED_SYNC) window.SHIN2_CRM_SHARED_SYNC.push(syncName, arr); }catch(e){} }
+    return true;
   }
   function readObj(key){ try{ const raw = localStorage.getItem(key); const o = raw?JSON.parse(raw):{}; return (o && typeof o==='object')?o:{}; }catch(e){ return {}; } }
-  function writeObj(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){ console.error('저장 실패(용량 초과 가능)', key, e); } }
+  function writeObj(key, obj, opts){
+    opts = opts || {};
+    // 파일 바이트(BLOB_KEY)가 대표적인 대용량 저장소라 용량 초과가 가장 먼저 터지는 곳이다.
+    // 지금까지는 console.error만 남기고 화면은 성공처럼 보였다.
+    var haveRaw;
+    try{ haveRaw = localStorage.getItem(key); }catch(e){ haveRaw = undefined; }
+    if(haveRaw != null && haveRaw !== ''){
+      var haveKeys = null;
+      try{ var o = JSON.parse(haveRaw); haveKeys = (o && typeof o === 'object' && !Array.isArray(o)) ? Object.keys(o).length : null; }catch(e){ haveKeys = -1; }
+      if(haveKeys === -1){
+        storageProblem('기존 데이터를 읽지 못해 덮어쓰기를 막았습니다(' + key + ')');
+        return false;
+      }
+      var newKeys = (obj && typeof obj === 'object') ? Object.keys(obj).length : 0;
+      if(!opts.allowShrink && haveKeys > 0 && newKeys < haveKeys){
+        storageProblem('데이터 로드 이상으로 기존 데이터 보호됨 — ' + haveKeys + '건이 ' + newKeys
+          + '건으로 줄어드는 저장을 막았습니다(' + key + ')');
+        return false;
+      }
+    }
+    try{ localStorage.setItem(key, JSON.stringify(obj)); }
+    catch(e){
+      storageProblem('저장 공간이 가득 찼습니다 — 파일이 저장되지 않았습니다(' + key + ')', e);
+      return false;
+    }
+    return true;
+  }
 
   function genId(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
   function nowIso(){ return new Date().toISOString(); }
@@ -2818,7 +2912,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
 
   // ---- customerActivities ----
   function loadActivities(){ return readArr(ACT_KEY); }
-  function saveActivities(list){ writeArr(ACT_KEY, list); }
+  function saveActivities(list, opts){ return writeArr(ACT_KEY, list, opts); }
   function classifyActivity(text){
     const t = String(text || '');
     if(/(협약|MOU)/i.test(t)) return '협약';
@@ -2844,7 +2938,8 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     saveActivities(list);
     return rec;
   }
-  function deleteActivity(id){ saveActivities(loadActivities().filter(a=> a.id !== id)); }
+  // 사용자가 명시적으로 지우는 경우다 — 축소가 정상이므로 allowShrink를 명시한다.
+  function deleteActivity(id){ saveActivities(loadActivities().filter(a=> a.id !== id), { allowShrink:true }); }
   function activitiesForCompany(companyId){
     return loadActivities().filter(a=> a.companyId === companyId).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
   }
@@ -2856,9 +2951,12 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 그대로 클라우드에도 밀어준다 — v2 탭이 열려있어야만 동작하던 기존 "storage 이벤트
   // 전달자" 경로에 의존하지 않고 이 함수를 호출하는 모든 지점(추가/이름변경/메모/삭제/
   // 공용전환)에서 항상 직접 동기화된다.
-  function saveDocuments(list){
-    writeArr(DOC_KEY, list);
+  function saveDocuments(list, opts){
+    // 로컬 저장이 막히거나 실패했으면 클라우드로도 내보내지 않는다 — 로컬과 클라우드가
+    // 어긋난 상태(로컬은 옛 값, 클라우드는 새 값)를 만드는 것이 유실을 키웠다.
+    if(!writeArr(DOC_KEY, list, opts)) return false;
     try{ if(window.SHIN2_CRM_DOCS_SYNC && window.SHIN2_CRM_DOCS_SYNC.push) window.SHIN2_CRM_DOCS_SYNC.push(list); }catch(e){}
+    return true;
   }
   function documentsForCompany(companyId, type){
     return loadDocuments().filter(d=> d.companyId === companyId && (!type || d.documentType === type))
@@ -3027,10 +3125,10 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     // companyId로만 연결되어 있으므로(§9) 이 id 하나만 지우면 같은 회사의 다른 문서,
     // 다른 회사의 문서 모두 영향 없음 — 메타데이터와 blob을 함께, 그리고 이것만 지운다.
     const rec = findDocument(id);
-    saveDocuments(loadDocuments().filter(d=> d.id !== id));
+    saveDocuments(loadDocuments().filter(d=> d.id !== id), { allowShrink:true });
     const blobs = readObj(BLOB_KEY);
     delete blobs[id];
-    writeObj(BLOB_KEY, blobs);
+    writeObj(BLOB_KEY, blobs, { allowShrink:true });
     // §11: 메타데이터를 지운 뒤 실제 Storage 파일도 함께 지운다(클라우드 문서일 때만).
     // 메타데이터 삭제(화면/다른 직원에게 즉시 반영되어야 함)를 이 네트워크 요청 때문에
     // 지연시키지 않는다 — best-effort로 뒤따라 지우고, 실패해도 콘솔 경고만 남긴다
@@ -3080,7 +3178,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
 
   // ---- memos (공용 컴포넌트 재사용 — targetType 'company', v2의 SHIN2_MEMO와 완전히 동일한 스키마) ----
   function loadMemos(){ return readArr(MEMO_KEY); }
-  function saveMemos(list){ writeArr(MEMO_KEY, list); }
+  function saveMemos(list, opts){ return writeArr(MEMO_KEY, list, opts); }
   function memosFor(companyId){
     return loadMemos().filter(m=> m.targetType==='company' && String(m.targetId)===String(companyId))
       .sort((a,b)=> (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt));
@@ -3095,7 +3193,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     const list = loadMemos(); const rec = list.find(m=> m.id===id); if(!rec) return;
     rec.text = text; rec.updatedAt = Date.now(); saveMemos(list);
   }
-  function deleteMemo(id){ saveMemos(loadMemos().filter(m=> m.id !== id)); }
+  function deleteMemo(id){ saveMemos(loadMemos().filter(m=> m.id !== id), { allowShrink:true }); }
 
   // ---- 다음 할 일: customerActivities의 status:'pending'(전화기록 미처리) — CRM 전용
   // 배열(ACT_KEY)에서만 읽는다(§한솔 업무페이지/CRM 시스템 분리 라운드부터 CRM 데이터).
