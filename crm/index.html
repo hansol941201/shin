@@ -5499,9 +5499,13 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 없이 MOU만 체결된 경우(§9 사례 A) 안내 문구를 별도로 붙인다 — 빈 원(미도달 표시)이
     // "누락"/"미완료 경고"로 오해되지 않게 하기 위함(§ 요구사항).
     const curStage = hasAny ? stages[currentIdx] : null;
-    const isMouDone = curStage && curStage.key === 'mou' && curStage.state === 'done';
+    const mouStageAll = stages.find(s=>s.key==='mou');
+    const isMouDone = mouStageAll && mouStageAll.state === 'done';
     const stageText = hasAny ? (isMouDone ? '협약 완료' : `${curStage.label} ${PROGRESS_STATUS_LABEL[curStage.state]}`) : '미확인';
-    const skippedMeetings = isMouDone && stages.find(s=>s.key==='m1').state !== 'done' && stages.find(s=>s.key==='m2').state !== 'done';
+    // §MOU 체결 업체의 단계 판정 예외 처리 라운드 §6: q/m1/m2는 이제 mouDone이면 항상
+    // state==='done'이라, "완료" 여부가 아니라 "실제 날짜(ts)가 있었는지"로만 스킵 여부를
+    // 판단한다 — ts는 예외처리로도 절대 바뀌지 않는 원본 파싱 결과 그대로다(§2).
+    const skippedMeetings = isMouDone && stages.find(s=>s.key==='m1').ts == null && stages.find(s=>s.key==='m2').ts == null;
     const stageNote = skippedMeetings ? '1·2차 미팅 없이 MOU 체결' : '';
     const usage = buildPourUsageSummary(co);
     const topCats = usage ? usage.categoryTop.slice(0, 2) : [];
@@ -6092,10 +6096,25 @@ window.SHIN2_CRM_APP_INIT = function(){
       }
       return dateState(nm.mouLabel);
     })();
+    // §MOU 체결 업체의 단계 판정 예외 처리 라운드 §1~§3: 1·2차 미팅 없이 바로 MOU를
+    // 체결하는 자회사/특수 업체가 실제로 있다(원본에 질문서/미팅 기록 자체가 없음). 지금까지는
+    // mou만 done이고 q/m1/m2는 그대로 dateState(원본 날짜 라벨)로만 계산돼, 이런 업체가
+    // 고객카드/업무관리에서 앞 단계가 "대기"인 미진행 업체처럼 보였다. mouDone===true(원본의
+    // 실제 서명완료 신호)면 상태 계산 우선순위 최상단에서 q/m1/m2를 전부 done으로 간주한다 —
+    // 이미 실제 날짜(dateState)로 done 판정된 단계는 그 날짜를 그대로 두고, 날짜가 없던
+    // 단계만 dateDisplay '—'/ts null을 유지한 채 상태만 done으로 바꾼다(§2 "실제 날짜는 절대
+    // 만들지 않기" — MOU 날짜를 앞 단계로 복사하지 않고, qSentLabel/m1Label/m2Label 같은
+    // 원본 필드에도 전혀 쓰지 않는다. co에는 이 결과를 저장하지 않는다 — 매번 다시 계산하는
+    // 화면 표시용 값일 뿐이다, §7).
+    const mouDoneFlag = !!nm.mouDone;
+    function applyMouDoneException(stage){
+      if(!mouDoneFlag || stage.state === 'done') return stage;
+      return Object.assign({}, stage, { state:'done' });
+    }
     const stages = [
-      { key:'q', label:'질문서', ...q },
-      { key:'m1', label:'1차미팅', ...m1 },
-      { key:'m2', label:'2차미팅', ...m2 },
+      { key:'q', label:'질문서', ...applyMouDoneException(q) },
+      { key:'m1', label:'1차미팅', ...applyMouDoneException(m1) },
+      { key:'m2', label:'2차미팅', ...applyMouDoneException(m2) },
       { key:'mou', label:'MOU', ...mou }
     ];
     // 현재 단계(§6): 마지막으로 완료된 단계의 "다음" 단계. 전부 완료면 MOU, 전부 대기면 질문서.
@@ -6777,7 +6796,25 @@ window.SHIN2_CRM_APP_INIT = function(){
   // §고객 단계 전환관리 라운드 §5/§8 — 표의 "해야 할 일" 버튼 문구만 스펙 표현("[L2 전환]"/
   // "[L3 전환]")에 맞춰 바꾼다. 판정값(firstActivity/l2Stall) 자체는 그대로다.
   const WORKQ_L2L3_ACTION_LABEL = { firstActivity:'L2 전환', l2Stall:'L3 전환' };
-  const WORKQ_TYPE_PRIORITY = { m1:0, m1Scheduled:0, m2:1, m2Scheduled:1, mou:2, firstActivity:3, l2Stall:4, reuse:5 };
+  const WORKQ_TYPE_PRIORITY = { m1:0, m1Scheduled:0, m2:1, m2Scheduled:1, mou:2, firstActivity:3, l2Stall:4, reuse:5, newPartner:6 };
+  // §신규 협력업체 관리 라운드 — 샤인하우징 실사례 조사 결과: partner-dashboard 동기화로
+  // CRM에는 신규 고객으로 정상 생성됐지만(previewPartnerSync 2차 패스, §협력사 동기화
+  // 근본원인 수정 라운드), 업무관리는 classifyWorkQueueMeeting(질문서 회신 완료를 전제조건으로
+  // 함, §6 전제조건)과 classifyManagementNeed(mouDone을 전제조건으로 함, §mouDoneTs==null이면
+  // 'none')를 순서대로만 판정해서, "질문서/미팅/MOU 어느 것도 아직 시작 안 한" 이런 업체는
+  // 두 판정 모두 통과하지 못해 buildWorkQueueItem이 끝까지 null을 반환했다(§ 실제 확인된
+  // 원인 — 업무관리가 "모든 고객"이 아니라 "특정 후속행동 조건에 해당하는 업체만" 보여주는
+  // 설계 자체는 의도된 동작이고, 이 케이스만 그 조건표에 아예 없었다). q/m1/m2/mou 넷 다
+  // 실제 날짜(ts)가 없고 MOU도 미체결인 경우에만 "신규 협력업체"로 최하위 우선순위에 추가한다
+  // — 다른 실제 후속상태가 하나라도 있으면(질문서 발송만 됐어도 q.ts가 생김) 이 판정보다
+  // 우선순위가 높은 위 판정들이 먼저 걸려 여기까지 오지 않는다(§ "다른 실제 후속상태가 하나도
+  // 없을 때만 표시").
+  function isNewPartnerNoProgress(progress){
+    if(!progress.hasAny) return false;
+    const byKey = {}; progress.stages.forEach(s=> byKey[s.key] = s);
+    if(byKey.mou.state === 'done') return false; // MOU 완료 업체는 신규 업무로 다시 잡히면 안 됨(§ 요구사항)
+    return byKey.q.ts == null && byKey.m1.ts == null && byKey.m2.ts == null;
+  }
   // §업무관리 제외 조건 추가: "질문서 발송/회신 기록도, 1차·2차미팅 기록도 전혀 없이
   // MOU만 체결완료"된 업체(기존협약업체를 곧바로 MOU 완료 상태로 들여온 실제 사례 —
   // ㈜종명건설 등, 첫 라운드의 "1·2차 미팅 없이 MOU 체결" 예외와 같은 부류)는 업무관리에서
@@ -6831,6 +6868,16 @@ window.SHIN2_CRM_APP_INIT = function(){
         co, type: 'reuse', category: 'reuse',
         currentStateLabel: mgmtNeedStageLabel(mgmt), reasonText: mgmtNeedReasonText(mgmt),
         days: mgmt.days, actionLabel: '재사용', isDelayed: false
+      };
+    }
+    // §신규 협력업체 관리 라운드 — 위 미팅/L2·L3/재사용 판정에 전부 해당하지 않을 때만(=
+    // 최하위 우선순위) 도달한다. days/isDelayed는 근거 날짜가 없으므로 항상 null/false다
+    // (§ "임의 날짜 생성 금지"와 같은 원칙).
+    if(isNewPartnerNoProgress(progress)){
+      return {
+        co, type: 'newPartner', category: 'newPartner',
+        currentStateLabel: '신규 협력업체', reasonText: '신규 등록 · 후속 진행 없음',
+        days: null, actionLabel: '첫 연락 / 온보딩', isDelayed: false
       };
     }
     return null; // 정상 진행 중이거나(판정 대상 아님) 판정불가(mgmt.type==='unknown') — 억지로 만들지 않는다(§6)
@@ -7012,7 +7059,10 @@ window.SHIN2_CRM_APP_INIT = function(){
   const WORKQ_L2L3_BUTTONS = {
     firstActivity: ['현장등록 요청', '전화 확인', '자료 안내', '보류'],
     l2Stall: ['견적 제안', 'PT 제안', '현장검토 제안', '자료 안내', '전화 확인', '보류'],
-    reuse: ['새 현장 확인', '다른 공종 제안', '자료 재안내', '전화 확인', '보류']
+    reuse: ['새 현장 확인', '다른 공종 제안', '자료 재안내', '전화 확인', '보류'],
+    // §신규 협력업체 관리 라운드 — 아래 renderWorkqExpandBody의 기존 fallback 분기(firstActivity/
+    // l2Stall/reuse와 동일하게 활동기록 버튼 + 메모 + 보류)를 새 계산 없이 그대로 재사용한다.
+    newPartner: ['첫 연락 완료', '온보딩 안내', '전화 확인', '보류']
   };
   function workqContactBlockHtml(co){
     return `
@@ -7140,7 +7190,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="workq-btn-row">
         ${buttons.map(b=> `<button type="button" class="workq-btn${b==='보류'?' muted':''}" data-workq-do="log" data-workq-label="${esc(b)}">${esc(b)}</button>`).join('')}
       </div>
-      ${(item.type === 'firstActivity' || item.type === 'l2Stall' || item.type === 'reuse') ? `
+      ${(item.type === 'firstActivity' || item.type === 'l2Stall' || item.type === 'reuse' || item.type === 'newPartner') ? `
       <div class="workq-hold-panel" style="display:none;">
         <div class="workq-hold-row">
           <span class="workq-expand-label">다시 확인일</span>
@@ -7157,7 +7207,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   // (firstActivity/l2Stall)을 그대로 키로 쓴다 — filtered 계산의
   // `it.type === workQueueFilter` 조건이 이미 이 값을 처리하므로 로직 추가 없음.
   const WORKQ_FILTER_DEFS = [
-    ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['firstActivity','L1→L2'], ['l2Stall','L2→L3'], ['reuse','재사용']
+    ['all','전체'], ['meeting','미팅'], ['mou','MOU'], ['firstActivity','L1→L2'], ['l2Stall','L2→L3'], ['reuse','재사용'], ['newPartner','신규 협력업체']
   ];
   let workQueueFilter = 'all';
   // §업무관리 검색창 라운드 — 고객관리 목록 검색(matchesSearch, §searchQuery)과 완전히
@@ -8708,7 +8758,9 @@ window.SHIN2_CRM_APP_INIT = function(){
       const isMouDone = curStage.key === 'mou' && curStage.state === 'done';
       facts.push({ text: '현재 ' + (isMouDone ? '협약 완료' : curStage.label + ' ' + PROGRESS_STATUS_LABEL[curStage.state]), source: 'partnerStage' });
     }
-    const hadMeeting = hasAny && stages.some(s=> (s.key === 'm1' || s.key === 'm2') && s.state === 'done');
+    // §MOU 체결 업체의 단계 판정 예외 처리 라운드: state는 이제 mouDone이면 항상 done이라
+    // "실제 미팅 이력"을 판정할 수 없다 — 원본 날짜(ts)가 실제로 있었는지로 판정한다(§2).
+    const hadMeeting = hasAny && stages.some(s=> (s.key === 'm1' || s.key === 'm2') && s.ts != null);
     if(hadMeeting) facts.push({ text: '과거 미팅 진행 이력 있음', source: 'partnerStage' });
     const reqCount = (co.requestedMaterials || []).length;
     if(reqCount) facts.push({ text: '요청자료 이력 ' + reqCount + '건', source: 'materialRequest' });
