@@ -1454,28 +1454,28 @@
      상단 통합 투두 (§오른쪽 레일 폐기 라운드)
      빠른 입력 + 날짜별 업무 카드 4개 + 전체 할 일 모달. 저장소는 기존 shin2-todos 그대로.
      ================================================================================ */
-  .qadd{ display:flex; align-items:center; gap:8px; margin:2px 0 10px; }
+  .qadd{ display:flex; align-items:center; gap:9px; margin:2px 0 12px; }
   .qadd-box{
-    flex:1; min-width:0; display:flex; align-items:center; gap:8px;
-    height:38px; padding:0 10px 0 14px;
+    flex:1; min-width:0; display:flex; align-items:center; gap:9px;
+    height:46px; padding:0 12px 0 16px;
     background:var(--surface); border:1px solid var(--line); border-radius:8px;
   }
   .qadd-box:focus-within{ border-color:#C7CEDB; }
   .qadd-box input{
     flex:1; min-width:0; height:100%; border:none; outline:none; background:transparent;
-    font-size:13.5px; font-family:inherit; color:var(--text);
+    font-size:14.5px; font-family:inherit; color:var(--text);
   }
   .qadd-cal{ flex:none; border:none; background:transparent; cursor:pointer; color:#AEB3BD; padding:3px; line-height:1; border-radius:5px; }
   .qadd-cal:hover, .qadd-cal.on{ color:var(--navy); }
   .qadd-btn{
-    flex:none; height:38px; padding:0 18px; white-space:nowrap;
-    font-size:13px; font-family:inherit; font-weight:600; color:#fff;
+    flex:none; height:46px; padding:0 22px; white-space:nowrap;
+    font-size:14px; font-family:inherit; font-weight:600; color:#fff;
     background:var(--navy); border:1px solid var(--navy); border-radius:8px; cursor:pointer;
   }
   .qadd-btn:hover{ opacity:0.92; }
   .qadd-all{
-    flex:none; height:38px; padding:0 14px; white-space:nowrap;
-    font-size:12.5px; font-family:inherit; font-weight:500; color:var(--text-muted);
+    flex:none; height:46px; padding:0 17px; white-space:nowrap;
+    font-size:14px; font-family:inherit; font-weight:500; color:var(--text-muted);
     background:var(--surface); border:1px solid var(--line); border-radius:8px; cursor:pointer;
   }
   .qadd-all:hover{ background:#F2F4F7; color:var(--text); }
@@ -1492,59 +1492,61 @@
   /* 날짜별 업무 카드 4개 */
   .wcards{
     display:grid; grid-template-columns:repeat(4, minmax(0, 1fr));
-    gap:13px; margin:2px 0 8px;
+    gap:15px; margin:2px 0 8px;
     align-items:stretch;              /* 4개 카드 높이를 항상 같게 */
   }
   .wcard{
-    display:flex; flex-direction:column; min-height:150px; padding:16px;
-    background:var(--surface); border:1px solid #D8DCE3; border-radius:10px;
+    display:flex; flex-direction:column; min-height:200px; padding:18px 20px;
+    background:var(--surface); border:1px solid #CFD5DE; border-radius:10px;
   }
   .wcard-head{
-    display:flex; align-items:center; gap:6px; flex:none;
-    padding-bottom:10px; margin-bottom:6px; border-bottom:1px solid #E3E6EB;
-    font-size:13px; font-weight:700; color:var(--text);
+    display:flex; align-items:center; gap:7px; flex:none;
+    padding-bottom:12px; margin-bottom:8px; border-bottom:1px solid #DCE0E7;
+    font-size:16.5px; font-weight:700; color:var(--text);
   }
-  .wcard-head .n{ font-size:10.5px; font-weight:700; color:var(--text-muted); }
+  .wcard-head .n{ font-size:12px; font-weight:700; color:var(--text-muted); }
   .wcard-list{ flex:1; min-height:0; display:flex; flex-direction:column; }
   .wcard-item{
-    display:flex; align-items:center; gap:8px; min-height:34px;
-    padding:5px 2px; border-bottom:1px solid #F2F3F6;
-    font-size:12.5px; color:var(--text);
+    display:flex; align-items:center; gap:10px; min-height:40px;
+    padding:6px 2px; border-bottom:1px solid #EEF0F3;
+    font-size:14.5px; color:var(--text);
   }
   .wcard-item:last-child{ border-bottom:none; }
   .wcard-item:hover{ background:rgba(0,0,0,0.03); }
-  .wcard-item input[type="checkbox"]{ flex:none; width:14px; height:14px; margin:0; accent-color:var(--navy); cursor:pointer; }
-  .wcard-item .t{ flex:1; min-width:0; font-weight:500; line-height:1.4; white-space:normal; word-break:break-word; }
-  .wcard-item .d{ flex:none; font-size:10.5px; font-weight:700; color:var(--text-muted); }
+  .wcard-item input[type="checkbox"]{ flex:none; width:18px; height:18px; margin:0; accent-color:var(--navy); cursor:pointer; }
+  .wcard-item .t{ flex:1; min-width:0; font-weight:500; line-height:1.55; white-space:normal; word-break:break-word; }
+  .wcard-item .d{ flex:none; font-size:12.5px; font-weight:700; color:var(--text-muted); }
   .wcard-star{ flex:none; border:none; background:transparent; cursor:pointer; color:#DDE0E5; padding:2px; line-height:1; border-radius:4px; }
+  /* 별표 SVG는 전체 할 일 모달과 같은 마크업을 공유하므로, 카드 안에서만 CSS로 키운다. */
+  .wcard-star svg{ width:16.5px; height:16.5px; }
   .wcard-item:hover .wcard-star{ color:#BFC4CC; }
   .wcard-star:hover{ color:#C79A2E; }
   .wcard-star.on, .wcard-item:hover .wcard-star.on{ color:#C79A2E; }
   .wcard-star.on svg{ fill:currentColor; }
-  .wcard-empty{ font-size:11px; color:#B2B8C2; padding:8px 2px; }
+  .wcard-empty{ font-size:13px; color:#B2B8C2; padding:10px 2px; }
   .wcard-more{
-    flex:none; margin-top:4px; align-self:flex-start; border:none; background:transparent;
-    cursor:pointer; font-size:11px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:2px 0;
+    flex:none; margin-top:6px; align-self:flex-start; border:none; background:transparent;
+    cursor:pointer; font-size:12.5px; font-family:inherit; font-weight:600; color:var(--text-muted); padding:3px 0;
   }
   .wcard-more:hover{ color:var(--navy); }
 
   /* 오늘 = RED (카드 전체를 진하게 칠하지 않고 accent/제목/badge에만) */
   /* 오늘 = 가장 먼저 눈에 들어오게. 카드 전체를 빨갛게 칠하지는 않는다. */
-  .wcard.k-today{ background:#FEF7F7; border-color:#E9C4C8; border-left:3px solid #C0392F; }
-  .wcard.k-today .wcard-head{ color:#B3283C; border-bottom-color:#F0D8DA; }
-  .wcard.k-today .wcard-head .n{ color:#fff; background:#C0392F; padding:0 6px; border-radius:9px; }
-  .wcard.k-today .wcard-item{ border-bottom-color:#F5E3E4; }
-  .wcard.k-today .wcard-item .d{ color:#fff; background:#C0392F; padding:1px 7px; border-radius:9px; }
+  .wcard.k-today{ background:#FEF7F7; border-color:#E2B3B8; border-left:4px solid #C0392F; }
+  .wcard.k-today .wcard-head{ color:#B3283C; border-bottom-color:#EDCDD0; }
+  .wcard.k-today .wcard-head .n{ color:#fff; background:#C0392F; padding:1px 8px; border-radius:10px; }
+  .wcard.k-today .wcard-item{ border-bottom-color:#F3DDDE; }
+  .wcard.k-today .wcard-item .d{ color:#fff; background:#C0392F; padding:2px 9px; border-radius:10px; }
   /* 기한 지남 = 오늘과 경쟁하지 않게 차분하게. 상태 문구만 muted red. */
-  .wcard.k-over{ background:#FCFBFA; border-color:#DDD9D5; }
+  .wcard.k-over{ background:#FCFBFA; border-color:#D3CEC8; }
   .wcard.k-over .wcard-head{ color:#4B5563; }
   .wcard.k-over .wcard-item .d{ color:#A93B48; }
   /* 내일 = 네이비 제목 + 아주 연한 blue tint */
-  .wcard.k-tomorrow{ background:#FAFCFF; border-color:#CFD9E8; }
+  .wcard.k-tomorrow{ background:#FAFCFF; border-color:#BFCCE0; }
   .wcard.k-tomorrow .wcard-head{ color:var(--navy); }
   .wcard.k-tomorrow .wcard-item .d{ color:#3F5A86; }
   /* 예정 = 흰색 중심 */
-  .wcard.k-future{ background:var(--surface); border-color:#D8DCE3; }
+  .wcard.k-future{ background:var(--surface); border-color:#CFD5DE; }
   .wcard.k-future .wcard-head{ color:#3D4A5C; }
   .wcard.k-future .wcard-item .d{ color:#6B7280; }
 
@@ -12337,7 +12339,9 @@ ${text}
   var pendingDue = '';
   var cardExpanded = Object.create(null);
   var tallTab = 'active';
-  var CARD_MAX = 4;
+  // 카드가 커진 만큼 기본으로 보여주는 업무 수도 한 칸 늘린다(글씨를 줄이지 않고 5개까지).
+  // 넘치면 지금까지처럼 "+N개 더 보기" 버튼으로 펼친다 — 카드 안 스크롤바는 만들지 않는다.
+  var CARD_MAX = 5;
 
   function esc(v){
     return String(v == null ? '' : v)
