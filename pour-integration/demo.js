@@ -33,6 +33,63 @@
     }
   });
 
+  // 재공고 건 체크 시 기존 공고를 골라 내용을 가져온다
+  var rebidSource = null;
+
+  function refreshRebidOptions() {
+    var query = $("rebidSearch").value.trim().toUpperCase();
+    var candidates = PourRecords.list(storage).filter(function (r) {
+      if (r.status !== "공고" && r.status !== "재공고" && r.status !== "유찰") return false;
+      if (!query) return true;
+      return [r.client, r.city, r.region].concat(r.projectNames || [])
+        .join(" ").toUpperCase().indexOf(query) >= 0;
+    });
+    var select = $("rebidTarget");
+    select.innerHTML = "";
+    select.appendChild(new Option("— 선택 —", ""));
+    candidates.forEach(function (r) {
+      select.appendChild(new Option(
+        (r.client || "이름 없음") + " / " + PourRegion.format(r.region, r.city) +
+        " / " + r.status + (r.noticeDate ? " / " + r.noticeDate : ""), r.id));
+    });
+  }
+
+  $("isRenotice").addEventListener("change", function () {
+    $("rebidPanel").style.display = this.checked ? "" : "none";
+    if (this.checked) refreshRebidOptions(); else { rebidSource = null; $("rebidRound").value = ""; }
+  });
+  $("rebidSearch").addEventListener("input", refreshRebidOptions);
+
+  $("rebidTarget").addEventListener("change", function () {
+    var id = this.value;
+    rebidSource = id || null;
+    if (!id) { $("rebidRound").value = ""; return; }
+    var origin = PourRecords.list(storage).filter(function (r) { return r.id === id; })[0];
+    if (!origin) return;
+
+    // 기존 내용을 가져오되 그대로 수정할 수 있게 입력칸에 채워 넣는다
+    $("clientInput").value = origin.client;
+    $("projectNames").value = origin.projectNames.join("\n");
+    $("categoryInput").value = origin.categories.join(", ");
+    $("cityInput").value = origin.city;
+    setRegionOptions([origin.region], origin.region);
+    regionField.setValue(origin.region, origin.city);
+    $("phoneInput").value = origin.phone;
+    $("householdsInput").value = origin.households === "" ? "" : String(origin.households);
+    $("scopeInput").value = (origin.scopes || []).join("\n");
+    $("noticePatentText").value = origin.noticePatentText;
+    $("agreementNo").value = origin.agreementNo;
+    $("previousFailDate").value = origin.bidDate || "";
+    patentEditor.setValue(origin);
+
+    var rootId = origin.originalProjectId || origin.id;
+    var round = 1;
+    PourRecords.list(storage).forEach(function (r) {
+      if (r.originalProjectId === rootId && r.rebidRound) round = Math.max(round, Number(r.rebidRound) + 1);
+    });
+    $("rebidRound").value = round + "차";
+  });
+
   // 입찰종류 버튼 (서류접수 · 전자입찰)
   var bidType = "";
   Array.prototype.forEach.call(document.querySelectorAll("#bidTypeGroup .pour-bidtype-btn"), function (btn) {
@@ -215,7 +272,7 @@
       bidDate: $("bidDate").value,
       contractor: $("contractorInput").value.trim(),
       agreementNo: $("agreementNo").value.trim(),
-      scope: $("scopeInput").value.trim(),
+      scopes: $("scopeInput").value,
       address: $("addressInput").value.trim(),
       remark: $("remarkInput").value.trim()
     };
@@ -227,6 +284,33 @@
     if (!data.city) { msg.textContent = "도시를 입력해 주세요."; msg.className = "msg error"; return; }
     // 공고일만 필수. 전화번호·세대수·서류 마감일·개찰일은 비워도 등록된다.
     if (!data.noticeDate) { msg.textContent = "공고일을 입력해 주세요."; msg.className = "msg error"; return; }
+
+    // 공고일 ≤ 서류 마감일 ≤ 개찰일
+    var dates = PourRecords.validateDates(data);
+    if (!dates.ok) {
+      msg.textContent = dates.errors.map(function (e) { return e.message; }).join("\n");
+      msg.className = "msg error";
+      return;
+    }
+
+    // 재공고 건이면 원본을 유찰로 두고 새 행으로 연결해서 만든다
+    if ($("isRenotice").checked) {
+      if (!rebidSource) {
+        msg.textContent = "재공고할 기존 공고를 선택해 주세요.";
+        msg.className = "msg error";
+        return;
+      }
+      data.rebidReason = $("rebidReason").value.trim();
+      data.previousFailDate = $("previousFailDate").value;
+      var rebid = PourRecords.createRebid(rebidSource, data, storage);
+      if (!rebid.ok) { msg.textContent = rebid.message; msg.className = "msg error"; return; }
+      msg.textContent = "재공고 " + rebid.round + "차로 등록했습니다. 원본 공고는 유찰로 남았습니다.";
+      msg.className = "msg ok";
+      resetForm();
+      refreshAll();
+      return;
+    }
+
     if (!data.region) {
       var parsed = PourRegion.parse($("cityInput").value);
       if (parsed.status === "ambiguous") {
@@ -252,6 +336,9 @@
      "contractorInput", "agreementNo", "scopeInput", "addressInput", "remarkInput"]
       .forEach(function (id) { $(id).value = ""; });
     $("isRenotice").checked = false;
+    $("rebidPanel").style.display = "none";
+    ["rebidSearch", "rebidRound", "rebidReason", "previousFailDate"].forEach(function (id) { $(id).value = ""; });
+    rebidSource = null;
     bidType = "";
     Array.prototype.forEach.call(document.querySelectorAll("#bidTypeGroup .pour-bidtype-btn"), function (b) {
       b.className = "pour-bidtype-btn";
@@ -643,8 +730,27 @@
 
   /* ------------------------------------------------- 전체 실적표 */
 
+  var statusTab = "전체";
+
+  function renderStatusTabs(all) {
+    var counts = PourRecords.statusCounts(all);
+    var box = $("statusTabs");
+    box.innerHTML = "";
+    ["전체", "낙찰", "공고", "재공고(유찰)"].forEach(function (name) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "pour-kind-tab" + (statusTab === name ? " is-active" : "");
+      button.textContent = name + " (" + counts[name] + ")";
+      button.setAttribute("data-status-tab", name);
+      button.addEventListener("click", function () { statusTab = name; renderAll(); });
+      box.appendChild(button);
+    });
+  }
+
   function renderAll() {
-    var records = PourRecords.list(storage);
+    var all = PourRecords.list(storage);
+    renderStatusTabs(all);
+    var records = all.filter(function (r) { return PourRecords.matchesStatusTab(r, statusTab); });
     if (sort.key) records = PourRecords.sortRecords(records, sort.key, sort.dir);
     PourUI.renderTable($("allTable"), records, PourRecords.COLUMNS, {
       sortKey: sort.key, sortDir: sort.dir,
@@ -840,10 +946,16 @@
     PourExport.downloadCsv(PourRecords.list(storage), "공사실적.csv");
   });
 
-  $("xlsxBtn").addEventListener("click", function () {
-    var wb = PourExport.buildWorkbook(PourRecords.list(storage));
-    if (!wb) return alert("엑셀 라이브러리를 불러오지 못했습니다. CSV를 사용해 주세요.");
-    PourExport.downloadWorkbook(wb, "공사실적.xlsx");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-export]"), function (button) {
+    button.addEventListener("click", function () {
+      var tab = button.getAttribute("data-export");
+      var rows = PourRecords.list(storage).filter(function (r) {
+        return PourRecords.matchesStatusTab(r, tab);
+      });
+      var wb = PourExport.buildWorkbook(rows);
+      if (!wb) return alert("엑셀 라이브러리를 불러오지 못했습니다. CSV를 사용해 주세요.");
+      PourExport.downloadWorkbook(wb, "공사실적-" + tab + ".xlsx");
+    });
   });
 
   $("patentXlsxBtn").addEventListener("click", function () {

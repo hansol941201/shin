@@ -112,8 +112,9 @@
         input,
         function (query) {
           var q = String(query || "").trim();
-          if (!q) return [];
-          return PourPatents.search(q, 10, storage).map(function (h) {
+          // 빈 입력칸을 눌렀을 때는 등록된 POUR 특허 목록을 그대로 보여 준다
+          var hits = q ? PourPatents.search(q, 10, storage) : PourPatents.browse(10, storage);
+          return hits.map(function (h) {
             return {
               number: h.number, name: h.name, category: h.category,
               title: PourPatents.formatNumber(h.number),

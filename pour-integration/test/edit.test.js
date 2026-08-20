@@ -184,7 +184,7 @@ test("요청한 수정 항목이 모두 반영", () => {
     categories: ["슬라브", "에폭시"], region: "충남", city: "금산",
     phone: "041-222-3333", households: 900,
     noticeDate: "2026-02-01", bidDate: "2026-02-20", awardDate: "2026-03-05",
-    bidType: "제한경쟁", contractor: "새건설", expectedAmount: 500000000,
+    bidType: "전자입찰(적격)", contractor: "새건설", expectedAmount: 500000000,
     awardAmount: 480000000, noticePatentText: "POUR공법 (특허 제10-1935719호)",
     agreementNo: "HS-2026-001", patentNumbers: ["1935719"], patentNames: ["POUR공법"],
     scope: "외벽 전체", address: "충남 금산군 ...", quality: "우수", remark: "비고 수정"
@@ -198,7 +198,8 @@ test("요청한 수정 항목이 모두 반영", () => {
   assert.strictEqual(r.city, "금산");
   assert.strictEqual(r.phone, "041-222-3333");
   assert.strictEqual(r.households, 900);
-  assert.strictEqual(r.bidType, "제한경쟁");
+  assert.strictEqual(r.bidType, "전자입찰", "기존 표기가 두 종류 중 하나로 변환되어야 함");
+  assert.strictEqual(r.bidTypeRaw, "전자입찰(적격)", "원본 표기 보존");
   assert.strictEqual(r.expectedAmount, 500000000);
   assert.strictEqual(r.awardAmount, 480000000);
   assert.strictEqual(r.agreementNo, "HS-2026-001");

@@ -315,11 +315,11 @@ section("8. 드롭다운 안내 문구");
 
 test("특허 자료가 없으면 업로드 안내", () => {
   assert.strictEqual(PourPatents.emptyMessage(memoryStorage()),
-    "먼저 특허 자료 관리에서 POUR 특허 엑셀을 업로드해 주세요.");
+    "먼저 POUR 특허 엑셀을 업로드해 주세요.");
 });
 
 test("자료는 있는데 결과가 없으면 다른 문구", () => {
-  assert.strictEqual(PourPatents.emptyMessage(patentStore), "등록된 POUR 특허가 없습니다");
+  assert.strictEqual(PourPatents.emptyMessage(patentStore), "일치하는 POUR 특허가 없습니다.");
 });
 
 test("193 · 23 · POUR 검색이 POUR 특허만 반환", () => {

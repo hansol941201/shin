@@ -91,12 +91,23 @@ function section(t) { console.log("\n" + t); }
     assert.ok(text.includes("제10-1935719호"), text);
   });
 
-  await test("POUR 입력 시 특허명으로 검색", async () => {
+  await test("POUR 입력 시 우리 특허 목록이 나옴", async () => {
     await page.fill(POUR_SEARCH, "POUR");
     const items = await page.$$eval("#patentEditor .pour-suggest.is-open .pour-suggest-item",
       els => els.map(e => e.textContent));
     assert.ok(items.length >= 4, "결과 " + items.length + "건");
-    assert.ok(items.every(t => t.includes("POUR")), items.join(" | "));
+    assert.ok(items[0].includes("POUR"), items[0]);
+    assert.ok(items.every(t => t.startsWith("제10-")), items.join(" | "));
+  });
+
+  await test("빈 입력칸을 누르면 등록된 POUR 특허 목록이 열림", async () => {
+    await page.fill(POUR_SEARCH, "");
+    await page.click(POUR_SEARCH);
+    await page.waitForSelector("#patentEditor .pour-suggest.is-open", { timeout: 2000 });
+    const items = await page.$$eval("#patentEditor .pour-suggest.is-open .pour-suggest-item",
+      els => els.map(e => e.textContent));
+    assert.ok(items.length > 0, "목록이 비어 있음");
+    assert.ok(items[0].startsWith("제10-"), items[0]);
   });
 
   await test("방향키와 Enter로 선택 → 칩 추가 · 공종 자동 입력", async () => {
@@ -140,7 +151,7 @@ function section(t) { console.log("\n" + t); }
     await page.fill(POUR_SEARCH, "9999999");
     await page.dispatchEvent(POUR_SEARCH, "change");
     const dropdown = await page.textContent("#patentEditor .pour-suggest");
-    assert.ok(dropdown.includes("등록된 POUR 특허가 없습니다"), dropdown);
+    assert.ok(dropdown.includes("일치하는 POUR 특허가 없습니다."), dropdown);
     await page.fill(POUR_SEARCH, "");
   });
 
@@ -364,7 +375,7 @@ function section(t) { console.log("\n" + t); }
     await page.fill(EDIT_SEARCH, "8888888");
     await page.dispatchEvent(EDIT_SEARCH, "change");
     const dropdown = await page.textContent("#editPatentEditor .pour-suggest");
-    assert.ok(dropdown.includes("등록된 POUR 특허가 없습니다"), dropdown);
+    assert.ok(dropdown.includes("일치하는 POUR 특허가 없습니다."), dropdown);
   });
 
   await test("검색해서 고른 특허로 저장하면 알림에서 사라짐", async () => {
@@ -771,7 +782,107 @@ function section(t) { console.log("\n" + t); }
   });
 
   /* -------------------------------------------------------------- */
-  section("12. 새로고침 후에도 유지");
+  section("12. 재공고 · 상태 필터 · 날짜 검증");
+
+  await test("공고일보다 빠른 개찰일은 저장 전에 막힘", async () => {
+    await page.click("#resetFormBtn");
+    await page.fill("#cityInput", "하남");
+    await page.dispatchEvent("#cityInput", "change");
+    await page.fill("#clientInput", "날짜검증현장");
+    await page.fill("#noticeDate", "2026-05-20");
+    await page.fill("#bidDate", "2026-05-10");
+    await page.click("#saveBtn");
+    const msg = await page.textContent("#saveMsg");
+    assert.ok(msg.includes("개찰일은 공고일보다 빠를 수 없습니다"), msg);
+  });
+
+  await test("입찰종류를 고르면 진한 네이비로 표시", async () => {
+    await page.click('#bidTypeGroup [data-bid="서류접수"]');
+    const bg = await page.$eval('#bidTypeGroup [data-bid="서류접수"]',
+      el => getComputedStyle(el).backgroundColor);
+    const [r, g, b] = bg.match(/\d+/g).map(Number);
+    assert.ok(b > r && b > g && b < 130, "네이비 계열이 아님: " + bg);
+    // 하나만 선택된다
+    await page.click('#bidTypeGroup [data-bid="전자입찰"]');
+    const active = await page.$$eval("#bidTypeGroup .is-active", els => els.length);
+    assert.strictEqual(active, 1);
+  });
+
+  await test("재공고 건을 체크하면 기존 공고 선택 항목이 펼쳐짐", async () => {
+    await page.click("#resetFormBtn");
+    await page.check("#isRenotice");
+    assert.strictEqual(await page.isVisible("#rebidPanel"), true);
+    const options = await page.$$eval("#rebidTarget option", els => els.length);
+    assert.ok(options > 1, "선택할 기존 공고가 없음");
+  });
+
+  await test("기존 공고를 고르면 내용을 가져오고 차수가 자동 계산됨", async () => {
+    const value = await page.$$eval("#rebidTarget option",
+      els => (els.find(e => e.textContent.includes("혼합특허현장")) || {}).value);
+    assert.ok(value, "혼합특허현장을 찾지 못함");
+    await page.selectOption("#rebidTarget", value);
+    assert.strictEqual(await page.inputValue("#clientInput"), "혼합특허현장");
+    assert.strictEqual(await page.inputValue("#rebidRound"), "1차");
+    assert.strictEqual(await page.inputValue("#regionSelect"), "경기");
+  });
+
+  await test("재공고를 저장하면 별도 행이 생기고 원본은 유찰로 남음", async () => {
+    const before = await page.$$eval("#allTable tbody tr", els => els.length);
+    await page.fill("#noticeDate", "2026-07-01");
+    await page.fill("#rebidReason", "응찰 없음");
+    await page.click("#saveBtn");
+    const msg = await page.textContent("#saveMsg");
+    assert.ok(msg.includes("재공고 1차로 등록했습니다"), msg);
+
+    await page.click('#statusTabs [data-status-tab="전체"]');
+    const after = await page.$$eval("#allTable tbody tr", els => els.length);
+    assert.strictEqual(after, before + 1, "재공고가 별도 행으로 생기지 않음");
+
+    const heads = await page.$$eval("#allTable thead th", els => els.map(e => e.textContent.replace(/[▲▼]/g, "")));
+    const rows = await page.$$eval("#allTable tbody tr", els => els.map(e =>
+      Array.prototype.map.call(e.querySelectorAll("td"), td => td.textContent)));
+    const mixed = rows.filter(r => r[heads.indexOf("발주처(아파트명)")] === "혼합특허현장");
+    assert.strictEqual(mixed.length, 2, "원본 + 재공고 두 행이어야 함");
+    const statuses = mixed.map(r => r[heads.indexOf("상태")]).sort();
+    assert.deepStrictEqual(statuses, ["유찰", "재공고"], statuses.join(","));
+  });
+
+  await test("상태 필터 탭에 건수가 표시되고 눌러서 걸러짐", async () => {
+    const tabs = await page.$$eval("#statusTabs .pour-kind-tab", els => els.map(e => e.textContent));
+    assert.strictEqual(tabs.length, 4);
+    ["전체", "낙찰", "공고", "재공고(유찰)"].forEach((name, i) =>
+      assert.ok(tabs[i].startsWith(name + " ("), tabs[i]));
+
+    await page.click('#statusTabs [data-status-tab="재공고(유찰)"]');
+    const heads = await page.$$eval("#allTable thead th", els => els.map(e => e.textContent.replace(/[▲▼]/g, "")));
+    const statuses = await page.$$eval(`#allTable tbody tr td:nth-child(${heads.indexOf("상태") + 1})`,
+      els => els.map(e => e.textContent));
+    assert.ok(statuses.length > 0, "결과 없음");
+    assert.ok(statuses.every(s => s === "재공고" || s === "유찰"), statuses.join(","));
+    await page.click('#statusTabs [data-status-tab="전체"]');
+  });
+
+  await test("공사 범위를 여러 줄로 입력하면 한 셀에서 줄바꿈", async () => {
+    await page.click("#resetFormBtn");
+    await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
+    await page.fill("#cityInput", "양산");
+    await page.dispatchEvent("#cityInput", "change");
+    await page.fill("#clientInput", "공사범위현장");
+    await page.fill("#noticeDate", "2026-08-01");
+    await page.fill("#scopeInput", "외벽 도장\n옥상 방수\n지하주차장 에폭시");
+    await page.click("#saveBtn");
+
+    const heads = await page.$$eval("#allTable thead th", els => els.map(e => e.textContent.replace(/[▲▼]/g, "")));
+    const rowIndex = await page.$$eval("#allTable tbody tr td:nth-child(5)",
+      els => els.findIndex(e => e.textContent === "공사범위현장"));
+    const cell = await page.$eval(
+      `#allTable tbody tr:nth-child(${rowIndex + 1}) td:nth-child(${heads.indexOf("공사 범위") + 1})`,
+      el => el.textContent);
+    assert.strictEqual(cell, "외벽 도장\n옥상 방수\n지하주차장 에폭시", JSON.stringify(cell));
+  });
+
+  /* -------------------------------------------------------------- */
+  section("13. 새로고침 후에도 유지");
 
   const before = {
     rows: await page.$$eval("#allTable tbody tr", els => els.length),

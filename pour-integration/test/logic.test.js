@@ -143,10 +143,13 @@ test("숫자 23 입력 시 23으로 시작하는 특허 추천", () => {
   assert.strictEqual(hits[0].number, "23456", "시작 일치가 먼저 와야 함");
 });
 
-test("POUR 입력 시 특허명·공법명 검색", () => {
+test("POUR 입력 시 특허명·공법명이 먼저 오고, 우리 특허 전체가 나옴", () => {
   const hits = PourPatents.search("POUR", 10, patentStore);
   assert.ok(hits.length >= 4, "결과 " + hits.length + "건");
-  assert.ok(hits.every(h => h.name.toUpperCase().includes("POUR")));
+  // 이름에 POUR 이 들어간 특허가 앞에 온다
+  assert.ok(hits[0].name.toUpperCase().includes("POUR"), hits[0].name);
+  // 결과는 모두 등록된 우리 특허여야 한다
+  hits.forEach(h => assert.ok(PourPatents.find(h.number, patentStore), "우리 특허가 아님: " + h.number));
 });
 
 test("재도장 입력 시 공종으로 검색", () => {

@@ -72,7 +72,7 @@
     }
 
     input.addEventListener("input", refresh);
-    input.addEventListener("focus", function () { if (input.value.trim()) refresh(); });
+    input.addEventListener("focus", refresh);   // 빈 칸을 눌러도 목록을 연다
     input.addEventListener("blur", function () { setTimeout(close, 120); });
     input.addEventListener("keydown", function (e) {
       if (!list.classList.contains("is-open") || !items.length) return;

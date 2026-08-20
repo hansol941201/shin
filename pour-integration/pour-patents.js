@@ -65,6 +65,7 @@
     name:   ["특허명", "공법명", "특허공법명", "명칭", "기술명", "특허명공법명"],
     category: ["공종", "공종분류", "분류", "적용공종"],
     prefix: ["구분", "특허구분", "약칭", "특허약칭", "표시명", "태그"],
+    company: ["특허권자", "권리자", "회사명", "보유회사", "소유자", "출원인"],
     active: ["사용여부", "활성", "사용", "표시여부"],
     remark: ["비고", "메모", "참고"]
   };
@@ -141,15 +142,18 @@
       };
     }
 
-    var records = [], seen = {}, duplicated = 0;
+    var records = [], seen = {}, duplicated = 0, lastCategory = "";
     for (var r = headerIndex + 1; r < rows.length; r++) {
       var row = rows[r] || [];
       var rowNo = r + 1; // 엑셀 행 번호(1부터)
       var rawNumber = row[columns.number];
       var name = String(row[columns.name] == null ? "" : row[columns.name]).trim();
       var category = String(row[columns.category] == null ? "" : row[columns.category]).trim();
+      // 공종 열이 병합 셀이면 그룹의 첫 줄에만 값이 있으므로 아래로 이어받는다
+      if (category) lastCategory = category; else category = lastCategory;
       var remark = columns.remark != null ? String(row[columns.remark] == null ? "" : row[columns.remark]).trim() : "";
       var prefix = columns.prefix != null ? String(row[columns.prefix] == null ? "" : row[columns.prefix]).trim() : "";
+      var company = columns.company != null ? String(row[columns.company] == null ? "" : row[columns.company]).trim() : "";
       var active = columns.active != null ? parseActive(row[columns.active]) : true;
 
       var isBlank = !String(rawNumber == null ? "" : rawNumber).trim() && !name && !category;
@@ -164,12 +168,23 @@
         errors.push({ row: rowNo, reason: "공종이 비어 있습니다 (특허번호 " + formatNumber(number) + ")" });
         continue;
       }
-      if (seen[number]) { duplicated++; continue; } // 같은 파일 안의 중복
-      seen[number] = true;
+      // 같은 특허가 여러 공종에 걸쳐 있으면 행이 나뉘어 있다. 공종을 합치고 행은 하나로 유지한다.
+      if (seen[number]) {
+        var exist = records[seen[number].at];
+        if (category && exist.categories.indexOf(category) < 0) exist.categories.push(category);
+        else duplicated++;
+        exist.category = exist.categories.join(", ");
+        if (!exist.name && name) exist.name = name;
+        if (!exist.company && company) exist.company = company;
+        continue;
+      }
+      seen[number] = { at: records.length };
 
       records.push({
-        number: number, name: name, category: category,
-        remark: remark, prefix: prefix, active: active
+        number: number, name: name,
+        categories: category ? [category] : [],
+        category: category,
+        remark: remark, prefix: prefix, active: active, company: company
       });
     }
 
@@ -242,8 +257,8 @@
   /* ------------------------------------------------------------- 검색 */
 
   var NOT_FOUND_MESSAGE = "업로드된 POUR 특허 자료에서 일치 항목을 찾지 못했습니다. 우리 특허인지 확인해 주세요.";
-  var NO_RESULT_MESSAGE = "등록된 POUR 특허가 없습니다";
-  var NEED_UPLOAD_MESSAGE = "먼저 특허 자료 관리에서 POUR 특허 엑셀을 업로드해 주세요.";
+  var NO_RESULT_MESSAGE = "일치하는 POUR 특허가 없습니다.";
+  var NEED_UPLOAD_MESSAGE = "먼저 POUR 특허 엑셀을 업로드해 주세요.";
 
   /** 드롭다운에 무엇을 보여줄지 정한다. 자료 자체가 없을 때와 결과가 없을 때를 구분한다. */
   function emptyMessage(storage) {
@@ -257,6 +272,8 @@
    *   "재도장" → 공종이 재도장인 특허
    * @returns 최대 limit 개의 { number, name, category, label }
    */
+  var OUR_KEYWORDS = ["POUR", "POUR공법", "우리특허", "우리 특허"];
+
   function search(query, limit, storage) {
     var q = String(query == null ? "" : query).trim();
     if (!q) return [];
@@ -276,13 +293,18 @@
         else if (num.indexOf(digits) === 0 || lnum.indexOf(ldigits) === 0) score = 1;   // 시작 일치 우선
         else if (num.indexOf(digits) > 0) score = 4;                                    // 그다음 포함
       }
+      // 등록된 특허는 모두 우리(POUR) 특허이므로 "POUR"는 우리 특허 전체를 뜻하는 검색어로 본다.
+      // (실제 특허 자료의 특허명은 국문 기술명이라 "POUR" 글자가 들어 있지 않다)
+      if (score < 0 && OUR_KEYWORDS.indexOf(text) >= 0) score = 7;
       if (score < 0 && /[^0-9\s-]/.test(q)) {
         var name = String(rec.name || "").toUpperCase();
         var category = String(rec.category || "").toUpperCase();
+        var categoryList = (rec.categories || []).map(function (c) { return String(c).toUpperCase(); });
         if (name.indexOf(text) === 0) score = 2;
-        else if (category === text) score = 3;
+        else if (category === text || categoryList.indexOf(text) >= 0) score = 3;
         else if (name.indexOf(text) > 0) score = 5;
         else if (category.indexOf(text) >= 0) score = 6;
+        else if (String(rec.company || "").toUpperCase().indexOf(text) >= 0) score = 6;
       }
       if (score >= 0) scored.push({ rec: rec, score: score });
     });
@@ -298,6 +320,16 @@
         name: s.rec.name,
         category: s.rec.category,
         label: [formatNumber(s.rec.number), s.rec.name, s.rec.category].filter(Boolean).join(" · ")
+      };
+    });
+  }
+
+  /** 입력칸이 비어 있을 때 보여줄 전체 목록 (최근 등록 순서대로 최대 limit개). */
+  function browse(limit, storage) {
+    return readStore(storage).slice(0, limit || 10).map(function (rec) {
+      return {
+        number: rec.number, name: rec.name, category: rec.category,
+        label: [formatNumber(rec.number), rec.name, rec.category].filter(Boolean).join(" · ")
       };
     });
   }
@@ -318,8 +350,10 @@
     var out = [], seen = {};
     (numbers || []).forEach(function (n) {
       var rec = find(n, storage);
-      if (!rec || !rec.category) return;
-      rec.category.split(/[,/\n]/).forEach(function (part) {
+      if (!rec) return;
+      var source = (rec.categories && rec.categories.length) ? rec.categories.join(",") : rec.category;
+      if (!source) return;
+      String(source).split(/[,/\n]/).forEach(function (part) {
         var c = part.trim();
         if (c && !seen[c]) { seen[c] = true; out.push(c); }
       });
@@ -340,6 +374,7 @@
     parseRows: parseRows,
     load: load,
     search: search,
+    browse: browse,
     find: find,
     categoriesFor: categoriesFor,
     list: readStore,

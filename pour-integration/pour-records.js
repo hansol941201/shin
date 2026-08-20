@@ -17,6 +17,49 @@
   var STORAGE_KEY = "pour.records.v1";
 
   var STATUSES = ["공고", "낙찰", "유찰", "공고취소", "재공고", "타공법 낙찰"];
+
+  var BID_TYPES = ["서류접수", "전자입찰"];
+  var BID_TYPE_UNKNOWN = "확인 필요";
+
+  // 기존에 자유롭게 적혀 있던 입찰종류 값을 두 버튼 중 하나로 옮긴다.
+  // 어느 쪽인지 알 수 없는 값은 지우지 않고 "확인 필요"로 남긴다.
+  var BID_TYPE_MAP = {
+    "전자입찰": "전자입찰", "전자입찰(최저가)": "전자입찰", "전자입찰(적격)": "전자입찰",
+    "K-APT 전자입찰": "전자입찰", "KAPT 전자입찰": "전자입찰",
+    "서류접수": "서류접수", "방문접수": "서류접수", "우편접수": "서류접수",
+    "직접접수": "서류접수", "현장접수": "서류접수"
+  };
+
+  function normalizeBidType(value) {
+    var raw = String(value == null ? "" : value).trim();
+    if (!raw) return "";
+    if (BID_TYPES.indexOf(raw) >= 0) return raw;
+    var key = raw.replace(/\s+/g, "");
+    var found = "";
+    Object.keys(BID_TYPE_MAP).forEach(function (k) {
+      if (!found && k.replace(/\s+/g, "") === key) found = BID_TYPE_MAP[k];
+    });
+    if (found) return found;
+    if (/전자/.test(raw)) return "전자입찰";
+    if (/접수/.test(raw)) return "서류접수";
+    return BID_TYPE_UNKNOWN;                 // 원본은 bidTypeRaw 에 그대로 남는다
+  }
+
+  /** 공고일 ≤ 서류 마감일 ≤ 개찰일 인지 확인한다. 빈 값은 검사하지 않는다. */
+  function validateDates(record) {
+    var r = record || {};
+    var pairs = [
+      ["noticeDate", "documentDueDate", "서류 마감일은 공고일보다 빠를 수 없습니다."],
+      ["documentDueDate", "bidDate", "개찰일은 서류 마감일보다 빠를 수 없습니다."],
+      ["noticeDate", "bidDate", "개찰일은 공고일보다 빠를 수 없습니다."]
+    ];
+    var errors = [];
+    pairs.forEach(function (pair) {
+      var a = r[pair[0]], b = r[pair[1]];
+      if (a && b && String(a) > String(b)) errors.push({ field: pair[1], message: pair[2] });
+    });
+    return { ok: !errors.length, errors: errors };
+  }
   var QUALITY_OPTIONS = ["우수", "양호", "보통", "확인 필요"];
 
   /* --------------------------------------------------------- 열 정의 */
@@ -42,7 +85,7 @@
     { key: "awardAmount",    title: "낙찰금액",          type: "money",  width: 14 },
     { key: "agreementNo",    title: "협약서 발행번호",   type: "text",   width: 16 },
     { key: "patentNames",    title: "POUR 특허명·공법명", type: "list",  width: 22 },
-    { key: "scope",          title: "공사 범위",         type: "text",   width: 20 },
+    { key: "scopes",         title: "공사 범위",         type: "list",   width: 20 },
     { key: "address",        title: "주소",              type: "text",   width: 28 },
     { key: "remark",         title: "비고",              type: "text",   width: 18 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
@@ -111,7 +154,8 @@
       noticeMultiFlag: r.noticeMultiFlag === true,
       noticePatentText: String(r.noticePatentText || "").trim(),
       agreementNoOnly: String(r.agreementNoOnly || "").trim(),
-      bidType: String(r.bidType || "").trim(),
+      bidType: normalizeBidType(r.bidType),
+      bidTypeRaw: String(r.bidTypeRaw || r.bidType || "").trim(),   // 원본 표기 보존
       documentDueDate: String(r.documentDueDate || "").trim(),
       isRenotice: r.isRenotice === true,
       expectedAmount: toNumber(r.expectedAmount),
@@ -132,15 +176,20 @@
       contractorNote: String(r.contractorNote || "").trim(),
       resultEnteredAt: String(r.resultEnteredAt || "").trim(),
       updatedAt: String(r.updatedAt || "").trim(),
-      renoticeRound: r.renoticeRound == null || r.renoticeRound === "" ? "" : Number(r.renoticeRound),
-      originalNoticeId: String(r.originalNoticeId || "").trim(),
+      isRebid: r.isRebid === true || r.isRenotice === true,
+      rebidRound: r.rebidRound == null || r.rebidRound === "" ? "" : Number(r.rebidRound),
+      rebidReason: String(r.rebidReason || "").trim(),
+      previousFailDate: String(r.previousFailDate || "").trim(),
+      originalProjectId: String(r.originalProjectId || r.originalNoticeId || "").trim(),
+      previousProjectId: String(r.previousProjectId || "").trim(),
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
       awardDate: String(r.awardDate || "").trim(),
       awardAmount: toNumber(r.awardAmount),
       agreementNo: String(r.agreementNo || "").trim(),
-      scope: String(r.scope || "").trim(),
+      scopes: toList(r.scopes != null ? r.scopes : r.scope),
+      scope: toList(r.scopes != null ? r.scopes : r.scope).join("\n"),
       address: String(r.address || "").trim(),
       remark: String(r.remark || "").trim()
     };
@@ -673,6 +722,83 @@
     return "⚠ 특허번호 미기재 " + count + "건 — 확인이 필요한 낙찰 현장이 있습니다.";
   }
 
+  /* --------------------------------------------------------- 재공고 */
+
+  /**
+   * 재공고를 만든다. 원본 공고는 지우지 않고 유찰로 두고, 재공고는 별도 행으로 만들어 연결한다.
+   * 차수는 같은 원본에 딸린 재공고 수로 자동 계산한다.
+   */
+  function createRebid(originalId, changes, storage) {
+    var all = list(storage);
+    var origin = null;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === originalId) { origin = all[i]; break; } }
+    if (!origin) return { ok: false, message: "원본 공고를 찾지 못했습니다." };
+
+    // 원본을 따라 올라가 최초 공고를 찾는다 (재공고의 재공고도 같은 원본에 묶인다)
+    var rootId = origin.originalProjectId || origin.id;
+    var round = 1;
+    all.forEach(function (rec) {
+      if (rec.originalProjectId === rootId && rec.rebidRound) {
+        round = Math.max(round, Number(rec.rebidRound) + 1);
+      }
+    });
+
+    var draft = {};
+    // 단지명·공사명·공종·지역·도시·전화번호·세대수·특허·공사범위를 가져온다 (수정 가능)
+    ["client", "projectNames", "categories", "region", "city", "phone", "households",
+     "patentItems", "noticeMultiFlag", "noticePatentText", "scopes", "address",
+     "agreementNo", "quality"].forEach(function (key) { draft[key] = origin[key]; });
+
+    Object.keys(changes || {}).forEach(function (key) { draft[key] = changes[key]; });
+
+    draft.id = createId();
+    draft.status = "재공고";
+    draft.isRebid = true;
+    draft.rebidRound = round;
+    draft.originalProjectId = rootId;
+    draft.previousProjectId = origin.id;
+    draft.previousFailDate = String((changes || {}).previousFailDate || origin.bidDate || "").trim();
+    draft.contractor = "";
+    draft.contractorPhone = "";
+    draft.awardDate = "";
+    draft.awardAmount = "";
+
+    var rebid = normalize(draft);
+    all.push(rebid);
+
+    // 원본은 유찰로 남긴다 (이미 다른 상태면 건드리지 않는다)
+    for (var j = 0; j < all.length; j++) {
+      if (all[j].id !== origin.id) continue;
+      if (all[j].status === "공고" || all[j].status === "재공고") {
+        var before = JSON.parse(JSON.stringify(all[j]));
+        all[j].status = "유찰";
+        all[j].history = before.history.concat(buildHistory(before, all[j], "재공고 등록으로 유찰 처리"));
+      }
+    }
+
+    writeAll(all, storage);
+    return { ok: true, record: rebid, round: round, originalId: rootId };
+  }
+
+  /** 상태 필터 탭에 표시할 건수. */
+  function statusCounts(records) {
+    var all = records || [];
+    var count = function (fn) { return all.filter(fn).length; };
+    return {
+      "전체": all.length,
+      "낙찰": count(function (r) { return r.status === "낙찰"; }),
+      "공고": count(function (r) { return r.status === "공고"; }),
+      "재공고(유찰)": count(function (r) { return r.status === "재공고" || r.status === "유찰"; })
+    };
+  }
+
+  function matchesStatusTab(record, tab) {
+    if (!tab || tab === "전체") return true;
+    if (tab === "재공고(유찰)") return record.status === "재공고" || record.status === "유찰";
+    return record.status === tab;
+  }
+
+
   /* ----------------------------------------------------- 특허별 실적 */
 
   /**
@@ -830,6 +956,10 @@
   return {
     STORAGE_KEY: STORAGE_KEY,
     STATUSES: STATUSES,
+    BID_TYPES: BID_TYPES,
+    BID_TYPE_UNKNOWN: BID_TYPE_UNKNOWN,
+    normalizeBidType: normalizeBidType,
+    validateDates: validateDates,
     QUALITY_OPTIONS: QUALITY_OPTIONS,
     COLUMNS: COLUMNS,
     PATENT_TAB_COLUMNS: PATENT_TAB_COLUMNS,
@@ -842,6 +972,9 @@
     save: save,
     award: award,
     patentTabs: patentTabs,
+    createRebid: createRebid,
+    statusCounts: statusCounts,
+    matchesStatusTab: matchesStatusTab,
     recordsForPatent: recordsForPatent,
     summarize: summarize,
     summaryText: summaryText,

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>POUR 공사실적 — 입력·실적표 모듈 시연</title>
+<title>공고 등록 — POUR 공사실적 모듈 시연</title>
 <link rel="stylesheet" href="pour-integration.css" />
 <style>
   body{margin:0;padding:20px;background:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#1f2937;}
@@ -45,7 +45,7 @@
 </head>
 <body class="pour-scope">
 
-<h1>POUR 공사실적 — 입력·실적표 모듈 시연</h1>
+<h1>공고 등록</h1>
 <p class="lead">「한솔 공사실적 통합관리」에 붙일 모듈의 동작 확인용 화면입니다. 자료는 브라우저에 저장되어 새로고침해도 유지됩니다.</p>
 
 <div id="alertArea"></div>
@@ -81,6 +81,21 @@
     <span>② 새 공고 등록</span>
     <label class="pour-renotice"><input type="checkbox" id="isRenotice" /> 재공고 건</label>
   </h2>
+
+  <div class="pour-rebid-panel" id="rebidPanel" style="display:none">
+    <div class="pour-row pour-row-4">
+      <div class="pour-field">
+        <label for="rebidSearch">기존 공고 검색</label>
+        <input type="text" id="rebidSearch" placeholder="단지명·공사명·도시" autocomplete="off" />
+      </div>
+      <div><label for="rebidTarget">기존 공고 선택</label><select id="rebidTarget"></select></div>
+      <div><label for="rebidRound">재공고 차수 <span class="hint">자동</span></label><input type="text" id="rebidRound" readonly /></div>
+      <div><label for="previousFailDate">이전 유찰일</label><input type="date" id="previousFailDate" /></div>
+    </div>
+    <div class="pour-row pour-row-1">
+      <div><label for="rebidReason">재공고 사유</label><input type="text" id="rebidReason" placeholder="예: 응찰 없음, 예정가격 미달" /></div>
+    </div>
+  </div>
 
   <!-- 첫 줄: 아파트·단지명 | 공사명 | 공종 -->
   <div class="pour-row pour-row-3" id="rowBasic">
@@ -156,7 +171,7 @@
         <input type="text" id="noticePatentText" placeholder="공고문에 적힌 특허번호, 특허명 또는 공법명" />
       </div>
       <div><label for="agreementNo">협약서 발행번호</label><input type="text" id="agreementNo" /></div>
-      <div><label for="scopeInput">공사 범위</label><input type="text" id="scopeInput" /></div>
+      <div><label for="scopeInput">공사 범위 <span class="hint">여러 건은 줄바꿈</span></label><textarea id="scopeInput" rows="2"></textarea></div>
       <div><label for="addressInput">주소</label><input type="text" id="addressInput" /></div>
       <div>
         <label for="qualityInput">공사 품질</label>
@@ -179,10 +194,14 @@
 
 
 <section>
-  <h2>③ 전체 공사실적</h2>
+  <h2>③ 전체 공고·실적 목록</h2>
+  <div class="pour-kind-tabs" id="statusTabs" style="max-width:640px"></div>
   <div class="actions" style="margin:0 0 12px">
     <button class="btn secondary" type="button" id="csvBtn">CSV 내려받기</button>
-    <button class="btn secondary" type="button" id="xlsxBtn">엑셀 내려받기</button>
+    <button class="btn secondary" type="button" data-export="전체">전체 실적 엑셀</button>
+    <button class="btn secondary" type="button" data-export="낙찰">낙찰 실적 엑셀</button>
+    <button class="btn secondary" type="button" data-export="공고">공고 실적 엑셀</button>
+    <button class="btn secondary" type="button" data-export="재공고(유찰)">재공고·유찰 엑셀</button>
   </div>
   <div id="allTable"></div>
 </section>
