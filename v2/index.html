@@ -1729,8 +1729,15 @@
   });
   window.SHIN2_SYNC_MERGE = (function(){
     function tsOf(item){
-      var t = item && (item.updatedAt || item.createdAt);
-      if(!t) return 0;
+      // deletedAt을 먼저 본다 — 삭제는 그 항목에 일어난 마지막 사건이므로, 삭제 표시가
+      // 같은 항목의 수정본보다 오래된 것으로 판정되면 지운 항목이 되살아난다.
+      var t = item && (item.deletedAt || item.updatedAt || item.createdAt);
+      if(t == null) return 0;
+      // [버그 수정] 예전에는 Date.parse()만 썼는데, 이 앱의 타임스탬프는 대부분
+      // Date.now()가 만든 "숫자"다. Date.parse(1787187000000)은 NaN이라 전부 0으로
+      // 취급됐고, 그 결과 "같은 id면 최신 것 채택"이 사실상 동작하지 않았다
+      // (먼저 들어온 쪽이 늘 이김). 숫자/문자열 양쪽을 모두 인식한다.
+      if(typeof t === 'number') return isFinite(t) ? t : 0;
       var n = Date.parse(t);
       return isNaN(n) ? 0 : n;
     }
@@ -1860,7 +1867,7 @@
         } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
         const {
           getFirestore, doc, setDoc, onSnapshot, getDoc,
-          enableIndexedDbPersistence, serverTimestamp
+          enableIndexedDbPersistence, serverTimestamp, runTransaction
         } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
         // Storage SDK — 자료실/CRM 서류함 파일 업로드용(신규). 기존 Auth/Firestore와 동일한
         // CDN 동적 import 패턴을 그대로 따른다(새 로딩 방식을 만들지 않음). getStorage(app)를
@@ -1955,6 +1962,25 @@
           liveSyncStarted = true;
           const uid = currentUid;
           const pushTimers = {};
+          // §8/§9 — 동기화 대기열과 상태 표시.
+          // 클라우드 저장에 실패한 키를 기억해두고(로컬에는 이미 저장돼 있다), 온라인이
+          // 돌아오면 현재 로컬 값을 그대로 다시 보낸다. localStorage에 별도 큐 사본을
+          // 만들지 않는다 — 용량을 또 차지하지 않기 위해서다(§10).
+          const pendingKeys = new Set();
+          function syncStatus(state){
+            try{ window.dispatchEvent(new CustomEvent('shin2-sync-status', { detail:{ state: state, pending: pendingKeys.size } })); }catch(e){}
+          }
+          function flushPending(){
+            if(!pendingKeys.size) return;
+            Array.from(pendingKeys).forEach(function(key){
+              const sk = SHIN2_SYNC_KEYS[key];
+              let val = null;
+              try{ const raw = localStorage.getItem(sk); val = raw ? JSON.parse(raw) : null; }catch(e){}
+              if(!isEmptyVal(key, val)) pushToCloud(key, val);
+            });
+          }
+          window.addEventListener('online', flushPending);
+          setInterval(flushPending, 30000); // 브라우저가 online 이벤트를 놓치는 경우 대비
           // [버그 수정 — 삭제 항목 되살아남] localRev: 로컬에서 저장(삭제 포함)할 때마다
           // localStorage에 즉시(디바운스 전에) 기록해두는 단조증가 타임스탬프. onSnapshot이
           // 이 값보다 오래된(=아직 이 기기의 최신 로컬 변경을 반영하지 못한) 클라우드 스냅샷을
@@ -1974,8 +2000,30 @@
             try{ localStorage.setItem(localRevKey(key), String(rev)); }catch(e){}
             clearTimeout(pushTimers[key]);
             pushTimers[key] = setTimeout(async () => {
-              try{ await setDoc(doc(db, 'users', uid, 'shin2', SHIN2_SYNC_KEYS[key] || key), { value: data, updatedAt: serverTimestamp(), localRev: rev }); }
-              catch(e){ console.error(`[한솔2/Firebase] ${key} 저장 실패`, e); }
+              const ref = doc(db, 'users', uid, 'shin2', SHIN2_SYNC_KEYS[key] || key);
+              syncStatus('syncing');
+              try{
+                // §다기기 동기화 라운드 — 통째로 덮어쓰기(setDoc) 금지.
+                // 회사 PC가 업무 A를 고치는 동안 집 PC가 업무 B를 추가하면, 나중에 저장한
+                // 쪽의 배열이 상대 변경을 통째로 삼켰다. 이제 트랜잭션 안에서 클라우드의
+                // 최신 값을 읽어 항목 단위로 병합한 뒤 쓴다. 트랜잭션은 그 사이 값이 바뀌면
+                // 자동으로 다시 실행되므로, 양쪽 변경이 모두 살아남는다.
+                await runTransaction(db, async (tx) => {
+                  const snap = await tx.get(ref);
+                  const cloud = (snap.exists() && snap.data() && snap.data().value != null) ? snap.data().value : null;
+                  const merged = isEmptyVal(key, cloud) ? data : mergeValues(key, data, cloud);
+                  tx.set(ref, { value: merged, updatedAt: serverTimestamp(), localRev: rev });
+                });
+                pendingKeys.delete(key);
+                syncStatus(pendingKeys.size ? 'syncing' : 'ok');
+              }
+              catch(e){
+                // 실패해도 로컬에는 이미 저장돼 있다(§8 오프라인 보존). 대기 목록에 남겨두고
+                // 온라인이 되면 자동으로 다시 보낸다 — 사용자가 버튼을 누를 필요는 없다.
+                console.error(`[한솔2/Firebase] ${key} 저장 실패 — 로컬 보존, 나중에 재시도`, e);
+                pendingKeys.add(key);
+                syncStatus('pending');
+              }
             }, 500);
           }
           window.__shin2CloudSync.push = pushToCloud;
@@ -2021,21 +2069,12 @@
 
           // §10: 이 스냅샷 저장은 오직 이 버튼 클릭 경로 안에서만 실행된다(페이지 로드 시
           // 자동 실행되지 않음 — 이 함수 자체가 명시적 버튼 클릭으로만 호출되기 때문).
-          const snapshot = {};
-          Object.keys(SHIN2_SYNC_KEYS).forEach((k) => {
-            const sk = SHIN2_SYNC_KEYS[k];
-            try{ const raw = localStorage.getItem(sk); snapshot[k] = raw ? JSON.parse(raw) : null; }catch(e){ snapshot[k] = null; }
-          });
-          const now = new Date();
-          const pad = (n) => String(n).padStart(2, '0');
-          const snapKey = `shin2-pre-firebase-backup-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-          // §자동 동기화 라운드: 이 스냅샷은 "합치기 전 로컬 상태"를 보존하려는 안전장치인데,
-          // 로컬이 통째로 비어 있으면 보존할 것이 없는 빈 껍데기만 저장공간을 잡아먹는다.
-          // 저장공간 초과가 실제 사고 원인이었으므로, 실제로 지킬 데이터가 있을 때만 남긴다.
-          const hasAnyLocal = Object.keys(snapshot).some(function(k){ return !isEmptyVal(k, snapshot[k]); });
-          if(hasAnyLocal){
-            try{ localStorage.setItem(snapKey, JSON.stringify({ takenAt: now.toISOString(), data: snapshot })); }catch(e){}
-          }
+          // §10 — 동기화할 때마다 만들던 전체 스냅샷 백업(shin2-pre-firebase-backup-*)을
+          // 더 이상 만들지 않는다. 자동 동기화로 바뀌면서 이 스냅샷은 접속할 때마다 전체
+          // 데이터의 복제본을 localStorage에 쌓게 되는데, 저장공간이 가득 차는 것이 바로
+          // 이번 데이터 유실 사고의 배경이었다. 합치기 전 상태가 필요하면 진단 페이지의
+          // [전체 원본 백업 내려받기]로 파일에 저장한다 — 브라우저 용량을 쓰지 않는다.
+          // (이미 만들어져 있는 기존 백업 키는 지우지 않는다 — 복구 단서일 수 있다.)
 
           const results = [];
           for(const key of Object.keys(SHIN2_SYNC_KEYS)){
@@ -5978,6 +6017,16 @@
       : '이 브라우저에만 저장됨';
   }
   window.addEventListener('shin2-sync-active', function(){ setGuard('on', ''); });
+  // §9 — 상단 우측에 아주 작게 상태만. 별도의 큰 클라우드 관리 UI는 만들지 않는다.
+  window.addEventListener('shin2-sync-status', function(e){
+    var st = (e && e.detail && e.detail.state) || 'ok';
+    var n = (e && e.detail && e.detail.pending) || 0;
+    if(!guardEl) return;
+    if(st === 'ok'){ setGuard('on', ''); guardEl.textContent = '● 동기화 완료'; }
+    else if(st === 'syncing'){ guardEl.className = 'shin2-guard shin2-guard-wait'; guardEl.textContent = '↻ 동기화 중'; guardState = 'on'; }
+    else { guardEl.className = 'shin2-guard shin2-guard-off'; guardEl.textContent = '! 오프라인 · 동기화 대기' + (n > 1 ? ' ' + n : ''); guardState = 'off';
+           guardDetail = '인터넷 연결이 복구되면 자동으로 다시 보냅니다. 입력한 내용은 이 기기에 그대로 있습니다.'; }
+  });
   window.addEventListener('shin2-sync-failed', function(e){
     setGuard('off', (e && e.detail && e.detail.message) ? e.detail.message : '');
   });
@@ -12573,9 +12622,16 @@ ${text}
     var t = todos.find(function(x){ return x.id === id; });
     if(!t){ render(); return; }
     fn(t, todos);
+    // §다기기 동기화 라운드 — 충돌 해결의 기준값. 같은 항목을 두 기기가 고쳤을 때
+    // "더 나중에 고친 쪽"을 채택하려면 이 값이 반드시 있어야 한다. 기존 항목에 이 값이
+    // 없다고 해서 지우거나 id를 새로 만들지 않는다 — 다음에 고칠 때 자연히 채워진다.
+    t.updatedAt = Date.now();
     save(todos);
     render();
   }
+  // 화면에 보여줄 항목(지운 표시가 없는 것). 저장 배열 자체에는 tombstone이 남아 있어야
+  // 다른 기기에서도 삭제가 전파된다 — 그래서 걸러내는 건 표시 단계에서만 한다.
+  function live(list){ return (list || []).filter(function(t){ return t && !t.deleted; }); }
 
   // ---- 정렬: 중요 먼저 → 이른 마감일 → 기존 순서 ----
   function sortRows(rows){
@@ -12610,7 +12666,7 @@ ${text}
   }
 
   function render(){
-    var todos = load();
+    var todos = live(load());
     var active = todos.filter(function(t){ return !t.done; });
     var g = { today:[], over:[], tomorrow:[], future:[], plain:[] };
     active.forEach(function(t){ g[bucketOf(t)].push(t); });
@@ -12689,7 +12745,8 @@ ${text}
     var due = pendingDue || nl.dueDate;
     if(!text) return;
     var todos = load();
-    var item = { id: genId(), text: text };
+    var now = Date.now();
+    var item = { id: genId(), text: text, createdAt: now, updatedAt: now };
     if(due) item.dueDate = due;
     todos.push(item);
     if(save(todos)){
@@ -12713,7 +12770,7 @@ ${text}
     '</div>';
   }
   function renderTall(){
-    var todos = load();
+    var todos = live(load());
     var rows = tallTab === 'done'
       ? todos.filter(function(t){ return t.done; })
       : sortRows(todos.filter(function(t){ return !t.done; }));
@@ -12744,8 +12801,11 @@ ${text}
     var id = row.getAttribute('data-id');
     if(e.target.closest('[data-act="star"]')){ mutate(id, function(t){ t.important = !isImportant(t); }); return; }
     if(e.target.closest('[data-act="del"]')){
-      var todos = load().filter(function(x){ return x.id !== id; });
-      save(todos); render(); return;
+      // §다기기 동기화 라운드 — tombstone. 배열에서 그냥 빼버리면, 다른 기기의 클라우드
+      // 사본에는 그 항목이 아직 남아 있어서 병합 때 되살아난다("지웠는데 또 생김").
+      // 그래서 지운 표시만 남기고 화면에서만 감춘다. id는 그대로 유지한다.
+      mutate(id, function(t){ t.deleted = true; t.deletedAt = Date.now(); });
+      return;
     }
   });
   tallOverlay.addEventListener('change', function(e){
