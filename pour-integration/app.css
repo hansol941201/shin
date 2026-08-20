@@ -1,0 +1,299 @@
+/* ==========================================================================
+   POUR 공사실적 관리 — 업무용 데이터 관리 화면
+   흰색·밝은 회색 바탕에 네이비 포인트. 그림자와 둥근 모서리는 최소한만 쓴다.
+   ========================================================================== */
+:root{
+  --navy:#17213B;         /* 진한 네이비 */
+  --navy-mid:#33415F;     /* 중간 네이비 */
+  --bg:#F4F6F8;
+  --head:#E9EDF2;
+  --line:#CBD2DC;
+  --white:#FFFFFF;
+  --text:#1B2333;
+  --muted:#5C6880;
+  --ok:#1F9D55;
+  --warn:#D97706;
+  --danger:#D92D20;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  font-size:14px; line-height:1.45;
+}
+button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--text);}
+
+/* ------------------------------------------------------------- 상단 헤더 */
+.app-header{
+  display:flex; align-items:stretch; gap:0;
+  background:var(--navy); color:#fff; border-bottom:1px solid var(--navy);
+  position:sticky; top:0; z-index:60;
+}
+.brand{display:flex; flex-direction:column; justify-content:center; padding:8px 20px; flex:0 0 auto;}
+.brand-name{font-size:15px; font-weight:800; letter-spacing:.10em;}
+.brand-sub{font-size:12px; color:#A9B4CC;}
+.app-nav{display:flex; align-items:stretch; flex:1; min-width:0; overflow-x:auto;}
+.nav-item{
+  flex:0 0 auto; padding:0 18px; background:transparent; border:0; cursor:pointer;
+  color:#C6CEE0; font-size:14px; font-weight:600; border-bottom:3px solid transparent;
+}
+.nav-item:hover{color:#fff; background:var(--navy-mid);}
+.nav-item.is-active{color:#fff; background:var(--navy-mid); border-bottom-color:#7FA6FF;}
+.header-right{display:flex; align-items:center; gap:8px; padding:8px 16px; flex:0 0 auto;}
+.header-search{
+  width:210px; padding:6px 10px; border:1px solid var(--navy-mid); border-radius:3px;
+  background:#0F1729; color:#fff;
+}
+.header-search::placeholder{color:#8A96B0;}
+.user-chip{
+  display:flex; align-items:center; gap:6px; padding:5px 10px; font-size:13px;
+  background:var(--navy-mid); border:0; border-radius:3px; color:#fff; cursor:pointer;
+}
+.hamburger{display:none; padding:0 16px; background:transparent; border:0; color:#fff; font-size:20px; cursor:pointer;}
+
+/* ------------------------------------------------------------- 본문 */
+.app-main{padding:12px 16px 24px;}
+.view{display:none;}
+.view.is-active{display:block;}
+.view-title{font-size:22px; font-weight:700; margin:0 0 12px;}
+
+/* 알림 */
+.alert-bar{
+  display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;
+}
+.alert-chip{
+  padding:7px 14px; font-size:13.5px; font-weight:700; cursor:pointer;
+  background:#FFF7E6; border:1px solid #F0A92E; color:#92400E; border-radius:3px;
+}
+.alert-chip:hover{background:#FDF0D5;}
+
+/* 작업 버튼 */
+.toolbar{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+.tb-btn{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; font-size:13.5px; font-weight:600; cursor:pointer;
+  background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:3px;
+}
+.tb-btn:hover{background:var(--navy-mid);}
+.tb-btn.ghost{background:#fff; color:var(--navy); border-color:var(--line);}
+.tb-btn.ghost:hover{background:var(--head);}
+.tb-btn:disabled{opacity:.45; cursor:not-allowed;}
+
+/* 상태 탭 */
+.status-tabs{display:flex; flex-wrap:wrap; gap:2px; margin-bottom:8px;}
+.status-tab{
+  padding:7px 16px; font-size:13.5px; font-weight:600; cursor:pointer;
+  background:var(--head); border:1px solid var(--line); border-bottom:0;
+  border-radius:3px 3px 0 0; color:var(--muted);
+}
+.status-tab.is-active{background:var(--navy); border-color:var(--navy); color:#fff;}
+.status-tab .cnt{font-weight:700;}
+
+/* 표 위 도구 */
+.grid-tools{
+  display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+  padding:7px 8px; background:var(--white);
+  border:1px solid var(--line); border-bottom:0;
+}
+.grid-tools .spacer{flex:1;}
+.grid-search{width:260px; max-width:100%; padding:6px 10px; border:1px solid var(--line); border-radius:3px;}
+.grid-count{font-size:13px; color:var(--muted);}
+.grid-tools select{min-width:120px; padding:6px 9px; border:1px solid var(--line); border-radius:3px; background:#fff;}
+
+/* ------------------------------------------------------------- 엑셀형 표 */
+.grid-wrap{
+  overflow:auto; max-height:calc(100vh - 300px); min-height:220px;
+  border:1px solid var(--line); background:var(--white);
+  -webkit-overflow-scrolling:touch;
+}
+.grid{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px;}
+.grid th,.grid td{
+  border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+  padding:5px 8px; vertical-align:middle; background:var(--white);
+}
+.grid thead th{
+  position:sticky; top:0; z-index:3;
+  background:var(--head); font-weight:700; text-align:center; white-space:nowrap;
+  user-select:none; padding-right:14px;
+}
+.grid .grid-filter-row th{top:29px; z-index:3; padding:3px 4px; background:#F2F5F9;}
+.grid .grid-filter-row input{width:100%; min-width:60px; padding:3px 5px; font-size:12px; border:1px solid var(--line); border-radius:2px;}
+/* 주요 식별 열 고정 */
+.grid th.is-pinned,.grid td.is-pinned{position:sticky; z-index:2;}
+.grid th.is-pinned{z-index:4;}
+.grid th:nth-child(1),.grid td:nth-child(1){left:0;}
+.grid th:nth-child(2),.grid td:nth-child(2){left:52px;}
+.grid td.is-pinned{background:#FBFCFD;}
+.grid tbody tr:nth-child(even) td{background:#FAFBFD;}
+.grid tbody tr:nth-child(even) td.is-pinned{background:#F5F7FA;}
+.grid tbody tr:hover td{background:#EEF3FB;}
+.grid tbody tr.is-selected td{background:#E3EBF9; box-shadow:inset 0 0 0 2px var(--navy);}
+.grid td{white-space:nowrap;}
+.grid td.cell-wrap{white-space:pre-line; min-width:140px; max-width:320px;}
+.grid td.cell-num{text-align:right; font-variant-numeric:tabular-nums;}
+.grid td.cell-seq{text-align:center; color:var(--muted);}
+.grid-th-label{cursor:pointer;}
+.grid-sort{margin-left:3px; font-size:10px; color:var(--navy);}
+.grid-filtered{margin-left:3px; font-size:10px; color:var(--warn);}
+.grid-resize{
+  position:absolute; top:0; right:0; width:7px; height:100%;
+  cursor:col-resize; background:transparent;
+}
+.grid th{position:relative;}   /* 너비 조절 손잡이를 붙이기 위한 기준 */
+
+.grid-empty{padding:28px; text-align:center; color:var(--muted); font-size:14px;}
+
+/* 상태 배지 */
+.status-badge{
+  display:inline-block; padding:1px 8px; font-size:12px; font-weight:600;
+  border-radius:2px; border:1px solid;
+}
+.status-badge[data-status="낙찰"]{background:#E8F6EE; border-color:#1F9D55; color:#12693A;}
+.status-badge[data-status="공고"]{background:#E8F0FE; border-color:#3B82F6; color:#1D4ED8;}
+.status-badge[data-status="재공고"]{background:#F3E8FF; border-color:#A855F7; color:#7E22CE;}
+.status-badge[data-status="유찰"]{background:#FFF3E4; border-color:#D97706; color:#92400E;}
+.status-badge[data-status="공고취소"]{background:#F1F2F4; border-color:#A1A1AA; color:#52525B;}
+.status-badge[data-status="타공법 낙찰"]{background:#F3EEE7; border-color:#8B6F4E; color:#6B5233;}
+
+.multi-badge{
+  display:inline-block; margin-left:4px; padding:1px 7px; font-size:11.5px; font-weight:700;
+  border-radius:2px; border:1px solid;
+}
+.multi-badge[data-badge="pour"]{background:#E8F0FE; border-color:#3B82F6; color:#1D4ED8;}
+.multi-badge[data-badge="mixed"]{background:#F3E8FF; border-color:#A855F7; color:#7E22CE;}
+.multi-badge[data-badge="third"]{background:#F1F2F4; border-color:#A1A1AA; color:#52525B;}
+.multi-badge[data-badge="unknown"]{background:#FFF7E6; border-color:#F0A92E; color:#92400E;}
+
+/* ------------------------------------------------- 오른쪽 슬라이드 패널 */
+.panel-back{
+  position:fixed; inset:0; background:rgba(15,23,42,.42); z-index:80;
+  display:none;
+}
+.panel-back.is-open{display:block;}
+.panel{
+  position:fixed; top:0; right:0; bottom:0; width:min(920px, 100%);
+  background:var(--white); border-left:1px solid var(--line);
+  z-index:81; display:flex; flex-direction:column;
+  transform:translateX(100%); transition:transform .18s ease-out;
+}
+.panel.is-open{transform:translateX(0);}
+.panel-head{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 18px; background:var(--head); border-bottom:1px solid var(--line);
+}
+.panel-title{font-size:17px; font-weight:700; margin:0;}
+.panel-head .spacer{flex:1;}
+.panel-close{
+  width:30px; height:30px; font-size:15px; cursor:pointer;
+  background:#fff; border:1px solid var(--line); border-radius:3px;
+}
+.panel-body{flex:1; overflow-y:auto; padding:16px 18px;}
+.panel-foot{
+  display:flex; justify-content:flex-end; gap:8px;
+  padding:11px 18px; background:var(--head); border-top:1px solid var(--line);
+}
+.rebid-check{display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:400; padding:6px 8px; margin:-6px 0; cursor:pointer;}
+.rebid-check input{width:auto; cursor:pointer;}
+
+/* 입력 폼 */
+.form-row{display:grid; gap:10px; margin-bottom:10px;}
+.form-row-1{grid-template-columns:minmax(0,1fr);}
+.form-row-3{grid-template-columns:repeat(3, minmax(0, 1fr));}
+.form-row-4{grid-template-columns:repeat(4, minmax(0, 1fr));}
+.form-row > div{min-width:0;}
+.form-row label{display:block; font-size:12.5px; font-weight:600; margin-bottom:3px;}
+.form-row .opt{font-weight:400; color:var(--muted);}
+.form-row .req{color:var(--danger);}
+.form-row input,.form-row select,.form-row textarea{
+  width:100%; padding:6px 9px; border:1px solid var(--line); border-radius:3px; background:#fff;
+}
+.field-error{display:block; margin-top:3px; font-size:12px; color:var(--danger);}
+.form-msg{font-size:13px; white-space:pre-line; margin-top:8px;}
+.form-msg.error{color:var(--danger);}
+.form-msg.ok{color:var(--ok);}
+
+.bid-group{display:flex; gap:6px;}
+.bid-btn{
+  flex:1; min-width:0; padding:6px 6px; cursor:pointer;
+  background:#fff; border:1px solid var(--line); border-radius:3px; color:var(--muted);
+}
+.bid-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
+
+.more-box{margin:12px 0;}
+.more-box > summary{
+  cursor:pointer; padding:8px 12px; font-size:13.5px; font-weight:600;
+  background:var(--head); border:1px solid var(--line); border-radius:3px; list-style:none;
+}
+.more-box > summary::-webkit-details-marker{display:none;}
+.more-box > summary::before{content:"▸ ";}
+.more-box[open] > summary::before{content:"▾ ";}
+.more-body{padding:12px 2px 0;}
+.rebid-box{padding:10px; margin-bottom:10px; background:#FFF7E6; border:1px solid #F0A92E; border-radius:3px;}
+.sub-head{font-size:13.5px; font-weight:700; margin:14px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--line);}
+
+/* 가져오기 미리보기 */
+.preview-stats{display:flex; flex-wrap:wrap; gap:18px; margin:10px 0; font-size:13.5px;}
+.preview-stats b{display:block; font-size:18px;}
+.preview-errors{margin:6px 0 0; padding-left:18px; font-size:12.5px; color:var(--danger); max-height:160px; overflow-y:auto;}
+
+/* 특허별 실적 */
+.sheet-tabs{display:flex; align-items:center; gap:6px; margin-bottom:8px;}
+.sheet-scroll{display:flex; gap:3px; overflow-x:auto; flex:1; padding-bottom:3px;}
+.sheet-tab{
+  flex:0 0 auto; padding:6px 13px; font-size:13px; white-space:nowrap; cursor:pointer;
+  background:var(--head); border:1px solid var(--line); border-bottom:0;
+  border-radius:3px 3px 0 0; color:var(--muted);
+}
+.sheet-tab.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:700;}
+.sheet-nav{flex:0 0 auto; width:28px; height:28px; background:#fff; border:1px solid var(--line); border-radius:3px; cursor:pointer;}
+.sheet-search{flex:0 0 auto; width:150px; padding:5px 9px; border:1px solid var(--line); border-radius:3px;}
+.summary-bar{
+  padding:9px 14px; margin-bottom:8px; font-size:13.5px;
+  background:#EEF3FB; border:1px solid var(--navy-mid); border-radius:3px;
+}
+.summary-bar strong{font-size:15px;}
+
+/* 통계 */
+.stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:14px;}
+.stat-card{padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:3px;}
+.stat-card .lbl{font-size:12.5px; color:var(--muted);}
+.stat-card .val{font-size:22px; font-weight:700;}
+
+/* 공용 모듈(특허 입력기·자동완성)의 강조색을 이 화면의 네이비로 맞춘다 */
+body.pour-scope{
+  --pour-accent:#17213B;
+  --pour-accent-soft:#E8EDF6;
+  --pour-border:#CBD2DC;
+  --pour-head-bg:#E9EDF2;
+  --pour-text:#1B2333;
+  --pour-muted:#5C6880;
+}
+
+/* 자동완성 드롭다운 — 표·카드 뒤로 숨지 않도록 충분히 높게 */
+.pour-field{position:relative; overflow:visible;}
+.pour-suggest{z-index:2000;}
+
+/* ------------------------------------------------------------- 반응형 */
+@media (max-width:1024px){
+  .form-row-3,.form-row-4{grid-template-columns:repeat(2, minmax(0, 1fr));}
+  .header-search{width:150px;}
+  .toolbar{overflow-x:auto;}
+}
+@media (max-width:640px){
+  .hamburger{display:block;}
+  .app-nav{
+    display:none; position:absolute; top:100%; left:0; right:0;
+    flex-direction:column; background:var(--navy-mid); border-bottom:1px solid var(--navy);
+  }
+  .app-nav.is-open{display:flex;}
+  .nav-item{padding:12px 18px; border-bottom:1px solid rgba(255,255,255,.12); text-align:left;}
+  .app-header{position:relative; flex-wrap:wrap;}
+  .header-right{padding:8px 12px;}
+  .header-search{width:120px;}
+  .form-row-3,.form-row-4{grid-template-columns:minmax(0, 1fr);}
+  .toolbar{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .tb-btn{flex:0 0 auto;}
+  .grid-wrap{max-height:calc(100vh - 330px);}
+  .panel{width:100%;}
+}

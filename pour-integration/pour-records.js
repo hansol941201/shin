@@ -100,6 +100,31 @@
     { key: "__patentStatus",     title: "특허 확인 상태",        type: "patentStatus",   width: 18 }
   ];
 
+  // 메인 화면 엑셀형 목록의 기본 열 순서
+  var MAIN_COLUMNS = [
+    { key: "__seq",          title: "No.",              type: "seq",          width: 6,  pin: true },
+    { key: "status",         title: "상태",             type: "text",         width: 11, pin: true },
+    { key: "noticeDate",     title: "공고일",           type: "date",         width: 12 },
+    { key: "documentDueDate", title: "서류 마감일",     type: "date",         width: 12 },
+    { key: "bidDate",        title: "개찰일",           type: "date",         width: 12 },
+    { key: "region",         title: "지역",             type: "text",         width: 8 },
+    { key: "city",           title: "도시",             type: "text",         width: 10 },
+    { key: "client",         title: "발주처(아파트명)", type: "text",         width: 24, pin: true },
+    { key: "projectNames",   title: "공사명",           type: "list",         width: 32 },
+    { key: "categories",     title: "공종",             type: "list",         width: 14 },
+    { key: "patentNumbers",  title: "POUR 특허번호",    type: "patent",       width: 18 },
+    { key: "thirdPatentNumbers", title: "타사 특허번호", type: "thirdNumbers", width: 18 },
+    { key: "phone",          title: "전화번호",         type: "phone",        width: 15 },
+    { key: "households",     title: "세대수",           type: "number",       width: 9 },
+    { key: "bidType",        title: "입찰종류",         type: "text",         width: 11 },
+    { key: "contractor",     title: "시공사",           type: "text",         width: 16 },
+    { key: "contractorPhone", title: "시공사 전화번호", type: "phone",        width: 16 },
+    { key: "awardDate",      title: "낙찰일",           type: "date",         width: 12 },
+    { key: "awardAmount",    title: "낙찰금액",         type: "money",        width: 14 },
+    { key: "quality",        title: "공사 품질",        type: "text",         width: 10 },
+    { key: "remark",         title: "비고",             type: "text",         width: 18 }
+  ];
+
   // 특허별 실적 탭의 표. 순번이 맨 앞에 오고 핵심 열을 먼저 보여준다.
   var PATENT_TAB_COLUMNS = [
     { key: "__seq",         title: "순번",             type: "seq",    width: 6 },
@@ -422,9 +447,18 @@
     }
 
     // POUR 적용 특허번호는 없어도 저장을 막지 않는다. 확인만 받는다.
-    var patentNumbers = data.patentNumbers != null
-      ? toList(data.patentNumbers).map(PourPatents.normalizeNumber).filter(Boolean)
-      : target.patentNumbers;
+    // 특허 항목을 함께 넘겼다면 그쪽이 최신이므로 거기서 POUR 번호를 다시 뽑는다.
+    var patentNumbers;
+    if (data.patentItems != null) {
+      patentNumbers = data.patentItems
+        .filter(function (it) { return it && it.kind !== THIRD; })
+        .map(function (it) { return PourPatents.normalizeNumber(it.number); })
+        .filter(Boolean);
+    } else if (data.patentNumbers != null) {
+      patentNumbers = toList(data.patentNumbers).map(PourPatents.normalizeNumber).filter(Boolean);
+    } else {
+      patentNumbers = target.patentNumbers;
+    }
     if (!patentNumbers.length && !data.confirmedWithoutPatent) {
       return {
         ok: false,
@@ -451,6 +485,8 @@
     merged.awardAmount = awardAmount;
     merged.categories = categories;
     merged.patentNumbers = patentNumbers;
+    if (data.patentItems != null) merged.patentItems = data.patentItems;
+    if (data.noticeMultiFlag != null) merged.noticeMultiFlag = data.noticeMultiFlag;
     if (data.patentNames != null) merged.patentNames = toList(data.patentNames);
     if (data.quality != null) merged.quality = String(data.quality).trim();
     if (data.remark != null) merged.remark = String(data.remark).trim();
@@ -962,6 +998,7 @@
     validateDates: validateDates,
     QUALITY_OPTIONS: QUALITY_OPTIONS,
     COLUMNS: COLUMNS,
+    MAIN_COLUMNS: MAIN_COLUMNS,
     PATENT_TAB_COLUMNS: PATENT_TAB_COLUMNS,
     normalize: normalize,
     createId: createId,
