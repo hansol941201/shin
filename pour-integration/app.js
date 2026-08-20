@@ -2,7 +2,18 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var storage = window.localStorage;
+
+  /**
+   * 자료 저장소.
+   * 운영에서는 localStorage 를 쓰지 않는다. window.POUR_API_BASE 를 지정하면
+   * 그 주소의 API(D1)를 바라보고, 지정하지 않으면 화면 확인용 브라우저 저장소를 쓴다.
+   *
+   *   <script>window.POUR_API_BASE = "/api";</script>
+   */
+  var usingApi = !!window.POUR_API_BASE;
+  var storage = usingApi
+    ? PourStore.createApiStore({ baseUrl: window.POUR_API_BASE })
+    : PourStore.createLocalStore();
   PourRecords.usePatentStorage(storage);
 
   var state = { view: "records", statusTab: "전체", search: "", editingId: null, awardingId: null };
@@ -956,9 +967,35 @@
     if (state.view === "settings") renderPatentList();
   }
 
+  function showStorageError(err) {
+    var bar = $("alertBar");
+    var chip = document.createElement("div");
+    chip.className = "alert-chip";
+    chip.style.cursor = "default";
+    chip.textContent = "⚠ 서버 저장에 실패했습니다. 자료는 화면에 남아 있으며 다시 시도합니다. (" +
+      (err && err.message ? err.message : "원인 미상") + ")";
+    bar.insertBefore(chip, bar.firstChild);
+  }
+
   window.PourApp = {
     refresh: refresh, showView: showView, openNotice: openNotice, openAward: openAward,
-    grid: grid, state: state
+    grid: grid, state: state, storage: storage, usingApi: usingApi
   };
-  refresh();
+
+  if (usingApi) {
+    storage.on(function (event) { if (event.type === "error") showStorageError(event.error); });
+    // 서버에서 자료를 받아온 뒤 화면을 그린다
+    storage.load().then(refresh).catch(function (err) {
+      refresh();
+      showStorageError(err);
+    });
+    // 저장이 끝나기 전에 창을 닫으면 알려 준다
+    window.addEventListener("beforeunload", function (e) {
+      if (!storage.hasPending()) return;
+      e.preventDefault();
+      e.returnValue = "";
+    });
+  } else {
+    refresh();
+  }
 })();

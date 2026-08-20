@@ -33,9 +33,12 @@
 | `pour-patent-editor.js` | POUR/타사 특허 2탭 입력기 |
 | `pour-integration.css` | 표·탭·드롭다운 스타일 |
 | `pour-grid.js` | 엑셀형 표 (정렬·열 필터·열 너비 조절·행 선택·열 고정) |
+| `pour-store.js` | 저장소 어댑터 — 운영은 API(D1), 확인용은 브라우저 저장소 |
+| `migrations/` | D1 순방향 마이그레이션 (`0001_pour_forward.sql`, `migrate.js`) |
+| `API.md` | 서버가 제공해야 하는 엔드포인트와 자료 모양 |
 | `app.html` · `app.js` · `app.css` | **메인 화면** — 업무용 데이터 관리 화면 |
 | `demo.html` · `demo.js` | 모듈 동작 확인용 보조 화면 |
-| `test/` | 로직 116건 + 브라우저 133건 검증 (첨부 엑셀 원본 포함) |
+| `test/` | 총 272건 검증 (첨부 엑셀 원본 · D1 마이그레이션 포함) |
 
 ## 사용법
 
@@ -144,6 +147,20 @@ PourExport.buildPatentWorkbook(tabs, records);      // 특허번호별 워크시
 > `vendor/exceljs.min.js` 는 저장소에 포함하지 않습니다.
 > `npm i exceljs` 후 `node_modules/exceljs/dist/exceljs.min.js` 를 복사하거나 CDN 을 쓰세요.
 
+## 운영 저장소 (localStorage 금지)
+
+운영 화면은 **localStorage 를 자료 저장소로 쓰지 않습니다.**
+
+```html
+<script>window.POUR_API_BASE = "/api";</script>
+```
+
+이 값을 지정하면 `pour-store.js` 의 API 어댑터가 서버(D1)에서 자료를 읽어 화면을 그리고,
+바뀐 내용은 서버로 저장합니다. 저장에 실패하면 화면 위쪽에 알리고 자료를 버리지 않은 채
+다시 시도합니다. 값을 지정하지 않으면 화면 확인용 브라우저 저장소로 동작합니다.
+
+자세한 규격은 `API.md`, 표 구조는 `migrations/0001_pour_forward.sql` 를 보세요.
+
 ## 검증
 
 ```sh
@@ -158,6 +175,8 @@ sh pour-integration/test/run-all.sh
 | `test/real-excel.test.js` | 첨부해 주신 POUR 특허 엑셀 원본으로 검증 | 19건 통과 |
 | `test/browser.test.js` | 모듈 동작·레이아웃 (demo.html) | 85건 통과 |
 | `test/app.test.js` | 메인 화면 동작 (app.html) | 48건 통과 |
+| `test/api-store.test.js` | API(D1) 저장소 · 새로고침 유지 | 10건 통과 |
+| `test/migration.test.mjs` | D1 순방향 마이그레이션 (실제 SQLite) | 10건 통과 |
 
 브라우저 테스트는 Playwright 를 씁니다.
 사전 설치된 Chromium 을 쓰려면 `chromium.launch({ executablePath })` 경로를 환경에 맞게 고치세요.

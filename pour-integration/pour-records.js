@@ -262,7 +262,9 @@
       out.push(item);
     }
 
-    if (Array.isArray(r.patentItems) && r.patentItems.length) {
+    // 빈 배열도 "특허를 모두 지웠다"는 뜻이므로 그대로 받아들인다.
+    // 항목 자체가 없을 때(옛 자료)만 기존 번호에서 옮겨 온다.
+    if (Array.isArray(r.patentItems)) {
       r.patentItems.forEach(function (it) { push(normalizePatentItem(it)); });
     } else {
       var names = toList(r.patentNames);
@@ -486,6 +488,11 @@
     merged.categories = categories;
     merged.patentNumbers = patentNumbers;
     if (data.patentItems != null) merged.patentItems = data.patentItems;
+    else if (data.patentNumbers != null || data.thirdPatentNumbers != null) {
+      delete merged.patentItems;                 // 번호로 다시 구성한다
+      merged.patentNumbers = patentNumbers;
+      if (data.thirdPatentNumbers != null) merged.thirdPatentNumbers = data.thirdPatentNumbers;
+    }
     if (data.noticeMultiFlag != null) merged.noticeMultiFlag = data.noticeMultiFlag;
     if (data.patentNames != null) merged.patentNames = toList(data.patentNames);
     if (data.quality != null) merged.quality = String(data.quality).trim();
@@ -556,10 +563,17 @@
     var before = all[at];
     var draft = {};
     Object.keys(before).forEach(function (k) { draft[k] = before[k]; });
-    Object.keys(changes || {}).forEach(function (k) {
+    var incoming = changes || {};
+    Object.keys(incoming).forEach(function (k) {
       if (k === "id" || k === "createdAt" || k === "history") return;   // 보존 항목
-      draft[k] = changes[k];
+      draft[k] = incoming[k];
     });
+
+    // 특허 항목 없이 번호만 넘겼다면 그 번호로 항목을 다시 만든다
+    if (incoming.patentItems == null &&
+        (incoming.patentNumbers != null || incoming.thirdPatentNumbers != null)) {
+      delete draft.patentItems;
+    }
 
     var after = normalize(draft);
     after.id = before.id;
@@ -746,9 +760,12 @@
     all.forEach(function (rec, i) {
       var row = byId[rec.id];
       if (!row) return;
-      all[i] = normalize(Object.assign({}, rec, {
-        patentItems: [], patentNumbers: row.patentNumbers, patentNames: row.patentNames
-      }));
+      // 특허 항목을 지우고 원래 번호로 되돌린다 (빈 배열이 아니라 키 자체를 없앤다)
+      var restored = Object.assign({}, rec, {
+        patentNumbers: row.patentNumbers, patentNames: row.patentNames
+      });
+      delete restored.patentItems;
+      all[i] = normalize(restored);
     });
     writeAll(all, storage);
     return { ok: true, restored: saved.snapshot.length, at: saved.at };

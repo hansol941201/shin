@@ -84,6 +84,67 @@ test("낙찰 필수 항목(낙찰일·시공사·낙찰금액·최종 공종)은
 });
 
 /* ------------------------------------------------------------------ */
+section("1-2. 낙찰 저장 중 특허번호를 지운 경우");
+
+test("특허 항목을 비우면 이전 번호를 쓰지 않고 빈 값으로 저장", () => {
+  const s = memoryStorage();
+  const rec = PourRecords.save({
+    client: "특허지움", status: "공고", categories: ["재도장"],
+    patentItems: [{ kind: PourRecords.POUR, number: "1935719" }]
+  }, s);
+  assert.deepStrictEqual(rec.patentNumbers, ["1935719"], "준비 상태 확인");
+
+  // 낙찰 창에서 특허를 지우고 저장하는 상황
+  const warn = PourRecords.award(rec.id, {
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01",
+    awardAmount: 100, categories: ["재도장"], patentItems: []
+  }, s);
+  assert.strictEqual(warn.ok, false);
+  assert.strictEqual(warn.needsConfirm, true, "확인 경고가 떠야 함");
+
+  const saved = PourRecords.award(rec.id, {
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01",
+    awardAmount: 100, categories: ["재도장"], patentItems: [], confirmedWithoutPatent: true
+  }, s);
+  assert.strictEqual(saved.ok, true, saved.message);
+  const after = PourRecords.list(s)[0];
+  assert.deepStrictEqual(after.patentNumbers, [], "이전 번호가 남아 있음");
+  assert.deepStrictEqual(after.patentItems, [], "특허 항목이 남아 있음");
+});
+
+test("특허번호가 빈 낙찰은 반드시 미기재 알림에 포함", () => {
+  const s = memoryStorage();
+  PourRecords.save({
+    client: "빈낙찰", status: "낙찰", categories: ["재도장"],
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01",
+    awardAmount: 100, patentItems: []
+  }, s);
+  const missing = PourRecords.missingPatentRecords(PourRecords.list(s), patentStore);
+  assert.strictEqual(missing.length, 1, "알림에서 빠짐");
+  assert.strictEqual(missing[0].client, "빈낙찰");
+
+  const groups = PourRecords.alerts(PourRecords.list(s), patentStore);
+  assert.ok(groups.some(g => g.key === "missingPour"), "알림 묶음에 없음");
+});
+
+test("타사 특허만 남겨도 미기재 알림에서 빠지지 않음", () => {
+  const s = memoryStorage();
+  const rec = PourRecords.save({
+    client: "타사만남김", status: "공고", categories: ["재도장"],
+    patentItems: [{ kind: PourRecords.POUR, number: "1935719" }]
+  }, s);
+  PourRecords.award(rec.id, {
+    contractor: "가나", contractorPhone: "031-1", awardDate: "2026-06-01",
+    awardAmount: 100, categories: ["재도장"], confirmedWithoutPatent: true,
+    patentItems: [{ kind: PourRecords.THIRD_PARTY, number: "2091977", company: "타사명" }]
+  }, s);
+  const after = PourRecords.list(s)[0];
+  assert.deepStrictEqual(after.patentNumbers, [], "POUR 번호가 남아 있음");
+  assert.deepStrictEqual(after.thirdPatentNumbers, ["2091977"]);
+  assert.strictEqual(PourRecords.missingPatentRecords(PourRecords.list(s), patentStore).length, 1);
+});
+
+/* ------------------------------------------------------------------ */
 section("2. 상단 알림 대상 판정");
 
 const store2 = memoryStorage();

@@ -6,5 +6,7 @@ node pour-integration/test/logic.test.js
 node pour-integration/test/edit.test.js
 node pour-integration/test/multipatent.test.js
 node pour-integration/test/real-excel.test.js
+node pour-integration/test/migration.test.mjs
 node pour-integration/test/browser.test.js
 node pour-integration/test/app.test.js
+node pour-integration/test/api-store.test.js
