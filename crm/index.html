@@ -3954,6 +3954,36 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       }
     });
 
+    // §샤인하우징 실사례 진단 라운드 — 실제 운영 진단 로그로 확인된 진짜 근본 원인: 위
+    // merge.rows.forEach는 baseline.newMou + newMouAdds에서 만든 목록만 훑는다. 그런데
+    // 샤인하우징처럼 아직 질문서/미팅/MOU 어느 것도 시작 안 해서 newMou 계열에 전혀 없고
+    // partnerList(연락처 목록, RTDB의 partnerList_internal_overrides/adds 등)에만 있는
+    // "신규 협력업체"는 그 루프가 아예 방문하지 못해 100% 누락된다(신규 후보/업데이트/검토
+    // 어디에도 안 잡힘 — 실제 진단에서 counts.newCompany=0, updates=0으로 재현). contactIndex
+    // (이미 pdBuildContactIndex가 internal>contractor>external 우선순위로 만들어 둔 병합
+    // 결과)를 훑어서, merge.rows에 없던 회사명만 같은 매칭 규칙(pdMatchCompany)·같은 분류
+    // 로직으로 추가 처리한다 — 새 매칭/판정 로직이 아니라 기존 것을 그대로 재사용한다.
+    // 진행상황(row)은 지어내지 않는다 — company 이름만 있는 최소 row라 pdMergeNewMou가
+    // 실제로 병합하는 필드는 없고, 연락처만 반영된다.
+    const rowCompanySet = new Set(merge.rows.filter(r=> r && r.company).map(r=> r.company));
+    contactIndex.forEach((contact, companyName)=>{
+      if(rowCompanySet.has(companyName)) return; // 이미 위 루프에서 처리됨(newMou 계열에 존재)
+      const fauxRow = { company: companyName };
+      const m = pdMatchCompany(fauxRow, companies, bizIndex, nameIndex, contactIndex);
+      if(m.via === 'ambiguous-bizno' || m.via === 'ambiguous-name'){
+        review.push({ row: fauxRow, reason: m.via === 'ambiguous-bizno' ? '동일 사업자번호의 CRM 업체가 여러 건' : '동일 정규화 업체명의 CRM 업체가 여러 건' });
+        return;
+      }
+      if(!m.co){
+        newCompanies.push({ row: fauxRow, contact });
+        return;
+      }
+      const contactChanged = pdContactChanged(m.co, contact);
+      if(contactChanged){
+        updates.push({ co: m.co, row: fauxRow, contact, events: [], memo: null, progressChanged: false, contactChanged });
+      }
+    });
+
     return {
       baseline, overrides, usedOverrides,
       updates, newCompanies, review,
