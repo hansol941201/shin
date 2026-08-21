@@ -15,6 +15,9 @@ body{background:#F4F6F8;margin:0;}
   --pour-text:#1f2937;
   --pour-muted:#6b7280;
   --pour-danger:#d92d20;
+  --pour-r1:4px;                  /* 배지·작은 버튼 */
+  --pour-r2:6px;                  /* 버튼·입력칸 */
+  --pour-r3:8px;                  /* 카드·표 */
   color:var(--pour-text);
 }
 
@@ -25,9 +28,9 @@ body{background:#F4F6F8;margin:0;}
 .pour-field{overflow:visible;}
 .pour-suggest{
   position:absolute; z-index:1000; left:0; right:0; top:100%;
-  margin-top:2px; max-height:280px; overflow-y:auto;
-  background:#fff; border:1px solid var(--pour-border); border-radius:6px;
-  box-shadow:0 6px 20px rgba(15,23,42,.12); display:none;
+  margin-top:4px; max-height:280px; overflow-y:auto;
+  background:#fff; border:1px solid var(--pour-border); border-radius:var(--pour-r3);
+  box-shadow:0 12px 32px rgba(15,23,42,.16); display:none; overflow-x:hidden;
 }
 .pour-suggest.is-open{display:block;}
 .pour-suggest-item{
@@ -58,7 +61,7 @@ body{background:#F4F6F8;margin:0;}
   overflow:auto;                      /* 넓으면 좌우, 길면 세로 스크롤 */
   max-height:65vh;
   border:1px solid var(--pour-border);
-  border-radius:6px;
+  border-radius:var(--pour-r3);
   -webkit-overflow-scrolling:touch;   /* 모바일에서 손가락 스크롤 */
 }
 .pour-table{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px; background:#fff;}
@@ -86,10 +89,10 @@ body{background:#F4F6F8;margin:0;}
 .pour-table tbody tr:hover{background:var(--pour-accent-soft);}
 .pour-empty{padding:26px; text-align:center; color:var(--pour-muted); font-size:14px;}
 
-.pour-status{display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; border:1px solid var(--pour-border);}
-.pour-status[data-status="낙찰"]{background:var(--pour-accent-soft); border-color:var(--pour-accent); color:#14532d;}
-.pour-status[data-status="유찰"]{background:#fef3f2; border-color:#f3b1a8; color:#912018;}
-.pour-status[data-status="타공법 낙찰"]{background:#f4f4f5; color:#52525b;}
+.pour-status{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:700;}
+.pour-status[data-status="낙찰"]{background:#e4f4ea; color:#12693a;}
+.pour-status[data-status="유찰"]{background:#fdf0df; color:#92400e;}
+.pour-status[data-status="타공법 낙찰"]{background:#f1ece4; color:#6b5233;}
 
 /* --------------------------------------------------- 특허 탭 */
 .pour-tabbar{display:flex; align-items:center; gap:6px; margin-bottom:10px;}
@@ -98,24 +101,24 @@ body{background:#F4F6F8;margin:0;}
   flex:1; padding-bottom:4px; -webkit-overflow-scrolling:touch;
 }
 .pour-tab{
-  flex:0 0 auto; padding:7px 14px; font-size:13px; cursor:pointer; white-space:nowrap;
-  background:#f3f5f8; border:1px solid var(--pour-border); border-bottom:0;
-  border-radius:6px 6px 0 0; color:var(--pour-muted);
+  flex:0 0 auto; padding:6px 13px; font-size:12.5px; cursor:pointer; white-space:nowrap;
+  background:#fff; border:1px solid var(--pour-border);
+  border-radius:999px; color:var(--pour-muted);
 }
-.pour-tab:hover{background:#e9edf3;}
+.pour-tab:hover{background:var(--pour-head-bg); color:var(--pour-text);}
 .pour-tab.is-active{background:var(--pour-accent); border-color:var(--pour-accent); color:#fff; font-weight:700;}
 .pour-tab-nav{
   flex:0 0 auto; width:30px; height:30px; border:1px solid var(--pour-border);
-  background:#fff; border-radius:6px; cursor:pointer; font-size:14px; line-height:1;
+  background:#fff; border-radius:var(--pour-r2); cursor:pointer; font-size:14px; line-height:1;
 }
 .pour-tab-search{
   flex:0 0 auto; width:150px; padding:6px 9px; font-size:13px;
   border:1px solid var(--pour-border); border-radius:6px;
 }
 .pour-summary{
-  padding:10px 14px; margin-bottom:10px; font-size:14px;
-  background:var(--pour-accent-soft); border:1px solid var(--pour-accent);
-  border-radius:6px; line-height:1.6;
+  padding:12px 16px; margin-bottom:10px; font-size:13.5px;
+  background:#fff; border:1px solid var(--pour-border); border-left:3px solid var(--pour-accent);
+  border-radius:var(--pour-r3); line-height:1.6;
 }
 .pour-summary strong{font-size:15px;}
 .pour-filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; align-items:center;}
@@ -128,23 +131,27 @@ body{background:#F4F6F8;margin:0;}
 }
 
 /* ------------------------------------------ POUR / 타사 특허 입력기 */
-.pour-patent-editor{border:1px solid var(--pour-border); border-radius:6px; padding:10px 12px;}
+.pour-patent-editor{border:1px solid var(--pour-border); border-radius:var(--pour-r3); padding:10px 12px; background:#fff;}
 .pour-kind-tabs{display:flex; gap:4px; margin-bottom:10px;}
 .pour-kind-tab{
   flex:1; padding:7px 10px; font-size:13px; cursor:pointer; font-weight:600;
-  background:#f3f5f8; border:1px solid var(--pour-border); border-radius:5px; color:var(--pour-muted);
+  background:#fff; border:1px solid var(--pour-border);
+  border-radius:var(--pour-r2); color:var(--pour-muted);
 }
+.pour-kind-tab:hover{background:var(--pour-head-bg); color:var(--pour-text);}
 .pour-kind-tab.is-active{background:var(--pour-accent); border-color:var(--pour-accent); color:#fff;}
 .pour-third-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px;}
 .pour-third-form label{display:block; font-size:12px; font-weight:600; margin-bottom:3px;}
 .pour-add-btn{
   margin-top:8px; padding:6px 12px; font-size:13px; cursor:pointer; font-weight:600;
-  background:#fff; border:1px dashed var(--pour-accent); color:var(--pour-accent); border-radius:5px;
+  background:#fff; border:1px solid var(--pour-border); color:var(--pour-accent);
+  border-radius:var(--pour-r2);
 }
+.pour-add-btn:hover{background:var(--pour-head-bg);}
 .pour-item-list{margin-top:10px; display:flex; flex-direction:column; gap:4px;}
 .pour-item-row{
   display:flex; align-items:center; gap:6px; padding:6px 8px; font-size:13px;
-  background:#f8fafc; border:1px solid var(--pour-border); border-radius:5px;
+  background:#fbfcfe; border:1px solid var(--pour-border); border-radius:var(--pour-r2);
 }
 .pour-item-no{
   flex:0 0 20px; height:20px; line-height:20px; text-align:center; font-size:11px;
@@ -153,22 +160,26 @@ body{background:#F4F6F8;margin:0;}
 .pour-item-text{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .pour-item-btn{
   flex:0 0 auto; width:24px; height:24px; font-size:11px; cursor:pointer;
-  background:#fff; border:1px solid var(--pour-border); border-radius:4px;
+  background:#fff; border:1px solid var(--pour-border); border-radius:var(--pour-r1);
 }
+.pour-item-btn:hover:not(:disabled){background:var(--pour-head-bg);}
 .pour-item-btn:disabled{opacity:.35; cursor:not-allowed;}
 .pour-item-del{color:var(--pour-danger); border-color:#f3b1a8;}
 .pour-item-empty{padding:10px; text-align:center; color:var(--pour-muted); font-size:13px;}
-.pour-multi-check{display:block; margin-top:10px; font-size:13px; font-weight:400;}
-.pour-multi-check input{width:auto; margin-right:4px;}
+.pour-multi-check{
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:10px; font-size:13px; font-weight:400; cursor:pointer;
+}
+.pour-multi-check input{width:auto; flex:0 0 auto; margin:0;}
 .pour-multi-badge{
   display:inline-block; margin-top:8px; padding:3px 10px; font-size:12.5px;
-  font-weight:700; border-radius:999px; border:1px solid;
+  font-weight:700; border-radius:999px;
 }
 /* 배지 색상: POUR만 파랑 · 혼합 보라 · 타사만 회색 · 번호 미확인 주황 */
-.pour-multi-badge[data-badge="pour"]{background:#e8f0fe; border-color:#3b82f6; color:#1d4ed8;}
-.pour-multi-badge[data-badge="mixed"]{background:#f3e8ff; border-color:#a855f7; color:#7e22ce;}
-.pour-multi-badge[data-badge="third"]{background:#f4f4f5; border-color:#a1a1aa; color:#52525b;}
-.pour-multi-badge[data-badge="unknown"]{background:#fff7e6; border-color:#f0a92e; color:#92400e;}
+.pour-multi-badge[data-badge="pour"]{background:#e6eefc; color:#1d4ed8;}
+.pour-multi-badge[data-badge="mixed"]{background:#f1e7fd; color:#7e22ce;}
+.pour-multi-badge[data-badge="third"]{background:#eeeff2; color:#52525b;}
+.pour-multi-badge[data-badge="unknown"]{background:#fdf0df; color:#92400e;}
 
 /* ------------------------------------------------- 공고 등록 카드 배치 */
 .pour-card-title{
@@ -249,20 +260,48 @@ body{background:#F4F6F8;margin:0;}
 
 /* ==========================================================================
    POUR 공사실적 관리 — 업무용 데이터 관리 화면
-   흰색·밝은 회색 바탕에 네이비 포인트. 그림자와 둥근 모서리는 최소한만 쓴다.
+
+   설계 원칙
+     · 색은 네이비 하나로 강조하고 나머지는 회색 단계로만 구분한다
+     · 간격·모서리·글자 크기는 아래 토큰만 쓴다 (그때그때 정하지 않는다)
+     · 테두리는 얇게, 그림자는 떠 있어야 하는 것에만 쓴다
+     · 강조 버튼은 화면당 하나 (＋ 새 공고 / 저장)
    ========================================================================== */
 :root{
-  --navy:#17213B;         /* 진한 네이비 */
+  /* 브랜드 */
+  --navy:#17213B;         /* 진한 네이비 — 헤더·강조 버튼 */
   --navy-mid:#33415F;     /* 중간 네이비 */
-  --bg:#F4F6F8;
-  --head:#E9EDF2;
-  --line:#CBD2DC;
-  --white:#FFFFFF;
+  --navy-soft:#EEF1F7;    /* 네이비 계열 옅은 바탕 */
+
+  /* 회색 단계 */
+  --bg:#F4F6F8;           /* 화면 바탕 */
+  --white:#FFFFFF;        /* 카드·표 바탕 */
+  --head:#F1F4F8;         /* 표 머리글·구획 바탕 */
+  --line:#DFE4EC;         /* 기본 경계선 */
+  --line-strong:#C6CDD9;  /* 표 머리글 아래처럼 힘을 줄 경계선 */
   --text:#1B2333;
-  --muted:#5C6880;
-  --ok:#1F9D55;
-  --warn:#D97706;
-  --danger:#D92D20;
+  --muted:#616D85;
+  --faint:#8A94A8;
+
+  /* 상태 */
+  --ok:#137A44;
+  --warn:#B45309;
+  --danger:#C22B21;
+
+  /* 간격 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+
+  /* 모서리 */
+  --r1:4px;   /* 입력칸·배지 */
+  --r2:6px;   /* 버튼 */
+  --r3:8px;   /* 카드·표 */
+
+  /* 그림자 — 떠 있는 것에만 */
+  --shadow-1:0 1px 2px rgba(23,33,59,.06);
+  --shadow-2:0 12px 32px rgba(15,23,42,.18);
+
+  /* 초점 표시 */
+  --ring:0 0 0 3px rgba(23,33,59,.18);
 }
 *{box-sizing:border-box;}
 html,body{height:100%;}
@@ -270,115 +309,169 @@ body{
   margin:0; background:var(--bg); color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
   font-size:14px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
 }
 button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--text);}
+:focus-visible{outline:none; box-shadow:var(--ring); border-radius:var(--r1);}
 
 /* ------------------------------------------------------------- 상단 헤더 */
 .app-header{
-  display:flex; align-items:stretch; gap:0;
-  background:var(--navy); color:#fff; border-bottom:1px solid var(--navy);
+  display:flex; align-items:stretch;
+  background:var(--navy); color:#fff;
   position:sticky; top:0; z-index:60;
 }
-.brand{display:flex; flex-direction:column; justify-content:center; padding:8px 20px; flex:0 0 auto;}
-.brand-name{font-size:15px; font-weight:800; letter-spacing:.10em;}
-.brand-sub{font-size:12px; color:#A9B4CC;}
+.brand{
+  display:flex; flex-direction:column; justify-content:center;
+  padding:10px var(--s5) 10px var(--s4); flex:0 0 auto;
+  border-right:1px solid rgba(255,255,255,.10);
+}
+.brand-name{font-size:14px; font-weight:800; letter-spacing:.14em;}
+.brand-sub{font-size:11.5px; color:#9CA9C4; letter-spacing:.01em;}
+
 .app-nav{display:flex; align-items:stretch; flex:1; min-width:0; overflow-x:auto;}
+.app-nav::-webkit-scrollbar{height:0;}
 .nav-item{
-  flex:0 0 auto; padding:0 18px; background:transparent; border:0; cursor:pointer;
-  color:#C6CEE0; font-size:14px; font-weight:600; border-bottom:3px solid transparent;
+  position:relative; flex:0 0 auto; padding:0 18px;
+  background:transparent; border:0; cursor:pointer;
+  color:#AEB9D1; font-size:13.5px; font-weight:600; white-space:nowrap;
+  transition:color .12s;
 }
-.nav-item:hover{color:#fff; background:var(--navy-mid);}
-.nav-item.is-active{color:#fff; background:var(--navy-mid); border-bottom-color:#7FA6FF;}
-.header-right{display:flex; align-items:center; gap:8px; padding:8px 16px; flex:0 0 auto;}
+.nav-item::after{                       /* 밑줄 표시 — 배경색을 바꾸지 않는다 */
+  content:""; position:absolute; left:14px; right:14px; bottom:0; height:2px;
+  background:transparent; border-radius:2px 2px 0 0;
+}
+.nav-item:hover{color:#fff;}
+.nav-item.is-active{color:#fff;}
+.nav-item.is-active::after{background:#7FA6FF;}
+
+.header-right{display:flex; align-items:center; gap:var(--s2); padding:0 var(--s4); flex:0 0 auto;}
 .header-search{
-  width:210px; padding:6px 10px; border:1px solid var(--navy-mid); border-radius:3px;
-  background:#0F1729; color:#fff;
+  width:220px; padding:6px 11px; border:1px solid rgba(255,255,255,.16); border-radius:var(--r2);
+  background:rgba(255,255,255,.08); color:#fff; transition:background .12s, border-color .12s;
 }
-.header-search::placeholder{color:#8A96B0;}
+.header-search::placeholder{color:#8E9AB4;}
+.header-search:focus{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.34); outline:none; box-shadow:none;}
 .user-chip{
-  display:flex; align-items:center; gap:6px; padding:5px 10px; font-size:13px;
-  background:var(--navy-mid); border:0; border-radius:3px; color:#fff; cursor:pointer;
+  display:flex; align-items:center; gap:6px; padding:6px 11px; font-size:13px;
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--r2); color:#fff; cursor:pointer;
 }
-.hamburger{display:none; padding:0 16px; background:transparent; border:0; color:#fff; font-size:20px; cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.18);}
+.hamburger{display:none; padding:0 var(--s4); background:transparent; border:0; color:#fff; font-size:20px; cursor:pointer;}
 
 /* ------------------------------------------------------------- 본문 */
-.app-main{padding:12px 16px 24px;}
+.app-main{padding:var(--s4) var(--s4) var(--s5); max-width:1920px; margin:0 auto;}
 .view{display:none;}
 .view.is-active{display:block;}
-.view-title{font-size:22px; font-weight:700; margin:0 0 12px;}
+.view-title{font-size:19px; font-weight:700; margin:0 0 var(--s3); letter-spacing:-.01em;}
 
-/* 알림 */
-.alert-bar{
-  display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;
-}
+/* 알림 — 눈에 띄되 소리치지 않게 */
+.alert-bar{display:flex; flex-wrap:wrap; gap:var(--s2); margin-bottom:var(--s3);}
+.alert-bar:empty{display:none;}
 .alert-chip{
-  padding:7px 14px; font-size:13.5px; font-weight:700; cursor:pointer;
-  background:#FFF7E6; border:1px solid #F0A92E; color:#92400E; border-radius:3px;
+  display:inline-flex; align-items:center; gap:7px;
+  padding:6px 13px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--white); border:1px solid #EBC98A; color:#8A5A11;
+  border-radius:999px; box-shadow:var(--shadow-1);
+  transition:background .12s, border-color .12s;
 }
-.alert-chip:hover{background:#FDF0D5;}
+.alert-chip::before{content:""; width:6px; height:6px; border-radius:50%; background:#E0932A; flex:0 0 auto;}
+.alert-chip:hover{background:#FFFBF3; border-color:#DDB166;}
 
 /* 작업 버튼 */
-.toolbar{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+.toolbar{display:flex; flex-wrap:wrap; gap:var(--s2); margin-bottom:var(--s3); align-items:center;}
 .tb-btn{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:7px 14px; font-size:13.5px; font-weight:600; cursor:pointer;
-  background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:3px;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:var(--r2);
+  box-shadow:var(--shadow-1); transition:background .12s, border-color .12s, color .12s;
 }
-.tb-btn:hover{background:var(--navy-mid);}
-.tb-btn.ghost{background:#fff; color:var(--navy); border-color:var(--line);}
-.tb-btn.ghost:hover{background:var(--head);}
-.tb-btn:disabled{opacity:.45; cursor:not-allowed;}
+.tb-btn:hover{background:var(--navy-mid); border-color:var(--navy-mid);}
+.tb-btn.ghost{background:var(--white); color:var(--text); border-color:var(--line);}
+.tb-btn.ghost:hover{background:var(--head); border-color:var(--line-strong);}
+.tb-btn:disabled{opacity:.42; cursor:not-allowed; box-shadow:none;}
+.tb-btn:disabled:hover{background:var(--navy); border-color:var(--navy);}
+.tb-btn.ghost:disabled:hover{background:var(--white); border-color:var(--line);}
+.toolbar .spacer{flex:1;}
 
-/* 상태 탭 */
-.status-tabs{display:flex; flex-wrap:wrap; gap:2px; margin-bottom:8px;}
+/* 상태 탭 — 분절형 버튼 묶음 */
+.status-tabs{
+  display:inline-flex; flex-wrap:wrap; gap:2px; margin-bottom:var(--s3);
+  padding:3px; background:var(--head); border:1px solid var(--line); border-radius:var(--r3);
+}
 .status-tab{
-  padding:7px 16px; font-size:13.5px; font-weight:600; cursor:pointer;
-  background:var(--head); border:1px solid var(--line); border-bottom:0;
-  border-radius:3px 3px 0 0; color:var(--muted);
+  padding:6px 15px; font-size:13px; font-weight:600; cursor:pointer;
+  background:transparent; border:0; border-radius:var(--r2); color:var(--muted);
+  transition:background .12s, color .12s;
 }
-.status-tab.is-active{background:var(--navy); border-color:var(--navy); color:#fff;}
-.status-tab .cnt{font-weight:700;}
+.status-tab:hover{background:rgba(23,33,59,.06); color:var(--text);}
+.status-tab.is-active{background:var(--white); color:var(--navy); box-shadow:var(--shadow-1);}
+.status-tab .cnt{font-weight:700; margin-left:2px;}
 
-/* 표 위 도구 */
+/* ------------------------------------------------- 표 카드 (도구 + 표) */
 .grid-tools{
-  display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-  padding:7px 8px; background:var(--white);
+  display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center;
+  padding:var(--s2) var(--s3); background:var(--white);
   border:1px solid var(--line); border-bottom:0;
+  border-radius:var(--r3) var(--r3) 0 0;
 }
 .grid-tools .spacer{flex:1;}
-.grid-search{width:260px; max-width:100%; padding:6px 10px; border:1px solid var(--line); border-radius:3px;}
-.grid-count{font-size:13px; color:var(--muted);}
-.grid-tools select{min-width:120px; padding:6px 9px; border:1px solid var(--line); border-radius:3px; background:#fff;}
+.grid-tools .tb-btn{box-shadow:none;}
+.grid-search{
+  width:300px; max-width:100%; padding:7px 11px;
+  border:1px solid var(--line); border-radius:var(--r2); background:var(--white);
+}
+.grid-search:focus{border-color:var(--navy-mid); outline:none; box-shadow:var(--ring);}
+.grid-count{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums;}
+.grid-tools select{
+  min-width:130px; padding:7px 10px;
+  border:1px solid var(--line); border-radius:var(--r2); background:var(--white);
+}
 
 /* ------------------------------------------------------------- 엑셀형 표 */
 .grid-wrap{
   overflow:auto; max-height:calc(100vh - 300px); min-height:220px;
   border:1px solid var(--line); background:var(--white);
+  border-radius:var(--r3);
   -webkit-overflow-scrolling:touch;
 }
+/* 도구 막대와 표를 한 장의 카드로 잇는다 */
+.grid-tools + .grid-wrap,
+.grid-tools + .pour-table-wrap{border-top:0; border-radius:0 0 var(--r3) var(--r3);}
+.grid-tools + .pour-table-wrap{border-color:var(--line);}
 .grid{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px;}
 .grid th,.grid td{
   border-right:1px solid var(--line); border-bottom:1px solid var(--line);
-  padding:5px 8px; vertical-align:middle; background:var(--white);
+  padding:6px 10px; vertical-align:middle; background:var(--white);
 }
+.grid th:last-child,.grid td:last-child{border-right:0;}
+.grid tbody tr:last-child td{border-bottom:0;}
 .grid thead th{
   position:sticky; top:0; z-index:3;
   background:var(--head); font-weight:700; text-align:center; white-space:nowrap;
-  user-select:none; padding-right:14px;
+  color:var(--muted); letter-spacing:.01em;
+  border-bottom:1px solid var(--line-strong);
+  user-select:none; padding-right:16px;
 }
-.grid .grid-filter-row th{top:29px; z-index:3; padding:3px 4px; background:#F2F5F9;}
-.grid .grid-filter-row input{width:100%; min-width:60px; padding:3px 5px; font-size:12px; border:1px solid var(--line); border-radius:2px;}
+.grid .grid-filter-row th{
+  top:31px; z-index:3; padding:3px 5px; background:#FAFBFD;
+  border-bottom:1px solid var(--line);
+}
+.grid .grid-filter-row input{
+  width:100%; min-width:60px; padding:4px 6px; font-size:12px;
+  border:1px solid var(--line); border-radius:var(--r1); background:var(--white);
+}
 /* 주요 식별 열 고정 */
 .grid th.is-pinned,.grid td.is-pinned{position:sticky; z-index:2;}
 .grid th.is-pinned{z-index:4;}
 .grid th:nth-child(1),.grid td:nth-child(1){left:0;}
 .grid th:nth-child(2),.grid td:nth-child(2){left:52px;}
-.grid td.is-pinned{background:#FBFCFD;}
-.grid tbody tr:nth-child(even) td{background:#FAFBFD;}
-.grid tbody tr:nth-child(even) td.is-pinned{background:#F5F7FA;}
-.grid tbody tr:hover td{background:#EEF3FB;}
-.grid tbody tr.is-selected td{background:#E3EBF9; box-shadow:inset 0 0 0 2px var(--navy);}
-.grid td{white-space:nowrap;}
+.grid td.is-pinned{background:#FCFDFE;}
+.grid tbody tr:nth-child(even) td{background:#FAFBFC;}
+.grid tbody tr:nth-child(even) td.is-pinned{background:#F6F8FA;}
+.grid tbody tr:hover td{background:var(--navy-soft);}
+.grid tbody tr.is-selected td{background:#E4EAF6; box-shadow:inset 0 0 0 2px var(--navy);}
+.grid td{white-space:nowrap; color:var(--text);}
 .grid td.cell-wrap{white-space:normal; min-width:140px; max-width:320px;}
 /* 여러 줄 값은 세 줄까지만 보여 준다. 전체 내용은 셀에 마우스를 올리면 나온다 */
 .grid td.cell-wrap .cell-lines{white-space:pre-line; display:block;}
@@ -388,10 +481,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 }
 .grid td.cell-wrap .cell-lines.is-clamped::after{
   content:"…"; position:absolute; right:0; bottom:0;
-  padding-left:10px; background:inherit; color:var(--muted);
+  padding-left:10px; background:inherit; color:var(--faint);
 }
 .grid td.cell-num{text-align:right; font-variant-numeric:tabular-nums;}
-.grid td.cell-seq{text-align:center; color:var(--muted);}
+.grid td.cell-seq{text-align:center; color:var(--faint); font-variant-numeric:tabular-nums;}
 .grid-th-label{cursor:pointer;}
 .grid-sort{margin-left:3px; font-size:10px; color:var(--navy);}
 .grid-filtered{margin-left:3px; font-size:10px; color:var(--warn);}
@@ -400,63 +493,67 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   cursor:col-resize; background:transparent;
 }
 .grid th{position:relative;}   /* 너비 조절 손잡이를 붙이기 위한 기준 */
+.grid-empty{padding:40px var(--s4); text-align:center; color:var(--faint); font-size:13.5px;}
 
-.grid-empty{padding:28px; text-align:center; color:var(--muted); font-size:14px;}
-
-/* 상태 배지 */
+/* 상태 배지 — 테두리 없이 옅은 바탕과 진한 글자로만 */
 .status-badge{
-  display:inline-block; padding:1px 8px; font-size:12px; font-weight:600;
-  border-radius:2px; border:1px solid;
+  display:inline-block; padding:2px 9px; font-size:12px; font-weight:700;
+  border-radius:999px; white-space:nowrap;
 }
-.status-badge[data-status="낙찰"]{background:#E8F6EE; border-color:#1F9D55; color:#12693A;}
-.status-badge[data-status="공고"]{background:#E8F0FE; border-color:#3B82F6; color:#1D4ED8;}
-.status-badge[data-status="재공고"]{background:#F3E8FF; border-color:#A855F7; color:#7E22CE;}
-.status-badge[data-status="유찰"]{background:#FFF3E4; border-color:#D97706; color:#92400E;}
-.status-badge[data-status="공고취소"]{background:#F1F2F4; border-color:#A1A1AA; color:#52525B;}
-.status-badge[data-status="타공법 낙찰"]{background:#F3EEE7; border-color:#8B6F4E; color:#6B5233;}
+.status-badge[data-status="낙찰"]{background:#E4F4EA; color:#12693A;}
+.status-badge[data-status="공고"]{background:#E6EEFC; color:#1D4ED8;}
+.status-badge[data-status="재공고"]{background:#F1E7FD; color:#7E22CE;}
+.status-badge[data-status="유찰"]{background:#FDF0DF; color:#92400E;}
+.status-badge[data-status="공고취소"]{background:#EEEFF2; color:#52525B;}
+.status-badge[data-status="타공법 낙찰"]{background:#F1ECE4; color:#6B5233;}
 
 .multi-badge{
-  display:inline-block; margin-left:4px; padding:1px 7px; font-size:11.5px; font-weight:700;
-  border-radius:2px; border:1px solid;
+  display:inline-block; margin-left:5px; padding:2px 8px; font-size:11.5px; font-weight:700;
+  border-radius:999px; white-space:nowrap;
 }
-.multi-badge[data-badge="pour"]{background:#E8F0FE; border-color:#3B82F6; color:#1D4ED8;}
-.multi-badge[data-badge="mixed"]{background:#F3E8FF; border-color:#A855F7; color:#7E22CE;}
-.multi-badge[data-badge="third"]{background:#F1F2F4; border-color:#A1A1AA; color:#52525B;}
-.multi-badge[data-badge="unknown"]{background:#FFF7E6; border-color:#F0A92E; color:#92400E;}
+.multi-badge[data-badge="pour"]{background:#E6EEFC; color:#1D4ED8;}
+.multi-badge[data-badge="mixed"]{background:#F1E7FD; color:#7E22CE;}
+.multi-badge[data-badge="third"]{background:#EEEFF2; color:#52525B;}
+.multi-badge[data-badge="unknown"]{background:#FDF0DF; color:#92400E;}
 
 /* ------------------------------------------------- 오른쪽 슬라이드 패널 */
 .panel-back{
-  position:fixed; inset:0; background:rgba(15,23,42,.42); z-index:80;
+  position:fixed; inset:0; background:rgba(15,23,42,.38); z-index:80;
   display:none;
 }
 .panel-back.is-open{display:block;}
 .panel{
   position:fixed; top:0; right:0; bottom:0; width:min(920px, 100%);
-  background:var(--white); border-left:1px solid var(--line);
+  background:var(--white); box-shadow:var(--shadow-2);
   z-index:81; display:flex; flex-direction:column;
   transform:translateX(100%); transition:transform .18s ease-out;
 }
 .panel.is-open{transform:translateX(0);}
 .panel-head{
-  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-  padding:9px 16px; background:var(--head); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) var(--s4); background:var(--white); border-bottom:1px solid var(--line);
 }
-.panel-title{font-size:16px; font-weight:700; margin:0;}
+.panel-title{font-size:16px; font-weight:700; margin:0; letter-spacing:-.01em;}
 .panel-head .spacer{flex:1;}
 .panel-close{
-  width:30px; height:30px; font-size:15px; cursor:pointer;
-  background:#fff; border:1px solid var(--line); border-radius:3px;
+  width:30px; height:30px; font-size:14px; cursor:pointer; color:var(--muted);
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2);
 }
-.panel-body{flex:1; overflow-y:auto; padding:12px 16px;}
+.panel-close:hover{background:var(--head); color:var(--text);}
+.panel-body{flex:1; overflow-y:auto; padding:var(--s3) var(--s4) var(--s5);}
 .panel-foot{
-  display:flex; justify-content:flex-end; gap:8px;
-  padding:9px 16px; background:var(--head); border-top:1px solid var(--line);
+  display:flex; justify-content:flex-end; gap:var(--s2);
+  padding:var(--s3) var(--s4); background:var(--white); border-top:1px solid var(--line);
 }
-.rebid-check{display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:400; padding:6px 8px; margin:-6px 0; cursor:pointer;}
+.rebid-check{
+  display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500;
+  padding:5px 10px; background:var(--head); border:1px solid var(--line); border-radius:var(--r2);
+  cursor:pointer;
+}
 .rebid-check input{width:auto; cursor:pointer;}
 
 /* 입력 폼 */
-.form-row{display:grid; gap:8px 10px; margin-bottom:8px;}
+.form-row{display:grid; gap:var(--s2) var(--s3); margin-bottom:var(--s2);}
 .form-row-1{grid-template-columns:minmax(0,1fr);}
 .form-row-3{grid-template-columns:repeat(3, minmax(0, 1fr));}
 /* 항목 수가 열 수로 나누어떨어지지 않아 빈 칸이 생기는 것을 막는다 */
@@ -465,96 +562,136 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .form-row .span-all{grid-column:1 / -1;}
 .form-row-4{grid-template-columns:repeat(4, minmax(0, 1fr));}
 .form-row > div{min-width:0;}
-.form-row label{display:block; font-size:12px; font-weight:600; margin-bottom:2px; line-height:1.3;}
-.form-row .opt{font-weight:400; color:var(--muted);}
+.form-row label{
+  display:block; font-size:12px; font-weight:600; margin-bottom:3px;
+  line-height:1.3; color:var(--muted);
+}
+.form-row .opt{font-weight:400; color:var(--faint);}
 .form-row .req{color:var(--danger);}
 .form-row input,.form-row select,.form-row textarea{
-  width:100%; padding:4px 8px; font-size:13.5px; line-height:1.4;
-  border:1px solid var(--line); border-radius:3px; background:#fff;
+  width:100%; padding:6px 9px; font-size:13.5px; line-height:1.4;
+  border:1px solid var(--line); border-radius:var(--r2); background:var(--white);
+  transition:border-color .12s, box-shadow .12s;
+}
+/* 체크박스는 칸 전체 너비를 먹으면 안 된다 (글자 옆에 붙어야 한다) */
+.form-row input[type="checkbox"],.form-row input[type="radio"]{width:auto; margin:0;}
+.form-row input:hover,.form-row select:hover,.form-row textarea:hover{border-color:var(--line-strong);}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{
+  border-color:var(--navy-mid); outline:none; box-shadow:var(--ring);
 }
 /* 날짜 칸이 다른 칸보다 커지지 않게 높이를 맞춘다 */
-.form-row input[type="date"]{min-height:0; height:28px;}
-.form-row textarea{min-height:44px; resize:vertical;}
-.field-error{display:block; margin-top:2px; font-size:11.5px; color:var(--danger);}
-.form-msg{font-size:13px; white-space:pre-line; margin-top:8px;}
+.form-row input[type="date"]{min-height:0; height:31px;}
+.form-row textarea{min-height:48px; resize:vertical;}
+.field-error{display:block; margin-top:3px; font-size:11.5px; color:var(--danger);}
+.form-msg{font-size:13px; white-space:pre-line; margin-top:var(--s2);}
 .form-msg.error{color:var(--danger);}
 .form-msg.ok{color:var(--ok);}
 
-.bid-group{display:flex; gap:6px;}
+.bid-group{display:flex; gap:var(--s1);}
 .bid-btn{
-  flex:1; min-width:0; padding:6px 6px; cursor:pointer;
-  background:#fff; border:1px solid var(--line); border-radius:3px; color:var(--muted);
+  flex:1; min-width:0; padding:6px; cursor:pointer; font-size:13px;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--muted);
+  transition:background .12s, border-color .12s, color .12s;
 }
+.bid-btn:hover{border-color:var(--line-strong); color:var(--text);}
 .bid-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
 
-.more-box{margin:8px 0;}
-.more-box > summary{
-  cursor:pointer; padding:6px 11px; font-size:13px; font-weight:600;
-  background:var(--head); border:1px solid var(--line); border-radius:3px; list-style:none;
+.rebid-box{
+  padding:var(--s3); margin-bottom:var(--s3);
+  background:#FFFBF3; border:1px solid #EBC98A; border-radius:var(--r3);
 }
-.more-box > summary::-webkit-details-marker{display:none;}
-.more-box > summary::before{content:"▸ ";}
-.more-box[open] > summary::before{content:"▾ ";}
-.more-body{padding:9px 2px 0;}
-.rebid-box{padding:8px; margin-bottom:8px; background:#FFF7E6; border:1px solid #F0A92E; border-radius:3px;}
+
+/* 구획 이름 — 패널이 길어도 스크롤 중에 위치를 알 수 있게 */
 .sub-head{
-  font-size:13px; font-weight:700; margin:12px 0 6px; padding-bottom:4px;
+  font-size:11.5px; font-weight:700; letter-spacing:.06em; color:var(--faint);
+  margin:var(--s4) 0 var(--s2); padding:var(--s1) 0;
   border-bottom:1px solid var(--line);
-  /* 항목을 모두 펼쳐 두어 패널이 길어지므로, 스크롤 중에도 구획 이름이 보이게 한다 */
   position:sticky; top:0; z-index:5; background:var(--white);
 }
 .sub-head:first-child{margin-top:0;}
 
+/* 새 공고 등록에서는 감추고 상세 수정에서만 보이는 항목.
+   (상태는 자동으로 "공고", 시공사·시공사 전화번호는 낙찰 전환 패널에서 입력한다)
+   자료와 목록 열은 그대로 두고 입력 화면에서만 감춘다. */
+#noticePanel:not(.is-edit) .edit-only{display:none;}
+
+/* 수정 이력 */
+.pour-history,#editHistory{font-size:12.5px; color:var(--muted);}
+
+/* ------------------------------------------------------------- 카드 묶음 */
+/* 가져오기·내보내기, 설정처럼 표가 없는 화면의 구획 */
+.view:not(#view-records):not(#view-patents) .form-row{max-width:1100px;}
+
 /* 가져오기 미리보기 */
-.preview-stats{display:flex; flex-wrap:wrap; gap:18px; margin:10px 0; font-size:13.5px;}
-.preview-stats b{display:block; font-size:18px;}
-.preview-errors{margin:6px 0 0; padding-left:18px; font-size:12.5px; color:var(--danger); max-height:160px; overflow-y:auto;}
+.preview-stats{
+  display:flex; flex-wrap:wrap; gap:var(--s5); margin:var(--s3) 0; font-size:13px;
+  padding:var(--s3) var(--s4); background:var(--white);
+  border:1px solid var(--line); border-radius:var(--r3);
+  color:var(--muted);
+}
+.preview-stats b{display:block; font-size:20px; color:var(--text); font-variant-numeric:tabular-nums;}
+.preview-errors{
+  margin:var(--s2) 0 0; padding:var(--s2) var(--s3) var(--s2) var(--s5);
+  font-size:12.5px; color:var(--danger); max-height:160px; overflow-y:auto;
+  background:#FDF3F2; border:1px solid #F2C9C5; border-radius:var(--r3);
+}
 
-/* 특허별 실적 */
-.sheet-tabs{display:flex; align-items:center; gap:6px; margin-bottom:8px;}
-.sheet-scroll{display:flex; gap:3px; overflow-x:auto; flex:1; padding-bottom:3px;}
+/* ------------------------------------------------------------ 특허별 실적 */
+.sheet-tabs{display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3);}
+.sheet-scroll{display:flex; gap:var(--s1); overflow-x:auto; flex:1; padding-bottom:2px;}
+.sheet-scroll::-webkit-scrollbar{height:6px;}
+.sheet-scroll::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:3px;}
 .sheet-tab{
-  flex:0 0 auto; padding:6px 13px; font-size:13px; white-space:nowrap; cursor:pointer;
-  background:var(--head); border:1px solid var(--line); border-bottom:0;
-  border-radius:3px 3px 0 0; color:var(--muted);
+  flex:0 0 auto; padding:6px 13px; font-size:12.5px; white-space:nowrap; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:999px; color:var(--muted);
+  transition:background .12s, border-color .12s, color .12s;
 }
+.sheet-tab:hover{border-color:var(--line-strong); color:var(--text);}
 .sheet-tab.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:700;}
-.sheet-nav{flex:0 0 auto; width:28px; height:28px; background:#fff; border:1px solid var(--line); border-radius:3px; cursor:pointer;}
-.sheet-search{flex:0 0 auto; width:150px; padding:5px 9px; border:1px solid var(--line); border-radius:3px;}
-.summary-bar{
-  padding:9px 14px; margin-bottom:8px; font-size:13.5px;
-  background:#EEF3FB; border:1px solid var(--navy-mid); border-radius:3px;
+.sheet-nav{
+  flex:0 0 auto; width:30px; height:30px; color:var(--muted);
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); cursor:pointer;
 }
-.summary-bar strong{font-size:15px;}
+.sheet-nav:hover{background:var(--head);}
+.sheet-search{flex:0 0 auto; width:160px; padding:6px 10px; border:1px solid var(--line); border-radius:var(--r2);}
+.summary-bar{
+  padding:var(--s3) var(--s4); margin-bottom:var(--s3); font-size:13px; color:var(--muted);
+  background:var(--white); border:1px solid var(--line); border-left:3px solid var(--navy);
+  border-radius:var(--r3);
+}
+.summary-bar strong{font-size:15px; color:var(--text);}
 
-/* 통계 */
-.stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:14px;}
-.stat-card{padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:3px;}
-.stat-card .lbl{font-size:12.5px; color:var(--muted);}
-.stat-card .val{font-size:22px; font-weight:700;}
+/* ------------------------------------------------------------- 통계 */
+.stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:var(--s3); margin-bottom:var(--s4);}
+.stat-card{
+  padding:var(--s3) var(--s4); background:var(--white);
+  border:1px solid var(--line); border-radius:var(--r3); box-shadow:var(--shadow-1);
+}
+.stat-card .lbl{font-size:12px; color:var(--muted);}
+.stat-card .val{font-size:24px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
 
-/* 특허 입력기 밀도 */
-.pour-patent-editor{padding:8px 10px;}
-.pour-kind-tabs{margin-bottom:8px;}
-.pour-kind-tab{padding:5px 10px; font-size:12.5px;}
-.pour-third-form{gap:6px;}
-.pour-third-form label{font-size:11.5px; margin-bottom:2px;}
-.pour-add-btn{margin-top:6px; padding:4px 10px; font-size:12.5px;}
-.pour-item-list{margin-top:7px; gap:3px;}
-.pour-item-row{padding:4px 7px; font-size:12.5px;}
-.pour-item-btn{width:21px; height:21px;}
-.pour-multi-check{margin-top:7px; font-size:12.5px;}
-.pour-multi-badge{margin-top:6px; padding:2px 9px; font-size:12px;}
-.pour-suggest-item{padding:6px 10px; font-size:13px;}
+/* ------------------------------------------------- 특허 입력기 밀도 */
+.pour-patent-editor{padding:var(--s3); border-radius:var(--r3);}
+.pour-kind-tabs{margin-bottom:var(--s2);}
+.pour-kind-tab{padding:6px 12px; font-size:12.5px;}
+.pour-third-form{gap:var(--s2);}
+.pour-third-form label{font-size:11.5px; margin-bottom:3px;}
+.pour-add-btn{margin-top:var(--s2); padding:5px 11px; font-size:12.5px;}
+.pour-item-list{margin-top:var(--s2); gap:var(--s1);}
+.pour-item-row{padding:5px 9px; font-size:12.5px; border-radius:var(--r2);}
+.pour-item-btn{width:22px; height:22px;}
+.pour-multi-check{margin-top:var(--s2); font-size:12.5px;}
+.pour-multi-badge{margin-top:var(--s2); padding:2px 10px; font-size:12px;}
+.pour-suggest-item{padding:7px 11px; font-size:13px;}
 
 /* 공용 모듈(특허 입력기·자동완성)의 강조색을 이 화면의 네이비로 맞춘다 */
 .pour-scope{
   --pour-accent:#17213B;
-  --pour-accent-soft:#E8EDF6;
-  --pour-border:#CBD2DC;
-  --pour-head-bg:#E9EDF2;
+  --pour-accent-soft:#EEF1F7;
+  --pour-border:#DFE4EC;
+  --pour-head-bg:#F1F4F8;
   --pour-text:#1B2333;
-  --pour-muted:#5C6880;
+  --pour-muted:#616D85;
 }
 
 /* 자동완성 드롭다운 — 표·카드 뒤로 숨지 않도록 충분히 높게 */
@@ -566,23 +703,28 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   .form-row-3,.form-row-4{grid-template-columns:repeat(2, minmax(0, 1fr));}
   .header-search{width:150px;}
   .toolbar{overflow-x:auto;}
+  .grid-search{width:220px;}
 }
 @media (max-width:640px){
   .hamburger{display:block;}
   .app-nav{
     display:none; position:absolute; top:100%; left:0; right:0;
-    flex-direction:column; background:var(--navy-mid); border-bottom:1px solid var(--navy);
+    flex-direction:column; background:var(--navy-mid); box-shadow:var(--shadow-2);
   }
   .app-nav.is-open{display:flex;}
-  .nav-item{padding:12px 18px; border-bottom:1px solid rgba(255,255,255,.12); text-align:left;}
+  .nav-item{padding:13px 18px; border-bottom:1px solid rgba(255,255,255,.10); text-align:left;}
+  .nav-item::after{display:none;}
   .app-header{position:relative; flex-wrap:wrap;}
-  .header-right{padding:8px 12px;}
+  .brand{border-right:0;}
+  .header-right{padding:var(--s2) var(--s3);}
   .header-search{width:120px;}
+  .app-main{padding:var(--s3) var(--s3) var(--s5);}
   .form-row-3,.form-row-4{grid-template-columns:minmax(0, 1fr);}
   .toolbar{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
   .tb-btn{flex:0 0 auto;}
   .grid-wrap{max-height:calc(100vh - 330px);}
   .panel{width:100%;}
+  .status-tabs{display:flex; width:100%; overflow-x:auto;}
 }
 
 </style>
@@ -605,13 +747,13 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   </nav>
   <div class="header-right">
     <input type="search" class="header-search" id="globalSearch" placeholder="전체 검색" />
-    <button type="button" class="user-chip" id="userChip">👤 업무 관리</button>
+    <button type="button" class="user-chip" id="userChip">업무 관리</button>
   </div>
 </header>
 
 <div style="padding:8px 16px 0">
   <div class="alert-chip" style="cursor:default;background:#EEF3FB;border-color:#33415F;color:#17213B">
-    미리보기입니다 — 예시 자료가 들어 있고, 입력한 자료는 이 브라우저에만 남습니다.
+    미리보기입니다 — 자료가 들어 있고, 입력한 자료는 이 브라우저에만 남습니다.
     엑셀 내려받기는 미리보기에서 동작하지 않습니다.
   </div>
 </div>
@@ -621,21 +763,23 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   <section class="view is-active" id="view-records">
     <div class="alert-bar" id="alertBar"></div>
 
+    <!-- 강조 버튼은 하나만 둔다. 나머지는 조용한 보조 버튼. -->
     <div class="toolbar">
       <button type="button" class="tb-btn" id="btnNewNotice">＋ 새 공고</button>
-      <button type="button" class="tb-btn" id="btnImport">⭳ 엑셀 가져오기</button>
-      <button type="button" class="tb-btn" id="btnExport">⭱ 엑셀 내보내기</button>
-      <button type="button" class="tb-btn" id="btnReport">📄 보고서 만들기</button>
-      <button type="button" class="tb-btn" id="btnStats">📊 통계 보기</button>
+      <button type="button" class="tb-btn ghost" id="btnImport">엑셀 가져오기</button>
+      <button type="button" class="tb-btn ghost" id="btnExport">엑셀 내보내기</button>
+      <button type="button" class="tb-btn ghost" id="btnReport">보고서 만들기</button>
+      <button type="button" class="tb-btn ghost" id="btnStats">통계 보기</button>
       <button type="button" class="tb-btn ghost" id="btnPatentData">특허자료 관리</button>
-      <button type="button" class="tb-btn ghost" id="btnRefresh">↻ 새로고침</button>
+      <span class="spacer"></span>
+      <button type="button" class="tb-btn ghost" id="btnRefresh" title="새로고침">↻ 새로고침</button>
     </div>
 
     <div class="status-tabs" id="statusTabs"></div>
 
     <div class="grid-tools">
       <input type="search" class="grid-search" id="gridSearch"
-             placeholder="아파트명·공사명·지역·전화번호·시공사·특허번호·공종 검색" />
+             placeholder="아파트명·공사명·지역·시공사·특허번호 검색" />
       <button type="button" class="tb-btn ghost" id="btnFilterRow">필터</button>
       <button type="button" class="tb-btn ghost" id="btnClearFilter">필터 해제</button>
       <button type="button" class="tb-btn ghost" id="btnSortReset">정렬 초기화</button>
@@ -794,20 +938,22 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       </div>
     </div>
 
-    <div class="sub-head">특허·협약 정보</div>
-    <div class="form-row form-row-fill">
-      <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
-      <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+    <div class="edit-only" id="patentAgreementBox">
+      <div class="sub-head">특허·협약 정보</div>
+      <div class="form-row form-row-fill">
+        <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
+        <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+      </div>
     </div>
 
     <div class="sub-head">공사 내용</div>
     <div class="form-row form-row-fill">
       <div class="span-2"><label for="fScopes">공사범위 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fScopes" rows="2"></textarea></div>
       <div class="span-2"><label for="fAddress">나머지 주소</label><input type="text" id="fAddress" /></div>
-      <div><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
-      <div><label for="fStatus">상태</label><select id="fStatus"></select></div>
-      <div><label for="fContractor">시공사 <span class="opt">(공고 단계에서는 비움)</span></label><input type="text" id="fContractor" /></div>
-      <div class="span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
+      <div class="edit-only"><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
+      <div class="edit-only"><label for="fStatus">상태</label><select id="fStatus"></select></div>
+      <div class="edit-only"><label for="fContractor">시공사 <span class="opt">(낙찰 전환에서 입력)</span></label><input type="text" id="fContractor" /></div>
+      <div class="edit-only span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
     </div>
 
     <div id="editHistory" class="form-msg"></div>
@@ -1507,7 +1653,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     });
     return { ok: !errors.length, errors: errors };
   }
-  var QUALITY_OPTIONS = ["우수", "양호", "보통", "확인 필요"];
+  // 실적 List 엑셀은 최상/상/중/하 표기를 쓴다. 원본 표기를 바꾸지 않고 그대로 고를 수 있게 함께 둔다.
+  var QUALITY_OPTIONS = ["우수", "양호", "보통", "최상", "상", "중", "하", "확인 필요"];
 
   /* --------------------------------------------------------- 열 정의 */
 
@@ -1535,6 +1682,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     { key: "scopes",         title: "공사 범위",         type: "list",   width: 20 },
     { key: "address",        title: "주소",              type: "text",   width: 28 },
     { key: "remark",         title: "비고",              type: "text",   width: 18 },
+    // 연도별 실적 List 에서 옮겨 온 연도. 요청한 1~22번 열 순서를 흔들지 않도록 뒤에 둔다.
+    { key: "year",           title: "연도",              type: "text",   width: 7 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
     { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
     { key: "__thirdNames",       title: "타사 특허명·공법명",     type: "thirdNames",     width: 22 },
@@ -1551,6 +1700,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   var MAIN_COLUMNS = [
     { key: "__seq",          title: "No.",              type: "seq",          width: 6,  pin: true },
     { key: "status",         title: "상태",             type: "text",         width: 11, pin: true },
+    { key: "year",           title: "연도",             type: "text",         width: 7 },
     { key: "noticeDate",     title: "공고일",           type: "date",         width: 12 },
     { key: "documentDueDate", title: "서류 마감일",     type: "date",         width: 12 },
     { key: "bidDate",        title: "개찰일",           type: "date",         width: 12 },
@@ -1655,6 +1805,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       originalProjectId: String(r.originalProjectId || r.originalNoticeId || "").trim(),
       previousProjectId: String(r.previousProjectId || "").trim(),
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
+      year: String(r.year || "").trim(),
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
       awardDate: String(r.awardDate || "").trim(),
@@ -1739,7 +1890,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
     quality: "공사 품질", contractor: "시공사", status: "상태",
-    noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
+    year: "연도", noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
     isRenotice: "재공고 건",
     awardAmount: "낙찰금액", expectedAmount: "예상금액", bidType: "입찰 종류",
     agreementNo: "협약서 발행번호", scope: "공사 범위", address: "주소",
@@ -1851,6 +2002,26 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     if (at >= 0) all[at] = record; else all.push(record);
     writeAll(all, storage);
     return record;
+  }
+
+  /**
+   * 여러 건을 한 번에 넣는다. (엑셀에서 옮겨 올 때 씀)
+   * id 가 같으면 그 행을 갱신하고, 없으면 뒤에 붙인다. 기존 행은 지우지 않는다.
+   * 저장은 마지막에 한 번만 하므로 수천 건이어도 빠르다.
+   */
+  function saveMany(inputs, storage) {
+    var all = list(storage);
+    var at = {};
+    all.forEach(function (r, i) { at[r.id] = i; });
+    var saved = [];
+    (inputs || []).forEach(function (input) {
+      var record = normalize(input);
+      if (at[record.id] != null) all[at[record.id]] = record;
+      else { at[record.id] = all.length; all.push(record); }
+      saved.push(record);
+    });
+    writeAll(all, storage);
+    return saved;
   }
 
   /**
@@ -2420,7 +2591,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       if (f.region && f.region !== "전체" && rec.region !== f.region) return false;
       if (f.city && f.city !== "전체" && rec.city !== f.city) return false;
       if (f.year && f.year !== "전체") {
-        var y = String(rec.noticeDate || rec.awardDate || "").slice(0, 4);
+        var y = rec.year || String(rec.noticeDate || rec.awardDate || "").slice(0, 4);
         if (y !== String(f.year)) return false;
       }
       if (f.keyword) {
@@ -2471,6 +2642,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     usePatentStorage: usePatentStorage,
     list: list,
     save: save,
+    saveMany: saveMany,
     award: award,
     patentTabs: patentTabs,
     createRebid: createRebid,
@@ -3785,19 +3957,24 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 })(typeof self !== "undefined" ? self : this);
 
 
-/* ===== 미리보기용 예시 자료 (처음 열 때 한 번만) ===== */
+/* ===== 미리보기 자료 (자료가 바뀌었을 때만 다시 넣는다) ===== */
 (function () {
-  if (localStorage.getItem("pour.records.v1")) return;
+  var SEED_KEY = "pour.preview.seed";
+  var SEED_VERSION = "c16c9b3d68f6";
+  if (localStorage.getItem(SEED_KEY) === SEED_VERSION) return;
   PourPatents.load([["POUR공법 공종별 분류", "", "", "", "", "", "", "", "", "", "", ""], ["공종", "특허번호", "특허명", "특허권자", "발명자", "출원번호", "출원일", "등록일", "비고", "", "", ""], ["슁글", "제 10-2119347호", "슁글 및 금속지붕재를 방수하기 위한 방수구조물", "㈜넷폼알앤디", "이승우", "제 10-2019-0105672호", "2019-08-28", "2020-05-29", "", "", "", ""], ["", "제 10-1923102호", "슁글 마감을 위한 보강시트를 포함하는 후레싱 구조", "㈜넷폼알앤디", "이필선", "제 10-2016-0139804호", "2016-10-26", "2018-11-22", "", "", "", ""], ["", "제 10-1994773호", "콘크리트 구조물의 크랙에 의한 누수를 방지하기 위한 슁글을 포함하는 방수층", "㈜넷폼알앤디", "이필선", "제 10-2017-0039771호", "2017-03-29", "2019-06-25", "", "", "", ""], ["", "제 10-2122691호", "강풍에 의한 피해를 차단하는 보강재를 포함하는 후레싱 마감구조", "㈜넷폼알앤디", "이승우", "제 10-2019-0167423호", "2019-12-16", "2020-06-08", "", "", "", ""], ["", "제 10-2272203호", "강풍에 의한 피해를 차단하는 보강재를 포함하는 방수구조물", "㈜넷폼알앤디", "이승우", "제 10-2020-0118114호", "2020-09-15", "2021-06-28", "", "", "", ""], ["금속기와", "제 10-2425088호", "표면강화층을 포함하는 금속지붕재에 접합된 유기계 방수증", "㈜넷폼알앤디", "이승우", "제 10-2021-0099184호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-1905536호", "금속지붕재로 이루어진 지붕의 마감구조", "㈜넷폼알앤디", "이필선", "제 10-2016-0156166호", "2016-11-23", "2018-10-01", "", "", "", ""], ["", "제 10-2119347호", "슁글 및 금속지붕재를 방수하기 위한 방수구조물", "㈜넷폼알앤디", "이승우", "제 10-2019-0105672호", "2019-08-28", "2020-05-29", "", "", "", ""], ["", "제 10-2345836호", "강풍에 의한 피해를 차단하는 금속지붕 보강재", "㈜넷폼알앤디", "이승우", "제 10-2020-0066165호", "2020-06-02", "2021-12-28", "", "", "", ""], ["듀얼", "제 10-2425081호", "표면강화층을 포함하는 콘크리트에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099120호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2535699호", "콘크리트 표면 강화 및 습기 차단을 위한 도장공법", "㈜넷폼알앤디", "허지은", "제 10-2022-0184837호", "2022-12-26", "2023-05-18", "", "", "", ""], ["", "제 10-2614027호", "배수유도기능을 구비한 배관트랩 및 이를 이용한 배수유도 방수공법", "㈜넷폼알앤디", "허지은, 신명희", "제 10-2023-0120999호", "2023-09-12", "2023-12-11", "", "", "", ""], ["", "제 10-2856572호", "콘크리트 구조물의 물고임 방지 및 균열 보강을 위한 평슬라브 복합 방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0059036호", "2025-05-07", "2025-09-03", "", "", "", ""], ["", "제 10-2953887호", "콘크리트 슬래브 내부 건조를 위한 흡수 모듈러 및 이를 이용하는 건조·방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003403호", "2026-01-08", "2026-04-14", "", "", "", ""], ["", "제 10-2975363호", "콘크리트층 습기 배출을 위한 통기·흡습 복합 구조체 및 이를 이용하는 방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003407호", "2026-01-08", "2026-06-05", "", "", "", ""], ["PVC", "제 10-1883132호", "방수시트를 활용한 측벽 방수 구조체", "㈜넷폼알앤디", "이승우", "제 10-2018-0000573호", "2018-01-03", "2018-07-23", "", "", "", ""], ["", "제 10-2603257호", "결로방지 복합단열시트 및 이를 이용한 노출 시트방수공법", "㈜넷폼알앤디", "신명희", "제 10-2023-0073426호", "2023-06-08", "2023-11-13", "", "", "", ""], ["", "제 10-2953887호", "콘크리트 슬래브 내부 건조를 위한 흡수 모듈러 및 이를 이용하는 건조·방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003403호", "2026-01-08", "2026-04-14", "", "", "", ""], ["", "제 10-2975363호", "콘크리트층 습기 배출을 위한 통기·흡습 복합 구조체 및 이를 이용하는 방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003407호", "2026-01-08", "2026-06-05", "", "", "", ""], ["우레탄", "제 10-2870421호", "고강도 무기질 조성물 및 특수 섬유시트를 활용한 고밀도 및 고강도 바탕을 형성하는 우레탄 방수공법", "㈜넷폼알앤디", "황규현, 박현준, 김태우, 신명희, 심혜진", "제 10-2025-0017309호", "2025-02-11", "2025-10-02", "", "", "", ""], ["", "제 10-2425081호", "표면강화층을 포함하는 콘크리트에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099120호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2474761호", "표면강화층을 포함하는 콘크리트 측벽에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099152호", "2021-07-28", "2022-12-01", "", "", "", ""], ["", "제 10-2544157호", "콘크리트 표면 강화 및 습기 차단을 위한 공법", "㈜넷폼알앤디/김신용", "이승우/김신용", "제 10-2023-0003439호", "2023-01-10", "2023-06-12", "", "", "", ""], ["", "제 10-2805601호", "유성 도료를 이용한 특수 소재 및 자재 특성을 갖는 도장 및 방수 방법", "㈜넷폼알앤디", "한인규, 주현진", "제 10-2024-0123089호", "2024-09-10", "2025-05-07", "", "", "", ""], ["", "제 10-2870425호", "자외선과 습기 침투를 차단하고 균열에 대한 내구성을 확보한 고내구성 우레탄 도장 및 방수공법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0052257호", "2025-04-22", "2025-10-02", "", "", "", ""], ["", "제 10-2953887호", "콘크리트 슬래브 내부 건조를 위한 흡수 모듈러 및 이를 이용하는 건조·방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003403호", "2026-01-08", "2026-04-14", "", "", "", ""], ["", "제 10-2975363호", "콘크리트층 습기 배출을 위한 통기·흡습 복합 구조체 및 이를 이용하는 방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003407호", "2026-01-08", "2026-06-05", "", "", "", ""], ["배면차수", "제 10-1828211호", "콘크리트 구조물의 크랙 보수를 위한 인젝터 그라우팅 공법의 보수제 및 이를 이용한 보수장치", "㈜넷폼알앤디", "이승우", "제 10-2017-0065889호", "2017-05-29", "2018-02-05", "", "", "", ""], ["", "제 10-2869493호", "2액형 아크릴계 방수 기술을 활용한 구조물의 수분 침투 방지 및 내구성 강화 성능을 극대화하는 고효율 방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0069738호", "2025-05-28", "2025-10-01", "", "", "", ""], ["폴리우레아", "제 10-2474761호(옥상)", "표면강화층을 포함하는 콘크리트 측벽에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099152호", "2021-07-28", "2022-12-01", "", "", "", ""], ["", "제 10-2425081호(지하)", "표면강화층을 포함하는 콘크리트에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099120호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2535699호", "콘크리트 표면 강화 및 습기 차단을 위한 도장공법", "㈜넷폼알앤디", "허지은", "제 10-2022-0184837호", "2022-12-26", "2023-05-18", "", "", "", ""], ["", "제 10-2805601호", "유성 도료를 이용한 특수 소재 및 자재 특성을 갖는 도장 및 방수 방법", "㈜넷폼알앤디", "한인규, 주현진", "제 10-2024-0123089호", "2024-09-10", "2025-05-07", "", "", "", ""], ["", "제 10-2846086호", "균열 방지 및 장기 내구성 강화를 위한 특수 섬유시트 적용 폴리우레아 도장공법", "㈜넷폼알앤디,강남화성㈜", "황규현, 박현준, 김태우, 신명희, 심혜진", "제 10-2025-0042194호", "2025-04-01", "2025-08-08", "", "", "", ""], ["슁글 교체", "제 10-2320426호", "강풍에 의한 2차 피해를 차단하는 후레싱 마감구조", "㈜넷폼알앤디", "이승우", "제 10-2019-0125035호", "2019-10-10", "2021-10-27", "", "", "", ""], ["", "제 10-2122691호", "강풍에 의한 피해를 차단하는 보강재를 포함하는 후레싱 마감구조", "㈜넷폼알앤디", "이승우", "제 10-2019-0167423호", "2019-12-16", "2020-06-08", "", "", "", ""], ["탄성강화보강 (바탕면)", "제 10-2544157호", "콘크리트 표면 강화 및 습기 차단을 위한 공법", "㈜넷폼알앤디/김신용", "이승우/김신용", "제 10-2023-0003439호", "2023-01-10", "2023-06-12", "", "", "", ""], ["", "제 10-2425081호", "표면강화층을 포함하는 콘크리트에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099120호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2474761호", "표면강화층을 포함하는 콘크리트 측벽에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099152호", "2021-07-28", "2022-12-01", "", "", "", ""], ["", "제 10-2539919호", "콘크리트 강화 및 내습을 위한 보강 및 보수공법", "㈜넷폼알앤디", "허지은", "제 10-2023-0003437호", "2023-01-10", "2023-05-31", "", "", "", ""], ["탄성강화보강 (단면복구)", "제 10-2474761호", "표면강화층을 포함하는 콘크리트 측벽에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099152호", "2021-07-28", "2022-12-01", "", "", "", ""], ["", "제 10-2539919호", "콘크리트 강화 및 내습을 위한 보강 및 보수공법", "㈜넷폼알앤디", "허지은", "제 10-2023-0003437호", "2023-01-10", "2023-05-31", "", "", "", ""], ["", "제 10-2544157호", "콘크리트 표면 강화 및 습기 차단을 위한 공법", "㈜넷폼알앤디/김신용", "이승우/김신용", "제 10-2023-0003439호", "2023-01-10", "2023-06-12", "", "", "", ""], ["균열보수", "제 10-1935719호", "콘크리트 구조물의 크랙 보수를 위한 보수층 및 그 보수방법", "㈜넷폼알앤디", "이승우", "제 10-2018-0048775호", "2018-04-26", "2018-12-28", "", "", "", ""], ["", "제 10-1831299호", "콘크리트 외벽의 크랙보수를 위한 물차단판 및 이를 이용한 크랙 보수방법", "㈜넷폼알앤디", "이필선", "제 10-2016-0042193호", "2016-04-06", "2018-02-14", "", "", "", ""], ["", "제 10-2398289호", "퍼티재를 활용한 콘크리트 구조물의 크랙보수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0126295호", "2021-09-24", "2022-05-11", "", "", "", ""], ["", "제 10-2398304호", "퍼티재를 활용한 크랙보수층을 포함하는 콘크리트 구조물의 도장방법", "㈜넷폼알앤디", "이승우", "제 10-2021-0126370호", "2021-09-24", "2022-05-11", "", "", "", ""], ["", "제 10-2793770호", "고기능성 재료 결합을 통한 콘크리트 구조물 보수용 조성물 및 보수 공법", "㈜넷폼알앤디", "한인규, 주현진", "제 10-2024-0126558호", "2024-09-19", "2025-04-04", "", "", "", ""], ["후커", "제 10-2122700호", "강풍에 의한 피해를 차단하는 금속지붕 보강재", "㈜넷폼알앤디", "이승우", "제 10-2020-0007332호", "2020-01-20", "2020-06-08", "", "", "", ""], ["", "제 10-2122691호", "강풍에 의한 피해를 차단하는 보강재를 포함하는 후레싱 마감구조", "㈜넷폼알앤디", "이승우", "제 10-2019-0167423호", "2019-12-16", "2020-06-08", "", "", "", ""], ["", "제 10-2320426호", "강풍에 의한 2차 피해를 차단하는 후레싱 마감구조", "㈜넷폼알앤디", "이승우", "제 10-2019-0125035호", "2019-10-10", "2021-10-27", "", "", "", ""], ["", "제 10-2345836호", "강풍에 의한 피해를 차단하는 금속지붕 보강재", "㈜넷폼알앤디", "이승우", "제 10-2020-0066165호", "2020-06-02", "2021-12-28", "", "", "", ""], ["배관방수트랩", "제 10-2614027호", "배수유도기능을 구비한 배관트랩 및 이를 이용한 배수유도 방수공법", "㈜넷폼알앤디", "허지은, 신명희", "제 10-2023-0120999호", "2023-09-12", "2023-12-11", "", "", "", ""], ["", "제 10-2643734호", "배수구의 하자보수를 위한 보수용 배관 및 그 설치방법", "㈜넷폼알앤디", "이승우", "제 10-2021-0031118호", "2021-03-10", "2024-02-28", "", "", "", ""], ["페이퍼팬벤트", "제 10-2953887호", "콘크리트 슬래브 내부 건조를 위한 흡수 모듈러 및 이를 이용하는 건조·방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003403호", "2026-01-08", "2026-04-14", "", "", "", ""], ["", "제 10-2953879호", "콘크리트 슬래브 내부 수분 저감을 위한 다층 흡습 구조체 및 이를 이용하는 배습 시공 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003401호", "2026-01-08", "2026-04-14", "", "", "", ""], ["", "제 10-2975363호", "콘크리트층 습기 배출을 위한 통기·흡습 복합 구조체 및 이를 이용하는 방수 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003407호", "2026-01-08", "2026-06-05", "", "", "", ""], ["", "제 10-2981356호", "콘크리트층 방수층 하부의 잔류 습기 배출을 위한 다층 통기·배습 구조체 및 이를이용하는 통기·배습 공법", "㈜넷폼알앤디", "심혜진", "제 10-2026-0003410호", "2026-01-08", "2026-06-18", "", "", "", ""], ["금속기와 코팅", "제 10-2425088호", "표면강화층을 포함하는 금속지붕재에 접합된 유기계 방수증", "㈜넷폼알앤디", "이승우", "제 10-2021-0099184호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2119347호", "슁글 및 금속지붕재를 방수하기 위한 방수구조물", "㈜넷폼알앤디", "이승우", "제 10-2019-0105672호", "2019-08-28", "2020-05-29", "", "", "", ""], ["에폭시", "제 10-2535699호", "콘크리트 표면 강화 및 습기 차단을 위한 도장공법", "㈜넷폼알앤디", "허지은", "제 10-2022-0184837호", "2022-12-26", "2023-05-18", "", "", "", ""], ["", "제 10-1703553호", "지하 바닥의 수분을 제거하기 위한 벤트 구조물", "㈜넷폼알앤디", "이필선", "제 10-2016-0153073호", "2016-11-17", "2017-02-01", "", "", "", ""], ["", "제 10-1885983호", "콘크리트 바닥의 수분을 제거하기 위한 벤트 구조물", "㈜넷폼알앤디", "이필선", "제 10-2017-0009528호", "2017-01-20", "2018-07-31", "", "", "", ""], ["", "제 10-2425081호", "표면강화층을 포함하는 콘크리트에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099120호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2474761호", "표면강화층을 포함하는 콘크리트 측벽에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099152호", "2021-07-28", "2022-12-01", "", "", "", ""], ["", "제 10-2743867호", "콘크리트용 에폭시 도료 조성물 및 무기질계 혼합물을 이용한 콘크리트 표면 도장공법", "㈜넷폼알앤디", "신명희", "제 10-2024-0066361호", "2024-05-22", "2024-12-12", "", "", "", ""], ["", "제 10-2780472호", "에폭시 콘크리트 바닥 방수용 도장재 및 무기질 파우더를 이용한 콘크리트 표면 도장 공법", "㈜넷폼알앤디", "허지은", "제 10-2024-0067074호", "2024-05-23", "2025-03-07", "", "", "", ""], ["", "제 10-2805601호", "유성 도료를 이용한 특수 소재 및 자재 특성을 갖는 도장 및 방수 방법", "㈜넷폼알앤디", "한인규, 주현진", "제 10-2024-0123089호", "2024-09-10", "2025-05-07", "", "", "", ""], ["엠보라이닝", "제 10-2743867호", "콘크리트용 에폭시 도료 조성물 및 무기질계 혼합물을 이용한 콘크리트 표면 도장공법", "㈜넷폼알앤디", "신명희", "제 10-2024-0066361호", "2024-05-22", "2024-12-12", "", "", "", ""], ["", "제 10-1703553호", "지하 바닥의 수분을 제거하기 위한 벤트 구조물", "㈜넷폼알앤디", "이필선", "제 10-2016-0153073호", "2016-11-17", "2017-02-01", "", "", "", ""], ["", "제 10-1885983호", "콘크리트 바닥의 수분을 제거하기 위한 벤트 구조물", "㈜넷폼알앤디", "이필선", "제 10-2017-0009528호", "2017-01-20", "2018-07-31", "", "", "", ""], ["", "제 10-2425081호", "표면강화층을 포함하는 콘크리트에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099120호", "2021-07-28", "2022-07-21", "", "", "", ""], ["", "제 10-2474761호", "표면강화층을 포함하는 콘크리트 측벽에 접합되는 유기계 방수층", "㈜넷폼알앤디", "이승우", "제 10-2021-0099152호", "2021-07-28", "2022-12-01", "", "", "", ""], ["", "제 10-2535699호", "콘크리트 표면 강화 및 습기 차단을 위한 도장공법", "㈜넷폼알앤디", "허지은", "제 10-2022-0184837호", "2022-12-26", "2023-05-18", "", "", "", ""], ["", "제 10-2780472호", "에폭시 콘크리트 바닥 방수용 도장재 및 무기질 파우더를 이용한 콘크리트 표면 도장 공법", "㈜넷폼알앤디", "허지은", "제 10-2024-0067074호", "2024-05-23", "2025-03-07", "", "", "", ""], ["", "제 10-2805601호", "유성 도료를 이용한 특수 소재 및 자재 특성을 갖는 도장 및 방수 방법", "㈜넷폼알앤디", "한인규, 주현진", "제 10-2024-0123089호", "2024-09-10", "2025-05-07", "", "", "", ""], ["균열보수 및 재도장", "제 10-1935719호", "콘크리트 구조물의 크랙 보수를 위한 보수층 및 그 보수방법", "㈜넷폼알앤디", "이승우", "제 10-2018-0048775호", "2018-04-26", "2018-12-28", "", "", "", ""], ["", "제 10-2398296호", "퍼티재를 활용한 콘크리트 구조물의 크랙보수층을 포함하는 유기계 방수증", "㈜넷폼알앤디", "이승우", "제 10-2021-0126345호", "2021-09-24", "2022-05-11", "", "", "", ""], ["", "제 10-2398304호", "퍼티재를 활용한 크랙보수층을 포함하는 콘크리트 구조물의 도장방법", "㈜넷폼알앤디", "이승우", "제 10-2021-0126370호", "2021-09-24", "2022-05-11", "", "", "", ""], ["", "제 10-2709702호", "특수 수성도료 조성물을 이용하여 부착력 및 강도를 증진시킨 수성용 페인트를 활용한 외벽 도장공법", "㈜넷폼알앤디", "신명희", "제 10-2023-0137739호", "2023-10-16", "2024-09-20", "", "", "", ""], ["", "제 10-2784426호", "콘크리트 구조물의 벽체를 위한 재도장층", "㈜넷폼알앤디", "이승우", "제 10-2022-0047307호", "2022-04-18", "2025-03-17", "", "", "", ""], ["", "제 10-2861078호", "고기능성 페인트와 다층 보호 복합재를 활용한 철근 콘크리트 구조물 도장 공법", "㈜넷폼알앤디", "한인규, 주현진", "제 10-2024-0123083호", "2024-09-10", "2025-09-12", "", "", "", ""], ["아스콘 균열보수", "제 10-2562855호", "아스콘 재포장에서의 재시공을 위한 경계석 접합층을 포함하는 도로 경계석", "㈜넷폼알앤디", "이승우", "제 10-2022-0018842호", "2022-02-14", "2023-07-29", "", "", "", ""], ["", "제 10-2562854호", "아스콘 접합층을 포함하는 아스콘 재포장층", "㈜넷폼알앤디", "이승우", "제 10-2022-0018792호", "2022-02-14", "2023-07-29", "", "", "", ""], ["보도블럭", "제 10-2516517호", "아스콘 재포장에서의 보도블록의 재시공을 위한 경계석 접합층", "㈜넷폼알앤디", "이승우", "제 10-2022-0018875호", "2022-02-14", "2023-03-28", "", "", "", ""], ["", "제 10-2562855호", "아스콘 재포장에서의 재시공을 위한 경계석 접합층을 포함하는 도로 경계석", "㈜넷폼알앤디", "이승우", "제 10-2022-0018842호", "2022-02-14", "2023-07-29", "", "", "", ""], ["", "제 10-2893921호", "탄성 및 강도 향상을 위한 복합 보수공법의 콘크리트 손상면 및 도로 경계부 적용 방법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0062920호", "2025-05-15", "2025-11-27", "", "", "", ""], ["아스콘 씰코팅", "제 10-2562854호", "아스콘 접합층을 포함하는 아스콘 재포장층", "㈜넷폼알앤디", "이승우", "제 10-2022-0018792호", "2022-02-14", "2023-07-29", "", "", "", ""], ["", "제 10-2562855호", "아스콘 재포장에서의 재시공을 위한 경계석 접합층을 포함하는 도로 경계석", "㈜넷폼알앤디", "이승우", "제 10-2022-0018842호", "2022-02-14", "2023-07-29", "", "", "", ""], ["아스콘 도로포장", "제 10-2900226호", "충격 및 하중 분산 성능이 강화된 유화 아스팔트 기반 도로 포장공법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0068198호", "2025-05-26", "2025-12-10", "", "", "", ""], ["", "제 10-2516517호", "아스콘 재포장에서의 보도블록의 재시공을 위한 경계석 접합층", "㈜넷폼알앤디", "이승우", "제 10-2022-0018875호", "2022-02-14", "2023-03-28", "", "", "", ""], ["", "제 10-2562854호", "아스콘 접합층을 포함하는 아스콘 재포장층", "㈜넷폼알앤디", "이승우", "제 10-2022-0018792호", "2022-02-14", "2023-07-29", "", "", "", ""], ["MMA공법", "제 10-2937091호", "미끄럼 저항성과 도막 내구성이 향상된 MMA계 도막 조성물 및 이의 시공방법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0103116호", "2025-07-29", "2026-03-05", "", "", "", ""], ["", "제 10-2946330호", "MMA수지 기반의 골재 복합 조성물을 이용한 미끄럼 저항성 포장 공법", "㈜넷폼알앤디", "심혜진", "제 10-2025-0104912호", "2025-07-31", "2026-03-26", "", "", "", ""]], localStorage);
-  [{"client": "평택비전지웰푸르지오", "region": "경기", "city": "평택", "phone": "031-647-3158", "households": 717, "projectNames": ["외벽·지하주차장 바닥 균열보수 및 도장공사", "옥상 방수공사"], "noticeDate": "2026-03-02", "documentDueDate": "2026-03-14", "bidDate": "2026-03-20", "bidType": "전자입찰", "status": "공고", "scopes": ["외벽", "옥상"], "patentItems": [{"kind": "POUR", "number": "1935719"}, {"kind": "POUR", "number": "2425081"}, {"kind": "POUR", "number": "2535699"}]}, {"client": "하남미사강변도시", "region": "경기", "city": "하남", "phone": "031-790-1234", "households": 1240, "projectNames": ["외벽 재도장공사"], "noticeDate": "2026-01-11", "bidDate": "2026-01-25", "bidType": "서류접수", "status": "낙찰", "contractor": "코지건설㈜", "contractorPhone": "031-647-3158", "awardDate": "2026-02-05", "awardAmount": 1250000000, "quality": "우수", "patentItems": [{"kind": "POUR", "number": "2425081"}, {"kind": "THIRD_PARTY", "number": "2091977", "name": "균열보수 공법", "company": "타사명"}]}, {"client": "금산주공아파트", "region": "충남", "city": "금산", "phone": "041-555-0001", "households": 430, "projectNames": ["외벽 도장공사"], "noticeDate": "2026-02-05", "bidType": "전자입찰", "status": "낙찰", "contractor": "가나건설", "contractorPhone": "041-222-3333", "awardDate": "2026-03-10", "awardAmount": 800000000, "categories": ["균열보수 및 재도장"], "noticePatentText": "POUR공법", "patentItems": []}, {"client": "양산센트럴자이", "region": "경남", "city": "양산", "phone": "055-123-4567", "households": 880, "projectNames": ["지하주차장 에폭시 바닥공사"], "noticeDate": "2026-04-01", "documentDueDate": "2026-04-12", "bidDate": "2026-04-18", "bidType": "전자입찰", "status": "공고", "patentItems": [{"kind": "POUR", "number": "2780472"}, {"kind": "THIRD_PARTY", "number": "2474761", "name": "방수 공법", "company": "다른회사"}, {"kind": "THIRD_PARTY", "number": "1234567", "name": "도장 공법", "company": "세번째회사"}]}, {"client": "서울강남래미안", "region": "서울", "city": "강남", "phone": "02-1234-5678", "households": 2100, "projectNames": ["옥상 슁글 교체공사"], "noticeDate": "2026-05-02", "bidType": "서류접수", "status": "유찰", "patentItems": [{"kind": "POUR", "number": "2122691"}]}, {"client": "부산해운대엘시티", "region": "부산", "city": "해운대", "households": 1560, "projectNames": ["금속기와 코팅공사"], "noticeDate": "2026-06-01", "bidType": "전자입찰", "status": "재공고", "rebidRound": 1, "patentItems": [{"kind": "POUR", "number": "2119347"}]}, {"client": "대전유성푸르지오", "region": "대전", "city": "유성", "phone": "042-777-8888", "households": 640, "projectNames": ["아스콘 도로포장공사"], "noticeDate": "2026-06-20", "bidType": "서류접수", "status": "타공법 낙찰", "contractor": "타사건설", "contractorPhone": "042-111-2222", "awardDate": "2026-07-10", "awardAmount": 430000000, "categories": ["아스콘 도로포장"], "patentItems": []}].forEach(function (r) {
-    if (!r.categories) {
+  var rows = [{"client": "가나예시아파트", "region": "경기", "city": "평택", "phone": "031-000-0001", "households": 717, "projectNames": ["외벽·지하주차장 바닥 균열보수 및 도장공사", "옥상 방수공사"], "noticeDate": "2026-03-02", "documentDueDate": "2026-03-14", "bidDate": "2026-03-20", "bidType": "전자입찰", "status": "공고", "scopes": ["외벽", "옥상"], "patentItems": [{"kind": "POUR", "number": "1935719"}, {"kind": "POUR", "number": "2425081"}, {"kind": "POUR", "number": "2535699"}]}, {"client": "하남미사강변도시", "region": "경기", "city": "하남", "phone": "031-790-1234", "households": 1240, "projectNames": ["외벽 재도장공사"], "noticeDate": "2026-01-11", "bidDate": "2026-01-25", "bidType": "서류접수", "status": "낙찰", "contractor": "코지건설㈜", "contractorPhone": "031-000-0002", "awardDate": "2026-02-05", "awardAmount": 1250000000, "quality": "우수", "patentItems": [{"kind": "POUR", "number": "2425081"}, {"kind": "THIRD_PARTY", "number": "2091977", "name": "균열보수 공법", "company": "타사명"}]}, {"client": "금산주공아파트", "region": "충남", "city": "금산", "phone": "041-555-0001", "households": 430, "projectNames": ["외벽 도장공사"], "noticeDate": "2026-02-05", "bidType": "전자입찰", "status": "낙찰", "contractor": "가나건설", "contractorPhone": "041-222-3333", "awardDate": "2026-03-10", "awardAmount": 800000000, "categories": ["균열보수 및 재도장"], "noticePatentText": "POUR공법", "patentItems": []}, {"client": "양산센트럴자이", "region": "경남", "city": "양산", "phone": "055-123-4567", "households": 880, "projectNames": ["지하주차장 에폭시 바닥공사"], "noticeDate": "2026-04-01", "documentDueDate": "2026-04-12", "bidDate": "2026-04-18", "bidType": "전자입찰", "status": "공고", "patentItems": [{"kind": "POUR", "number": "2780472"}, {"kind": "THIRD_PARTY", "number": "2474761", "name": "방수 공법", "company": "다른회사"}, {"kind": "THIRD_PARTY", "number": "1234567", "name": "도장 공법", "company": "세번째회사"}]}, {"client": "서울강남래미안", "region": "서울", "city": "강남", "phone": "02-1234-5678", "households": 2100, "projectNames": ["옥상 슁글 교체공사"], "noticeDate": "2026-05-02", "bidType": "서류접수", "status": "유찰", "patentItems": [{"kind": "POUR", "number": "2122691"}]}, {"client": "부산해운대엘시티", "region": "부산", "city": "해운대", "households": 1560, "projectNames": ["금속기와 코팅공사"], "noticeDate": "2026-06-01", "bidType": "전자입찰", "status": "재공고", "rebidRound": 1, "patentItems": [{"kind": "POUR", "number": "2119347"}]}, {"client": "대전유성푸르지오", "region": "대전", "city": "유성", "phone": "042-777-8888", "households": 640, "projectNames": ["아스콘 도로포장공사"], "noticeDate": "2026-06-20", "bidType": "서류접수", "status": "타공법 낙찰", "contractor": "타사건설", "contractorPhone": "042-111-2222", "awardDate": "2026-07-10", "awardAmount": 430000000, "categories": ["아스콘 도로포장"], "patentItems": []}];
+  rows.forEach(function (r) {
+    if (!r.categories || !r.categories.length) {
       r.categories = PourPatents.categoriesFor(
         (r.patentItems || [])
           .filter(function (i) { return i.kind === "POUR"; })
           .map(function (i) { return i.number; }), localStorage);
     }
-    PourRecords.save(r, localStorage);
   });
+  // id 가 같은 행만 갱신하므로 이 브라우저에서 직접 입력한 자료는 그대로 남는다
+  PourRecords.saveMany(rows, localStorage);   // 한 번에 저장한다 (수천 건이어도 빠르다)
+  localStorage.setItem(SEED_KEY, SEED_VERSION);
 })();
 
 /* POUR 공사실적 관리 — 화면 동작 */
@@ -3951,7 +4128,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       chip.type = "button";
       chip.className = "alert-chip";
       chip.id = "alert-" + g.key;
-      chip.textContent = "⚠ " + g.label;
+      chip.textContent = g.label;
       chip.addEventListener("click", function () {
         // 해당 자료만 보이도록 목록을 걸러 준다
         state.statusTab = "전체";
@@ -4045,10 +4222,15 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     clearNoticeForm();
     state.editingId = id || null;
 
+    // 새 공고에서는 상태·시공사·공사 품질·비고·특허·협약 정보를 감춘다.
+    // (자료와 목록 열은 그대로 두고 입력 화면에서만 감추는 것이다)
+    $("noticePanel").classList.toggle("is-edit", !!id);
+
     if (!id) {
       $("panelTitle").textContent = "새 공고 등록";
       $("panelSave").textContent = "공고 등록";
       $("isRebid").parentNode.style.display = "";
+      $("fStatus").value = "공고";              // 화면에서 고르지 않고 언제나 공고로 저장
     } else {
       var rec = PourRecords.list(storage).filter(function (r) { return r.id === id; })[0];
       if (!rec) return;
@@ -4167,7 +4349,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       address: $("fAddress").value.trim(),
       remark: $("fRemark").value.trim(),
       contractor: $("fContractor").value.trim(),
-      status: $("fStatus").value,
+      // 새 공고는 화면에서 상태를 고르지 않는다. 수정할 때만 고른 값을 쓴다.
+      status: state.editingId ? $("fStatus").value : "공고",
       patentItems: patents.patentItems,
       noticeMultiFlag: patents.noticeMultiFlag
     };
@@ -4221,7 +4404,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     { key: "categories", label: "최종 공종", required: true },
     { key: "status", label: "낙찰 결과 상태", type: "select", options: PourRecords.STATUSES },
     { key: "scopes", label: "최종 공사범위" },
-    { key: "quality", label: "공사 품질" },
+    { key: "quality", label: "공사 품질", datalist: "qualityList" },
     { key: "remark", label: "낙찰 비고" }
   ];
   var awardPatentEditor = null;
@@ -4247,6 +4430,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       } else {
         input = document.createElement("input");
         input.type = f.type || "text";
+        if (f.datalist) input.setAttribute("list", f.datalist);
       }
       input.id = "aw-" + f.key;
       var value = record[f.key];
@@ -4772,7 +4956,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     var chip = document.createElement("div");
     chip.className = "alert-chip";
     chip.style.cursor = "default";
-    chip.textContent = "⚠ 서버 저장에 실패했습니다. 자료는 화면에 남아 있으며 다시 시도합니다. (" +
+    chip.textContent = "서버 저장에 실패했습니다. 자료는 화면에 남아 있으며 다시 시도합니다. (" +
       (err && err.message ? err.message : "원인 미상") + ")";
     bar.insertBefore(chip, bar.firstChild);
   }
