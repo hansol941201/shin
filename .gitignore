@@ -9,3 +9,9 @@ node_modules/
 pour-integration/vendor/
 tmp-test-output/
 pour-integration/nextjs/.tmp-build/
+
+# 실제 운영 실적 자료 — 발주처 이름과 관리사무소 전화번호가 들어 있어 저장소에 올리지 않는다.
+# scripts/import-records.py 로 엑셀에서 다시 만들 수 있다.
+pour-integration/test/fixtures-records.json
+pour-integration/nextjs/drizzle/seed-records.sql
+pour-integration/preview-records.html

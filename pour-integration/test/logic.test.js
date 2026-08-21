@@ -344,6 +344,11 @@ test("전체 실적표 열 순서 (요청한 20개 + 서류 마감일·시공사
   ]);
 });
 
+test("연도 열은 요청한 22개 뒤에 붙는다 (앞선 열 순서를 흔들지 않는다)", () => {
+  assert.strictEqual(PourRecords.COLUMNS[22].title, "연도");
+  assert.strictEqual(PourRecords.MAIN_COLUMNS[2].title, "연도");
+});
+
 test("특허 탭 표는 순번부터 세대수까지 핵심 열이 앞에", () => {
   assert.deepStrictEqual(PourRecords.PATENT_TAB_COLUMNS.slice(0, 8).map(c => c.title), [
     "순번", "지역", "도시", "특허번호", "발주처(아파트명)", "공사명", "발주처 전화번호", "세대수"

@@ -22,7 +22,7 @@ const INFO_FIELDS = [
   { key: "categories", label: "최종 공종", required: true },
   { key: "status", label: "낙찰 결과 상태", select: true },
   { key: "scopes", label: "최종 공사범위" },
-  { key: "quality", label: "공사 품질" },
+  { key: "quality", label: "공사 품질", datalist: "pour-award-quality" },
   { key: "remark", label: "낙찰 비고" }
 ] as const;
 
@@ -119,6 +119,7 @@ export default function AwardPanel({
     const phone = "phone" in field && field.phone;
     const money = "money" in field && field.money;
     const isSelect = "select" in field && field.select;
+    const datalist = "datalist" in field ? field.datalist : undefined;
     return (
       <div key={key}>
         <label htmlFor={`aw-${key}`}>
@@ -133,6 +134,7 @@ export default function AwardPanel({
           <input
             id={`aw-${key}`}
             type={"type" in field && field.type ? field.type : "text"}
+            list={datalist}
             value={values[key] || ""}
             onChange={(e) => set(key, e.target.value)}
             onBlur={(e) => {
@@ -144,6 +146,11 @@ export default function AwardPanel({
               }
             }}
           />
+        )}
+        {datalist && (
+          <datalist id={datalist}>
+            {PourRecords.QUALITY_OPTIONS.map((q: string) => <option key={q} value={q} />)}
+          </datalist>
         )}
         {errors[key] && <span className="pour-field-error" id={`aw-error-${key}`}>{errors[key]}</span>}
       </div>

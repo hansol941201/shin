@@ -243,10 +243,15 @@
     clearNoticeForm();
     state.editingId = id || null;
 
+    // 새 공고에서는 상태·시공사·공사 품질·비고·특허·협약 정보를 감춘다.
+    // (자료와 목록 열은 그대로 두고 입력 화면에서만 감추는 것이다)
+    $("noticePanel").classList.toggle("is-edit", !!id);
+
     if (!id) {
       $("panelTitle").textContent = "새 공고 등록";
       $("panelSave").textContent = "공고 등록";
       $("isRebid").parentNode.style.display = "";
+      $("fStatus").value = "공고";              // 화면에서 고르지 않고 언제나 공고로 저장
     } else {
       var rec = PourRecords.list(storage).filter(function (r) { return r.id === id; })[0];
       if (!rec) return;
@@ -365,7 +370,8 @@
       address: $("fAddress").value.trim(),
       remark: $("fRemark").value.trim(),
       contractor: $("fContractor").value.trim(),
-      status: $("fStatus").value,
+      // 새 공고는 화면에서 상태를 고르지 않는다. 수정할 때만 고른 값을 쓴다.
+      status: state.editingId ? $("fStatus").value : "공고",
       patentItems: patents.patentItems,
       noticeMultiFlag: patents.noticeMultiFlag
     };
@@ -419,7 +425,7 @@
     { key: "categories", label: "최종 공종", required: true },
     { key: "status", label: "낙찰 결과 상태", type: "select", options: PourRecords.STATUSES },
     { key: "scopes", label: "최종 공사범위" },
-    { key: "quality", label: "공사 품질" },
+    { key: "quality", label: "공사 품질", datalist: "qualityList" },
     { key: "remark", label: "낙찰 비고" }
   ];
   var awardPatentEditor = null;
@@ -445,6 +451,7 @@
       } else {
         input = document.createElement("input");
         input.type = f.type || "text";
+        if (f.datalist) input.setAttribute("list", f.datalist);
       }
       input.id = "aw-" + f.key;
       var value = record[f.key];

@@ -85,3 +85,4 @@ CREATE INDEX IF NOT EXISTS idx_pph_project ON pour_project_history (project_id, 
 -- ALTER TABLE projects ADD COLUMN result_entered_at       TEXT;
 -- ALTER TABLE projects ADD COLUMN updated_at              TEXT;
 -- ALTER TABLE projects ADD COLUMN patents_migrated        INTEGER DEFAULT 0;
+-- ALTER TABLE projects ADD COLUMN record_year             TEXT;

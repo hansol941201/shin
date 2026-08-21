@@ -60,7 +60,8 @@
     });
     return { ok: !errors.length, errors: errors };
   }
-  var QUALITY_OPTIONS = ["우수", "양호", "보통", "확인 필요"];
+  // 실적 List 엑셀은 최상/상/중/하 표기를 쓴다. 원본 표기를 바꾸지 않고 그대로 고를 수 있게 함께 둔다.
+  var QUALITY_OPTIONS = ["우수", "양호", "보통", "최상", "상", "중", "하", "확인 필요"];
 
   /* --------------------------------------------------------- 열 정의 */
 
@@ -88,6 +89,8 @@
     { key: "scopes",         title: "공사 범위",         type: "list",   width: 20 },
     { key: "address",        title: "주소",              type: "text",   width: 28 },
     { key: "remark",         title: "비고",              type: "text",   width: 18 },
+    // 연도별 실적 List 에서 옮겨 온 연도. 요청한 1~22번 열 순서를 흔들지 않도록 뒤에 둔다.
+    { key: "year",           title: "연도",              type: "text",   width: 7 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
     { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
     { key: "__thirdNames",       title: "타사 특허명·공법명",     type: "thirdNames",     width: 22 },
@@ -104,6 +107,7 @@
   var MAIN_COLUMNS = [
     { key: "__seq",          title: "No.",              type: "seq",          width: 6,  pin: true },
     { key: "status",         title: "상태",             type: "text",         width: 11, pin: true },
+    { key: "year",           title: "연도",             type: "text",         width: 7 },
     { key: "noticeDate",     title: "공고일",           type: "date",         width: 12 },
     { key: "documentDueDate", title: "서류 마감일",     type: "date",         width: 12 },
     { key: "bidDate",        title: "개찰일",           type: "date",         width: 12 },
@@ -208,6 +212,7 @@
       originalProjectId: String(r.originalProjectId || r.originalNoticeId || "").trim(),
       previousProjectId: String(r.previousProjectId || "").trim(),
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
+      year: String(r.year || "").trim(),
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
       awardDate: String(r.awardDate || "").trim(),
@@ -292,7 +297,7 @@
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
     quality: "공사 품질", contractor: "시공사", status: "상태",
-    noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
+    year: "연도", noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
     isRenotice: "재공고 건",
     awardAmount: "낙찰금액", expectedAmount: "예상금액", bidType: "입찰 종류",
     agreementNo: "협약서 발행번호", scope: "공사 범위", address: "주소",
@@ -404,6 +409,26 @@
     if (at >= 0) all[at] = record; else all.push(record);
     writeAll(all, storage);
     return record;
+  }
+
+  /**
+   * 여러 건을 한 번에 넣는다. (엑셀에서 옮겨 올 때 씀)
+   * id 가 같으면 그 행을 갱신하고, 없으면 뒤에 붙인다. 기존 행은 지우지 않는다.
+   * 저장은 마지막에 한 번만 하므로 수천 건이어도 빠르다.
+   */
+  function saveMany(inputs, storage) {
+    var all = list(storage);
+    var at = {};
+    all.forEach(function (r, i) { at[r.id] = i; });
+    var saved = [];
+    (inputs || []).forEach(function (input) {
+      var record = normalize(input);
+      if (at[record.id] != null) all[at[record.id]] = record;
+      else { at[record.id] = all.length; all.push(record); }
+      saved.push(record);
+    });
+    writeAll(all, storage);
+    return saved;
   }
 
   /**
@@ -973,7 +998,7 @@
       if (f.region && f.region !== "전체" && rec.region !== f.region) return false;
       if (f.city && f.city !== "전체" && rec.city !== f.city) return false;
       if (f.year && f.year !== "전체") {
-        var y = String(rec.noticeDate || rec.awardDate || "").slice(0, 4);
+        var y = rec.year || String(rec.noticeDate || rec.awardDate || "").slice(0, 4);
         if (y !== String(f.year)) return false;
       }
       if (f.keyword) {
@@ -1024,6 +1049,7 @@
     usePatentStorage: usePatentStorage,
     list: list,
     save: save,
+    saveMany: saveMany,
     award: award,
     patentTabs: patentTabs,
     createRebid: createRebid,

@@ -3,13 +3,16 @@
 app.html 과 딸린 파일들을 한 파일로 합쳐 미리보기용 HTML 을 만든다.
 
     python3 pour-integration/scripts/build-preview.py
+    python3 pour-integration/scripts/build-preview.py --with-records   (실제 실적 포함)
 
-결과: pour-integration/preview.html
+결과: pour-integration/preview.html (예시 자료)
+      pour-integration/preview-records.html (--with-records · 저장소에 올리지 않는다)
 외부 파일을 참조하지 않으므로 브라우저로 바로 열거나 어디든 올릴 수 있다.
-예시 자료(첨부 엑셀의 특허 50건 + 현장 7곳)가 들어 있어 빈 화면으로 열리지 않는다.
+자료(특허 50건 + 연도별 실적 List 엑셀에서 옮겨 온 실적)가 들어 있어 빈 화면으로 열리지 않는다.
 
 엑셀 라이브러리(ExcelJS)는 넣지 않는다 — 미리보기에서는 파일 내려받기가 막혀 있다.
 """
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -65,7 +68,23 @@ def safe(js: str) -> str:
     return js.replace("</script>", "<\\/script>")
 
 
-def sample_records() -> str:
+def sample_records(with_records: bool = False) -> str:
+    """
+    기본은 예시 현장이다.
+    --with-records 를 주면 연도별 실적 List 엑셀에서 옮겨 온 실제 실적을 쓴다.
+    (scripts/import-records.py 가 만든 test/fixtures-records.json)
+
+    실제 실적에는 발주처 이름과 관리사무소 전화번호가 들어 있어 저장소에 올리지 않는다.
+    그래서 공개용 docs/index.html 은 언제나 예시 자료로만 만든다.
+    """
+    imported = BASE / "test" / "fixtures-records.json"
+    if with_records:
+        if not imported.exists():
+            raise SystemExit(
+                "test/fixtures-records.json 이 없습니다.\n"
+                "  python3 pour-integration/scripts/import-records.py <실적List.xlsx> 를 먼저 실행하세요.")
+        return json.dumps(json.loads(imported.read_text(encoding="utf-8")), ensure_ascii=False)
+
     rows = []
     for site in SAMPLE_SITES:
         record = {k: v for k, v in site.items() if k != "patents"}
@@ -78,7 +97,7 @@ def sample_records() -> str:
     return json.dumps(rows, ensure_ascii=False)
 
 
-def build() -> Path:
+def build(with_records: bool = False) -> Path:
     html = read("app.html")
 
     css = read("pour-integration.css") + "\n" + read("app.css")
@@ -89,20 +108,28 @@ def build() -> Path:
         json.loads((BASE / "test" / "fixtures-patent-excel.json").read_text(encoding="utf-8")),
         ensure_ascii=False)
 
+    rows_json = sample_records(with_records)
+    seed_version = hashlib.sha1(rows_json.encode("utf-8")).hexdigest()[:12]
+
     seed = f"""
-/* ===== 미리보기용 예시 자료 (처음 열 때 한 번만) ===== */
+/* ===== 미리보기 자료 (자료가 바뀌었을 때만 다시 넣는다) ===== */
 (function () {{
-  if (localStorage.getItem("pour.records.v1")) return;
+  var SEED_KEY = "pour.preview.seed";
+  var SEED_VERSION = "{seed_version}";
+  if (localStorage.getItem(SEED_KEY) === SEED_VERSION) return;
   PourPatents.load({excel}, localStorage);
-  {sample_records()}.forEach(function (r) {{
-    if (!r.categories) {{
+  var rows = {rows_json};
+  rows.forEach(function (r) {{
+    if (!r.categories || !r.categories.length) {{
       r.categories = PourPatents.categoriesFor(
         (r.patentItems || [])
           .filter(function (i) {{ return i.kind === "POUR"; }})
           .map(function (i) {{ return i.number; }}), localStorage);
     }}
-    PourRecords.save(r, localStorage);
   }});
+  // id 가 같은 행만 갱신하므로 이 브라우저에서 직접 입력한 자료는 그대로 남는다
+  PourRecords.saveMany(rows, localStorage);   // 한 번에 저장한다 (수천 건이어도 빠르다)
+  localStorage.setItem(SEED_KEY, SEED_VERSION);
 }})();
 """
 
@@ -123,14 +150,18 @@ def build() -> Path:
 
     html = html.replace('<main class="app-main">', '''<div style="padding:8px 16px 0">
   <div class="alert-chip" style="cursor:default;background:#EEF3FB;border-color:#33415F;color:#17213B">
-    미리보기입니다 — 예시 자료가 들어 있고, 입력한 자료는 이 브라우저에만 남습니다.
+    미리보기입니다 — 자료가 들어 있고, 입력한 자료는 이 브라우저에만 남습니다.
     엑셀 내려받기는 미리보기에서 동작하지 않습니다.
   </div>
 </div>
 <main class="app-main">''')
 
-    out = BASE / "preview.html"
+    out = BASE / ("preview-records.html" if with_records else "preview.html")
     out.write_text(html, encoding="utf-8")
+
+    # 실제 실적이 들어간 파일은 공개용으로 만들지 않는다
+    if with_records:
+        return out
 
     # GitHub Pages 로 올릴 때는 문서 골격이 필요하다 (아티팩트는 자동으로 감싸 준다)
     page = ("<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n"
@@ -148,6 +179,11 @@ def build() -> Path:
 
 
 if __name__ == "__main__":
-    path = build()
+    import sys
+    with_records = "--with-records" in sys.argv
+    path = build(with_records)
     print(f"{path.relative_to(BASE.parent)} 생성 — {round(path.stat().st_size / 1024)} KB")
-    print("docs/index.html 생성 — GitHub Pages 용")
+    if with_records:
+        print("실제 실적이 들어 있습니다. 저장소에 올리거나 공개하지 마세요.")
+    else:
+        print("docs/index.html 생성 — GitHub Pages 용 (예시 자료)")

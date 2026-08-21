@@ -177,9 +177,52 @@ sh pour-integration/test/run-all.sh
 | `test/app.test.js` | 메인 화면 동작 (app.html) | 48건 통과 |
 | `test/api-store.test.js` | API(D1) 저장소 · 새로고침 유지 | 10건 통과 |
 | `test/migration.test.mjs` | D1 순방향 마이그레이션 (실제 SQLite) | 10건 통과 |
+| `test/import-records.test.mjs` | 연도별 실적 List 엑셀 옮겨 심기 (실제 SQLite) | 18건 통과 |
+
+`test/import-records.test.mjs` 는 실적 자료 파일이 없으면 건너뜁니다
+(아래 "연도별 실적 List 엑셀 옮기기" 참고).
 
 브라우저 테스트는 Playwright 를 씁니다.
 사전 설치된 Chromium 을 쓰려면 `chromium.launch({ executablePath })` 경로를 환경에 맞게 고치세요.
+
+## 연도별 실적 List 엑셀 옮기기
+
+`1POUR 실적 List.xlsx` 처럼 연도별 시트로 나뉜 실적표를 자료로 옮깁니다.
+
+```sh
+python3 pour-integration/scripts/import-records.py <연도별 실적List.xlsx>
+```
+
+만들어지는 것 (둘 다 `.gitignore` 대상 — 발주처 이름과 관리사무소 전화번호가 들어 있습니다)
+
+| 파일 | 쓰임 |
+|---|---|
+| `test/fixtures-records.json` | 화면·검증용 실적 자료 |
+| `nextjs/drizzle/seed-records.sql` | D1 에 옮겨 심는 SQL (UPSERT · 지우는 문장 없음) |
+
+읽는 방법
+
+* 시트 이름의 연도를 `year` 에 담습니다. 원본에 날짜가 없으므로 **날짜는 만들어 내지 않습니다.**
+* 12번째(이름 없는) 열은 시공사입니다. 2024~2026 시트에만 있습니다.
+* 특허번호 칸의 숫자는 POUR 특허로, `건설신기술 1026호` · `탄성강화 파우더` 처럼
+  번호가 아닌 표기는 버리지 않고 **공고문 특허·공법 원문**에 남깁니다.
+* 같은 현장·같은 공사가 여러 시트에 반복되면 한 행으로 합칩니다. 빈 칸만 채우므로
+  어느 시트의 정보도 사라지지 않고, 합쳐진 행은 비고에 등재 연도를 남깁니다.
+* 전화번호는 문자열로 두어 앞자리 0 이 사라지지 않습니다.
+
+D1 에 넣기 (먼저 `nextjs/scripts/pour-migrate.mjs` 로 `record_year` 열을 더하세요)
+
+```sh
+npx wrangler d1 execute <DB> --file pour-integration/nextjs/drizzle/seed-records.sql
+```
+
+실적이 들어간 화면을 확인하려면
+
+```sh
+python3 pour-integration/scripts/build-preview.py --with-records   # preview-records.html
+```
+
+공개용 `docs/index.html` 은 언제나 예시 자료로만 만듭니다.
 
 ## 첨부 특허 엑셀 분석 결과
 

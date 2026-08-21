@@ -24,6 +24,7 @@ export const COLUMN_MAP = {
   scopes: "scopes",
   phone: "phone",
   households: "households",
+  year: "record_year",
   noticeDate: "notice_date",
   documentDueDate: "document_due_date",
   bidDate: "bid_date",
@@ -167,6 +168,7 @@ export function projectRowToRecord(
     scopes: toList(get("scopes")),
     phone: text(get("phone")),
     households: toNumber(get("households")),
+    year: text(get("year")),
     noticeDate: text(get("noticeDate")),
     documentDueDate: text(get("documentDueDate")),
     bidDate: text(get("bidDate")),
@@ -238,6 +240,7 @@ export function recordToProjectRow(record: PourRecord & { __extra?: ProjectRow }
   set("scopes", fromList(record.scopes));
   set("phone", record.phone);                       // 문자열 그대로
   set("households", record.households === "" ? null : record.households);
+  set("year", record.year);
   set("noticeDate", record.noticeDate);
   set("documentDueDate", record.documentDueDate);
   set("bidDate", record.bidDate);

@@ -207,20 +207,22 @@
       </div>
     </div>
 
-    <div class="sub-head">특허·협약 정보</div>
-    <div class="form-row form-row-fill">
-      <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
-      <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+    <div class="edit-only" id="patentAgreementBox">
+      <div class="sub-head">특허·협약 정보</div>
+      <div class="form-row form-row-fill">
+        <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
+        <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+      </div>
     </div>
 
     <div class="sub-head">공사 내용</div>
     <div class="form-row form-row-fill">
       <div class="span-2"><label for="fScopes">공사범위 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fScopes" rows="2"></textarea></div>
       <div class="span-2"><label for="fAddress">나머지 주소</label><input type="text" id="fAddress" /></div>
-      <div><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
-      <div><label for="fStatus">상태</label><select id="fStatus"></select></div>
-      <div><label for="fContractor">시공사 <span class="opt">(공고 단계에서는 비움)</span></label><input type="text" id="fContractor" /></div>
-      <div class="span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
+      <div class="edit-only"><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
+      <div class="edit-only"><label for="fStatus">상태</label><select id="fStatus"></select></div>
+      <div class="edit-only"><label for="fContractor">시공사 <span class="opt">(낙찰 전환에서 입력)</span></label><input type="text" id="fContractor" /></div>
+      <div class="edit-only span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
     </div>
 
     <div id="editHistory" class="form-msg"></div>

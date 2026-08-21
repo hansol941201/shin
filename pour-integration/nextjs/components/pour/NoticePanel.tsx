@@ -23,6 +23,8 @@ const EMPTY_FORM = {
 };
 
 export default function NoticePanel({ open, storage, record, onClose, onSaved }: NoticePanelProps) {
+  // 상세 수정일 때만 보이는 항목이 있다 (새 공고 화면에서는 감춘다)
+  const isEdit = !!record;
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [bidType, setBidType] = useState("");
@@ -147,6 +149,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       ...form,
       households: form.households,
       bidType,
+      // 새 공고는 화면에서 상태를 고르지 않는다. 수정할 때만 고른 값을 쓴다.
+      status: record ? form.status : "공고",
       patentItems: patents.patentItems,
       noticeMultiFlag: patents.noticeMultiFlag
     };
@@ -311,7 +315,7 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
             </div>
           </div>
 
-          <div className="pour-sub-head">적용 특허 · 공사범위 · 추가정보</div>
+          <div className="pour-sub-head">적용 특허</div>
 
               <div className="pour-form-row pour-form-row-1">
                 <div>
@@ -326,26 +330,28 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                   />
                 </div>
               </div>
+              {/* 공고문 특허·공법 원문과 협약서 발행번호는 새 공고에서는 감춘다.
+                  자료와 목록 열은 그대로 두고 입력 화면에서만 감추는 것이다. */}
+              {isEdit && (
+                <>
+                  <div className="pour-sub-head">특허·협약 정보</div>
+                  <div className="pour-form-row pour-form-row-fill">
+                    <div className="span-2">
+                      <label htmlFor="pf-notice-patent">공고문 특허·공법 원문</label>
+                      <input id="pf-notice-patent" type="text" value={form.noticePatentText}
+                             placeholder="공고문에 적힌 특허번호·특허명·공법명"
+                             onChange={(e) => set("noticePatentText", e.target.value)} />
+                    </div>
+                    <div>
+                      <label htmlFor="pf-agreement">협약서 발행번호</label>
+                      <input id="pf-agreement" type="text" value={form.agreementNo}
+                             onChange={(e) => set("agreementNo", e.target.value)} />
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className="pour-sub-head">공사 내용</div>
               <div className="pour-form-row pour-form-row-fill">
-                <div className="span-2">
-                  <label htmlFor="pf-notice-patent">공고문 특허·공법 원문</label>
-                  <input id="pf-notice-patent" type="text" value={form.noticePatentText}
-                         placeholder="공고문에 적힌 특허번호·특허명·공법명"
-                         onChange={(e) => set("noticePatentText", e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="pf-agreement">협약서 발행번호</label>
-                  <input id="pf-agreement" type="text" value={form.agreementNo}
-                         onChange={(e) => set("agreementNo", e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="pf-quality">공사 품질</label>
-                  <input id="pf-quality" type="text" list="pour-quality" value={form.quality}
-                         onChange={(e) => set("quality", e.target.value)} />
-                  <datalist id="pour-quality">
-                    {PourRecords.QUALITY_OPTIONS.map((q) => <option key={q} value={q} />)}
-                  </datalist>
-                </div>
                 <div className="span-2">
                   <label htmlFor="pf-scopes">공사범위 <span className="opt">(여러 건은 줄바꿈)</span></label>
                   <textarea id="pf-scopes" rows={2} value={form.scopes}
@@ -356,22 +362,37 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                   <input id="pf-address" type="text" value={form.address}
                          onChange={(e) => set("address", e.target.value)} />
                 </div>
-                <div>
-                  <label htmlFor="pf-remark">비고</label>
-                  <input id="pf-remark" type="text" value={form.remark}
-                         onChange={(e) => set("remark", e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="pf-status">상태</label>
-                  <select id="pf-status" value={form.status} onChange={(e) => set("status", e.target.value)}>
-                    {PourRecords.STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="pf-contractor">시공사 <span className="opt">(공고 단계에서는 비움)</span></label>
-                  <input id="pf-contractor" type="text" value={form.contractor}
-                         onChange={(e) => set("contractor", e.target.value)} />
-                </div>
+                {/* 공사 품질은 낙찰 전환이나 상세 수정에서, 비고는 상세 수정에서,
+                    시공사·시공사 전화번호는 낙찰 전환 패널에서 입력한다.
+                    상태는 새 공고에서 고르지 않고 언제나 "공고" 로 저장된다. */}
+                {isEdit && (
+                  <>
+                    <div>
+                      <label htmlFor="pf-quality">공사 품질</label>
+                      <input id="pf-quality" type="text" list="pour-quality" value={form.quality}
+                             onChange={(e) => set("quality", e.target.value)} />
+                      <datalist id="pour-quality">
+                        {PourRecords.QUALITY_OPTIONS.map((q) => <option key={q} value={q} />)}
+                      </datalist>
+                    </div>
+                    <div>
+                      <label htmlFor="pf-remark">비고</label>
+                      <input id="pf-remark" type="text" value={form.remark}
+                             onChange={(e) => set("remark", e.target.value)} />
+                    </div>
+                    <div>
+                      <label htmlFor="pf-status">상태</label>
+                      <select id="pf-status" value={form.status} onChange={(e) => set("status", e.target.value)}>
+                        {PourRecords.STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="pf-contractor">시공사 <span className="opt">(낙찰 전환에서 입력)</span></label>
+                      <input id="pf-contractor" type="text" value={form.contractor}
+                             onChange={(e) => set("contractor", e.target.value)} />
+                    </div>
+                  </>
+                )}
               </div>
             
 

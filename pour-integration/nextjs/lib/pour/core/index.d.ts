@@ -53,6 +53,7 @@ export interface PourRecord {
   scope: string;
   phone: string;
   households: number | "";
+  year: string;
   noticeDate: string;
   documentDueDate: string;
   bidDate: string;

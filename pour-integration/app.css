@@ -256,6 +256,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 }
 .sub-head:first-child{margin-top:0;}
 
+/* 새 공고 등록에서는 감추고 상세 수정에서만 보이는 항목.
+   (상태는 자동으로 "공고", 시공사·시공사 전화번호는 낙찰 전환 패널에서 입력한다)
+   자료와 목록 열은 그대로 두고 입력 화면에서만 감춘다. */
+#noticePanel:not(.is-edit) .edit-only{display:none;}
+
 /* 가져오기 미리보기 */
 .preview-stats{display:flex; flex-wrap:wrap; gap:18px; margin:10px 0; font-size:13.5px;}
 .preview-stats b{display:block; font-size:18px;}

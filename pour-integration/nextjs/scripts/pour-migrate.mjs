@@ -33,7 +33,8 @@ const NEW_COLUMNS = [
   ["previous_project_id", "TEXT"],
   ["result_entered_at", "TEXT"],
   ["updated_at", "TEXT"],
-  ["patents_migrated", "INTEGER DEFAULT 0"]
+  ["patents_migrated", "INTEGER DEFAULT 0"],
+  ["record_year", "TEXT"]
 ];
 
 function arg(name, fallback) {

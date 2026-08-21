@@ -74,10 +74,10 @@ function section(t) { console.log("\n" + t); }
     assert.strictEqual(await isOpen("#noticePanel"), false, "공고 입력 패널이 열려 있음");
   });
 
-  await test("표 열 순서가 요청한 21개와 동일", async () => {
+  await test("표 열 순서가 요청한 21개 + 연도와 동일", async () => {
     const heads = await page.$$eval("#recordsGrid .grid thead th", els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
     assert.deepStrictEqual(heads, [
-      "No.", "상태", "공고일", "서류 마감일", "개찰일", "지역", "도시", "발주처(아파트명)",
+      "No.", "상태", "연도", "공고일", "서류 마감일", "개찰일", "지역", "도시", "발주처(아파트명)",
       "공사명", "공종", "POUR 특허번호", "타사 특허번호", "전화번호", "세대수", "입찰종류",
       "시공사", "시공사 전화번호", "낙찰일", "낙찰금액", "공사 품질", "비고"
     ]);
@@ -162,6 +162,28 @@ function section(t) { console.log("\n" + t); }
     assert.strictEqual(await page.$("#fExpectedAmount"), null);
     const body = await page.textContent("#noticePanel");
     assert.ok(!body.includes("예상금액"), "예상금액 문구가 남아 있음");
+  });
+
+  await test("새 공고 패널에 공사 품질·상태·시공사·비고 입력칸이 없음", async () => {
+    for (const id of ["#fQuality", "#fStatus", "#fContractor", "#fRemark"]) {
+      assert.strictEqual(await page.isVisible(id), false, id + " 가 보임");
+    }
+    // 보이는 글자만 확인한다 (자료를 지운 것이 아니라 감춘 것이므로 DOM 에는 남아 있다)
+    const shown = await page.$eval("#noticePanel", el => el.innerText);
+    assert.ok(!shown.includes("공사 품질"), "공사 품질 문구가 보임");
+    assert.ok(!shown.includes("비고"), "비고 문구가 보임");
+  });
+
+  await test("새 공고 패널에 특허·협약 정보 영역이 없고 특허 입력은 그대로 있음", async () => {
+    assert.strictEqual(await page.isVisible("#patentAgreementBox"), false);
+    assert.strictEqual(await page.isVisible("#fNoticePatent"), false);
+    assert.strictEqual(await page.isVisible("#fAgreement"), false);
+    const shown = await page.$eval("#noticePanel", el => el.innerText);
+    assert.ok(!shown.includes("협약서 발행번호"), "협약서 발행번호 문구가 보임");
+    assert.ok(!shown.includes("공고문 특허·공법 원문"), "공고문 원문 문구가 보임");
+    // POUR·타사 특허 입력은 유지된다
+    assert.strictEqual(await page.isVisible("#patentEditor"), true);
+    assert.strictEqual(await page.isVisible(PATENT_SEARCH), true);
   });
 
   await test("POUR 특허 드롭다운 — 빈 칸을 누르면 등록된 특허 목록", async () => {
@@ -306,7 +328,7 @@ function section(t) { console.log("\n" + t); }
     await page.click("#btnFilterRow");
     await page.waitForSelector("#recordsGrid .grid-filter-row");
     await page.fill('[data-filter="city"]', "하남");
-    const rows = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(7)", els => els.map(e => e.textContent));
+    const rows = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(8)", els => els.map(e => e.textContent));
     assert.deepStrictEqual(rows, ["하남"]);
     await page.click("#btnClearFilter");
   });
@@ -333,6 +355,11 @@ function section(t) { console.log("\n" + t); }
     await page.waitForSelector("#noticePanel.is-open");
     const title = await page.textContent("#panelTitle");
     assert.ok(title.includes("자료 수정"), title);
+    // 새 공고에서 감춘 항목은 상세 수정에서는 다시 보인다 (자료를 지운 것이 아니다)
+    for (const id of ["#fQuality", "#fStatus", "#fContractor", "#fRemark",
+                      "#fNoticePatent", "#fAgreement"]) {
+      assert.strictEqual(await page.isVisible(id), true, id + " 가 수정 화면에서 안 보임");
+    }
     await page.click("#panelClose");
   });
 
