@@ -331,8 +331,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                   />
                 </div>
               </div>
-              <div className="pour-form-row pour-form-row-3">
-                <div>
+              <div className="pour-form-row pour-form-row-fill">
+                <div className="span-2">
                   <label htmlFor="pf-notice-patent">공고문 특허·공법 원문</label>
                   <input id="pf-notice-patent" type="text" value={form.noticePatentText}
                          placeholder="공고문에 적힌 특허번호·특허명·공법명"
@@ -351,7 +351,7 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                     {PourRecords.QUALITY_OPTIONS.map((q) => <option key={q} value={q} />)}
                   </datalist>
                 </div>
-                <div>
+                <div className="span-2">
                   <label htmlFor="pf-scopes">공사범위 <span className="opt">(여러 건은 줄바꿈)</span></label>
                   <textarea id="pf-scopes" rows={2} value={form.scopes}
                             onChange={(e) => set("scopes", e.target.value)} />

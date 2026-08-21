@@ -176,9 +176,13 @@
 .pour-renotice input{width:auto; margin:0; cursor:pointer;}
 .pour-required{color:var(--pour-danger);}
 
-.pour-row{display:grid; gap:12px; margin-bottom:12px;}
+.pour-row{display:grid; gap:8px 10px; margin-bottom:8px;}
 .pour-row-1{grid-template-columns:minmax(0,1fr);}
 .pour-row-3{grid-template-columns:repeat(3, minmax(0, 1fr));}
+/* 항목 수가 열 수로 나누어떨어지지 않아 빈 칸이 생기는 것을 막는다 */
+.pour-row-fill{grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));}
+.pour-row .span-2{grid-column:span 2;}
+.pour-row .span-all{grid-column:1 / -1;}
 .pour-row-4{grid-template-columns:repeat(4, minmax(0, 1fr));}
 .pour-row > div{min-width:0;}                    /* 입력칸이 칸 너비를 넘지 않도록 */
 .pour-row input, .pour-row select, .pour-row textarea{width:100%;}

@@ -179,36 +179,44 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 }
 .panel.is-open{transform:translateX(0);}
 .panel-head{
-  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-  padding:12px 18px; background:var(--head); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:9px 16px; background:var(--head); border-bottom:1px solid var(--line);
 }
-.panel-title{font-size:17px; font-weight:700; margin:0;}
+.panel-title{font-size:16px; font-weight:700; margin:0;}
 .panel-head .spacer{flex:1;}
 .panel-close{
   width:30px; height:30px; font-size:15px; cursor:pointer;
   background:#fff; border:1px solid var(--line); border-radius:3px;
 }
-.panel-body{flex:1; overflow-y:auto; padding:16px 18px;}
+.panel-body{flex:1; overflow-y:auto; padding:12px 16px;}
 .panel-foot{
   display:flex; justify-content:flex-end; gap:8px;
-  padding:11px 18px; background:var(--head); border-top:1px solid var(--line);
+  padding:9px 16px; background:var(--head); border-top:1px solid var(--line);
 }
 .rebid-check{display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:400; padding:6px 8px; margin:-6px 0; cursor:pointer;}
 .rebid-check input{width:auto; cursor:pointer;}
 
 /* 입력 폼 */
-.form-row{display:grid; gap:10px; margin-bottom:10px;}
+.form-row{display:grid; gap:8px 10px; margin-bottom:8px;}
 .form-row-1{grid-template-columns:minmax(0,1fr);}
 .form-row-3{grid-template-columns:repeat(3, minmax(0, 1fr));}
+/* 항목 수가 열 수로 나누어떨어지지 않아 빈 칸이 생기는 것을 막는다 */
+.form-row-fill{grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));}
+.form-row .span-2{grid-column:span 2;}
+.form-row .span-all{grid-column:1 / -1;}
 .form-row-4{grid-template-columns:repeat(4, minmax(0, 1fr));}
 .form-row > div{min-width:0;}
-.form-row label{display:block; font-size:12.5px; font-weight:600; margin-bottom:3px;}
+.form-row label{display:block; font-size:12px; font-weight:600; margin-bottom:2px; line-height:1.3;}
 .form-row .opt{font-weight:400; color:var(--muted);}
 .form-row .req{color:var(--danger);}
 .form-row input,.form-row select,.form-row textarea{
-  width:100%; padding:6px 9px; border:1px solid var(--line); border-radius:3px; background:#fff;
+  width:100%; padding:4px 8px; font-size:13.5px; line-height:1.4;
+  border:1px solid var(--line); border-radius:3px; background:#fff;
 }
-.field-error{display:block; margin-top:3px; font-size:12px; color:var(--danger);}
+/* 날짜 칸이 다른 칸보다 커지지 않게 높이를 맞춘다 */
+.form-row input[type="date"]{min-height:0; height:28px;}
+.form-row textarea{min-height:44px; resize:vertical;}
+.field-error{display:block; margin-top:2px; font-size:11.5px; color:var(--danger);}
 .form-msg{font-size:13px; white-space:pre-line; margin-top:8px;}
 .form-msg.error{color:var(--danger);}
 .form-msg.ok{color:var(--ok);}
@@ -220,17 +228,17 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 }
 .bid-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
 
-.more-box{margin:12px 0;}
+.more-box{margin:8px 0;}
 .more-box > summary{
-  cursor:pointer; padding:8px 12px; font-size:13.5px; font-weight:600;
+  cursor:pointer; padding:6px 11px; font-size:13px; font-weight:600;
   background:var(--head); border:1px solid var(--line); border-radius:3px; list-style:none;
 }
 .more-box > summary::-webkit-details-marker{display:none;}
 .more-box > summary::before{content:"▸ ";}
 .more-box[open] > summary::before{content:"▾ ";}
-.more-body{padding:12px 2px 0;}
-.rebid-box{padding:10px; margin-bottom:10px; background:#FFF7E6; border:1px solid #F0A92E; border-radius:3px;}
-.sub-head{font-size:13.5px; font-weight:700; margin:14px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--line);}
+.more-body{padding:9px 2px 0;}
+.rebid-box{padding:8px; margin-bottom:8px; background:#FFF7E6; border:1px solid #F0A92E; border-radius:3px;}
+.sub-head{font-size:13px; font-weight:700; margin:10px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--line);}
 
 /* 가져오기 미리보기 */
 .preview-stats{display:flex; flex-wrap:wrap; gap:18px; margin:10px 0; font-size:13.5px;}
@@ -259,6 +267,20 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .stat-card{padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:3px;}
 .stat-card .lbl{font-size:12.5px; color:var(--muted);}
 .stat-card .val{font-size:22px; font-weight:700;}
+
+/* 특허 입력기 밀도 */
+.pour-patent-editor{padding:8px 10px;}
+.pour-kind-tabs{margin-bottom:8px;}
+.pour-kind-tab{padding:5px 10px; font-size:12.5px;}
+.pour-third-form{gap:6px;}
+.pour-third-form label{font-size:11.5px; margin-bottom:2px;}
+.pour-add-btn{margin-top:6px; padding:4px 10px; font-size:12.5px;}
+.pour-item-list{margin-top:7px; gap:3px;}
+.pour-item-row{padding:4px 7px; font-size:12.5px;}
+.pour-item-btn{width:21px; height:21px;}
+.pour-multi-check{margin-top:7px; font-size:12.5px;}
+.pour-multi-badge{margin-top:6px; padding:2px 9px; font-size:12px;}
+.pour-suggest-item{padding:6px 10px; font-size:13px;}
 
 /* 공용 모듈(특허 입력기·자동완성)의 강조색을 이 화면의 네이비로 맞춘다 */
 body.pour-scope{

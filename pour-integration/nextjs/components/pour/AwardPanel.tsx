@@ -175,10 +175,10 @@ export default function AwardPanel({
           )}
 
           <div className="pour-sub-head">시공사 정보</div>
-          <div className="pour-form-row pour-form-row-3">{CONTRACTOR_FIELDS.map(renderField)}</div>
+          <div className="pour-form-row pour-form-row-fill">{CONTRACTOR_FIELDS.map(renderField)}</div>
 
           <div className="pour-sub-head">낙찰 정보</div>
-          <div className="pour-form-row pour-form-row-3">{INFO_FIELDS.map(renderField)}</div>
+          <div className="pour-form-row pour-form-row-fill">{INFO_FIELDS.map(renderField)}</div>
 
           <div className="pour-sub-head">적용 특허</div>
           <PatentEditor
