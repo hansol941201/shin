@@ -1,16 +1,18 @@
 /**
- * 공종 고르기 — 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다.
+ * 공종 선택 — 대분류 탭 + 세부 공종 체크 배지
  *
  *   var picker = PourCategoryPicker.create(container, { onChange: fn });
- *   picker.setValue(record);      // 또는 항목 배열 / 이름 배열
- *   picker.getValue();            // [{ group, name }, ...]
+ *   picker.setValue(record);        // 또는 항목 배열 / 이름 배열
+ *   picker.setAutoNames(names);     // 특허에서 자동으로 온 공종 이름 (배지에 표시만 한다)
+ *   picker.setFromNames(names);     // 특허 선택으로 공종을 갈아 끼운다
+ *   picker.getValue();              // [{ group, name }, ...]
  *
  * 규칙
- *   · 대분류를 고르면 그 대분류의 세부 공종만 보인다
- *   · 세부 공종은 여러 개 고를 수 있고, 다시 누르면 해제된다
+ *   · 대분류 탭을 고르면 그 대분류의 세부 공종만 배지로 보인다
+ *   · 배지는 여러 개 고를 수 있고, 다시 누르면 해제된다
  *   · 같은 이름이 여러 대분류에 있어도 고른 대분류 기준으로 저장한다
  *   · 기타를 고르면 직접 적는 칸이 나온다
- *   · 분류표에 없는 옛 자료는 기타로 보이되 이름은 그대로 남는다
+ *   · 특허 선택으로 자동 지정된 공종에는 "특허 자동" 표시가 붙는다
  */
 (function (root, factory) {
   var node = typeof require === "function" && typeof module === "object";
@@ -28,19 +30,27 @@
     return n;
   }
 
+  /** 비교용 이름 (공백·가운뎃점 차이를 무시한다) */
+  function key(name) {
+    return String(name == null ? "" : name).replace(/[\s·]/g, "").toUpperCase();
+  }
+
   function create(container, options) {
     var opts = options || {};
     var items = [];                                  // [{ group, name }]
+    var autoNames = {};                              // 특허에서 자동으로 온 이름
     var openGroup = PourCategories.GROUP_KEYS[0];
 
     container.innerHTML = "";
     container.classList.add("cat-picker");
 
+    var title = el("div", "cat-title", "공종 선택");
+    title.appendChild(el("span", "cat-title-hint",
+      "대분류를 고른 뒤 세부 공종을 고릅니다 · 특허를 고르면 자동으로 채워집니다"));
     var groupRow = el("div", "cat-groups");
     var itemRow = el("div", "cat-items");
     var customRow = el("div", "cat-custom");
-    var chipRow = el("div", "cat-chips");
-    var emptyMsg = el("div", "cat-empty", "고른 공종이 없습니다. 위에서 대분류를 먼저 고르세요.");
+    var summary = el("div", "cat-summary");
 
     var customInput = document.createElement("input");
     customInput.type = "text";
@@ -51,16 +61,20 @@
     customRow.appendChild(customInput);
     customRow.appendChild(customBtn);
 
+    container.appendChild(title);
     container.appendChild(groupRow);
     container.appendChild(itemRow);
     container.appendChild(customRow);
-    container.appendChild(chipRow);
-    container.appendChild(emptyMsg);
+    container.appendChild(summary);
 
     /* ------------------------------------------------------- 상태 */
 
     function has(group, name) {
       return items.some(function (it) { return it.group === group && it.name === name; });
+    }
+
+    function isAuto(name) {
+      return !!autoNames[key(name)];
     }
 
     function toggle(group, name) {
@@ -87,6 +101,8 @@
         var count = items.filter(function (it) { return it.group === group; }).length;
         var btn = el("button", "cat-group" + (group === openGroup ? " is-open" : ""));
         btn.type = "button";
+        btn.setAttribute("data-group", group);
+        btn.setAttribute("aria-selected", group === openGroup ? "true" : "false");
         btn.appendChild(document.createTextNode(group));
         if (count) btn.appendChild(el("span", "cat-group-count", String(count)));
         btn.addEventListener("click", function () {
@@ -114,37 +130,45 @@
       }
       list.forEach(function (name) {
         var on = has(openGroup, name);
-        var btn = el("button", "cat-item" + (on ? " is-on" : ""), name);
+        var btn = el("button", "cat-item" + (on ? " is-on" : ""));
         btn.type = "button";
         btn.setAttribute("data-group", openGroup);
         btn.setAttribute("data-item", name);
         btn.setAttribute("aria-pressed", on ? "true" : "false");
+        btn.appendChild(el("span", "cat-item-check", on ? "✓" : ""));
+        btn.appendChild(el("span", "cat-item-name", name));
+        // 특허를 고르면 자동으로 들어온 공종임을 알려 준다
+        if (isAuto(name)) btn.appendChild(el("span", "cat-item-auto", "특허 자동"));
         btn.addEventListener("click", function () { toggle(openGroup, name); });
         itemRow.appendChild(btn);
       });
     }
 
-    function renderChips() {
-      chipRow.innerHTML = "";
-      items.forEach(function (it) {
-        var chip = el("span", "cat-chip");
-        chip.appendChild(el("span", "cat-chip-group", it.group));
-        chip.appendChild(el("span", "cat-chip-name", it.name));
-        var x = el("button", "cat-chip-x", "×");
-        x.type = "button";
-        x.title = it.group + " " + it.name + " 빼기";
-        x.addEventListener("click", function () { toggle(it.group, it.name); });
-        chip.appendChild(x);
-        chipRow.appendChild(chip);
+    function renderSummary() {
+      summary.innerHTML = "";
+      if (!items.length) {
+        summary.appendChild(el("span", "cat-summary-empty",
+          "선택된 공종이 없습니다. 위에서 대분류를 먼저 고르세요."));
+        return;
+      }
+      summary.appendChild(el("span", "cat-summary-label", "선택됨"));
+      PourCategories.GROUP_KEYS.forEach(function (group) {
+        var names = items.filter(function (it) { return it.group === group; })
+          .map(function (it) { return it.name; });
+        if (!names.length) return;
+        var line = el("span", "cat-summary-part");
+        line.appendChild(el("b", "cat-summary-group", group));
+        line.appendChild(el("span", "cat-summary-dot", "·"));
+        line.appendChild(el("span", "cat-summary-names", names.join(", ")));
+        summary.appendChild(line);
       });
-      emptyMsg.style.display = items.length ? "none" : "";
     }
 
     function render() {
       renderGroups();
       renderItems();
       customRow.style.display = openGroup === PourCategories.OTHER ? "" : "none";
-      renderChips();
+      renderSummary();
     }
 
     function addCustom() {
@@ -171,6 +195,25 @@
       render();
     }
 
+    /** 특허에서 온 이름을 표시용으로만 기억한다 (고른 값은 건드리지 않는다) */
+    function setAutoNames(names) {
+      autoNames = {};
+      (names || []).forEach(function (name) {
+        var k = key(name);
+        if (k) autoNames[k] = true;
+      });
+      render();
+    }
+
+    /** 특허 선택으로 공종을 갈아 끼운다. 확실하지 않은 이름은 기타로 간다. */
+    function setFromNames(names) {
+      setAutoNames(names);
+      items = PourCategories.itemsFromNames(names);
+      openGroup = items.length ? items[0].group : PourCategories.GROUP_KEYS[0];
+      render();
+      if (typeof opts.onChange === "function") opts.onChange(getValue());
+    }
+
     function getValue() {
       return PourCategories.normalizeItems(items);
     }
@@ -179,16 +222,9 @@
       return PourCategories.namesOf(items);
     }
 
-    /** 특허 선택 등으로 자동 입력할 때. 확실하지 않은 이름은 기타로 간다. */
-    function setFromNames(names) {
-      items = PourCategories.itemsFromNames(names);
-      openGroup = items.length ? items[0].group : PourCategories.GROUP_KEYS[0];
-      render();
-      if (typeof opts.onChange === "function") opts.onChange(getValue());
-    }
-
     function clear() {
       items = [];
+      autoNames = {};
       openGroup = PourCategories.GROUP_KEYS[0];
       render();
     }
@@ -196,6 +232,7 @@
     render();
     return {
       setValue: setValue,
+      setAutoNames: setAutoNames,
       setFromNames: setFromNames,
       getValue: getValue,
       getNames: getNames,

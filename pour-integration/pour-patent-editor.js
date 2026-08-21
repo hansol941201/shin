@@ -21,11 +21,15 @@
    * @param options   { storage, categoryInput, onCategories, onChange }
    *                  categoryInput — 옛 자유 입력 칸 (값에 이름을 이어 붙인다)
    *                  onCategories  — 공종 고르기에 이름 목록을 넘긴다 (분류는 그쪽에서 한다)
+   *                                  두 번째 인자 replace 가 true 일 때만 골라 둔 공종을 갈아 끼운다.
+   *                                  자료를 불러올 때(setValue)는 false 라 저장된 공종을 덮지 않는다.
    */
   function create(container, options) {
     var opts = options || {};
     var storage = opts.storage;
     var pourItems = [], thirdItems = [], activeTab = POUR, noticeMulti = false;
+    // 자료를 불러오는 중인지. 이때는 저장된 공종을 특허에서 뽑은 값으로 갈아 끼우지 않는다.
+    var loading = false;
 
     container.classList.add("pour-patent-editor");
     container.innerHTML = "";
@@ -73,7 +77,7 @@
       if (opts.categoryInput) opts.categoryInput.value = out.join(", ");
       // 분류표에 맞춰 넣는 일은 받는 쪽에서 한다.
       // 어느 대분류인지 하나로 정해지지 않으면 임의로 고르지 않고 기타로 간다.
-      if (typeof opts.onCategories === "function") opts.onCategories(out);
+      if (typeof opts.onCategories === "function") opts.onCategories(out, !loading);
     }
 
     /* ------------------------------------------------------------ 경고 */
@@ -287,7 +291,8 @@
       thirdItems = items.filter(function (i) { return i.kind === THIRD; })
         .map(function (i) { return PourRecords.normalizePatentItem(i, THIRD); });
       noticeMulti = !!(record && record.noticeMultiFlag);
-      refresh();
+      loading = true;                 // 저장된 공종을 덮지 않는다
+      try { refresh(); } finally { loading = false; }
     }
 
     refresh();

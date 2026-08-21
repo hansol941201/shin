@@ -1,6 +1,6 @@
 "use client";
 /**
- * 공종 고르기 — 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다.
+ * 공종 선택 — 대분류 탭 + 세부 공종 체크 배지
  *
  * 규칙
  *   · 대분류를 고르면 그 대분류의 세부 공종만 보인다
@@ -8,6 +8,7 @@
  *   · 같은 이름이 여러 대분류에 있어도 고른 대분류 기준으로 저장한다
  *   · 기타를 고르면 직접 적는 칸이 나온다
  *   · 분류표에 없는 옛 자료는 기타로 보이되 이름은 그대로 남는다
+ *   · 특허 선택으로 자동 지정된 공종에는 "특허 자동" 표시가 붙는다
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PourCategories from "@/lib/pour/core/pour-categories.js";
@@ -16,9 +17,14 @@ import type { CategoryItem } from "@/lib/pour/core";
 export interface CategoryPickerProps {
   value: CategoryItem[];
   onChange: (items: CategoryItem[]) => void;
+  /** 특허에서 자동으로 온 공종 이름 (배지에 표시만 한다) */
+  autoNames?: string[];
 }
 
-export default function CategoryPicker({ value, onChange }: CategoryPickerProps) {
+/** 비교용 이름 (공백·가운뎃점 차이를 무시한다) */
+const nameKey = (name: string) => String(name || "").replace(/[\s·]/g, "").toUpperCase();
+
+export default function CategoryPicker({ value, onChange, autoNames }: CategoryPickerProps) {
   const groups: string[] = useMemo(() => PourCategories.GROUP_KEYS, []);
   const other: string = PourCategories.OTHER;
 
@@ -27,6 +33,9 @@ export default function CategoryPicker({ value, onChange }: CategoryPickerProps)
 
   const items: CategoryItem[] = useMemo(
     () => PourCategories.normalizeItems(value) as CategoryItem[], [value]);
+
+  const autoSet = useMemo(
+    () => new Set((autoNames || []).map(nameKey).filter(Boolean)), [autoNames]);
 
   // 고른 것이 있으면 그 대분류를 먼저 펼쳐 준다
   useEffect(() => {
@@ -63,6 +72,13 @@ export default function CategoryPicker({ value, onChange }: CategoryPickerProps)
 
   return (
     <div className="cat-picker">
+      <div className="cat-title">
+        공종 선택
+        <span className="cat-title-hint">
+          대분류를 고른 뒤 세부 공종을 고릅니다 · 특허를 고르면 자동으로 채워집니다
+        </span>
+      </div>
+
       <div className="cat-groups">
         {groups.map((group) => {
           const count = items.filter((it) => it.group === group).length;
@@ -70,6 +86,8 @@ export default function CategoryPicker({ value, onChange }: CategoryPickerProps)
             <button
               key={group}
               type="button"
+              data-group={group}
+              aria-selected={group === openGroup}
               className={`cat-group${group === openGroup ? " is-open" : ""}`}
               onClick={() => setOpenGroup(group)}
             >
@@ -99,7 +117,10 @@ export default function CategoryPicker({ value, onChange }: CategoryPickerProps)
               className={`cat-item${on ? " is-on" : ""}`}
               onClick={() => toggle(openGroup, name)}
             >
-              {name}
+              <span className="cat-item-check">{on ? "✓" : ""}</span>
+              <span className="cat-item-name">{name}</span>
+              {/* 특허를 고르면 자동으로 들어온 공종임을 알려 준다 */}
+              {autoSet.has(nameKey(name)) && <span className="cat-item-auto">특허 자동</span>}
             </button>
           );
         })}
@@ -119,26 +140,29 @@ export default function CategoryPicker({ value, onChange }: CategoryPickerProps)
         </div>
       )}
 
-      <div className="cat-chips">
-        {items.map((it) => (
-          <span key={it.group + "|" + it.name} className="cat-chip">
-            <span className="cat-chip-group">{it.group}</span>
-            <span className="cat-chip-name">{it.name}</span>
-            <button
-              type="button"
-              className="cat-chip-x"
-              title={`${it.group} ${it.name} 빼기`}
-              onClick={() => toggle(it.group, it.name)}
-            >
-              ×
-            </button>
+      <div className="cat-summary">
+        {items.length === 0 ? (
+          <span className="cat-summary-empty">
+            선택된 공종이 없습니다. 위에서 대분류를 먼저 고르세요.
           </span>
-        ))}
+        ) : (
+          <>
+            <span className="cat-summary-label">선택됨</span>
+            {groups.map((group) => {
+              const names = items.filter((it) => it.group === group).map((it) => it.name);
+              if (!names.length) return null;
+              return (
+                <span key={group} className="cat-summary-part">
+                  <b className="cat-summary-group">{group}</b>
+                  <span className="cat-summary-dot">·</span>
+                  <span className="cat-summary-names">{names.join(", ")}</span>
+                </span>
+              );
+            })}
+          </>
+        )}
       </div>
 
-      {items.length === 0 && (
-        <div className="cat-empty">고른 공종이 없습니다. 위에서 대분류를 먼저 고르세요.</div>
-      )}
     </div>
   );
 }

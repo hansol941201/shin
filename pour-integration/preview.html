@@ -591,61 +591,87 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .bid-btn:hover{border-color:var(--line-strong); color:var(--text);}
 .bid-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
 
-/* ------------------------------------------------- 공종 고르기 */
-/* 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다 */
-.cat-picker{border:1px solid var(--line); border-radius:var(--r3); padding:var(--s3); background:var(--white);}
+/* ------------------------------------------------- 공종 선택 */
+/* 대분류 탭 + 세부 공종 체크 배지. 좁은 화면에서는 자연스럽게 다음 줄로 넘어간다. */
+.cat-picker{
+  --cat-line:#CBD2DC;                 /* 고르지 않은 탭·배지 테두리 */
+  border:1px solid var(--cat-line); border-radius:var(--r3);
+  padding:var(--s3) var(--s4) var(--s4); background:var(--white);
+}
+.cat-title{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s2);
+  font-size:13px; font-weight:700; color:var(--text);
+  margin-bottom:var(--s3); padding-bottom:var(--s2);
+  border-bottom:1px solid var(--line);
+}
+.cat-title-hint{font-size:12px; font-weight:400; color:var(--faint);}
+
+/* 1. 대분류 탭 */
 .cat-groups{display:flex; flex-wrap:wrap; gap:var(--s1); margin-bottom:var(--s3);}
 .cat-group{
   display:inline-flex; align-items:center; gap:6px;
-  padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer;
-  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--muted);
+  padding:7px 16px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--white); border:1px solid var(--cat-line); border-radius:var(--r2);
+  color:var(--text);
   transition:background .12s, border-color .12s, color .12s;
 }
-.cat-group:hover{border-color:var(--line-strong); color:var(--text);}
+.cat-group:hover{background:var(--head);}
 .cat-group.is-open{background:var(--navy); border-color:var(--navy); color:#fff;}
 .cat-group-count{
   min-width:18px; padding:0 5px; font-size:11px; font-weight:700; text-align:center;
   background:var(--navy-soft); color:var(--navy); border-radius:999px;
 }
-.cat-group.is-open .cat-group-count{background:rgba(255,255,255,.22); color:#fff;}
+.cat-group.is-open .cat-group-count{background:rgba(255,255,255,.24); color:#fff;}
 
-.cat-items{display:flex; flex-wrap:wrap; gap:var(--s1); min-height:30px;}
+/* 2. 세부 공종 체크 배지 */
+.cat-items{display:flex; flex-wrap:wrap; gap:var(--s1) 6px; min-height:32px;}
 .cat-item{
+  display:inline-flex; align-items:center; gap:5px;
   padding:6px 13px; font-size:13px; cursor:pointer;
-  background:var(--white); border:1px solid var(--line); border-radius:999px; color:var(--text);
+  background:var(--white); border:1px solid var(--cat-line); border-radius:999px;
+  color:var(--text);
   transition:background .12s, border-color .12s, color .12s;
 }
-.cat-item:hover{background:var(--head); border-color:var(--line-strong);}
-.cat-item.is-on{background:var(--navy-soft); border-color:var(--navy); color:var(--navy); font-weight:700;}
-.cat-item.is-on::before{content:"✓ "; font-weight:700;}
+.cat-item:hover{background:var(--head);}
+.cat-item.is-on{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
+.cat-item-check{
+  display:inline-block; width:0; overflow:hidden; font-size:11px; line-height:1;
+  transition:width .12s;
+}
+.cat-item.is-on .cat-item-check{width:10px;}
+.cat-item-auto{
+  padding:1px 7px; font-size:10.5px; font-weight:700; border-radius:999px;
+  background:var(--navy-soft); color:var(--navy);
+}
+.cat-item.is-on .cat-item-auto{background:rgba(255,255,255,.24); color:#fff;}
 .cat-hint{font-size:12.5px; color:var(--faint); align-self:center;}
 
+/* 3. 기타 — 직접 입력 */
 .cat-custom{display:flex; gap:var(--s2); margin-top:var(--s2);}
 .cat-custom-input{
   flex:1; min-width:0; padding:6px 10px; font-size:13px;
-  border:1px solid var(--line); border-radius:var(--r2); background:var(--white);
+  border:1px solid var(--cat-line); border-radius:var(--r2); background:var(--white);
 }
 .cat-custom-btn{
   flex:0 0 auto; padding:6px 13px; font-size:13px; font-weight:600; cursor:pointer;
-  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--navy);
+  background:var(--white); border:1px solid var(--cat-line); border-radius:var(--r2);
+  color:var(--navy);
 }
 .cat-custom-btn:hover{background:var(--head);}
 
-.cat-chips{display:flex; flex-wrap:wrap; gap:var(--s1); margin-top:var(--s3);}
-.cat-chips:empty{display:none;}
-.cat-chip{
-  display:inline-flex; align-items:center; gap:0;
-  border:1px solid var(--line); border-radius:999px; overflow:hidden;
-  font-size:12.5px; background:var(--white);
+/* 4. 선택 요약 */
+.cat-summary{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s1) var(--s3);
+  margin-top:var(--s3); padding-top:var(--s3); border-top:1px solid var(--line);
+  font-size:12.5px;
 }
-.cat-chip-group{padding:3px 9px; background:var(--head); color:var(--muted); font-weight:600;}
-.cat-chip-name{padding:3px 9px; color:var(--text); font-weight:600;}
-.cat-chip-x{
-  padding:3px 9px 3px 2px; border:0; background:transparent; cursor:pointer;
-  color:var(--faint); font-size:14px; line-height:1;
-}
-.cat-chip-x:hover{color:var(--danger);}
-.cat-empty{margin-top:var(--s3); font-size:12.5px; color:var(--faint);}
+.cat-summary-label{font-weight:700; color:var(--muted);}
+.cat-summary-label::after{content:":";}
+.cat-summary-part{display:inline-flex; align-items:baseline; gap:5px;}
+.cat-summary-group{color:var(--navy); font-weight:700;}
+.cat-summary-dot{color:var(--faint);}
+.cat-summary-names{color:var(--text);}
+.cat-summary-empty{color:var(--faint);}
 
 .rebid-box{
   padding:var(--s3); margin-bottom:var(--s3);
@@ -776,6 +802,12 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   .grid-wrap{max-height:calc(100vh - 330px);}
   .panel{width:100%;}
   .status-tabs{display:flex; width:100%; overflow-x:auto;}
+  /* 공종 선택 — 탭과 배지가 자연스럽게 다음 줄로 넘어간다 */
+  .cat-picker{padding:var(--s3);}
+  .cat-group{flex:1 1 auto; justify-content:center; padding:7px 10px;}
+  .cat-custom{flex-wrap:wrap;}
+  .cat-custom-input{flex:1 1 100%;}
+  .cat-summary{flex-direction:column; gap:var(--s1);}
 }
 
 </style>
@@ -956,12 +988,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       <div class="span-2"><label for="fProjects">공사명 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fProjects" rows="2"></textarea></div>
     </div>
 
-    <div class="sub-head">공종</div>
     <div class="form-row form-row-1" id="rowCategories">
-      <div>
-        <label>대분류를 고른 뒤 세부 공종을 고릅니다 <span class="opt">(특허를 고르면 자동으로 채워집니다)</span></label>
-        <div id="categoryPicker"></div>
-      </div>
+      <div><div id="categoryPicker"></div></div>
     </div>
 
     <div class="sub-head">지역·연락처</div>
@@ -3586,11 +3614,15 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
    * @param options   { storage, categoryInput, onCategories, onChange }
    *                  categoryInput — 옛 자유 입력 칸 (값에 이름을 이어 붙인다)
    *                  onCategories  — 공종 고르기에 이름 목록을 넘긴다 (분류는 그쪽에서 한다)
+   *                                  두 번째 인자 replace 가 true 일 때만 골라 둔 공종을 갈아 끼운다.
+   *                                  자료를 불러올 때(setValue)는 false 라 저장된 공종을 덮지 않는다.
    */
   function create(container, options) {
     var opts = options || {};
     var storage = opts.storage;
     var pourItems = [], thirdItems = [], activeTab = POUR, noticeMulti = false;
+    // 자료를 불러오는 중인지. 이때는 저장된 공종을 특허에서 뽑은 값으로 갈아 끼우지 않는다.
+    var loading = false;
 
     container.classList.add("pour-patent-editor");
     container.innerHTML = "";
@@ -3638,7 +3670,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       if (opts.categoryInput) opts.categoryInput.value = out.join(", ");
       // 분류표에 맞춰 넣는 일은 받는 쪽에서 한다.
       // 어느 대분류인지 하나로 정해지지 않으면 임의로 고르지 않고 기타로 간다.
-      if (typeof opts.onCategories === "function") opts.onCategories(out);
+      if (typeof opts.onCategories === "function") opts.onCategories(out, !loading);
     }
 
     /* ------------------------------------------------------------ 경고 */
@@ -3852,7 +3884,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       thirdItems = items.filter(function (i) { return i.kind === THIRD; })
         .map(function (i) { return PourRecords.normalizePatentItem(i, THIRD); });
       noticeMulti = !!(record && record.noticeMultiFlag);
-      refresh();
+      loading = true;                 // 저장된 공종을 덮지 않는다
+      try { refresh(); } finally { loading = false; }
     }
 
     refresh();
@@ -3872,18 +3905,20 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
 /* ===== pour-category-picker.js ===== */
 /**
- * 공종 고르기 — 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다.
+ * 공종 선택 — 대분류 탭 + 세부 공종 체크 배지
  *
  *   var picker = PourCategoryPicker.create(container, { onChange: fn });
- *   picker.setValue(record);      // 또는 항목 배열 / 이름 배열
- *   picker.getValue();            // [{ group, name }, ...]
+ *   picker.setValue(record);        // 또는 항목 배열 / 이름 배열
+ *   picker.setAutoNames(names);     // 특허에서 자동으로 온 공종 이름 (배지에 표시만 한다)
+ *   picker.setFromNames(names);     // 특허 선택으로 공종을 갈아 끼운다
+ *   picker.getValue();              // [{ group, name }, ...]
  *
  * 규칙
- *   · 대분류를 고르면 그 대분류의 세부 공종만 보인다
- *   · 세부 공종은 여러 개 고를 수 있고, 다시 누르면 해제된다
+ *   · 대분류 탭을 고르면 그 대분류의 세부 공종만 배지로 보인다
+ *   · 배지는 여러 개 고를 수 있고, 다시 누르면 해제된다
  *   · 같은 이름이 여러 대분류에 있어도 고른 대분류 기준으로 저장한다
  *   · 기타를 고르면 직접 적는 칸이 나온다
- *   · 분류표에 없는 옛 자료는 기타로 보이되 이름은 그대로 남는다
+ *   · 특허 선택으로 자동 지정된 공종에는 "특허 자동" 표시가 붙는다
  */
 (function (root, factory) {
   var node = typeof require === "function" && typeof module === "object";
@@ -3901,19 +3936,27 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     return n;
   }
 
+  /** 비교용 이름 (공백·가운뎃점 차이를 무시한다) */
+  function key(name) {
+    return String(name == null ? "" : name).replace(/[\s·]/g, "").toUpperCase();
+  }
+
   function create(container, options) {
     var opts = options || {};
     var items = [];                                  // [{ group, name }]
+    var autoNames = {};                              // 특허에서 자동으로 온 이름
     var openGroup = PourCategories.GROUP_KEYS[0];
 
     container.innerHTML = "";
     container.classList.add("cat-picker");
 
+    var title = el("div", "cat-title", "공종 선택");
+    title.appendChild(el("span", "cat-title-hint",
+      "대분류를 고른 뒤 세부 공종을 고릅니다 · 특허를 고르면 자동으로 채워집니다"));
     var groupRow = el("div", "cat-groups");
     var itemRow = el("div", "cat-items");
     var customRow = el("div", "cat-custom");
-    var chipRow = el("div", "cat-chips");
-    var emptyMsg = el("div", "cat-empty", "고른 공종이 없습니다. 위에서 대분류를 먼저 고르세요.");
+    var summary = el("div", "cat-summary");
 
     var customInput = document.createElement("input");
     customInput.type = "text";
@@ -3924,16 +3967,20 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     customRow.appendChild(customInput);
     customRow.appendChild(customBtn);
 
+    container.appendChild(title);
     container.appendChild(groupRow);
     container.appendChild(itemRow);
     container.appendChild(customRow);
-    container.appendChild(chipRow);
-    container.appendChild(emptyMsg);
+    container.appendChild(summary);
 
     /* ------------------------------------------------------- 상태 */
 
     function has(group, name) {
       return items.some(function (it) { return it.group === group && it.name === name; });
+    }
+
+    function isAuto(name) {
+      return !!autoNames[key(name)];
     }
 
     function toggle(group, name) {
@@ -3960,6 +4007,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
         var count = items.filter(function (it) { return it.group === group; }).length;
         var btn = el("button", "cat-group" + (group === openGroup ? " is-open" : ""));
         btn.type = "button";
+        btn.setAttribute("data-group", group);
+        btn.setAttribute("aria-selected", group === openGroup ? "true" : "false");
         btn.appendChild(document.createTextNode(group));
         if (count) btn.appendChild(el("span", "cat-group-count", String(count)));
         btn.addEventListener("click", function () {
@@ -3987,37 +4036,45 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       }
       list.forEach(function (name) {
         var on = has(openGroup, name);
-        var btn = el("button", "cat-item" + (on ? " is-on" : ""), name);
+        var btn = el("button", "cat-item" + (on ? " is-on" : ""));
         btn.type = "button";
         btn.setAttribute("data-group", openGroup);
         btn.setAttribute("data-item", name);
         btn.setAttribute("aria-pressed", on ? "true" : "false");
+        btn.appendChild(el("span", "cat-item-check", on ? "✓" : ""));
+        btn.appendChild(el("span", "cat-item-name", name));
+        // 특허를 고르면 자동으로 들어온 공종임을 알려 준다
+        if (isAuto(name)) btn.appendChild(el("span", "cat-item-auto", "특허 자동"));
         btn.addEventListener("click", function () { toggle(openGroup, name); });
         itemRow.appendChild(btn);
       });
     }
 
-    function renderChips() {
-      chipRow.innerHTML = "";
-      items.forEach(function (it) {
-        var chip = el("span", "cat-chip");
-        chip.appendChild(el("span", "cat-chip-group", it.group));
-        chip.appendChild(el("span", "cat-chip-name", it.name));
-        var x = el("button", "cat-chip-x", "×");
-        x.type = "button";
-        x.title = it.group + " " + it.name + " 빼기";
-        x.addEventListener("click", function () { toggle(it.group, it.name); });
-        chip.appendChild(x);
-        chipRow.appendChild(chip);
+    function renderSummary() {
+      summary.innerHTML = "";
+      if (!items.length) {
+        summary.appendChild(el("span", "cat-summary-empty",
+          "선택된 공종이 없습니다. 위에서 대분류를 먼저 고르세요."));
+        return;
+      }
+      summary.appendChild(el("span", "cat-summary-label", "선택됨"));
+      PourCategories.GROUP_KEYS.forEach(function (group) {
+        var names = items.filter(function (it) { return it.group === group; })
+          .map(function (it) { return it.name; });
+        if (!names.length) return;
+        var line = el("span", "cat-summary-part");
+        line.appendChild(el("b", "cat-summary-group", group));
+        line.appendChild(el("span", "cat-summary-dot", "·"));
+        line.appendChild(el("span", "cat-summary-names", names.join(", ")));
+        summary.appendChild(line);
       });
-      emptyMsg.style.display = items.length ? "none" : "";
     }
 
     function render() {
       renderGroups();
       renderItems();
       customRow.style.display = openGroup === PourCategories.OTHER ? "" : "none";
-      renderChips();
+      renderSummary();
     }
 
     function addCustom() {
@@ -4044,6 +4101,25 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       render();
     }
 
+    /** 특허에서 온 이름을 표시용으로만 기억한다 (고른 값은 건드리지 않는다) */
+    function setAutoNames(names) {
+      autoNames = {};
+      (names || []).forEach(function (name) {
+        var k = key(name);
+        if (k) autoNames[k] = true;
+      });
+      render();
+    }
+
+    /** 특허 선택으로 공종을 갈아 끼운다. 확실하지 않은 이름은 기타로 간다. */
+    function setFromNames(names) {
+      setAutoNames(names);
+      items = PourCategories.itemsFromNames(names);
+      openGroup = items.length ? items[0].group : PourCategories.GROUP_KEYS[0];
+      render();
+      if (typeof opts.onChange === "function") opts.onChange(getValue());
+    }
+
     function getValue() {
       return PourCategories.normalizeItems(items);
     }
@@ -4052,16 +4128,9 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       return PourCategories.namesOf(items);
     }
 
-    /** 특허 선택 등으로 자동 입력할 때. 확실하지 않은 이름은 기타로 간다. */
-    function setFromNames(names) {
-      items = PourCategories.itemsFromNames(names);
-      openGroup = items.length ? items[0].group : PourCategories.GROUP_KEYS[0];
-      render();
-      if (typeof opts.onChange === "function") opts.onChange(getValue());
-    }
-
     function clear() {
       items = [];
+      autoNames = {};
       openGroup = PourCategories.GROUP_KEYS[0];
       render();
     }
@@ -4069,6 +4138,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     render();
     return {
       setValue: setValue,
+      setAutoNames: setAutoNames,
       setFromNames: setFromNames,
       getValue: getValue,
       getNames: getNames,
@@ -4672,7 +4742,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     storage: storage,
     // 특허를 고르면 공종이 자동으로 채워진다. 분류는 분류표를 따르고,
     // 어느 대분류인지 확실하지 않으면 임의로 고르지 않고 기타로 간다.
-    onCategories: function (names) { categoryPicker.setFromNames(names); }
+    // 자료를 불러오는 중(replace=false)에는 저장된 공종을 덮지 않고 표시만 붙인다.
+    onCategories: function (names, replace) {
+      if (replace) categoryPicker.setFromNames(names);
+      else categoryPicker.setAutoNames(names);
+    }
   });
 
   PourRecords.STATUSES.forEach(function (s) { $("fStatus").appendChild(new Option(s, s)); });

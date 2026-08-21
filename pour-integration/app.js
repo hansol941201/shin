@@ -196,7 +196,11 @@
     storage: storage,
     // 특허를 고르면 공종이 자동으로 채워진다. 분류는 분류표를 따르고,
     // 어느 대분류인지 확실하지 않으면 임의로 고르지 않고 기타로 간다.
-    onCategories: function (names) { categoryPicker.setFromNames(names); }
+    // 자료를 불러오는 중(replace=false)에는 저장된 공종을 덮지 않고 표시만 붙인다.
+    onCategories: function (names, replace) {
+      if (replace) categoryPicker.setFromNames(names);
+      else categoryPicker.setAutoNames(names);
+    }
   });
 
   PourRecords.STATUSES.forEach(function (s) { $("fStatus").appendChild(new Option(s, s)); });

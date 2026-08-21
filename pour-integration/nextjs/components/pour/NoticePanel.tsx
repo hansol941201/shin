@@ -30,6 +30,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
   const [form, setForm] = useState({ ...EMPTY_FORM });
   // 공종은 대분류와 짝지어 두므로 문자열 폼과 따로 관리한다
   const [categoryItems, setCategoryItems] = useState<CategoryItem[]>([]);
+  // 특허에서 자동으로 온 공종 이름. 배지에 "특허 자동" 을 붙이는 데만 쓴다.
+  const [autoNames, setAutoNames] = useState<string[]>([]);
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [bidType, setBidType] = useState("");
   const [patents, setPatents] = useState<PatentEditorValue>({ patentItems: [], noticeMultiFlag: false });
@@ -83,6 +85,7 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       setBidType("");
       setPatents({ patentItems: [], noticeMultiFlag: false });
       setCategoryItems([]);
+      setAutoNames([]);
       setIsRebid(false);
       setRebidSource("");
     }
@@ -270,7 +273,11 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                 대분류를 고른 뒤 세부 공종을 고릅니다{" "}
                 <span className="opt">(특허를 고르면 자동으로 채워집니다)</span>
               </label>
-              <CategoryPicker value={categoryItems} onChange={setCategoryItems} />
+              <CategoryPicker
+                value={categoryItems}
+                onChange={setCategoryItems}
+                autoNames={autoNames}
+              />
             </div>
           </div>
 
@@ -343,7 +350,10 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                     storage={storage}
                     value={patents}
                     onChange={setPatents}
-                    onCategories={(names) => {
+                    onCategories={(names, replace) => {
+                      setAutoNames(names);
+                      // 자료를 불러오는 중(replace=false)에는 저장된 공종을 덮지 않는다
+                      if (!replace) return;
                       // 확실하지 않은 이름은 임의로 정하지 않고 기타로 간다
                       setCategoryItems(PourCategories.itemsFromNames(names) as CategoryItem[]);
                     }}

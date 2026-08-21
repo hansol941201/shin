@@ -214,11 +214,13 @@ function section(t) { console.log("\n" + t); }
     assert.ok(items.some(t => t.includes("에폭시")), items[0]);
   });
 
+  /** 선택 요약에서 "대분류 · 세부, 세부" 를 읽어 항목 목록으로 되돌린다 */
   async function chosenCategories() {
-    return page.$$eval("#categoryPicker .cat-chip", els => els.map(e => ({
-      group: e.querySelector(".cat-chip-group").textContent,
-      name: e.querySelector(".cat-chip-name").textContent
+    const parts = await page.$$eval("#categoryPicker .cat-summary-part", els => els.map(e => ({
+      group: e.querySelector(".cat-summary-group").textContent,
+      names: e.querySelector(".cat-summary-names").textContent
     })));
+    return parts.flatMap(p => p.names.split(", ").map(name => ({ group: p.group, name })));
   }
 
   await test("특허를 고르면 공종이 자동 입력됨", async () => {
@@ -299,6 +301,64 @@ function section(t) { console.log("\n" + t); }
 
   await test("자유 입력 공종 칸은 사라졌다", async () => {
     assert.strictEqual(await page.$("#fCategories"), null);
+  });
+
+  await test("제목과 선택 요약이 보인다", async () => {
+    assert.strictEqual(await page.textContent("#categoryPicker .cat-title > *:not(.cat-title-hint)")
+      .catch(() => null) ?? (await page.$eval("#categoryPicker .cat-title",
+        el => el.childNodes[0].textContent.trim())), "공종 선택");
+    const summary = await page.$eval("#categoryPicker .cat-summary", el => el.innerText);
+    assert.ok(summary.startsWith("선택됨"), summary);
+  });
+
+  await test("고른 대분류 탭은 네이비, 나머지는 흰 바탕", async () => {
+    await page.click('#categoryPicker .cat-group[data-group="주차장"]');
+    const open = await page.$eval('#categoryPicker .cat-group[data-group="주차장"]',
+      el => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
+    assert.deepStrictEqual(open, ["rgb(23, 33, 59)", "rgb(255, 255, 255)"], open.join(" / "));
+    const closed = await page.$eval('#categoryPicker .cat-group[data-group="도로"]',
+      el => [getComputedStyle(el).backgroundColor, getComputedStyle(el).borderTopColor]);
+    assert.deepStrictEqual(closed, ["rgb(255, 255, 255)", "rgb(203, 210, 220)"], closed.join(" / "));
+  });
+
+  await test("고른 배지는 체크 표시와 네이비 바탕", async () => {
+    await page.click('#categoryPicker .cat-group[data-group="도로"]');
+    await page.click('#categoryPicker .cat-item[data-item="보도블럭"]');
+    const badge = await page.$eval('#categoryPicker .cat-item[data-item="보도블럭"]', el => ({
+      bg: getComputedStyle(el).backgroundColor,
+      color: getComputedStyle(el).color,
+      check: el.querySelector(".cat-item-check").textContent,
+      pressed: el.getAttribute("aria-pressed")
+    }));
+    assert.strictEqual(badge.bg, "rgb(23, 33, 59)");
+    assert.strictEqual(badge.color, "rgb(255, 255, 255)");
+    assert.strictEqual(badge.check, "✓");
+    assert.strictEqual(badge.pressed, "true");
+    await page.click('#categoryPicker .cat-item[data-item="보도블럭"]');   // 되돌리기
+  });
+
+  await test("특허로 자동 지정된 공종에는 특허 자동 표시", async () => {
+    // 앞선 시험에서 제10-1935719호가 골라져 있다 → 공종이 자동으로 들어와 있다
+    await page.click('#categoryPicker .cat-group[data-group="기타"]');
+    const marks = await page.$$eval("#categoryPicker .cat-item", els => els.map(e => ({
+      name: e.getAttribute("data-item"),
+      auto: e.querySelector(".cat-item-auto") ? e.querySelector(".cat-item-auto").textContent : null
+    })));
+    const auto = marks.filter(m => m.name.startsWith("균열보수"));
+    assert.strictEqual(auto.length, 2, JSON.stringify(marks));
+    assert.ok(auto.every(m => m.auto === "특허 자동"), JSON.stringify(marks));
+    // 직접 적어 넣은 것에는 붙지 않는다
+    assert.ok(marks.filter(m => m.name === "특수 코팅").every(m => m.auto === null),
+      JSON.stringify(marks));
+  });
+
+  await test("직접 적어 넣은 공종에는 특허 자동 표시가 없다", async () => {
+    await page.fill("#categoryPicker .cat-custom-input", "손으로 적은 공종");
+    await page.click("#categoryPicker .cat-custom-btn");
+    const mark = await page.$eval('#categoryPicker .cat-item[data-item="손으로 적은 공종"]',
+      el => !!el.querySelector(".cat-item-auto"));
+    assert.strictEqual(mark, false);
+    await page.click('#categoryPicker .cat-item[data-item="손으로 적은 공종"]');   // 되돌리기
   });
 
   await test("타사 특허를 별도 탭에서 여러 개 추가", async () => {
@@ -668,6 +728,35 @@ function section(t) { console.log("\n" + t); }
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(overflow <= 1, "본문이 가로로 " + overflow + "px 넘침");
     await page.setViewportSize({ width: 1600, height: 1000 });
+  });
+
+  await test("자료를 다시 열어도 저장된 공종이 특허 공종으로 바뀌지 않는다", async () => {
+    // 특허를 고른 뒤 공종은 사람이 따로 정해 저장한다
+    await openNewNotice();
+    await fillBasics("김포", "공종보존시험아파트", "2026-07-01");
+    await addPourPatent("1935719");                       // 공종이 자동으로 들어온다
+    await page.click('#categoryPicker .cat-group[data-group="도로"]');
+    await page.click('#categoryPicker .cat-item[data-item="보도블럭"]');
+    await page.click('#categoryPicker .cat-group[data-group="기타"]');
+    for (const name of ["균열보수", "균열보수 및 재도장"]) {
+      const badge = `#categoryPicker .cat-item[data-item="${name}"]`;
+      if (await page.$(badge)) await page.click(badge);   // 자동으로 들어온 것은 뺀다
+    }
+    const before = await chosenCategories();
+    assert.deepStrictEqual(before, [{ group: "도로", name: "보도블럭" }], JSON.stringify(before));
+    await page.click("#panelSave");
+    await page.waitForTimeout(200);
+
+    // 다시 열었을 때 특허에서 뽑은 공종이 저장값을 덮으면 안 된다
+    await page.fill("#gridSearch", "공종보존시험아파트");
+    await page.waitForTimeout(200);
+    await page.dblclick("#recordsGrid .grid tbody tr:first-child");
+    await page.waitForSelector("#noticePanel.is-open");
+    await page.waitForTimeout(200);
+    const after = await chosenCategories();
+    assert.deepStrictEqual(after, before, "저장된 공종이 바뀌었다: " + JSON.stringify(after));
+    await page.click("#panelClose");
+    await page.fill("#gridSearch", "");
   });
 
   await test("콘솔 오류 없음", async () => {

@@ -1,6 +1,6 @@
 "use client";
 /** POUR 특허 / 타사 특허 2탭 입력기 — 자동완성 드롭다운 포함 */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PourPatents from "@/lib/pour/core/pour-patents.js";
 import PourRecords from "@/lib/pour/core/pour-records.js";
 import type { PatentItem, PourStorage } from "@/lib/pour/core";
@@ -18,7 +18,12 @@ export interface PatentEditorProps {
   value: PatentEditorValue;
   onChange: (value: PatentEditorValue) => void;
   /** 공종 칸에 자동 입력할 때 부른다 */
-  onCategories?: (categories: string[]) => void;
+  /**
+   * 고른 POUR 특허에서 뽑은 공종 이름.
+   * replace 가 true 일 때만 골라 둔 공종을 갈아 끼운다.
+   * 자료를 불러올 때는 false 라 저장된 공종을 덮지 않는다.
+   */
+  onCategories?: (categories: string[], replace: boolean) => void;
 }
 
 export default function PatentEditor({ storage, value, onChange, onCategories }: PatentEditorProps) {
@@ -37,7 +42,9 @@ export default function PatentEditor({ storage, value, onChange, onCategories }:
   // 고른 POUR 특허에서 공종을 다시 계산한다 (중복 제거)
   useEffect(() => {
     if (!onCategories) return;
-    onCategories(PourPatents.categoriesFor(pourItems.map((i) => i.number), storage));
+    const replace = userTouched.current;
+    userTouched.current = false;
+    onCategories(PourPatents.categoriesFor(pourItems.map((i) => i.number), storage), replace);
   }, [pourItems, storage, onCategories]);
 
   // POUR 와 타사에 같은 번호가 들어갔는지 확인
@@ -51,7 +58,11 @@ export default function PatentEditor({ storage, value, onChange, onCategories }:
     return q ? PourPatents.search(q, 10, storage) : PourPatents.browse(10, storage);
   }, [query, storage]);
 
+  // 사람이 이 화면에서 특허를 고쳤는지. 자료를 불러온 것과 구분하기 위해 둔다.
+  const userTouched = useRef(false);
+
   const emit = useCallback((items: PatentItem[]) => {
+    userTouched.current = true;
     onChange({ patentItems: items, noticeMultiFlag: value.noticeMultiFlag });
   }, [onChange, value.noticeMultiFlag]);
 
