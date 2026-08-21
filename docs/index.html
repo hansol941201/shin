@@ -240,6 +240,13 @@ body{background:#F4F6F8;margin:0;}
   background:#fff7e6; border:1px solid #f0a92e; border-radius:6px;
 }
 
+/* 구획 제목 — 모든 항목을 한 화면에 펼쳐 두었을 때 위치를 알려 준다 */
+.pour-sub-head{
+  font-size:13px; font-weight:700; color:var(--pour-text);
+  margin:12px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--pour-border);
+}
+.pour-sub-head:first-child{margin-top:0;}
+
 /* ==========================================================================
    POUR 공사실적 관리 — 업무용 데이터 관리 화면
    흰색·밝은 회색 바탕에 네이비 포인트. 그림자와 둥근 모서리는 최소한만 쓴다.
@@ -490,7 +497,13 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .more-box[open] > summary::before{content:"▾ ";}
 .more-body{padding:9px 2px 0;}
 .rebid-box{padding:8px; margin-bottom:8px; background:#FFF7E6; border:1px solid #F0A92E; border-radius:3px;}
-.sub-head{font-size:13px; font-weight:700; margin:10px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--line);}
+.sub-head{
+  font-size:13px; font-weight:700; margin:12px 0 6px; padding-bottom:4px;
+  border-bottom:1px solid var(--line);
+  /* 항목을 모두 펼쳐 두어 패널이 길어지므로, 스크롤 중에도 구획 이름이 보이게 한다 */
+  position:sticky; top:0; z-index:5; background:var(--white);
+}
+.sub-head:first-child{margin-top:0;}
 
 /* 가져오기 미리보기 */
 .preview-stats{display:flex; flex-wrap:wrap; gap:18px; margin:10px 0; font-size:13.5px;}
@@ -535,7 +548,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .pour-suggest-item{padding:6px 10px; font-size:13px;}
 
 /* 공용 모듈(특허 입력기·자동완성)의 강조색을 이 화면의 네이비로 맞춘다 */
-body.pour-scope{
+.pour-scope{
   --pour-accent:#17213B;
   --pour-accent-soft:#E8EDF6;
   --pour-border:#CBD2DC;
@@ -744,12 +757,14 @@ body.pour-scope{
       </div>
     </div>
 
+    <div class="sub-head">기본 정보</div>
     <div class="form-row form-row-3" id="rowBasic">
       <div><label for="fClient">아파트·단지명</label><input type="text" id="fClient" /></div>
       <div><label for="fProjects">공사명 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fProjects" rows="2"></textarea></div>
       <div><label for="fCategories">공종 <span class="opt">(특허 선택 시 자동)</span></label><input type="text" id="fCategories" /></div>
     </div>
 
+    <div class="sub-head">지역·연락처</div>
     <div class="form-row form-row-4" id="rowRegion">
       <div><label for="fRegion">지역 <span class="opt">(도시 입력 시 자동)</span></label><select id="fRegion"><option value="">—</option></select></div>
       <div class="pour-field"><label for="fCity">도시</label><input type="text" id="fCity" placeholder="예: 하남, 금산, 평택" autocomplete="off" /></div>
@@ -757,6 +772,7 @@ body.pour-scope{
       <div><label for="fHouseholds">세대수 <span class="opt">(선택)</span></label><input type="text" id="fHouseholds" /></div>
     </div>
 
+    <div class="sub-head">일정·입찰</div>
     <div class="form-row form-row-4" id="rowSchedule">
       <div><label for="fNoticeDate">공고일 <span class="req">*</span></label><input type="date" id="fNoticeDate" /></div>
       <div><label for="fDueDate">서류 마감일 <span class="opt">(선택)</span></label><input type="date" id="fDueDate" /></div>
@@ -770,27 +786,29 @@ body.pour-scope{
       </div>
     </div>
 
-    <details class="more-box" id="moreBox">
-      <summary>특허 · 공사범위 · 추가정보 펼치기</summary>
-      <div class="more-body">
-        <div class="form-row form-row-1">
-          <div>
-            <label>적용 특허 <span class="opt">(POUR 특허와 타사 특허를 나누어 입력)</span></label>
-            <div id="patentEditor"></div>
-          </div>
-        </div>
-        <div class="form-row form-row-fill">
-          <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
-          <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
-          <div><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
-          <div class="span-2"><label for="fScopes">공사범위 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fScopes" rows="2"></textarea></div>
-          <div><label for="fAddress">나머지 주소</label><input type="text" id="fAddress" /></div>
-          <div><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
-          <div><label for="fStatus">상태</label><select id="fStatus"></select></div>
-          <div><label for="fContractor">시공사 <span class="opt">(공고 단계에서는 비움)</span></label><input type="text" id="fContractor" /></div>
-        </div>
+    <div class="sub-head">적용 특허</div>
+    <div class="form-row form-row-1">
+      <div>
+        <label>POUR 특허와 타사 특허를 나누어 입력합니다</label>
+        <div id="patentEditor"></div>
       </div>
-    </details>
+    </div>
+
+    <div class="sub-head">특허·협약 정보</div>
+    <div class="form-row form-row-fill">
+      <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
+      <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+    </div>
+
+    <div class="sub-head">공사 내용</div>
+    <div class="form-row form-row-fill">
+      <div class="span-2"><label for="fScopes">공사범위 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fScopes" rows="2"></textarea></div>
+      <div class="span-2"><label for="fAddress">나머지 주소</label><input type="text" id="fAddress" /></div>
+      <div><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
+      <div><label for="fStatus">상태</label><select id="fStatus"></select></div>
+      <div><label for="fContractor">시공사 <span class="opt">(공고 단계에서는 비움)</span></label><input type="text" id="fContractor" /></div>
+      <div class="span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
+    </div>
 
     <div id="editHistory" class="form-msg"></div>
     <div class="form-msg" id="panelMsg"></div>
@@ -4021,7 +4039,6 @@ body.pour-scope{
     patentEditor.clear();
     $("editHistory").innerHTML = "";
     $("panelMsg").textContent = "";
-    $("moreBox").open = false;
   }
 
   function openNotice(id) {
@@ -4063,7 +4080,6 @@ body.pour-scope{
         b.classList.toggle("is-active", b.getAttribute("data-bid") === bidType);
       });
       patentEditor.setValue(rec);
-      $("moreBox").open = true;
 
       $("editHistory").innerHTML = rec.history.length
         ? "<b>수정 이력</b>" + rec.history.map(function (h) {
