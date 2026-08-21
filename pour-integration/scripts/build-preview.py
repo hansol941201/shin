@@ -131,9 +131,23 @@ def build() -> Path:
 
     out = BASE / "preview.html"
     out.write_text(html, encoding="utf-8")
+
+    # GitHub Pages 로 올릴 때는 문서 골격이 필요하다 (아티팩트는 자동으로 감싸 준다)
+    page = ("<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n"
+            "<meta charset=\"UTF-8\" />\n"
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
+            + html.split('<div class="pour-scope">')[0]
+            + "</head>\n<body>\n<div class=\"pour-scope\">"
+            + html.split('<div class="pour-scope">', 1)[1]
+            + "\n</body>\n</html>\n")
+    docs = BASE.parent / "docs" / "index.html"
+    docs.parent.mkdir(exist_ok=True)
+    docs.write_text(page, encoding="utf-8")
+
     return out
 
 
 if __name__ == "__main__":
     path = build()
     print(f"{path.relative_to(BASE.parent)} 생성 — {round(path.stat().st_size / 1024)} KB")
+    print("docs/index.html 생성 — GitHub Pages 용")
