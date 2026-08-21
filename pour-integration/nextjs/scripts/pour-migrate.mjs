@@ -38,7 +38,9 @@ const NEW_COLUMNS = [
   ["category_items", "TEXT"],
   ["record_source", "TEXT"],
   ["source_ref", "TEXT"],
-  ["duplicate_of", "TEXT"]
+  ["duplicate_of", "TEXT"],
+  ["notice_no", "TEXT"],
+  ["is_partner", "TEXT"]
 ];
 
 function arg(name, fallback) {

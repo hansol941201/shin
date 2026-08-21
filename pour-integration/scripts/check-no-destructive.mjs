@@ -74,5 +74,48 @@ if (existsSync(seed)) {
   console.log("\n  · seed-records.sql 이 없어 건너뜁니다 (import-records.py 로 만듭니다)");
 }
 
+/*
+ * 열 목록이 세 곳에 나뉘어 있어 한 곳만 고치면 조용히 어긋난다.
+ * (실제로 mapping.ts 와 pour-migrate.mjs 가 각각 한 번씩 뒤처진 적이 있다)
+ *   migrate.ts PROJECT_COLUMNS  — 배포 때 도는 순방향 마이그레이션
+ *   pour-migrate.mjs NEW_COLUMNS — 손으로 돌리는 열 추가 스크립트
+ *   mapping.ts COLUMN_MAP        — 값을 실제로 읽고 쓰는 짝
+ */
+console.log("\n열 목록 어긋남 검사");
+
+const listFrom = (file, marker) => {
+  const text = readFileSync(file, "utf8");
+  const from = text.indexOf(marker);
+  const body = text.slice(from, text.indexOf("];", from));
+  return (body.match(/\["([a-z_]+)",/g) || []).map((m) => m.slice(2, -2));
+};
+
+const declared = listFrom(join(HERE, "..", "nextjs", "lib", "pour", "migrate.ts"), "PROJECT_COLUMNS");
+const runner = listFrom(join(HERE, "..", "nextjs", "scripts", "pour-migrate.mjs"), "NEW_COLUMNS");
+const missingInRunner = declared.filter((c) => !runner.includes(c));
+if (missingInRunner.length) {
+  console.log(`  ✗ pour-migrate.mjs 에 빠진 열: ${missingInRunner.join(", ")}`);
+  bad++;
+} else {
+  console.log(`  ✓ pour-migrate.mjs 가 migrate.ts 와 같다 (${declared.length}개)`);
+}
+
+// COLUMN_MAP 에 이름만 넣고 값을 옮겨 담는 두 함수에 빠뜨리면 저장이 안 된다
+const mapping = readFileSync(join(HERE, "..", "nextjs", "lib", "pour", "mapping.ts"), "utf8");
+const mapped = (mapping.slice(mapping.indexOf("COLUMN_MAP = {"), mapping.indexOf("} as const"))
+  .match(/^\s*([A-Za-z]+):\s*"/gm) || []).map((m) => m.trim().replace(/:\s*"$/, ""));
+const unread = mapped.filter((f) => !mapping.includes(`get("${f}")`));
+const unwritten = mapped.filter((f) => !mapping.includes(`set("${f}"`));
+const stranded = [...new Set([...unread, ...unwritten])]
+  // 읽기 전용·쓰기 전용으로 두는 것이 맞는 열
+  .filter((f) => !["id", "createdAt", "legacyPatentNumbers", "patentsMigrated", "categoryItems",
+                   "patentConfirmed", "expectedAmount"].includes(f));
+if (stranded.length) {
+  console.log(`  ✗ COLUMN_MAP 에만 있고 읽기/쓰기에 빠진 필드: ${stranded.join(", ")}`);
+  bad++;
+} else {
+  console.log(`  ✓ COLUMN_MAP 의 모든 필드가 읽기·쓰기에 이어져 있다 (${mapped.length}개)`);
+}
+
 console.log(bad ? `\n실패 ${bad}건` : "\n모두 통과");
 process.exit(bad ? 1 : 0);
