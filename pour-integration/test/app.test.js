@@ -62,7 +62,7 @@ function section(t) { console.log("\n" + t); }
 
   await test("상단 메뉴·작업 버튼·상태 탭·엑셀형 표가 한 화면에 있음", async () => {
     const menus = await page.$$eval(".nav-item", els => els.map(e => e.textContent.trim()));
-    assert.deepStrictEqual(menus, ["공고·실적", "특허별 실적", "가져오기·내보내기", "통계·분석", "설정"]);
+    assert.deepStrictEqual(menus, ["공고·실적", "특허별 실적", "가져오기·내보내기", "설정"]);
     const brand = await page.textContent(".brand");
     assert.ok(brand.includes("NETFORM"), brand);
     assert.ok(brand.includes("POUR 공사실적 관리"), brand);
@@ -584,8 +584,15 @@ function section(t) { console.log("\n" + t); }
     await page.click("#awardSave");
     assert.ok(lastDialog && lastDialog.includes("미기재 상태로 낙찰 저장할까요"), String(lastDialog));
     await page.waitForSelector("#alert-missingPour");
-    const alertText = await page.textContent("#alert-missingPour");
-    assert.ok(alertText.includes("POUR 특허번호 미기재 낙찰 1건"), alertText);
+    // 업무 확인 카드는 이름과 건수를 나눠 보여 준다. 원래 문구는 title 에 남는다.
+    const card = await page.$eval("#alert-missingPour", (el) => ({
+      title: el.getAttribute("title"),
+      name: el.querySelector(".alert-card-name").textContent,
+      count: el.querySelector(".alert-card-count").textContent
+    }));
+    assert.strictEqual(card.title, "POUR 특허번호 미기재 낙찰 1건", JSON.stringify(card));
+    assert.strictEqual(card.name, "POUR 특허번호 미기재 낙찰", JSON.stringify(card));
+    assert.strictEqual(card.count, "1건", JSON.stringify(card));
   });
 
   await test("알림을 누르면 해당 낙찰만 표시", async () => {
@@ -682,14 +689,13 @@ function section(t) { console.log("\n" + t); }
   });
 
   /* -------------------------------------------------------------- */
-  section("9. 통계 · 새로고침 · 반응형");
+  section("9. 새로고침 · 반응형");
 
-  await test("통계 화면", async () => {
-    await page.click(".nav-item[data-view='stats']");
-    const cards = await page.$$eval(".stat-card", els => els.map(e => e.textContent));
-    assert.ok(cards.length >= 6, "카드 " + cards.length + "개");
-    assert.ok(cards.some(c => c.includes("등록 POUR 특허")), cards.join(" | "));
-    await page.click(".nav-item[data-view='records']");
+  await test("통계·분석 메뉴·버튼·화면이 없다", async () => {
+    assert.strictEqual(await page.$(".nav-item[data-view='stats']"), null, "메뉴가 남음");
+    assert.strictEqual(await page.$("#btnStats"), null, "버튼이 남음");
+    assert.strictEqual(await page.$("#view-stats"), null, "화면이 남음");
+    assert.strictEqual(await page.$(".stat-card"), null, "통계 카드가 남음");
   });
 
   await test("새로고침 후에도 모든 자료가 유지", async () => {
@@ -794,7 +800,7 @@ function section(t) { console.log("\n" + t); }
   await test("빠진 낙찰 정보가 추가 입력 필요 알림에 표시된다", async () => {
     await page.fill("#gridSearch", "");
     await page.waitForTimeout(200);
-    const labels = await page.$$eval(".alert-chip", els => els.map(e => e.textContent.trim()));
+    const labels = await page.$$eval("#alertBar .alert-card", els => els.map(e => e.innerText.replace(/\n/g, " ")));
     assert.ok(labels.some(t => t.includes("낙찰 정보 추가 입력 필요")), labels.join(" | "));
     await page.click("#alert-awardIncomplete");
     await page.waitForTimeout(200);
@@ -899,7 +905,7 @@ function section(t) { console.log("\n" + t); }
     });
     await page.click("#btnRefresh");
     await page.waitForTimeout(300);
-    const labels = await page.$$eval("#alertBar .alert-chip", els => els.map(e => e.textContent.trim()));
+    const labels = await page.$$eval("#alertBar .alert-card", els => els.map(e => e.innerText.replace(/\n/g, " ")));
     const chip = labels.filter(t => t.includes("협약서번호 미입력"))[0];
     if (chip) {
       // 알림이 있다면 이전분은 그 안에 없어야 한다
@@ -911,6 +917,37 @@ function section(t) { console.log("\n" + t); }
       await page.click("#btnRefresh");
       await page.waitForTimeout(200);
     }
+  });
+
+  await test("알림이 업무 확인 카드로 보이고 누르면 그대로 걸러진다", async () => {
+    const cards = await page.$$eval("#alertBar .alert-card", els => els.map((e) => ({
+      tag: e.querySelector(".alert-card-tag").textContent,
+      name: e.querySelector(".alert-card-name").textContent,
+      note: e.querySelector(".alert-card-note").textContent,
+      count: e.querySelector(".alert-card-count").textContent,
+      id: e.id
+    })));
+    assert.ok(cards.length > 0, "알림 카드가 없다");
+    cards.forEach((c) => {
+      assert.strictEqual(c.tag, "중요 확인", JSON.stringify(c));
+      assert.strictEqual(c.note, "확인 필요", JSON.stringify(c));
+      assert.ok(/^[\d,]+건$/.test(c.count), "건수 표기: " + c.count);
+      assert.ok(!/\d+건$/.test(c.name), "이름에 건수가 남음: " + c.name);
+    });
+    // 건수는 카드 안에서 가장 큰 글자여야 한다
+    const sizes = await page.$eval("#alertBar .alert-card", (el) => ({
+      count: parseFloat(getComputedStyle(el.querySelector(".alert-card-count")).fontSize),
+      name: parseFloat(getComputedStyle(el.querySelector(".alert-card-name")).fontSize)
+    }));
+    assert.ok(sizes.count > sizes.name, JSON.stringify(sizes));
+
+    // 누르면 예전처럼 그 자료만 걸러진다
+    await page.click("#" + cards[0].id);
+    await page.waitForTimeout(250);
+    const note = await page.textContent("#gridCount");
+    assert.ok(note.includes("만 표시 중"), note);
+    await page.click("#btnRefresh");
+    await page.waitForTimeout(200);
   });
 
   await test("콘솔 오류 없음", async () => {

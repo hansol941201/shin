@@ -378,6 +378,30 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .alert-chip::before{content:""; width:6px; height:6px; border-radius:50%; background:#E0932A; flex:0 0 auto;}
 .alert-chip:hover{background:#FFFBF3; border-color:#DDB166;}
 
+/* 업무 확인 카드 — 그냥 넘길 알림이 아니라 손을 대야 하는 항목이다.
+   빨강으로 오류창처럼 만들지 않고, 왼쪽 굵은 띠와 큰 숫자로 구분한다. */
+.alert-card{
+  display:inline-flex; align-items:center; gap:var(--s3);
+  padding:8px 14px 8px 12px; cursor:pointer; text-align:left;
+  background:var(--white); border:1px solid #E4C99A; border-left:4px solid #C8891F;
+  border-radius:var(--r2); box-shadow:var(--shadow-1);
+  transition:background .12s, border-color .12s;
+}
+.alert-card:hover{background:#FFFCF6; border-color:#D6B677; border-left-color:#A8710F;}
+.alert-card-tag{
+  flex:0 0 auto; padding:2px 8px; font-size:10.5px; font-weight:700; letter-spacing:.02em;
+  background:#FBF1DF; color:#8A5A11; border-radius:999px; white-space:nowrap;
+}
+.alert-card-body{display:flex; flex-direction:column; gap:1px; min-width:0;}
+.alert-card-name{font-size:13px; font-weight:700; color:var(--text); white-space:nowrap;}
+.alert-card-note{font-size:11px; color:#8A5A11;}
+.alert-card-count{
+  flex:0 0 auto; margin-left:var(--s2);
+  font-size:22px; font-weight:800; line-height:1; color:var(--navy);
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+}
+.alert-card-unit{margin-left:2px; font-size:11.5px; font-weight:600; color:var(--muted);}
+
 /* 작업 버튼 */
 .toolbar{display:flex; flex-wrap:wrap; gap:var(--s2); margin-bottom:var(--s3); align-items:center;}
 .tb-btn{
@@ -743,15 +767,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 }
 .summary-bar strong{font-size:15px; color:var(--text);}
 
-/* ------------------------------------------------------------- 통계 */
-.stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:var(--s3); margin-bottom:var(--s4);}
-.stat-card{
-  padding:var(--s3) var(--s4); background:var(--white);
-  border:1px solid var(--line); border-radius:var(--r3); box-shadow:var(--shadow-1);
-}
-.stat-card .lbl{font-size:12px; color:var(--muted);}
-.stat-card .val{font-size:24px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
-
 /* ------------------------------------------------- 특허 입력기 밀도 */
 .pour-patent-editor{padding:var(--s3); border-radius:var(--r3);}
 .pour-kind-tabs{margin-bottom:var(--s2);}
@@ -830,7 +845,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     <button type="button" class="nav-item is-active" data-view="records">공고·실적</button>
     <button type="button" class="nav-item" data-view="patents">특허별 실적</button>
     <button type="button" class="nav-item" data-view="io">가져오기·내보내기</button>
-    <button type="button" class="nav-item" data-view="stats">통계·분석</button>
     <button type="button" class="nav-item" data-view="settings">설정</button>
   </nav>
   <div class="header-right">
@@ -857,7 +871,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       <button type="button" class="tb-btn ghost" id="btnImport">엑셀 가져오기</button>
       <button type="button" class="tb-btn ghost" id="btnExport">엑셀 내보내기</button>
       <button type="button" class="tb-btn ghost" id="btnReport">보고서 만들기</button>
-      <button type="button" class="tb-btn ghost" id="btnStats">통계 보기</button>
       <button type="button" class="tb-btn ghost" id="btnPatentData">특허자료 관리</button>
       <span class="spacer"></span>
       <button type="button" class="tb-btn ghost" id="btnRefresh" title="새로고침">↻ 새로고침</button>
@@ -936,16 +949,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       <button type="button" class="tb-btn" data-export="특허별">특허별 실적</button>
     </div>
     <div class="form-msg" id="exportMsg"></div>
-  </section>
-
-  <!-- ======================================================= 통계·분석 -->
-  <section class="view" id="view-stats">
-    <h2 class="view-title">통계·분석</h2>
-    <div class="stat-cards" id="statCards"></div>
-    <div class="sub-head">공종별 현황</div>
-    <div id="statByCategory"></div>
-    <div class="sub-head">연도별 현황</div>
-    <div id="statByYear"></div>
   </section>
 
   <!-- =========================================================== 설정 -->
@@ -4732,7 +4735,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     });
     $("appNav").classList.remove("is-open");
     if (name === "patents") renderPatentView();
-    if (name === "stats") renderStats();
     if (name === "settings") renderPatentList();
   }
 
@@ -4810,7 +4812,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   $("btnSortReset").addEventListener("click", function () { grid.setSort(null); updateCount(); });
   $("btnRefresh").addEventListener("click", function () { refresh(); });
   $("btnPatentData").addEventListener("click", function () { showView("settings"); });
-  $("btnStats").addEventListener("click", function () { showView("stats"); });
   $("btnImport").addEventListener("click", function () { showView("io"); });
   $("btnExport").addEventListener("click", function () { showView("io"); });
   $("btnReport").addEventListener("click", function () {
@@ -4852,11 +4853,43 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     var bar = $("alertBar");
     bar.innerHTML = "";
     groups.forEach(function (g) {
+      // 표시만 바꾼다. 건수 계산과 누르는 동작은 그대로다.
+      // 이름은 알림 문구에서 뒤에 붙은 건수만 떼어 쓴다.
+      var name = String(g.label).replace(/\s*[\d,]+건$/, "");
+
       var chip = document.createElement("button");
       chip.type = "button";
-      chip.className = "alert-chip";
+      chip.className = "alert-card";
       chip.id = "alert-" + g.key;
-      chip.textContent = g.label;
+      chip.title = g.label;
+
+      var tag = document.createElement("span");
+      tag.className = "alert-card-tag";
+      tag.textContent = "중요 확인";
+
+      var body = document.createElement("span");
+      body.className = "alert-card-body";
+      var nameEl = document.createElement("span");
+      nameEl.className = "alert-card-name";
+      nameEl.textContent = name;
+      var note = document.createElement("span");
+      note.className = "alert-card-note";
+      note.textContent = "확인 필요";
+      body.appendChild(nameEl);
+      body.appendChild(note);
+
+      var count = document.createElement("span");
+      count.className = "alert-card-count";
+      count.textContent = Number(g.count).toLocaleString("ko-KR");
+      var unit = document.createElement("span");
+      unit.className = "alert-card-unit";
+      unit.textContent = "건";
+      count.appendChild(unit);
+
+      chip.appendChild(tag);
+      chip.appendChild(body);
+      chip.appendChild(count);
+
       chip.addEventListener("click", function () {
         // 해당 자료만 보이도록 목록을 걸러 준다
         state.statusTab = "전체";
@@ -5623,57 +5656,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     paint();
   }
 
-  /* --------------------------------------------------------- 통계 */
-
-  function renderStats() {
-    var records = PourRecords.list(storage);
-    var counts = PourRecords.statusCounts(records);
-    var awarded = records.filter(function (r) { return r.status === "낙찰"; });
-    var amount = awarded.reduce(function (sum, r) {
-      return sum + (r.awardAmount === "" ? 0 : Number(r.awardAmount));
-    }, 0);
-    var households = records.reduce(function (sum, r) {
-      return sum + (r.households === "" ? 0 : Number(r.households));
-    }, 0);
-
-    $("statCards").innerHTML = [
-      ["전체 현장", counts["전체"].toLocaleString("ko-KR") + "건"],
-      ["낙찰", counts["낙찰"].toLocaleString("ko-KR") + "건"],
-      ["공고", counts["공고"].toLocaleString("ko-KR") + "건"],
-      ["재공고·유찰", counts["재공고(유찰)"].toLocaleString("ko-KR") + "건"],
-      ["총 세대수", households.toLocaleString("ko-KR") + "세대"],
-      ["낙찰금액 합계", PourRecords.formatAmountShort(amount)],
-      ["등록 POUR 특허", PourPatents.list(storage).length + "건"]
-    ].map(function (pair) {
-      return '<div class="stat-card"><div class="lbl">' + pair[0] + '</div><div class="val">' + pair[1] + "</div></div>";
-    }).join("");
-
-    $("statByCategory").innerHTML = groupTable(records, function (r) { return r.categories; }, "공종");
-    $("statByYear").innerHTML = groupTable(records, function (r) {
-      return [String(r.noticeDate || r.awardDate || "").slice(0, 4) || "연도 미상"];
-    }, "연도");
-  }
-
-  function groupTable(records, pick, label) {
-    var map = {};
-    records.forEach(function (r) {
-      (pick(r) || []).forEach(function (key) {
-        if (!key) return;
-        map[key] = map[key] || { total: 0, awarded: 0 };
-        map[key].total++;
-        if (r.status === "낙찰") map[key].awarded++;
-      });
-    });
-    var keys = Object.keys(map).sort();
-    if (!keys.length) return '<div class="grid-empty">자료가 없습니다.</div>';
-    return '<div class="grid-wrap"><table class="grid"><thead><tr><th>' + label +
-      "</th><th>전체</th><th>낙찰</th></tr></thead><tbody>" +
-      keys.map(function (k) {
-        return "<tr><td>" + k + '</td><td class="cell-num">' + map[k].total +
-          '</td><td class="cell-num">' + map[k].awarded + "</td></tr>";
-      }).join("") + "</tbody></table></div>";
-  }
-
   /* --------------------------------------------------- 특허 목록(설정) */
 
   function renderPatentList() {
@@ -5705,7 +5687,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     updateCount();
     syncRowButtons(grid.getSelected());
     if (state.view === "patents") renderPatentView();
-    if (state.view === "stats") renderStats();
     if (state.view === "settings") renderPatentList();
   }
 

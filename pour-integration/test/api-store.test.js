@@ -168,7 +168,7 @@ function section(t) { console.log("\n" + t); }
 
     assert.deepStrictEqual(server.records[0].patentNumbers, [], "이전 번호가 남음");
     await page.waitForSelector("#alert-missingPour");
-    const alertText = await page.textContent("#alert-missingPour");
+    const alertText = await page.getAttribute("#alert-missingPour", "title");
     assert.ok(alertText.includes("POUR 특허번호 미기재 낙찰 1건"), alertText);
   });
 
@@ -176,7 +176,7 @@ function section(t) { console.log("\n" + t); }
     await page.reload();
     await page.waitForFunction(() => window.PourApp && window.PourApp.usingApi === true);
     await page.waitForSelector("#alert-missingPour");
-    const alertText = await page.textContent("#alert-missingPour");
+    const alertText = await page.getAttribute("#alert-missingPour", "title");
     assert.ok(alertText.includes("미기재 낙찰 1건"), alertText);
   });
 

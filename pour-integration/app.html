@@ -19,7 +19,6 @@
     <button type="button" class="nav-item is-active" data-view="records">공고·실적</button>
     <button type="button" class="nav-item" data-view="patents">특허별 실적</button>
     <button type="button" class="nav-item" data-view="io">가져오기·내보내기</button>
-    <button type="button" class="nav-item" data-view="stats">통계·분석</button>
     <button type="button" class="nav-item" data-view="settings">설정</button>
   </nav>
   <div class="header-right">
@@ -40,7 +39,6 @@
       <button type="button" class="tb-btn ghost" id="btnImport">엑셀 가져오기</button>
       <button type="button" class="tb-btn ghost" id="btnExport">엑셀 내보내기</button>
       <button type="button" class="tb-btn ghost" id="btnReport">보고서 만들기</button>
-      <button type="button" class="tb-btn ghost" id="btnStats">통계 보기</button>
       <button type="button" class="tb-btn ghost" id="btnPatentData">특허자료 관리</button>
       <span class="spacer"></span>
       <button type="button" class="tb-btn ghost" id="btnRefresh" title="새로고침">↻ 새로고침</button>
@@ -119,16 +117,6 @@
       <button type="button" class="tb-btn" data-export="특허별">특허별 실적</button>
     </div>
     <div class="form-msg" id="exportMsg"></div>
-  </section>
-
-  <!-- ======================================================= 통계·분석 -->
-  <section class="view" id="view-stats">
-    <h2 class="view-title">통계·분석</h2>
-    <div class="stat-cards" id="statCards"></div>
-    <div class="sub-head">공종별 현황</div>
-    <div id="statByCategory"></div>
-    <div class="sub-head">연도별 현황</div>
-    <div id="statByYear"></div>
   </section>
 
   <!-- =========================================================== 설정 -->

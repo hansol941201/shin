@@ -31,7 +31,6 @@
     });
     $("appNav").classList.remove("is-open");
     if (name === "patents") renderPatentView();
-    if (name === "stats") renderStats();
     if (name === "settings") renderPatentList();
   }
 
@@ -109,7 +108,6 @@
   $("btnSortReset").addEventListener("click", function () { grid.setSort(null); updateCount(); });
   $("btnRefresh").addEventListener("click", function () { refresh(); });
   $("btnPatentData").addEventListener("click", function () { showView("settings"); });
-  $("btnStats").addEventListener("click", function () { showView("stats"); });
   $("btnImport").addEventListener("click", function () { showView("io"); });
   $("btnExport").addEventListener("click", function () { showView("io"); });
   $("btnReport").addEventListener("click", function () {
@@ -151,11 +149,43 @@
     var bar = $("alertBar");
     bar.innerHTML = "";
     groups.forEach(function (g) {
+      // 표시만 바꾼다. 건수 계산과 누르는 동작은 그대로다.
+      // 이름은 알림 문구에서 뒤에 붙은 건수만 떼어 쓴다.
+      var name = String(g.label).replace(/\s*[\d,]+건$/, "");
+
       var chip = document.createElement("button");
       chip.type = "button";
-      chip.className = "alert-chip";
+      chip.className = "alert-card";
       chip.id = "alert-" + g.key;
-      chip.textContent = g.label;
+      chip.title = g.label;
+
+      var tag = document.createElement("span");
+      tag.className = "alert-card-tag";
+      tag.textContent = "중요 확인";
+
+      var body = document.createElement("span");
+      body.className = "alert-card-body";
+      var nameEl = document.createElement("span");
+      nameEl.className = "alert-card-name";
+      nameEl.textContent = name;
+      var note = document.createElement("span");
+      note.className = "alert-card-note";
+      note.textContent = "확인 필요";
+      body.appendChild(nameEl);
+      body.appendChild(note);
+
+      var count = document.createElement("span");
+      count.className = "alert-card-count";
+      count.textContent = Number(g.count).toLocaleString("ko-KR");
+      var unit = document.createElement("span");
+      unit.className = "alert-card-unit";
+      unit.textContent = "건";
+      count.appendChild(unit);
+
+      chip.appendChild(tag);
+      chip.appendChild(body);
+      chip.appendChild(count);
+
       chip.addEventListener("click", function () {
         // 해당 자료만 보이도록 목록을 걸러 준다
         state.statusTab = "전체";
@@ -922,57 +952,6 @@
     paint();
   }
 
-  /* --------------------------------------------------------- 통계 */
-
-  function renderStats() {
-    var records = PourRecords.list(storage);
-    var counts = PourRecords.statusCounts(records);
-    var awarded = records.filter(function (r) { return r.status === "낙찰"; });
-    var amount = awarded.reduce(function (sum, r) {
-      return sum + (r.awardAmount === "" ? 0 : Number(r.awardAmount));
-    }, 0);
-    var households = records.reduce(function (sum, r) {
-      return sum + (r.households === "" ? 0 : Number(r.households));
-    }, 0);
-
-    $("statCards").innerHTML = [
-      ["전체 현장", counts["전체"].toLocaleString("ko-KR") + "건"],
-      ["낙찰", counts["낙찰"].toLocaleString("ko-KR") + "건"],
-      ["공고", counts["공고"].toLocaleString("ko-KR") + "건"],
-      ["재공고·유찰", counts["재공고(유찰)"].toLocaleString("ko-KR") + "건"],
-      ["총 세대수", households.toLocaleString("ko-KR") + "세대"],
-      ["낙찰금액 합계", PourRecords.formatAmountShort(amount)],
-      ["등록 POUR 특허", PourPatents.list(storage).length + "건"]
-    ].map(function (pair) {
-      return '<div class="stat-card"><div class="lbl">' + pair[0] + '</div><div class="val">' + pair[1] + "</div></div>";
-    }).join("");
-
-    $("statByCategory").innerHTML = groupTable(records, function (r) { return r.categories; }, "공종");
-    $("statByYear").innerHTML = groupTable(records, function (r) {
-      return [String(r.noticeDate || r.awardDate || "").slice(0, 4) || "연도 미상"];
-    }, "연도");
-  }
-
-  function groupTable(records, pick, label) {
-    var map = {};
-    records.forEach(function (r) {
-      (pick(r) || []).forEach(function (key) {
-        if (!key) return;
-        map[key] = map[key] || { total: 0, awarded: 0 };
-        map[key].total++;
-        if (r.status === "낙찰") map[key].awarded++;
-      });
-    });
-    var keys = Object.keys(map).sort();
-    if (!keys.length) return '<div class="grid-empty">자료가 없습니다.</div>';
-    return '<div class="grid-wrap"><table class="grid"><thead><tr><th>' + label +
-      "</th><th>전체</th><th>낙찰</th></tr></thead><tbody>" +
-      keys.map(function (k) {
-        return "<tr><td>" + k + '</td><td class="cell-num">' + map[k].total +
-          '</td><td class="cell-num">' + map[k].awarded + "</td></tr>";
-      }).join("") + "</tbody></table></div>";
-  }
-
   /* --------------------------------------------------- 특허 목록(설정) */
 
   function renderPatentList() {
@@ -1004,7 +983,6 @@
     updateCount();
     syncRowButtons(grid.getSelected());
     if (state.view === "patents") renderPatentView();
-    if (state.view === "stats") renderStats();
     if (state.view === "settings") renderPatentList();
   }
 

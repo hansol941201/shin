@@ -13,7 +13,6 @@ const MENUS = [
   { key: "records", label: "공고·실적" },
   { key: "patents", label: "특허별 실적" },
   { key: "io", label: "가져오기·내보내기" },
-  { key: "stats", label: "통계·분석" },
   { key: "settings", label: "설정" }
 ] as const;
 
@@ -142,7 +141,6 @@ export default function PourApp({ apiBase = "/api" }: { apiBase?: string }) {
               <button type="button" className="pour-btn" onClick={() => openNotice(null)}>＋ 새 공고</button>
               <button type="button" className="pour-btn" onClick={() => setView("io")}>⭳ 엑셀 가져오기</button>
               <button type="button" className="pour-btn" onClick={() => setView("io")}>⭱ 엑셀 내보내기</button>
-              <button type="button" className="pour-btn" onClick={() => setView("stats")}>📊 통계 보기</button>
               <button type="button" className="pour-btn ghost" onClick={() => setView("settings")}>특허자료 관리</button>
               <button type="button" className="pour-btn ghost" onClick={() => void reload()}>↻ 새로고침</button>
             </div>
@@ -256,25 +254,6 @@ export default function PourApp({ apiBase = "/api" }: { apiBase?: string }) {
           </section>
         )}
 
-        {view === "stats" && (
-          <section>
-            <h2 className="pour-view-title">통계·분석</h2>
-            <div className="pour-stat-cards">
-              {[
-                ["전체 현장", `${counts["전체"]?.toLocaleString("ko-KR") ?? 0}건`],
-                ["낙찰", `${counts["낙찰"]?.toLocaleString("ko-KR") ?? 0}건`],
-                ["공고", `${counts["공고"]?.toLocaleString("ko-KR") ?? 0}건`],
-                ["재공고·유찰", `${counts["재공고(유찰)"]?.toLocaleString("ko-KR") ?? 0}건`],
-                ["등록 POUR 특허", `${patents.length}건`]
-              ].map(([label, value]) => (
-                <div className="pour-stat-card" key={label}>
-                  <div className="lbl">{label}</div>
-                  <div className="val">{value}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <NoticePanel
