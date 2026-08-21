@@ -100,7 +100,7 @@ db.exec(`
     status TEXT, record_year TEXT, notice_date TEXT, bid_date TEXT, award_date TEXT,
     award_amount INTEGER, expected_amount INTEGER, contractor TEXT, quality TEXT,
     notice_patent_text TEXT, patent_numbers TEXT, patents_migrated INTEGER DEFAULT 0,
-    category_items TEXT,
+    category_items TEXT, record_source TEXT,
     remark TEXT, created_at TEXT, updated_at TEXT
   );
   CREATE TABLE pour_project_patents (

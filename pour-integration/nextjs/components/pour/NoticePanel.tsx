@@ -175,8 +175,15 @@ export default function NoticePanel({
       noticeMultiFlag: patents.noticeMultiFlag
     };
 
-    if (!payload.city) { setMessage({ text: "도시를 입력해 주세요.", kind: "error" }); return; }
-    if (!payload.noticeDate) { setMessage({ text: "공고일을 입력해 주세요.", kind: "error" }); return; }
+    // 새로 등록할 때만 도시·공고일을 요구한다.
+    // 엑셀에서 옮겨 온 자료에는 공고일이 없어(원본에 날짜가 없다) 여기서 막으면
+    // 그 자료는 협약서 발행번호조차 넣을 수 없게 된다.
+    if (!record) {
+      if (!payload.city) { setMessage({ text: "도시를 입력해 주세요.", kind: "error" }); return; }
+      if (!payload.noticeDate) {
+        setMessage({ text: "공고일을 입력해 주세요.", kind: "error" }); return;
+      }
+    }
 
     const dates = PourRecords.validateDates(payload);
     if (!dates.ok) {

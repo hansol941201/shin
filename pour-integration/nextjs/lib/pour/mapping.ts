@@ -27,6 +27,8 @@ export const COLUMN_MAP = {
   phone: "phone",
   households: "households",
   year: "record_year",
+  /** 어디서 들어온 자료인지 ("import" = 엑셀 이전분) */
+  source: "record_source",
   noticeDate: "notice_date",
   documentDueDate: "document_due_date",
   bidDate: "bid_date",
@@ -194,6 +196,7 @@ export function projectRowToRecord(
     phone: text(get("phone")),
     households: toNumber(get("households")),
     year: text(get("year")),
+    source: text(get("source")),
     noticeDate: text(get("noticeDate")),
     documentDueDate: text(get("documentDueDate")),
     bidDate: text(get("bidDate")),
@@ -268,6 +271,7 @@ export function recordToProjectRow(record: PourRecord & { __extra?: ProjectRow }
   set("phone", record.phone);                       // 문자열 그대로
   set("households", record.households === "" ? null : record.households);
   set("year", record.year);
+  set("source", record.source || null);
   set("noticeDate", record.noticeDate);
   set("documentDueDate", record.documentDueDate);
   set("bidDate", record.bidDate);

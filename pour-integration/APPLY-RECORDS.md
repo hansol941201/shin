@@ -68,6 +68,7 @@ python3 pour-integration/scripts/import-records.py <연도별 실적List.xlsx>
 nextjs/drizzle/0002_pour_integration.sql     새 표 3개 + projects 새 열 23개
 nextjs/drizzle/0003_pour_record_year.sql     ALTER TABLE projects ADD COLUMN record_year TEXT;
 nextjs/drizzle/0004_pour_category_items.sql  ALTER TABLE projects ADD COLUMN category_items TEXT;
+nextjs/drizzle/0005_pour_record_source.sql   ALTER TABLE projects ADD COLUMN record_source TEXT;
 ```
 
 **(나) 실행 시점 마이그레이션** — 기록 없이 배포 코드에서 직접 부를 때 (권장)
@@ -140,3 +141,6 @@ sh   pour-integration/test/run-all.sh                    # 전체
   표에 없는 이름은 임의로 정하지 않고 **기타**로 두었습니다 (이름은 그대로).
   대분류가 정해진 행 1,143건 · 기타만 있는 행 836건 — 화면에서 다시 고를 수 있습니다.
 * 지역·도시만 있고 발주처·공사명·특허·전화가 모두 빈 1줄은 실적으로 세지 않았습니다.
+* 협약서 발행번호도 만들어 내지 않습니다. 옮겨 온 행은 `record_source = "import"` 로 표시해
+  **"협약서번호 미입력" 알림에서 뺍니다** (1,979건이 알림을 덮지 않도록).
+  처리 단계 열에는 사실대로 "협약서번호 미입력" 이 보이고, 상세 수정 화면에서 직접 넣을 수 있습니다.

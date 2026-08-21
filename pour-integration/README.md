@@ -158,6 +158,11 @@ PourCategories.normalizeItem({ group: "주차장", name: "우레탄" });  // 고
 * 번호가 없을 때만 시공사·시공사 전화번호·낙찰일·낙찰금액·최종 공종을 요구합니다.
 * 낙찰인데 정리가 덜 된 행은 목록에서 **「낙찰 정보 보완」** 으로 이어서 채웁니다.
 * 번호를 지우면 **과거 번호를 되살리지 않고**, 상태를 공고로 되돌릴지 물어봅니다.
+* **"협약서번호 미입력" 알림은 프로그램에서 등록·전환한 건만 대상**입니다.
+  엑셀에서 옮겨 온 행(`source: "import"`)에는 애초에 번호가 없어 1,979건이 알림을 덮기 때문입니다.
+  번호를 지어내지 않고, 처리 단계 열에는 사실대로 표시하며, 상세 수정 화면에서 직접 넣을 수 있습니다.
+* 새 등록에만 도시·공고일을 요구합니다. 옛 자료에는 공고일이 없어(원본에 날짜가 없다)
+  여기서 막으면 협약서 발행번호조차 넣을 수 없게 됩니다.
 
 ```js
 PourRecords.update(id, { agreementNo: "HS-2026-001" }, storage);   // → 상태 낙찰
@@ -244,7 +249,7 @@ sh pour-integration/test/run-all.sh
 | `test/edit.test.js` | 수정 기능, 미기재 알림, 수정 이력 | 20건 통과 |
 | `test/multipatent.test.js` | POUR/타사 분리, 다특허, 자료 이전 | 30건 통과 |
 | `test/categories.test.js` | 공종 분류표, 자동 분류, 기존 자료 보존 | 26건 통과 |
-| `test/agreement.test.js` | 협약서 발행번호 기준 공고 → 낙찰 흐름 | 22건 통과 |
+| `test/agreement.test.js` | 협약서 발행번호 기준 공고 → 낙찰 흐름 | 27건 통과 |
 | `test/real-excel.test.js` | 첨부해 주신 POUR 특허 엑셀 원본으로 검증 | 19건 통과 |
 | `test/browser.test.js` | 모듈 동작·레이아웃 (demo.html) | 85건 통과 |
 | `test/app.test.js` | 메인 화면 동작 (app.html) | 48건 통과 |

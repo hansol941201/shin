@@ -67,7 +67,7 @@ const NEW_COLUMNS = [
   ["previous_fail_date", "TEXT"], ["original_project_id", "TEXT"],
   ["previous_project_id", "TEXT"], ["result_entered_at", "TEXT"], ["updated_at", "TEXT"],
   ["patents_migrated", "INTEGER DEFAULT 0"], ["record_year", "TEXT"],
-  ["category_items", "TEXT"]
+  ["category_items", "TEXT"], ["record_source", "TEXT"]
 ];
 
 const q = (sql) => db.prepare(sql).get();

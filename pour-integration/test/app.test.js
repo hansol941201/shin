@@ -853,6 +853,66 @@ function section(t) { console.log("\n" + t); }
     await page.waitForTimeout(200);
   });
 
+  await test("공고일이 없는 옛 자료도 상세 수정으로 협약서 발행번호를 넣을 수 있다", async () => {
+    // 엑셀에서 옮겨 온 자료에는 공고일이 없다. 필수 검사에 걸려 저장이 막히면 안 된다.
+    await page.evaluate(() => {
+      const PourRecords = window.PourRecords;
+      PourRecords.save({
+        id: "rec-imp-9001", source: "import", client: "옛자료수정시험",
+        city: "하남", status: "낙찰", noticeDate: "",
+        patentNumbers: ["1935719"], patentConfirmed: true
+      }, localStorage);
+    });
+    await page.click("#btnRefresh");
+    await page.fill("#gridSearch", "옛자료수정시험");
+    await page.waitForTimeout(250);
+
+    const heads = await page.$$eval("#recordsGrid .grid thead th",
+      els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
+    let row = await page.$$eval("#recordsGrid .grid tbody tr:first-child td",
+      els => els.map(e => e.innerText.trim()));
+    assert.strictEqual(row[heads.indexOf("처리 단계")], "협약서번호 미입력", row.join(" | "));
+
+    await page.dblclick("#recordsGrid .grid tbody tr:first-child");
+    await page.waitForSelector("#noticePanel.is-open");
+    await page.waitForTimeout(250);
+    await page.fill("#fAgreement", "HS-OLD-001");
+    await page.click("#panelSave");
+    await page.waitForTimeout(350);
+    assert.strictEqual(await page.isVisible("#noticePanel.is-open"), false, "저장이 막힘");
+
+    row = await page.$$eval("#recordsGrid .grid tbody tr:first-child td",
+      els => els.map(e => e.innerText.trim()));
+    assert.strictEqual(row[heads.indexOf("협약서 발행번호")], "HS-OLD-001", row.join(" | "));
+    assert.strictEqual(row[heads.indexOf("처리 단계")], "추가 입력 필요");
+    await page.fill("#gridSearch", "");
+    await page.waitForTimeout(200);
+  });
+
+  await test("엑셀 이전분은 협약서번호 미입력 알림에 올라오지 않는다", async () => {
+    // 위 시험에서 이전분 한 건은 번호가 채워졌다. 번호 없는 이전분을 하나 더 만든다.
+    await page.evaluate(() => {
+      window.PourRecords.save({
+        id: "rec-imp-9002", source: "import", client: "이전분알림시험",
+        city: "하남", status: "낙찰", patentNumbers: ["1935719"], patentConfirmed: true
+      }, localStorage);
+    });
+    await page.click("#btnRefresh");
+    await page.waitForTimeout(300);
+    const labels = await page.$$eval("#alertBar .alert-chip", els => els.map(e => e.textContent.trim()));
+    const chip = labels.filter(t => t.includes("협약서번호 미입력"))[0];
+    if (chip) {
+      // 알림이 있다면 이전분은 그 안에 없어야 한다
+      await page.click("#alert-noAgreement");
+      await page.waitForTimeout(250);
+      const clients = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(9)",
+        els => els.map(e => e.textContent.trim()));
+      assert.ok(!clients.includes("이전분알림시험"), clients.join(", "));
+      await page.click("#btnRefresh");
+      await page.waitForTimeout(200);
+    }
+  });
+
   await test("콘솔 오류 없음", async () => {
     assert.deepStrictEqual(consoleErrors, []);
   });

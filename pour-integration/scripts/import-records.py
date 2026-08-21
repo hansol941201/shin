@@ -240,6 +240,8 @@ def to_record(row, index):
         remark = (remark + "\n" + note).strip() if remark else note
     return {
         "id": "rec-imp-%04d" % index,
+        # 엑셀에서 옮겨 온 행 표시. "협약서번호 미입력" 알림 대상에서 빼는 데만 쓴다.
+        "source": "import",
         "status": "낙찰",
         "year": row["year"],
         "categories": row["categories"],
@@ -280,7 +282,7 @@ def build_sql(records):
         "-- 원칙",
         "--   · DELETE / DROP / TRUNCATE 를 쓰지 않습니다 (기존 운영 자료 보존)",
         "--   · 같은 id 로 다시 실행해도 행이 늘지 않습니다 (UPSERT)",
-        "--   · 0002~0004 마이그레이션(record_year·category_items 열 포함)을 먼저 실행하세요",
+        "--   · 0002~0005 마이그레이션(record_year·category_items·record_source 포함)을 먼저 실행하세요",
         "",
         "BEGIN TRANSACTION;",
         "",
@@ -289,6 +291,8 @@ def build_sql(records):
     for rec in records:
         cols = [
             ("id", rec["id"]), ("status", rec["status"]), ("record_year", rec["year"]),
+            # 엑셀 이전분 표시. 협약서번호 미입력 알림에서 빼는 데만 쓴다.
+            ("record_source", rec.get("source") or None),
             ("region", rec["region"]), ("city", rec["city"]), ("client", rec["client"]),
             ("project_name", "\n".join(rec["projectNames"])),
             ("category", "\n".join(rec["categories"])),

@@ -242,6 +242,63 @@ test("추가 입력 필요·협약서번호 미입력이 각각 모인다", () =
   assert.deepStrictEqual(found.noAgreement.records.map(r => r.client), ["알림나"]);
 });
 
+test("엑셀에서 옮겨 온 행은 협약서번호 미입력 알림에서 뺀다", () => {
+  const store = memoryStorage();
+  // 엑셀 이전분 — 번호가 아예 없다
+  PourRecords.save({
+    id: "rec-imp-0001", source: "import", client: "엑셀이전아파트", city: "하남",
+    status: "낙찰", patentConfirmed: true, patentNumbers: ["1935719"]
+  }, store);
+  // 프로그램에서 등록한 건
+  PourRecords.save({
+    id: "rec-app-1", client: "앱등록아파트", city: "하남",
+    status: "낙찰", patentConfirmed: true, patentNumbers: ["1935719"]
+  }, store);
+
+  const found = {};
+  PourRecords.alerts(PourRecords.list(store), memoryStorage())
+    .forEach((x) => { found[x.key] = x; });
+  assert.ok(found.noAgreement, "알림 자체가 없음");
+  assert.deepStrictEqual(found.noAgreement.records.map(r => r.client), ["앱등록아파트"]);
+});
+
+test("id 가 rec-imp- 로 시작하면 source 가 없어도 이전분으로 본다", () => {
+  const legacy = PourRecords.normalize({ id: "rec-imp-9999", status: "낙찰" });
+  assert.strictEqual(PourRecords.isImported(legacy), true);
+  const made = PourRecords.normalize({ id: "rec-abc", status: "낙찰" });
+  assert.strictEqual(PourRecords.isImported(made), false);
+});
+
+test("이전분이어도 처리 단계는 사실대로 보여 준다", () => {
+  const rec = PourRecords.normalize({ id: "rec-imp-1", source: "import", status: "낙찰" });
+  assert.strictEqual(PourRecords.agreementStage(rec), "협약서번호 미입력");
+});
+
+test("이전분도 번호를 직접 넣으면 정리가 이어진다", () => {
+  const store = memoryStorage();
+  const rec = PourRecords.save({
+    id: "rec-imp-0002", source: "import", client: "이전분수정", city: "하남",
+    status: "낙찰", contractor: "가", contractorPhone: "1",
+    awardDate: "2024-01-01", awardAmount: 1, categories: ["보도블럭"]
+  }, store);
+  assert.strictEqual(PourRecords.agreementStage(rec), "협약서번호 미입력");
+  const after = PourRecords.update(rec.id, { agreementNo: "HS-2024-999" }, store);
+  assert.strictEqual(after.ok, true);
+  assert.strictEqual(after.record.agreementNo, "HS-2024-999");
+  assert.strictEqual(PourRecords.agreementStage(after.record), "정리 완료");
+  assert.strictEqual(after.record.source, "import", "이전분 표시는 그대로 남는다");
+});
+
+test("번호가 없어도 이전분의 번호를 지어내지 않는다", () => {
+  const store = memoryStorage();
+  const rec = PourRecords.save({
+    id: "rec-imp-0003", source: "import", client: "지어내기금지", city: "하남", status: "낙찰"
+  }, store);
+  assert.strictEqual(rec.agreementNo, "");
+  const after = PourRecords.update(rec.id, { remark: "메모" }, store);
+  assert.strictEqual(after.record.agreementNo, "", "번호가 저절로 생겼다");
+});
+
 test("공고 상태(확인 대기)는 알림에 올라오지 않는다", () => {
   const store = memoryStorage();
   newNotice(store, "확인대기아파트");

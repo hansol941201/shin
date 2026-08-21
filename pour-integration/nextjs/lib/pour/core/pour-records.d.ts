@@ -43,6 +43,10 @@ declare const PourRecords: {
   AWARD_REQUIRED: { key: string; label: string }[];
   /** 번호를 지웠을 때 되돌릴지 물어보는 문구 */
   AGREEMENT_CLEARED_MESSAGE: string;
+  /** 엑셀 이전분을 나타내는 값 ("import") */
+  IMPORT_SOURCE: string;
+  /** 엑셀에서 옮겨 온 행인지 (협약서번호 미입력 알림에서 뺀다) */
+  isImported(record: PourRecord | null | undefined): boolean;
   hasAgreement(record: PourRecord | null | undefined): boolean;
   /** 낙찰인데 아직 비어 있는 항목 이름 */
   missingAwardFields(record: PourRecord | null | undefined): string[];

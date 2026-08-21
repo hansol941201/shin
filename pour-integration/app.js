@@ -399,8 +399,13 @@
     var msg = $("panelMsg");
     msg.className = "form-msg error";
 
-    if (!data.city) { msg.textContent = "도시를 입력해 주세요."; return; }
-    if (!data.noticeDate) { msg.textContent = "공고일을 입력해 주세요."; return; }
+    // 새로 등록할 때만 도시·공고일을 요구한다.
+    // 엑셀에서 옮겨 온 자료에는 공고일이 없다(원본에 날짜가 없어 지어내지 않았다).
+    // 여기서 막으면 그 자료는 협약서 발행번호조차 넣을 수 없게 된다.
+    if (!state.editingId) {
+      if (!data.city) { msg.textContent = "도시를 입력해 주세요."; return; }
+      if (!data.noticeDate) { msg.textContent = "공고일을 입력해 주세요."; return; }
+    }
     var dates = PourRecords.validateDates(data);
     if (!dates.ok) {
       msg.textContent = dates.errors.map(function (e) { return e.message; }).join("\n");

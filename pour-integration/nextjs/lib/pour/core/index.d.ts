@@ -62,6 +62,8 @@ export interface PourRecord {
   phone: string;
   households: number | "";
   year: string;
+  /** 어디서 들어온 자료인지 ("import" = 연도별 실적 List 이전분) */
+  source: string;
   noticeDate: string;
   documentDueDate: string;
   bidDate: string;

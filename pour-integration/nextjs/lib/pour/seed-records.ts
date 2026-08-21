@@ -25,6 +25,7 @@ export interface SeedRecord {
   status: string;
   year: string;
   categories: string[];
+  source?: string;
   categoryItems?: { group: string; name: string }[];
   region: string;
   city: string;
@@ -74,6 +75,8 @@ export interface SeedOptions extends StoreOptions {
 const COLUMNS: ReadonlyArray<readonly [string, (r: SeedRecord) => unknown]> = [
   ["status", (r) => r.status],
   ["record_year", (r) => r.year],
+  // 엑셀 이전분 표시. 협약서번호 미입력 알림에서 빼는 데만 쓴다.
+  ["record_source", (r) => text(r.source)],
   ["region", (r) => r.region],
   ["city", (r) => r.city],
   ["client", (r) => r.client],

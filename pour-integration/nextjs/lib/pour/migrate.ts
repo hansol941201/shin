@@ -41,7 +41,9 @@ export const PROJECT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   /** 연도별 실적 List 에서 옮겨 온 연도. 원본에 날짜가 없어 연도만 담는다. */
   ["record_year", "TEXT"],
   /** 공종의 대분류+세부 짝. 기존 공종 열(category)은 그대로 두고 옆에 더한다. */
-  ["category_items", "TEXT"]
+  ["category_items", "TEXT"],
+  /** 어디서 들어온 자료인지 ("import" = 연도별 실적 List 이전분). 알림 대상을 가르는 데만 쓴다. */
+  ["record_source", "TEXT"]
 ] as const;
 
 /** 새로 만드는 표와 색인. 전부 IF NOT EXISTS 라 기존 것을 덮지 않는다. */

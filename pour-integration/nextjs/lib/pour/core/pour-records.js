@@ -57,6 +57,23 @@
   /** 협약서 발행번호가 들어오면 낙찰로 바꿀 수 있는 상태 */
   var AGREEMENT_PROMOTES = ["공고", "재공고", "유찰"];
 
+  /**
+   * 엑셀에서 옮겨 온 행인지.
+   *
+   * 연도별 실적 List 에는 협약서 발행번호가 아예 없다. 이 행들까지 알림에 넣으면
+   * 알림이 1,900건이 넘어 정작 봐야 할 것이 묻힌다. 그래서 "협약서번호 미입력"
+   * 알림은 프로그램에서 새로 등록·전환한 건만 대상으로 한다.
+   * (번호를 지어내지 않는다. 상세 수정 화면에서 직접 넣는 길은 그대로 열어 둔다.)
+   */
+  var IMPORT_SOURCE = "import";
+  var IMPORT_ID_PREFIX = "rec-imp-";
+
+  function isImported(record) {
+    if (!record) return false;
+    if (record.source === IMPORT_SOURCE) return true;
+    return String(record.id || "").indexOf(IMPORT_ID_PREFIX) === 0;   // 옛 자료용 대비책
+  }
+
   /** 번호를 지웠을 때 되돌릴지 물어보는 문구 */
   var AGREEMENT_CLEARED_MESSAGE =
     "협약서 발행번호를 지웠습니다. 상태를 \"공고\"로 되돌릴까요?\n" +
@@ -288,6 +305,8 @@
       originalProjectId: String(r.originalProjectId || r.originalNoticeId || "").trim(),
       previousProjectId: String(r.previousProjectId || "").trim(),
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
+      // 어디서 들어온 자료인지 (엑셀 이전분은 "import"). 알림 대상을 가르는 데만 쓴다.
+      source: String(r.source || "").trim(),
       year: String(r.year || "").trim(),
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
@@ -867,10 +886,11 @@
       if (conflictingPatents(rec).length ||
           (stats.status === "POUR 특허 검토 필요")) needsCheck.push(rec);
 
-      // 협약서 발행번호를 기준으로 본 처리 단계
+      // 협약서 발행번호를 기준으로 본 처리 단계.
+      // 엑셀에서 옮겨 온 행은 애초에 번호가 없으므로 미입력 알림에서 뺀다.
       var stage = agreementStage(rec);
       if (stage === "추가 입력 필요") needsMore.push(rec);
-      if (stage === "협약서번호 미입력") noAgreement.push(rec);
+      if (stage === "협약서번호 미입력" && !isImported(rec)) noAgreement.push(rec);
     });
 
     var out = [];
@@ -1200,6 +1220,8 @@
     QUALITY_OPTIONS: QUALITY_OPTIONS,
     AGREEMENT_PROMOTES: AGREEMENT_PROMOTES,
     AWARD_REQUIRED: AWARD_REQUIRED,
+    IMPORT_SOURCE: IMPORT_SOURCE,
+    isImported: isImported,
     hasAgreement: hasAgreement,
     missingAwardFields: missingAwardFields,
     agreementStage: agreementStage,
