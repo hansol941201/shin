@@ -67,7 +67,8 @@ const NEW_COLUMNS = [
   ["previous_fail_date", "TEXT"], ["original_project_id", "TEXT"],
   ["previous_project_id", "TEXT"], ["result_entered_at", "TEXT"], ["updated_at", "TEXT"],
   ["patents_migrated", "INTEGER DEFAULT 0"], ["record_year", "TEXT"],
-  ["category_items", "TEXT"], ["record_source", "TEXT"]
+  ["category_items", "TEXT"], ["record_source", "TEXT"],
+  ["source_ref", "TEXT"], ["duplicate_of", "TEXT"]
 ];
 
 const q = (sql) => db.prepare(sql).get();
@@ -121,9 +122,9 @@ const after = {
 };
 const years = db.prepare(
   "SELECT record_year y, COUNT(*) c FROM projects WHERE id LIKE 'rec-imp-%' GROUP BY y ORDER BY y DESC").all();
-const dup = q(`SELECT COUNT(*) c FROM (
-  SELECT client, project_name FROM projects WHERE id LIKE 'rec-imp-%'
-  GROUP BY client, project_name HAVING COUNT(*) > 1)`).c;
+const srcRef = q(`SELECT COUNT(*) total,
+  SUM(CASE WHEN source_ref IS NULL OR source_ref = '' THEN 1 ELSE 0 END) missing
+  FROM projects WHERE id LIKE 'rec-imp-%'`);
 const phone = q(`SELECT
   SUM(CASE WHEN phone LIKE '0%' THEN 1 ELSE 0 END) lead0,
   SUM(CASE WHEN typeof(phone) = 'integer' THEN 1 ELSE 0 END) asnum
@@ -154,7 +155,8 @@ check("기존 열이 하나도 사라지지 않음",
 check("두 번 실행해도 늘지 않음 (id 기준 UPSERT)",
   once.total === twice.total && once.patents === twice.patents,
   `행 ${once.total}→${twice.total} · 특허 ${once.patents}→${twice.patents}`);
-check("겹치는 실적 없음", dup === 0, `${dup}묶음`);
+check("모든 행에 원본 위치가 남음", srcRef.missing === 0,
+  `${srcRef.total}행 중 빠진 것 ${srcRef.missing}건`);
 check("전화번호가 문자열로 남음", phone.asnum === 0, `앞자리0 ${phone.lead0}건 · 숫자로 변한 것 ${phone.asnum}건`);
 check("없던 날짜를 만들지 않음", dates.n === 0 && dates.b === 0 && dates.a === 0,
   `공고일 ${dates.n} · 개찰일 ${dates.b} · 낙찰일 ${dates.a}`);

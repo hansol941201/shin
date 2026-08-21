@@ -36,7 +36,9 @@ const NEW_COLUMNS = [
   ["patents_migrated", "INTEGER DEFAULT 0"],
   ["record_year", "TEXT"],
   ["category_items", "TEXT"],
-  ["record_source", "TEXT"]
+  ["record_source", "TEXT"],
+  ["source_ref", "TEXT"],
+  ["duplicate_of", "TEXT"]
 ];
 
 function arg(name, fallback) {

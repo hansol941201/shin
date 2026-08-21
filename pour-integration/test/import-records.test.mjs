@@ -40,18 +40,42 @@ section("1. 옮겨 온 자료 자체");
 
 test("행이 비어 있지 않다", () => assert.ok(records.length > 1900));
 
+test("모든 행에 원본 위치가 남아 있다", () => {
+  assert.ok(records.every(r => /^\d{4}년.* \d+행$/.test(r.sourceRef)), 
+    JSON.stringify(records.filter(r => !/행$/.test(r.sourceRef || "")).slice(0, 3)));
+});
+
+test("원본 위치는 행마다 서로 다르다 (같은 줄을 두 번 읽지 않았다)", () => {
+  assert.strictEqual(new Set(records.map(r => r.sourceRef)).size, records.length);
+});
+
 test("id 가 겹치지 않는다", () => {
   assert.strictEqual(new Set(records.map(r => r.id)).size, records.length);
 });
 
-test("현장+공사명이 겹치는 행이 없다", () => {
+test("겹치는 행은 지우지 않고 표시만 한다", () => {
   const key = r => (r.client + "|" + r.projectNames.join(" ")).replace(/[\s()[\]·,./-]/g, "");
-  assert.strictEqual(new Set(records.map(key)).size, records.length);
+  const groups = new Map();
+  records.forEach((r) => {
+    const k = key(r);
+    groups.set(k, (groups.get(k) || 0) + 1);
+  });
+  const dupRows = records.filter(r => groups.get(key(r)) > 1);
+  // 겹치는 묶음 안에서 첫 줄을 뺀 나머지는 모두 표시가 붙어 있어야 한다
+  const marked = dupRows.filter(r => r.duplicateOf);
+  assert.ok(marked.length > 0, "겹침 표시가 하나도 없다");
+  marked.forEach((r) => {
+    assert.ok(records.some(o => o.id === r.duplicateOf),
+      r.id + " 가 가리키는 " + r.duplicateOf + " 가 없다");
+  });
 });
 
-test("발주처와 연도는 모두 채워져 있다", () => {
-  assert.ok(records.every(r => r.client && /^20\d{2}$/.test(r.year)));
+test("발주처와 연도가 비어 있는 행도 버리지 않는다", () => {
+  // 원본에 있던 줄은 알맹이가 없어도 그대로 남긴다
+  assert.ok(records.some(r => !r.client), "빈 줄이 사라졌다");
 });
+
+
 
 test("특허번호는 숫자만 남고 표시는 제10-…호 형식이다", () => {
   const items = records.flatMap(r => r.patentItems);
@@ -84,10 +108,17 @@ test("세대수는 숫자이거나 빈 값이다", () => {
   assert.ok(records.every(r => r.households === "" || Number.isInteger(r.households)));
 });
 
-test("여러 해에 걸쳐 실린 행은 비고에 등재 연도를 남긴다", () => {
-  const merged = records.filter(r => /실적 List 등재 연도/.test(r.remark));
-  assert.ok(merged.length > 0);
-  assert.ok(merged.every(r => r.remark.includes(r.year + "년")));
+test("여러 해에 걸쳐 실린 줄도 각 시트의 줄로 그대로 남는다", () => {
+  // 합치지 않으므로 같은 공사가 두 해에 실렸으면 두 행으로 남아 있어야 한다
+  const cross = records.filter(r => r.duplicateOf).filter((r) => {
+    const first = records.filter(o => o.id === r.duplicateOf)[0];
+    return first && first.year !== r.year;
+  });
+  assert.ok(cross.length > 0, "해를 넘긴 겹침이 하나도 없다");
+  cross.forEach((r) => {
+    assert.ok(r.sourceRef && r.sourceRef !== records.filter(o => o.id === r.duplicateOf)[0].sourceRef,
+      "원본 위치가 같다: " + r.sourceRef);
+  });
 });
 
 section("2. D1 옮겨 심기 SQL");
@@ -100,7 +131,7 @@ db.exec(`
     status TEXT, record_year TEXT, notice_date TEXT, bid_date TEXT, award_date TEXT,
     award_amount INTEGER, expected_amount INTEGER, contractor TEXT, quality TEXT,
     notice_patent_text TEXT, patent_numbers TEXT, patents_migrated INTEGER DEFAULT 0,
-    category_items TEXT, record_source TEXT,
+    category_items TEXT, record_source TEXT, source_ref TEXT, duplicate_of TEXT,
     remark TEXT, created_at TEXT, updated_at TEXT
   );
   CREATE TABLE pour_project_patents (

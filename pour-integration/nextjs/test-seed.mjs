@@ -202,11 +202,21 @@ await test("세 번째도 마찬가지", async () => {
   assert.strictEqual(one("SELECT COUNT(*) c FROM projects").c, rows);
 });
 
-await test("겹치는 실적이 없음", () => {
-  const dup = one(`SELECT COUNT(*) c FROM (
-    SELECT client, project_name FROM projects WHERE id LIKE 'rec-imp-%'
-    GROUP BY client, project_name HAVING COUNT(*) > 1)`).c;
-  assert.strictEqual(dup, 0);
+await test("모든 행에 원본 위치가 남고 겹치는 줄은 표시만 한다", () => {
+  // 원본의 모든 줄을 그대로 옮기므로 겹치는 줄도 지우지 않는다.
+  // 대신 어느 줄에서 왔는지(source_ref)와 어느 줄과 겹치는지(duplicate_of)를 남긴다.
+  const r = one(`SELECT
+    COUNT(*) total,
+    SUM(CASE WHEN source_ref IS NULL OR source_ref = '' THEN 1 ELSE 0 END) missing,
+    SUM(CASE WHEN duplicate_of IS NOT NULL AND duplicate_of <> '' THEN 1 ELSE 0 END) marked
+    FROM projects WHERE id LIKE 'rec-imp-%'`);
+  assert.strictEqual(r.missing, 0, `원본 위치가 빠진 행 ${r.missing}건`);
+  assert.ok(r.marked > 0, "겹침 표시가 하나도 없다");
+  // 표시가 가리키는 행이 실제로 있어야 한다
+  const dangling = one(`SELECT COUNT(*) c FROM projects a
+    WHERE a.duplicate_of IS NOT NULL AND a.duplicate_of <> ''
+      AND NOT EXISTS (SELECT 1 FROM projects b WHERE b.id = a.duplicate_of)`).c;
+  assert.strictEqual(dangling, 0, `가리키는 행이 없는 표시 ${dangling}건`);
 });
 
 section("4. 사람이 고친 자료 보호");

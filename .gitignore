@@ -15,3 +15,7 @@ pour-integration/nextjs/.tmp-build/
 pour-integration/test/fixtures-records.json
 pour-integration/nextjs/drizzle/seed-records.sql
 pour-integration/preview-records.html
+
+# 파이썬 임시 파일
+__pycache__/
+*.pyc

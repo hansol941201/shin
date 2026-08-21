@@ -88,3 +88,5 @@ CREATE INDEX IF NOT EXISTS idx_pph_project ON pour_project_history (project_id, 
 -- ALTER TABLE projects ADD COLUMN record_year             TEXT;
 -- ALTER TABLE projects ADD COLUMN category_items          TEXT;
 -- ALTER TABLE projects ADD COLUMN record_source           TEXT;
+-- ALTER TABLE projects ADD COLUMN source_ref              TEXT;
+-- ALTER TABLE projects ADD COLUMN duplicate_of            TEXT;

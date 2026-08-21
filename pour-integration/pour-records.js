@@ -171,6 +171,8 @@
     // 공종 대분류. 세부 공종(공종 열)은 그대로 두고 대분류만 따로 보여 준다.
     { key: "categoryGroups", title: "공종 대분류",       type: "list",   width: 12 },
     { key: "categoryItems",  title: "공종 (대분류·세부)", type: "categoryPairs", width: 20 },
+    { key: "sourceRef",      title: "원본 위치",          type: "text",   width: 14 },
+    { key: "duplicateOf",    title: "겹치는 줄",          type: "text",   width: 14 },
     { key: "__agreementStage", title: "처리 단계",         type: "agreementStage", width: 14 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
     { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
@@ -307,6 +309,10 @@
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
       // 어디서 들어온 자료인지 (엑셀 이전분은 "import"). 알림 대상을 가르는 데만 쓴다.
       source: String(r.source || "").trim(),
+      // 원본 위치 ("2025년 348행"). 어느 시트 몇 번째 줄에서 왔는지 되짚을 수 있게 남긴다.
+      sourceRef: String(r.sourceRef || "").trim(),
+      // 겹치는 줄이면 먼저 나온 줄의 id. 지우지 않고 표시만 한다.
+      duplicateOf: String(r.duplicateOf || "").trim(),
       year: String(r.year || "").trim(),
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
@@ -398,6 +404,7 @@
   // 수정 이력에 남길 항목 이름
   var FIELD_LABELS = {
     categories: "공종", categoryItems: "공종(대분류·세부)", region: "지역", city: "도시",
+    sourceRef: "원본 위치", duplicateOf: "겹치는 줄",
     patentNumbers: "POUR 적용 특허번호", patentNames: "특허명·공법명",
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",

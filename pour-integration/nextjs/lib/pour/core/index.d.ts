@@ -64,6 +64,10 @@ export interface PourRecord {
   year: string;
   /** 어디서 들어온 자료인지 ("import" = 연도별 실적 List 이전분) */
   source: string;
+  /** 원본 위치 ("2025년 348행") */
+  sourceRef: string;
+  /** 겹치는 줄이면 먼저 나온 줄의 id */
+  duplicateOf: string;
   noticeDate: string;
   documentDueDate: string;
   bidDate: string;

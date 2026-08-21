@@ -6,8 +6,10 @@ POUR 공법 실적 List 엑셀(연도별 시트)을 앱 실적 자료로 옮긴�
 - 시트 이름의 연도를 그대로 record.year 로 쓴다. (원본에 날짜가 없으므로 날짜는 만들어 내지 않는다)
 - 특허번호 칸의 숫자는 POUR 특허 항목으로, 숫자가 없는 표기("POUR공법" 등)는
   공고문 특허·공법 원문(noticePatentText)에 그대로 남긴다.
-- 같은 현장·같은 공사가 여러 시트에 반복되면 한 행으로 합친다. 값이 빈 칸만 채워 넣으므로
-  어느 시트의 정보도 사라지지 않는다.
+- 모든 시트의 모든 줄을 하나도 빠뜨리지 않고 옮긴다.
+  겹치는 줄도 지우거나 합치지 않고 그대로 남기되, 어느 줄과 겹치는지 표시만 해 둔다.
+  (--merge 를 주면 예전처럼 겹치는 줄을 한 행으로 합친다)
+- 모든 행에 원본 위치(시트·줄 번호)를 남겨 언제든 되짚을 수 있게 한다.
 
 사용: python3 scripts/import-records.py <엑셀경로> [출력 JSON] [출력 SQL]
 """
@@ -176,8 +178,7 @@ def read_sheet(ws, year):
             "contractor": one_line(cells[COL["contractor"] - 1]),
             "remark": text(cells[COL["note"] - 1]),
         }
-        if not is_empty_row(row):
-            rows.append(row)
+        rows.append(row)          # 원본에 있던 줄은 하나도 빼지 않는다
     return rows
 
 
@@ -242,6 +243,10 @@ def to_record(row, index):
         "id": "rec-imp-%04d" % index,
         # 엑셀에서 옮겨 온 행 표시. "협약서번호 미입력" 알림 대상에서 빼는 데만 쓴다.
         "source": "import",
+        # 원본 위치. 어느 시트 몇 번째 줄에서 왔는지 되짚을 수 있게 남긴다.
+        "sourceRef": "%s %d행" % (row["sheet"], row["sourceRow"]),
+        # 겹치는 줄이면 먼저 나온 줄의 id. 지우지 않고 표시만 한다.
+        "duplicateOf": row.get("duplicateOf", ""),
         "status": "낙찰",
         "year": row["year"],
         "categories": row["categories"],
@@ -293,6 +298,8 @@ def build_sql(records):
             ("id", rec["id"]), ("status", rec["status"]), ("record_year", rec["year"]),
             # 엑셀 이전분 표시. 협약서번호 미입력 알림에서 빼는 데만 쓴다.
             ("record_source", rec.get("source") or None),
+            ("source_ref", rec.get("sourceRef") or None),
+            ("duplicate_of", rec.get("duplicateOf") or None),
             ("region", rec["region"]), ("city", rec["city"]), ("client", rec["client"]),
             ("project_name", "\n".join(rec["projectNames"])),
             ("category", "\n".join(rec["categories"])),
@@ -342,10 +349,13 @@ def main():
 
     for row in raw:
         row["years"] = [row["year"]] if row["year"] else []
+        row["duplicateOf"] = ""
 
+    merge_mode = "--merge" in sys.argv
     duplicates = 0
 
     def collapse(rows, key_of):
+        """겹치는 줄을 한 행으로 합친다 (--merge 일 때만 쓴다)."""
         nonlocal duplicates
         table, order = {}, []
         for row in rows:
@@ -358,8 +368,27 @@ def main():
                 order.append(k)
         return [table[k] for k in order]
 
-    rows = collapse(raw, strict_key)          # 완전히 같은 줄부터 합치고
-    rows = collapse(rows, loose_key)          # 표기만 다른 겹침을 한 번 더 합친다
+    def mark(rows, key_of):
+        """겹치는 줄을 지우지 않고 표시만 한다. 먼저 나온 줄의 자리를 가리킨다."""
+        nonlocal duplicates
+        first = {}
+        for i, row in enumerate(rows):
+            k = key_of(row)
+            if k in first:
+                if not row["duplicateOf"]:
+                    row["duplicateOf"] = "rec-imp-%04d" % (first[k] + 1)
+                    duplicates += 1
+            else:
+                first[k] = i
+        return rows
+
+    if merge_mode:
+        rows = collapse(raw, strict_key)       # 완전히 같은 줄부터 합치고
+        rows = collapse(rows, loose_key)       # 표기만 다른 겹침을 한 번 더 합친다
+    else:
+        # 기본은 하나도 빼지 않는다. 겹치는 줄은 남겨 두고 표시만 한다.
+        rows = mark(raw, strict_key)
+        rows = mark(rows, loose_key)
 
     records = [to_record(row, i + 1) for i, row in enumerate(rows)]
 
@@ -372,7 +401,11 @@ def main():
 
     for name, n in per_sheet:
         print("  %-12s %4d행" % (name, n))
-    print("원본 합계 %d행 / 중복 병합 %d행 / 최종 %d행" % (len(raw), duplicates, len(records)))
+    if merge_mode:
+        print("원본 합계 %d행 / 중복 병합 %d행 / 최종 %d행" % (len(raw), duplicates, len(records)))
+    else:
+        print("원본 합계 %d행 / 그대로 옮김 %d행 (겹치는 줄 %d개는 지우지 않고 표시만)"
+              % (len(raw), len(records), duplicates))
     print("→ %s" % out)
     print("→ %s" % sql_out)
 

@@ -43,7 +43,11 @@ export const PROJECT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   /** 공종의 대분류+세부 짝. 기존 공종 열(category)은 그대로 두고 옆에 더한다. */
   ["category_items", "TEXT"],
   /** 어디서 들어온 자료인지 ("import" = 연도별 실적 List 이전분). 알림 대상을 가르는 데만 쓴다. */
-  ["record_source", "TEXT"]
+  ["record_source", "TEXT"],
+  /** 원본 위치 ("2025년 348행"). 엑셀 어느 줄에서 왔는지 되짚기 위해 남긴다. */
+  ["source_ref", "TEXT"],
+  /** 겹치는 줄이면 먼저 나온 줄의 id. 지우지 않고 표시만 한다. */
+  ["duplicate_of", "TEXT"]
 ] as const;
 
 /** 새로 만드는 표와 색인. 전부 IF NOT EXISTS 라 기존 것을 덮지 않는다. */

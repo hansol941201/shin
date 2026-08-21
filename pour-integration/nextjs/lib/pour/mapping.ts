@@ -29,6 +29,10 @@ export const COLUMN_MAP = {
   year: "record_year",
   /** 어디서 들어온 자료인지 ("import" = 엑셀 이전분) */
   source: "record_source",
+  /** 원본 위치 ("2025년 348행") */
+  sourceRef: "source_ref",
+  /** 겹치는 줄이면 먼저 나온 줄의 id */
+  duplicateOf: "duplicate_of",
   noticeDate: "notice_date",
   documentDueDate: "document_due_date",
   bidDate: "bid_date",
@@ -197,6 +201,8 @@ export function projectRowToRecord(
     households: toNumber(get("households")),
     year: text(get("year")),
     source: text(get("source")),
+    sourceRef: text(get("sourceRef")),
+    duplicateOf: text(get("duplicateOf")),
     noticeDate: text(get("noticeDate")),
     documentDueDate: text(get("documentDueDate")),
     bidDate: text(get("bidDate")),
@@ -272,6 +278,8 @@ export function recordToProjectRow(record: PourRecord & { __extra?: ProjectRow }
   set("households", record.households === "" ? null : record.households);
   set("year", record.year);
   set("source", record.source || null);
+  set("sourceRef", record.sourceRef || null);
+  set("duplicateOf", record.duplicateOf || null);
   set("noticeDate", record.noticeDate);
   set("documentDueDate", record.documentDueDate);
   set("bidDate", record.bidDate);

@@ -26,6 +26,8 @@ export interface SeedRecord {
   year: string;
   categories: string[];
   source?: string;
+  sourceRef?: string;
+  duplicateOf?: string;
   categoryItems?: { group: string; name: string }[];
   region: string;
   city: string;
@@ -77,6 +79,9 @@ const COLUMNS: ReadonlyArray<readonly [string, (r: SeedRecord) => unknown]> = [
   ["record_year", (r) => r.year],
   // 엑셀 이전분 표시. 협약서번호 미입력 알림에서 빼는 데만 쓴다.
   ["record_source", (r) => text(r.source)],
+  // 원본 위치와 겹침 표시. 어느 줄에서 왔는지 되짚기 위해 함께 담는다.
+  ["source_ref", (r) => text(r.sourceRef)],
+  ["duplicate_of", (r) => text(r.duplicateOf)],
   ["region", (r) => r.region],
   ["city", (r) => r.city],
   ["client", (r) => r.client],
