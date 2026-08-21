@@ -10,6 +10,6 @@
     "rootDir": ".",
     "paths": { "@/*": ["./*"] }
   },
-  "include": ["lib/pour/mapping.ts", "lib/pour/store.ts"],
-  "//": "test-d1.mjs 를 돌리기 위한 임시 빌드 설정입니다. 실제 프로젝트에는 필요 없습니다."
+  "include": ["lib/pour/mapping.ts", "lib/pour/store.ts", "lib/pour/migrate.ts", "lib/pour/seed-records.ts"],
+  "//": "test-d1.mjs · test-seed.mjs 를 돌리기 위한 임시 빌드 설정입니다. 실제 프로젝트에는 필요 없습니다."
 }

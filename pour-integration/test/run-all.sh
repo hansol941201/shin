@@ -8,6 +8,7 @@ node pour-integration/test/multipatent.test.js
 node pour-integration/test/real-excel.test.js
 node pour-integration/test/migration.test.mjs
 node pour-integration/test/import-records.test.mjs
+node pour-integration/scripts/check-no-destructive.mjs
 node pour-integration/test/browser.test.js
 node pour-integration/test/app.test.js
 node pour-integration/test/api-store.test.js
@@ -18,4 +19,5 @@ npx tsc -p pour-integration/nextjs/tsconfig.build.json
 mkdir -p pour-integration/nextjs/.tmp-build/lib/pour/core
 cp pour-integration/nextjs/lib/pour/core/*.js pour-integration/nextjs/.tmp-build/lib/pour/core/
 node pour-integration/nextjs/test-d1.mjs
+node pour-integration/nextjs/test-seed.mjs
 rm -rf pour-integration/nextjs/.tmp-build
