@@ -82,10 +82,6 @@ def build() -> Path:
     html = read("app.html")
 
     css = read("pour-integration.css") + "\n" + read("app.css")
-    html = re.sub(
-        r'<link rel="stylesheet" href="pour-integration\.css" />\s*'
-        r'<link rel="stylesheet" href="app\.css" />',
-        "<style>\n" + css + "\n</style>", html)
 
     js = "\n".join(f"/* ===== {n} ===== */\n{safe(read(n))}" for n in SCRIPTS)
 
@@ -120,8 +116,9 @@ def build() -> Path:
     # 문서 골격은 올리는 쪽에서 감싸므로 본문만 남긴다
     html = re.sub(r"^.*?<body class=\"pour-scope\">", "", html, flags=re.S)
     html = html.replace("</body>", "").replace("</html>", "")
+    # 스타일은 head 를 걷어낸 뒤에 붙인다 (head 에 두면 함께 사라진다)
     html = ('<title>POUR 공사실적 관리</title>\n'
-            '<style>body{background:#F4F6F8;margin:0;}</style>\n'
+            "<style>\nbody{background:#F4F6F8;margin:0;}\n" + css + "\n</style>\n"
             '<div class="pour-scope">' + html + "</div>")
 
     html = html.replace('<main class="app-main">', '''<div style="padding:8px 16px 0">

@@ -150,6 +150,15 @@ export default function PourGrid({
                       </td>
                     );
                   }
+                  if (WRAP_TYPES.has(col.type)) {
+                    // 줄 수가 많으면 행이 지나치게 높아지므로 세 줄까지만 보여 준다
+                    const clamped = value.split("\n").length > 3;
+                    return (
+                      <td key={col.key} className={className || undefined} title={value || undefined}>
+                        <span className={`cell-lines${clamped ? " is-clamped" : ""}`}>{value}</span>
+                      </td>
+                    );
+                  }
                   return (
                     <td key={col.key} className={className || undefined} title={value || undefined}>
                       {value}

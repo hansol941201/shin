@@ -130,7 +130,17 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .grid tbody tr:hover td{background:#EEF3FB;}
 .grid tbody tr.is-selected td{background:#E3EBF9; box-shadow:inset 0 0 0 2px var(--navy);}
 .grid td{white-space:nowrap;}
-.grid td.cell-wrap{white-space:pre-line; min-width:140px; max-width:320px;}
+.grid td.cell-wrap{white-space:normal; min-width:140px; max-width:320px;}
+/* 여러 줄 값은 세 줄까지만 보여 준다. 전체 내용은 셀에 마우스를 올리면 나온다 */
+.grid td.cell-wrap .cell-lines{white-space:pre-line; display:block;}
+.grid td.cell-wrap .cell-lines.is-clamped{
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  overflow:hidden; position:relative;
+}
+.grid td.cell-wrap .cell-lines.is-clamped::after{
+  content:"…"; position:absolute; right:0; bottom:0;
+  padding-left:10px; background:inherit; color:var(--muted);
+}
 .grid td.cell-num{text-align:right; font-variant-numeric:tabular-nums;}
 .grid td.cell-seq{text-align:center; color:var(--muted);}
 .grid-th-label{cursor:pointer;}

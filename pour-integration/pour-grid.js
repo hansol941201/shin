@@ -171,6 +171,12 @@
             td.appendChild(statusBadge(value));
             var badge = multiBadge(rec);
             if (badge) td.appendChild(badge);
+          } else if (WRAP_TYPES[col.type]) {
+            // 줄 수가 많으면 행이 지나치게 높아지므로 세 줄까지만 보이고 나머지는 툴팁으로
+            var lines = el("span", "cell-lines", value);
+            if (String(value).split("\n").length > 3) lines.classList.add("is-clamped");
+            td.appendChild(lines);
+            if (value) td.title = value;
           } else {
             td.textContent = value;
             if (value) td.title = value;
