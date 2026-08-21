@@ -210,10 +210,11 @@ python3 pour-integration/scripts/import-records.py <연도별 실적List.xlsx>
   어느 시트의 정보도 사라지지 않고, 합쳐진 행은 비고에 등재 연도를 남깁니다.
 * 전화번호는 문자열로 두어 앞자리 0 이 사라지지 않습니다.
 
-D1 에 넣기 (먼저 `nextjs/scripts/pour-migrate.mjs` 로 `record_year` 열을 더하세요)
+D1 에 넣는 절차와 검증 질의는 **`APPLY-RECORDS.md`** 를 보세요.
+운영에 넣기 전에 예행연습을 먼저 돌립니다 (운영을 건드리지 않습니다).
 
 ```sh
-npx wrangler d1 execute <DB> --file pour-integration/nextjs/drizzle/seed-records.sql
+node pour-integration/scripts/dry-run-seed.mjs
 ```
 
 실적이 들어간 화면을 확인하려면

@@ -24,8 +24,10 @@ SCRIPTS = [
     "pour-export.js", "pour-ui.js", "pour-patent-editor.js", "pour-grid.js", "pour-store.js",
 ]
 
+# 공개 미리보기에 쓰는 예시 자료.
+# 실제 발주처 이름과 관리사무소 전화번호는 절대 넣지 않는다 (공개 주소이기 때문).
 SAMPLE_SITES = [
-    dict(client="평택비전지웰푸르지오", region="경기", city="평택", phone="031-647-3158",
+    dict(client="가나예시아파트", region="경기", city="평택", phone="031-000-0001",
          households=717, projectNames=["외벽·지하주차장 바닥 균열보수 및 도장공사", "옥상 방수공사"],
          noticeDate="2026-03-02", documentDueDate="2026-03-14", bidDate="2026-03-20",
          bidType="전자입찰", status="공고", scopes=["외벽", "옥상"],
@@ -33,7 +35,7 @@ SAMPLE_SITES = [
     dict(client="하남미사강변도시", region="경기", city="하남", phone="031-790-1234",
          households=1240, projectNames=["외벽 재도장공사"], noticeDate="2026-01-11",
          bidDate="2026-01-25", bidType="서류접수", status="낙찰", contractor="코지건설㈜",
-         contractorPhone="031-647-3158", awardDate="2026-02-05", awardAmount=1250000000,
+         contractorPhone="031-000-0002", awardDate="2026-02-05", awardAmount=1250000000,
          quality="우수", patents=[("POUR", "2425081"), ("THIRD", "2091977", "균열보수 공법", "타사명")]),
     dict(client="금산주공아파트", region="충남", city="금산", phone="041-555-0001",
          households=430, projectNames=["외벽 도장공사"], noticeDate="2026-02-05",
