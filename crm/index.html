@@ -3862,6 +3862,12 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 옛/빈 값만 계속 쓰게 된다 — 이게 실제 ㈜샤인하우징 이메일이 최신으로 안 바뀌던 진짜
   // 근본 원인이다(지난 라운드에서 고친 "onlyFillEmpty" 정책 문제는 반드시 필요했지만
   // 충분하지 않았다 — 애초에 최신 이메일 자체를 가져오지 못하고 있었다).
+  // §협력사 동기화 진단 라운드 — 지금까지는 실패한 키를 out[k]=null 하나로만 처리해서
+  // "fetch가 안 됐는지" vs "그 key에 원래 데이터가 없는지"를 구분할 방법이 화면 어디에도
+  // 없었다(§3 "각 요청별 URL/key, HTTP status, response 존재 여부, parse 성공 여부 확인"
+  // 요구사항 자체가 불가능했음). fetch 결과(data)는 그대로 두고, 12개 key 각각의 실제
+  // 진단 정보(diagnostics)를 따로 만들어 함께 반환한다 — previewPartnerSync가 이걸 결과에
+  // 실어 보내면 동기화 결과창에서 실제로 몇 개가 성공/실패했는지 볼 수 있다.
   async function pdFetchOverrides(){
     const keys = [
       'mouOverrides', 'newMouAdds', 'mouDeleted',
@@ -3870,15 +3876,35 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       'partnerList_external_overrides', 'partnerList_external_adds', 'partnerList_external_deletes'
     ];
     const out = {};
+    const diagnostics = [];
     for(const k of keys){
+      const url = PD_RTDB_BASE + '/partner/' + encodeURIComponent(k) + '.json';
+      const diag = { key: k, url, ok: false, status: null, hasData: false, error: null };
       try{
-        const res = await fetch(PD_RTDB_BASE + '/partner/' + encodeURIComponent(k) + '.json', { cache: 'no-store' });
-        out[k] = res.ok ? await res.json() : null;
+        const res = await fetch(url, { cache: 'no-store' });
+        diag.status = res.status;
+        diag.ok = res.ok;
+        if(res.ok){
+          try{
+            const json = await res.json();
+            out[k] = json;
+            diag.hasData = json !== null && json !== undefined && !(Array.isArray(json) && json.length === 0) && !(typeof json === 'object' && json && Object.keys(json).length === 0);
+          }catch(parseErr){
+            out[k] = null;
+            diag.ok = false;
+            diag.error = 'parse 실패: ' + (parseErr && parseErr.message || String(parseErr));
+          }
+        } else {
+          out[k] = null;
+          diag.error = 'HTTP ' + res.status;
+        }
       }catch(e){
         out[k] = null; // 네트워크/CORS로 실패해도 전체 동기화를 막지 않는다 — DATA 베이스라인만으로 계속 진행(§ 아래 usedOverrides 플래그로 사용자에게 알림)
+        diag.error = '네트워크/CORS 오류: ' + (e && e.message || String(e));
       }
+      diagnostics.push(diag);
     }
-    return out;
+    return { data: out, diagnostics };
   }
   // §협력사 동기화 근본 원인 조사 라운드 — partner-dashboard의 getPartnerListData(view)와
   // 완전히 같은 규칙으로 병합한다(로컬 클론 8031~8056줄에서 그대로 확인): base에서
@@ -4006,6 +4032,8 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 사례로 확인 — 이 업체는 다른 이유로 updates에 포함돼 있어 patch만 고쳐도 됐지만, 진행
   // 상황 변화 없이 연락처만 바뀌는 업체는 이 체크가 없으면 여전히 누락된다).
   const PD_CONTACT_FIELD_MAP = [['ceo','repName'], ['phone','phone'], ['fax','fax'], ['email','email'], ['address','address'], ['bizno','bizRegNo']];
+  // §협력사 동기화 진단 라운드 §9 — 변경 필드 로그 표시용 라벨(사람이 읽는 이름)만 따로 둔다.
+  const PD_CONTACT_FIELD_LABEL = { repName:'대표자', phone:'전화', fax:'FAX', email:'Email', address:'주소', bizRegNo:'사업자번호' };
   function pdContactChanged(co, contact){
     if(!contact) return false;
     return PD_CONTACT_FIELD_MAP.some(([ck, coKey])=>{
@@ -4061,7 +4089,13 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 반환한다.
   async function previewPartnerSync(){
     const baseline = await pdFetchBaselineData();
-    const overrides = await pdFetchOverrides();
+    // §협력사 동기화 진단 라운드 — pdFetchOverrides가 이제 {data, diagnostics}를 반환한다.
+    // 아래 모든 pdBuildXxx/pdMatchCompany 호출은 지금까지와 완전히 같은 overrides.data(=
+    // 예전의 overrides 그 자체)만 넘겨받으므로 병합/매칭 로직은 한 글자도 안 바뀐다 —
+    // diagnostics는 오직 결과창 진단 표시(§9)에만 쓰인다.
+    const overridesResult = await pdFetchOverrides();
+    const overrides = overridesResult.data;
+    const fetchDiagnostics = overridesResult.diagnostics;
     // §협력사 동기화 근본 원인 조사 라운드 — "실시간 편집분을 확인했다" 배지가 partnerList
     // 쪽 편집(연락처 수정 등)도 정직하게 반영하도록 9개 키도 함께 검사한다.
     const usedOverrides = !!(overrides.mouOverrides || overrides.newMouAdds || overrides.mouDeleted
@@ -4080,6 +4114,10 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     const newCompanies = []; // { row, contact }
     const review = []; // { row, reason }
     let progressChangedCount = 0, eventCount = 0, memoCount = 0;
+    // §협력사 동기화 진단 라운드 §2/§9 — "CRM 매칭"/"변경 없음"은 지금까지 어디서도 세지
+    // 않았다(매칭됐지만 아무것도 안 바뀐 업체는 그냥 조용히 return될 뿐이었다). 새 판정을
+    // 만들지 않고, 이미 있는 판정 결과(m.co 존재 여부, updates.push 조건)를 세기만 한다.
+    let matchedCount = 0, noChangeCount = 0;
 
     merge.rows.forEach(row=>{
       if(!row || !row.company) return;
@@ -4093,6 +4131,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
         newCompanies.push({ row, contact });
         return;
       }
+      matchedCount++;
       const oldNm = (m.co.partnerDashboard && m.co.partnerDashboard.newMou) || null;
       const changed = pdRowChangedFromExisting(oldNm, row);
       const contactChanged = pdContactChanged(m.co, contact);
@@ -4109,6 +4148,8 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       if(memo) memoCount++;
       if(changed || contactChanged || events.length || memo || mouSignalPatch || !m.co.partnerDashboard || !m.co.partnerDashboard.newMou){
         updates.push({ co: m.co, row, contact, events, memo, progressChanged: changed, contactChanged });
+      } else {
+        noChangeCount++;
       }
     });
 
@@ -4136,6 +4177,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
         newCompanies.push({ row: fauxRow, contact });
         return;
       }
+      matchedCount++;
       const contactChanged = pdContactChanged(m.co, contact);
       // §업무관리 협약체결 판정 누락 라운드 — 이 루프의 업체는 newMou 계열 자체가 없으므로
       // oldNm은 항상 co.partnerDashboard.newMou(있다면) 그대로 쓴다.
@@ -4143,18 +4185,31 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
       const mouSignalPatch = pdResolveContactMouPatch(oldNm2, contact);
       if(contactChanged || mouSignalPatch){
         updates.push({ co: m.co, row: fauxRow, contact, events: [], memo: null, progressChanged: false, contactChanged });
+      } else {
+        noChangeCount++;
       }
     });
 
+    // §협력사 동기화 진단 라운드 §1/§9 — "원본 업체" = partner-dashboard 쪽에서 실제로
+    // 확인된 회사명의 distinct 합(merge.rows ∪ contactIndex, 이미 위에서 두 루프가 각각
+    // 순회하던 바로 그 두 소스). 새 데이터 소스가 아니라 이미 만들어 둔 것의 개수만 센다.
+    const originalCompanySet = new Set(rowCompanySet);
+    contactIndex.forEach((_, name)=> originalCompanySet.add(name));
+    const errorKeyCount = fetchDiagnostics.filter(d=> !d.ok).length;
+
     return {
-      baseline, overrides, usedOverrides,
+      baseline, overrides, usedOverrides, fetchDiagnostics,
       updates, newCompanies, review,
       counts: {
         existingUpdate: updates.length,
         newCompany: newCompanies.length,
         progressChanged: progressChangedCount,
         newActivity: eventCount + memoCount,
-        review: review.length
+        review: review.length,
+        originalCompany: originalCompanySet.size,
+        matched: matchedCount,
+        noChange: noChangeCount,
+        errorKey: errorKeyCount
       }
     };
   }
@@ -4173,15 +4228,23 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     // §협력사 동기화 결과 세분화 라운드 §11 — "기본정보/질문서/1차/2차/MOU 몇 건 바뀌었는지"를
     // 따로 센다. 판정 로직은 그대로 재사용(pdGroupChanged/pdContactChanged)하고, merge 직전
     // "옛 값"과 merge에 쓸 row를 그대로 넘겨 세기만 한다 — 새 비교를 만들지 않는다.
-    let contactChangedCount = 0, qChangedCount = 0, m1ChangedCount = 0, m2ChangedCount = 0, mouChangedCount = 0;
+    let contactChangedCount = 0, qChangedCount = 0, m1ChangedCount = 0, m2ChangedCount = 0, mouChangedCount = 0, meetingChangedCoCount = 0;
+    // §협력사 동기화 진단 라운드 §9 — "기본정보 변경 X개"를 눌렀을 때 업체명/변경 필드/
+    // 기존값→새값을 보여주기 위한 로그. 새 비교 로직이 아니라 아래에서 이미 계산하는
+    // contactPatch를 적용하기 "직전"의 co[field](기존값)만 함께 기록한다.
+    const contactFieldChanges = []; // { company, fields: [{field,label,from,to}] }
 
     preview.updates.forEach(u=>{
       const co = byId.get(u.co.id);
       if(!co) return;
       const oldNm = (co.partnerDashboard && co.partnerDashboard.newMou) || null;
-      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.q)) qChangedCount++;
-      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m1)) m1ChangedCount++;
-      if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m2)) m2ChangedCount++;
+      const qChanged = pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.q);
+      const m1Changed = pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m1);
+      const m2Changed = pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.m2);
+      if(qChanged) qChangedCount++;
+      if(m1Changed) m1ChangedCount++;
+      if(m2Changed) m2ChangedCount++;
+      if(qChanged || m1Changed || m2Changed) meetingChangedCoCount++;
       const mouSignalPatch = pdResolveContactMouPatch(pdMergeNewMou(oldNm, u.row), u.contact);
       if(pdGroupChanged(oldNm, u.row, PD_FIELD_GROUPS.mou) || mouSignalPatch) mouChangedCount++;
       if(pdContactChanged(co, u.contact)) contactChangedCount++;
@@ -4211,6 +4274,13 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
         if(c.email) contactPatch.email = c.email;
         if(c.address) contactPatch.address = c.address;
         if(c.bizno) contactPatch.bizRegNo = c.bizno;
+        // §협력사 동기화 진단 라운드 §9 — applyPatchToRecord로 실제로 덮어쓰기 직전, 정말
+        // 값이 달라지는 필드만(patch 값 존재 + 기존 값과 다름) 골라 기존값→새값을 기록한다.
+        // PD_CONTACT_FIELD_MAP과 같은 라벨(대표자/전화/FAX/Email/주소/사업자번호)을 쓴다.
+        const fieldChanges = PD_CONTACT_FIELD_MAP
+          .filter(([ck, coKey])=> contactPatch[coKey] !== undefined && String(contactPatch[coKey]).trim() !== String(co[coKey] || '').trim())
+          .map(([ck, coKey])=> ({ field: coKey, label: PD_CONTACT_FIELD_LABEL[coKey] || coKey, from: co[coKey] || '', to: contactPatch[coKey] }));
+        if(fieldChanges.length) contactFieldChanges.push({ company: co.name, fields: fieldChanges });
         if(Object.keys(contactPatch).length) applyPatchToRecord(co, contactPatch, false);
       }
       updatedCount++;
@@ -4272,9 +4342,18 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     saveCompanies(companies);
     saveActivities(activities);
     writeArr(MEMO_KEY, memos);
+    // §협력사 동기화 진단 라운드 §5/§9 — "마지막 동기화" 시각을 저장한다. 새 사용자 데이터가
+    // 아니라 순수 메타데이터(언제 마지막으로 실행됐는지)라서 companies/customerActivities/
+    // memos 등 기존 키는 전혀 안 건드리고 별도의 작은 신규 key 하나만 쓴다 — "새 DB/새 저장
+    // 정책"이 아니라 이 진단 기능 하나를 위한 타임스탬프 한 줄일 뿐이다.
+    try{ localStorage.setItem('shin2-partner-sync-last-run', now); }catch(e){}
     return {
       updatedCount, newCount, activityAdded, memoAdded, reviewCount: preview.review.length,
-      contactChangedCount, qChangedCount, m1ChangedCount, m2ChangedCount, mouChangedCount
+      contactChangedCount, qChangedCount, m1ChangedCount, m2ChangedCount, mouChangedCount,
+      meetingChangedCoCount, contactFieldChanges,
+      originalCompany: preview.counts.originalCompany, matched: preview.counts.matched,
+      noChange: preview.counts.noChange, errorKey: preview.counts.errorKey,
+      lastSyncAt: now
     };
   }
 
@@ -8511,17 +8590,34 @@ window.SHIN2_CRM_APP_INIT = function(){
       actionsHtml = `<button type="button" class="co-text-action primary" id="pdSyncCloseBtn">닫기</button>`;
     } else if(s.step === 'preview'){
       const c = s.preview.counts;
+      // §협력사 동기화 진단 라운드 §3 — RTDB 12개 key 각각의 실제 fetch 결과(URL/HTTP
+      // status/데이터 존재 여부/오류)를 접어서 보여준다. pdFetchOverrides가 이미 만들어 둔
+      // diagnostics를 그대로 표시만 한다(새 fetch/검사 로직 없음).
+      const diagRows = (s.preview.fetchDiagnostics || []).map(d=> `
+        <tr>
+          <td style="font-family:monospace;font-size:11px;">${esc(d.key)}</td>
+          <td>${d.ok ? '<span style="color:#079455;">성공</span>' : '<span style="color:#B91C1C;">실패</span>'}</td>
+          <td>${d.status != null ? esc(d.status) : '—'}</td>
+          <td>${d.ok ? (d.hasData ? '데이터 있음' : '데이터 없음(정상)') : '—'}</td>
+          <td style="color:#B91C1C;font-size:11px;">${d.error ? esc(d.error) : ''}</td>
+        </tr>`).join('');
       bodyHtml = `
         <div class="cat-dist-total">${s.preview.usedOverrides ? 'partner-dashboard 최신 데이터(실시간 편집분 포함) 확인됨' : 'partner-dashboard 기본 데이터만 확인됨(실시간 편집분을 가져오지 못했습니다 — 결과가 최신이 아닐 수 있습니다)'}</div>
         <table class="pi-sample-table"><tbody>
+          <tr><td>원본 업체(partner-dashboard)</td><td>${esc(c.originalCompany)}개</td></tr>
+          <tr><td>CRM 매칭</td><td>${esc(c.matched)}개</td></tr>
           <tr><td>기존 업체 업데이트</td><td>${esc(c.existingUpdate)}개</td></tr>
           <tr><td>신규 업체</td><td>${esc(c.newCompany)}개</td></tr>
+          <tr><td>변경 없음</td><td>${esc(c.noChange)}개</td></tr>
           <tr><td>진행상황 변경</td><td>${esc(c.progressChanged)}개</td></tr>
           <tr><td>새 메모/활동</td><td>${esc(c.newActivity)}건</td></tr>
           <tr><td>검토 필요</td><td>${esc(c.review)}개</td></tr>
+          <tr><td>RTDB 요청 오류</td><td>${c.errorKey ? `<span style="color:#B91C1C;">${esc(c.errorKey)}개</span>` : '0개'}</td></tr>
         </table>
         ${s.preview.newCompanies.length ? `<div class="pi-note" style="margin-top:10px;">신규 업체: ${s.preview.newCompanies.slice(0,10).map(n=> esc(n.row.company)).join(', ')}${s.preview.newCompanies.length>10 ? ' 외 ' + (s.preview.newCompanies.length-10) + '개' : ''}</div>` : ''}
         ${s.preview.review.length ? `<div class="pi-note" style="margin-top:6px;color:#B45309;">검토 필요(자동 반영 안 됨): ${s.preview.review.slice(0,10).map(r=> esc(r.row.company) + '(' + esc(r.reason) + ')').join(', ')}</div>` : ''}
+        <button type="button" class="co-text-action" id="pdSyncDiagToggle" style="margin-top:10px;">${s.diagOpen ? '▼' : '▶'} RTDB 요청 진단 보기(${esc((s.preview.fetchDiagnostics||[]).length)}개 key)</button>
+        ${s.diagOpen ? `<div style="max-height:220px;overflow-y:auto;margin-top:6px;"><table class="pi-sample-table"><thead><tr><td>key</td><td>결과</td><td>HTTP</td><td>데이터</td><td>오류</td></tr></thead><tbody>${diagRows}</tbody></table></div>` : ''}
       `;
       actionsHtml = `
         <button type="button" class="co-text-action" id="pdSyncCancelBtn">취소</button>
@@ -8531,22 +8627,32 @@ window.SHIN2_CRM_APP_INIT = function(){
       bodyHtml = `<div class="pi-note">동기화 적용 중...</div>`;
       actionsHtml = `<button type="button" class="co-text-action" disabled>적용 중...</button>`;
     } else if(s.step === 'result'){
-      // §협력사 동기화 결과 세분화 라운드 §11 — "어떤 항목이 몇 건 바뀌었는지" 필드
-      // 그룹별로 보여준다. applyPartnerSync가 이미 계산해 둔 값을 그대로 표시만 한다.
+      // §협력사 동기화 결과 세분화 라운드 §11/§협력사 동기화 진단 라운드 §9 — "어떤 항목이
+      // 몇 건 바뀌었는지" + "원본/매칭/변경없음/오류" + "기본정보 변경 클릭 시 필드별 상세"까지
+      // 전부 applyPartnerSync/previewPartnerSync가 이미 계산해 둔 값을 표시만 한다.
       const r = s.result;
+      const lastSyncLabel = (()=>{ const d = new Date(r.lastSyncAt); return isNaN(d.getTime()) ? r.lastSyncAt : (d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')); })();
+      const detailRows = (r.contactFieldChanges || []).map(c=> `
+        <div class="pi-note" style="margin-top:6px;padding:6px 8px;background:#F8FAFC;border-radius:6px;">
+          <div style="font-weight:700;">${esc(c.company)}</div>
+          ${c.fields.map(f=> `<div style="font-size:12px;color:var(--text-muted);">${esc(f.label)}: ${esc(f.from || '(없음)')} → <span style="color:var(--navy);font-weight:600;">${esc(f.to)}</span></div>`).join('')}
+        </div>`).join('');
       bodyHtml = `
         <div class="cat-dist-total">협력사 동기화 완료</div>
         <table class="pi-sample-table"><tbody>
-          <tr><td>신규 업체</td><td>${esc(r.newCount)}</td></tr>
-          <tr><td>기본정보 변경</td><td>${esc(r.contactChangedCount)}</td></tr>
-          <tr><td>질문서 변경</td><td>${esc(r.qChangedCount)}</td></tr>
-          <tr><td>1차미팅 변경</td><td>${esc(r.m1ChangedCount)}</td></tr>
-          <tr><td>2차미팅 변경</td><td>${esc(r.m2ChangedCount)}</td></tr>
-          <tr><td>MOU 변경</td><td>${esc(r.mouChangedCount)}</td></tr>
-          <tr><td>새 메모/활동</td><td>${esc(r.activityAdded + r.memoAdded)}건</td></tr>
-          <tr><td>검토 필요</td><td>${esc(r.reviewCount)}</td></tr>
+          <tr><td>원본 업체</td><td>${esc(r.originalCompany)}개</td></tr>
+          <tr><td>CRM 매칭</td><td>${esc(r.matched)}개</td></tr>
+          <tr><td>신규</td><td>${esc(r.newCount)}개</td></tr>
+          <tr><td>기본정보 변경</td><td>${r.contactFieldChanges && r.contactFieldChanges.length ? `<button type="button" class="co-text-action" id="pdSyncDetailToggle" style="padding:0;">${esc(r.contactChangedCount)}개 ${s.detailOpen ? '▼' : '▶'}</button>` : esc(r.contactChangedCount) + '개'}</td></tr>
+          <tr><td>미팅정보 변경</td><td>${esc(r.meetingChangedCoCount)}개</td></tr>
+          <tr><td>협약정보 변경</td><td>${esc(r.mouChangedCount)}개</td></tr>
+          <tr><td>변경 없음</td><td>${esc(r.noChange)}개</td></tr>
+          <tr><td>오류</td><td>${r.errorKey ? `<span style="color:#B91C1C;">${esc(r.errorKey)}개</span>` : '0개'}</td></tr>
+          <tr><td>검토 필요</td><td>${esc(r.reviewCount)}개</td></tr>
         </table>
+        ${s.detailOpen && r.contactFieldChanges && r.contactFieldChanges.length ? `<div style="max-height:260px;overflow-y:auto;">${detailRows}</div>` : ''}
         <div class="pi-note" style="margin-top:8px;">기존 업체 업데이트 ${esc(r.updatedCount)}개(위 항목 중 하나 이상 바뀌었거나 처음 연결된 업체) · 새 활동 ${esc(r.activityAdded)}건 · 새 메모 ${esc(r.memoAdded)}건</div>
+        <div class="pi-note" style="margin-top:4px;color:var(--text-muted);">마지막 동기화: ${esc(lastSyncLabel)}</div>
       `;
       actionsHtml = `<button type="button" class="co-text-action primary" id="pdSyncCloseBtn">닫기</button>`;
     }
@@ -8568,6 +8674,12 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(cancelBtn) cancelBtn.addEventListener('click', closePartnerSyncModal);
     const closeBtn = document.getElementById('pdSyncCloseBtn');
     if(closeBtn) closeBtn.addEventListener('click', ()=>{ closePartnerSyncModal(); renderList(); });
+    // §협력사 동기화 진단 라운드 §3/§9 — RTDB 진단 표/기본정보 변경 상세를 접었다 펼쳤다만
+    // 한다(새 fetch/재계산 없음, partnerSyncState에 열림 상태만 잠깐 저장).
+    const diagToggle = document.getElementById('pdSyncDiagToggle');
+    if(diagToggle) diagToggle.addEventListener('click', ()=>{ partnerSyncState.diagOpen = !s.diagOpen; renderPartnerSyncModal(); });
+    const detailToggle = document.getElementById('pdSyncDetailToggle');
+    if(detailToggle) detailToggle.addEventListener('click', ()=>{ partnerSyncState.detailOpen = !s.detailOpen; renderPartnerSyncModal(); });
     const applyBtn = document.getElementById('pdSyncApplyBtn');
     if(applyBtn) applyBtn.addEventListener('click', ()=>{
       // §15: 중복 클릭 방지 — "적용 중..."으로 즉시 바꾸고 버튼을 비활성화한다.
