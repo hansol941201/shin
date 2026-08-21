@@ -7,6 +7,9 @@
   --pour-text:#1f2937;
   --pour-muted:#6b7280;
   --pour-danger:#d92d20;
+  --pour-r1:4px;                  /* 배지·작은 버튼 */
+  --pour-r2:6px;                  /* 버튼·입력칸 */
+  --pour-r3:8px;                  /* 카드·표 */
   color:var(--pour-text);
 }
 
@@ -17,9 +20,9 @@
 .pour-field{overflow:visible;}
 .pour-suggest{
   position:absolute; z-index:1000; left:0; right:0; top:100%;
-  margin-top:2px; max-height:280px; overflow-y:auto;
-  background:#fff; border:1px solid var(--pour-border); border-radius:6px;
-  box-shadow:0 6px 20px rgba(15,23,42,.12); display:none;
+  margin-top:4px; max-height:280px; overflow-y:auto;
+  background:#fff; border:1px solid var(--pour-border); border-radius:var(--pour-r3);
+  box-shadow:0 12px 32px rgba(15,23,42,.16); display:none; overflow-x:hidden;
 }
 .pour-suggest.is-open{display:block;}
 .pour-suggest-item{
@@ -50,7 +53,7 @@
   overflow:auto;                      /* 넓으면 좌우, 길면 세로 스크롤 */
   max-height:65vh;
   border:1px solid var(--pour-border);
-  border-radius:6px;
+  border-radius:var(--pour-r3);
   -webkit-overflow-scrolling:touch;   /* 모바일에서 손가락 스크롤 */
 }
 .pour-table{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px; background:#fff;}
@@ -78,10 +81,10 @@
 .pour-table tbody tr:hover{background:var(--pour-accent-soft);}
 .pour-empty{padding:26px; text-align:center; color:var(--pour-muted); font-size:14px;}
 
-.pour-status{display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; border:1px solid var(--pour-border);}
-.pour-status[data-status="낙찰"]{background:var(--pour-accent-soft); border-color:var(--pour-accent); color:#14532d;}
-.pour-status[data-status="유찰"]{background:#fef3f2; border-color:#f3b1a8; color:#912018;}
-.pour-status[data-status="타공법 낙찰"]{background:#f4f4f5; color:#52525b;}
+.pour-status{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:700;}
+.pour-status[data-status="낙찰"]{background:#e4f4ea; color:#12693a;}
+.pour-status[data-status="유찰"]{background:#fdf0df; color:#92400e;}
+.pour-status[data-status="타공법 낙찰"]{background:#f1ece4; color:#6b5233;}
 
 /* --------------------------------------------------- 특허 탭 */
 .pour-tabbar{display:flex; align-items:center; gap:6px; margin-bottom:10px;}
@@ -90,24 +93,24 @@
   flex:1; padding-bottom:4px; -webkit-overflow-scrolling:touch;
 }
 .pour-tab{
-  flex:0 0 auto; padding:7px 14px; font-size:13px; cursor:pointer; white-space:nowrap;
-  background:#f3f5f8; border:1px solid var(--pour-border); border-bottom:0;
-  border-radius:6px 6px 0 0; color:var(--pour-muted);
+  flex:0 0 auto; padding:6px 13px; font-size:12.5px; cursor:pointer; white-space:nowrap;
+  background:#fff; border:1px solid var(--pour-border);
+  border-radius:999px; color:var(--pour-muted);
 }
-.pour-tab:hover{background:#e9edf3;}
+.pour-tab:hover{background:var(--pour-head-bg); color:var(--pour-text);}
 .pour-tab.is-active{background:var(--pour-accent); border-color:var(--pour-accent); color:#fff; font-weight:700;}
 .pour-tab-nav{
   flex:0 0 auto; width:30px; height:30px; border:1px solid var(--pour-border);
-  background:#fff; border-radius:6px; cursor:pointer; font-size:14px; line-height:1;
+  background:#fff; border-radius:var(--pour-r2); cursor:pointer; font-size:14px; line-height:1;
 }
 .pour-tab-search{
   flex:0 0 auto; width:150px; padding:6px 9px; font-size:13px;
   border:1px solid var(--pour-border); border-radius:6px;
 }
 .pour-summary{
-  padding:10px 14px; margin-bottom:10px; font-size:14px;
-  background:var(--pour-accent-soft); border:1px solid var(--pour-accent);
-  border-radius:6px; line-height:1.6;
+  padding:12px 16px; margin-bottom:10px; font-size:13.5px;
+  background:#fff; border:1px solid var(--pour-border); border-left:3px solid var(--pour-accent);
+  border-radius:var(--pour-r3); line-height:1.6;
 }
 .pour-summary strong{font-size:15px;}
 .pour-filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; align-items:center;}
@@ -120,23 +123,27 @@
 }
 
 /* ------------------------------------------ POUR / 타사 특허 입력기 */
-.pour-patent-editor{border:1px solid var(--pour-border); border-radius:6px; padding:10px 12px;}
+.pour-patent-editor{border:1px solid var(--pour-border); border-radius:var(--pour-r3); padding:10px 12px; background:#fff;}
 .pour-kind-tabs{display:flex; gap:4px; margin-bottom:10px;}
 .pour-kind-tab{
   flex:1; padding:7px 10px; font-size:13px; cursor:pointer; font-weight:600;
-  background:#f3f5f8; border:1px solid var(--pour-border); border-radius:5px; color:var(--pour-muted);
+  background:#fff; border:1px solid var(--pour-border);
+  border-radius:var(--pour-r2); color:var(--pour-muted);
 }
+.pour-kind-tab:hover{background:var(--pour-head-bg); color:var(--pour-text);}
 .pour-kind-tab.is-active{background:var(--pour-accent); border-color:var(--pour-accent); color:#fff;}
 .pour-third-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px;}
 .pour-third-form label{display:block; font-size:12px; font-weight:600; margin-bottom:3px;}
 .pour-add-btn{
   margin-top:8px; padding:6px 12px; font-size:13px; cursor:pointer; font-weight:600;
-  background:#fff; border:1px dashed var(--pour-accent); color:var(--pour-accent); border-radius:5px;
+  background:#fff; border:1px solid var(--pour-border); color:var(--pour-accent);
+  border-radius:var(--pour-r2);
 }
+.pour-add-btn:hover{background:var(--pour-head-bg);}
 .pour-item-list{margin-top:10px; display:flex; flex-direction:column; gap:4px;}
 .pour-item-row{
   display:flex; align-items:center; gap:6px; padding:6px 8px; font-size:13px;
-  background:#f8fafc; border:1px solid var(--pour-border); border-radius:5px;
+  background:#fbfcfe; border:1px solid var(--pour-border); border-radius:var(--pour-r2);
 }
 .pour-item-no{
   flex:0 0 20px; height:20px; line-height:20px; text-align:center; font-size:11px;
@@ -145,22 +152,26 @@
 .pour-item-text{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .pour-item-btn{
   flex:0 0 auto; width:24px; height:24px; font-size:11px; cursor:pointer;
-  background:#fff; border:1px solid var(--pour-border); border-radius:4px;
+  background:#fff; border:1px solid var(--pour-border); border-radius:var(--pour-r1);
 }
+.pour-item-btn:hover:not(:disabled){background:var(--pour-head-bg);}
 .pour-item-btn:disabled{opacity:.35; cursor:not-allowed;}
 .pour-item-del{color:var(--pour-danger); border-color:#f3b1a8;}
 .pour-item-empty{padding:10px; text-align:center; color:var(--pour-muted); font-size:13px;}
-.pour-multi-check{display:block; margin-top:10px; font-size:13px; font-weight:400;}
-.pour-multi-check input{width:auto; margin-right:4px;}
+.pour-multi-check{
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:10px; font-size:13px; font-weight:400; cursor:pointer;
+}
+.pour-multi-check input{width:auto; flex:0 0 auto; margin:0;}
 .pour-multi-badge{
   display:inline-block; margin-top:8px; padding:3px 10px; font-size:12.5px;
-  font-weight:700; border-radius:999px; border:1px solid;
+  font-weight:700; border-radius:999px;
 }
 /* 배지 색상: POUR만 파랑 · 혼합 보라 · 타사만 회색 · 번호 미확인 주황 */
-.pour-multi-badge[data-badge="pour"]{background:#e8f0fe; border-color:#3b82f6; color:#1d4ed8;}
-.pour-multi-badge[data-badge="mixed"]{background:#f3e8ff; border-color:#a855f7; color:#7e22ce;}
-.pour-multi-badge[data-badge="third"]{background:#f4f4f5; border-color:#a1a1aa; color:#52525b;}
-.pour-multi-badge[data-badge="unknown"]{background:#fff7e6; border-color:#f0a92e; color:#92400e;}
+.pour-multi-badge[data-badge="pour"]{background:#e6eefc; color:#1d4ed8;}
+.pour-multi-badge[data-badge="mixed"]{background:#f1e7fd; color:#7e22ce;}
+.pour-multi-badge[data-badge="third"]{background:#eeeff2; color:#52525b;}
+.pour-multi-badge[data-badge="unknown"]{background:#fdf0df; color:#92400e;}
 
 /* ------------------------------------------------- 공고 등록 카드 배치 */
 .pour-card-title{

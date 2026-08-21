@@ -149,7 +149,7 @@
       chip.type = "button";
       chip.className = "alert-chip";
       chip.id = "alert-" + g.key;
-      chip.textContent = "⚠ " + g.label;
+      chip.textContent = g.label;
       chip.addEventListener("click", function () {
         // 해당 자료만 보이도록 목록을 걸러 준다
         state.statusTab = "전체";
@@ -977,7 +977,7 @@
     var chip = document.createElement("div");
     chip.className = "alert-chip";
     chip.style.cursor = "default";
-    chip.textContent = "⚠ 서버 저장에 실패했습니다. 자료는 화면에 남아 있으며 다시 시도합니다. (" +
+    chip.textContent = "서버 저장에 실패했습니다. 자료는 화면에 남아 있으며 다시 시도합니다. (" +
       (err && err.message ? err.message : "원인 미상") + ")";
     bar.insertBefore(chip, bar.firstChild);
   }
