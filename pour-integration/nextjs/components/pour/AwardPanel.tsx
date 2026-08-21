@@ -7,8 +7,8 @@ import PatentEditor, { type PatentEditorValue } from "./PatentEditor";
 import type { PourRecord, PourStorage } from "@/lib/pour/core";
 
 const CONTRACTOR_FIELDS = [
-  { key: "contractor", label: "시공사명", required: true },
-  { key: "contractorPhone", label: "시공사 전화번호", required: true, phone: true },
+  { key: "contractor", label: "시공사명" },
+  { key: "contractorPhone", label: "시공사 전화번호", phone: true },
   { key: "contractorContactName", label: "담당자명" },
   { key: "contractorMobile", label: "담당자 휴대전화", phone: true },
   { key: "contractorAddress", label: "시공사 주소" },
@@ -16,10 +16,12 @@ const CONTRACTOR_FIELDS = [
   { key: "contractorNote", label: "시공사 비고" }
 ] as const;
 
+// 협약서 발행번호가 핵심 처리 기준이다. 번호만 먼저 넣고 나머지는 나중에 채울 수 있다.
 const INFO_FIELDS = [
-  { key: "awardDate", label: "낙찰일", required: true, type: "date" },
-  { key: "awardAmount", label: "낙찰금액", required: true, money: true },
-  { key: "categories", label: "최종 공종", required: true },
+  { key: "agreementNo", label: "협약서 발행번호" },
+  { key: "awardDate", label: "낙찰일", type: "date" },
+  { key: "awardAmount", label: "낙찰금액", money: true },
+  { key: "categories", label: "최종 공종" },
   { key: "status", label: "낙찰 결과 상태", select: true },
   { key: "scopes", label: "최종 공사범위" },
   { key: "quality", label: "공사 품질", datalist: "pour-award-quality" },
@@ -122,10 +124,8 @@ export default function AwardPanel({
     const datalist = "datalist" in field ? field.datalist : undefined;
     return (
       <div key={key}>
-        <label htmlFor={`aw-${key}`}>
-          {field.label}
-          {"required" in field && field.required && <span className="req"> *</span>}
-        </label>
+        {/* 협약서 발행번호만 있으면 저장되므로 필수 표시는 두지 않는다 */}
+        <label htmlFor={`aw-${key}`}>{field.label}</label>
         {isSelect ? (
           <select id={`aw-${key}`} value={values[key] || "낙찰"} onChange={(e) => set(key, e.target.value)}>
             {PourRecords.STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -178,8 +178,16 @@ export default function AwardPanel({
               공고문 특허·공법: {record.noticePatentText || "—"}<br />
               현재 상태: {record.status}
               {record.rebidRound ? ` (재공고 ${record.rebidRound}차)` : ""}
+              {` · 처리 단계: ${PourRecords.agreementStage(record)}`}
             </div>
           )}
+
+          {/* 협약서 발행번호만 먼저 넣어도 낙찰로 정리된다 */}
+          <div className="pour-form-msg">
+            {PourRecords.missingAwardFields(record).length > 0
+              ? `아직 비어 있는 항목: ${PourRecords.missingAwardFields(record).join(", ")}`
+              : "협약서 발행번호만 먼저 넣어도 낙찰로 정리됩니다. 나머지는 나중에 채울 수 있습니다."}
+          </div>
 
           <div className="pour-sub-head">시공사 정보</div>
           <div className="pour-form-row pour-form-row-fill">{CONTRACTOR_FIELDS.map(renderField)}</div>

@@ -27,7 +27,27 @@ declare const PourRecords: {
 
   list(storage?: PourStorage): PourRecord[];
   save(input: Partial<PourRecord> | Record<string, unknown>, storage?: PourStorage): PourRecord;
-  update(id: string, changes: Record<string, unknown>, storage?: PourStorage): { ok: boolean; record?: PourRecord; message?: string };
+  update(id: string, changes: Record<string, unknown>, storage?: PourStorage): {
+    ok: boolean;
+    record?: PourRecord;
+    message?: string;
+    /** 협약서 발행번호를 지웠을 때 상태를 되돌릴지 확인받아야 한다 */
+    needsConfirm?: boolean;
+    reason?: string;
+  };
+
+  /* --- 협약서 발행번호 (공고 → 낙찰의 핵심 처리 기준) --- */
+  /** 번호가 들어오면 낙찰로 바꿀 수 있는 상태 */
+  AGREEMENT_PROMOTES: string[];
+  /** 낙찰 결과로 채워야 할 항목 */
+  AWARD_REQUIRED: { key: string; label: string }[];
+  /** 번호를 지웠을 때 되돌릴지 물어보는 문구 */
+  AGREEMENT_CLEARED_MESSAGE: string;
+  hasAgreement(record: PourRecord | null | undefined): boolean;
+  /** 낙찰인데 아직 비어 있는 항목 이름 */
+  missingAwardFields(record: PourRecord | null | undefined): string[];
+  /** 확인 대기 · 추가 입력 필요 · 정리 완료 · 협약서번호 미입력 */
+  agreementStage(record: PourRecord | null | undefined): string;
   award(id: string, payload: Record<string, unknown>, storage?: PourStorage): AwardResult;
   createRebid(originalId: string, changes: Record<string, unknown>, storage?: PourStorage): { ok: boolean; record?: PourRecord; round?: number; originalId?: string; message?: string };
   clear(storage?: PourStorage): void;

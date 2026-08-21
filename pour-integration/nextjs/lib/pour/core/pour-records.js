@@ -45,6 +45,66 @@
     return BID_TYPE_UNKNOWN;                 // 원본은 bidTypeRaw 에 그대로 남는다
   }
 
+  /* --------------------------------------------- 협약서 발행번호 규칙
+
+     협약서 발행번호는 낙찰 결과를 정리했다는 표시다.
+       · 번호가 들어오면 그 행을 낙찰로 바꾼다 (새 행을 만들지 않는다)
+       · 번호만 먼저 넣고 나머지 낙찰 정보는 나중에 채울 수 있다
+       · 아직 비어 있는 낙찰 정보는 "추가 입력 필요" 알림에 모인다
+       · 낙찰인데 번호가 없는 옛 자료는 "협약서번호 미입력" 알림에 모인다
+  */
+
+  /** 협약서 발행번호가 들어오면 낙찰로 바꿀 수 있는 상태 */
+  var AGREEMENT_PROMOTES = ["공고", "재공고", "유찰"];
+
+  /** 번호를 지웠을 때 되돌릴지 물어보는 문구 */
+  var AGREEMENT_CLEARED_MESSAGE =
+    "협약서 발행번호를 지웠습니다. 상태를 \"공고\"로 되돌릴까요?\n" +
+    "되돌리지 않으면 낙찰 상태로 남고 \"협약서번호 미입력\" 알림에 표시됩니다.";
+
+  /** 낙찰 결과로 채워야 할 항목 */
+  var AWARD_REQUIRED = [
+    { key: "contractor", label: "시공사" },
+    { key: "contractorPhone", label: "시공사 전화번호" },
+    { key: "awardDate", label: "낙찰일" },
+    { key: "awardAmount", label: "낙찰금액" },
+    { key: "categories", label: "최종 공종" }
+  ];
+
+  function isFilled(record, key) {
+    var v = record ? record[key] : null;
+    if (Array.isArray(v)) return v.length > 0;
+    return !(v == null || String(v).trim() === "");
+  }
+
+  /** 협약서 발행번호가 적혀 있는지 */
+  function hasAgreement(record) {
+    return isFilled(record, "agreementNo");
+  }
+
+  /** 낙찰인데 아직 비어 있는 항목 이름 */
+  function missingAwardFields(record) {
+    if (!record || record.status !== "낙찰") return [];
+    return AWARD_REQUIRED.filter(function (f) { return !isFilled(record, f.key); })
+      .map(function (f) { return f.label; });
+  }
+
+  /**
+   * 협약서 발행번호를 기준으로 본 처리 단계.
+   *   확인 대기 — 아직 번호가 없다 (낙찰 결과를 정리하지 않았다)
+   *   추가 입력 필요 — 번호는 있지만 낙찰 정보가 덜 찼다
+   *   정리 완료 — 번호와 낙찰 정보가 모두 있다
+   *   협약서번호 미입력 — 낙찰인데 번호가 없다
+   */
+  function agreementStage(record) {
+    if (!record) return "";
+    if (record.status === "낙찰") {
+      if (!hasAgreement(record)) return "협약서번호 미입력";
+      return missingAwardFields(record).length ? "추가 입력 필요" : "정리 완료";
+    }
+    return hasAgreement(record) ? "정리 완료" : "확인 대기";
+  }
+
   /** 공고일 ≤ 서류 마감일 ≤ 개찰일 인지 확인한다. 빈 값은 검사하지 않는다. */
   function validateDates(record) {
     var r = record || {};
@@ -94,6 +154,7 @@
     // 공종 대분류. 세부 공종(공종 열)은 그대로 두고 대분류만 따로 보여 준다.
     { key: "categoryGroups", title: "공종 대분류",       type: "list",   width: 12 },
     { key: "categoryItems",  title: "공종 (대분류·세부)", type: "categoryPairs", width: 20 },
+    { key: "__agreementStage", title: "처리 단계",         type: "agreementStage", width: 14 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
     { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
     { key: "__thirdNames",       title: "타사 특허명·공법명",     type: "thirdNames",     width: 22 },
@@ -129,6 +190,8 @@
     { key: "contractorPhone", title: "시공사 전화번호", type: "phone",        width: 16 },
     { key: "awardDate",      title: "낙찰일",           type: "date",         width: 12 },
     { key: "awardAmount",    title: "낙찰금액",         type: "money",        width: 14 },
+    { key: "agreementNo",    title: "협약서 발행번호",  type: "text",         width: 16 },
+    { key: "__agreementStage", title: "처리 단계",       type: "agreementStage", width: 13 },
     { key: "quality",        title: "공사 품질",        type: "text",         width: 10 },
     { key: "remark",         title: "비고",             type: "text",         width: 18 }
   ];
@@ -375,6 +438,8 @@
         return patentStats(record, patentStorageRef).status;
       case "categoryPairs":
         return PourCategories.labelsOf(record.categoryItems).join("\n");
+      case "agreementStage":
+        return agreementStage(record);
     }
     switch (column.type) {
       case "seq":    return String((index || 0) + 1);
@@ -483,23 +548,34 @@
 
     var contractorPhone = String(
       data.contractorPhone != null ? data.contractorPhone : target.contractorPhone).trim();
+    var agreementNo = String(
+      data.agreementNo != null ? data.agreementNo : target.agreementNo).trim();
+
+    // 협약서 발행번호가 있으면 그것만으로 낙찰 정리를 시작할 수 있다.
+    // 나머지 낙찰 정보는 나중에 채우고, 그동안 "추가 입력 필요" 알림에 남는다.
     var fields = {};
-    if (!contractor) { missing.push("시공사명"); fields.contractor = "시공사명을 입력해 주세요."; }
-    if (!contractorPhone) {
-      missing.push("시공사 전화번호");
-      fields.contractorPhone = "시공사 전화번호를 입력해 주세요.";
-    }
-    if (!awardDate) { missing.push("낙찰일"); fields.awardDate = "낙찰일을 입력해 주세요."; }
-    if (awardAmount === "" || awardAmount == null) {
-      missing.push("낙찰금액");
-      fields.awardAmount = "낙찰금액을 입력해 주세요.";
-    }
-    if (!categories.length) { missing.push("최종 공종"); fields.categories = "최종 공종을 입력해 주세요."; }
-    if (missing.length) {
-      return {
-        ok: false, fields: fields,
-        message: "낙찰 등록을 위해 시공사명, 시공사 전화번호, 낙찰일, 낙찰금액 및 최종 공종을 입력해 주세요."
-      };
+    if (!agreementNo) {
+      if (!contractor) { missing.push("시공사명"); fields.contractor = "시공사명을 입력해 주세요."; }
+      if (!contractorPhone) {
+        missing.push("시공사 전화번호");
+        fields.contractorPhone = "시공사 전화번호를 입력해 주세요.";
+      }
+      if (!awardDate) { missing.push("낙찰일"); fields.awardDate = "낙찰일을 입력해 주세요."; }
+      if (awardAmount === "" || awardAmount == null) {
+        missing.push("낙찰금액");
+        fields.awardAmount = "낙찰금액을 입력해 주세요.";
+      }
+      if (!categories.length) {
+        missing.push("최종 공종");
+        fields.categories = "최종 공종을 입력해 주세요.";
+      }
+      if (missing.length) {
+        return {
+          ok: false, fields: fields,
+          message: "협약서 발행번호를 넣으면 나머지는 나중에 채울 수 있습니다.\n" +
+            "번호가 아직 없다면 시공사명, 시공사 전화번호, 낙찰일, 낙찰금액, 최종 공종을 입력해 주세요."
+        };
+      }
     }
 
     // POUR 적용 특허번호는 없어도 저장을 막지 않는다. 확인만 받는다.
@@ -519,6 +595,7 @@
       return {
         ok: false,
         needsConfirm: true,
+        reason: "missingPatent",
         message: "POUR 적용 특허번호가 아직 확인되지 않았습니다. 미기재 상태로 낙찰 저장할까요?"
       };
     }
@@ -555,7 +632,7 @@
     if (data.patentNames != null) merged.patentNames = toList(data.patentNames);
     if (data.quality != null) merged.quality = String(data.quality).trim();
     if (data.remark != null) merged.remark = String(data.remark).trim();
-    if (data.agreementNo != null) merged.agreementNo = String(data.agreementNo).trim();
+    merged.agreementNo = agreementNo;      // 협약서 발행번호 (핵심 처리 기준)
 
     var before = JSON.parse(JSON.stringify(target));
     var after = normalize(merged);
@@ -638,6 +715,33 @@
     if (incoming.categoryItems == null && incoming.categories != null) {
       delete draft.categoryItems;
     }
+
+    /* ---- 협약서 발행번호 ---- */
+    if (incoming.agreementNo != null) {
+      var hadNo = hasAgreement(before);
+      var hasNo = String(incoming.agreementNo).trim() !== "";
+
+      // 번호가 새로 들어오면 그 행을 낙찰로 바꾼다 (새 행을 만들지 않는다)
+      if (!hadNo && hasNo && AGREEMENT_PROMOTES.indexOf(draft.status) >= 0) {
+        draft.status = "낙찰";
+        draft.resultEnteredAt = nowStamp();
+      }
+
+      // 번호를 지웠을 때는 과거 번호를 되살리지 않는다.
+      // 상태를 공고로 되돌릴지는 쓰는 사람에게 물어본다.
+      if (hadNo && !hasNo && before.status === "낙찰") {
+        if (incoming.agreementCleared == null) {
+          return {
+            ok: false,
+            needsConfirm: true,
+            reason: "agreementCleared",
+            message: AGREEMENT_CLEARED_MESSAGE
+          };
+        }
+        if (incoming.agreementCleared === "notice") draft.status = "공고";
+      }
+    }
+    delete draft.agreementCleared;
 
     var after = normalize(draft);
     after.id = before.id;
@@ -754,6 +858,7 @@
    */
   function alerts(records, patentStorage) {
     var missing = [], multiUnknown = [], needsCheck = [];
+    var needsMore = [], noAgreement = [];
 
     (records || []).forEach(function (rec) {
       var stats = patentStats(rec, patentStorage);
@@ -761,9 +866,24 @@
       if (stats.noticeMultiFlag && stats.totalCount < 2) multiUnknown.push(rec);
       if (conflictingPatents(rec).length ||
           (stats.status === "POUR 특허 검토 필요")) needsCheck.push(rec);
+
+      // 협약서 발행번호를 기준으로 본 처리 단계
+      var stage = agreementStage(rec);
+      if (stage === "추가 입력 필요") needsMore.push(rec);
+      if (stage === "협약서번호 미입력") noAgreement.push(rec);
     });
 
     var out = [];
+    if (needsMore.length) {
+      out.push({ key: "awardIncomplete",
+                 label: "낙찰 정보 추가 입력 필요 " + needsMore.length + "건",
+                 count: needsMore.length, records: needsMore });
+    }
+    if (noAgreement.length) {
+      out.push({ key: "noAgreement",
+                 label: "협약서번호 미입력 " + noAgreement.length + "건",
+                 count: noAgreement.length, records: noAgreement });
+    }
     if (missing.length) {
       out.push({ key: "missingPour", label: "POUR 특허번호 미기재 낙찰 " + missing.length + "건",
                  count: missing.length, records: missing });
@@ -1078,6 +1198,12 @@
     normalizeBidType: normalizeBidType,
     validateDates: validateDates,
     QUALITY_OPTIONS: QUALITY_OPTIONS,
+    AGREEMENT_PROMOTES: AGREEMENT_PROMOTES,
+    AWARD_REQUIRED: AWARD_REQUIRED,
+    hasAgreement: hasAgreement,
+    missingAwardFields: missingAwardFields,
+    agreementStage: agreementStage,
+    AGREEMENT_CLEARED_MESSAGE: AGREEMENT_CLEARED_MESSAGE,
     COLUMNS: COLUMNS,
     MAIN_COLUMNS: MAIN_COLUMNS,
     PATENT_TAB_COLUMNS: PATENT_TAB_COLUMNS,

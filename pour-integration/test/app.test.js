@@ -74,12 +74,13 @@ function section(t) { console.log("\n" + t); }
     assert.strictEqual(await isOpen("#noticePanel"), false, "공고 입력 패널이 열려 있음");
   });
 
-  await test("표 열 순서가 요청한 21개 + 연도·공종 대분류와 동일", async () => {
+  await test("표 열 순서가 요청한 21개 + 연도·공종 대분류·협약서·처리 단계와 동일", async () => {
     const heads = await page.$$eval("#recordsGrid .grid thead th", els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
     assert.deepStrictEqual(heads, [
       "No.", "상태", "연도", "공고일", "서류 마감일", "개찰일", "지역", "도시", "발주처(아파트명)",
       "공사명", "공종 대분류", "공종", "POUR 특허번호", "타사 특허번호", "전화번호", "세대수", "입찰종류",
-      "시공사", "시공사 전화번호", "낙찰일", "낙찰금액", "공사 품질", "비고"
+      "시공사", "시공사 전화번호", "낙찰일", "낙찰금액",
+      "협약서 발행번호", "처리 단계", "공사 품질", "비고"
     ]);
   });
 
@@ -757,6 +758,99 @@ function section(t) { console.log("\n" + t); }
     assert.deepStrictEqual(after, before, "저장된 공종이 바뀌었다: " + JSON.stringify(after));
     await page.click("#panelClose");
     await page.fill("#gridSearch", "");
+  });
+
+  await test("낙찰 전환에 협약서 발행번호 칸이 있고 번호만으로 저장된다", async () => {
+    await openNewNotice();
+    await fillBasics("하남", "협약시험아파트", "2026-09-01");
+    await page.click("#panelSave");
+    await page.waitForTimeout(200);
+
+    await page.fill("#gridSearch", "협약시험아파트");
+    await page.waitForTimeout(200);
+    await page.click("#recordsGrid .grid tbody tr:first-child");
+    await page.click("#btnToAward");
+    await page.waitForSelector("#awardPanel.is-open");
+    await page.waitForTimeout(300);
+
+    assert.strictEqual(await page.isVisible("#aw-agreementNo"), true, "협약서 발행번호 칸이 없음");
+    // 협약서 발행번호만 넣고 나머지는 비워 둔 채 저장한다
+    await page.fill("#aw-agreementNo", "HS-2026-777");
+    lastDialog = null;
+    await page.click("#awardSave");
+    await page.waitForTimeout(400);
+    assert.strictEqual(await page.isVisible("#awardPanel.is-open"), false,
+      "저장되지 않고 패널이 열린 채로 남음");
+
+    const heads = await page.$$eval("#recordsGrid .grid thead th",
+      els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
+    const row = await page.$$eval("#recordsGrid .grid tbody tr:first-child td",
+      els => els.map(e => e.innerText.trim()));
+    assert.strictEqual(row[heads.indexOf("상태")], "낙찰", row.join(" | "));
+    assert.strictEqual(row[heads.indexOf("협약서 발행번호")], "HS-2026-777");
+    assert.strictEqual(row[heads.indexOf("처리 단계")], "추가 입력 필요");
+  });
+
+  await test("빠진 낙찰 정보가 추가 입력 필요 알림에 표시된다", async () => {
+    await page.fill("#gridSearch", "");
+    await page.waitForTimeout(200);
+    const labels = await page.$$eval(".alert-chip", els => els.map(e => e.textContent.trim()));
+    assert.ok(labels.some(t => t.includes("낙찰 정보 추가 입력 필요")), labels.join(" | "));
+    await page.click("#alert-awardIncomplete");
+    await page.waitForTimeout(200);
+    const clients = await page.$$eval("#recordsGrid .grid tbody tr", els => els.length);
+    assert.ok(clients >= 1, "알림을 눌러도 걸러지지 않음");
+    await page.click("#btnRefresh");
+    await page.waitForTimeout(200);
+  });
+
+  await test("낙찰이어도 정보가 덜 차 있으면 이어서 보완할 수 있다", async () => {
+    await page.fill("#gridSearch", "협약시험아파트");
+    await page.waitForTimeout(250);
+    await page.click("#recordsGrid .grid tbody tr:first-child");
+    assert.strictEqual(await page.isEnabled("#btnToAward"), true, "보완 버튼이 잠겨 있음");
+    assert.strictEqual((await page.textContent("#btnToAward")).trim(), "낙찰 정보 보완");
+
+    await page.click("#btnToAward");
+    await page.waitForSelector("#awardPanel.is-open");
+    await page.waitForTimeout(300);
+    const guide = await page.textContent("#awardMsg");
+    assert.ok(guide.includes("아직 비어 있는 항목"), guide);
+
+    await page.fill("#aw-contractor", "가나건설");
+    await page.fill("#aw-contractorPhone", "0311112222");
+    await page.fill("#aw-awardDate", "2026-10-01");
+    await page.fill("#aw-awardAmount", "500000000");
+    await page.fill("#aw-categories", "보도블럭");
+    await page.click("#awardSave");
+    await page.waitForTimeout(400);
+
+    const heads = await page.$$eval("#recordsGrid .grid thead th",
+      els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
+    const row = await page.$$eval("#recordsGrid .grid tbody tr:first-child td",
+      els => els.map(e => e.innerText.trim()));
+    assert.strictEqual(row[heads.indexOf("처리 단계")], "정리 완료", row.join(" | "));
+    assert.strictEqual(row[heads.indexOf("협약서 발행번호")], "HS-2026-777", "번호가 사라짐");
+  });
+
+  await test("협약서 발행번호를 지우면 되돌릴지 물어본다", async () => {
+    await page.dblclick("#recordsGrid .grid tbody tr:first-child");
+    await page.waitForSelector("#noticePanel.is-open");
+    await page.waitForTimeout(300);
+    await page.fill("#fAgreement", "");
+    lastDialog = null;
+    await page.click("#panelSave");          // 확인창은 위쪽 dialog 처리기가 수락한다
+    await page.waitForTimeout(400);
+    assert.ok(lastDialog && lastDialog.includes("공고"), String(lastDialog));
+
+    const heads = await page.$$eval("#recordsGrid .grid thead th",
+      els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
+    const row = await page.$$eval("#recordsGrid .grid tbody tr:first-child td",
+      els => els.map(e => e.innerText.trim()));
+    assert.strictEqual(row[heads.indexOf("상태")], "공고", "되돌리기를 골랐는데 낙찰로 남음");
+    assert.strictEqual(row[heads.indexOf("협약서 발행번호")], "", "지운 번호가 되살아남");
+    await page.fill("#gridSearch", "");
+    await page.waitForTimeout(200);
   });
 
   await test("콘솔 오류 없음", async () => {

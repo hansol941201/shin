@@ -74,7 +74,12 @@
 
   function syncRowButtons(rec) {
     $("btnDetail").disabled = !rec;
-    $("btnToAward").disabled = !rec || (rec.status !== "공고" && rec.status !== "재공고");
+    // 공고·재공고는 낙찰로 바꾸고, 낙찰인데 정보가 덜 찬 건은 이어서 보완한다
+    var canAward = !!rec && (
+      rec.status === "공고" || rec.status === "재공고" || rec.status === "유찰" ||
+      (rec.status === "낙찰" && PourRecords.agreementStage(rec) !== "정리 완료"));
+    $("btnToAward").disabled = !canAward;
+    $("btnToAward").textContent = rec && rec.status === "낙찰" ? "낙찰 정보 보완" : "낙찰로 변경";
   }
 
   $("btnDetail").addEventListener("click", function () {
@@ -404,6 +409,11 @@
 
     if (state.editingId) {
       var updated = PourRecords.update(state.editingId, data, storage);
+      // 협약서 발행번호를 지웠다면 상태를 되돌릴지 물어본다 (과거 번호는 되살리지 않는다)
+      if (!updated.ok && updated.reason === "agreementCleared") {
+        data.agreementCleared = window.confirm(updated.message) ? "notice" : "keep";
+        updated = PourRecords.update(state.editingId, data, storage);
+      }
       if (!updated.ok) { msg.textContent = updated.message; return; }
     } else if ($("isRebid").checked) {
       if (!rebidSource) { msg.textContent = "재공고할 기존 공고를 선택해 주세요."; return; }
@@ -423,18 +433,20 @@
   /* ------------------------------------------------ 낙찰 상세정보 */
 
   var AWARD_CONTRACTOR_FIELDS = [
-    { key: "contractor", label: "시공사명", required: true },
-    { key: "contractorPhone", label: "시공사 전화번호", required: true, phone: true },
+    { key: "contractor", label: "시공사명" },
+    { key: "contractorPhone", label: "시공사 전화번호", phone: true },
     { key: "contractorContactName", label: "담당자명" },
     { key: "contractorMobile", label: "담당자 휴대전화", phone: true },
     { key: "contractorAddress", label: "시공사 주소" },
     { key: "contractorBusinessNo", label: "사업자등록번호" },
     { key: "contractorNote", label: "시공사 비고" }
   ];
+  // 협약서 발행번호가 핵심 처리 기준이다. 번호만 먼저 넣고 나머지는 나중에 채울 수 있다.
   var AWARD_INFO_FIELDS = [
-    { key: "awardDate", label: "낙찰일", required: true, type: "date" },
-    { key: "awardAmount", label: "낙찰금액", required: true, money: true },
-    { key: "categories", label: "최종 공종", required: true },
+    { key: "agreementNo", label: "협약서 발행번호", lead: true },
+    { key: "awardDate", label: "낙찰일", type: "date" },
+    { key: "awardAmount", label: "낙찰금액", money: true },
+    { key: "categories", label: "최종 공종" },
     { key: "status", label: "낙찰 결과 상태", type: "select", options: PourRecords.STATUSES },
     { key: "scopes", label: "최종 공사범위" },
     { key: "quality", label: "공사 품질", datalist: "qualityList" },
@@ -501,7 +513,8 @@
       "공고일 " + (rec.noticeDate || "—") + " · 서류 마감일 " + (rec.documentDueDate || "—") +
       " · 개찰일 " + (rec.bidDate || "—") + "<br>" +
       "공고문 특허·공법: " + (rec.noticePatentText || "—") + "<br>" +
-      "현재 상태: " + rec.status + (rec.rebidRound ? " (재공고 " + rec.rebidRound + "차)" : "");
+      "현재 상태: " + rec.status + (rec.rebidRound ? " (재공고 " + rec.rebidRound + "차)" : "") +
+      " · 처리 단계: " + PourRecords.agreementStage(rec);
 
     buildAwardFields($("awardContractorFields"), AWARD_CONTRACTOR_FIELDS, rec);
     buildAwardFields($("awardInfoFields"), AWARD_INFO_FIELDS, rec);
@@ -513,7 +526,13 @@
     awardPatentEditor.setValue(rec);
     if (rec.categories.length) $("aw-categories").value = rec.categories.join(", ");
 
-    $("awardMsg").textContent = "";
+    // 협약서 발행번호만 먼저 넣어도 낙찰로 정리된다는 것을 알려 준다
+    var stage = PourRecords.agreementStage(rec);
+    var left = PourRecords.missingAwardFields(rec);
+    $("awardMsg").className = "form-msg";
+    $("awardMsg").textContent = stage === "추가 입력 필요" && left.length
+      ? "아직 비어 있는 항목: " + left.join(", ")
+      : "협약서 발행번호만 먼저 넣어도 낙찰로 정리됩니다. 나머지는 나중에 채울 수 있습니다.";
     $("awardSave").disabled = false;
     openPanel("awardPanel", "awardBack");
   }

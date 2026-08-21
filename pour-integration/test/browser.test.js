@@ -269,10 +269,12 @@ function section(t) { console.log("\n" + t); }
     assert.ok(summary.includes("현재 상태: 공고"), summary);
   });
 
-  await test("시공사명·전화번호·낙찰일·금액·공종이 없으면 저장 차단", async () => {
+  await test("협약서 발행번호도 낙찰 정보도 없으면 저장 차단", async () => {
     await page.click("#awardSave");
     const message = await page.textContent("#awardMsg");
-    assert.ok(message.includes("시공사명, 시공사 전화번호, 낙찰일, 낙찰금액 및 최종 공종"), message);
+    // 협약서 발행번호가 있으면 나머지는 나중에 채울 수 있다고 알려 준다
+    assert.ok(message.includes("협약서 발행번호"), message);
+    assert.ok(message.includes("시공사명, 시공사 전화번호, 낙찰일, 낙찰금액, 최종 공종"), message);
     for (const key of ["contractor", "contractorPhone", "awardDate", "awardAmount"]) {
       assert.strictEqual(await page.isVisible("#award-error-" + key), true, key + " 개별 안내 없음");
     }

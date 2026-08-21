@@ -139,6 +139,40 @@ PourCategories.normalizeItem({ group: "주차장", name: "우레탄" });  // 고
 엑셀과 일치하지 않는 번호는 자동 확정하지 않고 검토 대상으로 표시합니다.
 `rollbackMigration()` 으로 되돌릴 수 있습니다.
 
+### 4-1. 협약서 발행번호 — 공고 → 낙찰의 핵심 처리 기준
+
+협약서 발행번호는 "낙찰 결과를 정리했다"는 표시입니다.
+
+| 처리 단계 | 뜻 |
+|---|---|
+| 확인 대기 | 번호가 아직 없다 (낙찰 결과를 정리하지 않았다) |
+| 추가 입력 필요 | 번호는 있지만 낙찰 정보가 덜 찼다 → **낙찰 정보 추가 입력 필요** 알림 |
+| 정리 완료 | 번호와 낙찰 정보가 모두 있다 |
+| 협약서번호 미입력 | 낙찰인데 번호가 없다 → **협약서번호 미입력** 알림 |
+
+* 새 공고 등록 화면에는 번호 칸이 없습니다. 결과가 나온 뒤에 넣습니다.
+* **번호가 들어오면 그 행이 낙찰이 됩니다.** 새 행을 만들지 않고 같은 행을 갱신합니다.
+  (공고·재공고·유찰 → 낙찰. 타공법 낙찰·공고취소는 바꾸지 않습니다.)
+* **번호만 먼저 넣고 나머지는 나중에** 채울 수 있습니다.
+  그동안 빠진 항목은 알림과 낙찰 전환 패널 위쪽에 나옵니다.
+* 번호가 없을 때만 시공사·시공사 전화번호·낙찰일·낙찰금액·최종 공종을 요구합니다.
+* 낙찰인데 정리가 덜 된 행은 목록에서 **「낙찰 정보 보완」** 으로 이어서 채웁니다.
+* 번호를 지우면 **과거 번호를 되살리지 않고**, 상태를 공고로 되돌릴지 물어봅니다.
+
+```js
+PourRecords.update(id, { agreementNo: "HS-2026-001" }, storage);   // → 상태 낙찰
+PourRecords.agreementStage(record);      // "추가 입력 필요"
+PourRecords.missingAwardFields(record);  // ["시공사", "낙찰일", …]
+
+// 번호를 지울 때
+var r = PourRecords.update(id, { agreementNo: "" }, storage);
+// r.needsConfirm === true, r.reason === "agreementCleared"
+PourRecords.update(id, { agreementNo: "", agreementCleared: "notice" }, storage);  // 공고로
+PourRecords.update(id, { agreementNo: "", agreementCleared: "keep" }, storage);    // 낙찰 유지
+```
+
+기존 `agreementNo` 값과 데이터베이스 열은 그대로 둡니다.
+
 ### 5. 낙찰 전환
 
 상태가 `공고` · `재공고` 인 행에 **「낙찰로 변경」** 버튼이 붙고, 누르면
@@ -210,6 +244,7 @@ sh pour-integration/test/run-all.sh
 | `test/edit.test.js` | 수정 기능, 미기재 알림, 수정 이력 | 20건 통과 |
 | `test/multipatent.test.js` | POUR/타사 분리, 다특허, 자료 이전 | 30건 통과 |
 | `test/categories.test.js` | 공종 분류표, 자동 분류, 기존 자료 보존 | 26건 통과 |
+| `test/agreement.test.js` | 협약서 발행번호 기준 공고 → 낙찰 흐름 | 22건 통과 |
 | `test/real-excel.test.js` | 첨부해 주신 POUR 특허 엑셀 원본으로 검증 | 19건 통과 |
 | `test/browser.test.js` | 모듈 동작·레이아웃 (demo.html) | 85건 통과 |
 | `test/app.test.js` | 메인 화면 동작 (app.html) | 48건 통과 |

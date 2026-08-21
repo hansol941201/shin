@@ -9,6 +9,8 @@ import PourCategories from "@/lib/pour/core/pour-categories.js";
 import type { PourRecord, PourStorage, CategoryItem } from "@/lib/pour/core";
 
 export interface NoticePanelProps {
+  /** 협약서 발행번호를 지웠을 때 상태를 되돌릴지 확인받는다. 기본은 window.confirm */
+  confirmAgreementCleared?: (message: string) => boolean;
   open: boolean;
   storage: PourStorage;
   /** 수정할 자료. 없으면 새 공고 등록 */
@@ -24,7 +26,10 @@ const EMPTY_FORM = {
   remark: "", contractor: "", status: "공고"
 };
 
-export default function NoticePanel({ open, storage, record, onClose, onSaved }: NoticePanelProps) {
+export default function NoticePanel({
+  open, storage, record, onClose, onSaved,
+  confirmAgreementCleared = (message: string) => window.confirm(message)
+}: NoticePanelProps) {
   // 상세 수정일 때만 보이는 항목이 있다 (새 공고 화면에서는 감춘다)
   const isEdit = !!record;
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -180,7 +185,13 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
     }
 
     if (record) {
-      const result = PourRecords.update(record.id, payload, storage);
+      let result = PourRecords.update(record.id, payload, storage);
+      // 협약서 발행번호를 지웠다면 상태를 되돌릴지 물어본다 (과거 번호는 되살리지 않는다)
+      if (!result.ok && result.reason === "agreementCleared") {
+        const revert = confirmAgreementCleared(result.message || "");
+        result = PourRecords.update(
+          record.id, { ...payload, agreementCleared: revert ? "notice" : "keep" }, storage);
+      }
       if (!result.ok) { setMessage({ text: result.message || "저장하지 못했습니다.", kind: "error" }); return; }
     } else if (isRebid) {
       if (!rebidSource) { setMessage({ text: "재공고할 기존 공고를 선택해 주세요.", kind: "error" }); return; }
@@ -193,7 +204,7 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
     onSaved();
     onClose();
   }, [form, bidType, patents, categoryItems, record, isRebid, rebidSource, rebidReason,
-      previousFailDate, storage, onSaved, onClose]);
+      previousFailDate, storage, onSaved, onClose, confirmAgreementCleared]);
 
   return (
     <>
