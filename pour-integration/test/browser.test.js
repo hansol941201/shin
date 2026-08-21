@@ -442,7 +442,7 @@ function section(t) { console.log("\n" + t); }
 
   await test("상태 필터", async () => {
     await page.selectOption("#filterStatus", "낙찰");
-    const statuses = await page.$$eval("#patentTable tbody tr td:nth-child(10)", els => els.map(e => e.textContent));
+    const statuses = await page.$$eval("#patentTable tbody tr td:nth-child(11)", els => els.map(e => e.textContent));
     assert.ok(statuses.every(s => s === "낙찰"), statuses.join(" | "));
     await page.selectOption("#filterStatus", "전체");
   });

@@ -20,8 +20,9 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 
 SCRIPTS = [
-    "regions.data.js", "pour-region.js", "pour-patents.js", "pour-records.js",
-    "pour-export.js", "pour-ui.js", "pour-patent-editor.js", "pour-grid.js", "pour-store.js",
+    "regions.data.js", "pour-region.js", "pour-patents.js", "pour-categories.js",
+    "pour-records.js", "pour-export.js", "pour-ui.js", "pour-patent-editor.js",
+    "pour-category-picker.js", "pour-grid.js", "pour-store.js",
 ]
 
 # 공개 미리보기에 쓰는 예시 자료.

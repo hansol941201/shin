@@ -18,7 +18,9 @@
 
   /**
    * @param container 입력기를 넣을 엘리먼트
-   * @param options   { storage, categoryInput, onChange }
+   * @param options   { storage, categoryInput, onCategories, onChange }
+   *                  categoryInput — 옛 자유 입력 칸 (값에 이름을 이어 붙인다)
+   *                  onCategories  — 공종 고르기에 이름 목록을 넘긴다 (분류는 그쪽에서 한다)
    */
   function create(container, options) {
     var opts = options || {};
@@ -60,7 +62,7 @@
     /* ------------------------------------------------------ 공종 자동 입력 */
 
     function syncCategories() {
-      if (!opts.categoryInput) return;
+      if (!opts.categoryInput && typeof opts.onCategories !== "function") return;
       var seen = {}, out = [];
       pourItems.forEach(function (it) {
         String(it.category || "").split(/[,/\n]/).forEach(function (part) {
@@ -68,7 +70,10 @@
           if (c && !seen[c]) { seen[c] = true; out.push(c); }
         });
       });
-      opts.categoryInput.value = out.join(", ");
+      if (opts.categoryInput) opts.categoryInput.value = out.join(", ");
+      // 분류표에 맞춰 넣는 일은 받는 쪽에서 한다.
+      // 어느 대분류인지 하나로 정해지지 않으면 임의로 고르지 않고 기타로 간다.
+      if (typeof opts.onCategories === "function") opts.onCategories(out);
     }
 
     /* ------------------------------------------------------------ 경고 */

@@ -25,6 +25,7 @@ export interface SeedRecord {
   status: string;
   year: string;
   categories: string[];
+  categoryItems?: { group: string; name: string }[];
   region: string;
   city: string;
   patentItems: SeedPatent[];
@@ -78,6 +79,9 @@ const COLUMNS: ReadonlyArray<readonly [string, (r: SeedRecord) => unknown]> = [
   ["client", (r) => r.client],
   ["project_name", (r) => join(r.projectNames)],
   ["category", (r) => join(r.categories)],
+  // 공종의 대분류+세부 짝. 기존 공종 열(category)은 그대로 두고 옆에 담는다.
+  ["category_items", (r) => (r.categoryItems && r.categoryItems.length
+    ? JSON.stringify(r.categoryItems) : null)],
   ["scopes", (r) => join(r.scopes)],
   ["phone", (r) => text(r.phone)],              // 문자열 그대로 — 앞자리 0 보존
   ["households", (r) => (r.households === "" ? null : r.households)],

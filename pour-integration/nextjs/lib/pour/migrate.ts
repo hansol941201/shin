@@ -39,7 +39,9 @@ export const PROJECT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   ["updated_at", "TEXT"],
   ["patents_migrated", "INTEGER DEFAULT 0"],
   /** 연도별 실적 List 에서 옮겨 온 연도. 원본에 날짜가 없어 연도만 담는다. */
-  ["record_year", "TEXT"]
+  ["record_year", "TEXT"],
+  /** 공종의 대분류+세부 짝. 기존 공종 열(category)은 그대로 두고 옆에 더한다. */
+  ["category_items", "TEXT"]
 ] as const;
 
 /** 새로 만드는 표와 색인. 전부 IF NOT EXISTS 라 기존 것을 덮지 않는다. */

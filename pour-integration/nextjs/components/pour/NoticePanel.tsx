@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import PourRecords from "@/lib/pour/core/pour-records.js";
 import PourRegion from "@/lib/pour/core/pour-region.js";
 import PatentEditor, { type PatentEditorValue } from "./PatentEditor";
-import type { PourRecord, PourStorage } from "@/lib/pour/core";
+import CategoryPicker from "./CategoryPicker";
+import PourCategories from "@/lib/pour/core/pour-categories.js";
+import type { PourRecord, PourStorage, CategoryItem } from "@/lib/pour/core";
 
 export interface NoticePanelProps {
   open: boolean;
@@ -16,7 +18,7 @@ export interface NoticePanelProps {
 }
 
 const EMPTY_FORM = {
-  client: "", projectNames: "", categories: "", city: "", region: "",
+  client: "", projectNames: "", city: "", region: "",
   phone: "", households: "", noticeDate: "", documentDueDate: "", bidDate: "",
   noticePatentText: "", agreementNo: "", quality: "", scopes: "", address: "",
   remark: "", contractor: "", status: "공고"
@@ -26,6 +28,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
   // 상세 수정일 때만 보이는 항목이 있다 (새 공고 화면에서는 감춘다)
   const isEdit = !!record;
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  // 공종은 대분류와 짝지어 두므로 문자열 폼과 따로 관리한다
+  const [categoryItems, setCategoryItems] = useState<CategoryItem[]>([]);
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [bidType, setBidType] = useState("");
   const [patents, setPatents] = useState<PatentEditorValue>({ patentItems: [], noticeMultiFlag: false });
@@ -49,7 +53,6 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       setForm({
         client: record.client,
         projectNames: record.projectNames.join("\n"),
-        categories: record.categories.join(", "),
         city: record.city,
         region: record.region,
         phone: record.phone,
@@ -69,12 +72,17 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       setRegionOptions(record.region ? [record.region] : []);
       setBidType(record.bidType);
       setPatents({ patentItems: record.patentItems, noticeMultiFlag: record.noticeMultiFlag });
+      // 항목이 없는 옛 자료는 공종 이름에서 분류를 붙여 온다 (이름은 그대로 남는다)
+      setCategoryItems((record.categoryItems && record.categoryItems.length
+        ? record.categoryItems
+        : PourCategories.itemsFromNames(record.categories)) as CategoryItem[]);
       setIsRebid(false);
     } else {
       setForm({ ...EMPTY_FORM });
       setRegionOptions([]);
       setBidType("");
       setPatents({ patentItems: [], noticeMultiFlag: false });
+      setCategoryItems([]);
       setIsRebid(false);
       setRebidSource("");
     }
@@ -131,7 +139,6 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       ...prev,
       client: origin.client,
       projectNames: origin.projectNames.join("\n"),
-      categories: origin.categories.join(", "),
       city: origin.city,
       region: origin.region,
       phone: origin.phone,
@@ -139,6 +146,9 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       scopes: (origin.scopes || []).join("\n"),
       noticePatentText: origin.noticePatentText
     }));
+    setCategoryItems((origin.categoryItems && origin.categoryItems.length
+      ? origin.categoryItems
+      : PourCategories.itemsFromNames(origin.categories)) as CategoryItem[]);
     setRegionOptions(origin.region ? [origin.region] : []);
     setPatents({ patentItems: origin.patentItems, noticeMultiFlag: origin.noticeMultiFlag });
     setPreviousFailDate(origin.bidDate || "");
@@ -151,6 +161,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       bidType,
       // 새 공고는 화면에서 상태를 고르지 않는다. 수정할 때만 고른 값을 쓴다.
       status: record ? form.status : "공고",
+      // 공종은 대분류와 짝지어 저장한다. 기존 공종 열은 모델이 함께 채운다.
+      categoryItems,
       patentItems: patents.patentItems,
       noticeMultiFlag: patents.noticeMultiFlag
     };
@@ -177,7 +189,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
     }
     onSaved();
     onClose();
-  }, [form, bidType, patents, record, isRebid, rebidSource, rebidReason, previousFailDate, storage, onSaved, onClose]);
+  }, [form, bidType, patents, categoryItems, record, isRebid, rebidSource, rebidReason,
+      previousFailDate, storage, onSaved, onClose]);
 
   return (
     <>
@@ -243,15 +256,21 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
               <input id="pf-client" type="text" value={form.client}
                      onChange={(e) => set("client", e.target.value)} />
             </div>
-            <div>
+            <div className="span-2">
               <label htmlFor="pf-projects">공사명 <span className="opt">(여러 건은 줄바꿈)</span></label>
               <textarea id="pf-projects" rows={2} value={form.projectNames}
                         onChange={(e) => set("projectNames", e.target.value)} />
             </div>
+          </div>
+
+          <div className="pour-sub-head">공종</div>
+          <div className="pour-form-row pour-form-row-1">
             <div>
-              <label htmlFor="pf-categories">공종 <span className="opt">(특허 선택 시 자동)</span></label>
-              <input id="pf-categories" type="text" value={form.categories}
-                     onChange={(e) => set("categories", e.target.value)} />
+              <label>
+                대분류를 고른 뒤 세부 공종을 고릅니다{" "}
+                <span className="opt">(특허를 고르면 자동으로 채워집니다)</span>
+              </label>
+              <CategoryPicker value={categoryItems} onChange={setCategoryItems} />
             </div>
           </div>
 
@@ -324,8 +343,9 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                     storage={storage}
                     value={patents}
                     onChange={setPatents}
-                    onCategories={(categories) => {
-                      if (categories.length) set("categories", categories.join(", "));
+                    onCategories={(names) => {
+                      // 확실하지 않은 이름은 임의로 정하지 않고 기타로 간다
+                      setCategoryItems(PourCategories.itemsFromNames(names) as CategoryItem[]);
                     }}
                   />
                 </div>

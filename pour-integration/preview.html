@@ -591,6 +591,62 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .bid-btn:hover{border-color:var(--line-strong); color:var(--text);}
 .bid-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
 
+/* ------------------------------------------------- 공종 고르기 */
+/* 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다 */
+.cat-picker{border:1px solid var(--line); border-radius:var(--r3); padding:var(--s3); background:var(--white);}
+.cat-groups{display:flex; flex-wrap:wrap; gap:var(--s1); margin-bottom:var(--s3);}
+.cat-group{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--muted);
+  transition:background .12s, border-color .12s, color .12s;
+}
+.cat-group:hover{border-color:var(--line-strong); color:var(--text);}
+.cat-group.is-open{background:var(--navy); border-color:var(--navy); color:#fff;}
+.cat-group-count{
+  min-width:18px; padding:0 5px; font-size:11px; font-weight:700; text-align:center;
+  background:var(--navy-soft); color:var(--navy); border-radius:999px;
+}
+.cat-group.is-open .cat-group-count{background:rgba(255,255,255,.22); color:#fff;}
+
+.cat-items{display:flex; flex-wrap:wrap; gap:var(--s1); min-height:30px;}
+.cat-item{
+  padding:6px 13px; font-size:13px; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:999px; color:var(--text);
+  transition:background .12s, border-color .12s, color .12s;
+}
+.cat-item:hover{background:var(--head); border-color:var(--line-strong);}
+.cat-item.is-on{background:var(--navy-soft); border-color:var(--navy); color:var(--navy); font-weight:700;}
+.cat-item.is-on::before{content:"✓ "; font-weight:700;}
+.cat-hint{font-size:12.5px; color:var(--faint); align-self:center;}
+
+.cat-custom{display:flex; gap:var(--s2); margin-top:var(--s2);}
+.cat-custom-input{
+  flex:1; min-width:0; padding:6px 10px; font-size:13px;
+  border:1px solid var(--line); border-radius:var(--r2); background:var(--white);
+}
+.cat-custom-btn{
+  flex:0 0 auto; padding:6px 13px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--navy);
+}
+.cat-custom-btn:hover{background:var(--head);}
+
+.cat-chips{display:flex; flex-wrap:wrap; gap:var(--s1); margin-top:var(--s3);}
+.cat-chips:empty{display:none;}
+.cat-chip{
+  display:inline-flex; align-items:center; gap:0;
+  border:1px solid var(--line); border-radius:999px; overflow:hidden;
+  font-size:12.5px; background:var(--white);
+}
+.cat-chip-group{padding:3px 9px; background:var(--head); color:var(--muted); font-weight:600;}
+.cat-chip-name{padding:3px 9px; color:var(--text); font-weight:600;}
+.cat-chip-x{
+  padding:3px 9px 3px 2px; border:0; background:transparent; cursor:pointer;
+  color:var(--faint); font-size:14px; line-height:1;
+}
+.cat-chip-x:hover{color:var(--danger);}
+.cat-empty{margin-top:var(--s3); font-size:12.5px; color:var(--faint);}
+
 .rebid-box{
   padding:var(--s3); margin-bottom:var(--s3);
   background:#FFFBF3; border:1px solid #EBC98A; border-radius:var(--r3);
@@ -897,8 +953,15 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     <div class="sub-head">기본 정보</div>
     <div class="form-row form-row-3" id="rowBasic">
       <div><label for="fClient">아파트·단지명</label><input type="text" id="fClient" /></div>
-      <div><label for="fProjects">공사명 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fProjects" rows="2"></textarea></div>
-      <div><label for="fCategories">공종 <span class="opt">(특허 선택 시 자동)</span></label><input type="text" id="fCategories" /></div>
+      <div class="span-2"><label for="fProjects">공사명 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fProjects" rows="2"></textarea></div>
+    </div>
+
+    <div class="sub-head">공종</div>
+    <div class="form-row form-row-1" id="rowCategories">
+      <div>
+        <label>대분류를 고른 뒤 세부 공종을 고릅니다 <span class="opt">(특허를 고르면 자동으로 채워집니다)</span></label>
+        <div id="categoryPicker"></div>
+      </div>
     </div>
 
     <div class="sub-head">지역·연락처</div>
@@ -1583,6 +1646,193 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   };
 });
 
+/* ===== pour-categories.js ===== */
+/**
+ * 공종 분류표 — 대분류 → 세부 공종
+ *
+ * 규칙
+ *   · 같은 세부 공종이 여러 대분류에 있을 수 있다 (예: 우레탄 = 옥상방수·주차장).
+ *     그래서 저장할 때는 언제나 "고른 대분류 + 세부 공종" 짝으로 남긴다.
+ *   · 자동 분류는 확실할 때만 한다. 어느 대분류인지 하나로 정해지지 않으면
+ *     임의로 고르지 않고 "기타"로 두되 원래 공종명은 그대로 지킨다.
+ *   · 분류표에 없는 이름도 지우지 않는다. "기타"로 묶고 이름은 그대로 남긴다.
+ */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.PourCategories = api;
+})(typeof self !== "undefined" ? self : this, function () {
+  "use strict";
+
+  var OTHER = "기타";
+  var SEP = " > ";                      // 대분류와 세부 공종을 잇는 표기
+
+  var GROUPS = [
+    { key: "옥상방수", items: ["PVC", "금속기와", "박공지붕", "방수", "복합시트", "슬라브", "싱글", "우레탄"] },
+    { key: "재도장",   items: ["균열보수", "재도장"] },
+    { key: "주차장",   items: ["균열보수", "배면차수", "아스콘", "에폭시", "우레탄", "재도장"] },
+    { key: "도로",     items: ["보도블럭", "아스콘", "에폭시"] },
+    // 기타는 미리 정한 세부 공종이 없다. 쓰는 사람이 직접 적는다.
+    { key: OTHER,      items: [] }
+  ];
+
+  var GROUP_KEYS = GROUPS.map(function (g) { return g.key; });
+
+  function itemsOf(groupKey) {
+    for (var i = 0; i < GROUPS.length; i++) {
+      if (GROUPS[i].key === groupKey) return GROUPS[i].items.slice();
+    }
+    return [];
+  }
+
+  /** 비교용 이름. 공백·가운뎃점 차이는 같은 것으로 본다. */
+  function key(name) {
+    return String(name == null ? "" : name).replace(/[\s·]/g, "").toUpperCase();
+  }
+
+  function cleanName(name) {
+    return String(name == null ? "" : name).trim();
+  }
+
+  /** 이 이름이 들어 있는 대분류를 모두 찾는다. */
+  function groupsOf(name) {
+    var k = key(name);
+    if (!k) return [];
+    return GROUPS.filter(function (g) {
+      return g.items.some(function (item) { return key(item) === k; });
+    }).map(function (g) { return g.key; });
+  }
+
+  /** 표에 적힌 표기로 맞춘다. 표에 없으면 원래 이름 그대로 둔다. */
+  function canonical(groupKey, name) {
+    var k = key(name);
+    var list = itemsOf(groupKey);
+    for (var i = 0; i < list.length; i++) {
+      if (key(list[i]) === k) return list[i];
+    }
+    return cleanName(name);
+  }
+
+  /**
+   * 이름 하나를 분류한다.
+   * 대분류가 하나로 정해질 때만 그 대분류를 쓰고, 여러 곳에 있거나 표에 없으면 기타로 둔다.
+   * 이름은 어느 경우에도 바꾸지 않는다.
+   */
+  function classify(name) {
+    var clean = cleanName(name);
+    if (!clean) return null;
+    var found = groupsOf(clean);
+    if (found.length === 1) return { group: found[0], name: canonical(found[0], clean) };
+    return { group: OTHER, name: clean };          // 확실하지 않으면 판단하지 않는다
+  }
+
+  /** 대분류가 이 이름을 실제로 가지고 있는지 */
+  function has(groupKey, name) {
+    return groupsOf(name).indexOf(groupKey) >= 0;
+  }
+
+  /** 항목 하나를 {group, name} 모양으로 다듬는다. */
+  function normalizeItem(input) {
+    if (input == null) return null;
+    if (typeof input === "string") return fromLabel(input);
+
+    var name = cleanName(input.name);
+    if (!name) return null;
+    var group = cleanName(input.group);
+
+    if (!group) return classify(name);
+    if (GROUP_KEYS.indexOf(group) < 0) return { group: OTHER, name: name };
+    if (group === OTHER) return { group: OTHER, name: name };
+    // 고른 대분류에 없는 이름이면 임의로 옮기지 않고 기타로 둔다
+    if (!has(group, name)) return { group: OTHER, name: name };
+    return { group: group, name: canonical(group, name) };
+  }
+
+  /** "옥상방수 > 우레탄" 처럼 붙어 있는 표기도 읽는다. */
+  function fromLabel(text) {
+    var raw = cleanName(text);
+    if (!raw) return null;
+    var at = raw.indexOf(SEP.trim());
+    if (at < 0) return classify(raw);
+    return normalizeItem({
+      group: raw.slice(0, at).trim(),
+      name: raw.slice(at + SEP.trim().length).trim()
+    });
+  }
+
+  function toArray(value) {
+    if (value == null) return [];
+    if (Array.isArray(value)) return value;
+    return String(value).split(/[\n,]/).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  /** 목록을 다듬고 같은 (대분류, 세부 공종) 짝은 한 번만 남긴다. */
+  function normalizeItems(list) {
+    var out = [], seen = {};
+    toArray(list).forEach(function (raw) {
+      var item = normalizeItem(raw);
+      if (!item) return;
+      var k = item.group + " " + key(item.name);
+      if (seen[k]) return;
+      seen[k] = true;
+      out.push(item);
+    });
+    return out;
+  }
+
+  /** 옛 자료(이름만 있는 목록)를 항목 목록으로 옮긴다. */
+  function itemsFromNames(names) {
+    return normalizeItems(toArray(names));
+  }
+
+  /** 항목 목록에서 세부 공종 이름만 뽑는다 (기존 공종 열에 그대로 쓰는 값). */
+  function namesOf(items) {
+    var out = [], seen = {};
+    normalizeItems(items).forEach(function (it) {
+      var k = key(it.name);
+      if (seen[k]) return;
+      seen[k] = true;
+      out.push(it.name);
+    });
+    return out;
+  }
+
+  /** 항목 목록에 쓰인 대분류를 표 순서대로 뽑는다. */
+  function groupNamesOf(items) {
+    var used = {};
+    normalizeItems(items).forEach(function (it) { used[it.group] = true; });
+    return GROUP_KEYS.filter(function (g) { return used[g]; });
+  }
+
+  /** 화면·엑셀에 쓰는 표기 */
+  function label(item) {
+    var it = normalizeItem(item);
+    return it ? it.group + SEP + it.name : "";
+  }
+
+  function labelsOf(items) {
+    return normalizeItems(items).map(label);
+  }
+
+  return {
+    OTHER: OTHER,
+    SEP: SEP,
+    GROUPS: GROUPS,
+    GROUP_KEYS: GROUP_KEYS,
+    itemsOf: itemsOf,
+    groupsOf: groupsOf,
+    has: has,
+    classify: classify,
+    normalizeItem: normalizeItem,
+    normalizeItems: normalizeItems,
+    itemsFromNames: itemsFromNames,
+    namesOf: namesOf,
+    groupNamesOf: groupNamesOf,
+    label: label,
+    labelsOf: labelsOf
+  };
+});
+
 /* ===== pour-records.js ===== */
 /**
  * 공사실적 자료 모델 · 실적표 열 정의 · 특허별 집계
@@ -1591,13 +1841,13 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
  * 새 행을 만들지 않고 같은 행(id)을 갱신한다.
  */
 (function (root, factory) {
-  var patents = typeof require === "function" && typeof module === "object"
-    ? require("./pour-patents.js")
-    : root.PourPatents;
-  var api = factory(patents);
+  var node = typeof require === "function" && typeof module === "object";
+  var patents = node ? require("./pour-patents.js") : root.PourPatents;
+  var categories = node ? require("./pour-categories.js") : root.PourCategories;
+  var api = factory(patents, categories);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PourRecords = api;
-})(typeof self !== "undefined" ? self : this, function (PourPatents) {
+})(typeof self !== "undefined" ? self : this, function (PourPatents, PourCategories) {
   "use strict";
 
   var STORAGE_KEY = "pour.records.v1";
@@ -1677,6 +1927,9 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     { key: "remark",         title: "비고",              type: "text",   width: 18 },
     // 연도별 실적 List 에서 옮겨 온 연도. 요청한 1~22번 열 순서를 흔들지 않도록 뒤에 둔다.
     { key: "year",           title: "연도",              type: "text",   width: 7 },
+    // 공종 대분류. 세부 공종(공종 열)은 그대로 두고 대분류만 따로 보여 준다.
+    { key: "categoryGroups", title: "공종 대분류",       type: "list",   width: 12 },
+    { key: "categoryItems",  title: "공종 (대분류·세부)", type: "categoryPairs", width: 20 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
     { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
     { key: "__thirdNames",       title: "타사 특허명·공법명",     type: "thirdNames",     width: 22 },
@@ -1701,6 +1954,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     { key: "city",           title: "도시",             type: "text",         width: 10 },
     { key: "client",         title: "발주처(아파트명)", type: "text",         width: 24, pin: true },
     { key: "projectNames",   title: "공사명",           type: "list",         width: 32 },
+    { key: "categoryGroups", title: "공종 대분류",      type: "list",         width: 11 },
     { key: "categories",     title: "공종",             type: "list",         width: 14 },
     { key: "patentNumbers",  title: "POUR 특허번호",    type: "patent",       width: 18 },
     { key: "thirdPatentNumbers", title: "타사 특허번호", type: "thirdNumbers", width: 18 },
@@ -1725,6 +1979,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     { key: "projectNames",  title: "공사명",           type: "list",   width: 34 },
     { key: "phone",         title: "발주처 전화번호",  type: "phone",  width: 16 },
     { key: "households",    title: "세대수",           type: "number", width: 9 },
+    { key: "categoryGroups", title: "공종 대분류",      type: "list",   width: 11 },
     { key: "categories",    title: "공종",             type: "list",   width: 14 },
     { key: "status",        title: "상태",             type: "text",   width: 11 },
     { key: "noticeDate",    title: "공고일",           type: "date",   width: 12 },
@@ -1754,12 +2009,20 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
   function normalize(input) {
     var r = input || {};
+    var categoryItems = buildCategoryItems(r);
+    var categoryNames = PourCategories.namesOf(categoryItems);
     var items = buildPatentItems(r);
     var pourItems = items.filter(function (it) { return it.kind === POUR; });
     var thirdItems = items.filter(function (it) { return it.kind === THIRD; });
     return {
       id: r.id || createId(),
-      categories: toList(r.categories),
+      // 공종은 두 가지로 함께 남긴다.
+      //   categories     — 지금까지 써 온 세부 공종 이름 목록 (열·엑셀이 그대로 쓴다)
+      //   categoryItems  — 대분류를 함께 담은 항목 목록 (같은 이름이 여러 대분류에 있어서 필요하다)
+      // 항목이 없는 옛 자료는 이름에서 옮겨 오되 확실할 때만 분류하고 나머지는 기타로 둔다.
+      categories: categoryNames,
+      categoryItems: categoryItems,
+      categoryGroups: PourCategories.groupNamesOf(categoryItems),
       region: String(r.region || "").trim(),
       city: String(r.city || "").trim(),
       patentItems: items,
@@ -1809,6 +2072,16 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       address: String(r.address || "").trim(),
       remark: String(r.remark || "").trim()
     };
+  }
+
+  /**
+   * 공종 항목을 만든다.
+   * categoryItems 가 있으면 그대로 쓰고(빈 배열도 "모두 지웠다"는 뜻),
+   * 없으면 기존 categories 이름에서 옮겨 온다. 어느 쪽이든 이름은 바꾸지 않는다.
+   */
+  function buildCategoryItems(r) {
+    if (Array.isArray(r.categoryItems)) return PourCategories.normalizeItems(r.categoryItems);
+    return PourCategories.itemsFromNames(r.categories);
   }
 
   var POUR = "POUR", THIRD = "THIRD_PARTY";
@@ -1878,7 +2151,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
   // 수정 이력에 남길 항목 이름
   var FIELD_LABELS = {
-    categories: "공종", region: "지역", city: "도시",
+    categories: "공종", categoryItems: "공종(대분류·세부)", region: "지역", city: "도시",
     patentNumbers: "POUR 적용 특허번호", patentNames: "특허명·공법명",
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
@@ -1936,6 +2209,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
         return stats.label ? stats.label + (stats.isMulti ? " (" + stats.detail + ")" : "") : "";
       case "patentStatus":
         return patentStats(record, patentStorageRef).status;
+      case "categoryPairs":
+        return PourCategories.labelsOf(record.categoryItems).join("\n");
     }
     switch (column.type) {
       case "seq":    return String((index || 0) + 1);
@@ -2036,7 +2311,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     var awardDate = String(data.awardDate != null ? data.awardDate : target.awardDate).trim();
     var awardAmount = data.awardAmount != null && data.awardAmount !== ""
       ? toNumber(data.awardAmount) : target.awardAmount;
-    var categories = data.categories != null ? toList(data.categories) : target.categories;
+    // 최종 공종: 항목(대분류+세부)을 넘겼으면 거기서 이름을 뽑고,
+    // 이름만 넘겼으면 그 이름을 쓴다. 둘 다 없으면 원래 값을 그대로 둔다.
+    var categories = data.categoryItems != null ? PourCategories.namesOf(data.categoryItems)
+      : data.categories != null ? toList(data.categories)
+      : target.categories;
 
     var contractorPhone = String(
       data.contractorPhone != null ? data.contractorPhone : target.contractorPhone).trim();
@@ -2096,7 +2375,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     merged.resultEnteredAt = nowStamp();       // 결과 입력일
     merged.updatedAt = nowStamp();             // 최종 수정일
     merged.awardAmount = awardAmount;
+    // 공종: 항목(대분류+세부)을 함께 넘겼으면 그쪽을 쓰고,
+    // 이름만 넘겼으면 그 이름으로 항목을 다시 만든다 (확실하지 않은 것은 기타로 간다)
     merged.categories = categories;
+    if (data.categoryItems != null) merged.categoryItems = data.categoryItems;
+    else if (data.categories != null) delete merged.categoryItems;
     merged.patentNumbers = patentNumbers;
     if (data.patentItems != null) merged.patentItems = data.patentItems;
     else if (data.patentNumbers != null || data.thirdPatentNumbers != null) {
@@ -2184,6 +2467,12 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     if (incoming.patentItems == null &&
         (incoming.patentNumbers != null || incoming.thirdPatentNumbers != null)) {
       delete draft.patentItems;
+    }
+
+    // 공종도 마찬가지. 대분류 없이 이름만 넘겼다면 그 이름으로 항목을 다시 만든다
+    // (확실하지 않은 것은 임의로 옮기지 않고 기타로 간다)
+    if (incoming.categoryItems == null && incoming.categories != null) {
+      delete draft.categoryItems;
     }
 
     var after = normalize(draft);
@@ -3294,7 +3583,9 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
   /**
    * @param container 입력기를 넣을 엘리먼트
-   * @param options   { storage, categoryInput, onChange }
+   * @param options   { storage, categoryInput, onCategories, onChange }
+   *                  categoryInput — 옛 자유 입력 칸 (값에 이름을 이어 붙인다)
+   *                  onCategories  — 공종 고르기에 이름 목록을 넘긴다 (분류는 그쪽에서 한다)
    */
   function create(container, options) {
     var opts = options || {};
@@ -3336,7 +3627,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     /* ------------------------------------------------------ 공종 자동 입력 */
 
     function syncCategories() {
-      if (!opts.categoryInput) return;
+      if (!opts.categoryInput && typeof opts.onCategories !== "function") return;
       var seen = {}, out = [];
       pourItems.forEach(function (it) {
         String(it.category || "").split(/[,/\n]/).forEach(function (part) {
@@ -3344,7 +3635,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
           if (c && !seen[c]) { seen[c] = true; out.push(c); }
         });
       });
-      opts.categoryInput.value = out.join(", ");
+      if (opts.categoryInput) opts.categoryInput.value = out.join(", ");
+      // 분류표에 맞춰 넣는 일은 받는 쪽에서 한다.
+      // 어느 대분류인지 하나로 정해지지 않으면 임의로 고르지 않고 기타로 간다.
+      if (typeof opts.onCategories === "function") opts.onCategories(out);
     }
 
     /* ------------------------------------------------------------ 경고 */
@@ -3575,6 +3869,216 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
   root.PourPatentEditor = { create: create };
 })(typeof self !== "undefined" ? self : this);
+
+/* ===== pour-category-picker.js ===== */
+/**
+ * 공종 고르기 — 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다.
+ *
+ *   var picker = PourCategoryPicker.create(container, { onChange: fn });
+ *   picker.setValue(record);      // 또는 항목 배열 / 이름 배열
+ *   picker.getValue();            // [{ group, name }, ...]
+ *
+ * 규칙
+ *   · 대분류를 고르면 그 대분류의 세부 공종만 보인다
+ *   · 세부 공종은 여러 개 고를 수 있고, 다시 누르면 해제된다
+ *   · 같은 이름이 여러 대분류에 있어도 고른 대분류 기준으로 저장한다
+ *   · 기타를 고르면 직접 적는 칸이 나온다
+ *   · 분류표에 없는 옛 자료는 기타로 보이되 이름은 그대로 남는다
+ */
+(function (root, factory) {
+  var node = typeof require === "function" && typeof module === "object";
+  var categories = node ? require("./pour-categories.js") : root.PourCategories;
+  var api = factory(categories);
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.PourCategoryPicker = api;
+})(typeof self !== "undefined" ? self : this, function (PourCategories) {
+  "use strict";
+
+  function el(tag, className, text) {
+    var n = document.createElement(tag);
+    if (className) n.className = className;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function create(container, options) {
+    var opts = options || {};
+    var items = [];                                  // [{ group, name }]
+    var openGroup = PourCategories.GROUP_KEYS[0];
+
+    container.innerHTML = "";
+    container.classList.add("cat-picker");
+
+    var groupRow = el("div", "cat-groups");
+    var itemRow = el("div", "cat-items");
+    var customRow = el("div", "cat-custom");
+    var chipRow = el("div", "cat-chips");
+    var emptyMsg = el("div", "cat-empty", "고른 공종이 없습니다. 위에서 대분류를 먼저 고르세요.");
+
+    var customInput = document.createElement("input");
+    customInput.type = "text";
+    customInput.className = "cat-custom-input";
+    customInput.placeholder = "공종명을 직접 입력";
+    var customBtn = el("button", "cat-custom-btn", "＋ 추가");
+    customBtn.type = "button";
+    customRow.appendChild(customInput);
+    customRow.appendChild(customBtn);
+
+    container.appendChild(groupRow);
+    container.appendChild(itemRow);
+    container.appendChild(customRow);
+    container.appendChild(chipRow);
+    container.appendChild(emptyMsg);
+
+    /* ------------------------------------------------------- 상태 */
+
+    function has(group, name) {
+      return items.some(function (it) { return it.group === group && it.name === name; });
+    }
+
+    function toggle(group, name) {
+      var at = -1;
+      items.forEach(function (it, i) {
+        if (it.group === group && it.name === name) at = i;
+      });
+      if (at >= 0) items.splice(at, 1);
+      else items.push({ group: group, name: name });
+      changed();
+    }
+
+    function changed() {
+      items = PourCategories.normalizeItems(items);
+      render();
+      if (typeof opts.onChange === "function") opts.onChange(getValue());
+    }
+
+    /* ------------------------------------------------------- 그리기 */
+
+    function renderGroups() {
+      groupRow.innerHTML = "";
+      PourCategories.GROUP_KEYS.forEach(function (group) {
+        var count = items.filter(function (it) { return it.group === group; }).length;
+        var btn = el("button", "cat-group" + (group === openGroup ? " is-open" : ""));
+        btn.type = "button";
+        btn.appendChild(document.createTextNode(group));
+        if (count) btn.appendChild(el("span", "cat-group-count", String(count)));
+        btn.addEventListener("click", function () {
+          openGroup = group;
+          render();
+        });
+        groupRow.appendChild(btn);
+      });
+    }
+
+    function renderItems() {
+      itemRow.innerHTML = "";
+      var list = PourCategories.itemsOf(openGroup);
+      if (openGroup === PourCategories.OTHER) {
+        // 기타는 미리 정한 세부 공종이 없다. 이미 고른 것만 보여 준다.
+        list = items.filter(function (it) { return it.group === PourCategories.OTHER; })
+          .map(function (it) { return it.name; });
+      }
+      if (!list.length) {
+        itemRow.appendChild(el("span", "cat-hint",
+          openGroup === PourCategories.OTHER
+            ? "아래 칸에 공종명을 직접 적어 추가하세요."
+            : "이 대분류에는 세부 공종이 없습니다."));
+        return;
+      }
+      list.forEach(function (name) {
+        var on = has(openGroup, name);
+        var btn = el("button", "cat-item" + (on ? " is-on" : ""), name);
+        btn.type = "button";
+        btn.setAttribute("data-group", openGroup);
+        btn.setAttribute("data-item", name);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        btn.addEventListener("click", function () { toggle(openGroup, name); });
+        itemRow.appendChild(btn);
+      });
+    }
+
+    function renderChips() {
+      chipRow.innerHTML = "";
+      items.forEach(function (it) {
+        var chip = el("span", "cat-chip");
+        chip.appendChild(el("span", "cat-chip-group", it.group));
+        chip.appendChild(el("span", "cat-chip-name", it.name));
+        var x = el("button", "cat-chip-x", "×");
+        x.type = "button";
+        x.title = it.group + " " + it.name + " 빼기";
+        x.addEventListener("click", function () { toggle(it.group, it.name); });
+        chip.appendChild(x);
+        chipRow.appendChild(chip);
+      });
+      emptyMsg.style.display = items.length ? "none" : "";
+    }
+
+    function render() {
+      renderGroups();
+      renderItems();
+      customRow.style.display = openGroup === PourCategories.OTHER ? "" : "none";
+      renderChips();
+    }
+
+    function addCustom() {
+      var name = customInput.value.trim();
+      if (!name) return;
+      if (!has(PourCategories.OTHER, name)) items.push({ group: PourCategories.OTHER, name: name });
+      customInput.value = "";
+      changed();
+    }
+    customBtn.addEventListener("click", addCustom);
+    customInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+    });
+
+    /* ------------------------------------------------------- 바깥 창구 */
+
+    function setValue(value) {
+      var source = value && !Array.isArray(value)
+        ? (Array.isArray(value.categoryItems) ? value.categoryItems : value.categories)
+        : value;
+      items = PourCategories.normalizeItems(source);
+      // 고른 것이 있으면 그 대분류를 먼저 펼쳐 준다
+      openGroup = items.length ? items[0].group : PourCategories.GROUP_KEYS[0];
+      render();
+    }
+
+    function getValue() {
+      return PourCategories.normalizeItems(items);
+    }
+
+    function getNames() {
+      return PourCategories.namesOf(items);
+    }
+
+    /** 특허 선택 등으로 자동 입력할 때. 확실하지 않은 이름은 기타로 간다. */
+    function setFromNames(names) {
+      items = PourCategories.itemsFromNames(names);
+      openGroup = items.length ? items[0].group : PourCategories.GROUP_KEYS[0];
+      render();
+      if (typeof opts.onChange === "function") opts.onChange(getValue());
+    }
+
+    function clear() {
+      items = [];
+      openGroup = PourCategories.GROUP_KEYS[0];
+      render();
+    }
+
+    render();
+    return {
+      setValue: setValue,
+      setFromNames: setFromNames,
+      getValue: getValue,
+      getNames: getNames,
+      clear: clear,
+      openGroup: function () { return openGroup; }
+    };
+  }
+
+  return { create: create };
+});
 
 /* ===== pour-grid.js ===== */
 /**
@@ -3989,6 +4493,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   PourRecords.usePatentStorage(storage);
 
   var state = { view: "records", statusTab: "전체", search: "", editingId: null, awardingId: null };
+  var categoryPicker = null;
 
   /* ----------------------------------------------------------- 메뉴 */
 
@@ -4161,8 +4666,13 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     }
   });
 
+  categoryPicker = PourCategoryPicker.create($("categoryPicker"), {});
+
   patentEditor = PourPatentEditor.create($("patentEditor"), {
-    storage: storage, categoryInput: $("fCategories")
+    storage: storage,
+    // 특허를 고르면 공종이 자동으로 채워진다. 분류는 분류표를 따르고,
+    // 어느 대분류인지 확실하지 않으면 임의로 고르지 않고 기타로 간다.
+    onCategories: function (names) { categoryPicker.setFromNames(names); }
   });
 
   PourRecords.STATUSES.forEach(function (s) { $("fStatus").appendChild(new Option(s, s)); });
@@ -4192,11 +4702,12 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   }
 
   function clearNoticeForm() {
-    ["fClient", "fProjects", "fCategories", "fCity", "fPhone", "fHouseholds", "fNoticeDate",
+    ["fClient", "fProjects", "fCity", "fPhone", "fHouseholds", "fNoticeDate",
      "fDueDate", "fBidDate", "fNoticePatent", "fAgreement", "fQuality", "fScopes",
      "fAddress", "fRemark", "fContractor", "rebidSearch", "rebidRound", "rebidReason",
      "previousFailDate"].forEach(function (id) { $(id).value = ""; });
     $("fStatus").value = "공고";
+    if (categoryPicker) categoryPicker.clear();
     $("isRebid").checked = false;
     $("rebidBox").style.display = "none";
     rebidSource = null;
@@ -4233,7 +4744,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
       $("fClient").value = rec.client;
       $("fProjects").value = rec.projectNames.join("\n");
-      $("fCategories").value = rec.categories.join(", ");
+      categoryPicker.setValue(rec);
       $("fCity").value = rec.city;
       setRegionOptions([rec.region].filter(Boolean), rec.region);
       regionField.setValue(rec.region, rec.city);
@@ -4301,7 +4812,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     if (!origin) return;
     $("fClient").value = origin.client;
     $("fProjects").value = origin.projectNames.join("\n");
-    $("fCategories").value = origin.categories.join(", ");
+    categoryPicker.setValue(origin);
     $("fCity").value = origin.city;
     setRegionOptions([origin.region].filter(Boolean), origin.region);
     regionField.setValue(origin.region, origin.city);
@@ -4328,7 +4839,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       city: resolved ? resolved.city : $("fCity").value.trim(),
       client: $("fClient").value.trim(),
       projectNames: $("fProjects").value,
-      categories: $("fCategories").value,
+      // 공종은 대분류와 짝지어 저장한다. 기존 공종 열(categories)은 모델이 함께 채운다.
+      categoryItems: categoryPicker.getValue(),
       phone: $("fPhone").value.trim(),
       households: $("fHouseholds").value,
       noticeDate: $("fNoticeDate").value,

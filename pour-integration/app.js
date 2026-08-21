@@ -17,6 +17,7 @@
   PourRecords.usePatentStorage(storage);
 
   var state = { view: "records", statusTab: "전체", search: "", editingId: null, awardingId: null };
+  var categoryPicker = null;
 
   /* ----------------------------------------------------------- 메뉴 */
 
@@ -189,8 +190,13 @@
     }
   });
 
+  categoryPicker = PourCategoryPicker.create($("categoryPicker"), {});
+
   patentEditor = PourPatentEditor.create($("patentEditor"), {
-    storage: storage, categoryInput: $("fCategories")
+    storage: storage,
+    // 특허를 고르면 공종이 자동으로 채워진다. 분류는 분류표를 따르고,
+    // 어느 대분류인지 확실하지 않으면 임의로 고르지 않고 기타로 간다.
+    onCategories: function (names) { categoryPicker.setFromNames(names); }
   });
 
   PourRecords.STATUSES.forEach(function (s) { $("fStatus").appendChild(new Option(s, s)); });
@@ -220,11 +226,12 @@
   }
 
   function clearNoticeForm() {
-    ["fClient", "fProjects", "fCategories", "fCity", "fPhone", "fHouseholds", "fNoticeDate",
+    ["fClient", "fProjects", "fCity", "fPhone", "fHouseholds", "fNoticeDate",
      "fDueDate", "fBidDate", "fNoticePatent", "fAgreement", "fQuality", "fScopes",
      "fAddress", "fRemark", "fContractor", "rebidSearch", "rebidRound", "rebidReason",
      "previousFailDate"].forEach(function (id) { $(id).value = ""; });
     $("fStatus").value = "공고";
+    if (categoryPicker) categoryPicker.clear();
     $("isRebid").checked = false;
     $("rebidBox").style.display = "none";
     rebidSource = null;
@@ -261,7 +268,7 @@
 
       $("fClient").value = rec.client;
       $("fProjects").value = rec.projectNames.join("\n");
-      $("fCategories").value = rec.categories.join(", ");
+      categoryPicker.setValue(rec);
       $("fCity").value = rec.city;
       setRegionOptions([rec.region].filter(Boolean), rec.region);
       regionField.setValue(rec.region, rec.city);
@@ -329,7 +336,7 @@
     if (!origin) return;
     $("fClient").value = origin.client;
     $("fProjects").value = origin.projectNames.join("\n");
-    $("fCategories").value = origin.categories.join(", ");
+    categoryPicker.setValue(origin);
     $("fCity").value = origin.city;
     setRegionOptions([origin.region].filter(Boolean), origin.region);
     regionField.setValue(origin.region, origin.city);
@@ -356,7 +363,8 @@
       city: resolved ? resolved.city : $("fCity").value.trim(),
       client: $("fClient").value.trim(),
       projectNames: $("fProjects").value,
-      categories: $("fCategories").value,
+      // 공종은 대분류와 짝지어 저장한다. 기존 공종 열(categories)은 모델이 함께 채운다.
+      categoryItems: categoryPicker.getValue(),
       phone: $("fPhone").value.trim(),
       households: $("fHouseholds").value,
       noticeDate: $("fNoticeDate").value,

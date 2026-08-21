@@ -66,7 +66,8 @@ const NEW_COLUMNS = [
   ["is_rebid", "INTEGER DEFAULT 0"], ["rebid_round", "INTEGER"], ["rebid_reason", "TEXT"],
   ["previous_fail_date", "TEXT"], ["original_project_id", "TEXT"],
   ["previous_project_id", "TEXT"], ["result_entered_at", "TEXT"], ["updated_at", "TEXT"],
-  ["patents_migrated", "INTEGER DEFAULT 0"], ["record_year", "TEXT"]
+  ["patents_migrated", "INTEGER DEFAULT 0"], ["record_year", "TEXT"],
+  ["category_items", "TEXT"]
 ];
 
 const q = (sql) => db.prepare(sql).get();

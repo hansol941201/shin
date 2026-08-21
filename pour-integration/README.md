@@ -85,6 +85,43 @@ PourRecords.alerts(records, storage);       // 상단 알림 묶음
 낙찰 필수 항목은 **낙찰일 · 시공사 · 낙찰금액 · 최종 공종** 이고,
 POUR 특허번호는 필수가 아닙니다. 비어 있으면 `needsConfirm` 확인 경고만 돌려줍니다.
 
+### 3-1. 공종 분류 (`pour-categories.js`, `pour-category-picker.js`)
+
+공종은 **대분류 → 세부 공종** 두 단계로 고릅니다.
+
+| 대분류 | 세부 공종 |
+|---|---|
+| 옥상방수 | PVC · 금속기와 · 박공지붕 · 방수 · 복합시트 · 슬라브 · 싱글 · 우레탄 |
+| 재도장 | 균열보수 · 재도장 |
+| 주차장 | 균열보수 · 배면차수 · 아스콘 · 에폭시 · 우레탄 · 재도장 |
+| 도로 | 보도블럭 · 아스콘 · 에폭시 |
+| 기타 | (미리 정한 것 없음 — 직접 입력) |
+
+* 대분류를 고르면 그 대분류의 세부 공종만 보이고, 여러 개 고를 수 있습니다.
+  고른 것을 다시 누르면 해제됩니다.
+* **같은 세부 공종이 여러 대분류에 있어도 고른 대분류 기준으로 저장합니다.**
+  그래서 자료에는 이름만이 아니라 `{ group, name }` 짝으로 남습니다.
+* 자동 분류(특허 선택·엑셀 이전)는 **확실할 때만** 합니다.
+  한 대분류에만 있는 이름이면 그 대분류로, 여러 곳에 있거나 표에 없으면
+  임의로 정하지 않고 **기타**로 두되 **이름은 그대로 지킵니다.**
+
+```js
+PourCategories.classify("싱글");    // { group: "옥상방수", name: "싱글" }
+PourCategories.classify("우레탄");  // { group: "기타", name: "우레탄" }  ← 두 곳에 있어 확실하지 않음
+PourCategories.normalizeItem({ group: "주차장", name: "우레탄" });  // 고른 대로 저장
+```
+
+자료에 남는 것
+
+| 항목 | 내용 |
+|---|---|
+| `categories` | 지금까지 써 온 세부 공종 이름 목록 (열·엑셀이 그대로 씁니다) |
+| `categoryItems` | `[{ group, name }]` — 대분류를 함께 담은 항목 |
+| `categoryGroups` | 쓰인 대분류 (표의 "공종 대분류" 열) |
+
+옛 자료에는 `categoryItems` 가 없습니다. 읽을 때 이름에서 분류를 붙여 주므로
+**기존 공종 자료는 지워지거나 바뀌지 않습니다.**
+
 ### 4. POUR / 타사 특허
 
 특허는 `patentItems` 배열에 개별 항목으로 저장되며 `kind` 로 구분합니다.
@@ -172,6 +209,7 @@ sh pour-integration/test/run-all.sh
 | `test/logic.test.js` | 지역 분류, 엑셀 업로드, 자동검색, 실적표, 엑셀 파일 재확인 | 47건 통과 |
 | `test/edit.test.js` | 수정 기능, 미기재 알림, 수정 이력 | 20건 통과 |
 | `test/multipatent.test.js` | POUR/타사 분리, 다특허, 자료 이전 | 30건 통과 |
+| `test/categories.test.js` | 공종 분류표, 자동 분류, 기존 자료 보존 | 26건 통과 |
 | `test/real-excel.test.js` | 첨부해 주신 POUR 특허 엑셀 원본으로 검증 | 19건 통과 |
 | `test/browser.test.js` | 모듈 동작·레이아웃 (demo.html) | 85건 통과 |
 | `test/app.test.js` | 메인 화면 동작 (app.html) | 48건 통과 |

@@ -150,6 +150,32 @@ await test("원본에 없는 날짜를 만들지 않음", () => {
   assert.deepStrictEqual([r.n, r.b, r.a], [0, 0, 0]);
 });
 
+await test("공종 대분류가 category_items 에 담긴다", () => {
+  const n = one(`SELECT COUNT(*) c FROM projects
+    WHERE id LIKE 'rec-imp-%' AND category_items IS NOT NULL AND category_items <> ''`).c;
+  const expect = records.filter((r) => (r.categoryItems || []).length).length;
+  assert.strictEqual(n, expect, `담긴 행 ${n} / 기대 ${expect}`);
+  const row = db.prepare(`SELECT category, category_items FROM projects
+    WHERE id LIKE 'rec-imp-%' AND category_items IS NOT NULL LIMIT 1`).get();
+  const items = JSON.parse(row.category_items);
+  assert.ok(Array.isArray(items) && items.length);
+  assert.ok(items.every((it) => it.group && it.name), row.category_items);
+  // 기존 공종 열은 그대로 이름만 담고 있다
+  assert.ok(row.category.split("\n").length >= 1);
+});
+
+await test("확실하지 않은 공종은 임의로 정하지 않고 기타로 담긴다", () => {
+  const all = records.flatMap((r) => r.categoryItems || []);
+  // 우레탄·에폭시·아스콘·균열보수·재도장은 두 대분류에 있으므로 기타여야 한다
+  const ambiguous = ["우레탄", "에폭시", "아스콘", "균열보수", "재도장"];
+  all.filter((it) => ambiguous.includes(it.name))
+    .forEach((it) => assert.strictEqual(it.group, "기타", it.name + " → " + it.group));
+  // 한 곳에만 있는 이름은 그 대분류로 들어간다
+  const singles = all.filter((it) => it.name === "슬라브" || it.name === "보도블럭");
+  assert.ok(singles.length > 0, "한 대분류뿐인 공종이 없다");
+  singles.forEach((it) => assert.notStrictEqual(it.group, "기타", it.name));
+});
+
 await test("특허 연결이 모두 POUR 로 들어감", () => {
   const r = one(`SELECT COUNT(*) c, SUM(CASE WHEN kind <> 'POUR' THEN 1 ELSE 0 END) other
     FROM pour_project_patents WHERE project_id LIKE 'rec-imp-%'`);

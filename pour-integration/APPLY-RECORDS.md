@@ -65,8 +65,9 @@ python3 pour-integration/scripts/import-records.py <연도별 실적List.xlsx>
 **(가) Drizzle 마이그레이션 파일** — Sites 배포가 drizzle 기록(journal)으로 한 번씩 실행할 때
 
 ```
-nextjs/drizzle/0002_pour_integration.sql   새 표 3개 + projects 새 열 23개
-nextjs/drizzle/0003_pour_record_year.sql   ALTER TABLE projects ADD COLUMN record_year TEXT;
+nextjs/drizzle/0002_pour_integration.sql     새 표 3개 + projects 새 열 23개
+nextjs/drizzle/0003_pour_record_year.sql     ALTER TABLE projects ADD COLUMN record_year TEXT;
+nextjs/drizzle/0004_pour_category_items.sql  ALTER TABLE projects ADD COLUMN category_items TEXT;
 ```
 
 **(나) 실행 시점 마이그레이션** — 기록 없이 배포 코드에서 직접 부를 때 (권장)
@@ -134,4 +135,8 @@ sh   pour-integration/test/run-all.sh                    # 전체
 * `건설신기술 1026호` · `탄성강화 파우더` → 특허번호가 아니므로 번호로 바꾸지 않고
   **공고문 특허·공법 원문**에 원문 그대로 남깁니다 (14건).
 * 원본에 날짜가 없어 공고일·개찰일·낙찰일은 비워 둡니다. 연도만 `record_year` 에 담습니다.
+* 공종은 분류표로 옮기되 **확실할 때만** 대분류를 붙입니다.
+  `우레탄`·`에폭시`·`아스콘`·`균열보수`·`재도장` 처럼 두 대분류에 걸친 이름과
+  표에 없는 이름은 임의로 정하지 않고 **기타**로 두었습니다 (이름은 그대로).
+  대분류가 정해진 행 1,143건 · 기타만 있는 행 836건 — 화면에서 다시 고를 수 있습니다.
 * 지역·도시만 있고 발주처·공사명·특허·전화가 모두 빈 1줄은 실적으로 세지 않았습니다.

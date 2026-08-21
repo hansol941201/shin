@@ -610,6 +610,62 @@
 .pour-scope .pour-bid-btn:hover{border-color:var(--line-strong); color:var(--text);}
 .pour-scope .pour-bid-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff; font-weight:600;}
 
+/* ------------------------------------------------- 공종 고르기 */
+/* 대분류를 먼저 고르고 그 안의 세부 공종을 여러 개 고른다 */
+.pour-scope .cat-picker{border:1px solid var(--line); border-radius:var(--r3); padding:var(--s3); background:var(--white);}
+.pour-scope .cat-groups{display:flex; flex-wrap:wrap; gap:var(--s1); margin-bottom:var(--s3);}
+.pour-scope .cat-group{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--muted);
+  transition:background .12s, border-color .12s, color .12s;
+}
+.pour-scope .cat-group:hover{border-color:var(--line-strong); color:var(--text);}
+.pour-scope .cat-group.is-open{background:var(--navy); border-color:var(--navy); color:#fff;}
+.pour-scope .cat-group-count{
+  min-width:18px; padding:0 5px; font-size:11px; font-weight:700; text-align:center;
+  background:var(--navy-soft); color:var(--navy); border-radius:999px;
+}
+.pour-scope .cat-group.is-open .cat-group-count{background:rgba(255,255,255,.22); color:#fff;}
+
+.pour-scope .cat-items{display:flex; flex-wrap:wrap; gap:var(--s1); min-height:30px;}
+.pour-scope .cat-item{
+  padding:6px 13px; font-size:13px; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:999px; color:var(--text);
+  transition:background .12s, border-color .12s, color .12s;
+}
+.pour-scope .cat-item:hover{background:var(--head); border-color:var(--line-strong);}
+.pour-scope .cat-item.is-on{background:var(--navy-soft); border-color:var(--navy); color:var(--navy); font-weight:700;}
+.pour-scope .cat-item.is-on::before{content:"✓ "; font-weight:700;}
+.pour-scope .cat-hint{font-size:12.5px; color:var(--faint); align-self:center;}
+
+.pour-scope .cat-custom{display:flex; gap:var(--s2); margin-top:var(--s2);}
+.pour-scope .cat-custom-input{
+  flex:1; min-width:0; padding:6px 10px; font-size:13px;
+  border:1px solid var(--line); border-radius:var(--r2); background:var(--white);
+}
+.pour-scope .cat-custom-btn{
+  flex:0 0 auto; padding:6px 13px; font-size:13px; font-weight:600; cursor:pointer;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r2); color:var(--navy);
+}
+.pour-scope .cat-custom-btn:hover{background:var(--head);}
+
+.pour-scope .cat-chips{display:flex; flex-wrap:wrap; gap:var(--s1); margin-top:var(--s3);}
+.pour-scope .cat-chips:empty{display:none;}
+.pour-scope .cat-chip{
+  display:inline-flex; align-items:center; gap:0;
+  border:1px solid var(--line); border-radius:999px; overflow:hidden;
+  font-size:12.5px; background:var(--white);
+}
+.pour-scope .cat-chip-group{padding:3px 9px; background:var(--head); color:var(--muted); font-weight:600;}
+.pour-scope .cat-chip-name{padding:3px 9px; color:var(--text); font-weight:600;}
+.pour-scope .cat-chip-x{
+  padding:3px 9px 3px 2px; border:0; background:transparent; cursor:pointer;
+  color:var(--faint); font-size:14px; line-height:1;
+}
+.pour-scope .cat-chip-x:hover{color:var(--danger);}
+.pour-scope .cat-empty{margin-top:var(--s3); font-size:12.5px; color:var(--faint);}
+
 .pour-scope .pour-rebid-box{
   padding:var(--s3); margin-bottom:var(--s3);
   background:#FFFBF3; border:1px solid #EBC98A; border-radius:var(--r3);

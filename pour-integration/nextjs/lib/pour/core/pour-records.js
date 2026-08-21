@@ -5,13 +5,13 @@
  * 새 행을 만들지 않고 같은 행(id)을 갱신한다.
  */
 (function (root, factory) {
-  var patents = typeof require === "function" && typeof module === "object"
-    ? require("./pour-patents.js")
-    : root.PourPatents;
-  var api = factory(patents);
+  var node = typeof require === "function" && typeof module === "object";
+  var patents = node ? require("./pour-patents.js") : root.PourPatents;
+  var categories = node ? require("./pour-categories.js") : root.PourCategories;
+  var api = factory(patents, categories);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PourRecords = api;
-})(typeof self !== "undefined" ? self : this, function (PourPatents) {
+})(typeof self !== "undefined" ? self : this, function (PourPatents, PourCategories) {
   "use strict";
 
   var STORAGE_KEY = "pour.records.v1";
@@ -60,7 +60,8 @@
     });
     return { ok: !errors.length, errors: errors };
   }
-  var QUALITY_OPTIONS = ["우수", "양호", "보통", "확인 필요"];
+  // 실적 List 엑셀은 최상/상/중/하 표기를 쓴다. 원본 표기를 바꾸지 않고 그대로 고를 수 있게 함께 둔다.
+  var QUALITY_OPTIONS = ["우수", "양호", "보통", "최상", "상", "중", "하", "확인 필요"];
 
   /* --------------------------------------------------------- 열 정의 */
 
@@ -88,6 +89,11 @@
     { key: "scopes",         title: "공사 범위",         type: "list",   width: 20 },
     { key: "address",        title: "주소",              type: "text",   width: 28 },
     { key: "remark",         title: "비고",              type: "text",   width: 18 },
+    // 연도별 실적 List 에서 옮겨 온 연도. 요청한 1~22번 열 순서를 흔들지 않도록 뒤에 둔다.
+    { key: "year",           title: "연도",              type: "text",   width: 7 },
+    // 공종 대분류. 세부 공종(공종 열)은 그대로 두고 대분류만 따로 보여 준다.
+    { key: "categoryGroups", title: "공종 대분류",       type: "list",   width: 12 },
+    { key: "categoryItems",  title: "공종 (대분류·세부)", type: "categoryPairs", width: 20 },
     // POUR 특허와 타사 특허는 절대 같은 열에 섞지 않는다
     { key: "thirdPatentNumbers", title: "타사 특허번호",         type: "thirdNumbers",   width: 18 },
     { key: "__thirdNames",       title: "타사 특허명·공법명",     type: "thirdNames",     width: 22 },
@@ -104,6 +110,7 @@
   var MAIN_COLUMNS = [
     { key: "__seq",          title: "No.",              type: "seq",          width: 6,  pin: true },
     { key: "status",         title: "상태",             type: "text",         width: 11, pin: true },
+    { key: "year",           title: "연도",             type: "text",         width: 7 },
     { key: "noticeDate",     title: "공고일",           type: "date",         width: 12 },
     { key: "documentDueDate", title: "서류 마감일",     type: "date",         width: 12 },
     { key: "bidDate",        title: "개찰일",           type: "date",         width: 12 },
@@ -111,6 +118,7 @@
     { key: "city",           title: "도시",             type: "text",         width: 10 },
     { key: "client",         title: "발주처(아파트명)", type: "text",         width: 24, pin: true },
     { key: "projectNames",   title: "공사명",           type: "list",         width: 32 },
+    { key: "categoryGroups", title: "공종 대분류",      type: "list",         width: 11 },
     { key: "categories",     title: "공종",             type: "list",         width: 14 },
     { key: "patentNumbers",  title: "POUR 특허번호",    type: "patent",       width: 18 },
     { key: "thirdPatentNumbers", title: "타사 특허번호", type: "thirdNumbers", width: 18 },
@@ -135,6 +143,7 @@
     { key: "projectNames",  title: "공사명",           type: "list",   width: 34 },
     { key: "phone",         title: "발주처 전화번호",  type: "phone",  width: 16 },
     { key: "households",    title: "세대수",           type: "number", width: 9 },
+    { key: "categoryGroups", title: "공종 대분류",      type: "list",   width: 11 },
     { key: "categories",    title: "공종",             type: "list",   width: 14 },
     { key: "status",        title: "상태",             type: "text",   width: 11 },
     { key: "noticeDate",    title: "공고일",           type: "date",   width: 12 },
@@ -164,12 +173,20 @@
 
   function normalize(input) {
     var r = input || {};
+    var categoryItems = buildCategoryItems(r);
+    var categoryNames = PourCategories.namesOf(categoryItems);
     var items = buildPatentItems(r);
     var pourItems = items.filter(function (it) { return it.kind === POUR; });
     var thirdItems = items.filter(function (it) { return it.kind === THIRD; });
     return {
       id: r.id || createId(),
-      categories: toList(r.categories),
+      // 공종은 두 가지로 함께 남긴다.
+      //   categories     — 지금까지 써 온 세부 공종 이름 목록 (열·엑셀이 그대로 쓴다)
+      //   categoryItems  — 대분류를 함께 담은 항목 목록 (같은 이름이 여러 대분류에 있어서 필요하다)
+      // 항목이 없는 옛 자료는 이름에서 옮겨 오되 확실할 때만 분류하고 나머지는 기타로 둔다.
+      categories: categoryNames,
+      categoryItems: categoryItems,
+      categoryGroups: PourCategories.groupNamesOf(categoryItems),
       region: String(r.region || "").trim(),
       city: String(r.city || "").trim(),
       patentItems: items,
@@ -208,6 +225,7 @@
       originalProjectId: String(r.originalProjectId || r.originalNoticeId || "").trim(),
       previousProjectId: String(r.previousProjectId || "").trim(),
       status: STATUSES.indexOf(r.status) >= 0 ? r.status : "공고",
+      year: String(r.year || "").trim(),
       noticeDate: String(r.noticeDate || "").trim(),
       bidDate: String(r.bidDate || "").trim(),
       awardDate: String(r.awardDate || "").trim(),
@@ -218,6 +236,16 @@
       address: String(r.address || "").trim(),
       remark: String(r.remark || "").trim()
     };
+  }
+
+  /**
+   * 공종 항목을 만든다.
+   * categoryItems 가 있으면 그대로 쓰고(빈 배열도 "모두 지웠다"는 뜻),
+   * 없으면 기존 categories 이름에서 옮겨 온다. 어느 쪽이든 이름은 바꾸지 않는다.
+   */
+  function buildCategoryItems(r) {
+    if (Array.isArray(r.categoryItems)) return PourCategories.normalizeItems(r.categoryItems);
+    return PourCategories.itemsFromNames(r.categories);
   }
 
   var POUR = "POUR", THIRD = "THIRD_PARTY";
@@ -287,12 +315,12 @@
 
   // 수정 이력에 남길 항목 이름
   var FIELD_LABELS = {
-    categories: "공종", region: "지역", city: "도시",
+    categories: "공종", categoryItems: "공종(대분류·세부)", region: "지역", city: "도시",
     patentNumbers: "POUR 적용 특허번호", patentNames: "특허명·공법명",
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
     quality: "공사 품질", contractor: "시공사", status: "상태",
-    noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
+    year: "연도", noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
     isRenotice: "재공고 건",
     awardAmount: "낙찰금액", expectedAmount: "예상금액", bidType: "입찰 종류",
     agreementNo: "협약서 발행번호", scope: "공사 범위", address: "주소",
@@ -345,6 +373,8 @@
         return stats.label ? stats.label + (stats.isMulti ? " (" + stats.detail + ")" : "") : "";
       case "patentStatus":
         return patentStats(record, patentStorageRef).status;
+      case "categoryPairs":
+        return PourCategories.labelsOf(record.categoryItems).join("\n");
     }
     switch (column.type) {
       case "seq":    return String((index || 0) + 1);
@@ -407,6 +437,26 @@
   }
 
   /**
+   * 여러 건을 한 번에 넣는다. (엑셀에서 옮겨 올 때 씀)
+   * id 가 같으면 그 행을 갱신하고, 없으면 뒤에 붙인다. 기존 행은 지우지 않는다.
+   * 저장은 마지막에 한 번만 하므로 수천 건이어도 빠르다.
+   */
+  function saveMany(inputs, storage) {
+    var all = list(storage);
+    var at = {};
+    all.forEach(function (r, i) { at[r.id] = i; });
+    var saved = [];
+    (inputs || []).forEach(function (input) {
+      var record = normalize(input);
+      if (at[record.id] != null) all[at[record.id]] = record;
+      else { at[record.id] = all.length; all.push(record); }
+      saved.push(record);
+    });
+    writeAll(all, storage);
+    return saved;
+  }
+
+  /**
    * 공고를 낙찰로 바꾼다. 새 행을 만들지 않고 같은 행을 갱신한다.
    * 시공사는 낙찰 처리 시 반드시 있어야 한다.
    */
@@ -425,7 +475,11 @@
     var awardDate = String(data.awardDate != null ? data.awardDate : target.awardDate).trim();
     var awardAmount = data.awardAmount != null && data.awardAmount !== ""
       ? toNumber(data.awardAmount) : target.awardAmount;
-    var categories = data.categories != null ? toList(data.categories) : target.categories;
+    // 최종 공종: 항목(대분류+세부)을 넘겼으면 거기서 이름을 뽑고,
+    // 이름만 넘겼으면 그 이름을 쓴다. 둘 다 없으면 원래 값을 그대로 둔다.
+    var categories = data.categoryItems != null ? PourCategories.namesOf(data.categoryItems)
+      : data.categories != null ? toList(data.categories)
+      : target.categories;
 
     var contractorPhone = String(
       data.contractorPhone != null ? data.contractorPhone : target.contractorPhone).trim();
@@ -485,7 +539,11 @@
     merged.resultEnteredAt = nowStamp();       // 결과 입력일
     merged.updatedAt = nowStamp();             // 최종 수정일
     merged.awardAmount = awardAmount;
+    // 공종: 항목(대분류+세부)을 함께 넘겼으면 그쪽을 쓰고,
+    // 이름만 넘겼으면 그 이름으로 항목을 다시 만든다 (확실하지 않은 것은 기타로 간다)
     merged.categories = categories;
+    if (data.categoryItems != null) merged.categoryItems = data.categoryItems;
+    else if (data.categories != null) delete merged.categoryItems;
     merged.patentNumbers = patentNumbers;
     if (data.patentItems != null) merged.patentItems = data.patentItems;
     else if (data.patentNumbers != null || data.thirdPatentNumbers != null) {
@@ -573,6 +631,12 @@
     if (incoming.patentItems == null &&
         (incoming.patentNumbers != null || incoming.thirdPatentNumbers != null)) {
       delete draft.patentItems;
+    }
+
+    // 공종도 마찬가지. 대분류 없이 이름만 넘겼다면 그 이름으로 항목을 다시 만든다
+    // (확실하지 않은 것은 임의로 옮기지 않고 기타로 간다)
+    if (incoming.categoryItems == null && incoming.categories != null) {
+      delete draft.categoryItems;
     }
 
     var after = normalize(draft);
@@ -973,7 +1037,7 @@
       if (f.region && f.region !== "전체" && rec.region !== f.region) return false;
       if (f.city && f.city !== "전체" && rec.city !== f.city) return false;
       if (f.year && f.year !== "전체") {
-        var y = String(rec.noticeDate || rec.awardDate || "").slice(0, 4);
+        var y = rec.year || String(rec.noticeDate || rec.awardDate || "").slice(0, 4);
         if (y !== String(f.year)) return false;
       }
       if (f.keyword) {
@@ -1024,6 +1088,7 @@
     usePatentStorage: usePatentStorage,
     list: list,
     save: save,
+    saveMany: saveMany,
     award: award,
     patentTabs: patentTabs,
     createRebid: createRebid,

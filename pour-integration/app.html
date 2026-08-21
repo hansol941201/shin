@@ -175,8 +175,15 @@
     <div class="sub-head">기본 정보</div>
     <div class="form-row form-row-3" id="rowBasic">
       <div><label for="fClient">아파트·단지명</label><input type="text" id="fClient" /></div>
-      <div><label for="fProjects">공사명 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fProjects" rows="2"></textarea></div>
-      <div><label for="fCategories">공종 <span class="opt">(특허 선택 시 자동)</span></label><input type="text" id="fCategories" /></div>
+      <div class="span-2"><label for="fProjects">공사명 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fProjects" rows="2"></textarea></div>
+    </div>
+
+    <div class="sub-head">공종</div>
+    <div class="form-row form-row-1" id="rowCategories">
+      <div>
+        <label>대분류를 고른 뒤 세부 공종을 고릅니다 <span class="opt">(특허를 고르면 자동으로 채워집니다)</span></label>
+        <div id="categoryPicker"></div>
+      </div>
     </div>
 
     <div class="sub-head">지역·연락처</div>
@@ -265,10 +272,12 @@
 <script src="regions.data.js"></script>
 <script src="pour-region.js"></script>
 <script src="pour-patents.js"></script>
+<script src="pour-categories.js"></script>
 <script src="pour-records.js"></script>
 <script src="pour-export.js"></script>
 <script src="pour-ui.js"></script>
 <script src="pour-patent-editor.js"></script>
+<script src="pour-category-picker.js"></script>
 <script src="pour-grid.js"></script>
 <script src="pour-store.js"></script>
 <script src="app.js"></script>

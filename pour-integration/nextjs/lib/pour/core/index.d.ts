@@ -41,6 +41,12 @@ export interface HistoryEntry {
 export type ProjectStatus = "공고" | "낙찰" | "유찰" | "공고취소" | "재공고" | "타공법 낙찰";
 
 /** 화면과 API 가 주고받는 공고·실적 한 건. */
+/** 공종 한 건 — 대분류와 세부 공종 짝 */
+export interface CategoryItem {
+  group: string;
+  name: string;
+}
+
 export interface PourRecord {
   id: string;
   status: ProjectStatus;
@@ -49,6 +55,8 @@ export interface PourRecord {
   city: string;
   projectNames: string[];
   categories: string[];
+  categoryItems: CategoryItem[];
+  categoryGroups: string[];
   scopes: string[];
   scope: string;
   phone: string;

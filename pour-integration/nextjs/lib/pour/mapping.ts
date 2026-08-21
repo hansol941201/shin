@@ -10,7 +10,7 @@
  *  - expected_amount 같이 화면에서 쓰지 않는 열도 읽어서 그대로 되돌려 준다.
  *  - 전화번호는 문자열로 유지한다 (앞자리 0 보존).
  */
-import type { PourRecord, PatentItem } from "./core";
+import type { PourRecord, PatentItem, CategoryItem } from "./core";
 
 /** 화면 필드 → projects 열 이름 */
 export const COLUMN_MAP = {
@@ -21,6 +21,8 @@ export const COLUMN_MAP = {
   city: "city",
   projectNames: "project_name",
   categories: "category",
+  /** 공종의 대분류+세부 짝 (JSON 배열). 기존 category 열은 그대로 둔다 */
+  categoryItems: "category_items",
   scopes: "scopes",
   phone: "phone",
   households: "households",
@@ -103,6 +105,27 @@ const toList = (v: unknown): string[] => {
 
 const fromList = (v: string[] | undefined): string => (v && v.length ? v.join("\n") : "");
 
+/**
+ * category_items 열(JSON 배열)을 읽는다.
+ * 열이 비어 있거나 읽을 수 없으면 아무것도 넘기지 않는다.
+ * 그러면 모델이 기존 공종 이름에서 분류를 붙여 주므로 옛 자료가 비지 않는다.
+ */
+const parseCategoryItems = (v: unknown): { categoryItems: CategoryItem[] } | null => {
+  if (v == null || v === "") return null;
+  try {
+    const parsed = typeof v === "string" ? JSON.parse(v) : v;
+    if (!Array.isArray(parsed)) return null;
+    return {
+      categoryItems: parsed
+        .filter((it) => it && typeof it === "object")
+        .map((it) => ({ group: text(it.group), name: text(it.name) }))
+        .filter((it) => it.name)
+    };
+  } catch {
+    return null;
+  }
+};
+
 const toNumber = (v: unknown): number | "" => {
   if (v == null || v === "") return "";
   const n = Number(String(v).replace(/[^0-9.-]/g, ""));
@@ -165,6 +188,8 @@ export function projectRowToRecord(
     city: text(get("city")),
     projectNames: toList(get("projectNames")),
     categories: toList(get("categories")),
+    // 항목이 비어 있는 옛 행은 넘기지 않는다. 모델이 기존 공종 이름에서 분류를 붙여 준다.
+    ...(parseCategoryItems(get("categoryItems")) || {}),
     scopes: toList(get("scopes")),
     phone: text(get("phone")),
     households: toNumber(get("households")),
@@ -237,6 +262,8 @@ export function recordToProjectRow(record: PourRecord & { __extra?: ProjectRow }
   set("city", record.city);
   set("projectNames", fromList(record.projectNames));
   set("categories", fromList(record.categories));
+  set("categoryItems", record.categoryItems && record.categoryItems.length
+    ? JSON.stringify(record.categoryItems) : null);
   set("scopes", fromList(record.scopes));
   set("phone", record.phone);                       // 문자열 그대로
   set("households", record.households === "" ? null : record.households);

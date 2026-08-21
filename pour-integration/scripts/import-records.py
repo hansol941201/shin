@@ -94,6 +94,43 @@ def households(value):
     return int(d) if d else ""
 
 
+# 공종 분류표 — pour-categories.js 와 같은 표를 쓴다
+CATEGORY_GROUPS = [
+    ("옥상방수", ["PVC", "금속기와", "박공지붕", "방수", "복합시트", "슬라브", "싱글", "우레탄"]),
+    ("재도장",   ["균열보수", "재도장"]),
+    ("주차장",   ["균열보수", "배면차수", "아스콘", "에폭시", "우레탄", "재도장"]),
+    ("도로",     ["보도블럭", "아스콘", "에폭시"]),
+]
+CATEGORY_OTHER = "기타"
+
+
+def classify_category(name):
+    """대분류가 하나로 정해질 때만 분류한다. 확실하지 않으면 기타로 두고 이름은 그대로."""
+    clean = text(name)
+    if not clean:
+        return None
+    plain = re.sub(r"[\s·]", "", clean).upper()
+    found = [(group, item) for group, items in CATEGORY_GROUPS for item in items
+             if re.sub(r"[\s·]", "", item).upper() == plain]
+    if len(found) == 1:
+        return {"group": found[0][0], "name": found[0][1]}
+    return {"group": CATEGORY_OTHER, "name": clean}
+
+
+def classify_categories(names):
+    out, seen = [], set()
+    for name in names:
+        item = classify_category(name)
+        if not item:
+            continue
+        k = (item["group"], re.sub(r"[\s·]", "", item["name"]).upper())
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(item)
+    return out
+
+
 def key_text(value):
     """중복 판단용 열쇠. 공백·괄호·기호를 지우고 비교한다."""
     return re.sub(r"[\s()（）\[\]·,./\-]", "", text(value))
@@ -195,6 +232,7 @@ def to_record(row, index):
             "name": "", "method": "", "company": "", "category": "", "remark": "",
             "createdAt": stamp, "updatedAt": stamp,
         })
+    category_items = classify_categories(row["categories"])
     years = row["years"]
     remark = row["remark"]
     if len(years) > 1:
@@ -205,6 +243,11 @@ def to_record(row, index):
         "status": "낙찰",
         "year": row["year"],
         "categories": row["categories"],
+        "categoryItems": category_items,
+        "categoryGroups": sorted(
+            {it["group"] for it in category_items},
+            key=lambda g: [x[0] for x in CATEGORY_GROUPS].index(g)
+            if g in [x[0] for x in CATEGORY_GROUPS] else 99),
         "region": row["region"],
         "city": row["city"],
         "patentItems": items,
@@ -237,7 +280,7 @@ def build_sql(records):
         "-- 원칙",
         "--   · DELETE / DROP / TRUNCATE 를 쓰지 않습니다 (기존 운영 자료 보존)",
         "--   · 같은 id 로 다시 실행해도 행이 늘지 않습니다 (UPSERT)",
-        "--   · 0002_pour_integration 마이그레이션(record_year 열 포함)을 먼저 실행하세요",
+        "--   · 0002~0004 마이그레이션(record_year·category_items 열 포함)을 먼저 실행하세요",
         "",
         "BEGIN TRANSACTION;",
         "",
@@ -249,6 +292,8 @@ def build_sql(records):
             ("region", rec["region"]), ("city", rec["city"]), ("client", rec["client"]),
             ("project_name", "\n".join(rec["projectNames"])),
             ("category", "\n".join(rec["categories"])),
+            ("category_items", json.dumps(rec["categoryItems"], ensure_ascii=False)
+             if rec["categoryItems"] else None),
             ("scopes", "\n".join(rec["scopes"])),
             ("phone", rec["phone"]),
             ("households", rec["households"] if rec["households"] != "" else None),

@@ -74,11 +74,11 @@ function section(t) { console.log("\n" + t); }
     assert.strictEqual(await isOpen("#noticePanel"), false, "공고 입력 패널이 열려 있음");
   });
 
-  await test("표 열 순서가 요청한 21개 + 연도와 동일", async () => {
+  await test("표 열 순서가 요청한 21개 + 연도·공종 대분류와 동일", async () => {
     const heads = await page.$$eval("#recordsGrid .grid thead th", els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
     assert.deepStrictEqual(heads, [
       "No.", "상태", "연도", "공고일", "서류 마감일", "개찰일", "지역", "도시", "발주처(아파트명)",
-      "공사명", "공종", "POUR 특허번호", "타사 특허번호", "전화번호", "세대수", "입찰종류",
+      "공사명", "공종 대분류", "공종", "POUR 특허번호", "타사 특허번호", "전화번호", "세대수", "입찰종류",
       "시공사", "시공사 전화번호", "낙찰일", "낙찰금액", "공사 품질", "비고"
     ]);
   });
@@ -214,23 +214,91 @@ function section(t) { console.log("\n" + t); }
     assert.ok(items.some(t => t.includes("에폭시")), items[0]);
   });
 
+  async function chosenCategories() {
+    return page.$$eval("#categoryPicker .cat-chip", els => els.map(e => ({
+      group: e.querySelector(".cat-chip-group").textContent,
+      name: e.querySelector(".cat-chip-name").textContent
+    })));
+  }
+
   await test("특허를 고르면 공종이 자동 입력됨", async () => {
     await page.fill(PATENT_SEARCH, "");
     await addPourPatent("1935719");
-    assert.strictEqual(await page.inputValue("#fCategories"), "균열보수, 균열보수 및 재도장");
+    const chosen = await chosenCategories();
+    assert.deepStrictEqual(chosen.map(c => c.name), ["균열보수", "균열보수 및 재도장"]);
+  });
+
+  await test("자동 분류가 확실하지 않은 공종은 임의로 정하지 않고 기타로", async () => {
+    const chosen = await chosenCategories();
+    // 균열보수 = 재도장·주차장 두 곳, "균열보수 및 재도장" = 분류표에 없음 → 둘 다 기타
+    assert.ok(chosen.every(c => c.group === "기타"), JSON.stringify(chosen));
   });
 
   await test("특허를 더 고르면 공종이 합쳐지고 중복 제거", async () => {
     await addPourPatent("2784426");                    // 공종: 균열보수 및 재도장 (중복)
-    const value = await page.inputValue("#fCategories");
-    const parts = value.split(", ");
-    assert.strictEqual(parts.length, new Set(parts).size, "중복이 남음: " + value);
-    assert.ok(parts.includes("균열보수"), value);
+    const chosen = await chosenCategories();
+    const keys = chosen.map(c => c.group + "|" + c.name);
+    assert.strictEqual(keys.length, new Set(keys).size, "중복이 남음: " + keys.join(","));
+    assert.ok(chosen.some(c => c.name === "균열보수"), keys.join(","));
   });
 
   await test("특허를 지우면 공종이 다시 계산됨", async () => {
     await page.click(PATENT_ITEMS + ":last-child .pour-item-del");
-    assert.strictEqual(await page.inputValue("#fCategories"), "균열보수, 균열보수 및 재도장");
+    const chosen = await chosenCategories();
+    assert.deepStrictEqual(chosen.map(c => c.name), ["균열보수", "균열보수 및 재도장"]);
+  });
+
+  await test("대분류를 고르면 그 대분류의 세부 공종만 보인다", async () => {
+    const expected = {
+      "옥상방수": ["PVC", "금속기와", "박공지붕", "방수", "복합시트", "슬라브", "싱글", "우레탄"],
+      "재도장": ["균열보수", "재도장"],
+      "주차장": ["균열보수", "배면차수", "아스콘", "에폭시", "우레탄", "재도장"],
+      "도로": ["보도블럭", "아스콘", "에폭시"]
+    };
+    for (const [group, items] of Object.entries(expected)) {
+      await page.click(`#categoryPicker .cat-group:text-is("${group}")`);
+      const shown = await page.$$eval("#categoryPicker .cat-item",
+        els => els.map(e => e.getAttribute("data-item")));
+      assert.deepStrictEqual(shown, items, group);
+    }
+  });
+
+  await test("세부 공종을 여러 개 고르고 다시 눌러 해제", async () => {
+    await page.click('#categoryPicker .cat-group:text-is("옥상방수")');
+    await page.click('#categoryPicker .cat-item[data-item="싱글"]');
+    await page.click('#categoryPicker .cat-item[data-item="슬라브"]');
+    let chosen = await chosenCategories();
+    assert.ok(chosen.some(c => c.group === "옥상방수" && c.name === "싱글"));
+    assert.ok(chosen.some(c => c.group === "옥상방수" && c.name === "슬라브"));
+
+    await page.click('#categoryPicker .cat-item[data-item="슬라브"]');   // 다시 눌러 해제
+    chosen = await chosenCategories();
+    assert.ok(!chosen.some(c => c.name === "슬라브"), JSON.stringify(chosen));
+  });
+
+  await test("같은 세부 공종을 두 대분류에서 고르면 각각 남는다", async () => {
+    await page.click('#categoryPicker .cat-group:text-is("옥상방수")');
+    await page.click('#categoryPicker .cat-item[data-item="우레탄"]');
+    await page.click('#categoryPicker .cat-group:text-is("주차장")');
+    await page.click('#categoryPicker .cat-item[data-item="우레탄"]');
+    const chosen = await chosenCategories();
+    assert.ok(chosen.some(c => c.group === "옥상방수" && c.name === "우레탄"));
+    assert.ok(chosen.some(c => c.group === "주차장" && c.name === "우레탄"));
+  });
+
+  await test("기타를 고르면 직접입력 칸이 나온다", async () => {
+    await page.click('#categoryPicker .cat-group:text-is("도로")');
+    assert.strictEqual(await page.isVisible("#categoryPicker .cat-custom"), false);
+    await page.click('#categoryPicker .cat-group:text-is("기타")');
+    assert.strictEqual(await page.isVisible("#categoryPicker .cat-custom"), true);
+    await page.fill("#categoryPicker .cat-custom-input", "특수 코팅");
+    await page.click("#categoryPicker .cat-custom-btn");
+    const chosen = await chosenCategories();
+    assert.ok(chosen.some(c => c.group === "기타" && c.name === "특수 코팅"), JSON.stringify(chosen));
+  });
+
+  await test("자유 입력 공종 칸은 사라졌다", async () => {
+    assert.strictEqual(await page.$("#fCategories"), null);
   });
 
   await test("타사 특허를 별도 탭에서 여러 개 추가", async () => {
