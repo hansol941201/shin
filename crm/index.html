@@ -437,6 +437,19 @@
   .col-insight{ flex:0 0 150px; min-width:0; font-size:12px; }
   .insight-cell{ display:flex; flex-wrap:wrap; gap:3px; align-items:center; min-width:0; width:100%; }
   .insight-tag{ display:inline-flex; align-items:center; max-width:100%; padding:2px 6px; font-size:10.5px; font-weight:650; color:#475569; background:#F1F5F9; border-radius:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* §고객 인사이트 복수선택 라운드 §2/§10 — 카테고리별 체크박스 다중선택 그리드(작은 칩
+     형태, 현재 .insight-tag/co-field와 같은 네이비/화이트 톤 유지, §21 "새 디자인 시스템
+     금지"). */
+  .insight-check-grid{ display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+  .insight-check-item{ display:inline-flex; align-items:center; gap:4px; padding:3px 8px; font-size:11.5px; border:1px solid #dce5ef; border-radius:14px; cursor:pointer; background:#fff; user-select:none; }
+  .insight-check-item input{ margin:0; }
+  .insight-check-item.is-checked{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .insight-view-group{ margin-bottom:10px; }
+  .insight-view-group-title{ font-size:10.5px; color:var(--text-muted); margin-bottom:3px; font-weight:650; }
+  .insight-tag-x{ background:none; border:none; color:#94a3b8; cursor:pointer; padding:0 0 0 3px; font-size:11px; line-height:1; }
+  .insight-tag.is-important{ background:#FFF4DF; color:#B7791F; }
+  .insight-star-chip{ cursor:pointer; }
+  .insight-star-chip.is-star{ background:#FFF4DF; color:#B7791F; border-color:#F2C572; }
   .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
   .stage-dn-cell.st-normal{ color:var(--text); }
   .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
@@ -3406,7 +3419,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // (INSIGHT_DICTIONARY)과 고객별 선택값은 완전히 분리된 구조라, 사전 내용을 나중에
   // 고치더라도 이미 저장된 co.customerInsight.insightIds(문자열 id 배열일 뿐)는 전혀
   // 영향받지 않는다(§17 "사전을 수정했다고 고객 데이터가 날아가면 안 됨").
-  const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags','insightIds','customInsights','importantInsightIds'];
+  // §고객 인사이트 복수선택 라운드 §18 — 고객은 한 가지 성향으로만 설명되지 않는다는
+  // 요구에 맞춰, 성향 항목을 배열(복수선택)로 저장하는 신규 필드를 "추가"한다. 기존 필드
+  // (decisionStyle/interests/needs/concerns/preferredContact/tags/insightIds/
+  // customInsights/importantInsightIds)는 전혀 지우지 않는다 — "주요 니즈"(needs)도
+  // 필드 자체는 그대로 두고 화면에서만 더 이상 쓰지 않는다(§1/§17 "데이터는 삭제하지
+  // 않는다"). competitorCompanies/preferredCompanies는 자유입력 업체명 배열이다.
+  const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags','insightIds','customInsights','importantInsightIds',
+    'decisionTraits','interestTraits','priceTraits','materialPreferences','competitorUsageTraits','competitorCompanies','preferredCompanyTraits','preferredCompanies','barrierTraits','importantTraits'];
   function setCustomerInsight(companyId, patch){
     const co = findCompany(companyId); if(!co) return null;
     const merged = Object.assign({}, co.customerInsight || {});
@@ -8342,6 +8362,29 @@ window.SHIN2_CRM_APP_INIT = function(){
     ["ins_502","etc","본사와 현장 요청사항이 다른 경우 있음"],
   ];
 
+  // §고객 인사이트 복수선택 라운드 §1~§11 — 위 500개+ 사전(INSIGHT_DICTIONARY)을 삭제하지
+  // 않고, 요청받은 10개 카테고리 구조에 맞는 "다중선택 프리셋" 목록을 사전에서 이미 검증된
+  // 실제 문구 위주로 재구성한다(§16 "적절한 항목을 재분류"). 새로 정의가 필요한 "타사 이용"/
+  // "선호 업체·공법"만 신규 작성했다 — 사전에 없던 완전히 새로운 개념이기 때문이다.
+  const PRESET_DECISION = ['실무 중심','대표 결정형','실무자 검토형','빠른 결정형','즉시 실행형','신중 검토형','비교 검토형','자료 검토 후 결정','현장 확인 후 결정','내부 협의형','여러 사람 의견 수렴','발주처 반응 확인 후 결정','가격 확인 후 결정','기술 검토 후 결정','실적 확인 후 결정'];
+  const PRESET_INTEREST = ['실적','가격','수익성','마진','기술력','특허','공법 차별성','현장지원','입찰지원','시공 편의성','하자관리','사후관리','브랜드 신뢰','공기 단축','원가 절감','발주처 설득','수주 경쟁력','자재 안정성','시공 품질','현장 대응 속도'];
+  const PRESET_PRICE = ['가격 민감','최저가 선호','단가 비교형','원가 중시','마진 중시','수익성 중시','가격 협의 필요','경쟁사 단가 비교','초기 비용 민감','장기 비용 중시','가격보다 품질 중시','가격보다 실적 중시','가격보다 기술력 중시','예산 확정 후 진행','자재단가 관심','시공단가 관심'];
+  const PRESET_MATERIAL = ['자료 먼저 선호','전화 설명 선호','대면 설명 선호','핵심만 설명 선호','상세 설명 필요','실적자료 선호','비교표 선호','사진자료 선호','PT자료 선호','시방서 선호','시험성적서 중시','특허자료 중시','공고문 예시 선호','유사현장 자료 선호','견적자료 선호','기술자료 선호'];
+  const PRESET_COMPETITOR_USAGE = ['타사 이용 없음','타사 병행 이용','타사 중심 이용','기존 거래처 있음','경쟁 공법 사용','상황별 업체 선택','현장별 업체 변경','발주처 지정업체 사용','특정 업체 선호','확인 필요'];
+  const PRESET_PREFERRED_COMPANY = ['POUR 선호','기존 거래업체 선호','특정 공법 선호','가격 좋은 업체 선호','실적 많은 업체 선호','현장지원 좋은 업체 선호','브랜드 인지도 높은 업체 선호','발주처 지정업체 선호','상황에 따라 선택','아직 선호 없음'];
+  const PRESET_BARRIER = ['가격 부담','기존 거래처 존재','경쟁사 비교 중','공법 이해 부족','시공성 우려','하자 우려','자재수급 우려','대표 승인 필요','내부 검토 필요','발주처 설득 필요','예산 미확정','현장 미확정','입찰 일정 미확정','실적 확인 필요','타사 관계 유지 중'];
+  // §고객 인사이트 복수선택 라운드 §10 — 편집/보기 화면 렌더 순서. 각 항목: [필드키, 라벨,
+  // 프리셋배열|null(자유입력/자유텍스트 전용이면 null)].
+  const INSIGHT_SECTION_ORDER = [
+    ['decisionTraits', '의사결정 성향', PRESET_DECISION],
+    ['interestTraits', '주요 관심', PRESET_INTEREST],
+    ['priceTraits', '가격 / 비용 성향', PRESET_PRICE],
+    ['competitorUsageTraits', '타사 이용', PRESET_COMPETITOR_USAGE],
+    ['preferredCompanyTraits', '선호 업체 / 공법', PRESET_PREFERRED_COMPANY],
+    ['materialPreferences', '자료 / 설명 선호', PRESET_MATERIAL],
+    ['barrierTraits', '우려 / 장벽', PRESET_BARRIER],
+  ];
+
   // §고객 인사이트 사전 라운드 — INSIGHT_DICTIONARY(id/카테고리/문구 500개+, 아래 별도
   // 정의)를 id로 조회하기 위한 캐시 Map. 사전 자체는 static이라 한 번만 만든다(§성능 원칙).
   let _insightDictMapCache = null;
@@ -8367,9 +8410,35 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 선택된 인사이트(사전+직접추가, 선택 순서) ③(둘 다 비어 있을 때만) 예전 자유서술
   // 필드(decisionStyle/interests/tags) — 신/구 데이터 전부 호환. needs/concerns 같은
   // 자유 서술형 문장은 여기서도 절대 자동으로 짧은 라벨로 재해석하지 않는다(§8/§15).
+  // §고객 인사이트 복수선택 라운드 §13 — 목록 대표 태그 전체 후보를, 우선순위가 이미
+  // 반영된 순서로 모은다: ①★importantTraits ②의사결정 ③주요 관심 ④타사 이용 상태
+  // ⑤선호 업체/공법 상태 ⑥가격 ⑦자료선호 ⑧우려. 같은 값이 여러 배열에 동시에 들어있을
+  // 순 없으므로(체크박스가 카테고리별로 분리돼 있음) 중복 걱정 없이 그대로 이어붙인다.
+  function insightAllTraits(ci){
+    return []
+      .concat(ci.decisionTraits || [])
+      .concat(ci.interestTraits || [])
+      .concat(ci.competitorUsageTraits || [])
+      .concat(ci.preferredCompanyTraits || [])
+      .concat(ci.priceTraits || [])
+      .concat(ci.materialPreferences || [])
+      .concat(ci.barrierTraits || [])
+      .filter(Boolean);
+  }
   function buildInsightRepTagsFull(co){
     const ci = co.customerInsight;
     if(!ci) return { shown: [], overflow: 0 };
+    const traits = insightAllTraits(ci);
+    if(traits.length){
+      const importantSet = new Set(ci.importantTraits || []);
+      const important = traits.filter(t=> importantSet.has(t));
+      const rest = traits.filter(t=> !importantSet.has(t));
+      const ordered = important.concat(rest);
+      return { shown: ordered.slice(0,3), overflow: Math.max(0, ordered.length - 3) };
+    }
+    // §고객 인사이트 사전 라운드(직전 라운드) 데이터와 호환 — 이번 라운드 필드가 전부
+    // 비어있을 때만 예전 방식(insightIds/customInsights → tags → decisionStyle+interests)으로
+    // 폴백한다.
     const all = insightAllSelected(ci);
     if(all.length){
       const importantSet = new Set(ci.importantInsightIds || []);
@@ -10470,62 +10539,107 @@ window.SHIN2_CRM_APP_INIT = function(){
      하나로 통일되도록 필드 구조를 미리 넓게 잡아 둔다(§7). 기본은 접힘(renderReactionsCol과
      완전히 같은 accordion 패턴/state를 그대로 재사용 — cardState.accordionOpen.insight/
      cardState.sectionEdit.insight). ----------------------------------------------- */
-  const INSIGHT_DECISION_PRESETS = ['빠른 결정','검토형','신중형','실무 중심'];
-  const INSIGHT_INTEREST_PRESETS = ['실적','가격','기술력','특허','현장지원','입찰지원'];
-  const INSIGHT_CONTACT_PRESETS = ['전화 선호','자료 먼저','핵심만 설명','상세 설명 필요','비교자료 선호'];
+  // §고객 인사이트 복수선택 라운드 §19 — 편집 진행 중인 값을 카드가 다시 그려져도(업체
+  // 추가/삭제 등으로 재렌더링될 때) 잃지 않기 위한 임시 draft. 저장을 눌러야만
+  // D.setCustomerInsight로 실제 반영되고, 그 전까지는 co.customerInsight 원본을 전혀
+  // 건드리지 않는다. 카드를 다시 열면(openCard) cardState 전체가 초기화되므로 draft도
+  // 자동으로 사라진다 — 별도 저장소가 필요 없다(§4 기존 accordion 패턴과 동일 원칙).
+  function insightDraftFrom(ci){
+    return {
+      decisionTraits: (ci.decisionTraits || []).slice(),
+      interestTraits: (ci.interestTraits || []).slice(),
+      priceTraits: (ci.priceTraits || []).slice(),
+      materialPreferences: (ci.materialPreferences || []).slice(),
+      competitorUsageTraits: (ci.competitorUsageTraits || []).slice(),
+      competitorCompanies: (ci.competitorCompanies || []).slice(),
+      preferredCompanyTraits: (ci.preferredCompanyTraits || []).slice(),
+      preferredCompanies: (ci.preferredCompanies || []).slice(),
+      barrierTraits: (ci.barrierTraits || []).slice(),
+      importantTraits: (ci.importantTraits || []).slice(),
+      keyQuote: ci.keyQuote || '',
+      nextAction: ci.nextAction || '',
+      evidence: ci.evidence || ''
+    };
+  }
   function renderInsightBlock(co){
     const wrap = document.getElementById('cdashInsightBlock');
     if(!wrap) return;
     const editing = !!cardState.sectionEdit.insight;
     const open = !!(cardState.accordionOpen && cardState.accordionOpen.insight);
     const ci = co.customerInsight || {};
+    if(editing && !cardState.insightDraft) cardState.insightDraft = insightDraftFrom(ci);
+    const draft = editing ? cardState.insightDraft : null;
     const repTags = buildInsightRepTags(co);
     const summaryText = repTags.length ? repTags.join(' · ') : '';
     const row = (label, value)=> `<div class="co-field"><div class="co-field-label">${esc(label)}</div><div class="co-field-value">${value}</div></div>`;
-    const hasAny = repTags.length || ci.needs || ci.concerns || ci.preferredContact || ci.keyQuote || ci.nextAction;
-    const bodyHtml = hasAny ? [
+    // §고객 인사이트 복수선택 라운드 §14 — 보기(펼침) 화면은 카테고리별로 그룹지어 보여준다.
+    // "주요 니즈"(needs)는 화면에서 뺐다(§1 "UI에서만 사용 안 함, 데이터는 보존") — 그 외
+    // 기존 자유서술 필드(concerns/preferredContact 등, 이전 라운드 폴백용)는 신규 카테고리
+    // 배열이 비어있을 때만 아래 폴백에서 보인다.
+    const groupHtml = INSIGHT_SECTION_ORDER.map(([key, label])=>{
+      const vals = ci[key] || [];
+      if(!vals.length) return '';
+      const extra = (key === 'competitorUsageTraits' && (ci.competitorCompanies||[]).length)
+        ? `<div class="insight-view-group-title" style="margin-top:4px;">사용업체</div><div>${(ci.competitorCompanies||[]).map(n=> `<span class="insight-tag">${esc(n)}</span>`).join(' ')}</div>`
+        : (key === 'preferredCompanyTraits' && (ci.preferredCompanies||[]).length)
+        ? `<div class="insight-view-group-title" style="margin-top:4px;">업체/공법명</div><div>${(ci.preferredCompanies||[]).map(n=> `<span class="insight-tag">${esc(n)}</span>`).join(' ')}</div>`
+        : '';
+      return `<div class="insight-view-group"><div class="insight-view-group-title">${esc(label)}</div><div>${vals.map(v=> `<span class="insight-tag">${esc(v)}</span>`).join(' ')}</div>${extra}</div>`;
+    }).join('');
+    const fallbackHtml = !groupHtml ? [
       ci.decisionStyle ? row('의사결정 성향', esc(ci.decisionStyle)) : '',
       (ci.interests && ci.interests.length) ? row('주요 관심', esc(ci.interests.join(' · '))) : '',
-      ci.needs ? row('주요 니즈', esc(ci.needs)) : '',
       ci.concerns ? row('우려/장벽', esc(ci.concerns)) : '',
-      ci.preferredContact ? row('선호 대응', esc(ci.preferredContact)) : '',
+      ci.preferredContact ? row('선호 대응', esc(ci.preferredContact)) : ''
+    ].join('') : '';
+    const tailHtml = [
       ci.keyQuote ? row('핵심 발언', '"' + esc(ci.keyQuote) + '"') : '',
-      ci.nextAction ? row('다음 대응', esc(ci.nextAction)) : '',
+      ci.nextAction ? row('다음 대응 포인트', esc(ci.nextAction)) : '',
       ci.evidence ? row('근거', esc(ci.evidence)) : ''
-    ].join('') : '<div class="cdash-field-value is-muted">등록된 고객 인사이트가 없습니다.</div>';
+    ].join('');
+    const hasAny = !!(groupHtml || fallbackHtml || tailHtml);
+    const bodyHtml = hasAny ? (groupHtml + fallbackHtml + tailHtml) : '<div class="cdash-field-value is-muted">등록된 고객 인사이트가 없습니다.</div>';
+
+    const checkGrid = (fieldKey, presets)=> `
+      <div class="insight-check-grid" data-insight-cat="${fieldKey}">
+        ${presets.map(opt=> `<label class="insight-check-item${draft[fieldKey].includes(opt) ? ' is-checked' : ''}"><input type="checkbox" value="${esc(opt)}" ${draft[fieldKey].includes(opt) ? 'checked' : ''}/> ${esc(opt)}</label>`).join('')}
+      </div>`;
+    const companyChipRow = (arrName, addBtnId, inputId)=> `
+      <div class="insight-check-grid" style="margin-bottom:4px;">
+        ${draft[arrName].map((n,i)=> `<span class="insight-tag">${esc(n)} <button type="button" class="insight-tag-x" data-remove-name="${arrName}" data-idx="${i}">×</button></span>`).join('')}
+      </div>
+      <div class="cdash-mini-add-row">
+        <input type="text" id="${inputId}" placeholder="업체명 입력 후 추가" />
+        <button type="button" class="co-text-action" id="${addBtnId}">+ 업체 추가</button>
+      </div>`;
+    const allDraftTraits = editing ? []
+      .concat(draft.decisionTraits, draft.interestTraits, draft.competitorUsageTraits, draft.preferredCompanyTraits, draft.priceTraits, draft.materialPreferences, draft.barrierTraits) : [];
+    const editHtml = editing ? `
+      ${INSIGHT_SECTION_ORDER.map(([key, label, presets])=> {
+        let extra = '';
+        if(key === 'competitorUsageTraits') extra = `<div class="co-field-label" style="margin-top:6px;">타사/경쟁업체명</div>` + companyChipRow('competitorCompanies', 'ciCompetitorAddBtn', 'ciCompetitorInput');
+        if(key === 'preferredCompanyTraits') extra = `<div class="co-field-label" style="margin-top:6px;">선호 업체/공법명</div>` + companyChipRow('preferredCompanies', 'ciPreferredAddBtn', 'ciPreferredInput');
+        return `<div class="co-form-field"><label>${esc(label)} (복수선택)</label>${checkGrid(key, presets)}${extra}</div>`;
+      }).join('')}
+      <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
+      <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(draft.nextAction)}</textarea></div>
+      <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(draft.evidence)}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
+      ${allDraftTraits.length ? `<div class="co-form-field"><label>★ 중요 표시(목록에 우선 표시할 항목 선택)</label>
+        <div class="insight-check-grid">${allDraftTraits.map(t=> `<span class="insight-tag insight-star-chip${draft.importantTraits.includes(t) ? ' is-star' : ''}" data-star-toggle="${esc(t)}">${draft.importantTraits.includes(t) ? '★' : '☆'} ${esc(t)}</span>`).join('')}</div>
+      </div>` : ''}
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button type="button" class="co-text-action primary" id="ciSaveBtn">저장</button>
+      </div>
+    ` : '';
+
     wrap.innerHTML = `
       <div class="cdash-accordion-header" id="cdashInsightAccHeader">
         <span class="cdash-accordion-chevron${open ? ' is-open' : ''}">▶</span>
         <div class="cdash-bcol-title">고객 인사이트</div>
-        ${open ? `<button type="button" class="cdash-mini-edit" id="cdashInsightToggle">${editing ? '완료' : '수정'}</button>` : (summaryText ? `<span class="cdash-accordion-summary">${esc(summaryText)}</span>` : '')}
+        ${open ? `<button type="button" class="cdash-mini-edit" id="cdashInsightToggle">${editing ? '완료' : '수정'}</button>` : (summaryText ? `<span class="cdash-accordion-summary">${esc(summaryText)}${repTags.length && buildInsightRepTagsFull(co).overflow ? ' +' + esc(buildInsightRepTagsFull(co).overflow) : ''}</span>` : '')}
       </div>
       <div class="cdash-accordion-body" id="cdashInsightAccBody" style="${open ? '' : 'display:none;'}">
-        ${editing ? `
-          <div class="co-form-field">
-            <label>의사결정 성향</label>
-            <input type="text" id="ciDecisionInput" value="${esc(ci.decisionStyle || '')}" list="ciDecisionPresets" placeholder="예: 검토형" />
-            <datalist id="ciDecisionPresets">${INSIGHT_DECISION_PRESETS.map(p=> `<option value="${esc(p)}"></option>`).join('')}</datalist>
-          </div>
-          <div class="co-form-field">
-            <label>주요 관심 (쉼표로 구분, 예: 실적, 기술력)</label>
-            <input type="text" id="ciInterestsInput" value="${esc((ci.interests||[]).join(', '))}" list="ciInterestPresets" placeholder="예: 실적, 기술력" />
-            <datalist id="ciInterestPresets">${INSIGHT_INTEREST_PRESETS.map(p=> `<option value="${esc(p)}"></option>`).join('')}</datalist>
-          </div>
-          <div class="co-form-field"><label>주요 니즈</label><textarea id="ciNeedsInput">${esc(ci.needs || '')}</textarea></div>
-          <div class="co-form-field"><label>우려 / 장벽</label><textarea id="ciConcernsInput">${esc(ci.concerns || '')}</textarea></div>
-          <div class="co-form-field">
-            <label>선호 대응</label>
-            <input type="text" id="ciContactInput" value="${esc(ci.preferredContact || '')}" list="ciContactPresets" placeholder="예: 자료 먼저" />
-            <datalist id="ciContactPresets">${INSIGHT_CONTACT_PRESETS.map(p=> `<option value="${esc(p)}"></option>`).join('')}</datalist>
-          </div>
-          <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(ci.keyQuote || '')}" placeholder="미팅에서 실제로 나온 발언" /></div>
-          <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(ci.nextAction || '')}</textarea></div>
-          <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(ci.evidence || '')}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
-          <div class="co-form-field"><label>목록 대표 태그 (쉼표로 구분, 최대 3개만 표시 · 비워두면 의사결정 성향/주요 관심에서 자동 채움)</label><input type="text" id="ciTagsInput" value="${esc((ci.tags||[]).join(', '))}" placeholder="예: 검토형, 실적 중시, 가격 민감" /></div>
-          <div style="display:flex;gap:10px;margin-top:6px;">
-            <button type="button" class="co-text-action primary" id="ciSaveBtn">저장</button>
-          </div>
-        ` : bodyHtml}
+        ${editing ? editHtml : bodyHtml}
       </div>
     `;
     document.getElementById('cdashInsightAccHeader').addEventListener('click', (e)=>{
@@ -10536,24 +10650,61 @@ window.SHIN2_CRM_APP_INIT = function(){
     const editBtn = document.getElementById('cdashInsightToggle');
     if(editBtn) editBtn.addEventListener('click', (e)=>{
       e.stopPropagation();
-      cardState.sectionEdit.insight = !editing;
+      if(editing){ cardState.sectionEdit.insight = false; cardState.insightDraft = null; }
+      else cardState.sectionEdit.insight = true;
       refreshChart();
     });
     if(editing){
-      const splitList = v=> v.split(',').map(s=> s.trim()).filter(Boolean);
-      document.getElementById('ciSaveBtn').addEventListener('click', ()=>{
-        D.setCustomerInsight(co.id, {
-          decisionStyle: document.getElementById('ciDecisionInput').value.trim(),
-          interests: splitList(document.getElementById('ciInterestsInput').value),
-          needs: document.getElementById('ciNeedsInput').value.trim(),
-          concerns: document.getElementById('ciConcernsInput').value.trim(),
-          preferredContact: document.getElementById('ciContactInput').value.trim(),
-          keyQuote: document.getElementById('ciQuoteInput').value.trim(),
-          nextAction: document.getElementById('ciNextInput').value.trim(),
-          evidence: document.getElementById('ciEvidenceInput').value.trim(),
-          tags: splitList(document.getElementById('ciTagsInput').value)
+      // 체크박스 토글: 각 값이 있으면 제거, 없으면 추가만 한다(§2 "라디오처럼 기존 선택이
+      // 해제되는 방식 금지" — 같은 카테고리 안에서도 서로 무관하게 켜고 끈다). 전체를
+      // 다시 그리지 않아 포커스/스크롤이 안 흔들린다.
+      wrap.querySelectorAll('.insight-check-grid[data-insight-cat] input[type=checkbox]').forEach(input=>{
+        input.addEventListener('change', ()=>{
+          const cat = input.closest('.insight-check-grid').getAttribute('data-insight-cat');
+          const val = input.value;
+          const arr = draft[cat];
+          const idx = arr.indexOf(val);
+          if(input.checked){ if(idx === -1) arr.push(val); }
+          else { if(idx !== -1) arr.splice(idx, 1); }
+          input.closest('.insight-check-item').classList.toggle('is-checked', input.checked);
         });
+      });
+      wrap.querySelectorAll('[data-star-toggle]').forEach(chip=>{
+        chip.addEventListener('click', ()=>{
+          const t = chip.getAttribute('data-star-toggle');
+          const idx = draft.importantTraits.indexOf(t);
+          if(idx === -1) draft.importantTraits.push(t); else draft.importantTraits.splice(idx, 1);
+          renderInsightBlock(co);
+        });
+      });
+      const addCompany = (arrName, inputId)=>{
+        const input = document.getElementById(inputId);
+        const v = input.value.trim();
+        if(!v) return;
+        if(!draft[arrName].includes(v)) draft[arrName].push(v);
+        renderInsightBlock(co);
+      };
+      const compBtn = document.getElementById('ciCompetitorAddBtn');
+      if(compBtn) compBtn.addEventListener('click', ()=> addCompany('competitorCompanies', 'ciCompetitorInput'));
+      const compInput = document.getElementById('ciCompetitorInput');
+      if(compInput) compInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addCompany('competitorCompanies', 'ciCompetitorInput'); } });
+      const prefBtn = document.getElementById('ciPreferredAddBtn');
+      if(prefBtn) prefBtn.addEventListener('click', ()=> addCompany('preferredCompanies', 'ciPreferredInput'));
+      const prefInput = document.getElementById('ciPreferredInput');
+      if(prefInput) prefInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addCompany('preferredCompanies', 'ciPreferredInput'); } });
+      wrap.querySelectorAll('[data-remove-name]').forEach(btn=> btn.addEventListener('click', ()=>{
+        const arrName = btn.getAttribute('data-remove-name');
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        draft[arrName].splice(idx, 1);
+        renderInsightBlock(co);
+      }));
+      document.getElementById('ciSaveBtn').addEventListener('click', ()=>{
+        draft.keyQuote = document.getElementById('ciQuoteInput').value.trim();
+        draft.nextAction = document.getElementById('ciNextInput').value.trim();
+        draft.evidence = document.getElementById('ciEvidenceInput').value.trim();
+        D.setCustomerInsight(co.id, draft);
         cardState.sectionEdit.insight = false;
+        cardState.insightDraft = null;
         refreshChart();
       });
     }
