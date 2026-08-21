@@ -26,6 +26,8 @@
     var sortKey = null, sortDir = "asc";
     var filters = {};              // 열별 필터
     var filterRowOpen = false;
+    // 열 제목 정렬과 열 필터를 쓸지. false 면 눌러도 자료 순서를 바꾸지 않는다.
+    var sortable = opts.sortable !== false;
     var selectedId = null;
     var widths = {};               // 사용자가 조절한 열 너비
 
@@ -90,16 +92,21 @@
         if (widths[col.key]) th.style.width = widths[col.key] + "px";
 
         var label = el("span", "grid-th-label", col.title);
-        label.title = col.title + " — 눌러서 정렬";
-        label.addEventListener("click", function () {
-          if (col.type === "seq") return;
-          sortDir = sortKey === col.key && sortDir === "asc" ? "desc" : "asc";
-          sortKey = col.key;
-          render();
-        });
+        // sortable: false 인 표는 열 제목을 눌러도 정렬하지 않는다 (자료 순서는 그대로 둔다)
+        if (sortable) {
+          label.title = col.title + " — 눌러서 정렬";
+          label.addEventListener("click", function () {
+            if (col.type === "seq") return;
+            sortDir = sortKey === col.key && sortDir === "asc" ? "desc" : "asc";
+            sortKey = col.key;
+            render();
+          });
+        }
         th.appendChild(label);
 
-        if (sortKey === col.key) th.appendChild(el("span", "grid-sort", sortDir === "desc" ? "▼" : "▲"));
+        if (sortable && sortKey === col.key) {
+          th.appendChild(el("span", "grid-sort", sortDir === "desc" ? "▼" : "▲"));
+        }
         if (filters[col.key]) th.appendChild(el("span", "grid-filtered", "▣"));
 
         // 열 너비 조절 손잡이
@@ -127,7 +134,7 @@
       });
       thead.appendChild(headRow);
 
-      if (filterRowOpen) {
+      if (filterRowOpen && sortable) {
         var filterRow = el("tr", "grid-filter-row");
         columns.forEach(function (col) {
           var td = el("th");
@@ -204,7 +211,12 @@
 
     return {
       render: render,
-      toggleFilterRow: function () { filterRowOpen = !filterRowOpen; render(); return filterRowOpen; },
+      toggleFilterRow: function () {
+        if (!sortable) return false;          // 필터 행을 쓰지 않는 표
+        filterRowOpen = !filterRowOpen;
+        render();
+        return filterRowOpen;
+      },
       clearFilters: function () { filters = {}; render(); },
       getFilters: function () { return JSON.parse(JSON.stringify(filters)); },
       getSort: function () { return { key: sortKey, dir: sortDir }; },

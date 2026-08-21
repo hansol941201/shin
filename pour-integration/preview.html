@@ -832,7 +832,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   <nav class="app-nav" id="appNav">
     <button type="button" class="nav-item is-active" data-view="records">공고·실적</button>
     <button type="button" class="nav-item" data-view="patents">특허별 실적</button>
-    <button type="button" class="nav-item" data-view="io">가져오기·내보내기</button>
     <button type="button" class="nav-item" data-view="settings">설정</button>
   </nav>
   <div class="header-right">
@@ -926,14 +925,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   <!-- =========================================================== 설정 -->
   <section class="view" id="view-settings">
     <h2 class="view-title">설정</h2>
-    <div class="sub-head">등록된 POUR 특허</div>
-    <div class="form-row form-row-3">
-      <div>
-        <label for="patentListSearch">특허 검색</label>
-        <input type="search" id="patentListSearch" placeholder="특허번호 · 특허명 · 공종" />
-      </div>
-    </div>
-    <div id="patentListGrid"></div>
   </section>
 
 </main>
@@ -4316,6 +4307,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     var sortKey = null, sortDir = "asc";
     var filters = {};              // 열별 필터
     var filterRowOpen = false;
+    // 열 제목 정렬과 열 필터를 쓸지. false 면 눌러도 자료 순서를 바꾸지 않는다.
+    var sortable = opts.sortable !== false;
     var selectedId = null;
     var widths = {};               // 사용자가 조절한 열 너비
 
@@ -4380,16 +4373,21 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
         if (widths[col.key]) th.style.width = widths[col.key] + "px";
 
         var label = el("span", "grid-th-label", col.title);
-        label.title = col.title + " — 눌러서 정렬";
-        label.addEventListener("click", function () {
-          if (col.type === "seq") return;
-          sortDir = sortKey === col.key && sortDir === "asc" ? "desc" : "asc";
-          sortKey = col.key;
-          render();
-        });
+        // sortable: false 인 표는 열 제목을 눌러도 정렬하지 않는다 (자료 순서는 그대로 둔다)
+        if (sortable) {
+          label.title = col.title + " — 눌러서 정렬";
+          label.addEventListener("click", function () {
+            if (col.type === "seq") return;
+            sortDir = sortKey === col.key && sortDir === "asc" ? "desc" : "asc";
+            sortKey = col.key;
+            render();
+          });
+        }
         th.appendChild(label);
 
-        if (sortKey === col.key) th.appendChild(el("span", "grid-sort", sortDir === "desc" ? "▼" : "▲"));
+        if (sortable && sortKey === col.key) {
+          th.appendChild(el("span", "grid-sort", sortDir === "desc" ? "▼" : "▲"));
+        }
         if (filters[col.key]) th.appendChild(el("span", "grid-filtered", "▣"));
 
         // 열 너비 조절 손잡이
@@ -4417,7 +4415,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       });
       thead.appendChild(headRow);
 
-      if (filterRowOpen) {
+      if (filterRowOpen && sortable) {
         var filterRow = el("tr", "grid-filter-row");
         columns.forEach(function (col) {
           var td = el("th");
@@ -4494,7 +4492,12 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
     return {
       render: render,
-      toggleFilterRow: function () { filterRowOpen = !filterRowOpen; render(); return filterRowOpen; },
+      toggleFilterRow: function () {
+        if (!sortable) return false;          // 필터 행을 쓰지 않는 표
+        filterRowOpen = !filterRowOpen;
+        render();
+        return filterRowOpen;
+      },
       clearFilters: function () { filters = {}; render(); },
       getFilters: function () { return JSON.parse(JSON.stringify(filters)); },
       getSort: function () { return { key: sortKey, dir: sortDir }; },
@@ -4747,6 +4750,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   }
 
   var grid = PourGrid.create($("recordsGrid"), {
+    sortable: false,               // 열 제목 정렬·열 필터를 쓰지 않는다 (자료 순서는 그대로)
     columns: PourRecords.MAIN_COLUMNS,
     getRecords: currentRecords,
     emptyText: "등록된 공고·실적이 없습니다. 「＋ 새 공고」로 등록해 주세요.",
@@ -5614,6 +5618,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   /* --------------------------------------------------- 특허 목록(설정) */
 
   function renderPatentList() {
+    // 특허자료 관리 진입 UI 를 화면에서 뺐다. 자료와 함수는 그대로 두고 그릴 곳만 없다.
+    if (!$("patentListSearch") || !$("patentListGrid")) return;
     var q = $("patentListSearch").value.trim();
     var rows = q
       ? PourPatents.search(q, 200, storage).map(function (h) { return PourPatents.find(h.number, storage); })
@@ -5631,7 +5637,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
           (r.company || "") + "</td></tr>";
       }).join("") + "</tbody></table></div>";
   }
-  $("patentListSearch").addEventListener("input", renderPatentList);
+  if ($("patentListSearch")) $("patentListSearch").addEventListener("input", renderPatentList);
 
   /* -------------------------------------------------------- 갱신 */
 

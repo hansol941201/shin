@@ -64,6 +64,7 @@
   }
 
   var grid = PourGrid.create($("recordsGrid"), {
+    sortable: false,               // 열 제목 정렬·열 필터를 쓰지 않는다 (자료 순서는 그대로)
     columns: PourRecords.MAIN_COLUMNS,
     getRecords: currentRecords,
     emptyText: "등록된 공고·실적이 없습니다. 「＋ 새 공고」로 등록해 주세요.",
@@ -931,6 +932,8 @@
   /* --------------------------------------------------- 특허 목록(설정) */
 
   function renderPatentList() {
+    // 특허자료 관리 진입 UI 를 화면에서 뺐다. 자료와 함수는 그대로 두고 그릴 곳만 없다.
+    if (!$("patentListSearch") || !$("patentListGrid")) return;
     var q = $("patentListSearch").value.trim();
     var rows = q
       ? PourPatents.search(q, 200, storage).map(function (h) { return PourPatents.find(h.number, storage); })
@@ -948,7 +951,7 @@
           (r.company || "") + "</td></tr>";
       }).join("") + "</tbody></table></div>";
   }
-  $("patentListSearch").addEventListener("input", renderPatentList);
+  if ($("patentListSearch")) $("patentListSearch").addEventListener("input", renderPatentList);
 
   /* -------------------------------------------------------- 갱신 */
 

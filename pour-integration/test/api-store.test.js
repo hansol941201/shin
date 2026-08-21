@@ -129,10 +129,9 @@ function section(t) { console.log("\n" + t); }
   });
 
   await test("특허 자료도 서버에서 다시 읽어온다", async () => {
-    await page.click(".nav-item[data-view='settings']");
-    const rows = await page.$$eval("#patentListGrid tbody tr", els => els.length);
+    // 특허자료 관리 화면은 뺐지만 자료는 그대로 서버에서 읽어 온다
+    const rows = await page.evaluate(() => window.PourPatents.list(window.PourApp.storage).length);
     assert.strictEqual(rows, 50);
-    await page.click(".nav-item[data-view='records']");
   });
 
   /* -------------------------------------------------------------- */

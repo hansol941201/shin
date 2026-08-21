@@ -62,7 +62,7 @@ function section(t) { console.log("\n" + t); }
 
   await test("상단 메뉴·작업 버튼·상태 탭·엑셀형 표가 한 화면에 있음", async () => {
     const menus = await page.$$eval(".nav-item", els => els.map(e => e.textContent.trim()));
-    assert.deepStrictEqual(menus, ["공고·실적", "특허별 실적", "가져오기·내보내기", "설정"]);
+    assert.deepStrictEqual(menus, ["공고·실적", "특허별 실적", "설정"]);
     const brand = await page.textContent(".brand");
     assert.ok(brand.includes("NETFORM"), brand);
     assert.ok(brand.includes("POUR 공사실적 관리"), brand);
@@ -111,7 +111,7 @@ function section(t) { console.log("\n" + t); }
   section("2. 엑셀 가져오기 미리보기");
 
   await test("가져오기 자료 종류를 고를 수 있음", async () => {
-    await page.click(".nav-item[data-view='io']");
+    await page.evaluate(() => window.PourApp.showView("io"));
     const kinds = await page.$$eval("#importKind option", els => els.map(e => e.textContent));
     assert.deepStrictEqual(kinds, ["POUR 특허 관리 자료", "공고·실적 자료"]);
   });
@@ -133,8 +133,8 @@ function section(t) { console.log("\n" + t); }
       window.PourPatents.load(rows, window.localStorage);
       window.PourApp.refresh();
     }, EXCEL_ROWS);
-    await page.click(".nav-item[data-view='settings']");
-    const rowCount = await page.$$eval("#patentListGrid tbody tr", els => els.length);
+    // 특허자료 관리 화면은 뺐지만 자료는 그대로 있어야 한다
+    const rowCount = await page.evaluate(() => window.PourPatents.list(window.localStorage).length);
     assert.strictEqual(rowCount, 50, "등록 " + rowCount + "건");
     await page.click(".nav-item[data-view='records']");
   });
@@ -442,29 +442,29 @@ function section(t) { console.log("\n" + t); }
     await page.click("#panelSave");
   }
 
-  await test("열 제목을 눌러 오름·내림차순 정렬", async () => {
+  await test("열 제목을 눌러도 정렬하지 않고 순서가 그대로다", async () => {
     const heads = await page.$$eval("#recordsGrid .grid thead th", els => els.map(e => e.textContent.replace(/[▲▼▣]/g, "").trim()));
     const at = heads.indexOf("세대수") + 1;
+    const before = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(1)", els => els.map(e => e.textContent));
     await page.click(`#recordsGrid .grid thead th:nth-child(${at}) .grid-th-label`);
-    let first = await page.$eval(`#recordsGrid .grid tbody tr:first-child td:nth-child(${at})`, e => e.textContent);
-    assert.strictEqual(first, "", "빈 값이 먼저 와야 함(오름차순)");
-    await page.click(`#recordsGrid .grid thead th:nth-child(${at}) .grid-th-label`);
-    first = await page.$eval(`#recordsGrid .grid tbody tr:first-child td:nth-child(${at})`, e => e.textContent);
-    assert.strictEqual(first, "1,240", "내림차순 + 천 단위 쉼표");
+    await page.waitForTimeout(150);
+    const after = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(1)", els => els.map(e => e.textContent));
+    assert.deepStrictEqual(after, before, "자료 순서가 바뀌었다");
+    assert.strictEqual(await page.$("#recordsGrid .grid-sort"), null, "정렬 화살표가 남음");
   });
 
-  await test("열 필터 (표 기능은 그대로 · 버튼만 없어짐)", async () => {
+  await test("필터 행이 화면에 나오지 않는다", async () => {
+    assert.strictEqual(await page.$("#recordsGrid .grid-filter-row"), null);
+    // 코드로 열려고 해도 열리지 않는다
+    const opened = await page.evaluate(() => window.PourApp.grid.toggleFilterRow());
+    assert.strictEqual(opened, false);
+    assert.strictEqual(await page.$("#recordsGrid .grid-filter-row"), null);
+  });
+
+  await test("필터·정렬 버튼이 모두 없어졌다", async () => {
     assert.strictEqual(await page.$("#btnFilterRow"), null, "필터 버튼이 남음");
     assert.strictEqual(await page.$("#btnClearFilter"), null, "필터 해제 버튼이 남음");
     assert.strictEqual(await page.$("#btnSortReset"), null, "정렬 초기화 버튼이 남음");
-    // 표의 열 필터 자체는 그대로 동작한다
-    await page.evaluate(() => window.PourApp.grid.toggleFilterRow());
-    await page.waitForSelector("#recordsGrid .grid-filter-row");
-    await page.fill('[data-filter="city"]', "하남");
-    const rows = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(8)", els => els.map(e => e.textContent));
-    assert.deepStrictEqual(rows, ["하남"]);
-    await page.evaluate(() => window.PourApp.grid.clearFilters());
-    await page.evaluate(() => window.PourApp.grid.toggleFilterRow());
   });
 
   await test("통합검색 (아파트명·시공사·특허번호·공종)", async () => {
@@ -669,7 +669,7 @@ function section(t) { console.log("\n" + t); }
   await test("현재 필터 결과·특허별 워크시트 내보내기", async () => {
     await page.click(".nav-item[data-view='records']");
     await page.fill("#gridSearch", "하남");
-    await page.click(".nav-item[data-view='io']");
+    await page.evaluate(() => window.PourApp.showView("io"));
 
     await page.click('[data-export="현재필터"]');
     const msg = await page.textContent("#exportMsg");
@@ -709,8 +709,7 @@ function section(t) { console.log("\n" + t); }
     await page.waitForSelector("#recordsGrid .grid tbody tr");
     const after = await page.$$eval("#recordsGrid .grid tbody tr", els => els.length);
     assert.strictEqual(after, before);
-    await page.click(".nav-item[data-view='settings']");
-    const patents = await page.$$eval("#patentListGrid tbody tr", els => els.length);
+    const patents = await page.evaluate(() => window.PourPatents.list(window.localStorage).length);
     assert.strictEqual(patents, 50, "특허 자료가 사라짐");
     await page.click(".nav-item[data-view='records']");
   });
