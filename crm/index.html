@@ -430,6 +430,13 @@
   .request-cell .request-date{ color:var(--text-faint); font-size:10.5px; }
   .request-cell .request-labels{ font-weight:600; color:var(--text); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .request-cell:hover .request-labels{ text-decoration:underline; }
+  /* §고객 성향 컬럼 라운드 — "최근 요청" 컬럼 자리를 대체한다(.col-request/.request-cell은
+     그대로 남겨둔다, 고객카드의 "최근 요청/고객 메모"는 이 클래스와 무관하게 계속 동작).
+     행 높이를 넘지 않도록 grade-badge와 같은 작은 중립 회색 배지 스타일을 재사용한다(§11
+     "과도한 색상 사용 금지"). */
+  .col-insight{ flex:0 0 150px; min-width:0; font-size:12px; }
+  .insight-cell{ display:flex; flex-wrap:wrap; gap:3px; align-items:center; min-width:0; width:100%; }
+  .insight-tag{ display:inline-flex; align-items:center; max-width:100%; padding:2px 6px; font-size:10.5px; font-weight:650; color:#475569; background:#F1F5F9; border-radius:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
   .stage-dn-cell.st-normal{ color:var(--text); }
   .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
@@ -1929,7 +1936,11 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
       <div class="col-name">협력사</div>
       <div class="col-pour">최근 실적</div>
       <div class="col-yr">총 실적</div>
-      <div class="col-request">최근 요청</div>
+      <!-- §고객 성향 컬럼 라운드 — "최근 요청" 컬럼을 "고객 성향"으로 교체(§1). 최근 요청
+           데이터/계산(requestHistoryIndex 등)과 고객카드의 최근 요청/메모 기능은 전혀 안
+           지웠다 — 이 목록 칸에서만 더 이상 렌더링하지 않을 뿐이다(§9 "화면 목록에서만
+           숨기는 것"). -->
+      <div class="col-insight">고객 성향</div>
       <div class="col-total-revenue col-total-revenue-head" id="totalRevenueSortHeader">총 매출 <span class="total-revenue-sort-arrow" id="totalRevenueSortArrow"></span></div>
       <div class="col-yr-revenue">2026 매출</div>
       <div class="col-contrib">실적↔매출</div>
@@ -3373,6 +3384,24 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   function setSalesTendency(companyId, text, evidence){
     return updateCompany(companyId, { salesTendency: { text: text || '', evidence: evidence || '' } });
   }
+  // §고객 성향 컬럼 라운드 — customerInsight: 기존 salesTendency(한 줄)/reactions(누적
+  // 배열)와는 완전히 별도의 신규 필드다(§10 "기존 필드와 충돌하지 않는 별도 구조로 추가",
+  // §6 "새 저장 key를 쓰지 않는다"의 반대 원칙 — 이건 새 key가 아니라 companies 배열 안의
+  // 새 필드 하나일 뿐, storage key/Firebase path/companyId는 전혀 안 바꾼다). 사람이 직접
+  // 입력한 값만 저장한다(§8/§9 — AI 자동분석은 이번 라운드 범위 밖, 나중에 "미팅 메모 →
+  // AI 분석 → 제안 → 사용자 확인 → 저장" 흐름이 붙어도 저장 시점은 항상 이 함수 하나로
+  // 통일되도록 만들어 둔다). patch에 있는 필드만 부분 병합한다(applyPatchToRecord와 같은
+  // "값이 있는 필드만 갱신" 원칙 — 필드 하나만 고쳐도 나머지가 사라지지 않는다).
+  const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags'];
+  function setCustomerInsight(companyId, patch){
+    const co = findCompany(companyId); if(!co) return null;
+    const merged = Object.assign({}, co.customerInsight || {});
+    CUSTOMER_INSIGHT_FIELDS.forEach(k=>{
+      if(k in (patch || {})) merged[k] = patch[k];
+    });
+    merged.updatedAt = nowIso();
+    return updateCompany(companyId, { customerInsight: merged });
+  }
   // nextActions: §고객 니즈 기반 영업지원 CRM 라운드 — 완료 처리(done/completedAt)를 추가한다.
   // 완료된 항목은 "다음 행동" 활성 목록에서는 빠지지만 배열에서 삭제하지 않고, 완료 사실을
   // customerActivities에도 기록해 활동/완료이력에 남긴다(§9 — 새 저장소를 만들지 않고 기존
@@ -4692,7 +4721,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     QUESTION_CATEGORIES, QUESTION_STATUSES,
     addCustomerQuestion, addCustomerQuestionIfNew, removeCustomerQuestion, setQuestionStatus, linkQuestionDocument,
     addMeetingChecklistItem, removeMeetingChecklistItem,
-    setSalesTendency, addNextAction, removeNextAction, completeNextAction,
+    setSalesTendency, setCustomerInsight, addNextAction, removeNextAction, completeNextAction,
     addBlocker, removeBlocker, addPourSupport, removePourSupport,
     addReaction, removeReaction, addRecommendedSupport, removeRecommendedSupport, setMemoSummary,
     loadLibraryDocs, findLibraryDoc,
@@ -5321,6 +5350,14 @@ window.SHIN2_CRM_APP_INIT = function(){
       } else {
         requestHtml = `<button type="button" class="request-cell" data-request-detail="${esc(co.id)}"><span class="data-none">—</span></button>`;
       }
+      // §고객 성향 컬럼 라운드 §2/§6: 목록에는 co.customerInsight(별도 신규 필드,
+      // 기존 salesTendency/reactions와 무관 — §10 "기존 필드와 충돌하지 않는 별도 구조")의
+      // 대표 태그 최대 3개만 짧게 보여준다. buildInsightRepTags는 아래 renderGlanceRow 근처
+      // 등 다른 곳에서도 재사용한다(같은 값을 두 번 계산하지 않기 위해 한 곳에만 정의).
+      const insightTags = buildInsightRepTags(co);
+      const insightHtml = insightTags.length
+        ? `<span class="insight-cell">${insightTags.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}</span>`
+        : `<span class="insight-cell"><span class="data-none">성향 미등록</span></span>`;
       // §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N"은 메인 목록에서 뺐지만
       // (§1), 기한 초과 여부(rowOverdueClass, 행 왼쪽 빨간 라인)는 계속 필요해서 계산
       // 자체는 그대로 둔다 — r.progress도 위 enriched에서 이미 계산된
@@ -5366,7 +5403,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         </div>
         <div class="col-pour">${lastActHtml}</div>
         <div class="col-yr">${yrHtml}</div>
-        <div class="col-request">${requestHtml}</div>
+        <div class="col-insight">${insightHtml}</div>
         <div class="col-total-revenue">${totalRevenueHtml}</div>
         <div class="col-yr-revenue">${yrRevenueHtml}</div>
         <div class="col-contrib">${contribHtml}</div>
@@ -5465,7 +5502,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardState.sectionEdit = {};
     cardState.progressStageSel = null; // §진행 기록 라운드: 업체를 새로 열 때만 선택 단계 초기화
     cardState.pourExpanded = false; cardState.pourYearFilter = 'all'; // §POUR 시공실적 라운드
-    cardState.accordionOpen = { info: false, docs: false }; // §고객카드 아코디언 라운드: 업체를 새로 열 때는 항상 접힘부터 시작(§4, 별도 저장값 없음)
+    cardState.accordionOpen = { info: false, docs: false, insight: false }; // §고객카드 아코디언 라운드/§고객 성향 컬럼 라운드 §4: 업체를 새로 열 때는 항상 접힘부터 시작(§4, 별도 저장값 없음)
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -5710,6 +5747,14 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div class="cdash-col" id="cdashReactionsCol"></div>
               <div class="cdash-col" id="cdashDocStatusBlock"></div>
             </div>
+
+            <!-- §고객 성향 컬럼 라운드 §3/§4 — 기존 3분할(cdash-quad)과 완전히 별도의 신규
+                 전체폭 블록. "새로운 큰 카드 추가 금지"(§11) 요구에 맞춰 cdashMeetingBlock과
+                 같은 .cdash-block(이미 있는 얇은 블록 스타일)을 그대로 재사용하고, 기본
+                 접힘(§4)은 위 cdashReactionsCol("고객 정보")과 동일한 accordion 패턴
+                 (cardState.accordionOpen/sectionEdit)을 그대로 재사용한다 — 새 UI 패턴을
+                 만들지 않는다. -->
+            <div class="cdash-block" id="cdashInsightBlock"></div>
           </div>
         </div>
       </div>
@@ -5725,6 +5770,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderPourTrackSection(co);
     renderReqPreview(co);
     renderReactionsCol(co);
+    renderInsightBlock(co); // §고객 성향 컬럼 라운드 §3
     // renderNextActionsCol(co); — §고객카드 레이아웃 재배치 라운드 §5: "다음 행동" 카드를
     // 화면에서 뺐다(§10 최종 구조에 없음). 함수 자체와 co.nextActions 원본 데이터는 전혀
     // 지우지 않았다 — 그릴 DOM 슬롯(cdashNextActionsCol)이 없어졌을 뿐이다.
@@ -7653,6 +7699,25 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(!breakdown.length) return null;
     return breakdown.slice(0, n || 2).map(x=> x.category).join(', ');
   }
+
+  // §고객 성향 컬럼 라운드 §6/§8 — 목록/고객카드 양쪽에서 재사용하는 "대표 성향 태그"
+  // 계산. co.customerInsight.decisionStyle(의사결정 성향, 짧은 값)과 interests(주요 관심,
+  // 짧은 값들의 배열)만 태그 후보로 쓴다 — needs/concerns/preferredContact는 자유 서술형
+  // 문장이라 자동으로 "OO 민감"/"OO 중시" 같은 짧은 라벨을 만들어내지 않는다(§8 "사람에
+  // 대한 임의 평가 금지" — 자유 텍스트를 임의로 요약/재해석하지 않는다는 원칙을 태그
+  // 생성에도 그대로 적용). 대신 co.customerInsight.tags(사용자가 직접 입력/수정하는 대표
+  // 태그 목록, 기본값은 decisionStyle+interests로 미리 채워지지만 그대로 사용자가 자유롭게
+  // 고쳐 쓸 수 있다)가 있으면 그걸 최우선으로 쓴다 — "가격 민감"처럼 사람이 실제로 그렇게
+  // 판단해서 직접 쓴 짧은 표현은 허용하되, 그 판단은 항상 사람이 한다(AI/자동 추론 아님).
+  function buildInsightRepTags(co){
+    const ci = co.customerInsight;
+    if(!ci) return [];
+    if(Array.isArray(ci.tags) && ci.tags.length) return ci.tags.filter(Boolean).slice(0, 3);
+    const tags = [];
+    if(ci.decisionStyle) tags.push(ci.decisionStyle);
+    (ci.interests || []).forEach(t=> { if(tags.length < 3 && t) tags.push(t); });
+    return tags.slice(0, 3);
+  }
   function getTotalRevenue(co){
     const gs = co.partnerDashboard && co.partnerDashboard.gradeSales;
     return (typeof gs === 'number') ? gs : null; // null=데이터 없음, 0=실제 0원(§ 구분)
@@ -9518,6 +9583,105 @@ window.SHIN2_CRM_APP_INIT = function(){
       document.getElementById('cdashReactionInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
       document.getElementById('cdashTendencySaveBtn').addEventListener('click', ()=>{
         D.setSalesTendency(co.id, document.getElementById('cdashTendencyInput').value.trim(), document.getElementById('cdashTendencyEvInput').value.trim());
+        refreshChart();
+      });
+    }
+  }
+
+  /* ==========================================================================
+     §고객 성향 컬럼 라운드 — "고객 인사이트": co.salesTendency(§9, 한 줄)/co.reactions(§10,
+     누적 목록)와는 완전히 별도의 신규 필드(co.customerInsight, §10 "기존 필드와 충돌하지
+     않는 구조")다. 실제 B2B 대응에 필요한 정보만 다룬다(§8) — "까다로운 사람"류의 인물평가는
+     입력 항목 자체에 없다(주관적 평가를 담을 자리를 아예 만들지 않음). 사람이 직접
+     입력/수정할 때만 값이 채워지고(§9 salesTendency와 같은 원칙), 나중에 "미팅메모 → AI
+     분석 → 제안 → 사용자 확인 → 저장" 흐름이 붙어도 저장은 항상 D.setCustomerInsight
+     하나로 통일되도록 필드 구조를 미리 넓게 잡아 둔다(§7). 기본은 접힘(renderReactionsCol과
+     완전히 같은 accordion 패턴/state를 그대로 재사용 — cardState.accordionOpen.insight/
+     cardState.sectionEdit.insight). ----------------------------------------------- */
+  const INSIGHT_DECISION_PRESETS = ['빠른 결정','검토형','신중형','실무 중심'];
+  const INSIGHT_INTEREST_PRESETS = ['실적','가격','기술력','특허','현장지원','입찰지원'];
+  const INSIGHT_CONTACT_PRESETS = ['전화 선호','자료 먼저','핵심만 설명','상세 설명 필요','비교자료 선호'];
+  function renderInsightBlock(co){
+    const wrap = document.getElementById('cdashInsightBlock');
+    if(!wrap) return;
+    const editing = !!cardState.sectionEdit.insight;
+    const open = !!(cardState.accordionOpen && cardState.accordionOpen.insight);
+    const ci = co.customerInsight || {};
+    const repTags = buildInsightRepTags(co);
+    const summaryText = repTags.length ? repTags.join(' · ') : '';
+    const row = (label, value)=> `<div class="co-field"><div class="co-field-label">${esc(label)}</div><div class="co-field-value">${value}</div></div>`;
+    const hasAny = repTags.length || ci.needs || ci.concerns || ci.preferredContact || ci.keyQuote || ci.nextAction;
+    const bodyHtml = hasAny ? [
+      ci.decisionStyle ? row('의사결정 성향', esc(ci.decisionStyle)) : '',
+      (ci.interests && ci.interests.length) ? row('주요 관심', esc(ci.interests.join(' · '))) : '',
+      ci.needs ? row('주요 니즈', esc(ci.needs)) : '',
+      ci.concerns ? row('우려/장벽', esc(ci.concerns)) : '',
+      ci.preferredContact ? row('선호 대응', esc(ci.preferredContact)) : '',
+      ci.keyQuote ? row('핵심 발언', '"' + esc(ci.keyQuote) + '"') : '',
+      ci.nextAction ? row('다음 대응', esc(ci.nextAction)) : '',
+      ci.evidence ? row('근거', esc(ci.evidence)) : ''
+    ].join('') : '<div class="cdash-field-value is-muted">등록된 고객 인사이트가 없습니다.</div>';
+    wrap.innerHTML = `
+      <div class="cdash-accordion-header" id="cdashInsightAccHeader">
+        <span class="cdash-accordion-chevron${open ? ' is-open' : ''}">▶</span>
+        <div class="cdash-bcol-title">고객 인사이트</div>
+        ${open ? `<button type="button" class="cdash-mini-edit" id="cdashInsightToggle">${editing ? '완료' : '수정'}</button>` : (summaryText ? `<span class="cdash-accordion-summary">${esc(summaryText)}</span>` : '')}
+      </div>
+      <div class="cdash-accordion-body" id="cdashInsightAccBody" style="${open ? '' : 'display:none;'}">
+        ${editing ? `
+          <div class="co-form-field">
+            <label>의사결정 성향</label>
+            <input type="text" id="ciDecisionInput" value="${esc(ci.decisionStyle || '')}" list="ciDecisionPresets" placeholder="예: 검토형" />
+            <datalist id="ciDecisionPresets">${INSIGHT_DECISION_PRESETS.map(p=> `<option value="${esc(p)}"></option>`).join('')}</datalist>
+          </div>
+          <div class="co-form-field">
+            <label>주요 관심 (쉼표로 구분, 예: 실적, 기술력)</label>
+            <input type="text" id="ciInterestsInput" value="${esc((ci.interests||[]).join(', '))}" list="ciInterestPresets" placeholder="예: 실적, 기술력" />
+            <datalist id="ciInterestPresets">${INSIGHT_INTEREST_PRESETS.map(p=> `<option value="${esc(p)}"></option>`).join('')}</datalist>
+          </div>
+          <div class="co-form-field"><label>주요 니즈</label><textarea id="ciNeedsInput">${esc(ci.needs || '')}</textarea></div>
+          <div class="co-form-field"><label>우려 / 장벽</label><textarea id="ciConcernsInput">${esc(ci.concerns || '')}</textarea></div>
+          <div class="co-form-field">
+            <label>선호 대응</label>
+            <input type="text" id="ciContactInput" value="${esc(ci.preferredContact || '')}" list="ciContactPresets" placeholder="예: 자료 먼저" />
+            <datalist id="ciContactPresets">${INSIGHT_CONTACT_PRESETS.map(p=> `<option value="${esc(p)}"></option>`).join('')}</datalist>
+          </div>
+          <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(ci.keyQuote || '')}" placeholder="미팅에서 실제로 나온 발언" /></div>
+          <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(ci.nextAction || '')}</textarea></div>
+          <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(ci.evidence || '')}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
+          <div class="co-form-field"><label>목록 대표 태그 (쉼표로 구분, 최대 3개만 표시 · 비워두면 의사결정 성향/주요 관심에서 자동 채움)</label><input type="text" id="ciTagsInput" value="${esc((ci.tags||[]).join(', '))}" placeholder="예: 검토형, 실적 중시, 가격 민감" /></div>
+          <div style="display:flex;gap:10px;margin-top:6px;">
+            <button type="button" class="co-text-action primary" id="ciSaveBtn">저장</button>
+          </div>
+        ` : bodyHtml}
+      </div>
+    `;
+    document.getElementById('cdashInsightAccHeader').addEventListener('click', (e)=>{
+      if(e.target.closest('#cdashInsightToggle')) return;
+      cardState.accordionOpen.insight = !open;
+      refreshChart();
+    });
+    const editBtn = document.getElementById('cdashInsightToggle');
+    if(editBtn) editBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      cardState.sectionEdit.insight = !editing;
+      refreshChart();
+    });
+    if(editing){
+      const splitList = v=> v.split(',').map(s=> s.trim()).filter(Boolean);
+      document.getElementById('ciSaveBtn').addEventListener('click', ()=>{
+        D.setCustomerInsight(co.id, {
+          decisionStyle: document.getElementById('ciDecisionInput').value.trim(),
+          interests: splitList(document.getElementById('ciInterestsInput').value),
+          needs: document.getElementById('ciNeedsInput').value.trim(),
+          concerns: document.getElementById('ciConcernsInput').value.trim(),
+          preferredContact: document.getElementById('ciContactInput').value.trim(),
+          keyQuote: document.getElementById('ciQuoteInput').value.trim(),
+          nextAction: document.getElementById('ciNextInput').value.trim(),
+          evidence: document.getElementById('ciEvidenceInput').value.trim(),
+          tags: splitList(document.getElementById('ciTagsInput').value)
+        });
+        cardState.sectionEdit.insight = false;
         refreshChart();
       });
     }
