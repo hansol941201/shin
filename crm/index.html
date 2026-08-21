@@ -450,6 +450,12 @@
   .insight-tag.is-important{ background:#FFF4DF; color:#B7791F; }
   .insight-star-chip{ cursor:pointer; }
   .insight-star-chip.is-star{ background:#FFF4DF; color:#B7791F; border-color:#F2C572; }
+  /* §고객 인사이트 공법/경쟁관계 라운드 §5 — "현재 공법 이용 형태"/"타 공법사 이용"/
+     "선호 업체·공법" 세 영역을 서로 떨어뜨리지 않고 하나의 영역처럼 보이게 옅은 배경/테두리로
+     묶는다(새 디자인 시스템 도입 없이 기존 톤 그대로). */
+  .insight-method-group{ background:#F8FAFC; border:1px solid #E7ECF2; border-radius:8px; padding:10px 12px; margin-top:4px; }
+  .insight-method-group .co-form-field{ margin-top:8px; }
+  .insight-method-group .co-form-field:first-child{ margin-top:0; }
   .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
   .stage-dn-cell.st-normal{ color:var(--text); }
   .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
@@ -3425,8 +3431,14 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // customInsights/importantInsightIds)는 전혀 지우지 않는다 — "주요 니즈"(needs)도
   // 필드 자체는 그대로 두고 화면에서만 더 이상 쓰지 않는다(§1/§17 "데이터는 삭제하지
   // 않는다"). competitorCompanies/preferredCompanies는 자유입력 업체명 배열이다.
+  // §고객 인사이트 공법/경쟁관계 라운드 §1/§6/§7 — "현재 공법 이용 형태"(currentUsageStatus,
+  // 대표 1개 선택)와 "타 공법사 이용" 상태(competitorUsageStatus: 없음/있음/확인 필요)를
+  // 새 필드로 "추가"한다. 기존 필드는 전혀 지우지 않는다 — 이전 라운드의
+  // competitorUsageTraits(다중선택 성향 태그)도 그대로 남겨두고 화면에서만 새 구조로
+  // 대체한다(§20 "데이터 보호").
   const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags','insightIds','customInsights','importantInsightIds',
-    'decisionTraits','interestTraits','priceTraits','materialPreferences','competitorUsageTraits','competitorCompanies','preferredCompanyTraits','preferredCompanies','barrierTraits','importantTraits'];
+    'decisionTraits','interestTraits','priceTraits','materialPreferences','competitorUsageTraits','competitorCompanies','preferredCompanyTraits','preferredCompanies','barrierTraits','importantTraits',
+    'currentUsageStatus','competitorUsageStatus'];
   function setCustomerInsight(companyId, patch){
     const co = findCompany(companyId); if(!co) return null;
     const merged = Object.assign({}, co.customerInsight || {});
@@ -3435,6 +3447,38 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     });
     merged.updatedAt = nowIso();
     return updateCompany(companyId, { customerInsight: merged });
+  }
+  // §고객 인사이트 공법/경쟁관계 라운드 §8/§9 — "타 공법사/공법" 사전은 개별 고객 데이터가
+  // 아니라 전체 고객이 공유하는 별도 저장소다(사용자가 한 고객카드에서 "+ 직접 추가"한
+  // 업체/공법을 다른 고객에서도 검색해서 재사용할 수 있어야 하므로). 새 localStorage
+  // key(shin2-competitor-method-dict)를 쓴다 — 기존 key는 전혀 건드리지 않는다. 초기
+  // 시드값은 이 프로젝트 코드베이스에서 실제로 이미 확인된 이름만 넣는다(§8 "확인되지
+  // 않은 업체명을 임의로 만들어 넣지 마세요") — COMPETITOR_NAMES(§고객 니즈 CRM 라운드,
+  // 메모 자동분류 규칙에 실사용 중)의 '루프마스터'/'우레탄', 그리고 이번 요청 본문에서
+  // 사용자가 직접 실제 사례로 언급한 '4A SYSTEM'/'에코크랙실'.
+  const COMPETITOR_METHOD_DICT_KEY = 'shin2-competitor-method-dict';
+  const COMPETITOR_METHOD_SEED = [
+    { id:'cm_seed_1', category:'공법', name:'4A SYSTEM', workType:'' },
+    { id:'cm_seed_2', category:'공법', name:'에코크랙실', workType:'' },
+    { id:'cm_seed_3', category:'공법', name:'루프마스터', workType:'' },
+    { id:'cm_seed_4', category:'자재', name:'우레탄', workType:'' }
+  ];
+  function loadCompetitorMethodDict(){
+    let arr = readArr(COMPETITOR_METHOD_DICT_KEY);
+    if(!arr.length){
+      arr = COMPETITOR_METHOD_SEED.slice();
+      try{ localStorage.setItem(COMPETITOR_METHOD_DICT_KEY, JSON.stringify(arr)); }catch(e){}
+    }
+    return arr;
+  }
+  function addCompetitorMethodEntry(entry){
+    const name = (entry && entry.name || '').trim();
+    if(!name) return loadCompetitorMethodDict();
+    const arr = loadCompetitorMethodDict();
+    if(arr.some(x=> x.name === name)) return arr; // 이름 중복이면 새로 추가하지 않고 그대로 재사용
+    arr.push({ id: 'cm_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), category: (entry.category || '기타'), name, workType: (entry.workType || '') });
+    try{ localStorage.setItem(COMPETITOR_METHOD_DICT_KEY, JSON.stringify(arr)); }catch(e){}
+    return arr;
   }
   // nextActions: §고객 니즈 기반 영업지원 CRM 라운드 — 완료 처리(done/completedAt)를 추가한다.
   // 완료된 항목은 "다음 행동" 활성 목록에서는 빠지지만 배열에서 삭제하지 않고, 완료 사실을
@@ -4855,7 +4899,8 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     // 크로스 스크립트 버그를 반복하지 않기 위해 항상 D.* 다리를 통해서만 부른다). 함수
     // 본문은 전혀 안 바꿨다 — previewPartnerSync/applyPartnerSync가 이미 내부적으로 쓰던
     // 그 함수들 그대로.
-    pdFetchBaselineData, pdFetchOverrides, pdBuildEffectiveRows, pdBuildContactIndex, pdMatchCompany, pdUnescapeKey
+    pdFetchBaselineData, pdFetchOverrides, pdBuildEffectiveRows, pdBuildContactIndex, pdMatchCompany, pdUnescapeKey,
+    loadCompetitorMethodDict, addCompetitorMethodEntry
   };
 })();
 </script>
@@ -8362,28 +8407,42 @@ window.SHIN2_CRM_APP_INIT = function(){
     ["ins_502","etc","본사와 현장 요청사항이 다른 경우 있음"],
   ];
 
-  // §고객 인사이트 복수선택 라운드 §1~§11 — 위 500개+ 사전(INSIGHT_DICTIONARY)을 삭제하지
-  // 않고, 요청받은 10개 카테고리 구조에 맞는 "다중선택 프리셋" 목록을 사전에서 이미 검증된
-  // 실제 문구 위주로 재구성한다(§16 "적절한 항목을 재분류"). 새로 정의가 필요한 "타사 이용"/
-  // "선호 업체·공법"만 신규 작성했다 — 사전에 없던 완전히 새로운 개념이기 때문이다.
-  const PRESET_DECISION = ['실무 중심','대표 결정형','실무자 검토형','빠른 결정형','즉시 실행형','신중 검토형','비교 검토형','자료 검토 후 결정','현장 확인 후 결정','내부 협의형','여러 사람 의견 수렴','발주처 반응 확인 후 결정','가격 확인 후 결정','기술 검토 후 결정','실적 확인 후 결정'];
-  const PRESET_INTEREST = ['실적','가격','수익성','마진','기술력','특허','공법 차별성','현장지원','입찰지원','시공 편의성','하자관리','사후관리','브랜드 신뢰','공기 단축','원가 절감','발주처 설득','수주 경쟁력','자재 안정성','시공 품질','현장 대응 속도'];
-  const PRESET_PRICE = ['가격 민감','최저가 선호','단가 비교형','원가 중시','마진 중시','수익성 중시','가격 협의 필요','경쟁사 단가 비교','초기 비용 민감','장기 비용 중시','가격보다 품질 중시','가격보다 실적 중시','가격보다 기술력 중시','예산 확정 후 진행','자재단가 관심','시공단가 관심'];
-  const PRESET_MATERIAL = ['자료 먼저 선호','전화 설명 선호','대면 설명 선호','핵심만 설명 선호','상세 설명 필요','실적자료 선호','비교표 선호','사진자료 선호','PT자료 선호','시방서 선호','시험성적서 중시','특허자료 중시','공고문 예시 선호','유사현장 자료 선호','견적자료 선호','기술자료 선호'];
+  // §고객 인사이트 복수선택 라운드(1차) + §고객 인사이트 공법/경쟁관계 라운드(2차) —
+  // 위 500개+ 사전(INSIGHT_DICTIONARY)을 삭제하지 않고, 요청받은 카테고리 구조에 맞는
+  // "다중선택 프리셋" 목록을 사전에서 이미 검증된 실제 문구 위주로 재구성한다. 2차
+  // 라운드에서 각 프리셋에 새 문구가 추가 요청된 경우 기존 프리셋 문구는 절대 빼지 않고
+  // (이미 선택돼 저장된 고객 데이터가 있을 수 있으므로) 뒤에 이어붙이기만 한다 — "삭제"가
+  // 아니라 "합집합"으로 처리(§19 "기존 500개+ 사전 유지"와 동일 원칙 적용).
+  const PRESET_DECISION = ['실무 중심','대표 중심','현장 중심','관계 중심','기술 검토형','빠른 결정형','즉시 실행형','신중 검토형','비교 검토형','자료 검토형','내부 협의형','대표 승인형','실무자 검토 후 대표 승인','여러 담당자 의견 수렴','현장 확인 후 결정','가격 확인 후 결정','실적 확인 후 결정','기술 확인 후 결정','발주처 반응 확인 후 결정','대표 결정형','실무자 검토형','자료 검토 후 결정','기술 검토 후 결정'];
+  const PRESET_INTEREST = ['가격','수익성','마진','실적','대단지 실적','유사현장 실적','기술력','특허','공법 차별성','시공 품질','하자관리','사후관리','현장지원','입찰지원','발주처 대응','수주 가능성','시공 편의성','공기 단축','원가 절감','자재 안정성','브랜드','관계','영업지원','브랜드 신뢰','발주처 설득','수주 경쟁력','현장 대응 속도'];
+  const PRESET_PRICE = ['가격 민감','최저가 선호','단가 비교형','원가 중시','마진 중시','수익성 중시','가격 협의 필요','경쟁사 단가 비교','초기 비용 민감','장기 비용 중시','가격보다 품질 중시','가격보다 실적 중시','가격보다 기술력 중시','예산 확정 후 진행','자재단가 관심','시공단가 관심','가격 협의형','예산 확정 후 결정'];
+  const PRESET_MATERIAL = ['자료 먼저 선호','전화 설명 선호','대면 설명 선호','핵심만 설명 선호','상세 설명 필요','실적자료 선호','비교표 선호','사진자료 선호','PT자료 선호','시방서 선호','시험성적서 중시','특허자료 중시','공고문 예시 선호','유사현장 자료 선호','견적자료 선호','기술자료 선호','전화 선호','핵심 설명 선호','상세 설명 선호'];
+  const PRESET_PREFERRED_COMPANY = ['POUR 선호','기존 거래업체 선호','특정 공법 선호','가격 좋은 업체 선호','실적 많은 업체 선호','현장지원 좋은 업체 선호','브랜드 인지도 높은 업체 선호','발주처 지정업체 선호','상황에 따라 선택','아직 선호 없음','특정 공법사 선호','마진 좋은 업체 선호','기술력 좋은 업체 선호','관계 있는 업체 선호','현장마다 다름','특별한 선호 없음'];
+  const PRESET_BARRIER = ['가격 부담','기존 거래처 존재','경쟁사 비교 중','공법 이해 부족','시공성 우려','하자 우려','자재수급 우려','대표 승인 필요','내부 검토 필요','발주처 설득 필요','예산 미확정','현장 미확정','입찰 일정 미확정','실적 확인 필요','타사 관계 유지 중','타 공법사 관계 있음'];
+  // §고객 인사이트 공법/경쟁관계 라운드 §6/§7 — "현재 공법 이용 형태"는 지금 상태를 나타내는
+  // 대표 성격이라 1개만 골라도 된다(라디오형 단일선택, 값은 문자열로 저장). "타 공법사 이용"
+  // 상태(없음/있음/확인 필요)도 동일하게 단일선택이다 — 실제 업체명 다중등록은 별도
+  // competitorCompanies 배열로 관리한다(§7 "한 고객이 타 공법사 여러 곳을 이용할 수 있다").
+  // 옛 다중선택 성향 태그(competitorUsageTraits/PRESET_COMPETITOR_USAGE)는 이번 라운드
+  // UI에서 더 이상 편집 화면에 노출하지 않지만, 필드/데이터/보기 화면 폴백은 그대로 남긴다
+  // (§20 "데이터 보호" — 이전 라운드에 이미 저장된 고객 데이터가 있을 수 있음).
+  const PRESET_CURRENT_USAGE = ['POUR 중심','POUR + 타사 병행','타사 중심','현장별 선택','발주처/현장 조건에 따라 선택','아직 파악 안 됨'];
+  const COMPETITOR_STATUS_OPTIONS = ['없음','있음','확인 필요'];
   const PRESET_COMPETITOR_USAGE = ['타사 이용 없음','타사 병행 이용','타사 중심 이용','기존 거래처 있음','경쟁 공법 사용','상황별 업체 선택','현장별 업체 변경','발주처 지정업체 사용','특정 업체 선호','확인 필요'];
-  const PRESET_PREFERRED_COMPANY = ['POUR 선호','기존 거래업체 선호','특정 공법 선호','가격 좋은 업체 선호','실적 많은 업체 선호','현장지원 좋은 업체 선호','브랜드 인지도 높은 업체 선호','발주처 지정업체 선호','상황에 따라 선택','아직 선호 없음'];
-  const PRESET_BARRIER = ['가격 부담','기존 거래처 존재','경쟁사 비교 중','공법 이해 부족','시공성 우려','하자 우려','자재수급 우려','대표 승인 필요','내부 검토 필요','발주처 설득 필요','예산 미확정','현장 미확정','입찰 일정 미확정','실적 확인 필요','타사 관계 유지 중'];
-  // §고객 인사이트 복수선택 라운드 §10 — 편집/보기 화면 렌더 순서. 각 항목: [필드키, 라벨,
-  // 프리셋배열|null(자유입력/자유텍스트 전용이면 null)].
+  // §고객 인사이트 공법/경쟁관계 라운드 §1 — 편집/보기 화면 렌더 순서(①~⑧, 자유입력 3개
+  // 제외). 각 항목: [필드키, 라벨, 프리셋배열]. "공법/경쟁 관계" 그룹(③~⑤)은 checkGrid로
+  // 표현할 수 없는 혼합 UI(단일선택+상태+검색드롭다운)라 이 목록에 넣지 않고
+  // renderInsightBlock에서 별도 블록으로 그린다.
   const INSIGHT_SECTION_ORDER = [
-    ['decisionTraits', '의사결정 성향', PRESET_DECISION],
+    ['decisionTraits', '의사결정 / 업무 성향', PRESET_DECISION],
     ['interestTraits', '주요 관심', PRESET_INTEREST],
+  ];
+  const INSIGHT_SECTION_ORDER_TAIL = [
     ['priceTraits', '가격 / 비용 성향', PRESET_PRICE],
-    ['competitorUsageTraits', '타사 이용', PRESET_COMPETITOR_USAGE],
-    ['preferredCompanyTraits', '선호 업체 / 공법', PRESET_PREFERRED_COMPANY],
     ['materialPreferences', '자료 / 설명 선호', PRESET_MATERIAL],
     ['barrierTraits', '우려 / 장벽', PRESET_BARRIER],
   ];
+  const INSIGHT_PREFERRED_SECTION = ['preferredCompanyTraits', '선호 업체 / 공법', PRESET_PREFERRED_COMPANY];
 
   // §고객 인사이트 사전 라운드 — INSIGHT_DICTIONARY(id/카테고리/문구 500개+, 아래 별도
   // 정의)를 id로 조회하기 위한 캐시 Map. 사전 자체는 static이라 한 번만 만든다(§성능 원칙).
@@ -8414,15 +8473,22 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 반영된 순서로 모은다: ①★importantTraits ②의사결정 ③주요 관심 ④타사 이용 상태
   // ⑤선호 업체/공법 상태 ⑥가격 ⑦자료선호 ⑧우려. 같은 값이 여러 배열에 동시에 들어있을
   // 순 없으므로(체크박스가 카테고리별로 분리돼 있음) 중복 걱정 없이 그대로 이어붙인다.
+  // §고객 인사이트 공법/경쟁관계 라운드 §17/§18 — 목록/접힌 카드 대표 태그 우선순위:
+  // ①의사결정 ②주요 관심 ③현재 공법 이용 형태(currentUsageStatus, 대표 1개) ④선호
+  // 업체/공법 ⑤가격 ⑥자료선호 ⑦우려 ⑧(구버전 호환) 타사 이용 성향 태그. 타 공법사
+  // "이름"(competitorCompanies)과 타 공법사 이용 상태(competitorUsageStatus)는 여기서
+  // 절대 포함하지 않는다 — §18 "타 공법사 이름을 목록에 여러 개 노출하지 않습니다. 상세
+  // 공법사는 고객카드에서 확인합니다."
   function insightAllTraits(ci){
     return []
       .concat(ci.decisionTraits || [])
       .concat(ci.interestTraits || [])
-      .concat(ci.competitorUsageTraits || [])
+      .concat(ci.currentUsageStatus ? [ci.currentUsageStatus] : [])
       .concat(ci.preferredCompanyTraits || [])
       .concat(ci.priceTraits || [])
       .concat(ci.materialPreferences || [])
       .concat(ci.barrierTraits || [])
+      .concat(ci.competitorUsageTraits || [])
       .filter(Boolean);
   }
   function buildInsightRepTagsFull(co){
@@ -10550,6 +10616,8 @@ window.SHIN2_CRM_APP_INIT = function(){
       interestTraits: (ci.interestTraits || []).slice(),
       priceTraits: (ci.priceTraits || []).slice(),
       materialPreferences: (ci.materialPreferences || []).slice(),
+      currentUsageStatus: ci.currentUsageStatus || '',
+      competitorUsageStatus: ci.competitorUsageStatus || '',
       competitorUsageTraits: (ci.competitorUsageTraits || []).slice(),
       competitorCompanies: (ci.competitorCompanies || []).slice(),
       preferredCompanyTraits: (ci.preferredCompanyTraits || []).slice(),
@@ -10561,6 +10629,12 @@ window.SHIN2_CRM_APP_INIT = function(){
       evidence: ci.evidence || ''
     };
   }
+  // §고객 인사이트 공법/경쟁관계 라운드 §1/§16/§17 — 보기(펼침) 화면 렌더 순서:
+  // ①의사결정/업무 성향 ②주요 관심 ③~⑤"공법/경쟁 관계" 그룹(현재 이용 형태/타 공법사
+  // 이용/선호 업체·공법 — 서로 붙여서 하나의 영역처럼) ⑥가격/비용 ⑦자료/설명 ⑧우려/장벽
+  // ⑨핵심 발언 ⑩다음 대응 포인트 ⑪근거. "주요 니즈"(needs)는 화면에서 뺐다(§1 "UI에서만
+  // 사용 안 함, 데이터는 보존") — 그 외 기존 자유서술 폴백 필드는 신규 카테고리가 전부
+  // 비어있을 때만 아래 폴백에서 보인다.
   function renderInsightBlock(co){
     const wrap = document.getElementById('cdashInsightBlock');
     if(!wrap) return;
@@ -10572,20 +10646,29 @@ window.SHIN2_CRM_APP_INIT = function(){
     const repTags = buildInsightRepTags(co);
     const summaryText = repTags.length ? repTags.join(' · ') : '';
     const row = (label, value)=> `<div class="co-field"><div class="co-field-label">${esc(label)}</div><div class="co-field-value">${value}</div></div>`;
-    // §고객 인사이트 복수선택 라운드 §14 — 보기(펼침) 화면은 카테고리별로 그룹지어 보여준다.
-    // "주요 니즈"(needs)는 화면에서 뺐다(§1 "UI에서만 사용 안 함, 데이터는 보존") — 그 외
-    // 기존 자유서술 필드(concerns/preferredContact 등, 이전 라운드 폴백용)는 신규 카테고리
-    // 배열이 비어있을 때만 아래 폴백에서 보인다.
-    const groupHtml = INSIGHT_SECTION_ORDER.map(([key, label])=>{
+    const simpleGroup = ([key, label])=>{
       const vals = ci[key] || [];
       if(!vals.length) return '';
-      const extra = (key === 'competitorUsageTraits' && (ci.competitorCompanies||[]).length)
-        ? `<div class="insight-view-group-title" style="margin-top:4px;">사용업체</div><div>${(ci.competitorCompanies||[]).map(n=> `<span class="insight-tag">${esc(n)}</span>`).join(' ')}</div>`
-        : (key === 'preferredCompanyTraits' && (ci.preferredCompanies||[]).length)
-        ? `<div class="insight-view-group-title" style="margin-top:4px;">업체/공법명</div><div>${(ci.preferredCompanies||[]).map(n=> `<span class="insight-tag">${esc(n)}</span>`).join(' ')}</div>`
-        : '';
-      return `<div class="insight-view-group"><div class="insight-view-group-title">${esc(label)}</div><div>${vals.map(v=> `<span class="insight-tag">${esc(v)}</span>`).join(' ')}</div>${extra}</div>`;
-    }).join('');
+      return `<div class="insight-view-group"><div class="insight-view-group-title">${esc(label)}</div><div>${vals.map(v=> `<span class="insight-tag">${esc(v)}</span>`).join(' ')}</div></div>`;
+    };
+    // §3~§5 — "현재 공법 이용 형태" / "타 공법사 이용" / "선호 업체·공법"을 서로 떨어뜨리지
+    // 않고 "공법 / 경쟁 관계" 소제목 아래 하나의 영역으로 묶는다. 셋 다 비어있으면 그룹
+    // 자체를 그리지 않는다.
+    const methodParts = [];
+    if(ci.currentUsageStatus){
+      methodParts.push(`<div class="insight-view-group"><div class="insight-view-group-title">현재 이용 형태</div><div><span class="insight-tag">${esc(ci.currentUsageStatus)}</span></div></div>`);
+    }
+    if(ci.competitorUsageStatus === '있음' && (ci.competitorCompanies||[]).length){
+      methodParts.push(`<div class="insight-view-group"><div class="insight-view-group-title">타 공법사 이용</div><div>${(ci.competitorCompanies||[]).map(n=> `<span class="insight-tag">${esc(n)}</span>`).join(' ')}</div></div>`);
+    } else if(ci.competitorUsageStatus){
+      methodParts.push(`<div class="insight-view-group"><div class="insight-view-group-title">타 공법사 이용</div><div><span class="insight-tag">${esc(ci.competitorUsageStatus)}</span></div></div>`);
+    }
+    const prefVals = ci.preferredCompanyTraits || [];
+    if(prefVals.length || (ci.preferredCompanies||[]).length){
+      methodParts.push(`<div class="insight-view-group"><div class="insight-view-group-title">선호 업체 / 공법</div><div>${prefVals.map(v=> `<span class="insight-tag">${esc(v)}</span>`).join(' ')}</div>${(ci.preferredCompanies||[]).length ? `<div style="margin-top:4px;">${(ci.preferredCompanies||[]).map(n=> `<span class="insight-tag">${esc(n)}</span>`).join(' ')}</div>` : ''}</div>`);
+    }
+    const methodGroupHtml = methodParts.length ? `<div class="insight-method-group"><div class="insight-view-group-title" style="font-weight:700;margin-bottom:2px;">공법 / 경쟁 관계</div>${methodParts.join('')}</div>` : '';
+    const groupHtml = INSIGHT_SECTION_ORDER.map(simpleGroup).join('') + methodGroupHtml + INSIGHT_SECTION_ORDER_TAIL.map(simpleGroup).join('');
     const fallbackHtml = !groupHtml ? [
       ci.decisionStyle ? row('의사결정 성향', esc(ci.decisionStyle)) : '',
       (ci.interests && ci.interests.length) ? row('주요 관심', esc(ci.interests.join(' · '))) : '',
@@ -10604,6 +10687,12 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="insight-check-grid" data-insight-cat="${fieldKey}">
         ${presets.map(opt=> `<label class="insight-check-item${draft[fieldKey].includes(opt) ? ' is-checked' : ''}"><input type="checkbox" value="${esc(opt)}" ${draft[fieldKey].includes(opt) ? 'checked' : ''}/> ${esc(opt)}</label>`).join('')}
       </div>`;
+    // §6/§7 — "현재 공법 이용 형태"/"타 공법사 이용 상태"는 1개만 대표로 고르는 단일선택
+    // 영역이다. 체크박스가 아니라 클릭형 칩으로 만들고, 같은 값을 다시 누르면 선택 해제된다.
+    const radioGroup = (fieldKey, presets)=> `
+      <div class="insight-check-grid" data-insight-radio="${fieldKey}">
+        ${presets.map(opt=> `<span class="insight-check-item${draft[fieldKey] === opt ? ' is-checked' : ''}" data-radio-value="${esc(opt)}">${esc(opt)}</span>`).join('')}
+      </div>`;
     const companyChipRow = (arrName, addBtnId, inputId)=> `
       <div class="insight-check-grid" style="margin-bottom:4px;">
         ${draft[arrName].map((n,i)=> `<span class="insight-tag">${esc(n)} <button type="button" class="insight-tag-x" data-remove-name="${arrName}" data-idx="${i}">×</button></span>`).join('')}
@@ -10612,15 +10701,50 @@ window.SHIN2_CRM_APP_INIT = function(){
         <input type="text" id="${inputId}" placeholder="업체명 입력 후 추가" />
         <button type="button" class="co-text-action" id="${addBtnId}">+ 업체 추가</button>
       </div>`;
+    // §7~§9 — "타 공법사 이용"이 "있음"일 때만: 등록된 목록(칩, × 로 제거) + 검색 가능한
+    // 사전 드롭다운(공유 사전, D.loadCompetitorMethodDict) + 목록에 없으면 직접 추가 폼.
+    // 직접 추가한 항목은 이 고객의 competitorCompanies에도 들어가고, 공유 사전에도 저장돼
+    // 다른 고객카드에서도 검색해서 재사용할 수 있다(§9).
+    const competitorDropdownHtml = (editing && draft.competitorUsageStatus === '있음') ? (()=> {
+      const dict = D.loadCompetitorMethodDict();
+      const searchVal = cardState.insightCompetitorSearch || '';
+      return `<div style="margin-top:6px;">
+        <div class="co-field-label">이용 중</div>
+        <div class="insight-check-grid" style="margin-bottom:4px;">
+          ${draft.competitorCompanies.length ? draft.competitorCompanies.map((n,i)=> `<span class="insight-tag">${esc(n)} <button type="button" class="insight-tag-x" data-remove-name="competitorCompanies" data-idx="${i}">×</button></span>`).join('') : '<span class="cdash-field-value is-muted" style="font-size:11px;">아직 등록된 타 공법사/공법이 없습니다.</span>'}
+        </div>
+        <input type="text" id="ciCompetitorSearchInput" value="${esc(searchVal)}" placeholder="타 공법사/공법 검색..." style="width:100%;box-sizing:border-box;margin-bottom:4px;padding:5px 8px;border:1px solid #dce5ef;border-radius:6px;font-size:12px;" />
+        <div class="insight-check-grid" id="ciCompetitorDictList">
+          ${dict.map(d=> `<span class="insight-check-item insight-dict-chip${draft.competitorCompanies.includes(d.name) ? ' is-checked' : ''}" data-dict-name="${esc(d.name)}" title="${esc(d.category)}${d.workType ? ' · ' + esc(d.workType) : ''}">${esc(d.name)}</span>`).join('')}
+        </div>
+        <button type="button" class="co-text-action" id="ciCompetitorAddToggleBtn" style="margin-top:4px;">+ 타 공법사/공법 직접 추가</button>
+        ${cardState.insightCompetitorAddOpen ? `
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <select id="ciAddCategorySelect" style="padding:4px 6px;border:1px solid #dce5ef;border-radius:6px;font-size:12px;">
+              <option value="공법사">공법사</option><option value="공법">공법</option><option value="자재사">자재사</option><option value="기타">기타</option>
+            </select>
+            <input type="text" id="ciAddNameInput" placeholder="이름" style="width:120px;padding:4px 6px;border:1px solid #dce5ef;border-radius:6px;font-size:12px;" />
+            <input type="text" id="ciAddWorkTypeInput" placeholder="관련 공종" style="width:120px;padding:4px 6px;border:1px solid #dce5ef;border-radius:6px;font-size:12px;" />
+            <button type="button" class="co-text-action" id="ciAddSubmitBtn">추가</button>
+          </div>
+        ` : ''}
+      </div>`;
+    })() : '';
+    const methodGroupEditHtml = editing ? `
+      <div class="co-form-field insight-method-group">
+        <label style="font-weight:700;">공법 / 경쟁 관계</label>
+        <div class="co-form-field"><label>현재 공법 이용 형태 (대표 1개 선택)</label>${radioGroup('currentUsageStatus', PRESET_CURRENT_USAGE)}</div>
+        <div class="co-form-field"><label>타 공법사 이용</label>${radioGroup('competitorUsageStatus', COMPETITOR_STATUS_OPTIONS)}${competitorDropdownHtml}</div>
+        <div class="co-form-field"><label>${esc(INSIGHT_PREFERRED_SECTION[1])} (복수선택)</label>${checkGrid(INSIGHT_PREFERRED_SECTION[0], INSIGHT_PREFERRED_SECTION[2])}
+          <div class="co-field-label" style="margin-top:6px;">선호 업체/공법명</div>${companyChipRow('preferredCompanies', 'ciPreferredAddBtn', 'ciPreferredInput')}
+        </div>
+      </div>` : '';
     const allDraftTraits = editing ? []
-      .concat(draft.decisionTraits, draft.interestTraits, draft.competitorUsageTraits, draft.preferredCompanyTraits, draft.priceTraits, draft.materialPreferences, draft.barrierTraits) : [];
+      .concat(draft.decisionTraits, draft.interestTraits, draft.currentUsageStatus ? [draft.currentUsageStatus] : [], draft.preferredCompanyTraits, draft.priceTraits, draft.materialPreferences, draft.barrierTraits) : [];
     const editHtml = editing ? `
-      ${INSIGHT_SECTION_ORDER.map(([key, label, presets])=> {
-        let extra = '';
-        if(key === 'competitorUsageTraits') extra = `<div class="co-field-label" style="margin-top:6px;">타사/경쟁업체명</div>` + companyChipRow('competitorCompanies', 'ciCompetitorAddBtn', 'ciCompetitorInput');
-        if(key === 'preferredCompanyTraits') extra = `<div class="co-field-label" style="margin-top:6px;">선호 업체/공법명</div>` + companyChipRow('preferredCompanies', 'ciPreferredAddBtn', 'ciPreferredInput');
-        return `<div class="co-form-field"><label>${esc(label)} (복수선택)</label>${checkGrid(key, presets)}${extra}</div>`;
-      }).join('')}
+      ${INSIGHT_SECTION_ORDER.map(([key, label, presets])=> `<div class="co-form-field"><label>${esc(label)} (복수선택)</label>${checkGrid(key, presets)}</div>`).join('')}
+      ${methodGroupEditHtml}
+      ${INSIGHT_SECTION_ORDER_TAIL.map(([key, label, presets])=> `<div class="co-form-field"><label>${esc(label)} (복수선택)</label>${checkGrid(key, presets)}</div>`).join('')}
       <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
       <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(draft.nextAction)}</textarea></div>
       <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(draft.evidence)}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
@@ -10669,6 +10793,16 @@ window.SHIN2_CRM_APP_INIT = function(){
           input.closest('.insight-check-item').classList.toggle('is-checked', input.checked);
         });
       });
+      // §6/§7 단일선택 칩: 같은 값을 다시 누르면 해제, 다른 값을 누르면 교체된다. 상태에
+      // 따라 드롭다운(§7)이 나타나거나 사라져야 해서 전체를 다시 그린다.
+      wrap.querySelectorAll('.insight-check-grid[data-insight-radio] [data-radio-value]').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          const fieldKey = el.closest('[data-insight-radio]').getAttribute('data-insight-radio');
+          const val = el.getAttribute('data-radio-value');
+          draft[fieldKey] = (draft[fieldKey] === val) ? '' : val;
+          renderInsightBlock(co);
+        });
+      });
       wrap.querySelectorAll('[data-star-toggle]').forEach(chip=>{
         chip.addEventListener('click', ()=>{
           const t = chip.getAttribute('data-star-toggle');
@@ -10684,14 +10818,48 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(!draft[arrName].includes(v)) draft[arrName].push(v);
         renderInsightBlock(co);
       };
-      const compBtn = document.getElementById('ciCompetitorAddBtn');
-      if(compBtn) compBtn.addEventListener('click', ()=> addCompany('competitorCompanies', 'ciCompetitorInput'));
-      const compInput = document.getElementById('ciCompetitorInput');
-      if(compInput) compInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addCompany('competitorCompanies', 'ciCompetitorInput'); } });
       const prefBtn = document.getElementById('ciPreferredAddBtn');
       if(prefBtn) prefBtn.addEventListener('click', ()=> addCompany('preferredCompanies', 'ciPreferredInput'));
       const prefInput = document.getElementById('ciPreferredInput');
       if(prefInput) prefInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addCompany('preferredCompanies', 'ciPreferredInput'); } });
+      // §8 — 검색은 전체를 다시 그리지 않고 이미 그려진 사전 칩만 보이기/숨기기 한다
+      // (입력 포커스가 매 글자마다 풀리지 않게 하기 위함).
+      const searchInput = document.getElementById('ciCompetitorSearchInput');
+      if(searchInput){
+        const applyFilter = ()=>{
+          const term = searchInput.value.trim().toLowerCase();
+          wrap.querySelectorAll('#ciCompetitorDictList .insight-dict-chip').forEach(chip=>{
+            const name = (chip.getAttribute('data-dict-name') || '').toLowerCase();
+            chip.style.display = (!term || name.includes(term)) ? '' : 'none';
+          });
+        };
+        searchInput.addEventListener('input', ()=>{ cardState.insightCompetitorSearch = searchInput.value; applyFilter(); });
+        applyFilter();
+      }
+      wrap.querySelectorAll('.insight-dict-chip').forEach(chip=>{
+        chip.addEventListener('click', ()=>{
+          const name = chip.getAttribute('data-dict-name');
+          const idx = draft.competitorCompanies.indexOf(name);
+          if(idx === -1) draft.competitorCompanies.push(name); else draft.competitorCompanies.splice(idx, 1);
+          renderInsightBlock(co);
+        });
+      });
+      const addToggleBtn = document.getElementById('ciCompetitorAddToggleBtn');
+      if(addToggleBtn) addToggleBtn.addEventListener('click', ()=>{
+        cardState.insightCompetitorAddOpen = !cardState.insightCompetitorAddOpen;
+        renderInsightBlock(co);
+      });
+      const addSubmitBtn = document.getElementById('ciAddSubmitBtn');
+      if(addSubmitBtn) addSubmitBtn.addEventListener('click', ()=>{
+        const category = document.getElementById('ciAddCategorySelect').value;
+        const name = document.getElementById('ciAddNameInput').value.trim();
+        const workType = document.getElementById('ciAddWorkTypeInput').value.trim();
+        if(!name) return;
+        D.addCompetitorMethodEntry({ category, name, workType });
+        if(!draft.competitorCompanies.includes(name)) draft.competitorCompanies.push(name);
+        cardState.insightCompetitorAddOpen = false;
+        renderInsightBlock(co);
+      });
       wrap.querySelectorAll('[data-remove-name]').forEach(btn=> btn.addEventListener('click', ()=>{
         const arrName = btn.getAttribute('data-remove-name');
         const idx = parseInt(btn.getAttribute('data-idx'), 10);
