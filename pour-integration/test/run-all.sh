@@ -24,4 +24,6 @@ mkdir -p pour-integration/nextjs/.tmp-build/lib/pour/core
 cp pour-integration/nextjs/lib/pour/core/*.js pour-integration/nextjs/.tmp-build/lib/pour/core/
 node pour-integration/nextjs/test-d1.mjs
 node pour-integration/nextjs/test-seed.mjs
+# 0007 적용 예행연습 (실적 자료가 로컬에 있을 때만 돈다)
+(cd pour-integration/nextjs && node rehearsal-0007.mjs)
 rm -rf pour-integration/nextjs/.tmp-build

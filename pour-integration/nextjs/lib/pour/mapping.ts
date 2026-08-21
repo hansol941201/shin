@@ -207,6 +207,8 @@ export function projectRowToRecord(
     source: text(get("source")),
     sourceRef: text(get("sourceRef")),
     duplicateOf: text(get("duplicateOf")),
+    noticeNo: text(get("noticeNo")),
+    isPartner: text(get("isPartner")),
     noticeDate: text(get("noticeDate")),
     documentDueDate: text(get("documentDueDate")),
     bidDate: text(get("bidDate")),
@@ -284,6 +286,8 @@ export function recordToProjectRow(record: PourRecord & { __extra?: ProjectRow }
   set("source", record.source || null);
   set("sourceRef", record.sourceRef || null);
   set("duplicateOf", record.duplicateOf || null);
+  set("noticeNo", record.noticeNo);
+  set("isPartner", record.isPartner);
   set("noticeDate", record.noticeDate);
   set("documentDueDate", record.documentDueDate);
   set("bidDate", record.bidDate);
