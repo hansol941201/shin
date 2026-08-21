@@ -171,6 +171,16 @@
   .col-name-top{ display:flex; align-items:center; gap:5px; min-width:0; white-space:nowrap; overflow:hidden; }
   .co-name-badges{ display:flex; align-items:center; gap:5px; min-width:0; max-width:100%; }
   .co-name-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+  /* §업체명 관계표시 라운드 — 목록 업체명 칸 두 번째 줄(연결된 모회사/자회사/관계사).
+     행 높이가 과도하게 커지지 않도록 폰트를 작고 연하게 하고 한 줄로 말줄임한다(§3). */
+  .col-name-relation{ display:flex; align-items:center; gap:4px; min-width:0; font-weight:500; font-size:11px; color:var(--text-faint); white-space:nowrap; overflow:hidden; }
+  .col-name-relation-arrow{ flex:0 0 auto; color:var(--text-faint); }
+  .col-name-relation-name{ overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+  .col-name-relation-name:hover{ text-decoration:underline; color:var(--blue); }
+  .relation-badge{ flex:0 0 auto; display:inline-block; padding:1px 5px; font-size:9.5px; font-weight:700; border-radius:4px; background:#EEF2F7; color:#5B6B84; }
+  .relation-badge.rel-parent{ background:#E8F0FE; color:#1D4ED8; }
+  .relation-badge.rel-sub{ background:#FDF1E7; color:#B45309; }
+  .relation-badge.rel-affiliate{ background:#F1EEFD; color:#6D28D9; }
   .col-recent{ flex:1.4 1 150px; min-width:0; color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .col-recent .recent-date{ color:var(--text-faint); margin-right:4px; }
   .col-yr, .col-total{ flex:0 0 62px; font-size:12.5px; color:var(--text); text-align:right; }
@@ -3567,6 +3577,57 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   function setTargetMarket(companyId, text){ return updateCompany(companyId, { targetMarket: text || '' }); }
   function setPartnerContractor(companyId, text){ return updateCompany(companyId, { partnerContractor: text || '' }); }
   function setOtherMethods(companyId, text){ return updateCompany(companyId, { otherMethods: text || '' }); }
+  // §업체명 관계표시 라운드 — 자회사/모회사/관계사 "표시정보"만 추가한다(§1 "이 관계는
+  // 고객관리용 표시정보일 뿐입니다"). co.relatedCompanies = [{companyId, relation}] 배열로,
+  // 이 필드는 co 자신이 저장하는 "나에서 상대방으로 향하는" 관계 하나(가리키는 대상의
+  // companyId + 그 대상이 나에게 무엇인지)만 담는다 — 두 업체 데이터를 합치는 게 아니라
+  // updateCompany의 얕은 PATCH(§updateCompany 자체가 이미 병합 방식)로 이 필드 하나만
+  // 얹는다. companyId/사업자번호/대표자/연락처/매출/미수금/POUR/질문서/미팅/MOU/메모/
+  // 인사이트/업무관리 상태는 전부 각자의 co 객체에 그대로 남아있고 이 함수가 손대는 필드는
+  // relatedCompanies 하나뿐이다.
+  const RELATION_TYPES = ['모회사','자회사','관계사'];
+  // 반대편에서 보면 관계가 뒤집힌다(모회사↔자회사는 서로 반대, 관계사는 대칭) — 사용자가
+  // 한쪽에서만 등록해도 상대 업체 카드/목록에서 자동으로 반대 라벨이 보이게 하기 위한 표.
+  const RELATION_INVERSE = { '모회사':'자회사', '자회사':'모회사', '관계사':'관계사' };
+  function addCompanyRelation(companyId, relatedCompanyId, relation){
+    if(!companyId || !relatedCompanyId || companyId === relatedCompanyId) return null;
+    if(RELATION_TYPES.indexOf(relation) === -1) return null;
+    const co = findCompany(companyId); if(!co) return null;
+    // §2 "기존 고객목록에서 업체명을 검색해서 연결... 새로운 회사를 임의 생성하지 않는다" —
+    // relatedCompanyId가 실제로 존재하는 companyId일 때만 연결을 저장한다.
+    if(!findCompany(relatedCompanyId)) return null;
+    const list = (co.relatedCompanies || []).filter(r=> r.companyId !== relatedCompanyId);
+    list.push({ companyId: relatedCompanyId, relation });
+    return updateCompany(companyId, { relatedCompanies: list });
+  }
+  function removeCompanyRelation(companyId, relatedCompanyId){
+    const co = findCompany(companyId); if(!co) return null;
+    const list = (co.relatedCompanies || []).filter(r=> r.companyId !== relatedCompanyId);
+    return updateCompany(companyId, { relatedCompanies: list });
+  }
+  // 목록(N개 업체)에서 매 행마다 전체 companies를 다시 훑지 않도록, 한 번만 전체 관계를
+  // 인덱싱한다(§성능 원칙 — buildPourRecordIndex/buildRevenueContributionIndex와 동일
+  // 패턴). companyId -> [{relatedCoId, relation}] 양방향(내가 등록한 것 + 남이 나를
+  // 가리켜서 등록한 것의 역관계) 모두 담되, 같은 상대 업체가 두 번 나오면 먼저 채워진
+  // 쪽(대개 co 자신이 명시적으로 등록한 쪽)만 남긴다. 삭제된 업체를 가리키는 죽은 링크는
+  // 조용히 건너뛴다(그 링크 데이터 자체는 지우지 않음, §"기존 데이터 migration/replace 금지").
+  function buildRelationIndex(companies){
+    const byId = new Map(companies.map(c=> [c.id, c]));
+    const idx = new Map();
+    const add = (companyId, relatedCoId, relation)=>{
+      if(!idx.has(companyId)) idx.set(companyId, []);
+      const arr = idx.get(companyId);
+      if(!arr.some(x=> x.relatedCoId === relatedCoId)) arr.push({ relatedCoId, relation });
+    };
+    companies.forEach(co=>{
+      (co.relatedCompanies || []).forEach(r=>{
+        if(!byId.has(r.companyId)) return;
+        add(co.id, r.companyId, r.relation);
+        add(r.companyId, co.id, RELATION_INVERSE[r.relation] || r.relation);
+      });
+    });
+    return idx;
+  }
   // 고객 상태(customerStatusNote) — 영업단계(dealStage, 고정 목록)와는 다른 개념의 자유
   // 문장형 상태 메모(예: "협약 검토 (2차 미팅 예정)"). 헤더 우측 요약 박스에서만 쓰인다.
   function setCustomerStatusNote(companyId, text){ return updateCompany(companyId, { customerStatusNote: text || '' }); }
@@ -4900,6 +4961,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     addReaction, removeReaction, addRecommendedSupport, removeRecommendedSupport, setMemoSummary,
     loadLibraryDocs, findLibraryDoc,
     setLegacyBusiness, setTargetMarket, setPartnerContractor, setOtherMethods, setCustomerStatusNote,
+    RELATION_TYPES, addCompanyRelation, removeCompanyRelation, buildRelationIndex,
     addCurrentSituation, removeCurrentSituation, addInterestField, removeInterestField,
     previewPartnerImport, applyPartnerImport,
     previewPourTrackImport, applyPourTrackImport,
@@ -5409,6 +5471,10 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 전체 업체의 분포를 알아야 계산할 수 있어서, 업체마다 다시 정렬할 수 없다 — 렌더링당
     // 한 번만 전체를 계산해 둔다(§11 "같은 공통 소스 재사용" + §성능 원칙과 동일).
     const contribIndex = buildRevenueContributionIndex();
+    // §업체명 관계표시 라운드 — 모회사/자회사/관계사 표시도 같은 "렌더링당 한 번만 인덱싱"
+    // 원칙을 따른다(위 pourLatestIndex/contribIndex와 동일 패턴, §성능 원칙).
+    const relationIndex = D.buildRelationIndex(companies);
+    const companiesById = new Map(companies.map(c=> [c.id, c]));
     // 파생 데이터는 매번 다시 계산만 한다(§26 — companyId 기준 실제 POUR/진행 데이터에서
     // 집계, 회사명 텍스트로 새 데이터를 만들지 않음. 별도 저장 없음).
     const enriched = companies.map(co=>{
@@ -5577,12 +5643,29 @@ window.SHIN2_CRM_APP_INIT = function(){
       const trendMark = { up:'▲', flat:'―', down:'▼', insufficient:'―' }[trend.state];
       const trendHtml = `<span class="trend-cell tr-${trend.state}">${trendMark} ${esc(trend.label)}</span>`;
       const rowOverdueClass = (stageInfo && stageInfo.status === 'overdue') ? ' is-overdue' : '';
+      // §업체명 관계표시 라운드 §목록 표시 — 첫 줄은 지금까지와 완전히 같고(등급/업체명/
+      // 미수금 배지), 관계가 등록돼 있을 때만 그 아래 작은 두 번째 줄을 추가한다(§관계
+      // 없는 일반 업체는 지금처럼 한 줄만). 여러 관계가 등록돼 있어도 목록에서는 첫 번째
+      // 하나만 compact하게 보여주고(행 높이 과다 증가 방지, §목록 표시), 나머지는
+      // 고객카드에서 전부 확인할 수 있다.
+      const relEntries = relationIndex.get(co.id) || [];
+      const relFirst = relEntries[0];
+      const relRelatedCo = relFirst ? companiesById.get(relFirst.relatedCoId) : null;
+      const relBadgeClass = relFirst && relFirst.relation === '모회사' ? 'rel-parent' : (relFirst && relFirst.relation === '자회사' ? 'rel-sub' : 'rel-affiliate');
+      const relationRowHtml = (relFirst && relRelatedCo) ? `
+          <div class="col-name-relation">
+            <span class="col-name-relation-arrow">└</span>
+            <span class="col-name-relation-name" data-relation-open="${esc(relRelatedCo.id)}">${esc(relRelatedCo.name)}</span>
+            <span class="relation-badge ${relBadgeClass}">${esc(relFirst.relation)}</span>
+            ${relEntries.length > 1 ? `<span class="relation-badge">+${relEntries.length - 1}</span>` : ''}
+          </div>` : '';
       return `
       <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">
           <div class="col-name-top">
             <span class="co-name-badges">${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
           </div>
+          ${relationRowHtml}
         </div>
         <div class="col-pour">${lastActHtml}</div>
         <div class="col-yr">${yrHtml}</div>
@@ -5598,6 +5681,15 @@ window.SHIN2_CRM_APP_INIT = function(){
     // §실적↔매출 실제 구현 라운드: "실적↔매출" 클릭 -> 실적·매출 분석 Drawer(다른 컬럼과
     // 같은 패턴, 옛 popover 방식은 없앰). 행 클릭(고객카드 열기)으로 전파되지 않도록
     // stopPropagation.
+    // §업체명 관계표시 라운드 — 목록 두 번째 줄의 연결 업체명 클릭 -> 그 업체 고객카드를
+    // 바로 연다(§목록 표시 "연결 업체명을 클릭하면 그 업체 고객카드를 바로 열 수 있게").
+    // 행 전체 클릭(현재 업체 카드 열기)으로 전파되지 않도록 stopPropagation.
+    listEl.querySelectorAll('[data-relation-open]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        openCard(el.getAttribute('data-relation-open'));
+      });
+    });
     listEl.querySelectorAll('[data-contrib-detail]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
@@ -6142,17 +6234,57 @@ window.SHIN2_CRM_APP_INIT = function(){
     // 붙이기만 한다(§15 자동+직접입력 함께, 덮어쓰기 금지).
     const autoFacts = buildCompanyFeatureFacts(co);
     const autoHtml = `<ul class="cdash-bullets cdash-auto-facts">${autoFacts.map(f=> `<li>${esc(f.text)}</li>`).join('')}</ul>`;
+    // §업체명 관계표시 라운드 §관계 등록 — 모회사/자회사/관계사 연결. 저장 버튼(위
+    // cdashBasicInfoSaveBtn)과 묶지 않고 [+ 연결]/[×] 클릭 즉시 D.addCompanyRelation/
+    // removeCompanyRelation을 호출해 바로 반영한다(§5 "두 업체를 하나의 데이터로 합치지
+    // 말 것" — updateCompany의 얕은 PATCH 한 번, companyId/매출/미수금/POUR/메모/인사이트/
+    // 업무관리 상태 등 다른 필드는 전혀 안 건드림). 관계가 없으면 view 모드에선 아예
+    // 아무것도 안 그린다(§목록 표시 "관계 없는 일반 업체는 지금처럼" 원칙을 카드에도 동일
+    // 적용 — 편집모드에서만 "등록된 관계 업체 없음"을 안내로 보여준다).
+    const relCompanies = D.loadCompanies();
+    const relCompaniesById = new Map(relCompanies.map(c=> [c.id, c]));
+    const relEntries = (D.buildRelationIndex(relCompanies).get(co.id) || []).filter(r=> relCompaniesById.has(r.relatedCoId));
+    const relBadgeCls = (relation)=> relation === '모회사' ? 'rel-parent' : (relation === '자회사' ? 'rel-sub' : 'rel-affiliate');
+    const relListHtml = relEntries.length
+      ? relEntries.map(r=>{
+          const rc = relCompaniesById.get(r.relatedCoId);
+          return `<div class="relation-row-item" style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+            <span class="col-name-relation-name" data-relation-open="${esc(rc.id)}">${esc(rc.name)}</span>
+            <span class="relation-badge ${relBadgeCls(r.relation)}">${esc(r.relation)}</span>
+            ${editing ? `<button type="button" class="insight-tag-x" data-remove-relation="${esc(rc.id)}">×</button>` : ''}
+          </div>`;
+        }).join('')
+      : (editing ? `<div class="cdash-field-value is-muted" style="margin-bottom:3px;">등록된 관계 업체 없음</div>` : '');
+    const relAddHtml = editing ? `
+      <div class="cdash-mini-add-row" style="margin-top:2px;">
+        <input type="text" id="cdashRelationSearchInput" list="cdashRelationSearchList" placeholder="업체명 검색" style="flex:1;min-width:0;" />
+        <datalist id="cdashRelationSearchList">${relCompanies.filter(c=> c.id !== co.id).map(c=> `<option value="${esc(c.name)}"></option>`).join('')}</datalist>
+        <select id="cdashRelationTypeSel">${D.RELATION_TYPES.map(t=> `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select>
+        <button type="button" class="co-text-action" id="cdashRelationAddBtn">+ 연결</button>
+      </div>` : '';
+    const relationBlockHtml = (relEntries.length || editing) ? `
+      <div class="cdash-field-row" style="flex-direction:column;align-items:flex-start;gap:3px;">
+        <div class="cdash-field-label">관계 업체</div>
+        <div style="width:100%;">${relListHtml}${relAddHtml}</div>
+      </div>` : '';
     wrap.innerHTML = `
       <div class="cdash-col-title-row">
         <div class="cdash-col-title">업체 특징</div>
         <button type="button" class="cdash-mini-edit" id="cdashBasicInfoToggle">${editing ? '완료' : '수정'}</button>
       </div>
-      <div class="cdash-col-body">${autoHtml}${bodyHtml}</div>
+      <div class="cdash-col-body">${autoHtml}${bodyHtml}${relationBlockHtml}</div>
       ${editing ? `<div class="cdash-mini-form-actions" style="margin-top:6px;"><button type="button" class="co-text-action primary" id="cdashBasicInfoSaveBtn">저장</button></div>` : ''}
     `;
     document.getElementById('cdashBasicInfoToggle').addEventListener('click', ()=>{
       cardState.sectionEdit.basicInfo = !editing;
       refreshChart();
+    });
+    // §업체명 관계표시 라운드 — 관계 업체명 클릭은 편집/보기 모드 둘 다에서 동작한다("두
+    // 업체를 서로 확인할 수 있게" — 보기 모드에서도 바로 열려야 한다). 지금 카드를 닫고
+    // 그 업체 카드를 그대로 연다(§8 "새로운 회사를 임의 생성하지 않는다"와 별개로, 여기는
+    // 기존 openCard(companyId)를 그대로 재사용할 뿐 새 화면을 만들지 않는다).
+    wrap.querySelectorAll('[data-relation-open]').forEach(el=>{
+      el.addEventListener('click', ()=> openCard(el.getAttribute('data-relation-open')));
     });
     if(editing){
       document.getElementById('cdashBasicInfoSaveBtn').addEventListener('click', ()=>{
@@ -6164,6 +6296,27 @@ window.SHIN2_CRM_APP_INIT = function(){
         D.setOtherMethods(co.id, document.querySelector('[data-basic-field="otherMethods"]').value.trim());
         cardState.sectionEdit.basicInfo = false;
         refreshChart();
+      });
+      wrap.querySelectorAll('[data-remove-relation]').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          D.removeCompanyRelation(co.id, btn.getAttribute('data-remove-relation'));
+          renderBasicInfoCol(co);
+        });
+      });
+      const relAddBtn = document.getElementById('cdashRelationAddBtn');
+      if(relAddBtn) relAddBtn.addEventListener('click', ()=>{
+        const nameInput = document.getElementById('cdashRelationSearchInput');
+        const typeSel = document.getElementById('cdashRelationTypeSel');
+        const name = nameInput.value.trim();
+        if(!name) return;
+        // §2 "기존 고객목록에서 업체명을 검색해서 연결... 새로운 회사를 임의 생성하지
+        // 않는다" — 정확히 일치하는 기존 업체명만 허용한다(부분/유사일치 금지, 이 세션
+        // 전체에서 지켜온 업체매칭 원칙과 동일).
+        const target = relCompanies.find(c=> c.id !== co.id && c.name === name);
+        if(!target){ alert('CRM에 등록된 정확한 업체명을 목록에서 선택해주세요.'); return; }
+        D.addCompanyRelation(co.id, target.id, typeSel.value);
+        renderBasicInfoCol(co);
       });
     }
   }
