@@ -28,7 +28,6 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
   const [bidType, setBidType] = useState("");
   const [patents, setPatents] = useState<PatentEditorValue>({ patentItems: [], noticeMultiFlag: false });
   const [message, setMessage] = useState<{ text: string; kind: "error" | "ok" } | null>(null);
-  const [showMore, setShowMore] = useState(false);
 
   const [isRebid, setIsRebid] = useState(false);
   const [rebidSource, setRebidSource] = useState("");
@@ -68,14 +67,12 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
       setRegionOptions(record.region ? [record.region] : []);
       setBidType(record.bidType);
       setPatents({ patentItems: record.patentItems, noticeMultiFlag: record.noticeMultiFlag });
-      setShowMore(true);
       setIsRebid(false);
     } else {
       setForm({ ...EMPTY_FORM });
       setRegionOptions([]);
       setBidType("");
       setPatents({ patentItems: [], noticeMultiFlag: false });
-      setShowMore(false);
       setIsRebid(false);
       setRebidSource("");
     }
@@ -314,10 +311,8 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
             </div>
           </div>
 
-          <details className="pour-more-box" open={showMore}
-                   onToggle={(e) => setShowMore((e.target as HTMLDetailsElement).open)}>
-            <summary>특허 · 공사범위 · 추가정보 펼치기</summary>
-            <div className="pour-more-body">
+          <div className="pour-sub-head">적용 특허 · 공사범위 · 추가정보</div>
+
               <div className="pour-form-row pour-form-row-1">
                 <div>
                   <label>적용 특허 <span className="opt">(POUR 특허와 타사 특허를 나누어 입력)</span></label>
@@ -378,8 +373,7 @@ export default function NoticePanel({ open, storage, record, onClose, onSaved }:
                          onChange={(e) => set("contractor", e.target.value)} />
                 </div>
               </div>
-            </div>
-          </details>
+            
 
           {record && record.history.length > 0 && (
             <div className="pour-history">

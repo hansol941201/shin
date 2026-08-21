@@ -27,7 +27,6 @@ function section(t) { console.log("\n" + t); }
   page.on("pageerror", e => console.log("      [브라우저 오류] " + e.message));
   await page.goto(PAGE_URL);
   // 특허 입력은 "펼치기" 안에 있으므로 열어둔다
-  await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
 
   // 확인 대화상자는 자동 승인 (낙찰 미기재 확인용 경고)
   let lastDialog = null;
@@ -160,7 +159,6 @@ function section(t) { console.log("\n" + t); }
 
   async function registerSite(city, client, patents, extra) {
     await page.click("#resetFormBtn");
-    await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
     await page.fill("#cityInput", city);
     await page.dispatchEvent("#cityInput", "change");
     await page.fill("#clientInput", client);
@@ -513,7 +511,6 @@ function section(t) { console.log("\n" + t); }
 
   await test("탭 이름에 현재 입력 개수가 표시", async () => {
     await page.click("#resetFormBtn");
-    await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
     assert.strictEqual((await page.textContent(POUR_TAB)).trim(), "POUR 특허(우리 특허) (0)");
     assert.strictEqual((await page.textContent(THIRD_TAB)).trim(), "타사 특허 (0)");
   });
@@ -584,7 +581,6 @@ function section(t) { console.log("\n" + t); }
 
   await test("공고문 다특허 체크 + 번호 부족 시 확인 필요 표시", async () => {
     await page.click("#resetFormBtn");
-    await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
     await page.check("#noticeMultiFlag");
     const badge = await page.$eval("#patentEditor .pour-multi-badge", el => ({
       text: el.textContent, kind: el.dataset.badge
@@ -595,7 +591,6 @@ function section(t) { console.log("\n" + t); }
 
   await test("POUR 1개 + 타사 1개면 다특허로 자동 표시", async () => {
     await page.click("#resetFormBtn");
-    await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
     await page.fill(POUR_SEARCH, "1935719");
     await page.waitForSelector("#patentEditor .pour-suggest.is-open");
     await page.press(POUR_SEARCH, "Enter");
@@ -864,7 +859,6 @@ function section(t) { console.log("\n" + t); }
 
   await test("공사 범위를 여러 줄로 입력하면 한 셀에서 줄바꿈", async () => {
     await page.click("#resetFormBtn");
-    await page.evaluate(() => { document.getElementById("moreDetails").open = true; });
     await page.fill("#cityInput", "양산");
     await page.dispatchEvent("#cityInput", "change");
     await page.fill("#clientInput", "공사범위현장");

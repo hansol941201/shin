@@ -81,7 +81,6 @@ function section(t) { console.log("\n" + t); }
   await test("새 공고를 등록하면 서버에 PUT 된다", async () => {
     await page.click("#btnNewNotice");
     await page.waitForSelector("#noticePanel.is-open");
-    await page.evaluate(() => { document.getElementById("moreBox").open = true; });
     await page.fill("#fCity", "하남");
     await page.dispatchEvent("#fCity", "change");
     await page.fill("#fClient", "API 저장 확인 단지");
@@ -163,7 +162,6 @@ function section(t) { console.log("\n" + t); }
     await page.click("#recordsGrid .grid tbody tr:first-child");
     await page.click("#btnDetail");
     await page.waitForSelector("#noticePanel.is-open");
-    await page.evaluate(() => { document.getElementById("moreBox").open = true; });
     await page.click("#patentEditor .pour-item-row:first-child .pour-item-del");
     await page.click("#panelSave");
     await page.evaluate(() => window.PourApp.storage.flush());

@@ -248,7 +248,13 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .more-box[open] > summary::before{content:"▾ ";}
 .more-body{padding:9px 2px 0;}
 .rebid-box{padding:8px; margin-bottom:8px; background:#FFF7E6; border:1px solid #F0A92E; border-radius:3px;}
-.sub-head{font-size:13px; font-weight:700; margin:10px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--line);}
+.sub-head{
+  font-size:13px; font-weight:700; margin:12px 0 6px; padding-bottom:4px;
+  border-bottom:1px solid var(--line);
+  /* 항목을 모두 펼쳐 두어 패널이 길어지므로, 스크롤 중에도 구획 이름이 보이게 한다 */
+  position:sticky; top:0; z-index:5; background:var(--white);
+}
+.sub-head:first-child{margin-top:0;}
 
 /* 가져오기 미리보기 */
 .preview-stats{display:flex; flex-wrap:wrap; gap:18px; margin:10px 0; font-size:13.5px;}
@@ -293,7 +299,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .pour-suggest-item{padding:6px 10px; font-size:13px;}
 
 /* 공용 모듈(특허 입력기·자동완성)의 강조색을 이 화면의 네이비로 맞춘다 */
-body.pour-scope{
+.pour-scope{
   --pour-accent:#17213B;
   --pour-accent-soft:#E8EDF6;
   --pour-border:#CBD2DC;

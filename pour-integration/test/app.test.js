@@ -44,7 +44,6 @@ function section(t) { console.log("\n" + t); }
   async function openNewNotice() {
     await page.click("#btnNewNotice");
     await page.waitForSelector("#noticePanel.is-open");
-    await page.evaluate(() => { document.getElementById("moreBox").open = true; });
   }
   async function fillBasics(city, client, date) {
     await page.fill("#fCity", city);
@@ -446,7 +445,6 @@ function section(t) { console.log("\n" + t); }
   await test("나중에 POUR 특허번호를 넣으면 알림이 사라짐", async () => {
     await page.dblclick("#recordsGrid .grid tbody tr:first-child");
     await page.waitForSelector("#noticePanel.is-open");
-    await page.evaluate(() => { document.getElementById("moreBox").open = true; });
     await addPourPatent("1935719");
     await page.click("#panelSave");
     assert.strictEqual(await page.$("#alert-missingPour"), null, "알림이 남아 있음");

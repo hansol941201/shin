@@ -237,7 +237,6 @@
     patentEditor.clear();
     $("editHistory").innerHTML = "";
     $("panelMsg").textContent = "";
-    $("moreBox").open = false;
   }
 
   function openNotice(id) {
@@ -279,7 +278,6 @@
         b.classList.toggle("is-active", b.getAttribute("data-bid") === bidType);
       });
       patentEditor.setValue(rec);
-      $("moreBox").open = true;
 
       $("editHistory").innerHTML = rec.history.length
         ? "<b>수정 이력</b>" + rec.history.map(function (h) {
