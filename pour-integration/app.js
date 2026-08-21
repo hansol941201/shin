@@ -101,21 +101,6 @@
     if (state.view !== "records") showView("records");
     refresh();
   });
-  $("btnFilterRow").addEventListener("click", function () {
-    this.classList.toggle("is-active", grid.toggleFilterRow());
-  });
-  $("btnClearFilter").addEventListener("click", function () { grid.clearFilters(); updateCount(); });
-  $("btnSortReset").addEventListener("click", function () { grid.setSort(null); updateCount(); });
-  $("btnRefresh").addEventListener("click", function () { refresh(); });
-  $("btnPatentData").addEventListener("click", function () { showView("settings"); });
-  $("btnImport").addEventListener("click", function () { showView("io"); });
-  $("btnExport").addEventListener("click", function () { showView("io"); });
-  $("btnReport").addEventListener("click", function () {
-    var rows = grid.getVisible();
-    $("exportMsg").textContent = "현재 화면 기준 보고서 대상 " + rows.length + "건입니다. 아래에서 내보낼 범위를 골라 주세요.";
-    $("exportMsg").className = "form-msg ok";
-    showView("io");
-  });
 
   function updateCount() {
     $("gridCount").textContent = grid.getVisible().length.toLocaleString("ko-KR") + "건 표시";
@@ -159,20 +144,12 @@
       chip.id = "alert-" + g.key;
       chip.title = g.label;
 
-      var tag = document.createElement("span");
-      tag.className = "alert-card-tag";
-      tag.textContent = "중요 확인";
-
       var body = document.createElement("span");
       body.className = "alert-card-body";
       var nameEl = document.createElement("span");
       nameEl.className = "alert-card-name";
       nameEl.textContent = name;
-      var note = document.createElement("span");
-      note.className = "alert-card-note";
-      note.textContent = "확인 필요";
       body.appendChild(nameEl);
-      body.appendChild(note);
 
       var count = document.createElement("span");
       count.className = "alert-card-count";
@@ -182,7 +159,6 @@
       unit.textContent = "건";
       count.appendChild(unit);
 
-      chip.appendChild(tag);
       chip.appendChild(body);
       chip.appendChild(count);
 

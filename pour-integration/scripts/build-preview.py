@@ -151,14 +151,6 @@ def build(with_records: bool = False) -> Path:
             "<style>\nbody{background:#F4F6F8;margin:0;}\n" + css + "\n</style>\n"
             '<div class="pour-scope">' + html + "</div>")
 
-    html = html.replace('<main class="app-main">', '''<div style="padding:8px 16px 0">
-  <div class="alert-chip" style="cursor:default;background:#EEF3FB;border-color:#33415F;color:#17213B">
-    미리보기입니다 — 자료가 들어 있고, 입력한 자료는 이 브라우저에만 남습니다.
-    엑셀 내려받기는 미리보기에서 동작하지 않습니다.
-  </div>
-</div>
-<main class="app-main">''')
-
     out = BASE / ("preview-records.html" if with_records else "preview.html")
     out.write_text(html, encoding="utf-8")
 

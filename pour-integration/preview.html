@@ -383,13 +383,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   transition:background .12s, border-color .12s;
 }
 .alert-card:hover{background:#FFFCF6; border-color:#D6B677; border-left-color:#A8710F;}
-.alert-card-tag{
-  flex:0 0 auto; padding:2px 8px; font-size:10.5px; font-weight:700; letter-spacing:.02em;
-  background:#FBF1DF; color:#8A5A11; border-radius:999px; white-space:nowrap;
-}
-.alert-card-body{display:flex; flex-direction:column; gap:1px; min-width:0;}
+.alert-card-body{display:flex; align-items:center; min-width:0;}
 .alert-card-name{font-size:13px; font-weight:700; color:var(--text); white-space:nowrap;}
-.alert-card-note{font-size:11px; color:#8A5A11;}
 .alert-card-count{
   flex:0 0 auto; margin-left:var(--s2);
   font-size:22px; font-weight:800; line-height:1; color:var(--navy);
@@ -846,27 +841,14 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   </div>
 </header>
 
-<div style="padding:8px 16px 0">
-  <div class="alert-chip" style="cursor:default;background:#EEF3FB;border-color:#33415F;color:#17213B">
-    미리보기입니다 — 자료가 들어 있고, 입력한 자료는 이 브라우저에만 남습니다.
-    엑셀 내려받기는 미리보기에서 동작하지 않습니다.
-  </div>
-</div>
 <main class="app-main">
 
   <!-- ========================================================= 공고·실적 -->
   <section class="view is-active" id="view-records">
     <div class="alert-bar" id="alertBar"></div>
 
-    <!-- 강조 버튼은 하나만 둔다. 나머지는 조용한 보조 버튼. -->
     <div class="toolbar">
       <button type="button" class="tb-btn" id="btnNewNotice">＋ 새 공고</button>
-      <button type="button" class="tb-btn ghost" id="btnImport">엑셀 가져오기</button>
-      <button type="button" class="tb-btn ghost" id="btnExport">엑셀 내보내기</button>
-      <button type="button" class="tb-btn ghost" id="btnReport">보고서 만들기</button>
-      <button type="button" class="tb-btn ghost" id="btnPatentData">특허자료 관리</button>
-      <span class="spacer"></span>
-      <button type="button" class="tb-btn ghost" id="btnRefresh" title="새로고침">↻ 새로고침</button>
     </div>
 
     <div class="status-tabs" id="statusTabs"></div>
@@ -874,9 +856,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     <div class="grid-tools">
       <input type="search" class="grid-search" id="gridSearch"
              placeholder="아파트명·공사명·지역·시공사·특허번호 검색" />
-      <button type="button" class="tb-btn ghost" id="btnFilterRow">필터</button>
-      <button type="button" class="tb-btn ghost" id="btnClearFilter">필터 해제</button>
-      <button type="button" class="tb-btn ghost" id="btnSortReset">정렬 초기화</button>
       <span class="spacer"></span>
       <span class="grid-count" id="gridCount"></span>
       <button type="button" class="tb-btn ghost" id="btnDetail" disabled>상세·수정</button>
@@ -4805,21 +4784,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     if (state.view !== "records") showView("records");
     refresh();
   });
-  $("btnFilterRow").addEventListener("click", function () {
-    this.classList.toggle("is-active", grid.toggleFilterRow());
-  });
-  $("btnClearFilter").addEventListener("click", function () { grid.clearFilters(); updateCount(); });
-  $("btnSortReset").addEventListener("click", function () { grid.setSort(null); updateCount(); });
-  $("btnRefresh").addEventListener("click", function () { refresh(); });
-  $("btnPatentData").addEventListener("click", function () { showView("settings"); });
-  $("btnImport").addEventListener("click", function () { showView("io"); });
-  $("btnExport").addEventListener("click", function () { showView("io"); });
-  $("btnReport").addEventListener("click", function () {
-    var rows = grid.getVisible();
-    $("exportMsg").textContent = "현재 화면 기준 보고서 대상 " + rows.length + "건입니다. 아래에서 내보낼 범위를 골라 주세요.";
-    $("exportMsg").className = "form-msg ok";
-    showView("io");
-  });
 
   function updateCount() {
     $("gridCount").textContent = grid.getVisible().length.toLocaleString("ko-KR") + "건 표시";
@@ -4863,20 +4827,12 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       chip.id = "alert-" + g.key;
       chip.title = g.label;
 
-      var tag = document.createElement("span");
-      tag.className = "alert-card-tag";
-      tag.textContent = "중요 확인";
-
       var body = document.createElement("span");
       body.className = "alert-card-body";
       var nameEl = document.createElement("span");
       nameEl.className = "alert-card-name";
       nameEl.textContent = name;
-      var note = document.createElement("span");
-      note.className = "alert-card-note";
-      note.textContent = "확인 필요";
       body.appendChild(nameEl);
-      body.appendChild(note);
 
       var count = document.createElement("span");
       count.className = "alert-card-count";
@@ -4886,7 +4842,6 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       unit.textContent = "건";
       count.appendChild(unit);
 
-      chip.appendChild(tag);
       chip.appendChild(body);
       chip.appendChild(count);
 

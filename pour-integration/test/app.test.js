@@ -453,13 +453,18 @@ function section(t) { console.log("\n" + t); }
     assert.strictEqual(first, "1,240", "내림차순 + 천 단위 쉼표");
   });
 
-  await test("열 필터", async () => {
-    await page.click("#btnFilterRow");
+  await test("열 필터 (표 기능은 그대로 · 버튼만 없어짐)", async () => {
+    assert.strictEqual(await page.$("#btnFilterRow"), null, "필터 버튼이 남음");
+    assert.strictEqual(await page.$("#btnClearFilter"), null, "필터 해제 버튼이 남음");
+    assert.strictEqual(await page.$("#btnSortReset"), null, "정렬 초기화 버튼이 남음");
+    // 표의 열 필터 자체는 그대로 동작한다
+    await page.evaluate(() => window.PourApp.grid.toggleFilterRow());
     await page.waitForSelector("#recordsGrid .grid-filter-row");
     await page.fill('[data-filter="city"]', "하남");
     const rows = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(8)", els => els.map(e => e.textContent));
     assert.deepStrictEqual(rows, ["하남"]);
-    await page.click("#btnClearFilter");
+    await page.evaluate(() => window.PourApp.grid.clearFilters());
+    await page.evaluate(() => window.PourApp.grid.toggleFilterRow());
   });
 
   await test("통합검색 (아파트명·시공사·특허번호·공종)", async () => {
@@ -806,7 +811,7 @@ function section(t) { console.log("\n" + t); }
     await page.waitForTimeout(200);
     const clients = await page.$$eval("#recordsGrid .grid tbody tr", els => els.length);
     assert.ok(clients >= 1, "알림을 눌러도 걸러지지 않음");
-    await page.click("#btnRefresh");
+    await page.click('.status-tab[data-status-tab="전체"]');
     await page.waitForTimeout(200);
   });
 
@@ -869,7 +874,7 @@ function section(t) { console.log("\n" + t); }
         patentNumbers: ["1935719"], patentConfirmed: true
       }, localStorage);
     });
-    await page.click("#btnRefresh");
+    await page.click('.status-tab[data-status-tab="전체"]');
     await page.fill("#gridSearch", "옛자료수정시험");
     await page.waitForTimeout(250);
 
@@ -903,7 +908,7 @@ function section(t) { console.log("\n" + t); }
         city: "하남", status: "낙찰", patentNumbers: ["1935719"], patentConfirmed: true
       }, localStorage);
     });
-    await page.click("#btnRefresh");
+    await page.click('.status-tab[data-status-tab="전체"]');
     await page.waitForTimeout(300);
     const labels = await page.$$eval("#alertBar .alert-card", els => els.map(e => e.innerText.replace(/\n/g, " ")));
     const chip = labels.filter(t => t.includes("협약서번호 미입력"))[0];
@@ -914,23 +919,26 @@ function section(t) { console.log("\n" + t); }
       const clients = await page.$$eval("#recordsGrid .grid tbody tr td:nth-child(9)",
         els => els.map(e => e.textContent.trim()));
       assert.ok(!clients.includes("이전분알림시험"), clients.join(", "));
-      await page.click("#btnRefresh");
+      await page.click('.status-tab[data-status-tab="전체"]');
       await page.waitForTimeout(200);
     }
   });
 
   await test("알림이 업무 확인 카드로 보이고 누르면 그대로 걸러진다", async () => {
     const cards = await page.$$eval("#alertBar .alert-card", els => els.map((e) => ({
-      tag: e.querySelector(".alert-card-tag").textContent,
+      tag: e.querySelector(".alert-card-tag"),
+      note: e.querySelector(".alert-card-note"),
       name: e.querySelector(".alert-card-name").textContent,
-      note: e.querySelector(".alert-card-note").textContent,
       count: e.querySelector(".alert-card-count").textContent,
+      text: e.innerText,
       id: e.id
     })));
     assert.ok(cards.length > 0, "알림 카드가 없다");
     cards.forEach((c) => {
-      assert.strictEqual(c.tag, "중요 확인", JSON.stringify(c));
-      assert.strictEqual(c.note, "확인 필요", JSON.stringify(c));
+      assert.strictEqual(c.tag, null, "중요 확인 표시가 남음");
+      assert.strictEqual(c.note, null, "확인 필요 표시가 남음");
+      assert.ok(!c.text.includes("중요 확인"), c.text);
+      assert.ok(!c.text.includes("확인 필요") || c.name.includes("확인 필요"), c.text);
       assert.ok(/^[\d,]+건$/.test(c.count), "건수 표기: " + c.count);
       assert.ok(!/\d+건$/.test(c.name), "이름에 건수가 남음: " + c.name);
     });
@@ -946,7 +954,7 @@ function section(t) { console.log("\n" + t); }
     await page.waitForTimeout(250);
     const note = await page.textContent("#gridCount");
     assert.ok(note.includes("만 표시 중"), note);
-    await page.click("#btnRefresh");
+    await page.click('.status-tab[data-status-tab="전체"]');
     await page.waitForTimeout(200);
   });
 
