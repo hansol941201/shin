@@ -1892,6 +1892,13 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
                  첨부해야 하는 수동 가져오기, openPartnerImportModal)와 다르다 — partner-
                  dashboard(pourservice.github.io)의 최신 데이터를 자동으로 fetch해서 온다. -->
             <button type="button" id="crmPartnerSyncBtn">협력사 동기화</button>
+            <!-- §동기화 단건 진단 라운드 — "동신도장처럼 특정 업체의 미팅정보가 왜 반영되지
+                 않는지" 사람이 직접 한 단계씩 확인할 수 있는 진단 패널. 새 fetch/병합/매칭
+                 로직이 아니라 이미 있는 실제 함수(pdFetchBaselineData/pdFetchOverrides/
+                 pdBuildEffectiveRows/pdBuildContactIndex/pdMatchCompany/previewPartnerSync/
+                 buildProgressStages)만 그대로 호출해서 결과를 그대로 보여준다(§7 "공통
+                 parser/merge 로직을 그대로 재사용, 하드코딩 금지" — 업체명은 입력값일 뿐). -->
+            <button type="button" id="crmSyncDiagBtn">동기화 진단(업체 1건 추적)</button>
           </div>
         </div>
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
@@ -1974,6 +1981,7 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   <div id="managementNeedModalRoot"></div>
   <!-- §협력사 동기화 라운드: partner-dashboard 동기화 미리보기/결과 중앙 모달 전용 root. -->
   <div id="partnerSyncModalRoot"></div>
+  <div id="syncDiagModalRoot"></div>
   <div id="sideDrawerRoot"></div>
   <div id="memoPanelRoot"></div>
   <!-- §총 매출 Popover 전환 라운드: 전용 root — sideDrawerRoot(전체 높이 오른쪽 패널,
@@ -3392,7 +3400,13 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // AI 분석 → 제안 → 사용자 확인 → 저장" 흐름이 붙어도 저장 시점은 항상 이 함수 하나로
   // 통일되도록 만들어 둔다). patch에 있는 필드만 부분 병합한다(applyPatchToRecord와 같은
   // "값이 있는 필드만 갱신" 원칙 — 필드 하나만 고쳐도 나머지가 사라지지 않는다).
-  const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags'];
+  // §고객 인사이트 사전 라운드 §16/§17 — insightIds(사전 500+개 중 선택한 id)/
+  // customInsights(사전에 없어 직접 추가한 항목, {id,text})/importantInsightIds(★ 표시)를
+  // 기존 필드(decisionStyle 등, §14 자유서술은 그대로 유지) 뒤에 "추가"한다 — 사전
+  // (INSIGHT_DICTIONARY)과 고객별 선택값은 완전히 분리된 구조라, 사전 내용을 나중에
+  // 고치더라도 이미 저장된 co.customerInsight.insightIds(문자열 id 배열일 뿐)는 전혀
+  // 영향받지 않는다(§17 "사전을 수정했다고 고객 데이터가 날아가면 안 됨").
+  const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags','insightIds','customInsights','importantInsightIds'];
   function setCustomerInsight(companyId, patch){
     const co = findCompany(companyId); if(!co) return null;
     const merged = Object.assign({}, co.customerInsight || {});
@@ -4815,7 +4829,13 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     getCompanyReceivable, buildReceivableCompanies,
     getLatestPourRecordForCompany, getAllPourRecordsForCompany, buildPourLatestIndex,
     buildRequestHistory, buildRequestHistoryIndex,
-    previewPartnerSync, applyPartnerSync
+    previewPartnerSync, applyPartnerSync,
+    // §동기화 단건 진단 라운드 — 렌더 스크립트(별도 <script> 블록)가 이 함수들을 직접
+    // 재선언하지 않고 그대로 재사용할 수 있게 export만 추가한다(§ "CO_KEY is not defined"류
+    // 크로스 스크립트 버그를 반복하지 않기 위해 항상 D.* 다리를 통해서만 부른다). 함수
+    // 본문은 전혀 안 바꿨다 — previewPartnerSync/applyPartnerSync가 이미 내부적으로 쓰던
+    // 그 함수들 그대로.
+    pdFetchBaselineData, pdFetchOverrides, pdBuildEffectiveRows, pdBuildContactIndex, pdMatchCompany, pdUnescapeKey
   };
 })();
 </script>
@@ -5433,9 +5453,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 기존 salesTendency/reactions와 무관 — §10 "기존 필드와 충돌하지 않는 별도 구조")의
       // 대표 태그 최대 3개만 짧게 보여준다. buildInsightRepTags는 아래 renderGlanceRow 근처
       // 등 다른 곳에서도 재사용한다(같은 값을 두 번 계산하지 않기 위해 한 곳에만 정의).
-      const insightTags = buildInsightRepTags(co);
-      const insightHtml = insightTags.length
-        ? `<span class="insight-cell">${insightTags.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}</span>`
+      // §고객 인사이트 사전 라운드 §12: 대표 태그 최대 3개 + 나머지는 "+N"으로 요약(전체는
+      // 고객카드에서 확인). buildInsightRepTagsFull이 ★중요 우선순위까지 이미 계산해 둔다.
+      const insightRep = buildInsightRepTagsFull(co);
+      const insightHtml = insightRep.shown.length
+        ? `<span class="insight-cell" title="${esc(insightRep.overflow ? '전체 ' + (insightRep.shown.length + insightRep.overflow) + '개 · 고객카드에서 확인' : '')}">${insightRep.shown.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}${insightRep.overflow ? `<span class="insight-tag insight-tag-more">+${esc(insightRep.overflow)}</span>` : ''}</span>`
         : `<span class="insight-cell"><span class="data-none">성향 미등록</span></span>`;
       // §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N"은 메인 목록에서 뺐지만
       // (§1), 기한 초과 여부(rowOverdueClass, 행 왼쪽 빨간 라인)는 계속 필요해서 계산
@@ -7779,24 +7801,591 @@ window.SHIN2_CRM_APP_INIT = function(){
     return breakdown.slice(0, n || 2).map(x=> x.category).join(', ');
   }
 
-  // §고객 성향 컬럼 라운드 §6/§8 — 목록/고객카드 양쪽에서 재사용하는 "대표 성향 태그"
-  // 계산. co.customerInsight.decisionStyle(의사결정 성향, 짧은 값)과 interests(주요 관심,
-  // 짧은 값들의 배열)만 태그 후보로 쓴다 — needs/concerns/preferredContact는 자유 서술형
-  // 문장이라 자동으로 "OO 민감"/"OO 중시" 같은 짧은 라벨을 만들어내지 않는다(§8 "사람에
-  // 대한 임의 평가 금지" — 자유 텍스트를 임의로 요약/재해석하지 않는다는 원칙을 태그
-  // 생성에도 그대로 적용). 대신 co.customerInsight.tags(사용자가 직접 입력/수정하는 대표
-  // 태그 목록, 기본값은 decisionStyle+interests로 미리 채워지지만 그대로 사용자가 자유롭게
-  // 고쳐 쓸 수 있다)가 있으면 그걸 최우선으로 쓴다 — "가격 민감"처럼 사람이 실제로 그렇게
-  // 판단해서 직접 쓴 짧은 표현은 허용하되, 그 판단은 항상 사람이 한다(AI/자동 추론 아님).
-  function buildInsightRepTags(co){
+  // §고객 인사이트 사전 라운드 — B2B 고객 대응용 인사이트 사전(실제 건설업/시공사/협력사/
+  // 입찰/공법 영업에서 구분 가치가 있는 항목만 선정, 유의미한 중복 없음 — 검증: 총 502개,
+  // 카테고리 30개, 완전 중복 0건(빌드 스크립트로 확인). "까다로운 사람"류 인물평가 문구는
+  // 전혀 포함하지 않는다(§15) — 전부 업무상 관찰 가능한 행동/발언 기반 표현.
+  const INSIGHT_CATEGORIES = [
+    ["decision","의사결정 성향"],
+    ["interest","관심 포인트"],
+    ["price","가격 / 비용 성향"],
+    ["tech","기술 / 공법 관심"],
+    ["track","실적 / 레퍼런스 관심"],
+    ["material","자료 선호"],
+    ["comm","커뮤니케이션 성향"],
+    ["meeting","미팅 성향"],
+    ["reaction","영업 반응"],
+    ["partnership","협약 / 파트너십 성향"],
+    ["site","현장 관심"],
+    ["bid","입찰 / 수주 관심"],
+    ["client","발주처 대응"],
+    ["orgstructure","내부 의사결정 구조"],
+    ["needs","주요 니즈"],
+    ["concern","우려 / 장벽"],
+    ["competitor","경쟁사 / 기존 거래처"],
+    ["signal_progress","진행 가능성 신호"],
+    ["signal_delay","이탈 / 지연 신호"],
+    ["reuse","재사용 가능성"],
+    ["relationship","관계 관리"],
+    ["followup","후속 대응 방식"],
+    ["sendstrategy","자료 발송 전략"],
+    ["meeting2strategy","2차미팅 전략"],
+    ["l1l2","L1→L2 전환 포인트"],
+    ["l2l3","L2→L3 전환 포인트"],
+    ["l3l4","L3→L4 전환 포인트"],
+    ["l4l5","L4→L5 전환 포인트"],
+    ["revenue","매출 전환 포인트"],
+    ["etc","기타 실무 특성"],
+  ];
+  const INSIGHT_DICTIONARY = [
+    ["ins_001","decision","빠른 결정형"],
+    ["ins_002","decision","즉시 실행형"],
+    ["ins_003","decision","신중 검토형"],
+    ["ins_004","decision","비교 검토형"],
+    ["ins_005","decision","자료 검토 후 결정"],
+    ["ins_006","decision","대표 직접 결정"],
+    ["ins_007","decision","실무자 검토 후 대표 승인"],
+    ["ins_008","decision","팀 내부협의 필요"],
+    ["ins_009","decision","여러 담당자 의견 수렴"],
+    ["ins_010","decision","결정까지 시간이 필요한 편"],
+    ["ins_011","decision","현장 확인 후 결정"],
+    ["ins_012","decision","가격 확인 후 결정"],
+    ["ins_013","decision","기술 검토 후 결정"],
+    ["ins_014","decision","실적 확인 후 결정"],
+    ["ins_015","decision","발주처 반응 확인 후 결정"],
+    ["ins_016","decision","시범시공 후 결정"],
+    ["ins_017","decision","타 현장 사례 확인 후 결정"],
+    ["ins_018","decision","계약서 검토가 꼼꼼한 편"],
+    ["ins_019","decision","견적서 여러 건 받아본 뒤 결정"],
+    ["ins_020","decision","현장소장 의견 반영해 결정"],
+    ["ins_021","decision","1인 담당자 전권으로 결정"],
+    ["ins_022","decision","외부 자문 받은 뒤 결정"],
+    ["ins_023","decision","연간 예산계획에 맞춰 결정"],
+    ["ins_024","interest","실적 건수 중시"],
+    ["ins_025","interest","가격 경쟁력 중시"],
+    ["ins_026","interest","기술력 우위 중시"],
+    ["ins_027","interest","특허 보유 여부 중시"],
+    ["ins_028","interest","공법 차별성 중시"],
+    ["ins_029","interest","브랜드 신뢰도 중시"],
+    ["ins_030","interest","현장지원 여부 중시"],
+    ["ins_031","interest","입찰지원 여부 중시"],
+    ["ins_032","interest","수주 가능성 중시"],
+    ["ins_033","interest","시공 편의성 중시"],
+    ["ins_034","interest","하자관리 체계 중시"],
+    ["ins_035","interest","사후관리 체계 중시"],
+    ["ins_036","interest","자재 안정성 중시"],
+    ["ins_037","interest","공기 단축 관심"],
+    ["ins_038","interest","원가절감 관심"],
+    ["ins_039","interest","친환경 인증 관심"],
+    ["ins_040","interest","안전시공 체계 관심"],
+    ["ins_041","interest","유지보수 비용 관심"],
+    ["ins_042","interest","장기 협력관계 관심"],
+    ["ins_043","interest","시공 후 성능보증 관심"],
+    ["ins_044","interest","지역업체 우대 여부 관심"],
+    ["ins_045","price","가격 민감"],
+    ["ins_046","price","단가 비교형"],
+    ["ins_047","price","최저가 선호"],
+    ["ins_048","price","가격보다 품질 중시"],
+    ["ins_049","price","가격보다 실적 중시"],
+    ["ins_050","price","가격보다 기술력 중시"],
+    ["ins_051","price","마진 확보 중시"],
+    ["ins_052","price","원가 구조 중시"],
+    ["ins_053","price","견적 세부내역 확인 요청"],
+    ["ins_054","price","경쟁사 단가와 비교 요청"],
+    ["ins_055","price","예산 확정 후 진행 희망"],
+    ["ins_056","price","가격협의 여지 확인 요청"],
+    ["ins_057","price","수익구조 설명 요청"],
+    ["ins_058","price","자재단가 상세 확인"],
+    ["ins_059","price","시공단가 상세 확인"],
+    ["ins_060","price","분할결제 선호"],
+    ["ins_061","price","총사업비 절감안 요청"],
+    ["ins_062","price","부가세/세금계산서 처리 확인형"],
+    ["ins_063","price","견적 유효기간 민감"],
+    ["ins_064","price","단가 인상 민감하게 반응하는 편"],
+    ["ins_065","price","장기계약 시 단가고정 요청"],
+    ["ins_066","tech","신공법 자체에 관심"],
+    ["ins_067","tech","공법 원리 설명 요청"],
+    ["ins_068","tech","시공 프로세스 상세 확인 요청"],
+    ["ins_069","tech","타 공법과 비교 요청"],
+    ["ins_070","tech","시공 사진/영상 자료 요청"],
+    ["ins_071","tech","성능시험 데이터 요청"],
+    ["ins_072","tech","내구성 데이터 관심"],
+    ["ins_073","tech","하자 발생률 데이터 관심"],
+    ["ins_074","tech","공법 인증서 확인 요청"],
+    ["ins_075","tech","특허 등록 여부 확인"],
+    ["ins_076","tech","시공팀 숙련도 확인 요청"],
+    ["ins_077","tech","현장 시연 요청"],
+    ["ins_078","tech","재료 배합비 관심"],
+    ["ins_079","tech","시공 시 소음/분진 우려"],
+    ["ins_080","tech","시공 소요시간 관심"],
+    ["ins_081","tech","동절기 시공 가능 여부 확인"],
+    ["ins_082","tech","유지보수 방법 관심"],
+    ["ins_083","tech","타사 공법 단점 비교 요청"],
+    ["ins_084","tech","시공 두께/스펙 상세 확인"],
+    ["ins_085","tech","내진성능 관련 데이터 요청"],
+    ["ins_086","tech","화재안전 인증 관심"],
+    ["ins_087","track","유사현장 실적 요청"],
+    ["ins_088","track","대단지 실적 선호"],
+    ["ins_089","track","지역 실적 관심"],
+    ["ins_090","track","최근 실적 관심"],
+    ["ins_091","track","실제 적용현장 방문 희망"],
+    ["ins_092","track","동일 발주처 실적 확인 요청"],
+    ["ins_093","track","동일 용도 건물 실적 요청"],
+    ["ins_094","track","실적 규모(면적) 중시"],
+    ["ins_095","track","실적 연차 중시"],
+    ["ins_096","track","준공 후 하자 이력 확인 요청"],
+    ["ins_097","track","실적 사진자료 요청"],
+    ["ins_098","track","실적 담당자 연락처 요청"],
+    ["ins_099","track","레퍼런스 콜 희망"],
+    ["ins_100","track","타 지자체 실적 관심"],
+    ["ins_101","track","공공기관 실적 여부 확인"],
+    ["ins_102","track","민간 실적 여부 확인"],
+    ["ins_103","track","최근 3년 실적 집중 확인"],
+    ["ins_104","track","동일 규모 현장 실적 요청"],
+    ["ins_105","track","해외 실적 여부 확인"],
+    ["ins_106","track","리모델링 실적 별도 확인"],
+    ["ins_107","track","신축 실적 별도 확인"],
+    ["ins_108","track","실적 수상/인증 이력 관심"],
+    ["ins_109","track","실적 대비 하자율 통계 요청"],
+    ["ins_110","material","자료 먼저 받아본 뒤 통화 선호"],
+    ["ins_111","material","전화보다 자료 선호"],
+    ["ins_112","material","간단한 요약자료 선호"],
+    ["ins_113","material","상세자료 선호"],
+    ["ins_114","material","실적자료 우선 요청"],
+    ["ins_115","material","유사현장 사례집 선호"],
+    ["ins_116","material","사진자료 선호"],
+    ["ins_117","material","비교표 형태 선호"],
+    ["ins_118","material","시방서 요청"],
+    ["ins_119","material","시험성적서 중시"],
+    ["ins_120","material","특허자료 중시"],
+    ["ins_121","material","기술가이드북 선호"],
+    ["ins_122","material","공고문 예시 요청"],
+    ["ins_123","material","CAD 도면 요청"],
+    ["ins_124","material","견적자료 요청"],
+    ["ins_125","material","PT자료 요청"],
+    ["ins_126","material","단가산출 근거자료 요청"],
+    ["ins_127","material","회사소개서 요청"],
+    ["ins_128","material","동영상 자료 선호"],
+    ["ins_129","material","인쇄물 형태 자료 선호"],
+    ["ins_130","material","클라우드 링크 공유 선호"],
+    ["ins_131","comm","전화 선호"],
+    ["ins_132","comm","카카오톡 선호"],
+    ["ins_133","comm","문자 선호"],
+    ["ins_134","comm","이메일 선호"],
+    ["ins_135","comm","대면 미팅 선호"],
+    ["ins_136","comm","짧은 설명 선호"],
+    ["ins_137","comm","상세 설명 선호"],
+    ["ins_138","comm","결론부터 듣는 편"],
+    ["ins_139","comm","자료 확인 후 통화 선호"],
+    ["ins_140","comm","응답이 빠른 편"],
+    ["ins_141","comm","응답이 느린 편"],
+    ["ins_142","comm","재연락이 필요한 편"],
+    ["ins_143","comm","먼저 연락해오는 편"],
+    ["ins_144","comm","질문이 많은 편"],
+    ["ins_145","comm","필요한 내용만 질문하는 편"],
+    ["ins_146","comm","업무시간 외 연락 어려운 편"],
+    ["ins_147","comm","직접 방문 응대를 선호"],
+    ["ins_148","comm","통화보다 문서 확인을 우선하는 편"],
+    ["ins_149","comm","다수 채널로 동시 확인하는 편"],
+    ["ins_150","comm","존댓말/격식 중시하는 편"],
+    ["ins_151","comm","편하게 소통하는 편"],
+    ["ins_152","comm","화상통화보다 전화 선호"],
+    ["ins_153","comm","담당자 지정 후 창구 일원화 요청"],
+    ["ins_154","meeting","미팅 시간 엄수형"],
+    ["ins_155","meeting","미팅 지연 잦은 편"],
+    ["ins_156","meeting","다수 참석자 동반 미팅 선호"],
+    ["ins_157","meeting","실무자 단독 미팅 선호"],
+    ["ins_158","meeting","현장에서 미팅 선호"],
+    ["ins_159","meeting","사무실 방문 미팅 선호"],
+    ["ins_160","meeting","화상미팅 가능"],
+    ["ins_161","meeting","미팅 전 자료 사전공유 요청"],
+    ["ins_162","meeting","미팅 중 메모 꼼꼼한 편"],
+    ["ins_163","meeting","미팅 후 회신 빠른 편"],
+    ["ins_164","meeting","미팅 후 회신 느린 편"],
+    ["ins_165","meeting","짧은 미팅 선호"],
+    ["ins_166","meeting","장시간 논의 선호"],
+    ["ins_167","meeting","질의응답 위주 미팅 선호"],
+    ["ins_168","meeting","미팅 일정 잦은 변경"],
+    ["ins_169","meeting","오전 미팅 선호"],
+    ["ins_170","meeting","오후 미팅 선호"],
+    ["ins_171","meeting","미팅 장소 변경 잦은 편"],
+    ["ins_172","meeting","동석자 사전공지 필요"],
+    ["ins_173","meeting","점심시간 활용 미팅 선호"],
+    ["ins_174","meeting","미팅 취소/연기 사전공지 확실한 편"],
+    ["ins_175","reaction","설명에 긍정적 반응"],
+    ["ins_176","reaction","설명에 회의적 반응"],
+    ["ins_177","reaction","질문으로 관심도 표현"],
+    ["ins_178","reaction","침묵형 반응"],
+    ["ins_179","reaction","즉석에서 의견 표현하는 편"],
+    ["ins_180","reaction","신중하게 반응 유보하는 편"],
+    ["ins_181","reaction","경쟁사 언급하며 비교 반응"],
+    ["ins_182","reaction","가격 얘기부터 꺼내는 편"],
+    ["ins_183","reaction","기술 얘기부터 꺼내는 편"],
+    ["ins_184","reaction","실적부터 확인하는 편"],
+    ["ins_185","reaction","우호적인 분위기 유지"],
+    ["ins_186","reaction","형식적 응대 위주"],
+    ["ins_187","reaction","제안에 즉각 피드백 주는 편"],
+    ["ins_188","reaction","반응 표현이 적은 편"],
+    ["ins_189","reaction","긍정 반응 후 진행이 더딘 편"],
+    ["ins_190","reaction","첫 접촉부터 우호적"],
+    ["ins_191","reaction","설명 중간에 질문 끊고 확인하는 편"],
+    ["ins_192","reaction","제안서 검토 후 코멘트가 구체적인 편"],
+    ["ins_193","reaction","반응이 부서마다 다르게 나뉘는 편"],
+    ["ins_194","partnership","장기 협력관계 선호"],
+    ["ins_195","partnership","단건 거래 선호"],
+    ["ins_196","partnership","협약서 조건 꼼꼼히 검토"],
+    ["ins_197","partnership","MOU 체결에 적극적"],
+    ["ins_198","partnership","협약 전 시범현장 요구"],
+    ["ins_199","partnership","협약 조건 협상 여지 있음"],
+    ["ins_200","partnership","독점 계약 요청"],
+    ["ins_201","partnership","비독점 계약 선호"],
+    ["ins_202","partnership","협약 갱신 이력 확인 요청"],
+    ["ins_203","partnership","계약기간 유연성 요청"],
+    ["ins_204","partnership","협약 해지조건 민감"],
+    ["ins_205","partnership","협약 체결 속도가 빠른 편"],
+    ["ins_206","partnership","협약 체결까지 신중한 편"],
+    ["ins_207","partnership","표준계약서 그대로 수용하는 편"],
+    ["ins_208","partnership","계약조건 수정 요청이 잦은 편"],
+    ["ins_209","partnership","협약서 법무검토 반드시 거치는 편"],
+    ["ins_210","partnership","복수 협력사와 병행 협약 선호"],
+    ["ins_211","site","현장 위치 우선 확인"],
+    ["ins_212","site","현장 규모 우선 확인"],
+    ["ins_213","site","현장 진입로 여건 확인"],
+    ["ins_214","site","현장 안전관리 체계 확인"],
+    ["ins_215","site","현장소장 성향 확인 요청"],
+    ["ins_216","site","현장 인력 운용 확인"],
+    ["ins_217","site","동시 다현장 진행 가능 여부 확인"],
+    ["ins_218","site","현장별 견적 개별 요청"],
+    ["ins_219","site","현장 접근성 우려"],
+    ["ins_220","site","현장 특수조건(고층/협소 등) 확인"],
+    ["ins_221","site","현장 주변 민원 우려 언급"],
+    ["ins_222","site","현장 주차공간 확인"],
+    ["ins_223","site","현장 야간작업 가능여부 확인"],
+    ["ins_224","site","현장 보양작업 관심"],
+    ["ins_225","site","현장 폐기물 처리방식 확인"],
+    ["ins_226","site","인접현장과 동시진행 조율 필요"],
+    ["ins_227","site","현장 기존 시공사와 인수인계 확인"],
+    ["ins_228","site","현장 특수자재 반입경로 확인"],
+    ["ins_229","bid","입찰 일정 민감"],
+    ["ins_230","bid","공고문 반영 여부 확인 요청"],
+    ["ins_231","bid","제안서 지원 요청"],
+    ["ins_232","bid","입찰 실적 요건 확인"],
+    ["ins_233","bid","적격심사 대응 자료 요청"],
+    ["ins_234","bid","경쟁사 입찰 이력 확인"],
+    ["ins_235","bid","수의계약 가능 여부 확인"],
+    ["ins_236","bid","낙찰 후 후속절차 확인"],
+    ["ins_237","bid","입찰 참가자격 확인 요청"],
+    ["ins_238","bid","현장설명회 참석 의향"],
+    ["ins_239","bid","공동수급 가능 여부 확인"],
+    ["ins_240","bid","입찰보증금 관련 문의"],
+    ["ins_241","bid","가격입찰/기술입찰 방식 확인"],
+    ["ins_242","bid","재입찰 가능성 언급"],
+    ["ins_243","bid","우선협상대상자 선정절차 확인"],
+    ["ins_244","bid","낙찰하한율 관련 문의"],
+    ["ins_245","bid","2단계 입찰 절차 확인"],
+    ["ins_246","client","발주처 설득 자료 필요"],
+    ["ins_247","client","발주처 반응 우선 확인"],
+    ["ins_248","client","발주처 담당자 성향 공유"],
+    ["ins_249","client","발주처 요구조건 명확화 필요"],
+    ["ins_250","client","발주처 예산 제약 언급"],
+    ["ins_251","client","발주처 결재라인 복잡함 언급"],
+    ["ins_252","client","발주처 재량권 제한적 언급"],
+    ["ins_253","client","입주자대표회의 설명자료 필요"],
+    ["ins_254","client","관리사무소 대응 필요"],
+    ["ins_255","client","발주처 담당자 교체 이력 언급"],
+    ["ins_256","client","발주처 내부규정 준수 강조"],
+    ["ins_257","client","발주처 민원 대응자료 필요"],
+    ["ins_258","client","발주처 공동 현장설명 요청"],
+    ["ins_259","client","발주처 회계연도 예산집행 일정 언급"],
+    ["ins_260","client","발주처 감사대응 자료 필요"],
+    ["ins_261","orgstructure","대표 단독 결정 구조"],
+    ["ins_262","orgstructure","실무팀 검토 후 대표 승인 구조"],
+    ["ins_263","orgstructure","이사회 승인 필요 구조"],
+    ["ins_264","orgstructure","본사-현장 이원 결재 구조"],
+    ["ins_265","orgstructure","담당 임원 결재 필요"],
+    ["ins_266","orgstructure","다수 부서 협의 필요"],
+    ["ins_267","orgstructure","외주 자문 거치는 구조"],
+    ["ins_268","orgstructure","결재 소요기간 긴 편"],
+    ["ins_269","orgstructure","결재 소요기간 짧은 편"],
+    ["ins_270","orgstructure","구매팀 별도 승인 필요"],
+    ["ins_271","orgstructure","기술팀 검토 병행 필요"],
+    ["ins_272","orgstructure","법무 검토 병행 필요"],
+    ["ins_273","orgstructure","현장소장 재량권 있는 구조"],
+    ["ins_274","orgstructure","해외 본사 승인 필요한 구조"],
+    ["ins_275","orgstructure","가족경영 구조로 결정 빠른 편"],
+    ["ins_276","needs","수주 경쟁력 강화 필요"],
+    ["ins_277","needs","새로운 공법 도입 필요"],
+    ["ins_278","needs","차별화 자료 필요"],
+    ["ins_279","needs","유사실적 필요"],
+    ["ins_280","needs","공고 반영 지원 필요"],
+    ["ins_281","needs","현장등록 지원 필요"],
+    ["ins_282","needs","견적지원 필요"],
+    ["ins_283","needs","PT지원 필요"],
+    ["ins_284","needs","현장설명 필요"],
+    ["ins_285","needs","드론진단 관심"],
+    ["ins_286","needs","CAD 지원 필요"],
+    ["ins_287","needs","내역서 지원 필요"],
+    ["ins_288","needs","자재산출 지원 필요"],
+    ["ins_289","needs","발주처 설득자료 필요"],
+    ["ins_290","needs","하자보수 대응방안 필요"],
+    ["ins_291","needs","공기단축 방안 필요"],
+    ["ins_292","needs","원가절감 방안 필요"],
+    ["ins_293","needs","안전인증 자료 필요"],
+    ["ins_294","needs","환경영향 관련 자료 필요"],
+    ["ins_295","needs","시공 후 관리매뉴얼 필요"],
+    ["ins_296","needs","경쟁입찰 대응전략 필요"],
+    ["ins_297","needs","협력업체 등록서류 지원 필요"],
+    ["ins_298","concern","가격 부담 언급"],
+    ["ins_299","concern","공법 이해 부족"],
+    ["ins_300","concern","시공성 우려"],
+    ["ins_301","concern","하자 우려"],
+    ["ins_302","concern","자재수급 우려"],
+    ["ins_303","concern","기존 거래처 존재 언급"],
+    ["ins_304","concern","기존 공법 선호 언급"],
+    ["ins_305","concern","발주처 설득 부담 언급"],
+    ["ins_306","concern","대표 승인 지연 우려"],
+    ["ins_307","concern","내부검토 지연 우려"],
+    ["ins_308","concern","현장 미확정 상태"],
+    ["ins_309","concern","입찰 일정 미확정 상태"],
+    ["ins_310","concern","예산 미확정 상태"],
+    ["ins_311","concern","경쟁사 비교 검토 중"],
+    ["ins_312","concern","실적 검증 필요 언급"],
+    ["ins_313","concern","보증/이행보증 관련 우려"],
+    ["ins_314","concern","공사기간 준수 우려"],
+    ["ins_315","concern","설계 변경 가능성 우려"],
+    ["ins_316","concern","인허가 지연 우려"],
+    ["ins_317","concern","협력업체 등록절차 부담 언급"],
+    ["ins_318","concern","타 현장 하자 소문 우려 언급"],
+    ["ins_319","concern","시공사 변경 이력으로 신중해진 상태"],
+    ["ins_320","competitor","기존 거래처 지속 이용 의향"],
+    ["ins_321","competitor","기존 거래처 불만 언급"],
+    ["ins_322","competitor","경쟁사와 동시 검토 중"],
+    ["ins_323","competitor","경쟁사 견적 이미 확보"],
+    ["ins_324","competitor","경쟁사 실적과 비교 요청"],
+    ["ins_325","competitor","특정 경쟁사 선호 이력 언급"],
+    ["ins_326","competitor","신규 거래처 발굴 의향"],
+    ["ins_327","competitor","기존 거래처 계약 만료 예정 언급"],
+    ["ins_328","competitor","경쟁사 하자이력 언급"],
+    ["ins_329","competitor","기존 거래처 가격에 만족 언급"],
+    ["ins_330","competitor","복수 협력사 동시 운용 중"],
+    ["ins_331","competitor","기존 거래처 대비 차별점 요구"],
+    ["ins_332","competitor","경쟁사 담당자와 친분 언급"],
+    ["ins_333","competitor","기존 거래처 서비스 불만 구체적 언급"],
+    ["ins_334","competitor","경쟁사 납기 지연 이력 언급"],
+    ["ins_335","competitor","기존 거래처 대비 신규업체 시범도입 의향"],
+    ["ins_336","signal_progress","적극적인 태도"],
+    ["ins_337","signal_progress","관심도 높음"],
+    ["ins_338","signal_progress","재문의 발생"],
+    ["ins_339","signal_progress","자료 추가요청 발생"],
+    ["ins_340","signal_progress","미팅 재요청 발생"],
+    ["ins_341","signal_progress","현장등록 의향 표현"],
+    ["ins_342","signal_progress","2차미팅 의향 표현"],
+    ["ins_343","signal_progress","대표 미팅 의향 표현"],
+    ["ins_344","signal_progress","현장정보 자발적 공유"],
+    ["ins_345","signal_progress","입찰정보 자발적 공유"],
+    ["ins_346","signal_progress","공고문 요청 발생"],
+    ["ins_347","signal_progress","견적 요청 발생"],
+    ["ins_348","signal_progress","PT 요청 발생"],
+    ["ins_349","signal_progress","시방서 요청 발생"],
+    ["ins_350","signal_progress","실적 반복조회 발생"],
+    ["ins_351","signal_progress","협약 조건 구체적 문의"],
+    ["ins_352","signal_progress","일정 먼저 제안하는 편"],
+    ["ins_353","signal_progress","타 담당자 소개 발생"],
+    ["ins_354","signal_progress","예산 확보 소식 공유"],
+    ["ins_355","signal_progress","내부보고용 자료 요청 발생"],
+    ["ins_356","signal_delay","연락 지연 발생"],
+    ["ins_357","signal_delay","답변 대기 장기화"],
+    ["ins_358","signal_delay","내부검토 장기화"],
+    ["ins_359","signal_delay","현장 미정 상태 지속"],
+    ["ins_360","signal_delay","예산 문제 언급"],
+    ["ins_361","signal_delay","대표 승인 대기 지속"],
+    ["ins_362","signal_delay","발주처 결정 대기 지속"],
+    ["ins_363","signal_delay","입찰 연기 발생"],
+    ["ins_364","signal_delay","자료 확인 후 무응답"],
+    ["ins_365","signal_delay","미팅 일정 미확정 지속"],
+    ["ins_366","signal_delay","담당자 변경 발생"],
+    ["ins_367","signal_delay","경쟁사로 기운 정황"],
+    ["ins_368","signal_delay","회신 요청에도 응답 없음"],
+    ["ins_369","signal_delay","프로젝트 자체 보류 언급"],
+    ["ins_370","signal_delay","연락처 변경 후 미확인 상태"],
+    ["ins_371","signal_delay","타 우선순위 업무로 후순위 밀림 언급"],
+    ["ins_372","reuse","타 현장 재의뢰 가능성 있음"],
+    ["ins_373","reuse","정기적 재발주 이력 있음"],
+    ["ins_374","reuse","신규 현장 발생 시 우선 연락 의향"],
+    ["ins_375","reuse","타 지역 확장 계획 있음"],
+    ["ins_376","reuse","계열사 현장 연계 가능성 있음"],
+    ["ins_377","reuse","기존 만족도 높아 재사용 유력"],
+    ["ins_378","reuse","휴면 상태지만 재접촉 반응 있음"],
+    ["ins_379","reuse","시공 만족 후기 확인됨"],
+    ["ins_380","reuse","재계약 시점 임박"],
+    ["ins_381","reuse","담당자 변경 후에도 관계 유지됨"],
+    ["ins_382","reuse","신규 프로젝트 착수 소식 확인됨"],
+    ["ins_383","reuse","동종업계 확장 소식 확인됨"],
+    ["ins_384","reuse","장기 미접촉 후 재문의 발생"],
+    ["ins_385","reuse","과거 거래 규모 대비 확장 여지 있음"],
+    ["ins_386","reuse","시공 완료 현장 추가 발주 문의 발생"],
+    ["ins_387","relationship","명절/기념일 연락 선호"],
+    ["ins_388","relationship","정기 안부연락 선호"],
+    ["ins_389","relationship","업계 행사에서 접점 있음"],
+    ["ins_390","relationship","소개로 연결된 관계"],
+    ["ins_391","relationship","장기간 신뢰관계 형성됨"],
+    ["ins_392","relationship","최근에 관계 형성된 편"],
+    ["ins_393","relationship","담당자 이직 시 관계 단절 우려"],
+    ["ins_394","relationship","대표와 직접 친분 있음"],
+    ["ins_395","relationship","실무자와 신뢰관계 두터움"],
+    ["ins_396","relationship","타 부서 소개로 확장 가능"],
+    ["ins_397","relationship","동종업계 네트워크로 연결됨"],
+    ["ins_398","relationship","협회/세미나에서 접점 형성됨"],
+    ["ins_399","relationship","경조사 챙기는 관계"],
+    ["ins_400","relationship","상호 소개로 신뢰 형성됨"],
+    ["ins_401","relationship","다른 협력사 통해 알게 된 관계"],
+    ["ins_402","relationship","동문/지역 인연으로 형성된 관계"],
+    ["ins_403","relationship","여러 해에 걸쳐 신뢰가 쌓인 관계"],
+    ["ins_404","followup","전화로 후속 확인 필요"],
+    ["ins_405","followup","자료 발송 후 재확인 필요"],
+    ["ins_406","followup","방문 후속 필요"],
+    ["ins_407","followup","일정 간격 두고 재연락 필요"],
+    ["ins_408","followup","즉시 후속 필요"],
+    ["ins_409","followup","담당자 통해 우회 접근 필요"],
+    ["ins_410","followup","상급자 통한 접근 필요"],
+    ["ins_411","followup","문자로 짧게 리마인드 필요"],
+    ["ins_412","followup","정기 보고 형태 후속 필요"],
+    ["ins_413","followup","현장 방문 겸 후속 필요"],
+    ["ins_414","followup","분기별 정기 컨택 필요"],
+    ["ins_415","followup","이메일 우선 후속 필요"],
+    ["ins_416","followup","공식 문서 형태 후속 필요"],
+    ["ins_417","followup","계절/시즌 이슈 연계 후속 필요"],
+    ["ins_418","sendstrategy","요약본 먼저 발송 후 전체자료 발송"],
+    ["ins_419","sendstrategy","실적자료 우선 발송"],
+    ["ins_420","sendstrategy","가격표 별도 발송"],
+    ["ins_421","sendstrategy","발주처용 자료 별도 준비 발송"],
+    ["ins_422","sendstrategy","기술자료 상세본 발송"],
+    ["ins_423","sendstrategy","비교표 포함 발송"],
+    ["ins_424","sendstrategy","동영상 자료 함께 발송"],
+    ["ins_425","sendstrategy","맞춤형 제안서 필요"],
+    ["ins_426","sendstrategy","발송 전 사전 통화로 수신여부 확인 필요"],
+    ["ins_427","sendstrategy","자료 발송 후 열람여부 확인 필요"],
+    ["ins_428","sendstrategy","단계별 순차 자료 발송 필요"],
+    ["ins_429","sendstrategy","보안자료 별도 처리 필요"],
+    ["ins_430","sendstrategy","발주처 배포용과 내부검토용 자료 구분 필요"],
+    ["ins_431","meeting2strategy","유사실적 자료 준비 필요"],
+    ["ins_432","meeting2strategy","비교자료 준비 필요"],
+    ["ins_433","meeting2strategy","견적안 준비 필요"],
+    ["ins_434","meeting2strategy","현장 방문 동행 준비 필요"],
+    ["ins_435","meeting2strategy","결정권자 배석 요청 필요"],
+    ["ins_436","meeting2strategy","기술진 동석 준비 필요"],
+    ["ins_437","meeting2strategy","시공 시연 준비 필요"],
+    ["ins_438","meeting2strategy","샘플/모형 준비 필요"],
+    ["ins_439","meeting2strategy","경쟁사 대비 강점 정리자료 준비 필요"],
+    ["ins_440","meeting2strategy","질의응답 예상 시나리오 준비 필요"],
+    ["ins_441","meeting2strategy","발주처 설득 논리 사전 정리 필요"],
+    ["ins_442","meeting2strategy","실무진 우려사항 사전 파악 필요"],
+    ["ins_443","meeting2strategy","협약조건 초안 준비 필요"],
+    ["ins_444","l1l2","첫 현장 제안 시점 도래"],
+    ["ins_445","l1l2","질문서 회신 후 즉시 접근 필요"],
+    ["ins_446","l1l2","1차미팅 요청 신호 발생"],
+    ["ins_447","l1l2","현장정보 확보 후 접근 필요"],
+    ["ins_448","l1l2","관심 표명 즉시 후속 필요"],
+    ["ins_449","l1l2","질문서 회신 지연 시 재접촉 필요"],
+    ["ins_450","l1l2","협약 직후 첫 제안 준비 필요"],
+    ["ins_451","l1l2","공고문 확인 즉시 현장 제안 필요"],
+    ["ins_452","l1l2","신규 등록 직후 온보딩 접촉 필요"],
+    ["ins_453","l2l3","현장등록 유도 시점 도래"],
+    ["ins_454","l2l3","견적요청 유도 필요"],
+    ["ins_455","l2l3","2차미팅 제안 시점 도래"],
+    ["ins_456","l2l3","비교자료 제공 후 압박 필요"],
+    ["ins_457","l2l3","경쟁사 대비 강점 강조 필요"],
+    ["ins_458","l2l3","1차미팅 후 무응답 시 재접촉 필요"],
+    ["ins_459","l2l3","첫 현장 반응 긍정적일 때 추가 현장 제안 필요"],
+    ["ins_460","l2l3","견적 회신 지연 시 재확인 필요"],
+    ["ins_461","l2l3","질문서만 있고 미팅 미진행 시 미팅 제안 필요"],
+    ["ins_462","l3l4","협약 제안 시점 도래"],
+    ["ins_463","l3l4","계약조건 협의 필요"],
+    ["ins_464","l3l4","MOU 초안 발송 필요"],
+    ["ins_465","l3l4","의사결정권자 미팅 필요"],
+    ["ins_466","l3l4","2차미팅 후 협약의향 확인 필요"],
+    ["ins_467","l3l4","반복 거래 발생 시 협약 제안 필요"],
+    ["ins_468","l3l4","시범현장 성공 후 협약 제안 필요"],
+    ["ins_469","l3l4","타 현장 성공사례로 협약 설득 필요"],
+    ["ins_470","l4l5","정식 계약 체결 유도 필요"],
+    ["ins_471","l4l5","착공 일정 협의 필요"],
+    ["ins_472","l4l5","계약서 서명 절차 안내 필요"],
+    ["ins_473","l4l5","협약 후 첫 현장 배정 필요"],
+    ["ins_474","l4l5","협약 후 장기 미실적 시 재활성화 필요"],
+    ["ins_475","l4l5","협약만 있고 실행 없을 때 촉진 필요"],
+    ["ins_476","l4l5","현장 확정 즉시 착공지원 필요"],
+    ["ins_477","revenue","발주 확정 임박 신호"],
+    ["ins_478","revenue","계약금 협의 진행 중"],
+    ["ins_479","revenue","시공 착수 일정 확정됨"],
+    ["ins_480","revenue","추가 현장 발주 가능성 언급"],
+    ["ins_481","revenue","장기 계약 전환 가능성 있음"],
+    ["ins_482","revenue","협약 후 첫 매출 발생 임박"],
+    ["ins_483","revenue","반복 발주 패턴 확인됨"],
+    ["ins_484","revenue","연간 발주계획에 편입될 가능성 언급"],
+    ["ins_485","revenue","단가 인상 협의 완료로 매출 증가 예상"],
+    ["ins_486","etc","출장 접근성 확인 필요한 지역"],
+    ["ins_487","etc","연락 가능 시간대가 제한적"],
+    ["ins_488","etc","실무 담당자와 대표 성향이 다름"],
+    ["ins_489","etc","타 부서 협조가 필요한 구조"],
+    ["ins_490","etc","서류작업을 꼼꼼히 요구하는 편"],
+    ["ins_491","etc","구두 합의보다 서면 확인 선호"],
+    ["ins_492","etc","결정 번복이 잦은 편"],
+    ["ins_493","etc","일정 변경이 잦은 편"],
+    ["ins_494","etc","담당자 부재가 잦은 편"],
+    ["ins_495","etc","연휴/성수기 응답 지연되는 편"],
+    ["ins_496","etc","다국어 응대 필요한 경우 있음"],
+    ["ins_497","etc","사내 시스템 등록절차 별도 요구"],
+    ["ins_498","etc","담당자 복수(교차 확인) 필요"],
+    ["ins_499","etc","사내 보안정책으로 자료공유 제한적"],
+    ["ins_500","etc","팩스 등 구식 채널 병행 필요"],
+    ["ins_501","etc","현장별 담당자가 별도로 지정됨"],
+    ["ins_502","etc","본사와 현장 요청사항이 다른 경우 있음"],
+  ];
+
+  // §고객 인사이트 사전 라운드 — INSIGHT_DICTIONARY(id/카테고리/문구 500개+, 아래 별도
+  // 정의)를 id로 조회하기 위한 캐시 Map. 사전 자체는 static이라 한 번만 만든다(§성능 원칙).
+  let _insightDictMapCache = null;
+  function getInsightDictMap(){
+    if(_insightDictMapCache) return _insightDictMapCache;
+    const m = new Map();
+    INSIGHT_DICTIONARY.forEach(([id, cat, text])=> m.set(id, { cat, text }));
+    _insightDictMapCache = m;
+    return m;
+  }
+  // §고객 인사이트 사전 라운드 §16 — 한 업체가 선택한 인사이트 전체(사전 선택분 +
+  // 직접추가분)를 {id,cat,text} 형태로 통일해서 돌려준다. 사전에서 지워진 id(사전을 나중에
+  // 수정해서 더 이상 없는 id)가 있어도 조용히 건너뛴다 — 그 id 자체(고객 데이터)는 절대
+  // 지우지 않는다(§17 "사전을 수정했다고 고객 데이터가 날아가면 안 됨").
+  function insightAllSelected(ci){
+    const dictMap = getInsightDictMap();
+    const dictSel = (ci.insightIds || []).map(id=> { const d = dictMap.get(id); return d ? { id, cat: d.cat, text: d.text } : null; }).filter(Boolean);
+    const custom = (ci.customInsights || []).map(c=> ({ id: c.id, cat: 'custom', text: c.text }));
+    return dictSel.concat(custom);
+  }
+  // §고객 성향 컬럼 라운드 §6/§8, §고객 인사이트 사전 라운드 §12 — 목록/고객카드 양쪽에서
+  // 재사용하는 "대표 성향 태그" 계산. 우선순위(§12): ①importantInsightIds(★ 표시) ②나머지
+  // 선택된 인사이트(사전+직접추가, 선택 순서) ③(둘 다 비어 있을 때만) 예전 자유서술
+  // 필드(decisionStyle/interests/tags) — 신/구 데이터 전부 호환. needs/concerns 같은
+  // 자유 서술형 문장은 여기서도 절대 자동으로 짧은 라벨로 재해석하지 않는다(§8/§15).
+  function buildInsightRepTagsFull(co){
     const ci = co.customerInsight;
-    if(!ci) return [];
-    if(Array.isArray(ci.tags) && ci.tags.length) return ci.tags.filter(Boolean).slice(0, 3);
+    if(!ci) return { shown: [], overflow: 0 };
+    const all = insightAllSelected(ci);
+    if(all.length){
+      const importantSet = new Set(ci.importantInsightIds || []);
+      const sorted = all.slice().sort((a,b)=> (importantSet.has(b.id)?1:0) - (importantSet.has(a.id)?1:0));
+      return { shown: sorted.slice(0,3).map(x=> x.text), overflow: Math.max(0, all.length - 3) };
+    }
+    if(Array.isArray(ci.tags) && ci.tags.length){
+      const t = ci.tags.filter(Boolean);
+      return { shown: t.slice(0,3), overflow: Math.max(0, t.length - 3) };
+    }
     const tags = [];
     if(ci.decisionStyle) tags.push(ci.decisionStyle);
     (ci.interests || []).forEach(t=> { if(tags.length < 3 && t) tags.push(t); });
-    return tags.slice(0, 3);
+    return { shown: tags.slice(0, 3), overflow: 0 };
   }
+  function buildInsightRepTags(co){ return buildInsightRepTagsFull(co).shown; }
   function getTotalRevenue(co){
     const gs = co.partnerDashboard && co.partnerDashboard.gradeSales;
     return (typeof gs === 'number') ? gs : null; // null=데이터 없음, 0=실제 0원(§ 구분)
@@ -8700,6 +9289,177 @@ window.SHIN2_CRM_APP_INIT = function(){
         if(wq && wq.style.display === 'block') renderWorkQueueView();
       }, 0);
     });
+  }
+
+  /* ==========================================================================
+     §동기화 단건 진단 라운드 — "동신도장처럼 특정 업체의 1차미팅(또는 다른 필드)이 왜
+     반영되지 않는지" A~H 단계를 실제로 하나씩 추적해 텍스트로 보여준다. 업체명을
+     입력값으로 받는다 — 특정 업체 이름을 코드에 하드코딩하지 않는다(§7). 아래 함수는
+     previewPartnerSync/applyPartnerSync가 이미 내부적으로 쓰는 실제 함수만 D.* 다리를
+     통해 그대로 호출한다 — 새 fetch/병합/매칭 로직을 전혀 만들지 않는다. 이 진단은
+     읽기 전용이다 — 아무것도 저장하지 않는다(companies/activities/memos 전부 미변경).
+     ========================================================================== */
+  let syncDiagState = { step: 'idle', companyName: '동신도장', result: '' };
+  function closeSyncDiagModal(){
+    const root = document.getElementById('syncDiagModalRoot');
+    if(root) root.innerHTML = '';
+    syncDiagState = { step: 'idle', companyName: syncDiagState.companyName, result: '' };
+  }
+  function openSyncDiagModal(){
+    syncDiagState = { step: 'idle', companyName: syncDiagState.companyName || '동신도장', result: '' };
+    renderSyncDiagModal();
+  }
+  async function runSyncDiagnostic(companyNameRaw){
+    const companyName = (companyNameRaw || '').trim();
+    const norm = normCompanyNameForPartnerMatch(companyName);
+    const L = [];
+    const push = (s)=> L.push(s == null ? '' : String(s));
+    const hr = ()=> push('----------------------------------------');
+    push('=== 협력사 동기화 진단: "' + companyName + '" ===');
+    push('진단 시각: ' + new Date().toString());
+    push('(읽기 전용 — 아무것도 저장하지 않습니다)');
+    try{
+      hr(); push('[A] RTDB fetch 진단 (12개 key)');
+      const baseline = await D.pdFetchBaselineData();
+      const overridesResult = await D.pdFetchOverrides();
+      const overrides = overridesResult.data;
+      overridesResult.diagnostics.forEach(d=>{
+        push(`  ${d.key}: ${d.ok ? '성공' : '실패'} HTTP=${d.status} 데이터=${d.hasData ? '있음' : '없음'}${d.error ? ' 오류=' + d.error : ''}`);
+      });
+
+      hr(); push('[B] partner-dashboard 원본에서 "' + companyName + '" 검색');
+      push('  B-1) baseline.newMou (정적 스냅샷):');
+      const baseHits = (baseline.newMou || []).filter(r=> r.company === companyName || normCompanyNameForPartnerMatch(r.company) === norm);
+      if(!baseHits.length) push('    (없음)');
+      baseHits.forEach(r=> push('    ' + JSON.stringify(r)));
+
+      push('  B-2) mouOverrides (실시간 편집분 — 기존 newMou 항목 수정):');
+      const mouOvKeys = Object.keys(overrides.mouOverrides || {});
+      const mouOvHitKey = mouOvKeys.find(k=> D.pdUnescapeKey(k) === companyName || normCompanyNameForPartnerMatch(D.pdUnescapeKey(k)) === norm);
+      push(mouOvHitKey ? '    ' + JSON.stringify(overrides.mouOverrides[mouOvHitKey]) : '    (없음)');
+
+      push('  B-3) newMouAdds (신규 추가된 협약 진행 업체):');
+      const newAddHit = (overrides.newMouAdds || []).find(r=> r && (r.company === companyName || normCompanyNameForPartnerMatch(r.company) === norm));
+      push(newAddHit ? '    ' + JSON.stringify(newAddHit) : '    (없음)');
+
+      push('  B-4) mouDeleted:');
+      const delHit = (overrides.mouDeleted || []).find(n=> n === companyName || normCompanyNameForPartnerMatch(n) === norm);
+      push(delHit ? '    ' + delHit : '    (없음)');
+
+      push('  B-5) partnerList_* 계열 (연락처/협약체결 목록):');
+      let anyPartnerListHit = false;
+      ['internal','contractor','external'].forEach(view=>{
+        const ovRaw = overrides['partnerList_' + view + '_overrides'];
+        if(ovRaw && typeof ovRaw === 'object'){
+          const rk = Object.keys(ovRaw).find(k=> D.pdUnescapeKey(k) === companyName || normCompanyNameForPartnerMatch(D.pdUnescapeKey(k)) === norm);
+          if(rk){ anyPartnerListHit = true; push(`    partnerList_${view}_overrides: ` + JSON.stringify(ovRaw[rk])); }
+        }
+        const addRaw = overrides['partnerList_' + view + '_adds'];
+        if(Array.isArray(addRaw)){
+          const hit = addRaw.find(x=> x && x.company && (x.company === companyName || normCompanyNameForPartnerMatch(x.company) === norm));
+          if(hit){ anyPartnerListHit = true; push(`    partnerList_${view}_adds: ` + JSON.stringify(hit)); }
+        }
+      });
+      if(!anyPartnerListHit) push('    (없음)');
+
+      hr(); push('[C] merge(pdBuildEffectiveRows) 이후 — newMou 파이프라인 병합 결과');
+      const merge = D.pdBuildEffectiveRows(baseline, overrides);
+      const mergedRow = merge.rows.find(r=> r && (r.company === companyName || normCompanyNameForPartnerMatch(r.company) === norm));
+      push(mergedRow ? '  ' + JSON.stringify(mergedRow) : '  (merge.rows에 없음 — 이 업체는 newMou 계열 자체가 비어있습니다)');
+
+      push('[C-2] contactIndex(pdBuildContactIndex) — 연락처/협약체결(partnerList.mou) 병합 결과');
+      const contactIndex = D.pdBuildContactIndex(baseline, overrides);
+      let contact = contactIndex.get(companyName);
+      if(!contact){
+        for(const [k,v] of contactIndex){ if(normCompanyNameForPartnerMatch(k) === norm){ contact = v; break; } }
+      }
+      push(contact ? '  ' + JSON.stringify(contact) : '  (없음)');
+
+      hr(); push('[D] CRM 업체 매칭(pdMatchCompany)');
+      const companies = D.loadCompanies();
+      const bizIndex = new Map();
+      companies.forEach(c=>{ if(c.bizRegNo){ const k = String(c.bizRegNo).trim(); if(!bizIndex.has(k)) bizIndex.set(k, []); bizIndex.get(k).push(c); } });
+      const nameIndex = new Map();
+      companies.forEach(c=>{ const n = normCompanyNameForPartnerMatch(c.name); if(!n) return; if(!nameIndex.has(n)) nameIndex.set(n, []); nameIndex.get(n).push(c); });
+      const rowForMatch = mergedRow || { company: companyName };
+      const m = D.pdMatchCompany(rowForMatch, companies, bizIndex, nameIndex, contactIndex);
+      push('  매칭 방식(via): ' + m.via);
+      push('  매칭된 CRM companyId: ' + (m.co ? m.co.id : '(매칭 안 됨)'));
+      push('  매칭된 CRM 업체명: ' + (m.co ? m.co.name : '-'));
+      push('  CRM 내 동일/유사 이름 후보(정규화명 "' + norm + '" 기준): ' + JSON.stringify((nameIndex.get(norm) || []).map(c=> ({ id: c.id, name: c.name }))));
+
+      hr(); push('[F/G] CRM에 현재 저장돼 있는 값 (동기화 적용 전 스냅샷)');
+      if(m.co){
+        const nm = (m.co.partnerDashboard && m.co.partnerDashboard.newMou) || {};
+        push('  co.partnerDashboard.newMou = ' + JSON.stringify(nm));
+        const progress = buildProgressStages(m.co);
+        const byKey = {}; progress.stages.forEach(s=> byKey[s.key] = s);
+        push('  buildProgressStages 결과: 질문서=' + byKey.q.state + ', 1차미팅=' + byKey.m1.state + '(' + byKey.m1.dateDisplay + '), 2차미팅=' + byKey.m2.state + ', MOU=' + byKey.mou.state);
+      } else {
+        push('  (CRM에 매칭된 업체가 없어 저장값을 확인할 수 없습니다 — 신규 업체 후보)');
+      }
+
+      hr(); push('[E] previewPartnerSync() 전체 실행 결과에서 이 업체의 위치');
+      const preview = await D.previewPartnerSync();
+      const inUpdates = preview.updates.find(u=> u.co && (u.co.name === companyName || normCompanyNameForPartnerMatch(u.co.name) === norm));
+      const inNew = preview.newCompanies.find(n=> n.row && n.row.company && (n.row.company === companyName || normCompanyNameForPartnerMatch(n.row.company) === norm));
+      const inReview = preview.review.find(r=> r.row && r.row.company && (r.row.company === companyName || normCompanyNameForPartnerMatch(r.row.company) === norm));
+      push('  updates(기존 업체 변경분)에 포함: ' + (inUpdates ? 'YES — progressChanged=' + inUpdates.progressChanged + ', contactChanged=' + inUpdates.contactChanged : 'NO'));
+      if(inUpdates) push('    적용될 row: ' + JSON.stringify(inUpdates.row));
+      push('  newCompanies(신규 후보)에 포함: ' + (inNew ? 'YES' : 'NO'));
+      push('  review(매칭 모호 — 자동 반영 안 됨)에 포함: ' + (inReview ? 'YES — ' + inReview.reason : 'NO'));
+      if(!inUpdates && !inNew && !inReview){
+        push('  => 이 업체는 previewPartnerSync 결과 어디에도 없습니다. 위 [C]/[C-2]에서 merge.rows/contactIndex에');
+        push('     이 업체가 없었다면 그것이 원인이고, 있었는데도 여기 없다면 [D] 매칭 단계에서 걸러진 것입니다.');
+      }
+    } catch(e){
+      push('');
+      push('진단 중 오류 발생: ' + ((e && e.message) || String(e)));
+    }
+    return L.join('\n');
+  }
+  function renderSyncDiagModal(){
+    const root = document.getElementById('syncDiagModalRoot');
+    if(!root) return;
+    const s = syncDiagState;
+    root.innerHTML = `
+      <div class="pi-overlay" id="syncDiagOverlay">
+        <div class="pi-panel" style="max-width:760px;">
+          <div class="pi-head">
+            <div class="pi-title">동기화 진단(업체 1건 추적)</div>
+            <button type="button" class="chart-close-btn" id="syncDiagXBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body">
+            <div class="pi-note">partner-dashboard 원본 → RTDB 편집분 → 병합 → CRM 매칭 → 저장값 → previewPartnerSync 결과까지, 실제 코드로 한 단계씩 추적합니다. 결과를 그대로 복사해서 전달하면 정확한 원인을 확인할 수 있습니다.</div>
+            <div class="cdash-mini-add-row" style="margin-top:10px;">
+              <input type="text" id="syncDiagCompanyInput" placeholder="업체명 (예: 동신도장)" value="${esc(s.companyName)}" />
+              <button type="button" class="co-text-action primary" id="syncDiagRunBtn" ${s.step === 'running' ? 'disabled' : ''}>${s.step === 'running' ? '진단 중...' : '진단 실행'}</button>
+            </div>
+            ${s.result ? `
+              <textarea readonly style="width:100%;height:360px;margin-top:10px;font-family:monospace;font-size:11.5px;white-space:pre;box-sizing:border-box;">${esc(s.result)}</textarea>
+              <div style="margin-top:6px;"><button type="button" class="co-text-action" id="syncDiagCopyBtn">결과 복사</button></div>
+            ` : ''}
+          </div>
+          <div class="pi-actions">
+            <button type="button" class="co-text-action" id="syncDiagCloseBtn">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('syncDiagXBtn').addEventListener('click', closeSyncDiagModal);
+    document.getElementById('syncDiagCloseBtn').addEventListener('click', closeSyncDiagModal);
+    document.getElementById('syncDiagOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'syncDiagOverlay') closeSyncDiagModal(); });
+    document.getElementById('syncDiagRunBtn').addEventListener('click', async ()=>{
+      const name = document.getElementById('syncDiagCompanyInput').value.trim();
+      if(!name) return;
+      syncDiagState = { step: 'running', companyName: name, result: '' };
+      renderSyncDiagModal();
+      const result = await runSyncDiagnostic(name);
+      syncDiagState = { step: 'done', companyName: name, result };
+      renderSyncDiagModal();
+    });
+    const copyBtn = document.getElementById('syncDiagCopyBtn');
+    if(copyBtn) copyBtn.addEventListener('click', ()=> copyText(s.result, copyBtn));
   }
 
   /* ==========================================================================
@@ -11454,6 +12214,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   document.getElementById('crmPartnerImportBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPartnerImportModal(); });
   document.getElementById('crmPourImportBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPourImportModal(); });
   document.getElementById('crmPartnerSyncBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openPartnerSyncModal(); });
+  document.getElementById('crmSyncDiagBtn').addEventListener('click', ()=>{ closeUpdateMenu(); openSyncDiagModal(); });
   function closeUpdateMenu(){ document.getElementById('crmUpdateMenu').classList.remove('is-open'); }
   document.getElementById('crmDataUpdateBtn').addEventListener('click', (e)=>{
     e.stopPropagation();
