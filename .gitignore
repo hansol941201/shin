@@ -8,3 +8,4 @@
 node_modules/
 pour-integration/vendor/
 tmp-test-output/
+pour-integration/nextjs/.tmp-build/

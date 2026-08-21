@@ -10,3 +10,11 @@ node pour-integration/test/migration.test.mjs
 node pour-integration/test/browser.test.js
 node pour-integration/test/app.test.js
 node pour-integration/test/api-store.test.js
+
+# Next.js 이식물 검증 (타입 검사 + D1 저장 로직)
+npx tsc -p pour-integration/nextjs/tsconfig.json --noEmit
+npx tsc -p pour-integration/nextjs/tsconfig.build.json
+mkdir -p pour-integration/nextjs/.tmp-build/lib/pour/core
+cp pour-integration/nextjs/lib/pour/core/*.js pour-integration/nextjs/.tmp-build/lib/pour/core/
+node pour-integration/nextjs/test-d1.mjs
+rm -rf pour-integration/nextjs/.tmp-build

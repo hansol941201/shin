@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "paths": { "@/*": ["./*"] }
+  },
+  "include": ["app/**/*", "components/**/*", "lib/**/*", ".typecheck/**/*"],
+  "//": "db/pour-schema.ts 는 drizzle-orm 이 설치된 실제 프로젝트에서 검사됩니다"
+}
