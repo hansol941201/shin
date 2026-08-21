@@ -4011,18 +4011,35 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 얹고, mouDeleted에 있는 업체는 제외하고, newMouAdds(원본에 없던 신규 협력업체)를
   // 뒤에 추가한다. 여기서 만드는 배열은 새 값을 "지어내는" 게 아니라 partner-dashboard가
   // 화면에 보여주는 것과 완전히 같은 결과를 CRM 쪽에서 재현하는 것뿐이다.
+  // §동신도장 실사례 근본원인 라운드 — 실제 partner-dashboard 소스(로컬 클론) 조사로 확인한
+  // 진짜 원인: partner-dashboard 자체는 매 렌더링마다 applyOverrides()가 DATA.newMou 전체
+  // (baseline에서 온 항목 + newMouAdds로 새로 추가된 항목 구분 없이 전부)에 mouOverrides를
+  // Object.assign으로 얹는다(로컬 클론 3148~3163줄) — 그래서 화면엔 항상 최신값이 보인다.
+  // 그런데 CRM은 그동안 overrideMap(mouOverrides)을 baseline 쪽 rows에만 적용하고, adds
+  // (newMouAdds 배열 항목)는 override 적용 없이 그대로 이어붙이기만 했다. "새 업체 추가" UI로
+  // 처음 만들어질 때는 adds 항목 자체에 값이 다 들어있어 문제가 안 보이지만, 그 이후
+  // 단계이동(예: "1차미팅 완료" 처리)은 partner-dashboard가 항상 saveOverride() →
+  // mouOverrides[업체명]에만 기록한다(newMouAdds 배열은 생성 시점 스냅샷 그대로 절대 안
+  // 바뀜, 로컬 클론 3165~3170/3370~3395줄로 확인) — 그 결과 "baseline에 아직 없고
+  // newMouAdds로만 존재하는 업체"가 생성 이후 겪는 모든 진행상황 변경(1차미팅 완료 포함)이
+  // CRM에서 통째로 무시됐다. 업체명을 가리지 않고 baseline/adds 양쪽에 같은 override 병합
+  // 규칙을 적용하는 것으로 고친다(§7 "동신도장 하드코딩 금지" — 이름 조건 없음).
   function pdBuildEffectiveRows(baseline, overrides){
     const rows = (baseline.newMou || []).map(c=> Object.assign({}, c));
     const rawOverrides = (overrides && overrides.mouOverrides) || {};
     const overrideMap = {};
     Object.keys(rawOverrides).forEach(k=> { overrideMap[pdUnescapeKey(k)] = rawOverrides[k]; });
     let overrideCount = 0;
-    rows.forEach(c=>{
+    const applyOverride = (c)=>{
       const patch = overrideMap[c.company];
       if(patch){ Object.assign(c, patch); overrideCount++; }
-    });
+      return c;
+    };
+    rows.forEach(applyOverride);
     const deletedSet = new Set((overrides && overrides.mouDeleted) || []);
-    const adds = ((overrides && overrides.newMouAdds) || []).filter(c=> c && c.company && !deletedSet.has(c.company));
+    const adds = ((overrides && overrides.newMouAdds) || [])
+      .filter(c=> c && c.company && !deletedSet.has(c.company))
+      .map(c=> applyOverride(Object.assign({}, c)));
     const merged = rows.filter(c=> !deletedSet.has(c.company)).concat(adds);
     return { rows: merged, overrideCount, addCount: adds.length, deletedCount: deletedSet.size };
   }
