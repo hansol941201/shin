@@ -22,8 +22,12 @@ export interface NoticePanelProps {
 const EMPTY_FORM = {
   client: "", projectNames: "", city: "", region: "",
   phone: "", households: "", noticeDate: "", documentDueDate: "", bidDate: "",
+  // K-APT 공고번호 — 공고 단계에서 확인되는 값
+  noticeNo: "",
   noticePatentText: "", agreementNo: "", quality: "", scopes: "", address: "",
-  remark: "", contractor: "", status: "공고"
+  remark: "", contractor: "", status: "공고",
+  // 낙찰 뒤에 확인되는 값들. 같은 행에 이어서 담는다.
+  contractorPhone: "", awardDate: "", awardAmount: "", isPartner: ""
 };
 
 export default function NoticePanel({
@@ -67,6 +71,7 @@ export default function NoticePanel({
         noticeDate: record.noticeDate,
         documentDueDate: record.documentDueDate,
         bidDate: record.bidDate,
+        noticeNo: record.noticeNo,
         noticePatentText: record.noticePatentText,
         agreementNo: record.agreementNo,
         quality: record.quality,
@@ -74,7 +79,11 @@ export default function NoticePanel({
         address: record.address,
         remark: record.remark,
         contractor: record.contractor,
-        status: record.status
+        status: record.status,
+        contractorPhone: record.contractorPhone,
+        awardDate: record.awardDate,
+        awardAmount: record.awardAmount === "" ? "" : String(record.awardAmount),
+        isPartner: record.isPartner
       });
       setRegionOptions(record.region ? [record.region] : []);
       setBidType(record.bidType);
@@ -232,6 +241,14 @@ export default function NoticePanel({
         </div>
 
         <div className="pour-panel-body">
+          {/* 어느 현장인지, 지금 어느 단계인지 먼저 보이게 한다 */}
+          {record && (
+            <div className="pour-panel-subject">
+              <span className="pour-panel-subject-name">{record.client || "이름 없음"}</span>
+              <span className="pour-status-badge" data-status={record.status}>{record.status}</span>
+            </div>
+          )}
+          {record && <div className="pour-stage-head">① 공고 정보</div>}
           {isRebid && !record && (
             <div className="pour-rebid-box">
               <div className="pour-form-row pour-form-row-4">
@@ -327,6 +344,11 @@ export default function NoticePanel({
 
           <div className="pour-form-row pour-form-row-4">
             <div>
+              <label htmlFor="pf-notice-no">공고번호 <span className="opt">(K-APT)</span></label>
+              <input id="pf-notice-no" type="text" value={form.noticeNo}
+                     onChange={(e) => set("noticeNo", e.target.value)} />
+            </div>
+            <div>
               <label htmlFor="pf-notice-date">공고일 <span className="req">*</span></label>
               <input id="pf-notice-date" type="date" value={form.noticeDate}
                      onChange={(e) => set("noticeDate", e.target.value)} />
@@ -382,18 +404,13 @@ export default function NoticePanel({
                   자료와 목록 열은 그대로 두고 입력 화면에서만 감추는 것이다. */}
               {isEdit && (
                 <>
-                  <div className="pour-sub-head">특허·협약 정보</div>
-                  <div className="pour-form-row pour-form-row-fill">
-                    <div className="span-2">
+                  <div className="pour-sub-head">공고문 특허·공법</div>
+                  <div className="pour-form-row pour-form-row-1">
+                    <div>
                       <label htmlFor="pf-notice-patent">공고문 특허·공법 원문</label>
                       <input id="pf-notice-patent" type="text" value={form.noticePatentText}
                              placeholder="공고문에 적힌 특허번호·특허명·공법명"
                              onChange={(e) => set("noticePatentText", e.target.value)} />
-                    </div>
-                    <div>
-                      <label htmlFor="pf-agreement">협약서 발행번호</label>
-                      <input id="pf-agreement" type="text" value={form.agreementNo}
-                             onChange={(e) => set("agreementNo", e.target.value)} />
                     </div>
                   </div>
                 </>
@@ -406,43 +423,72 @@ export default function NoticePanel({
                             onChange={(e) => set("scopes", e.target.value)} />
                 </div>
                 <div>
-                  <label htmlFor="pf-address">나머지 주소</label>
+                  <label htmlFor="pf-address">상세 주소</label>
                   <input id="pf-address" type="text" value={form.address}
                          onChange={(e) => set("address", e.target.value)} />
                 </div>
-                {/* 공사 품질은 낙찰 전환이나 상세 수정에서, 비고는 상세 수정에서,
-                    시공사·시공사 전화번호는 낙찰 전환 패널에서 입력한다.
-                    상태는 새 공고에서 고르지 않고 언제나 "공고" 로 저장된다. */}
-                {isEdit && (
-                  <>
-                    <div>
-                      <label htmlFor="pf-quality">공사 품질</label>
-                      <input id="pf-quality" type="text" list="pour-quality" value={form.quality}
-                             onChange={(e) => set("quality", e.target.value)} />
-                      <datalist id="pour-quality">
-                        {PourRecords.QUALITY_OPTIONS.map((q) => <option key={q} value={q} />)}
-                      </datalist>
-                    </div>
-                    <div>
-                      <label htmlFor="pf-remark">비고</label>
-                      <input id="pf-remark" type="text" value={form.remark}
-                             onChange={(e) => set("remark", e.target.value)} />
-                    </div>
-                    <div>
-                      <label htmlFor="pf-status">상태</label>
-                      <select id="pf-status" value={form.status} onChange={(e) => set("status", e.target.value)}>
-                        {PourRecords.STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="pf-contractor">시공사 <span className="opt">(낙찰 전환에서 입력)</span></label>
-                      <input id="pf-contractor" type="text" value={form.contractor}
-                             onChange={(e) => set("contractor", e.target.value)} />
-                    </div>
-                  </>
-                )}
               </div>
-            
+
+          {/* ② 낙찰 정보 — 낙찰 뒤에 확인되는 값들. 새 공고 화면에서는 감춘다.
+              같은 행에 이어서 담기므로 공고와 낙찰이 두 건으로 나뉘지 않는다. */}
+          {isEdit && (
+            <>
+              <div className="pour-stage-head">② 낙찰 정보</div>
+              <div className="pour-form-row pour-form-row-fill">
+                <div>
+                  <label htmlFor="pf-status">상태</label>
+                  <select id="pf-status" value={form.status} onChange={(e) => set("status", e.target.value)}>
+                    {PourRecords.STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="pf-contractor">시공사</label>
+                  <input id="pf-contractor" type="text" value={form.contractor}
+                         onChange={(e) => set("contractor", e.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor="pf-contractor-phone">시공사 전화번호</label>
+                  <input id="pf-contractor-phone" type="text" value={form.contractorPhone}
+                         onChange={(e) => set("contractorPhone", e.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor="pf-award-date">낙찰일</label>
+                  <input id="pf-award-date" type="date" value={form.awardDate}
+                         onChange={(e) => set("awardDate", e.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor="pf-award-amount">낙찰금액</label>
+                  <input id="pf-award-amount" type="text" value={form.awardAmount}
+                         onChange={(e) => set("awardAmount", e.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor="pf-is-partner">협약사 여부</label>
+                  <select id="pf-is-partner" value={form.isPartner}
+                          onChange={(e) => set("isPartner", e.target.value)}>
+                    {["", "예", "아니오"].map((v) => <option key={v} value={v}>{v || "—"}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="pf-agreement">협약서 발행번호</label>
+                  <input id="pf-agreement" type="text" value={form.agreementNo}
+                         onChange={(e) => set("agreementNo", e.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor="pf-quality">공사 품질</label>
+                  <input id="pf-quality" type="text" list="pour-quality" value={form.quality}
+                         onChange={(e) => set("quality", e.target.value)} />
+                  <datalist id="pour-quality">
+                    {PourRecords.QUALITY_OPTIONS.map((q) => <option key={q} value={q} />)}
+                  </datalist>
+                </div>
+                <div className="span-2">
+                  <label htmlFor="pf-remark">비고</label>
+                  <input id="pf-remark" type="text" value={form.remark}
+                         onChange={(e) => set("remark", e.target.value)} />
+                </div>
+              </div>
+            </>
+          )}
 
           {record && record.history.length > 0 && (
             <div className="pour-history">

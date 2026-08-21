@@ -33,6 +33,10 @@ export const COLUMN_MAP = {
   sourceRef: "source_ref",
   /** 겹치는 줄이면 먼저 나온 줄의 id */
   duplicateOf: "duplicate_of",
+  /** K-APT 공고번호 (공고 단계에서 확인) */
+  noticeNo: "notice_no",
+  /** 협약사 여부 ("예"/"아니오"/빈 값). agreement_no 와는 다른 뜻이다 */
+  isPartner: "is_partner",
   noticeDate: "notice_date",
   documentDueDate: "document_due_date",
   bidDate: "bid_date",

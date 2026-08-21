@@ -47,7 +47,11 @@ export const PROJECT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   /** 원본 위치 ("2025년 348행"). 엑셀 어느 줄에서 왔는지 되짚기 위해 남긴다. */
   ["source_ref", "TEXT"],
   /** 겹치는 줄이면 먼저 나온 줄의 id. 지우지 않고 표시만 한다. */
-  ["duplicate_of", "TEXT"]
+  ["duplicate_of", "TEXT"],
+  /** K-APT 공고번호. 공고 단계에서 확인되는 값이라 같은 뜻의 기존 열이 없다. */
+  ["notice_no", "TEXT"],
+  /** 협약사 여부 ("예"/"아니오"/빈 값). 협약서 발행번호(agreement_no)와는 뜻이 다르다. */
+  ["is_partner", "TEXT"]
 ] as const;
 
 /** 새로 만드는 표와 색인. 전부 IF NOT EXISTS 라 기존 것을 덮지 않는다. */

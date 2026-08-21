@@ -281,6 +281,11 @@
       bidType: normalizeBidType(r.bidType),
       bidTypeRaw: String(r.bidTypeRaw || r.bidType || "").trim(),   // 원본 표기 보존
       documentDueDate: String(r.documentDueDate || "").trim(),
+      // K-APT 공고번호. 공고 단계에서 확인할 수 있는 값이라 같은 뜻의 기존 필드가 없다.
+      noticeNo: String(r.noticeNo || "").trim(),
+      // 협약사 여부 ("예" / "아니오" / 빈 값=아직 확인 안 됨).
+      // 협약서 발행번호(agreementNo)와는 다른 뜻이라 따로 둔다.
+      isPartner: String(r.isPartner || "").trim(),
       isRenotice: r.isRenotice === true,
       expectedAmount: toNumber(r.expectedAmount),
       patentConfirmed: r.patentConfirmed === true,
@@ -409,7 +414,8 @@
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
     quality: "공사 품질", contractor: "시공사", status: "상태",
-    year: "연도", noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
+    year: "연도", noticeDate: "공고일", noticeNo: "공고번호", isPartner: "협약사 여부",
+    documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
     isRenotice: "재공고 건",
     awardAmount: "낙찰금액", expectedAmount: "예상금액", bidType: "입찰 종류",
     agreementNo: "협약서 발행번호", scope: "공사 범위", address: "주소",
@@ -631,8 +637,10 @@
     merged.awardDate = awardDate;
     merged.contractor = contractor;
     merged.contractorPhone = contractorPhone;
+    // 낙찰 뒤에 확인되는 값들. 같은 행에 계속 누적한다 (address·isPartner 포함)
     ["contractorContactName", "contractorMobile", "contractorAddress",
-     "contractorBusinessNo", "contractorNote", "scope", "agreementNo"].forEach(function (key) {
+     "contractorBusinessNo", "contractorNote", "scope", "agreementNo",
+     "address", "isPartner"].forEach(function (key) {
       if (data[key] != null) merged[key] = String(data[key]).trim();
     });
     if (data.thirdPatentNumbers != null || data.patentItems != null) {

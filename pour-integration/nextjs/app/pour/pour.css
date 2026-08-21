@@ -716,6 +716,22 @@
   background:#FFFBF3; border:1px solid #EBC98A; border-radius:var(--r3);
 }
 
+/* 상세·수정 위쪽 — 어느 현장을 보고 있는지와 지금 상태 */
+.pour-scope .pour-panel-subject{
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
+  padding:var(--s2) var(--s3); margin-bottom:var(--s3);
+  background:var(--head); border:1px solid var(--line); border-radius:var(--r3);
+}
+.pour-scope .pour-panel-subject-name{font-size:15px; font-weight:700; color:var(--text);}
+
+/* ① 공고 정보 · ② 낙찰 정보 두 단계를 나누는 제목 */
+.pour-scope .pour-stage-head{
+  font-size:13px; font-weight:700; color:var(--navy);
+  margin:var(--s5) 0 var(--s2); padding-bottom:var(--s2);
+  border-bottom:2px solid var(--navy);
+}
+.pour-scope .pour-stage-head:first-child{margin-top:0;}
+
 /* 구획 이름 — 패널이 길어도 스크롤 중에 위치를 알 수 있게 */
 .pour-scope .pour-sub-head{
   font-size:11.5px; font-weight:700; letter-spacing:.06em; color:var(--faint);

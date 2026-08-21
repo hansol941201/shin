@@ -341,5 +341,61 @@ test("처리 단계 열이 계산된 값을 보여 준다", () => {
   assert.strictEqual(PourRecords.displayValue(partial, column, 0), "추가 입력 필요");
 });
 
+/* ------------------------------------------------------------------ */
+
+section("6. K-APT 공고 → 낙찰 (한 현장 = 한 행에 계속 누적)");
+
+test("공고 등록 → 낙찰로 변경이 같은 행에 이어진다 (행이 늘지 않는다)", () => {
+  const store = memoryStorage();
+  const notice = PourRecords.save({
+    client: "OO아파트", city: "하남", status: "공고",
+    noticeDate: "2026-01-05", bidDate: "2026-01-20",
+    noticeNo: "K-2026-0001",
+    categoryItems: [{ group: "옥상방수", name: "옥상방수" }],
+    patentNumbers: ["10-1935719"]
+  }, store);
+  assert.strictEqual(notice.status, "공고");
+  assert.strictEqual(notice.noticeNo, "K-2026-0001");
+  assert.strictEqual(PourRecords.list(store).length, 1);
+
+  const result = PourRecords.award(notice.id, {
+    contractor: "가나건설", contractorPhone: "02-111-2222",
+    awardDate: "2026-03-02", awardAmount: "500000000",
+    address: "하남시 미사강변대로 1-2", isPartner: "예",
+    agreementNo: "HS-2026-77", patentNumbers: ["10-1935719"]
+  }, store);
+  assert.ok(result.ok, result.message);
+
+  // 같은 id · 같은 한 행 — 공고와 낙찰이 두 건으로 나뉘지 않는다
+  assert.strictEqual(result.record.id, notice.id);
+  assert.strictEqual(PourRecords.list(store).length, 1);
+
+  // 공고 때 넣은 값이 그대로 남고, 낙찰 뒤 값이 그 위에 쌓인다
+  const rec = result.record;
+  assert.strictEqual(rec.status, "낙찰");
+  assert.strictEqual(rec.noticeNo, "K-2026-0001");     // 공고 단계 값 유지
+  assert.strictEqual(rec.noticeDate, "2026-01-05");
+  assert.strictEqual(rec.contractor, "가나건설");
+  assert.strictEqual(rec.address, "하남시 미사강변대로 1-2");
+  assert.strictEqual(rec.isPartner, "예");
+  assert.strictEqual(rec.agreementNo, "HS-2026-77");
+  assert.strictEqual(PourRecords.agreementStage(rec), "정리 완료");
+});
+
+test("공고번호·협약사 여부는 값을 넣기 전에는 빈 값으로 남는다", () => {
+  // 옮겨 온 옛 자료에 임의로 값을 만들지 않기 위한 확인
+  const rec = PourRecords.normalize({ status: "낙찰", client: "옛자료" });
+  assert.strictEqual(rec.noticeNo, "");
+  assert.strictEqual(rec.isPartner, "");
+});
+
+test("협약사 여부는 협약서 발행번호와 다른 칸이다", () => {
+  const rec = PourRecords.normalize({ status: "낙찰", agreementNo: "HS-1", isPartner: "아니오" });
+  assert.strictEqual(rec.agreementNo, "HS-1");
+  assert.strictEqual(rec.isPartner, "아니오");
+  assert.strictEqual(PourRecords.FIELD_LABELS.noticeNo, "공고번호");
+  assert.strictEqual(PourRecords.FIELD_LABELS.isPartner, "협약사 여부");
+});
+
 console.log(`\n합계 ${passed + failed}건 · 통과 ${passed} · 실패 ${failed}`);
 process.exit(failed ? 1 : 0);

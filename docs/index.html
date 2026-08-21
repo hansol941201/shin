@@ -702,6 +702,22 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   background:#FFFBF3; border:1px solid #EBC98A; border-radius:var(--r3);
 }
 
+/* 상세·수정 위쪽 — 어느 현장을 보고 있는지와 지금 상태 */
+.panel-subject{
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
+  padding:var(--s2) var(--s3); margin-bottom:var(--s3);
+  background:var(--head); border:1px solid var(--line); border-radius:var(--r3);
+}
+.panel-subject-name{font-size:15px; font-weight:700; color:var(--text);}
+
+/* ① 공고 정보 · ② 낙찰 정보 두 단계를 나누는 제목 */
+.stage-head{
+  font-size:13px; font-weight:700; color:var(--navy);
+  margin:var(--s5) 0 var(--s2); padding-bottom:var(--s2);
+  border-bottom:2px solid var(--navy);
+}
+.stage-head:first-child{margin-top:0;}
+
 /* 구획 이름 — 패널이 길어도 스크롤 중에 위치를 알 수 있게 */
 .sub-head{
   font-size:11.5px; font-weight:700; letter-spacing:.06em; color:var(--faint);
@@ -962,6 +978,12 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       </div>
     </div>
 
+    <!-- 상세·수정에서만 보인다. 어느 현장을 보고 있는지와 지금 상태를 먼저 알려 준다. -->
+    <div class="edit-only panel-subject" id="panelSubject"></div>
+
+    <!-- ① 공고 정보 — 공고 단계에서 확인할 수 있는 것 -->
+    <div class="stage-head edit-only">① 공고 정보</div>
+
     <div class="sub-head">기본 정보</div>
     <div class="form-row form-row-3" id="rowBasic">
       <div><label for="fClient">아파트·단지명</label><input type="text" id="fClient" /></div>
@@ -982,6 +1004,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 
     <div class="sub-head">일정·입찰</div>
     <div class="form-row form-row-4" id="rowSchedule">
+      <div><label for="fNoticeNo">공고번호 <span class="opt">(K-APT)</span></label><input type="text" id="fNoticeNo" /></div>
       <div><label for="fNoticeDate">공고일 <span class="req">*</span></label><input type="date" id="fNoticeDate" /></div>
       <div><label for="fDueDate">서류 마감일 <span class="opt">(선택)</span></label><input type="date" id="fDueDate" /></div>
       <div><label for="fBidDate">개찰일 <span class="opt">(선택)</span></label><input type="date" id="fBidDate" /></div>
@@ -1003,21 +1026,33 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     </div>
 
     <div class="edit-only" id="patentAgreementBox">
-      <div class="sub-head">특허·협약 정보</div>
-      <div class="form-row form-row-fill">
-        <div class="span-2"><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
-        <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+      <div class="sub-head">공고문 특허·공법</div>
+      <div class="form-row form-row-1">
+        <div><label for="fNoticePatent">공고문 특허·공법 원문</label><input type="text" id="fNoticePatent" placeholder="공고문에 적힌 특허번호·특허명·공법명" /></div>
       </div>
     </div>
 
     <div class="sub-head">공사 내용</div>
     <div class="form-row form-row-fill">
       <div class="span-2"><label for="fScopes">공사범위 <span class="opt">(여러 건은 줄바꿈)</span></label><textarea id="fScopes" rows="2"></textarea></div>
-      <div class="span-2"><label for="fAddress">나머지 주소</label><input type="text" id="fAddress" /></div>
-      <div class="edit-only"><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
-      <div class="edit-only"><label for="fStatus">상태</label><select id="fStatus"></select></div>
-      <div class="edit-only"><label for="fContractor">시공사 <span class="opt">(낙찰 전환에서 입력)</span></label><input type="text" id="fContractor" /></div>
-      <div class="edit-only span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
+      <div class="span-2"><label for="fAddress">상세 주소</label><input type="text" id="fAddress" /></div>
+    </div>
+
+    <!-- ② 낙찰 정보 — 낙찰 결과가 나온 뒤에 확인할 수 있는 것.
+         새 공고 화면에서는 통째로 감춘다. 필드는 모두 기존 것을 그대로 쓴다. -->
+    <div class="edit-only" id="awardStageBox">
+      <div class="stage-head">② 낙찰 정보</div>
+      <div class="form-row form-row-fill">
+        <div><label for="fStatus">상태</label><select id="fStatus"></select></div>
+        <div><label for="fContractor">시공사</label><input type="text" id="fContractor" /></div>
+        <div><label for="fContractorPhone">시공사 전화번호</label><input type="text" id="fContractorPhone" /></div>
+        <div><label for="fAwardDate">낙찰일</label><input type="date" id="fAwardDate" /></div>
+        <div><label for="fAwardAmount">낙찰금액</label><input type="text" id="fAwardAmount" /></div>
+        <div><label for="fIsPartner">협약사 여부</label><select id="fIsPartner"></select></div>
+        <div><label for="fAgreement">협약서 발행번호</label><input type="text" id="fAgreement" /></div>
+        <div><label for="fQuality">공사 품질</label><input type="text" id="fQuality" list="qualityList" /><datalist id="qualityList"></datalist></div>
+        <div class="span-2"><label for="fRemark">비고</label><input type="text" id="fRemark" /></div>
+      </div>
     </div>
 
     <div id="editHistory" class="form-msg"></div>
@@ -2125,6 +2160,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       bidType: normalizeBidType(r.bidType),
       bidTypeRaw: String(r.bidTypeRaw || r.bidType || "").trim(),   // 원본 표기 보존
       documentDueDate: String(r.documentDueDate || "").trim(),
+      // K-APT 공고번호. 공고 단계에서 확인할 수 있는 값이라 같은 뜻의 기존 필드가 없다.
+      noticeNo: String(r.noticeNo || "").trim(),
+      // 협약사 여부 ("예" / "아니오" / 빈 값=아직 확인 안 됨).
+      // 협약서 발행번호(agreementNo)와는 다른 뜻이라 따로 둔다.
+      isPartner: String(r.isPartner || "").trim(),
       isRenotice: r.isRenotice === true,
       expectedAmount: toNumber(r.expectedAmount),
       patentConfirmed: r.patentConfirmed === true,
@@ -2253,7 +2293,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     noticePatentText: "공고문 특허·공법 원문", client: "발주처(아파트명)",
     projectNames: "공사명", phone: "전화번호", households: "세대수",
     quality: "공사 품질", contractor: "시공사", status: "상태",
-    year: "연도", noticeDate: "공고일", documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
+    year: "연도", noticeDate: "공고일", noticeNo: "공고번호", isPartner: "협약사 여부",
+    documentDueDate: "서류 마감일", bidDate: "개찰일", awardDate: "낙찰일",
     isRenotice: "재공고 건",
     awardAmount: "낙찰금액", expectedAmount: "예상금액", bidType: "입찰 종류",
     agreementNo: "협약서 발행번호", scope: "공사 범위", address: "주소",
@@ -2475,8 +2516,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     merged.awardDate = awardDate;
     merged.contractor = contractor;
     merged.contractorPhone = contractorPhone;
+    // 낙찰 뒤에 확인되는 값들. 같은 행에 계속 누적한다 (address·isPartner 포함)
     ["contractorContactName", "contractorMobile", "contractorAddress",
-     "contractorBusinessNo", "contractorNote", "scope", "agreementNo"].forEach(function (key) {
+     "contractorBusinessNo", "contractorNote", "scope", "agreementNo",
+     "address", "isPartner"].forEach(function (key) {
       if (data[key] != null) merged[key] = String(data[key]).trim();
     });
     if (data.thirdPatentNumbers != null || data.patentItems != null) {
@@ -4909,6 +4952,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   });
 
   PourRecords.STATUSES.forEach(function (s) { $("fStatus").appendChild(new Option(s, s)); });
+  // 빈 값은 "아직 확인하지 않음". 임의로 예/아니오를 정하지 않는다.
+  ["", "예", "아니오"].forEach(function (v) {
+    $("fIsPartner").appendChild(new Option(v || "—", v));
+  });
   PourRecords.QUALITY_OPTIONS.forEach(function (q) { $("qualityList").appendChild(new Option(q, q)); });
   ["전체"].concat(PourRecords.STATUSES).forEach(function (s) {
     $("patentStatusFilter").appendChild(new Option(s, s));
@@ -4935,9 +4982,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   }
 
   function clearNoticeForm() {
-    ["fClient", "fProjects", "fCity", "fPhone", "fHouseholds", "fNoticeDate",
+    ["fClient", "fProjects", "fCity", "fPhone", "fHouseholds", "fNoticeNo", "fNoticeDate",
      "fDueDate", "fBidDate", "fNoticePatent", "fAgreement", "fQuality", "fScopes",
-     "fAddress", "fRemark", "fContractor", "rebidSearch", "rebidRound", "rebidReason",
+     "fAddress", "fRemark", "fContractor", "fContractorPhone", "fAwardDate", "fAwardAmount",
+     "fIsPartner", "rebidSearch", "rebidRound", "rebidReason",
      "previousFailDate"].forEach(function (id) { $(id).value = ""; });
     $("fStatus").value = "공고";
     if (categoryPicker) categoryPicker.clear();
@@ -4983,6 +5031,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       regionField.setValue(rec.region, rec.city);
       $("fPhone").value = rec.phone;
       $("fHouseholds").value = rec.households === "" ? "" : String(rec.households);
+      $("fNoticeNo").value = rec.noticeNo;
       $("fNoticeDate").value = rec.noticeDate;
       $("fDueDate").value = rec.documentDueDate;
       $("fBidDate").value = rec.bidDate;
@@ -4993,7 +5042,23 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       $("fAddress").value = rec.address;
       $("fRemark").value = rec.remark;
       $("fContractor").value = rec.contractor;
+      $("fContractorPhone").value = rec.contractorPhone;
+      $("fAwardDate").value = rec.awardDate;
+      $("fAwardAmount").value = rec.awardAmount === "" ? "" : String(rec.awardAmount);
+      $("fIsPartner").value = rec.isPartner;
       $("fStatus").value = rec.status;
+
+      // 어느 현장을 보고 있는지와 지금 상태를 위쪽에 보여 준다
+      $("panelSubject").innerHTML = "";
+      var subjectName = document.createElement("span");
+      subjectName.className = "panel-subject-name";
+      subjectName.textContent = rec.client || "이름 없음";
+      var subjectBadge = document.createElement("span");
+      subjectBadge.className = "status-badge";
+      subjectBadge.setAttribute("data-status", rec.status);
+      subjectBadge.textContent = rec.status;
+      $("panelSubject").appendChild(subjectName);
+      $("panelSubject").appendChild(subjectBadge);
       bidType = rec.bidType;
       Array.prototype.forEach.call(document.querySelectorAll("#bidGroup .bid-btn"), function (b) {
         b.classList.toggle("is-active", b.getAttribute("data-bid") === bidType);
@@ -5076,6 +5141,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       categoryItems: categoryPicker.getValue(),
       phone: $("fPhone").value.trim(),
       households: $("fHouseholds").value,
+      noticeNo: $("fNoticeNo").value.trim(),
       noticeDate: $("fNoticeDate").value,
       documentDueDate: $("fDueDate").value,
       bidDate: $("fBidDate").value,
@@ -5087,6 +5153,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       address: $("fAddress").value.trim(),
       remark: $("fRemark").value.trim(),
       contractor: $("fContractor").value.trim(),
+      contractorPhone: $("fContractorPhone").value.trim(),
+      awardDate: $("fAwardDate").value,
+      awardAmount: $("fAwardAmount").value,
+      isPartner: $("fIsPartner").value,
       // 새 공고는 화면에서 상태를 고르지 않는다. 수정할 때만 고른 값을 쓴다.
       status: state.editingId ? $("fStatus").value : "공고",
       patentItems: patents.patentItems,
@@ -5149,8 +5219,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   // 협약서 발행번호가 핵심 처리 기준이다. 번호만 먼저 넣고 나머지는 나중에 채울 수 있다.
   var AWARD_INFO_FIELDS = [
     { key: "agreementNo", label: "협약서 발행번호", lead: true },
+    { key: "isPartner", label: "협약사 여부", type: "select", options: ["", "예", "아니오"] },
     { key: "awardDate", label: "낙찰일", type: "date" },
     { key: "awardAmount", label: "낙찰금액", money: true },
+    // 기존 address 필드를 그대로 쓴다 (같은 뜻의 새 필드를 만들지 않는다)
+    { key: "address", label: "상세 주소" },
     { key: "categories", label: "최종 공종" },
     { key: "status", label: "낙찰 결과 상태", type: "select", options: PourRecords.STATUSES },
     { key: "scopes", label: "최종 공사범위" },
@@ -5176,7 +5249,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       var input;
       if (f.type === "select") {
         input = document.createElement("select");
-        f.options.forEach(function (o) { input.appendChild(new Option(o, o)); });
+        // 빈 값은 "아직 확인하지 않음". 임의로 정하지 않는다.
+        f.options.forEach(function (o) { input.appendChild(new Option(o || "—", o)); });
       } else {
         input = document.createElement("input");
         input.type = f.type || "text";

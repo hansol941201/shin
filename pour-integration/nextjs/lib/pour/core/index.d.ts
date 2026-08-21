@@ -70,6 +70,10 @@ export interface PourRecord {
   duplicateOf: string;
   noticeDate: string;
   documentDueDate: string;
+  /** K-APT 공고번호 (공고 단계에서 확인) */
+  noticeNo: string;
+  /** 협약사 여부 ("예"/"아니오"/빈 값). agreementNo 와는 다른 뜻이다 */
+  isPartner: string;
   bidDate: string;
   bidType: string;
   bidTypeRaw: string;

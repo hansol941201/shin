@@ -19,8 +19,11 @@ const CONTRACTOR_FIELDS = [
 // 협약서 발행번호가 핵심 처리 기준이다. 번호만 먼저 넣고 나머지는 나중에 채울 수 있다.
 const INFO_FIELDS = [
   { key: "agreementNo", label: "협약서 발행번호" },
+  { key: "isPartner", label: "협약사 여부", options: ["", "예", "아니오"] },
   { key: "awardDate", label: "낙찰일", type: "date" },
   { key: "awardAmount", label: "낙찰금액", money: true },
+  // 기존 address 필드를 그대로 쓴다 (같은 뜻의 새 필드를 만들지 않는다)
+  { key: "address", label: "상세 주소" },
   { key: "categories", label: "최종 공종" },
   { key: "status", label: "낙찰 결과 상태", select: true },
   { key: "scopes", label: "최종 공사범위" },
@@ -59,8 +62,10 @@ export default function AwardPanel({
       contractorAddress: record.contractorAddress,
       contractorBusinessNo: record.contractorBusinessNo,
       contractorNote: record.contractorNote,
+      isPartner: record.isPartner,
       awardDate: record.awardDate,
       awardAmount: record.awardAmount === "" ? "" : String(record.awardAmount),
+      address: record.address,
       categories: record.categories.join(", "),
       status: "낙찰",
       scopes: (record.scopes || []).join("\n"),
@@ -121,12 +126,17 @@ export default function AwardPanel({
     const phone = "phone" in field && field.phone;
     const money = "money" in field && field.money;
     const isSelect = "select" in field && field.select;
+    const options = "options" in field ? (field.options as readonly string[]) : undefined;
     const datalist = "datalist" in field ? field.datalist : undefined;
     return (
       <div key={key}>
         {/* 협약서 발행번호만 있으면 저장되므로 필수 표시는 두지 않는다 */}
         <label htmlFor={`aw-${key}`}>{field.label}</label>
-        {isSelect ? (
+        {options ? (
+          <select id={`aw-${key}`} value={values[key] || ""} onChange={(e) => set(key, e.target.value)}>
+            {options.map((v) => <option key={v} value={v}>{v || "—"}</option>)}
+          </select>
+        ) : isSelect ? (
           <select id={`aw-${key}`} value={values[key] || "낙찰"} onChange={(e) => set(key, e.target.value)}>
             {PourRecords.STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>

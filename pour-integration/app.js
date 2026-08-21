@@ -216,6 +216,10 @@
   });
 
   PourRecords.STATUSES.forEach(function (s) { $("fStatus").appendChild(new Option(s, s)); });
+  // 빈 값은 "아직 확인하지 않음". 임의로 예/아니오를 정하지 않는다.
+  ["", "예", "아니오"].forEach(function (v) {
+    $("fIsPartner").appendChild(new Option(v || "—", v));
+  });
   PourRecords.QUALITY_OPTIONS.forEach(function (q) { $("qualityList").appendChild(new Option(q, q)); });
   ["전체"].concat(PourRecords.STATUSES).forEach(function (s) {
     $("patentStatusFilter").appendChild(new Option(s, s));
@@ -242,9 +246,10 @@
   }
 
   function clearNoticeForm() {
-    ["fClient", "fProjects", "fCity", "fPhone", "fHouseholds", "fNoticeDate",
+    ["fClient", "fProjects", "fCity", "fPhone", "fHouseholds", "fNoticeNo", "fNoticeDate",
      "fDueDate", "fBidDate", "fNoticePatent", "fAgreement", "fQuality", "fScopes",
-     "fAddress", "fRemark", "fContractor", "rebidSearch", "rebidRound", "rebidReason",
+     "fAddress", "fRemark", "fContractor", "fContractorPhone", "fAwardDate", "fAwardAmount",
+     "fIsPartner", "rebidSearch", "rebidRound", "rebidReason",
      "previousFailDate"].forEach(function (id) { $(id).value = ""; });
     $("fStatus").value = "공고";
     if (categoryPicker) categoryPicker.clear();
@@ -290,6 +295,7 @@
       regionField.setValue(rec.region, rec.city);
       $("fPhone").value = rec.phone;
       $("fHouseholds").value = rec.households === "" ? "" : String(rec.households);
+      $("fNoticeNo").value = rec.noticeNo;
       $("fNoticeDate").value = rec.noticeDate;
       $("fDueDate").value = rec.documentDueDate;
       $("fBidDate").value = rec.bidDate;
@@ -300,7 +306,23 @@
       $("fAddress").value = rec.address;
       $("fRemark").value = rec.remark;
       $("fContractor").value = rec.contractor;
+      $("fContractorPhone").value = rec.contractorPhone;
+      $("fAwardDate").value = rec.awardDate;
+      $("fAwardAmount").value = rec.awardAmount === "" ? "" : String(rec.awardAmount);
+      $("fIsPartner").value = rec.isPartner;
       $("fStatus").value = rec.status;
+
+      // 어느 현장을 보고 있는지와 지금 상태를 위쪽에 보여 준다
+      $("panelSubject").innerHTML = "";
+      var subjectName = document.createElement("span");
+      subjectName.className = "panel-subject-name";
+      subjectName.textContent = rec.client || "이름 없음";
+      var subjectBadge = document.createElement("span");
+      subjectBadge.className = "status-badge";
+      subjectBadge.setAttribute("data-status", rec.status);
+      subjectBadge.textContent = rec.status;
+      $("panelSubject").appendChild(subjectName);
+      $("panelSubject").appendChild(subjectBadge);
       bidType = rec.bidType;
       Array.prototype.forEach.call(document.querySelectorAll("#bidGroup .bid-btn"), function (b) {
         b.classList.toggle("is-active", b.getAttribute("data-bid") === bidType);
@@ -383,6 +405,7 @@
       categoryItems: categoryPicker.getValue(),
       phone: $("fPhone").value.trim(),
       households: $("fHouseholds").value,
+      noticeNo: $("fNoticeNo").value.trim(),
       noticeDate: $("fNoticeDate").value,
       documentDueDate: $("fDueDate").value,
       bidDate: $("fBidDate").value,
@@ -394,6 +417,10 @@
       address: $("fAddress").value.trim(),
       remark: $("fRemark").value.trim(),
       contractor: $("fContractor").value.trim(),
+      contractorPhone: $("fContractorPhone").value.trim(),
+      awardDate: $("fAwardDate").value,
+      awardAmount: $("fAwardAmount").value,
+      isPartner: $("fIsPartner").value,
       // 새 공고는 화면에서 상태를 고르지 않는다. 수정할 때만 고른 값을 쓴다.
       status: state.editingId ? $("fStatus").value : "공고",
       patentItems: patents.patentItems,
@@ -456,8 +483,11 @@
   // 협약서 발행번호가 핵심 처리 기준이다. 번호만 먼저 넣고 나머지는 나중에 채울 수 있다.
   var AWARD_INFO_FIELDS = [
     { key: "agreementNo", label: "협약서 발행번호", lead: true },
+    { key: "isPartner", label: "협약사 여부", type: "select", options: ["", "예", "아니오"] },
     { key: "awardDate", label: "낙찰일", type: "date" },
     { key: "awardAmount", label: "낙찰금액", money: true },
+    // 기존 address 필드를 그대로 쓴다 (같은 뜻의 새 필드를 만들지 않는다)
+    { key: "address", label: "상세 주소" },
     { key: "categories", label: "최종 공종" },
     { key: "status", label: "낙찰 결과 상태", type: "select", options: PourRecords.STATUSES },
     { key: "scopes", label: "최종 공사범위" },
@@ -483,7 +513,8 @@
       var input;
       if (f.type === "select") {
         input = document.createElement("select");
-        f.options.forEach(function (o) { input.appendChild(new Option(o, o)); });
+        // 빈 값은 "아직 확인하지 않음". 임의로 정하지 않는다.
+        f.options.forEach(function (o) { input.appendChild(new Option(o || "—", o)); });
       } else {
         input = document.createElement("input");
         input.type = f.type || "text";

@@ -42,6 +42,8 @@ RENAME = {
     "panel-close": "pour-panel-close", "panel-body": "pour-panel-body",
     "panel-foot": "pour-panel-foot", "rebid-check": "pour-rebid-check",
     "rebid-box": "pour-rebid-box", "sub-head": "pour-sub-head",
+    "panel-subject": "pour-panel-subject", "panel-subject-name": "pour-panel-subject-name",
+    "stage-head": "pour-stage-head",
     "form-row": "pour-form-row", "form-row-1": "pour-form-row-1",
     "form-row-3": "pour-form-row-3", "form-row-4": "pour-form-row-4",
     "form-row-fill": "pour-form-row-fill", "form-msg": "pour-form-msg",
