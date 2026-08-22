@@ -510,25 +510,21 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .grid-empty{padding:40px var(--s4); text-align:center; color:var(--faint); font-size:13.5px;}
 
 /* 상태 배지 — 테두리 없이 옅은 바탕과 진한 글자로만 */
+/* 상태와 다특허 표시를 한 칸에서 같은 계열로 통일한다.
+   상태값과 개수 계산은 그대로 두고 보이는 모양만 정한다.
+   상태마다 색을 달리하지 않는다 (연회색 바탕 · 네이비 글씨 한 가지). */
 .status-badge{
-  display:inline-block; padding:2px 9px; font-size:12px; font-weight:700;
+  display:inline-block; padding:2px 9px; font-size:12px; font-weight:600;
   border-radius:999px; white-space:nowrap;
+  background:#F3F5F8; color:var(--navy); border:1px solid #E3E8EF;
 }
-.status-badge[data-status="낙찰"]{background:#E4F4EA; color:#12693A;}
-.status-badge[data-status="공고"]{background:#E6EEFC; color:#1D4ED8;}
-.status-badge[data-status="재공고"]{background:#F1E7FD; color:#7E22CE;}
-.status-badge[data-status="유찰"]{background:#FDF0DF; color:#92400E;}
-.status-badge[data-status="공고취소"]{background:#EEEFF2; color:#52525B;}
-.status-badge[data-status="타공법 낙찰"]{background:#F1ECE4; color:#6B5233;}
 
+/* 상태 바로 옆에 붙는 "다특허 · 총 N개". 상태보다 한 단계 여린 톤이다. */
 .multi-badge{
-  display:inline-block; margin-left:5px; padding:2px 8px; font-size:11.5px; font-weight:700;
+  display:inline-block; margin-left:4px; padding:2px 8px; font-size:11.5px; font-weight:600;
   border-radius:999px; white-space:nowrap;
+  background:var(--white); color:#5C6675; border:1px solid #E3E8EF;
 }
-.multi-badge[data-badge="pour"]{background:#E6EEFC; color:#1D4ED8;}
-.multi-badge[data-badge="mixed"]{background:#F1E7FD; color:#7E22CE;}
-.multi-badge[data-badge="third"]{background:#EEEFF2; color:#52525B;}
-.multi-badge[data-badge="unknown"]{background:#FDF0DF; color:#92400E;}
 
 /* ------------------------------------------------- 오른쪽 슬라이드 패널 */
 .panel-back{
