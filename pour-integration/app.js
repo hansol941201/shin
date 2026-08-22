@@ -318,7 +318,8 @@
       subjectName.className = "panel-subject-name";
       subjectName.textContent = rec.client || "이름 없음";
       var subjectBadge = document.createElement("span");
-      subjectBadge.className = "status-badge";
+      // 상세 화면 전용 클래스. 목록 표(.status-badge) 와 따로 관리한다.
+      subjectBadge.className = "panel-status";
       subjectBadge.setAttribute("data-status", rec.status);
       subjectBadge.textContent = rec.status;
       $("panelSubject").appendChild(subjectName);

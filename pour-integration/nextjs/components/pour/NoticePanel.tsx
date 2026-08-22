@@ -245,7 +245,7 @@ export default function NoticePanel({
           {record && (
             <div className="pour-panel-subject">
               <span className="pour-panel-subject-name">{record.client || "이름 없음"}</span>
-              <span className="pour-status-badge" data-status={record.status}>{record.status}</span>
+              <span className="pour-panel-status" data-status={record.status}>{record.status}</span>
             </div>
           )}
           {record && <div className="pour-stage-head">① 공고 정보</div>}
