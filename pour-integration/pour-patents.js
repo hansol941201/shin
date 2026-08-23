@@ -60,6 +60,50 @@
 
   /* ------------------------------------------------------- 엑셀 열 인식 */
 
+  /**
+   * 개별 특허 한 건의 구분. 현장 전체의 구분과는 다른 것이다.
+   *   POUR   — 우리 특허
+   *   타사   — 다른 회사 특허
+   *   미분류 — 처음 보는 번호. 업체를 아직 확인하지 못했다 (추정하지 않는다)
+   */
+  var PATENT_TYPES = ["POUR", "타사", "미분류"];
+  var TYPE_POUR = "POUR", TYPE_THIRD = "타사", TYPE_UNKNOWN = "미분류";
+
+  /**
+   * 저장된 마스터 한 건을 오늘의 모양으로 맞춘다.
+   *
+   * patentType 이 없는 옛 자료는 POUR 로 본다. 이 저장소는 지금까지
+   * "POUR 특허 목록" 으로만 쓰여 왔고(find() 가 곧 POUR 확인이었다),
+   * 미분류로 돌리면 이미 확인된 특허가 갑자기 미확인으로 보이기 때문이다.
+   * 추정이 아니라 기존 쓰임을 그대로 이어받는 것이다.
+   */
+  function normalizeMaster(rec) {
+    var r = rec || {};
+    var type = String(r.patentType || "").trim();
+    if (PATENT_TYPES.indexOf(type) < 0) type = TYPE_POUR;
+    return {
+      number: r.number,
+      name: String(r.name || "").trim(),
+      categories: Array.isArray(r.categories) ? r.categories : (r.category ? [r.category] : []),
+      category: String(r.category || "").trim(),
+      remark: String(r.remark || "").trim(),
+      prefix: String(r.prefix || "").trim(),
+      active: r.active !== false,
+      company: String(r.company || "").trim(),
+      // 아래 넷이 이번에 더해진 칸이다
+      patentType: type,
+      methodName: String(r.methodName || "").trim(),
+      firstSeenAt: r.firstSeenAt || r.createdAt || "",
+      lastSeenAt: r.lastSeenAt || r.updatedAt || ""
+    };
+  }
+
+  function today() {
+    var d = new Date();
+    function two(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate());
+  }
+
   var COLUMN_ALIASES = {
     number: ["특허번호", "POUR특허번호", "특허", "특허번호_", "등록번호", "특허등록번호"],
     name:   ["특허명", "공법명", "특허공법명", "명칭", "기술명", "특허명공법명"],
@@ -199,7 +243,8 @@
     try {
       var raw = s.getItem(STORAGE_KEY);
       var parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(normalizeMaster);
     } catch (e) { return []; }
   }
 
@@ -223,20 +268,107 @@
       var at = byNumber[rec.number];
       if (at == null) {
         byNumber[rec.number] = current.length;
-        current.push(rec);
+        current.push(normalizeMaster(rec));
         inserted++;
       } else {
         var before = current[at];
         var changed = before.name !== rec.name || before.category !== rec.category ||
                       before.remark !== rec.remark || before.prefix !== rec.prefix ||
                       before.active !== rec.active;
-        current[at] = rec;
+        // 엑셀에 없는 칸(구분·공법명·확인일)은 업로드가 지우지 않는다
+        var next = normalizeMaster(rec);
+        if (!rec.patentType) next.patentType = before.patentType;
+        if (!next.methodName) next.methodName = before.methodName;
+        next.firstSeenAt = before.firstSeenAt || next.firstSeenAt;
+        next.lastSeenAt = before.lastSeenAt || next.lastSeenAt;
+        if (!next.company) next.company = before.company;
+        current[at] = next;
         if (changed) updated++;
       }
     });
 
     writeStore(current, storage);
     return { inserted: inserted, updated: updated, total: current.length };
+  }
+
+  /**
+   * 현장에서 본 특허번호를 마스터에 이어 붙인다.
+   *
+   *   · 이미 있으면  → 마지막 확인일만 새로 찍는다 (업체명·공법명은 건드리지 않는다)
+   *   · 처음 보면    → 번호만 담고 "미분류" 로 등록한다 (업체명을 추정하지 않는다)
+   *
+   * 현장 쪽 자료는 이 함수가 손대지 않는다. 마스터에만 쌓인다.
+   *
+   * @param items  특허 항목 배열 또는 번호 배열
+   * @param storage 저장소
+   * @param seenAt 확인일 (기본: 오늘)
+   * @returns {{registered:number, touched:number, total:number}}
+   */
+  /**
+   * 구분이 POUR 인 것만 돌려준다.
+   *
+   * 마스터에는 이제 타사·미분류 특허도 함께 쌓인다. POUR 특허를 고르거나
+   * POUR 특허별 실적을 볼 때 그것들이 섞여 들어오면 안 되므로, 그런 자리에서는
+   * 이 함수를 쓴다. (모든 특허가 필요하면 list() 를 그대로 쓰면 된다)
+   */
+  function listPour(storage) {
+    return readStore(storage).filter(function (r) { return r.patentType === TYPE_POUR; });
+  }
+
+  function noteSeen(items, storage, seenAt) {
+    var when = seenAt || today();
+    var current = readStore(storage);
+    var byNumber = {};
+    current.forEach(function (rec, i) { byNumber[rec.number] = i; });
+
+    var registered = 0, touched = 0;
+    (items || []).forEach(function (item) {
+      if (!item) return;
+      var raw = item.number != null ? item.number : item;
+      var number = normalizeNumber(raw);
+      if (!number) return;
+
+      var at = byNumber[number];
+      if (at == null) {
+        byNumber[number] = current.length;
+        current.push(normalizeMaster({
+          number: number,
+          // 업체명·공법명은 비워 둔다. 확인되기 전까지 지어내지 않는다.
+          patentType: TYPE_UNKNOWN,
+          firstSeenAt: when,
+          lastSeenAt: when
+        }));
+        registered++;
+        return;
+      }
+      var rec = current[at];
+      if (!rec.firstSeenAt) rec.firstSeenAt = when;
+      if (rec.lastSeenAt !== when) { rec.lastSeenAt = when; touched++; }
+    });
+
+    writeStore(current, storage);
+    return { registered: registered, touched: touched, total: current.length };
+  }
+
+  /**
+   * 특허번호 한 건의 구분을 알아낸다. 현장 전체의 구분과 혼동하지 말 것.
+   *
+   * 마스터에 확실한 구분(POUR·타사)이 있으면 그 값을 쓴다. 마스터가 아직
+   * 미분류이거나 등재 전이면, 그 현장에서 사람이 고른 값(fallbackKind)을 쓴다.
+   *
+   * @param number       특허번호
+   * @param storage      저장소
+   * @param fallbackKind "POUR" | "THIRD_PARTY" (현장 항목의 kind)
+   */
+  function typeOf(number, storage, fallbackKind) {
+    var n = normalizeNumber(number);
+    var master = n ? find(n, storage) : null;
+    if (master && master.patentType && master.patentType !== TYPE_UNKNOWN) {
+      return master.patentType;
+    }
+    if (fallbackKind === "POUR") return TYPE_POUR;
+    if (fallbackKind) return TYPE_THIRD;
+    return master ? master.patentType : TYPE_UNKNOWN;
   }
 
   /** 엑셀 한 건을 통째로 처리한다 (파싱 + 저장). */
@@ -278,7 +410,8 @@
     var q = String(query == null ? "" : query).trim();
     if (!q) return [];
     var max = limit || 10;
-    var records = readStore(storage);
+    // POUR 특허를 고르는 자리다. 자동으로 쌓인 타사·미분류는 여기 나오지 않는다.
+    var records = listPour(storage);
     var digits = q.replace(/[^0-9]/g, "");
     var text = q.toUpperCase();
     var scored = [];
@@ -326,7 +459,8 @@
 
   /** 입력칸이 비어 있을 때 보여줄 전체 목록 (최근 등록 순서대로 최대 limit개). */
   function browse(limit, storage) {
-    return readStore(storage).slice(0, limit || 10).map(function (rec) {
+    // search() 와 같은 자리에서 쓰인다. POUR 특허만 보여 준다.
+    return listPour(storage).slice(0, limit || 10).map(function (rec) {
       return {
         number: rec.number, name: rec.name, category: rec.category,
         label: [formatNumber(rec.number), rec.name, rec.category].filter(Boolean).join(" · ")
@@ -376,6 +510,13 @@
     search: search,
     browse: browse,
     find: find,
+    noteSeen: noteSeen,
+    listPour: listPour,
+    typeOf: typeOf,
+    PATENT_TYPES: PATENT_TYPES,
+    TYPE_POUR: TYPE_POUR,
+    TYPE_THIRD: TYPE_THIRD,
+    TYPE_UNKNOWN: TYPE_UNKNOWN,
     categoriesFor: categoriesFor,
     list: readStore,
     clear: function (storage) { writeStore([], storage); }

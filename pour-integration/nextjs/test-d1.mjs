@@ -15,6 +15,7 @@ import Database from "better-sqlite3";
 const require = createRequire(import.meta.url);
 const { listRecords, upsertRecords, listPatents, upsertPatents } =
   require("./.tmp-build/lib/pour/store.js");
+const { migratePourSchema } = require("./.tmp-build/lib/pour/migrate.js");
 const PourRecords = require("./lib/pour/core/pour-records.js");
 
 let passed = 0, failed = 0;
@@ -82,6 +83,8 @@ db.exec(`
 `);
 
 const DB = d1(db);
+// 옛 스키마로 만든 표에 순방향 마이그레이션을 돌린다 (운영이 거치는 길과 같다)
+await migratePourSchema(DB);
 const beforeCount = db.prepare("SELECT COUNT(*) AS n FROM projects").get().n;
 
 section("1. 기존 자료 읽기");

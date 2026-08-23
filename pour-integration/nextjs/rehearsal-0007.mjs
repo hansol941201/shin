@@ -75,6 +75,7 @@ section("1. 0007 적용 전 (운영 현재 모습 재현)");
 // 0002~0006 까지 적용된 상태 = 0007 의 두 열만 없는 상태
 const BEFORE_COLUMNS = PROJECT_COLUMNS
   .filter(([name]) => name !== "notice_no" && name !== "is_partner");
+// 특허 마스터도 0008 적용 전 모습으로 만든다 (열 넷이 없는 상태)
 db.exec(`
   CREATE TABLE projects (
     id TEXT PRIMARY KEY, client TEXT, region TEXT, city TEXT,
@@ -87,8 +88,23 @@ db.exec(`
 BEFORE_COLUMNS.forEach(([name, type]) => {
   db.exec(`ALTER TABLE projects ADD COLUMN ${name} ${type}`);
 });
-// 0002 가 만들어 둔 특허·이력 표 (0007 이전에 이미 있는 것들)
-db.exec(readFileSync("./drizzle/0002_pour_integration.sql", "utf8"));
+// 0002 가 만들어 둔 특허·이력 표를 0008 이전 모습으로 만든다
+// (0002 원본에는 새 열이 없다. 운영이 지금 이 모습이다)
+db.exec(`
+  CREATE TABLE pour_patents (
+    number TEXT PRIMARY KEY, display TEXT, name TEXT, categories TEXT,
+    company TEXT, prefix TEXT, remark TEXT, active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT, updated_at TEXT);
+  CREATE TABLE pour_project_patents (
+    id TEXT PRIMARY KEY, project_id TEXT NOT NULL, kind TEXT NOT NULL, number TEXT NOT NULL,
+    display TEXT, name TEXT, method TEXT, company TEXT, category TEXT, remark TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT, updated_at TEXT);
+  CREATE UNIQUE INDEX uq_ppp_project_kind_number
+    ON pour_project_patents (project_id, kind, number);
+  CREATE TABLE pour_project_history (
+    id TEXT PRIMARY KEY, project_id TEXT NOT NULL, changed_at TEXT NOT NULL,
+    action TEXT, status_before TEXT, status_after TEXT, changes_json TEXT, created_at TEXT);
+`);
 // 운영에 이미 있던 자료 두 건 (엑셀 이전분보다 먼저 있던 행)
 db.exec(`
   INSERT INTO projects (id, client, region, city, project_name, phone, households,
@@ -121,9 +137,21 @@ await test("적용 전에는 notice_no · is_partner 열이 없다", () => {
 section("2. 0007 마이그레이션 적용");
 
 const result = await migratePourSchema(DB);
-await test("notice_no · is_partner 두 열만 더해졌다", () => {
-  assert.deepStrictEqual(result.addedColumns, ["notice_no", "is_partner"], JSON.stringify(result));
+await test("더해진 열이 0007·0008 이 말하는 것과 정확히 같다", () => {
+  assert.deepStrictEqual(result.addedColumns, [
+    // 0007 — 공고번호 · 협약사 여부
+    "notice_no", "is_partner",
+    // 0008 — 특허 마스터의 구분 · 공법명 · 확인일
+    "patent_type", "method_name", "first_seen_at", "last_seen_at"
+  ], JSON.stringify(result));
 });
+await test("특허 마스터에도 열 넷이 더해졌다", () => {
+  const cols = db.prepare("PRAGMA table_info(pour_patents)").all().map((c) => c.name);
+  ["patent_type", "method_name", "first_seen_at", "last_seen_at"].forEach((c) => {
+    assert.ok(cols.includes(c), `${c} 열이 없다`);
+  });
+});
+
 await test("기존 열이 하나도 사라지지 않았다", () => {
   const after = cols();
   beforeColumns.forEach((c) => assert.ok(after.includes(c), `${c} 열이 사라졌다`));

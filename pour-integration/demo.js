@@ -768,7 +768,7 @@
 
   function renderPatentSection() {
     var records = PourRecords.list(storage);
-    var tabs = PourRecords.patentTabs(PourPatents.list(storage), records);
+    var tabs = PourRecords.patentTabs(PourPatents.listPour(storage), records);
 
     if (!tabs.length) {
       $("patentTabs").innerHTML = "";
@@ -796,7 +796,7 @@
   function renderPatentTable() {
     if (!activeTab) return;
     var records = PourRecords.list(storage);
-    var tabs = PourRecords.patentTabs(PourPatents.list(storage), records);
+    var tabs = PourRecords.patentTabs(PourPatents.listPour(storage), records);
     var tab = tabs.filter(function (t) { return t.number === activeTab; })[0];
     var rows = PourRecords.recordsForPatent(activeTab, records);
 
@@ -960,7 +960,7 @@
 
   $("patentXlsxBtn").addEventListener("click", function () {
     var records = PourRecords.list(storage);
-    var tabs = PourRecords.patentTabs(PourPatents.list(storage), records);
+    var tabs = PourRecords.patentTabs(PourPatents.listPour(storage), records);
     var wb = PourExport.buildPatentWorkbook(tabs, records);
     if (!wb) return alert("엑셀 라이브러리를 불러오지 못했습니다. CSV를 사용해 주세요.");
     PourExport.downloadWorkbook(wb, "특허별-실적.xlsx");

@@ -82,7 +82,12 @@ export async function listPatents(db: D1Like): Promise<PatentRecord[]> {
       company: String(row.company || ""),
       prefix: String(row.prefix || ""),
       remark: String(row.remark || ""),
-      active: row.active !== 0
+      active: row.active !== 0,
+      // 구분이 비어 있는 옛 자료는 POUR 로 본다 (이 표는 지금까지 POUR 특허 목록이었다)
+      patentType: String(row.patent_type || "") || "POUR",
+      methodName: String(row.method_name || ""),
+      firstSeenAt: String(row.first_seen_at || ""),
+      lastSeenAt: String(row.last_seen_at || "")
     };
   });
 }
@@ -211,20 +216,27 @@ export async function upsertPatents(db: D1Like, patents: PatentRecord[]): Promis
   for (const patent of patents) {
     const number = String(patent.number || "").trim();
     if (!number) continue;
-    const exists = await db.prepare("SELECT number FROM pour_patents WHERE number = ?")
-      .bind(number).first<{ number: string }>();
+    const exists = await db.prepare(
+      "SELECT number, patent_type, method_name, first_seen_at, last_seen_at FROM pour_patents WHERE number = ?")
+      .bind(number).first<{
+        number: string; patent_type: string | null; method_name: string | null;
+        first_seen_at: string | null; last_seen_at: string | null;
+      }>();
     const categories = (patent.categories && patent.categories.length
       ? patent.categories
       : String(patent.category || "").split(",").map((s) => s.trim()).filter(Boolean)).join("\n");
 
     await db.prepare(
       `INSERT INTO pour_patents
-         (number, display, name, categories, company, prefix, remark, active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         (number, display, name, categories, company, prefix, remark, active, created_at, updated_at,
+          patent_type, method_name, first_seen_at, last_seen_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(number) DO UPDATE SET
          display = excluded.display, name = excluded.name, categories = excluded.categories,
          company = excluded.company, prefix = excluded.prefix, remark = excluded.remark,
-         active = excluded.active, updated_at = excluded.updated_at`
+         active = excluded.active, updated_at = excluded.updated_at,
+         patent_type = excluded.patent_type, method_name = excluded.method_name,
+         first_seen_at = excluded.first_seen_at, last_seen_at = excluded.last_seen_at`
     ).bind(
       number,
       `제10-${number}호`,
@@ -235,7 +247,12 @@ export async function upsertPatents(db: D1Like, patents: PatentRecord[]): Promis
       patent.remark || "",
       patent.active === false ? 0 : 1,
       nowStamp(),
-      nowStamp()
+      nowStamp(),
+      // 이미 있던 구분·확인일은 지우지 않는다 (넘어온 값이 있을 때만 바꾼다)
+      patent.patentType || exists?.patent_type || "POUR",
+      patent.methodName || exists?.method_name || "",
+      patent.firstSeenAt || exists?.first_seen_at || "",
+      patent.lastSeenAt || exists?.last_seen_at || ""
     ).run();
 
     if (exists) result.updated++; else result.inserted++;

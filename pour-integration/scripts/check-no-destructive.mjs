@@ -90,8 +90,10 @@ const listFrom = (file, marker) => {
   return (body.match(/\["([a-z_]+)",/g) || []).map((m) => m.slice(2, -2));
 };
 
-const declared = listFrom(join(HERE, "..", "nextjs", "lib", "pour", "migrate.ts"), "PROJECT_COLUMNS");
-const runner = listFrom(join(HERE, "..", "nextjs", "scripts", "pour-migrate.mjs"), "NEW_COLUMNS");
+const migrateTs = join(HERE, "..", "nextjs", "lib", "pour", "migrate.ts");
+const runnerJs = join(HERE, "..", "nextjs", "scripts", "pour-migrate.mjs");
+const declared = listFrom(migrateTs, "PROJECT_COLUMNS").concat(listFrom(migrateTs, "PATENT_COLUMNS"));
+const runner = listFrom(runnerJs, "NEW_COLUMNS").concat(listFrom(runnerJs, "PATENT_COLUMNS"));
 const missingInRunner = declared.filter((c) => !runner.includes(c));
 if (missingInRunner.length) {
   console.log(`  ✗ pour-migrate.mjs 에 빠진 열: ${missingInRunner.join(", ")}`);

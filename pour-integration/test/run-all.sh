@@ -7,6 +7,7 @@ node pour-integration/test/edit.test.js
 node pour-integration/test/multipatent.test.js
 node pour-integration/test/categories.test.js
 node pour-integration/test/agreement.test.js
+node pour-integration/test/patent-master.test.js
 node pour-integration/test/real-excel.test.js
 node pour-integration/test/migration.test.mjs
 node pour-integration/test/import-records.test.mjs

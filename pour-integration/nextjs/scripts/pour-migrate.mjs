@@ -43,6 +43,14 @@ const NEW_COLUMNS = [
   ["is_partner", "TEXT"]
 ];
 
+/** 특허 마스터(pour_patents)에 더할 열. projects 와 표가 다르므로 따로 둔다. */
+const PATENT_COLUMNS = [
+  ["patent_type", "TEXT"],
+  ["method_name", "TEXT"],
+  ["first_seen_at", "TEXT"],
+  ["last_seen_at", "TEXT"]
+];
+
 function arg(name, fallback) {
   const at = process.argv.indexOf(`--${name}`);
   return at >= 0 ? process.argv[at + 1] : fallback;
@@ -78,6 +86,20 @@ for (const [column, type] of NEW_COLUMNS) {
   if (existing.has(column)) { skipped.push(column); continue; }
   d1(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   added.push(column);
+}
+
+// 특허 마스터에도 없는 열만 더한다 (표가 아직 없으면 조용히 건너뛴다)
+const patentInfo = d1("PRAGMA table_info(pour_patents)");
+const patentExisting = new Set((patentInfo?.[0]?.results || []).map((c) => c.name));
+if (patentExisting.size) {
+  for (const [column, type] of PATENT_COLUMNS) {
+    if (patentExisting.has(column)) { skipped.push(column); continue; }
+    d1(`ALTER TABLE pour_patents ADD COLUMN ${column} ${type}`);
+    added.push(column);
+  }
+} else {
+  console.log("pour_patents 표가 아직 없어 특허 마스터 열은 건너뜁니다 "
+    + "(0002_pour_integration.sql 을 먼저 실행하세요).");
 }
 
 const after = d1(`SELECT COUNT(*) AS n FROM ${table}`);

@@ -263,8 +263,56 @@
     setRegionOptions([]);
     regionField.clear();
     patentEditor.clear();
+    if ($("patentBreakdownBox")) $("patentBreakdownBox").innerHTML = "";
     $("editHistory").innerHTML = "";
     $("panelMsg").textContent = "";
+  }
+
+  /**
+   * 상세 화면에서만 개별 특허를 펼쳐 보여 준다 (목록은 "다특허 · 총 N개" 그대로).
+   * 현장 전체 구분과 개별 특허 구분을 나란히 보여, 둘을 헷갈리지 않게 한다.
+   */
+  function renderPatentBreakdown(rec) {
+    var box = $("patentBreakdownBox");
+    if (!box) return;
+    box.innerHTML = "";
+    var rows = PourRecords.patentBreakdown(rec, storage);
+    if (!rows.length) return;
+
+    var head = document.createElement("div");
+    head.className = "sub-head";
+    head.textContent = "특허 내역";
+    box.appendChild(head);
+
+    var siteClass = PourRecords.sitePatentClass(rec, storage);
+    var summary = document.createElement("div");
+    summary.className = "patent-site-class";
+    summary.innerHTML = "현장 구분 <b>" + siteClass + "</b>" +
+      "<span class=\"opt\"> · 이 현장에 들어간 특허 " + rows.length + "개</span>";
+    box.appendChild(summary);
+
+    var table = document.createElement("table");
+    table.className = "patent-breakdown";
+    var body = document.createElement("tbody");
+    rows.forEach(function (p) {
+      var tr = document.createElement("tr");
+      [p.display, p.company || "—", p.method || p.name || "—", p.type].forEach(function (text, i) {
+        var td = document.createElement("td");
+        if (i === 3) {
+          var tag = document.createElement("span");
+          tag.className = "patent-type";
+          tag.setAttribute("data-type", text);
+          tag.textContent = text;
+          td.appendChild(tag);
+        } else {
+          td.textContent = text;
+        }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    box.appendChild(table);
   }
 
   function openNotice(id) {
@@ -329,6 +377,8 @@
         b.classList.toggle("is-active", b.getAttribute("data-bid") === bidType);
       });
       patentEditor.setValue(rec);
+
+      renderPatentBreakdown(rec);
 
       $("editHistory").innerHTML = rec.history.length
         ? "<b>수정 이력</b>" + rec.history.map(function (h) {
@@ -746,7 +796,7 @@
 
       if (kind === "특허별") {
         var records = PourRecords.list(storage);
-        var tabs = PourRecords.patentTabs(PourPatents.list(storage), records);
+        var tabs = PourRecords.patentTabs(PourPatents.listPour(storage), records);
         var wb = PourExport.buildPatentWorkbook(tabs, records);
         if (!wb) { msg.textContent = "엑셀 라이브러리를 불러오지 못했습니다."; msg.className = "form-msg error"; return; }
         PourExport.downloadWorkbook(wb, "특허별-실적.xlsx");
@@ -793,7 +843,7 @@
 
   $("btnPatentExcel").addEventListener("click", function () {
     var records = PourRecords.list(storage);
-    var tabs = PourRecords.patentTabs(PourPatents.list(storage), records);
+    var tabs = PourRecords.patentTabs(PourPatents.listPour(storage), records);
     var wb = PourExport.buildPatentWorkbook(tabs, records);
     if (!wb) return alert("엑셀 라이브러리를 불러오지 못했습니다.");
     PourExport.downloadWorkbook(wb, "특허별-실적.xlsx");
@@ -871,7 +921,7 @@
     if (patentView === "multi") return multiGrid.render();
 
     var records = PourRecords.list(storage);
-    var tabs = PourRecords.patentTabs(PourPatents.list(storage), records);
+    var tabs = PourRecords.patentTabs(PourPatents.listPour(storage), records);
     if (!tabs.length) {
       $("sheetTabs").innerHTML = "";
       $("patentSummary").textContent = "등록된 특허가 없습니다. 「가져오기·내보내기」에서 POUR 특허 엑셀을 올려주세요.";

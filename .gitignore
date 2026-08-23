@@ -14,6 +14,9 @@ pour-integration/nextjs/.tmp-build/
 # scripts/import-records.py 로 엑셀에서 다시 만들 수 있다.
 pour-integration/test/fixtures-records.json
 pour-integration/nextjs/drizzle/seed-records.sql
+# 특허 마스터·현장 연결 (실제 업체명과 아파트명이 들어 있다)
+pour-integration/test/fixtures-patent-master.json
+pour-integration/nextjs/drizzle/seed-patent-master.sql
 pour-integration/preview-records.html
 
 # 파이썬 임시 파일

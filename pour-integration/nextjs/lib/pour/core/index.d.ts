@@ -119,6 +119,27 @@ export interface PatentRecord {
   prefix: string;
   remark: string;
   active: boolean;
+  /** 개별 특허 한 건의 구분 ("POUR" / "타사" / "미분류"). 현장 전체 구분과는 다르다. */
+  patentType?: string;
+  /** 공법명. 특허명(name)과 따로 둔다. */
+  methodName?: string;
+  /** 이 번호를 현장에서 처음 본 날 */
+  firstSeenAt?: string;
+  /** 마지막으로 본 날 */
+  lastSeenAt?: string;
+}
+
+/** 현장에 들어간 특허 한 건을 풀어 본 결과 (개별 구분을 그대로 지킨다) */
+export interface PatentBreakdownItem {
+  number: string;
+  display: string;
+  /** 현장에서 사람이 고른 값 ("POUR" | "THIRD_PARTY") */
+  kind: string;
+  /** 개별 특허의 구분 ("POUR" / "타사" / "미분류") */
+  type: string;
+  company: string;
+  name: string;
+  method: string;
 }
 
 /** getItem/setItem 만 있으면 어떤 저장소든 쓸 수 있다. */

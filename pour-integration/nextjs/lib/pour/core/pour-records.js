@@ -523,6 +523,16 @@
   }
 
   /** 새 공고를 등록하거나 기존 현장을 갱신한다. id가 같으면 언제나 같은 행을 고친다. */
+  /**
+   * 현장에 들어간 특허번호를 특허 마스터에 이어 붙인다.
+   * 처음 보는 번호는 "미분류" 로 등록하고 업체명은 비워 둔다 (지어내지 않는다).
+   * 현장 자료 자체는 건드리지 않는다.
+   */
+  function noteSeenPatents(record, storage) {
+    if (!record || !record.patentItems || !record.patentItems.length) return;
+    try { PourPatents.noteSeen(record.patentItems, storage); } catch (e) {}
+  }
+
   function save(input, storage) {
     var record = normalize(input);
     var all = list(storage);
@@ -530,6 +540,7 @@
     for (var i = 0; i < all.length; i++) { if (all[i].id === record.id) { at = i; break; } }
     if (at >= 0) all[at] = record; else all.push(record);
     writeAll(all, storage);
+    noteSeenPatents(record, storage);
     return record;
   }
 
@@ -550,6 +561,7 @@
       saved.push(record);
     });
     writeAll(all, storage);
+    saved.forEach(function (rec) { noteSeenPatents(rec, storage); });
     return saved;
   }
 
@@ -673,6 +685,7 @@
     after.history = before.history.concat(buildHistory(before, after, "낙찰 처리"));
     all[at] = after;
     writeAll(all, storage);
+    noteSeenPatents(after, storage);
     return { ok: true, record: after };
   }
 
@@ -785,6 +798,7 @@
 
     all[at] = after;
     writeAll(all, storage);
+    noteSeenPatents(after, storage);
     return { ok: true, record: after };
   }
 
@@ -794,11 +808,23 @@
    * POUR 적용 특허번호가 확정된 자료인지 판단한다.
    * 업로드된 특허 자료와 일치하거나, 관리자가 직접 확인 완료로 저장한 경우만 인정한다.
    */
+  /**
+   * 이 번호가 "확인된 POUR 특허" 인가.
+   *
+   * 마스터에 있기만 하면 되던 것을, 구분이 POUR 인 것만으로 좁힌다.
+   * 현장에서 본 번호가 미분류로 자동 등록되면서, 아직 확인 안 된 특허가
+   * 마스터에 있다는 이유만으로 확인 완료로 보이는 것을 막기 위해서다.
+   */
+  function isVerifiedPourPatent(number, patentStorage) {
+    var master = PourPatents.find(number, patentStorage);
+    return !!master && master.patentType === PourPatents.TYPE_POUR;
+  }
+
   function isPatentResolved(record, patentStorage) {
     if (!record || !record.patentNumbers || !record.patentNumbers.length) return false;
     if (record.patentConfirmed) return true;
     return record.patentNumbers.every(function (n) {
-      return !!PourPatents.find(n, patentStorage);
+      return isVerifiedPourPatent(n, patentStorage);
     });
   }
 
@@ -826,6 +852,72 @@
    * 한 현장의 특허 구성을 계산한다. 다특허 여부는 개수로 자동 판단한다.
    * (사용자가 매번 직접 입력하지 않는다)
    */
+  /* --------------------------------------- 현장 전체 구분 (개별 특허와 별개) */
+
+  var SITE_POUR = "POUR", SITE_THIRD = "타사";
+  var SITE_MULTI_PD = "다특허(PD)", SITE_MULTI = "다특허";
+  var SITE_CLASSES = [SITE_POUR, SITE_THIRD, SITE_MULTI_PD, SITE_MULTI];
+
+  /**
+   * 현장에 들어간 특허 하나하나의 구분을 돌려준다.
+   * 개별 특허는 각각 원래 업체와 구분을 그대로 지킨다.
+   * 다특허(PD) 현장이라고 해서 안에 든 타사 특허가 POUR 가 되지 않는다.
+   *
+   * @returns [{ number, display, kind, type, company, name, method }]
+   */
+  function patentBreakdown(record, patentStorage) {
+    var items = (record && record.patentItems) || [];
+    return items.map(function (it) {
+      var master = PourPatents.find(it.number, patentStorage);
+      return {
+        number: it.number,
+        display: it.display || PourPatents.formatNumber(it.number),
+        kind: it.kind,                                     // 현장에서 사람이 고른 값
+        // 개별 특허의 구분. 마스터에 확실한 값이 있으면 그것을, 없으면 현장의 kind 를 쓴다.
+        type: PourPatents.typeOf(it.number, patentStorage, it.kind),
+        // 업체명·공법명은 마스터에 있으면 이어 붙인다 (없으면 빈 값. 지어내지 않는다)
+        company: it.company || (master && master.company) || "",
+        name: it.name || (master && master.name) || "",
+        method: it.method || (master && master.methodName) || ""
+      };
+    });
+  }
+
+  /**
+   * 현장 전체의 구분. 그 현장에 들어간 특허 전부를 보고 정한다.
+   *
+   *   특허 1개 · POUR 포함        → POUR
+   *   특허 1개 · POUR 없음        → 타사
+   *   특허 2개 이상 · POUR 1개 이상 → 다특허(PD)
+   *   특허 2개 이상 · POUR 없음     → 다특허
+   *   특허 없음                    → "" (아직 확인 전)
+   *
+   * POUR 포함 여부는 개별 특허의 구분(마스터 기준)으로 판단한다.
+   * 현장 구분을 개별 특허에 되돌려 쓰지 않는다.
+   */
+  function sitePatentClass(record, patentStorage) {
+    var breakdown = patentBreakdown(record, patentStorage);
+    if (!breakdown.length) return "";
+    var hasPour = breakdown.some(function (p) { return p.type === PourPatents.TYPE_POUR; });
+    if (breakdown.length === 1) return hasPour ? SITE_POUR : SITE_THIRD;
+    return hasPour ? SITE_MULTI_PD : SITE_MULTI;
+  }
+
+  /**
+   * POUR 실적에 넣을 현장인가. POUR + 다특허(PD) 가 대상이다.
+   * (다특허(PD) 안의 타사 특허는 그대로 타사로 남는다)
+   */
+  function isPourSite(record, patentStorage) {
+    var cls = sitePatentClass(record, patentStorage);
+    return cls === SITE_POUR || cls === SITE_MULTI_PD;
+  }
+
+  /** 타사 대상 현장인가. 타사 + 다특허 가 대상이다. */
+  function isThirdSite(record, patentStorage) {
+    var cls = sitePatentClass(record, patentStorage);
+    return cls === SITE_THIRD || cls === SITE_MULTI;
+  }
+
   function patentStats(record, patentStorage) {
     var items = (record && record.patentItems) || [];
     var pour = items.filter(function (it) { return it.kind === POUR; });
@@ -843,7 +935,7 @@
 
     // 확인 상태
     var status;
-    var unverified = pour.filter(function (it) { return !PourPatents.find(it.number, patentStorage); });
+    var unverified = pour.filter(function (it) { return !isVerifiedPourPatent(it.number, patentStorage); });
     if (noticeMulti && total < 2) status = "다특허 번호 확인 필요";
     else if (!pour.length) status = "POUR 특허번호 미기재";
     else if (unverified.length && !(record && record.patentConfirmed)) status = "POUR 특허 검토 필요";
@@ -953,7 +1045,7 @@
       moved += rec.patentItems.filter(function (it) { return it.kind === POUR; }).length;
       rec.patentItems.forEach(function (it) {
         if (it.kind !== POUR) return;
-        if (!PourPatents.find(it.number, patentStorage)) {
+        if (!isVerifiedPourPatent(it.number, patentStorage)) {
           review.push({ id: rec.id, client: rec.client, number: it.number });
         }
       });
@@ -1049,6 +1141,7 @@
     }
 
     writeAll(all, storage);
+    noteSeenPatents(rebid, storage);
     return { ok: true, record: rebid, round: round, originalId: rootId };
   }
 
@@ -1273,6 +1366,12 @@
     THIRD_PARTY: THIRD,
     normalizePatentItem: normalizePatentItem,
     patentStats: patentStats,
+    // 현장 전체 구분 (개별 특허 구분과 별개)
+    sitePatentClass: sitePatentClass,
+    patentBreakdown: patentBreakdown,
+    isPourSite: isPourSite,
+    isThirdSite: isThirdSite,
+    SITE_CLASSES: SITE_CLASSES,
     conflictingPatents: conflictingPatents,
     CONFLICT_MESSAGE: CONFLICT_MESSAGE,
     alerts: alerts,

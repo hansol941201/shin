@@ -54,12 +54,28 @@ export const PROJECT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   ["is_partner", "TEXT"]
 ] as const;
 
+/**
+ * 특허 마스터(pour_patents)에 더할 열. 이미 있으면 건너뛴다.
+ * 표를 새로 만들 때는 CREATE 문에 이미 들어 있고, 옛 표에는 여기서 더해진다.
+ */
+export const PATENT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
+  /** 개별 특허 한 건의 구분 ("POUR" / "타사" / "미분류"). 현장 전체 구분과는 다르다. */
+  ["patent_type", "TEXT"],
+  /** 공법명. 특허명(name)과 따로 둔다. */
+  ["method_name", "TEXT"],
+  /** 이 번호를 현장에서 처음 본 날 */
+  ["first_seen_at", "TEXT"],
+  /** 마지막으로 본 날 */
+  ["last_seen_at", "TEXT"]
+] as const;
+
 /** 새로 만드는 표와 색인. 전부 IF NOT EXISTS 라 기존 것을 덮지 않는다. */
 const CREATE_STATEMENTS: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS pour_patents (
      number TEXT PRIMARY KEY, display TEXT, name TEXT, categories TEXT,
      company TEXT, prefix TEXT, remark TEXT,
-     active INTEGER NOT NULL DEFAULT 1, created_at TEXT, updated_at TEXT)`,
+     active INTEGER NOT NULL DEFAULT 1, created_at TEXT, updated_at TEXT,
+     patent_type TEXT, method_name TEXT, first_seen_at TEXT, last_seen_at TEXT)`,
   `CREATE INDEX IF NOT EXISTS idx_pour_patents_name ON pour_patents (name)`,
   `CREATE TABLE IF NOT EXISTS pour_project_patents (
      id TEXT PRIMARY KEY, project_id TEXT NOT NULL, kind TEXT NOT NULL, number TEXT NOT NULL,
@@ -112,6 +128,20 @@ export async function migratePourSchema(
     await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`).run();
     addedColumns.push(name);
   }
+
+  // 특허 마스터에도 없는 열만 더한다 (옛 표를 쓰던 곳을 위해)
+  const patentInfo = (await db.prepare("PRAGMA table_info(pour_patents)")
+    .all<{ name: string }>()).results || [];
+  const havePatent = new Set(patentInfo.map((c) => c.name));
+  for (const [name, type] of PATENT_COLUMNS) {
+    if (havePatent.has(name)) { existingColumns.push(name); continue; }
+    await db.prepare(`ALTER TABLE pour_patents ADD COLUMN ${name} ${type}`).run();
+    addedColumns.push(name);
+  }
+
+  // 색인은 열을 다 더한 뒤에 만든다. 옛 표에는 patent_type 이 아직 없어
+  // 먼저 만들려 하면 "no such column" 으로 마이그레이션이 통째로 멈춘다.
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_pour_patents_type ON pour_patents (patent_type)").run();
 
   const after = await db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).first<{ c: number }>();
   if (before && after && before.c !== after.c) {

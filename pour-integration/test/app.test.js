@@ -682,7 +682,8 @@ function section(t) { console.log("\n" + t); }
     // 실제로 특허번호별 워크시트가 만들어지는지 확인한다
     const sheets = await page.evaluate(() => {
       const records = window.PourRecords.list(localStorage);
-      const tabs = window.PourRecords.patentTabs(window.PourPatents.list(localStorage), records);
+      // POUR 특허별 워크시트다. 마스터에 함께 쌓이는 타사·미분류는 넣지 않는다.
+      const tabs = window.PourRecords.patentTabs(window.PourPatents.listPour(localStorage), records);
       const wb = window.PourExport.buildPatentWorkbook(tabs, records);
       return wb.worksheets.map(w => w.name);
     });
@@ -709,8 +710,13 @@ function section(t) { console.log("\n" + t); }
     await page.waitForSelector("#recordsGrid .grid tbody tr");
     const after = await page.$$eval("#recordsGrid .grid tbody tr", els => els.length);
     assert.strictEqual(after, before);
-    const patents = await page.evaluate(() => window.PourPatents.list(window.localStorage).length);
-    assert.strictEqual(patents, 50, "특허 자료가 사라짐");
+    // 마스터에는 POUR 특허 50건이 그대로 있고, 현장에서 본 타사 번호가 미분류로 함께 쌓인다
+    const patents = await page.evaluate(() => ({
+      pour: window.PourPatents.listPour(window.localStorage).length,
+      all: window.PourPatents.list(window.localStorage).length
+    }));
+    assert.strictEqual(patents.pour, 50, "POUR 특허 자료가 사라짐");
+    assert.ok(patents.all >= patents.pour, "마스터 건수 " + patents.all);
     await page.click(".nav-item[data-view='records']");
   });
 

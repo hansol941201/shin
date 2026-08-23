@@ -531,6 +531,30 @@
   background:#F3F5F8; color:var(--navy); border:1px solid #E3E8EF;
 }
 
+/* 상세 화면의 특허 내역. 현장 전체 구분과 개별 특허 구분을 함께 보여 준다. */
+.pour-scope .pour-patent-site-class{
+  font-size:13px; color:var(--text); margin:2px 0 8px;
+}
+.pour-scope .pour-patent-site-class b{color:var(--navy);}
+.pour-scope .pour-patent-breakdown{
+  width:100%; border-collapse:collapse; font-size:13px;
+  border:1px solid var(--line); border-radius:var(--r1); overflow:hidden;
+}
+.pour-scope .pour-patent-breakdown td{
+  padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:middle;
+}
+.pour-scope .pour-patent-breakdown tr:last-child td{border-bottom:0;}
+.pour-scope .pour-patent-breakdown td:first-child{font-variant-numeric:tabular-nums; white-space:nowrap;}
+.pour-scope .pour-patent-breakdown td:last-child{width:1%; white-space:nowrap; text-align:right;}
+/* 개별 특허 구분. 현장 구분 배지와 섞이지 않게 이름을 따로 둔다. */
+.pour-scope .pour-patent-type{
+  display:inline-block; padding:1px 8px; font-size:11.5px; font-weight:600;
+  border-radius:999px; white-space:nowrap;
+  background:var(--white); color:#5C6675; border:1px solid #E3E8EF;
+}
+.pour-scope .pour-patent-type[data-type="POUR"]{background:var(--navy); color:var(--white); border-color:var(--navy);}
+.pour-scope .pour-patent-type[data-type="미분류"]{background:#F3F5F8; color:#8A93A2;}
+
 /* 상세·수정 화면 위쪽의 상태 표시. 목록 표와 쓰임이 달라 따로 둔다.
    목록(.status-badge) 을 고쳐도 이쪽은 그대로다. */
 .pour-scope .pour-panel-status{
