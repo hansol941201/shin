@@ -45,7 +45,7 @@ RENAME = {
     "panel-subject": "pour-panel-subject", "panel-subject-name": "pour-panel-subject-name",
     "stage-head": "pour-stage-head", "panel-status": "pour-panel-status",
     "patent-site-class": "pour-patent-site-class", "patent-breakdown": "pour-patent-breakdown",
-    "patent-type": "pour-patent-type",
+    "patent-type": "pour-patent-type", "patent-note": "pour-patent-note",
     "form-row": "pour-form-row", "form-row-1": "pour-form-row-1",
     "form-row-3": "pour-form-row-3", "form-row-4": "pour-form-row-4",
     "form-row-fill": "pour-form-row-fill", "form-msg": "pour-form-msg",

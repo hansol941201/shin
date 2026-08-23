@@ -545,8 +545,15 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   border-radius:999px; white-space:nowrap;
   background:var(--white); color:#5C6675; border:1px solid #E3E8EF;
 }
+/* 자사 계열 셋은 채워서, 외부 타사·미분류는 비워서 구분한다.
+   POUR·DO·CNC 는 서로 다른 공법이므로 같은 배지로 뭉치지 않는다. */
 .patent-type[data-type="POUR"]{background:var(--navy); color:var(--white); border-color:var(--navy);}
+.patent-type[data-type="DO"]{background:var(--navy-mid); color:var(--white); border-color:var(--navy-mid);}
+.patent-type[data-type="CNC"]{background:var(--navy-soft); color:var(--navy); border-color:#C7D0E2;}
 .patent-type[data-type="미분류"]{background:#F3F5F8; color:#8A93A2;}
+.patent-note{
+  margin-top:6px; font-size:12px; color:var(--muted);
+}
 
 /* 상세·수정 화면 위쪽의 상태 표시. 목록 표와 쓰임이 달라 따로 둔다.
    목록(.status-badge) 을 고쳐도 이쪽은 그대로다. */
@@ -1402,13 +1409,37 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   /* ------------------------------------------------------- 엑셀 열 인식 */
 
   /**
-   * 개별 특허 한 건의 구분. 현장 전체의 구분과는 다른 것이다.
-   *   POUR   — 우리 특허
-   *   타사   — 다른 회사 특허
-   *   미분류 — 처음 보는 번호. 업체를 아직 확인하지 못했다 (추정하지 않는다)
+   * 개별 특허 한 건은 두 가지로 나누어 담는다. 현장 전체의 구분과는 다른 것이다.
+   *
+   *   소속(affiliationType)  자사계열 / 타사 / 미분류
+   *   공법(patentType)       POUR / DO / CNC / 타사공법 / 미분류
+   *
+   * DO 와 CNC 는 자사 계열이지만 POUR 공법 자체는 아니다. 그래서 소속은 같이 묶고
+   * 공법은 따로 둔다. 이렇게 해야 셋을 각각 세면서, 필요할 때 "자사계열 전체" 로도
+   * 합쳐 볼 수 있다.
    */
-  var PATENT_TYPES = ["POUR", "타사", "미분류"];
-  var TYPE_POUR = "POUR", TYPE_THIRD = "타사", TYPE_UNKNOWN = "미분류";
+  var AFFILIATIONS = ["자사계열", "타사", "미분류"];
+  var AFF_OWN = "자사계열", AFF_THIRD = "타사", AFF_UNKNOWN = "미분류";
+
+  var PATENT_TYPES = ["POUR", "DO", "CNC", "타사공법", "미분류"];
+  var TYPE_POUR = "POUR", TYPE_DO = "DO", TYPE_CNC = "CNC";
+  var TYPE_THIRD = "타사공법", TYPE_UNKNOWN = "미분류";
+
+  /** 자사 계열 공법. 셋을 합쳐 보는 자리에서 쓴다. */
+  var OWN_TYPES = [TYPE_POUR, TYPE_DO, TYPE_CNC];
+
+  /** 공법마다 정해진 소속. 공법이 정해지면 소속은 따라온다. */
+  var AFFILIATION_BY_TYPE = {
+    "POUR": AFF_OWN, "DO": AFF_OWN, "CNC": AFF_OWN,
+    "타사공법": AFF_THIRD, "미분류": AFF_UNKNOWN
+  };
+
+  /**
+   * 옛 값 → 새 값. 저장된 자료를 고쳐 쓰지 않고 읽을 때 옮겨 준다.
+   * 0008 까지는 patentType 에 "타사" 가 들어갔다. 그것은 공법 이름이 아니라
+   * 소속이었으므로 공법은 "타사공법", 소속은 "타사" 로 나눈다.
+   */
+  var LEGACY_TYPE = { "타사": TYPE_THIRD };
 
   /**
    * 저장된 마스터 한 건을 오늘의 모양으로 맞춘다.
@@ -1421,8 +1452,16 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   function normalizeMaster(rec) {
     var r = rec || {};
     var type = String(r.patentType || "").trim();
+    if (LEGACY_TYPE[type]) type = LEGACY_TYPE[type];          // "타사" → "타사공법"
     if (PATENT_TYPES.indexOf(type) < 0) type = TYPE_POUR;
+
+    // 소속은 공법에서 따라온다. 따로 담긴 값이 있고 어긋나지 않으면 그것을 쓴다.
+    var aff = String(r.affiliationType || "").trim();
+    if (AFFILIATIONS.indexOf(aff) < 0) aff = AFFILIATION_BY_TYPE[type];
+    else if (AFFILIATION_BY_TYPE[type] !== aff) aff = AFFILIATION_BY_TYPE[type];
+
     return {
+      affiliationType: aff,
       number: r.number,
       name: String(r.name || "").trim(),
       categories: Array.isArray(r.categories) ? r.categories : (r.category ? [r.category] : []),
@@ -1619,6 +1658,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
         // 엑셀에 없는 칸(구분·공법명·확인일)은 업로드가 지우지 않는다
         var next = normalizeMaster(rec);
         if (!rec.patentType) next.patentType = before.patentType;
+        if (!rec.affiliationType) next.affiliationType = before.affiliationType;
         if (!next.methodName) next.methodName = before.methodName;
         next.firstSeenAt = before.firstSeenAt || next.firstSeenAt;
         next.lastSeenAt = before.lastSeenAt || next.lastSeenAt;
@@ -1653,7 +1693,33 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
    * 이 함수를 쓴다. (모든 특허가 필요하면 list() 를 그대로 쓰면 된다)
    */
   function listPour(storage) {
-    return readStore(storage).filter(function (r) { return r.patentType === TYPE_POUR; });
+    return listByType(TYPE_POUR, storage);
+  }
+
+  /** 공법 하나로 골라 본다 ("POUR" / "DO" / "CNC" / "타사공법" / "미분류"). */
+  function listByType(type, storage) {
+    return readStore(storage).filter(function (r) { return r.patentType === type; });
+  }
+
+  /** 자사 계열 전체 (POUR + DO + CNC). */
+  function listOwn(storage) {
+    return readStore(storage).filter(function (r) { return r.affiliationType === AFF_OWN; });
+  }
+
+  /** 외부 타사만. 경쟁사 집계는 여기만 본다 (DO·CNC 는 들어오지 않는다). */
+  function listThirdParty(storage) {
+    return readStore(storage).filter(function (r) { return r.affiliationType === AFF_THIRD; });
+  }
+
+  /** 공법별 건수를 한 번에 센다. */
+  function countByType(storage) {
+    var out = {};
+    PATENT_TYPES.forEach(function (t) { out[t] = 0; });
+    readStore(storage).forEach(function (r) {
+      if (out[r.patentType] == null) out[r.patentType] = 0;
+      out[r.patentType]++;
+    });
+    return out;
   }
 
   function noteSeen(items, storage, seenAt) {
@@ -1676,6 +1742,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
           number: number,
           // 업체명·공법명은 비워 둔다. 확인되기 전까지 지어내지 않는다.
           patentType: TYPE_UNKNOWN,
+          affiliationType: AFF_UNKNOWN,
           firstSeenAt: when,
           lastSeenAt: when
         }));
@@ -1710,6 +1777,11 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     if (fallbackKind === "POUR") return TYPE_POUR;
     if (fallbackKind) return TYPE_THIRD;
     return master ? master.patentType : TYPE_UNKNOWN;
+  }
+
+  /** 특허번호 한 건의 소속 ("자사계열" / "타사" / "미분류"). */
+  function affiliationOf(number, storage, fallbackKind) {
+    return AFFILIATION_BY_TYPE[typeOf(number, storage, fallbackKind)] || AFF_UNKNOWN;
   }
 
   /** 엑셀 한 건을 통째로 처리한다 (파싱 + 저장). */
@@ -1853,6 +1925,19 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     find: find,
     noteSeen: noteSeen,
     listPour: listPour,
+    listByType: listByType,
+    listOwn: listOwn,
+    listThirdParty: listThirdParty,
+    countByType: countByType,
+    affiliationOf: affiliationOf,
+    AFFILIATIONS: AFFILIATIONS,
+    AFF_OWN: AFF_OWN,
+    AFF_THIRD: AFF_THIRD,
+    AFF_UNKNOWN: AFF_UNKNOWN,
+    OWN_TYPES: OWN_TYPES,
+    TYPE_DO: TYPE_DO,
+    TYPE_CNC: TYPE_CNC,
+    AFFILIATION_BY_TYPE: AFFILIATION_BY_TYPE,
     typeOf: typeOf,
     PATENT_TYPES: PATENT_TYPES,
     TYPE_POUR: TYPE_POUR,
@@ -2908,9 +2993,16 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
    */
   /* --------------------------------------- 현장 전체 구분 (개별 특허와 별개) */
 
-  var SITE_POUR = "POUR", SITE_THIRD = "타사";
-  var SITE_MULTI_PD = "다특허(PD)", SITE_MULTI = "다특허";
-  var SITE_CLASSES = [SITE_POUR, SITE_THIRD, SITE_MULTI_PD, SITE_MULTI];
+  var SITE_POUR = "POUR", SITE_DO = "DO", SITE_CNC = "CNC", SITE_THIRD = "타사";
+  var SITE_MULTI_PD = "다특허(PD)", SITE_MULTI = "다특허", SITE_UNKNOWN = "미분류";
+  var SITE_CLASSES = [SITE_POUR, SITE_DO, SITE_CNC, SITE_THIRD,
+                      SITE_MULTI_PD, SITE_MULTI, SITE_UNKNOWN];
+
+  /** 특허 한 건짜리 현장의 구분. 그 특허의 공법을 그대로 쓴다. */
+  var SINGLE_CLASS = {
+    "POUR": SITE_POUR, "DO": SITE_DO, "CNC": SITE_CNC,
+    "타사공법": SITE_THIRD, "미분류": SITE_UNKNOWN
+  };
 
   /**
    * 현장에 들어간 특허 하나하나의 구분을 돌려준다.
@@ -2927,8 +3019,10 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
         number: it.number,
         display: it.display || PourPatents.formatNumber(it.number),
         kind: it.kind,                                     // 현장에서 사람이 고른 값
-        // 개별 특허의 구분. 마스터에 확실한 값이 있으면 그것을, 없으면 현장의 kind 를 쓴다.
+        // 개별 특허의 공법. 마스터에 확실한 값이 있으면 그것을, 없으면 현장의 kind 를 쓴다.
         type: PourPatents.typeOf(it.number, patentStorage, it.kind),
+        // 소속 (자사계열 / 타사 / 미분류). 공법에서 따라온다.
+        affiliation: PourPatents.affiliationOf(it.number, patentStorage, it.kind),
         // 업체명·공법명은 마스터에 있으면 이어 붙인다 (없으면 빈 값. 지어내지 않는다)
         company: it.company || (master && master.company) || "",
         name: it.name || (master && master.name) || "",
@@ -2952,24 +3046,116 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   function sitePatentClass(record, patentStorage) {
     var breakdown = patentBreakdown(record, patentStorage);
     if (!breakdown.length) return "";
+    if (breakdown.length === 1) {
+      return SINGLE_CLASS[breakdown[0].type] || SITE_UNKNOWN;
+    }
     var hasPour = breakdown.some(function (p) { return p.type === PourPatents.TYPE_POUR; });
-    if (breakdown.length === 1) return hasPour ? SITE_POUR : SITE_THIRD;
     return hasPour ? SITE_MULTI_PD : SITE_MULTI;
   }
 
-  /**
-   * POUR 실적에 넣을 현장인가. POUR + 다특허(PD) 가 대상이다.
-   * (다특허(PD) 안의 타사 특허는 그대로 타사로 남는다)
-   */
-  function isPourSite(record, patentStorage) {
-    var cls = sitePatentClass(record, patentStorage);
-    return cls === SITE_POUR || cls === SITE_MULTI_PD;
+  /** 이 현장에 그 공법의 특허가 하나라도 들어 있는가. */
+  function hasPatentType(record, type, patentStorage) {
+    return patentBreakdown(record, patentStorage).some(function (p) { return p.type === type; });
   }
 
-  /** 타사 대상 현장인가. 타사 + 다특허 가 대상이다. */
+  /**
+   * 집계는 현장 구분이 아니라 그 현장에 든 개별 특허로 판단한다.
+   * 그래야 한 현장이 여러 집계에 동시에 들어갈 수 있다.
+   * (POUR + DO + 4A 현장 → POUR 실적 · DO 실적 · 4A 경쟁사 집계에 모두 들어간다)
+   */
+
+  /**
+   * POUR 실적 대상인가. 실제 POUR 특허가 한 개 이상 든 현장이다.
+   * 결과적으로 POUR 단독과 다특허(PD)가 모두 들어온다.
+   * DO·CNC 만 있는 현장은 자사 계열이지만 POUR 실적이 아니다.
+   */
+  function isPourSite(record, patentStorage) {
+    return hasPatentType(record, PourPatents.TYPE_POUR, patentStorage);
+  }
+
+  /** DO 실적 대상인가. 다른 특허와 같이 들어 있어도 대상이다. */
+  function isDoSite(record, patentStorage) {
+    return hasPatentType(record, PourPatents.TYPE_DO, patentStorage);
+  }
+
+  /** CNC 실적 대상인가. */
+  function isCncSite(record, patentStorage) {
+    return hasPatentType(record, PourPatents.TYPE_CNC, patentStorage);
+  }
+
+  /** 자사 계열 전체(POUR·DO·CNC 중 하나라도) 대상인가. */
+  function isOwnSite(record, patentStorage) {
+    return patentBreakdown(record, patentStorage).some(function (p) {
+      return p.affiliation === PourPatents.AFF_OWN;
+    });
+  }
+
+  /**
+   * 외부 타사 경쟁사 집계 대상인가.
+   * 소속이 "타사" 인 특허가 든 현장만 해당한다. DO·CNC 는 자사 계열이라 들어오지 않는다.
+   * 다특허(PD) 현장도 그 안에 외부 타사 특허가 있으면 대상이다.
+   */
   function isThirdSite(record, patentStorage) {
-    var cls = sitePatentClass(record, patentStorage);
-    return cls === SITE_THIRD || cls === SITE_MULTI;
+    return patentBreakdown(record, patentStorage).some(function (p) {
+      return p.affiliation === PourPatents.AFF_THIRD;
+    });
+  }
+
+  /**
+   * 이 현장에 든 외부 타사 업체 이름들. 경쟁사 집계에 쓴다.
+   * DO·CNC 는 자사 계열이라 여기에 나오지 않는다. 업체명이 비어 있으면 넣지 않는다.
+   */
+  function thirdPartyCompanies(record, patentStorage) {
+    var out = [], seen = {};
+    patentBreakdown(record, patentStorage).forEach(function (p) {
+      if (p.affiliation !== PourPatents.AFF_THIRD) return;
+      if (!p.company || seen[p.company]) return;
+      seen[p.company] = true;
+      out.push(p.company);
+    });
+    return out;
+  }
+
+  /**
+   * 이 현장에 든 자사 계열 공법들 (["POUR", "DO"] 처럼).
+   * POUR+DO 현장, POUR+CNC 현장을 찾는 데 쓴다.
+   */
+  function ownMethods(record, patentStorage) {
+    var out = [];
+    PourPatents.OWN_TYPES.forEach(function (t) {
+      if (hasPatentType(record, t, patentStorage)) out.push(t);
+    });
+    return out;
+  }
+
+  /**
+   * 한 현장을 집계에 넣기 좋은 모양으로 한 번에 풀어 준다.
+   * 나중에 만들 분석 화면은 이 값만 세면 된다.
+   */
+  function siteAnalysis(record, patentStorage) {
+    var breakdown = patentBreakdown(record, patentStorage);
+    return {
+      id: record.id,
+      client: record.client,
+      status: record.status,
+      region: record.region,
+      city: record.city,
+      contractor: record.contractor,
+      categories: record.categories,
+      categoryGroups: record.categoryGroups,
+      noticeDate: record.noticeDate,
+      awardDate: record.awardDate,
+      siteClass: sitePatentClass(record, patentStorage),
+      patents: breakdown,                                  // 개별 특허는 그대로 남는다
+      ownMethods: ownMethods(record, patentStorage),
+      thirdPartyCompanies: thirdPartyCompanies(record, patentStorage),
+      isPour: isPourSite(record, patentStorage),
+      isDo: isDoSite(record, patentStorage),
+      isCnc: isCncSite(record, patentStorage),
+      isOwn: isOwnSite(record, patentStorage),
+      isThirdParty: isThirdSite(record, patentStorage),
+      isMulti: breakdown.length >= 2
+    };
   }
 
   function patentStats(record, patentStorage) {
@@ -3424,7 +3610,14 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     sitePatentClass: sitePatentClass,
     patentBreakdown: patentBreakdown,
     isPourSite: isPourSite,
+    isDoSite: isDoSite,
+    isCncSite: isCncSite,
+    isOwnSite: isOwnSite,
     isThirdSite: isThirdSite,
+    hasPatentType: hasPatentType,
+    thirdPartyCompanies: thirdPartyCompanies,
+    ownMethods: ownMethods,
+    siteAnalysis: siteAnalysis,
     SITE_CLASSES: SITE_CLASSES,
     conflictingPatents: conflictingPatents,
     CONFLICT_MESSAGE: CONFLICT_MESSAGE,
@@ -5312,6 +5505,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
           var tag = document.createElement("span");
           tag.className = "patent-type";
           tag.setAttribute("data-type", text);
+          // 공법 옆에 소속을 함께 보여, 자사 계열인지 한눈에 알 수 있게 한다
+          tag.title = p.affiliation + " · " + text;
           tag.textContent = text;
           td.appendChild(tag);
         } else {
@@ -5323,6 +5518,17 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     });
     table.appendChild(body);
     box.appendChild(table);
+
+    // DO·CNC 가 든 현장에서만 알린다. POUR 로 합치지 않는다는 뜻을 분명히 하기 위해서다.
+    var ownOther = rows.filter(function (p) {
+      return p.type === PourPatents.TYPE_DO || p.type === PourPatents.TYPE_CNC;
+    });
+    if (ownOther.length) {
+      var note = document.createElement("div");
+      note.className = "patent-note";
+      note.textContent = "DO공법과 CNC는 자사 계열 공법으로 별도 분류됩니다.";
+      box.appendChild(note);
+    }
   }
 
   function openNotice(id) {

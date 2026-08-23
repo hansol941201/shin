@@ -70,6 +70,13 @@ export async function listRecords(db: D1Like, options?: StoreOptions): Promise<P
   });
 }
 
+/** 공법이 정해지면 소속은 따라온다. pour-patents.js 의 AFFILIATION_BY_TYPE 과 같아야 한다. */
+function affiliationForType(type: string): string {
+  if (type === "POUR" || type === "DO" || type === "CNC") return "자사계열";
+  if (type === "타사" || type === "타사공법") return "타사";
+  return "미분류";
+}
+
 export async function listPatents(db: D1Like): Promise<PatentRecord[]> {
   const rows = (await db.prepare("SELECT * FROM pour_patents WHERE active = 1").all<Record<string, unknown>>()).results || [];
   return rows.map((row) => {
@@ -83,8 +90,13 @@ export async function listPatents(db: D1Like): Promise<PatentRecord[]> {
       prefix: String(row.prefix || ""),
       remark: String(row.remark || ""),
       active: row.active !== 0,
-      // 구분이 비어 있는 옛 자료는 POUR 로 본다 (이 표는 지금까지 POUR 특허 목록이었다)
-      patentType: String(row.patent_type || "") || "POUR",
+      // 구분이 비어 있는 옛 자료는 POUR 로 본다 (이 표는 지금까지 POUR 특허 목록이었다).
+      // 0008 까지 쓰던 "타사" 는 공법 이름이 아니라 소속이었으므로 "타사공법" 으로 옮긴다.
+      // 저장된 값을 UPDATE 로 고치지 않고 읽을 때만 옮긴다.
+      patentType: (String(row.patent_type || "") === "타사"
+        ? "타사공법" : String(row.patent_type || "")) || "POUR",
+      affiliationType: String(row.affiliation_type || "")
+        || affiliationForType(String(row.patent_type || "") || "POUR"),
       methodName: String(row.method_name || ""),
       firstSeenAt: String(row.first_seen_at || ""),
       lastSeenAt: String(row.last_seen_at || "")
@@ -217,10 +229,12 @@ export async function upsertPatents(db: D1Like, patents: PatentRecord[]): Promis
     const number = String(patent.number || "").trim();
     if (!number) continue;
     const exists = await db.prepare(
-      "SELECT number, patent_type, method_name, first_seen_at, last_seen_at FROM pour_patents WHERE number = ?")
+      "SELECT number, patent_type, method_name, first_seen_at, last_seen_at, affiliation_type "
+      + "FROM pour_patents WHERE number = ?")
       .bind(number).first<{
         number: string; patent_type: string | null; method_name: string | null;
         first_seen_at: string | null; last_seen_at: string | null;
+        affiliation_type: string | null;
       }>();
     const categories = (patent.categories && patent.categories.length
       ? patent.categories
@@ -229,14 +243,15 @@ export async function upsertPatents(db: D1Like, patents: PatentRecord[]): Promis
     await db.prepare(
       `INSERT INTO pour_patents
          (number, display, name, categories, company, prefix, remark, active, created_at, updated_at,
-          patent_type, method_name, first_seen_at, last_seen_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          patent_type, method_name, first_seen_at, last_seen_at, affiliation_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(number) DO UPDATE SET
          display = excluded.display, name = excluded.name, categories = excluded.categories,
          company = excluded.company, prefix = excluded.prefix, remark = excluded.remark,
          active = excluded.active, updated_at = excluded.updated_at,
          patent_type = excluded.patent_type, method_name = excluded.method_name,
-         first_seen_at = excluded.first_seen_at, last_seen_at = excluded.last_seen_at`
+         first_seen_at = excluded.first_seen_at, last_seen_at = excluded.last_seen_at,
+         affiliation_type = excluded.affiliation_type`
     ).bind(
       number,
       `제10-${number}호`,
@@ -252,7 +267,10 @@ export async function upsertPatents(db: D1Like, patents: PatentRecord[]): Promis
       patent.patentType || exists?.patent_type || "POUR",
       patent.methodName || exists?.method_name || "",
       patent.firstSeenAt || exists?.first_seen_at || "",
-      patent.lastSeenAt || exists?.last_seen_at || ""
+      patent.lastSeenAt || exists?.last_seen_at || "",
+      // 소속은 공법에서 따라온다. 넘어온 값도 없고 저장된 값도 없으면 공법으로 정한다.
+      patent.affiliationType || exists?.affiliation_type
+        || affiliationForType(patent.patentType || exists?.patent_type || "POUR")
     ).run();
 
     if (exists) result.updated++; else result.inserted++;

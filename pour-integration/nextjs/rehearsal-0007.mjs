@@ -137,17 +137,20 @@ await test("적용 전에는 notice_no · is_partner 열이 없다", () => {
 section("2. 0007 마이그레이션 적용");
 
 const result = await migratePourSchema(DB);
-await test("더해진 열이 0007·0008 이 말하는 것과 정확히 같다", () => {
+await test("더해진 열이 0007·0008·0009 가 말하는 것과 정확히 같다", () => {
   assert.deepStrictEqual(result.addedColumns, [
     // 0007 — 공고번호 · 협약사 여부
     "notice_no", "is_partner",
-    // 0008 — 특허 마스터의 구분 · 공법명 · 확인일
-    "patent_type", "method_name", "first_seen_at", "last_seen_at"
+    // 0008 — 특허 마스터의 공법 · 공법명 · 확인일
+    "patent_type", "method_name", "first_seen_at", "last_seen_at",
+    // 0009 — 소속 (자사계열 / 타사 / 미분류)
+    "affiliation_type"
   ], JSON.stringify(result));
 });
-await test("특허 마스터에도 열 넷이 더해졌다", () => {
+await test("특허 마스터에도 열 다섯이 더해졌다", () => {
   const cols = db.prepare("PRAGMA table_info(pour_patents)").all().map((c) => c.name);
-  ["patent_type", "method_name", "first_seen_at", "last_seen_at"].forEach((c) => {
+  ["patent_type", "method_name", "first_seen_at", "last_seen_at",
+   "affiliation_type"].forEach((c) => {
     assert.ok(cols.includes(c), `${c} 열이 없다`);
   });
 });

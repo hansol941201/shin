@@ -61,13 +61,37 @@
   /* ------------------------------------------------------- 엑셀 열 인식 */
 
   /**
-   * 개별 특허 한 건의 구분. 현장 전체의 구분과는 다른 것이다.
-   *   POUR   — 우리 특허
-   *   타사   — 다른 회사 특허
-   *   미분류 — 처음 보는 번호. 업체를 아직 확인하지 못했다 (추정하지 않는다)
+   * 개별 특허 한 건은 두 가지로 나누어 담는다. 현장 전체의 구분과는 다른 것이다.
+   *
+   *   소속(affiliationType)  자사계열 / 타사 / 미분류
+   *   공법(patentType)       POUR / DO / CNC / 타사공법 / 미분류
+   *
+   * DO 와 CNC 는 자사 계열이지만 POUR 공법 자체는 아니다. 그래서 소속은 같이 묶고
+   * 공법은 따로 둔다. 이렇게 해야 셋을 각각 세면서, 필요할 때 "자사계열 전체" 로도
+   * 합쳐 볼 수 있다.
    */
-  var PATENT_TYPES = ["POUR", "타사", "미분류"];
-  var TYPE_POUR = "POUR", TYPE_THIRD = "타사", TYPE_UNKNOWN = "미분류";
+  var AFFILIATIONS = ["자사계열", "타사", "미분류"];
+  var AFF_OWN = "자사계열", AFF_THIRD = "타사", AFF_UNKNOWN = "미분류";
+
+  var PATENT_TYPES = ["POUR", "DO", "CNC", "타사공법", "미분류"];
+  var TYPE_POUR = "POUR", TYPE_DO = "DO", TYPE_CNC = "CNC";
+  var TYPE_THIRD = "타사공법", TYPE_UNKNOWN = "미분류";
+
+  /** 자사 계열 공법. 셋을 합쳐 보는 자리에서 쓴다. */
+  var OWN_TYPES = [TYPE_POUR, TYPE_DO, TYPE_CNC];
+
+  /** 공법마다 정해진 소속. 공법이 정해지면 소속은 따라온다. */
+  var AFFILIATION_BY_TYPE = {
+    "POUR": AFF_OWN, "DO": AFF_OWN, "CNC": AFF_OWN,
+    "타사공법": AFF_THIRD, "미분류": AFF_UNKNOWN
+  };
+
+  /**
+   * 옛 값 → 새 값. 저장된 자료를 고쳐 쓰지 않고 읽을 때 옮겨 준다.
+   * 0008 까지는 patentType 에 "타사" 가 들어갔다. 그것은 공법 이름이 아니라
+   * 소속이었으므로 공법은 "타사공법", 소속은 "타사" 로 나눈다.
+   */
+  var LEGACY_TYPE = { "타사": TYPE_THIRD };
 
   /**
    * 저장된 마스터 한 건을 오늘의 모양으로 맞춘다.
@@ -80,8 +104,16 @@
   function normalizeMaster(rec) {
     var r = rec || {};
     var type = String(r.patentType || "").trim();
+    if (LEGACY_TYPE[type]) type = LEGACY_TYPE[type];          // "타사" → "타사공법"
     if (PATENT_TYPES.indexOf(type) < 0) type = TYPE_POUR;
+
+    // 소속은 공법에서 따라온다. 따로 담긴 값이 있고 어긋나지 않으면 그것을 쓴다.
+    var aff = String(r.affiliationType || "").trim();
+    if (AFFILIATIONS.indexOf(aff) < 0) aff = AFFILIATION_BY_TYPE[type];
+    else if (AFFILIATION_BY_TYPE[type] !== aff) aff = AFFILIATION_BY_TYPE[type];
+
     return {
+      affiliationType: aff,
       number: r.number,
       name: String(r.name || "").trim(),
       categories: Array.isArray(r.categories) ? r.categories : (r.category ? [r.category] : []),
@@ -278,6 +310,7 @@
         // 엑셀에 없는 칸(구분·공법명·확인일)은 업로드가 지우지 않는다
         var next = normalizeMaster(rec);
         if (!rec.patentType) next.patentType = before.patentType;
+        if (!rec.affiliationType) next.affiliationType = before.affiliationType;
         if (!next.methodName) next.methodName = before.methodName;
         next.firstSeenAt = before.firstSeenAt || next.firstSeenAt;
         next.lastSeenAt = before.lastSeenAt || next.lastSeenAt;
@@ -312,7 +345,33 @@
    * 이 함수를 쓴다. (모든 특허가 필요하면 list() 를 그대로 쓰면 된다)
    */
   function listPour(storage) {
-    return readStore(storage).filter(function (r) { return r.patentType === TYPE_POUR; });
+    return listByType(TYPE_POUR, storage);
+  }
+
+  /** 공법 하나로 골라 본다 ("POUR" / "DO" / "CNC" / "타사공법" / "미분류"). */
+  function listByType(type, storage) {
+    return readStore(storage).filter(function (r) { return r.patentType === type; });
+  }
+
+  /** 자사 계열 전체 (POUR + DO + CNC). */
+  function listOwn(storage) {
+    return readStore(storage).filter(function (r) { return r.affiliationType === AFF_OWN; });
+  }
+
+  /** 외부 타사만. 경쟁사 집계는 여기만 본다 (DO·CNC 는 들어오지 않는다). */
+  function listThirdParty(storage) {
+    return readStore(storage).filter(function (r) { return r.affiliationType === AFF_THIRD; });
+  }
+
+  /** 공법별 건수를 한 번에 센다. */
+  function countByType(storage) {
+    var out = {};
+    PATENT_TYPES.forEach(function (t) { out[t] = 0; });
+    readStore(storage).forEach(function (r) {
+      if (out[r.patentType] == null) out[r.patentType] = 0;
+      out[r.patentType]++;
+    });
+    return out;
   }
 
   function noteSeen(items, storage, seenAt) {
@@ -335,6 +394,7 @@
           number: number,
           // 업체명·공법명은 비워 둔다. 확인되기 전까지 지어내지 않는다.
           patentType: TYPE_UNKNOWN,
+          affiliationType: AFF_UNKNOWN,
           firstSeenAt: when,
           lastSeenAt: when
         }));
@@ -369,6 +429,11 @@
     if (fallbackKind === "POUR") return TYPE_POUR;
     if (fallbackKind) return TYPE_THIRD;
     return master ? master.patentType : TYPE_UNKNOWN;
+  }
+
+  /** 특허번호 한 건의 소속 ("자사계열" / "타사" / "미분류"). */
+  function affiliationOf(number, storage, fallbackKind) {
+    return AFFILIATION_BY_TYPE[typeOf(number, storage, fallbackKind)] || AFF_UNKNOWN;
   }
 
   /** 엑셀 한 건을 통째로 처리한다 (파싱 + 저장). */
@@ -512,6 +577,19 @@
     find: find,
     noteSeen: noteSeen,
     listPour: listPour,
+    listByType: listByType,
+    listOwn: listOwn,
+    listThirdParty: listThirdParty,
+    countByType: countByType,
+    affiliationOf: affiliationOf,
+    AFFILIATIONS: AFFILIATIONS,
+    AFF_OWN: AFF_OWN,
+    AFF_THIRD: AFF_THIRD,
+    AFF_UNKNOWN: AFF_UNKNOWN,
+    OWN_TYPES: OWN_TYPES,
+    TYPE_DO: TYPE_DO,
+    TYPE_CNC: TYPE_CNC,
+    AFFILIATION_BY_TYPE: AFFILIATION_BY_TYPE,
     typeOf: typeOf,
     PATENT_TYPES: PATENT_TYPES,
     TYPE_POUR: TYPE_POUR,

@@ -48,7 +48,8 @@ const PATENT_COLUMNS = [
   ["patent_type", "TEXT"],
   ["method_name", "TEXT"],
   ["first_seen_at", "TEXT"],
-  ["last_seen_at", "TEXT"]
+  ["last_seen_at", "TEXT"],
+  ["affiliation_type", "TEXT"]
 ];
 
 function arg(name, fallback) {

@@ -119,8 +119,10 @@ export interface PatentRecord {
   prefix: string;
   remark: string;
   active: boolean;
-  /** 개별 특허 한 건의 구분 ("POUR" / "타사" / "미분류"). 현장 전체 구분과는 다르다. */
+  /** 공법 ("POUR" / "DO" / "CNC" / "타사공법" / "미분류"). 현장 전체 구분과는 다르다. */
   patentType?: string;
+  /** 소속 ("자사계열" / "타사" / "미분류"). DO·CNC 는 자사 계열이지만 POUR 는 아니다. */
+  affiliationType?: string;
   /** 공법명. 특허명(name)과 따로 둔다. */
   methodName?: string;
   /** 이 번호를 현장에서 처음 본 날 */
@@ -135,8 +137,10 @@ export interface PatentBreakdownItem {
   display: string;
   /** 현장에서 사람이 고른 값 ("POUR" | "THIRD_PARTY") */
   kind: string;
-  /** 개별 특허의 구분 ("POUR" / "타사" / "미분류") */
+  /** 공법 ("POUR" / "DO" / "CNC" / "타사공법" / "미분류") */
   type: string;
+  /** 소속 ("자사계열" / "타사" / "미분류") */
+  affiliation: string;
   company: string;
   name: string;
   method: string;

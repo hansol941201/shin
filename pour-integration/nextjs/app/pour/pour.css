@@ -552,8 +552,15 @@
   border-radius:999px; white-space:nowrap;
   background:var(--white); color:#5C6675; border:1px solid #E3E8EF;
 }
+/* 자사 계열 셋은 채워서, 외부 타사·미분류는 비워서 구분한다.
+   POUR·DO·CNC 는 서로 다른 공법이므로 같은 배지로 뭉치지 않는다. */
 .pour-scope .pour-patent-type[data-type="POUR"]{background:var(--navy); color:var(--white); border-color:var(--navy);}
+.pour-scope .pour-patent-type[data-type="DO"]{background:var(--navy-mid); color:var(--white); border-color:var(--navy-mid);}
+.pour-scope .pour-patent-type[data-type="CNC"]{background:var(--navy-soft); color:var(--navy); border-color:#C7D0E2;}
 .pour-scope .pour-patent-type[data-type="미분류"]{background:#F3F5F8; color:#8A93A2;}
+.pour-scope .pour-patent-note{
+  margin-top:6px; font-size:12px; color:var(--muted);
+}
 
 /* 상세·수정 화면 위쪽의 상태 표시. 목록 표와 쓰임이 달라 따로 둔다.
    목록(.status-badge) 을 고쳐도 이쪽은 그대로다. */

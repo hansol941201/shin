@@ -66,7 +66,12 @@ export const PATENT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   /** 이 번호를 현장에서 처음 본 날 */
   ["first_seen_at", "TEXT"],
   /** 마지막으로 본 날 */
-  ["last_seen_at", "TEXT"]
+  ["last_seen_at", "TEXT"],
+  /**
+   * 소속 ("자사계열" / "타사" / "미분류").
+   * 공법(patent_type)과 나누어 담는다. DO·CNC 는 자사 계열이지만 POUR 는 아니다.
+   */
+  ["affiliation_type", "TEXT"]
 ] as const;
 
 /** 새로 만드는 표와 색인. 전부 IF NOT EXISTS 라 기존 것을 덮지 않는다. */
@@ -75,7 +80,8 @@ const CREATE_STATEMENTS: readonly string[] = [
      number TEXT PRIMARY KEY, display TEXT, name TEXT, categories TEXT,
      company TEXT, prefix TEXT, remark TEXT,
      active INTEGER NOT NULL DEFAULT 1, created_at TEXT, updated_at TEXT,
-     patent_type TEXT, method_name TEXT, first_seen_at TEXT, last_seen_at TEXT)`,
+     patent_type TEXT, method_name TEXT, first_seen_at TEXT, last_seen_at TEXT,
+     affiliation_type TEXT)`,
   `CREATE INDEX IF NOT EXISTS idx_pour_patents_name ON pour_patents (name)`,
   `CREATE TABLE IF NOT EXISTS pour_project_patents (
      id TEXT PRIMARY KEY, project_id TEXT NOT NULL, kind TEXT NOT NULL, number TEXT NOT NULL,

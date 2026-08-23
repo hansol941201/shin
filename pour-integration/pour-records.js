@@ -854,9 +854,16 @@
    */
   /* --------------------------------------- 현장 전체 구분 (개별 특허와 별개) */
 
-  var SITE_POUR = "POUR", SITE_THIRD = "타사";
-  var SITE_MULTI_PD = "다특허(PD)", SITE_MULTI = "다특허";
-  var SITE_CLASSES = [SITE_POUR, SITE_THIRD, SITE_MULTI_PD, SITE_MULTI];
+  var SITE_POUR = "POUR", SITE_DO = "DO", SITE_CNC = "CNC", SITE_THIRD = "타사";
+  var SITE_MULTI_PD = "다특허(PD)", SITE_MULTI = "다특허", SITE_UNKNOWN = "미분류";
+  var SITE_CLASSES = [SITE_POUR, SITE_DO, SITE_CNC, SITE_THIRD,
+                      SITE_MULTI_PD, SITE_MULTI, SITE_UNKNOWN];
+
+  /** 특허 한 건짜리 현장의 구분. 그 특허의 공법을 그대로 쓴다. */
+  var SINGLE_CLASS = {
+    "POUR": SITE_POUR, "DO": SITE_DO, "CNC": SITE_CNC,
+    "타사공법": SITE_THIRD, "미분류": SITE_UNKNOWN
+  };
 
   /**
    * 현장에 들어간 특허 하나하나의 구분을 돌려준다.
@@ -873,8 +880,10 @@
         number: it.number,
         display: it.display || PourPatents.formatNumber(it.number),
         kind: it.kind,                                     // 현장에서 사람이 고른 값
-        // 개별 특허의 구분. 마스터에 확실한 값이 있으면 그것을, 없으면 현장의 kind 를 쓴다.
+        // 개별 특허의 공법. 마스터에 확실한 값이 있으면 그것을, 없으면 현장의 kind 를 쓴다.
         type: PourPatents.typeOf(it.number, patentStorage, it.kind),
+        // 소속 (자사계열 / 타사 / 미분류). 공법에서 따라온다.
+        affiliation: PourPatents.affiliationOf(it.number, patentStorage, it.kind),
         // 업체명·공법명은 마스터에 있으면 이어 붙인다 (없으면 빈 값. 지어내지 않는다)
         company: it.company || (master && master.company) || "",
         name: it.name || (master && master.name) || "",
@@ -898,24 +907,116 @@
   function sitePatentClass(record, patentStorage) {
     var breakdown = patentBreakdown(record, patentStorage);
     if (!breakdown.length) return "";
+    if (breakdown.length === 1) {
+      return SINGLE_CLASS[breakdown[0].type] || SITE_UNKNOWN;
+    }
     var hasPour = breakdown.some(function (p) { return p.type === PourPatents.TYPE_POUR; });
-    if (breakdown.length === 1) return hasPour ? SITE_POUR : SITE_THIRD;
     return hasPour ? SITE_MULTI_PD : SITE_MULTI;
   }
 
-  /**
-   * POUR 실적에 넣을 현장인가. POUR + 다특허(PD) 가 대상이다.
-   * (다특허(PD) 안의 타사 특허는 그대로 타사로 남는다)
-   */
-  function isPourSite(record, patentStorage) {
-    var cls = sitePatentClass(record, patentStorage);
-    return cls === SITE_POUR || cls === SITE_MULTI_PD;
+  /** 이 현장에 그 공법의 특허가 하나라도 들어 있는가. */
+  function hasPatentType(record, type, patentStorage) {
+    return patentBreakdown(record, patentStorage).some(function (p) { return p.type === type; });
   }
 
-  /** 타사 대상 현장인가. 타사 + 다특허 가 대상이다. */
+  /**
+   * 집계는 현장 구분이 아니라 그 현장에 든 개별 특허로 판단한다.
+   * 그래야 한 현장이 여러 집계에 동시에 들어갈 수 있다.
+   * (POUR + DO + 4A 현장 → POUR 실적 · DO 실적 · 4A 경쟁사 집계에 모두 들어간다)
+   */
+
+  /**
+   * POUR 실적 대상인가. 실제 POUR 특허가 한 개 이상 든 현장이다.
+   * 결과적으로 POUR 단독과 다특허(PD)가 모두 들어온다.
+   * DO·CNC 만 있는 현장은 자사 계열이지만 POUR 실적이 아니다.
+   */
+  function isPourSite(record, patentStorage) {
+    return hasPatentType(record, PourPatents.TYPE_POUR, patentStorage);
+  }
+
+  /** DO 실적 대상인가. 다른 특허와 같이 들어 있어도 대상이다. */
+  function isDoSite(record, patentStorage) {
+    return hasPatentType(record, PourPatents.TYPE_DO, patentStorage);
+  }
+
+  /** CNC 실적 대상인가. */
+  function isCncSite(record, patentStorage) {
+    return hasPatentType(record, PourPatents.TYPE_CNC, patentStorage);
+  }
+
+  /** 자사 계열 전체(POUR·DO·CNC 중 하나라도) 대상인가. */
+  function isOwnSite(record, patentStorage) {
+    return patentBreakdown(record, patentStorage).some(function (p) {
+      return p.affiliation === PourPatents.AFF_OWN;
+    });
+  }
+
+  /**
+   * 외부 타사 경쟁사 집계 대상인가.
+   * 소속이 "타사" 인 특허가 든 현장만 해당한다. DO·CNC 는 자사 계열이라 들어오지 않는다.
+   * 다특허(PD) 현장도 그 안에 외부 타사 특허가 있으면 대상이다.
+   */
   function isThirdSite(record, patentStorage) {
-    var cls = sitePatentClass(record, patentStorage);
-    return cls === SITE_THIRD || cls === SITE_MULTI;
+    return patentBreakdown(record, patentStorage).some(function (p) {
+      return p.affiliation === PourPatents.AFF_THIRD;
+    });
+  }
+
+  /**
+   * 이 현장에 든 외부 타사 업체 이름들. 경쟁사 집계에 쓴다.
+   * DO·CNC 는 자사 계열이라 여기에 나오지 않는다. 업체명이 비어 있으면 넣지 않는다.
+   */
+  function thirdPartyCompanies(record, patentStorage) {
+    var out = [], seen = {};
+    patentBreakdown(record, patentStorage).forEach(function (p) {
+      if (p.affiliation !== PourPatents.AFF_THIRD) return;
+      if (!p.company || seen[p.company]) return;
+      seen[p.company] = true;
+      out.push(p.company);
+    });
+    return out;
+  }
+
+  /**
+   * 이 현장에 든 자사 계열 공법들 (["POUR", "DO"] 처럼).
+   * POUR+DO 현장, POUR+CNC 현장을 찾는 데 쓴다.
+   */
+  function ownMethods(record, patentStorage) {
+    var out = [];
+    PourPatents.OWN_TYPES.forEach(function (t) {
+      if (hasPatentType(record, t, patentStorage)) out.push(t);
+    });
+    return out;
+  }
+
+  /**
+   * 한 현장을 집계에 넣기 좋은 모양으로 한 번에 풀어 준다.
+   * 나중에 만들 분석 화면은 이 값만 세면 된다.
+   */
+  function siteAnalysis(record, patentStorage) {
+    var breakdown = patentBreakdown(record, patentStorage);
+    return {
+      id: record.id,
+      client: record.client,
+      status: record.status,
+      region: record.region,
+      city: record.city,
+      contractor: record.contractor,
+      categories: record.categories,
+      categoryGroups: record.categoryGroups,
+      noticeDate: record.noticeDate,
+      awardDate: record.awardDate,
+      siteClass: sitePatentClass(record, patentStorage),
+      patents: breakdown,                                  // 개별 특허는 그대로 남는다
+      ownMethods: ownMethods(record, patentStorage),
+      thirdPartyCompanies: thirdPartyCompanies(record, patentStorage),
+      isPour: isPourSite(record, patentStorage),
+      isDo: isDoSite(record, patentStorage),
+      isCnc: isCncSite(record, patentStorage),
+      isOwn: isOwnSite(record, patentStorage),
+      isThirdParty: isThirdSite(record, patentStorage),
+      isMulti: breakdown.length >= 2
+    };
   }
 
   function patentStats(record, patentStorage) {
@@ -1370,7 +1471,14 @@
     sitePatentClass: sitePatentClass,
     patentBreakdown: patentBreakdown,
     isPourSite: isPourSite,
+    isDoSite: isDoSite,
+    isCncSite: isCncSite,
+    isOwnSite: isOwnSite,
     isThirdSite: isThirdSite,
+    hasPatentType: hasPatentType,
+    thirdPartyCompanies: thirdPartyCompanies,
+    ownMethods: ownMethods,
+    siteAnalysis: siteAnalysis,
     SITE_CLASSES: SITE_CLASSES,
     conflictingPatents: conflictingPatents,
     CONFLICT_MESSAGE: CONFLICT_MESSAGE,

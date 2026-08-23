@@ -25,14 +25,22 @@ function section(t) { console.log("\n" + t); }
 
 /** POUR 특허 하나와 타사 특허 하나가 든 마스터를 만든다 */
 function seedMaster(store) {
-  PourPatents.load([
-    ["특허번호", "특허명", "공종", "특허권자"],
-    ["10-1935719", "POUR공법", "재도장", "㈜넷폼알앤디"],
-    ["10-2694890", "DO공법", "재도장", "DO공법"]
-  ], store);
-  const list = PourPatents.list(store).map(r =>
-    r.company === "DO공법" ? Object.assign({}, r, { patentType: "타사" }) : r);
-  store.setItem(PourPatents.STORAGE_KEY, JSON.stringify(list));
+  store.setItem(PourPatents.STORAGE_KEY, JSON.stringify([
+    { number: "1935719", name: "POUR공법", company: "㈜넷폼알앤디", patentType: "POUR" },
+    { number: "2694890", name: "DO공법", company: "DO공법", patentType: "DO" },
+    { number: "2780472", name: "CNC공법", company: "CNC공법", patentType: "CNC" },
+    { number: "2091977", name: "4A공법", company: "4A시스템", patentType: "타사공법" }
+  ]));
+}
+
+const NO = { POUR: "10-1935719", DO: "10-2694890", CNC: "10-2780472", "4A": "10-2091977" };
+
+/** 공법 이름들로 현장 하나를 만든다 */
+function siteOf(store, client, keys) {
+  return PourRecords.save({
+    client, city: "하남", status: "공고", noticeDate: "2026-01-05",
+    patentItems: keys.map(k => ({ number: NO[k], kind: k === "4A" ? "THIRD_PARTY" : "POUR" }))
+  }, store);
 }
 
 function site(store, client, items) {
@@ -95,31 +103,28 @@ section("2. 개별 특허의 구분");
 test("현장 하나에 든 특허가 각각 제 구분을 지킨다", () => {
   const store = memoryStorage();
   seedMaster(store);
-  const rec = site(store, "조치원자이", [
-    { number: "10-1935719", kind: "POUR" },
-    { number: "10-2694890", kind: "THIRD_PARTY" }
-  ]);
+  const rec = siteOf(store, "POUR+4A", ["POUR", "4A"]);
   const rows = PourRecords.patentBreakdown(rec, store);
   assert.strictEqual(rows.length, 2);
   assert.strictEqual(rows[0].type, "POUR");
+  assert.strictEqual(rows[0].affiliation, "자사계열");
   assert.strictEqual(rows[0].company, "㈜넷폼알앤디");
-  assert.strictEqual(rows[1].type, "타사", "다특허(PD) 현장이어도 타사 특허는 타사로 남는다");
-  assert.strictEqual(rows[1].company, "DO공법");
+  assert.strictEqual(rows[1].type, "타사공법", "다특허(PD) 현장이어도 타사 특허는 타사로 남는다");
+  assert.strictEqual(rows[1].affiliation, "타사");
+  assert.strictEqual(rows[1].company, "4A시스템");
 });
 
 test("현장 구분이 개별 특허의 구분을 덮어쓰지 않는다", () => {
   const store = memoryStorage();
   seedMaster(store);
-  const rec = site(store, "오남신동아파밀리에", [
-    { number: "10-1935719", kind: "POUR" },
-    { number: "10-2694890", kind: "THIRD_PARTY" }
-  ]);
+  const rec = siteOf(store, "오남신동아파밀리에", ["POUR", "DO"]);
   assert.strictEqual(PourRecords.sitePatentClass(rec, store), "다특허(PD)");
-  // 현장은 PD 지만 특허 두 건의 구분은 그대로다
+  // 현장은 PD 지만 특허 두 건의 공법은 그대로다 (DO 가 POUR 로 바뀌지 않는다)
   const types = PourRecords.patentBreakdown(rec, store).map(p => p.type);
-  assert.deepStrictEqual(types, ["POUR", "타사"]);
+  assert.deepStrictEqual(types, ["POUR", "DO"]);
   // 마스터의 값도 바뀌지 않았다
-  assert.strictEqual(PourPatents.find("10-2694890", store).patentType, "타사");
+  assert.strictEqual(PourPatents.find(NO.DO, store).patentType, "DO");
+  assert.strictEqual(PourPatents.find(NO.DO, store).affiliationType, "자사계열");
 });
 
 /* ------------------------------------------------------------------ */
@@ -133,10 +138,10 @@ test("POUR 특허만 있으면 POUR", () => {
   assert.strictEqual(PourRecords.sitePatentClass(rec, store), "POUR");
 });
 
-test("타사 특허만 있으면 타사", () => {
+test("외부 타사 특허만 있으면 타사", () => {
   const store = memoryStorage();
   seedMaster(store);
-  const rec = site(store, "단일타사", [{ number: "10-2694890", kind: "THIRD_PARTY" }]);
+  const rec = siteOf(store, "단일타사", ["4A"]);
   assert.strictEqual(PourRecords.sitePatentClass(rec, store), "타사");
 });
 
@@ -180,28 +185,35 @@ test("POUR 실적에는 POUR 와 다특허(PD) 가 들어간다", () => {
   assert.ok(PourRecords.isPourSite(pd, store), "다특허(PD)는 POUR 실적에 포함되어야 한다");
 });
 
-test("타사 집계에는 타사와 다특허 가 들어가고 다특허(PD)는 빠진다", () => {
+test("타사 경쟁사 집계는 소속이 타사인 특허가 든 현장만 본다", () => {
   const store = memoryStorage();
   seedMaster(store);
-  const third = site(store, "타사단일", [{ number: "10-2694890", kind: "THIRD_PARTY" }]);
-  const multi = site(store, "타사둘", [
-    { number: "10-2694890", kind: "THIRD_PARTY" }, { number: "10-9999999", kind: "THIRD_PARTY" }]);
-  const pd = site(store, "PD", [
-    { number: "10-1935719", kind: "POUR" }, { number: "10-2694890", kind: "THIRD_PARTY" }]);
-  assert.ok(PourRecords.isThirdSite(third, store));
-  assert.ok(PourRecords.isThirdSite(multi, store));
-  assert.ok(!PourRecords.isThirdSite(pd, store));
+  // 다특허(PD)라도 그 안에 외부 타사가 있으면 그 업체 집계에는 들어간다
+  const pdWith4A = siteOf(store, "POUR+4A", ["POUR", "4A"]);
+  assert.ok(PourRecords.isThirdSite(pdWith4A, store));
+  assert.deepStrictEqual(PourRecords.thirdPartyCompanies(pdWith4A, store), ["4A시스템"]);
+  // DO·CNC 는 자사 계열이라 경쟁사 집계에 절대 들어가지 않는다
+  const pourDo = siteOf(store, "POUR+DO", ["POUR", "DO"]);
+  const doCnc = siteOf(store, "DO+CNC", ["DO", "CNC"]);
+  assert.ok(!PourRecords.isThirdSite(pourDo, store));
+  assert.ok(!PourRecords.isThirdSite(doCnc, store));
+  assert.deepStrictEqual(PourRecords.thirdPartyCompanies(doCnc, store), []);
 });
 
-test("다특허(PD) 안의 타사 특허는 그 업체 집계에 그대로 잡힌다", () => {
+test("조치원자이 — POUR + DO 가 양쪽에 다 잡히고 경쟁사는 없다", () => {
   const store = memoryStorage();
   seedMaster(store);
-  const pd = site(store, "조치원자이", [
-    { number: "10-1935719", kind: "POUR" }, { number: "10-2694890", kind: "THIRD_PARTY" }]);
-  // 업체별 집계는 현장 구분이 아니라 개별 특허를 세어야 한다
-  const doRows = PourRecords.patentBreakdown(pd, store)
-    .filter(p => p.company === "DO공법" && p.type === "타사");
-  assert.strictEqual(doRows.length, 1, "PD 현장이어도 DO공법은 경쟁사 집계에 잡혀야 한다");
+  const pd = siteOf(store, "조치원자이", ["POUR", "DO"]);
+  const a = PourRecords.siteAnalysis(pd, store);
+  assert.strictEqual(a.siteClass, "다특허(PD)");
+  assert.ok(a.isPour, "POUR 실적에 들어가야 한다");
+  assert.ok(a.isDo, "DO 실적에도 들어가야 한다");
+  assert.ok(a.isOwn);
+  assert.ok(!a.isThirdParty, "DO 는 외부 타사가 아니다");
+  assert.deepStrictEqual(a.thirdPartyCompanies, []);
+  // 개별 특허는 각각 제 공법을 그대로 지킨다
+  assert.deepStrictEqual(a.patents.map(p => p.type), ["POUR", "DO"]);
+  assert.deepStrictEqual(a.patents.map(p => p.affiliation), ["자사계열", "자사계열"]);
 });
 
 /* ------------------------------------------------------------------ */
@@ -241,6 +253,99 @@ test("미분류가 마스터에 있어도 POUR 검토 필요 표시가 유지된
   // 자동 등록으로 마스터에는 있지만 미분류다
   assert.ok(PourPatents.find("10-8888888", store));
   assert.strictEqual(PourRecords.patentStats(rec, store).status, "POUR 특허 검토 필요");
+});
+
+/* ------------------------------------------------------------------ */
+
+section("6. 소속과 공법을 나누어 담는다");
+
+test("DO·CNC 는 자사 계열이지만 POUR 가 아니다", () => {
+  const store = memoryStorage();
+  seedMaster(store);
+  const doRec = PourPatents.find(NO.DO, store);
+  const cncRec = PourPatents.find(NO.CNC, store);
+  assert.strictEqual(doRec.patentType, "DO");
+  assert.strictEqual(doRec.affiliationType, "자사계열");
+  assert.strictEqual(cncRec.patentType, "CNC");
+  assert.strictEqual(cncRec.affiliationType, "자사계열");
+  // POUR 로 합쳐지지 않았다
+  assert.notStrictEqual(doRec.patentType, "POUR");
+  assert.notStrictEqual(cncRec.patentType, "POUR");
+});
+
+test("DO·CNC 는 외부 타사로도 분류되지 않는다", () => {
+  const store = memoryStorage();
+  seedMaster(store);
+  const thirdNumbers = PourPatents.listThirdParty(store).map(r => r.number);
+  assert.ok(!thirdNumbers.includes("2694890"), "DO 가 타사에 섞였다");
+  assert.ok(!thirdNumbers.includes("2780472"), "CNC 가 타사에 섞였다");
+  assert.deepStrictEqual(thirdNumbers, ["2091977"]);
+});
+
+test("POUR·DO·CNC 를 각각 셀 수 있다", () => {
+  const store = memoryStorage();
+  seedMaster(store);
+  const count = PourPatents.countByType(store);
+  assert.strictEqual(count["POUR"], 1);
+  assert.strictEqual(count["DO"], 1);
+  assert.strictEqual(count["CNC"], 1);
+  assert.strictEqual(count["타사공법"], 1);
+});
+
+test("셋을 합쳐 자사계열 전체로도 셀 수 있다", () => {
+  const store = memoryStorage();
+  seedMaster(store);
+  assert.strictEqual(PourPatents.listOwn(store).length, 3);
+  assert.strictEqual(PourPatents.listPour(store).length, 1, "POUR 만 세면 1건이어야 한다");
+});
+
+test("0008 방식으로 저장된 옛 값이 두 칸으로 나뉘어 읽힌다", () => {
+  const store = memoryStorage();
+  store.setItem(PourPatents.STORAGE_KEY, JSON.stringify([
+    { number: "2091977", patentType: "타사", company: "4A시스템" },
+    { number: "1935719", patentType: "POUR", company: "㈜넷폼알앤디" }
+  ]));
+  const third = PourPatents.find("10-2091977", store);
+  assert.strictEqual(third.patentType, "타사공법", "'타사' 는 소속이지 공법 이름이 아니다");
+  assert.strictEqual(third.affiliationType, "타사");
+  const pour = PourPatents.find("10-1935719", store);
+  assert.strictEqual(pour.patentType, "POUR");
+  assert.strictEqual(pour.affiliationType, "자사계열");
+});
+
+/* ------------------------------------------------------------------ */
+
+section("7. 현장 구분 (열두 가지 조합)");
+
+const CASES = [
+  { keys: ["POUR"],             cls: "POUR",       pour: true,  drop: false, cnc: false, third: [] },
+  { keys: ["DO"],               cls: "DO",         pour: false, drop: true,  cnc: false, third: [] },
+  { keys: ["CNC"],              cls: "CNC",        pour: false, drop: false, cnc: true,  third: [] },
+  { keys: ["4A"],               cls: "타사",        pour: false, drop: false, cnc: false, third: ["4A시스템"] },
+  { keys: ["POUR", "4A"],       cls: "다특허(PD)",  pour: true,  drop: false, cnc: false, third: ["4A시스템"] },
+  { keys: ["POUR", "DO"],       cls: "다특허(PD)",  pour: true,  drop: true,  cnc: false, third: [] },
+  { keys: ["POUR", "CNC"],      cls: "다특허(PD)",  pour: true,  drop: false, cnc: true,  third: [] },
+  { keys: ["POUR", "DO", "4A"], cls: "다특허(PD)",  pour: true,  drop: true,  cnc: false, third: ["4A시스템"] },
+  { keys: ["DO", "4A"],         cls: "다특허",      pour: false, drop: true,  cnc: false, third: ["4A시스템"] },
+  { keys: ["CNC", "4A"],        cls: "다특허",      pour: false, drop: false, cnc: true,  third: ["4A시스템"] },
+  { keys: ["DO", "CNC"],        cls: "다특허",      pour: false, drop: true,  cnc: true,  third: [] },
+  { keys: ["POUR", "DO", "CNC"], cls: "다특허(PD)", pour: true,  drop: true,  cnc: true,  third: [] }
+];
+
+CASES.forEach((c) => {
+  test(`${c.keys.join(" + ")} → ${c.cls}`, () => {
+    const store = memoryStorage();
+    seedMaster(store);
+    const rec = siteOf(store, c.keys.join("+"), c.keys);
+    const a = PourRecords.siteAnalysis(rec, store);
+    assert.strictEqual(a.siteClass, c.cls);
+    assert.strictEqual(a.isPour, c.pour, "POUR 실적");
+    assert.strictEqual(a.isDo, c.drop, "DO 실적");
+    assert.strictEqual(a.isCnc, c.cnc, "CNC 실적");
+    assert.deepStrictEqual(a.thirdPartyCompanies, c.third, "타사 경쟁사");
+    // 개별 특허 수가 그대로다 (현장 구분 때문에 버려지지 않는다)
+    assert.strictEqual(a.patents.length, c.keys.length);
+  });
 });
 
 console.log(`\n합계 ${passed + failed}건 · 통과 ${passed} · 실패 ${failed}`);

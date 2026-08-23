@@ -30,11 +30,29 @@ import openpyxl
 
 BASE = Path(__file__).resolve().parent.parent
 
-# POUR 자사 특허를 가진 업체. 이 목록에 있는 것만 POUR 로 본다.
-# (엑셀에 적힌 업체명 그대로. 여기 없는 업체는 추정하지 않고 타사/미분류로 둔다)
-POUR_COMPANIES = {"㈜넷폼알앤디", "넷폼알앤디", "(주)넷폼알앤디"}
+# ---------------------------------------------------------------- 분류 기준
+#
+# 소속과 공법을 나누어 담는다. DO 와 CNC 는 자사 계열이지만 POUR 공법은 아니다.
+#
+#   소속  자사계열 / 타사 / 미분류
+#   공법  POUR / DO / CNC / 타사공법 / 미분류
+#
+# 아래 이름들은 모두 원본 엑셀에 실제로 적혀 있는 값이다. 짐작으로 만든 것이 없다.
+# 여기 없는 업체는 추정하지 않고 타사(업체명이 있을 때) 또는 미분류로 둔다.
 
-TYPE_POUR, TYPE_THIRD, TYPE_UNKNOWN = "POUR", "타사", "미분류"
+# 「특허(N)」 업체명 열에 그대로 적혀 있는 이름
+POUR_COMPANIES = {"㈜넷폼알앤디", "넷폼알앤디", "(주)넷폼알앤디"}
+DO_COMPANIES = {"DO공법"}
+CNC_COMPANIES = {"CNC공법"}
+
+AFF_OWN, AFF_THIRD, AFF_UNKNOWN = "자사계열", "타사", "미분류"
+TYPE_POUR, TYPE_DO, TYPE_CNC = "POUR", "DO", "CNC"
+TYPE_THIRD, TYPE_UNKNOWN = "타사공법", "미분류"
+
+AFFILIATION_BY_TYPE = {
+    TYPE_POUR: AFF_OWN, TYPE_DO: AFF_OWN, TYPE_CNC: AFF_OWN,
+    TYPE_THIRD: AFF_THIRD, TYPE_UNKNOWN: AFF_UNKNOWN,
+}
 
 
 def norm_number(raw):
@@ -64,11 +82,34 @@ def text(v):
     return str(v).strip() if v is not None else ""
 
 
-def patent_type_for(company):
-    """개별 특허 한 건의 구분. 업체명을 모르면 미분류로 둔다 (추정하지 않는다)."""
+def patent_type_for(company, method=""):
+    """
+    개별 특허 한 건의 공법. 업체명을 모르면 미분류로 둔다 (추정하지 않는다).
+
+    판정 근거는 원본 엑셀 두 곳이 서로 맞는 것만 쓴다.
+      · 업체명이 "DO공법"  → DO   (「특허(N)」 7건, 피벗 시트 구분=DO 행의 번호와 일치)
+      · 업체명이 "CNC공법" → CNC  (「특허(N)」 2건, 피벗 시트 구분=CNC 행과 일치)
+      · 넷폼알앤디이면서 공법명에 CNC 가 적힌 것 → CNC (자사 계열의 CNC 공법)
+      · 그 밖의 넷폼알앤디 → POUR
+      · 업체명이 있으나 위에 없음 → 타사공법
+      · 업체명 없음 → 미분류
+
+    "다특허(PD)" 같은 값은 현장 전체의 구분이지 개별 특허의 공법이 아니므로 쓰지 않는다.
+    """
     if not company:
         return TYPE_UNKNOWN
-    return TYPE_POUR if company in POUR_COMPANIES else TYPE_THIRD
+    if company in DO_COMPANIES:
+        return TYPE_DO
+    if company in CNC_COMPANIES:
+        return TYPE_CNC
+    if company in POUR_COMPANIES:
+        # 같은 회사 안에서도 CNC 공법은 따로 센다
+        return TYPE_CNC if "CNC" in method.upper() else TYPE_POUR
+    return TYPE_THIRD
+
+
+def affiliation_for(patent_type):
+    return AFFILIATION_BY_TYPE.get(patent_type, AFF_UNKNOWN)
 
 
 def read_master(wb):
@@ -96,20 +137,23 @@ def read_master(wb):
         if number in out:
             # 같은 번호가 여러 줄이면 비어 있는 칸만 채운다
             rec = out[number]
-            if not rec["company"] and company:
-                rec["company"] = company
-                rec["patentType"] = patent_type_for(company)
             if not rec["methodName"] and method:
                 rec["methodName"] = method
+            if not rec["company"] and company:
+                rec["company"] = company
             if not rec["name"] and name:
                 rec["name"] = name
+            rec["patentType"] = patent_type_for(rec["company"], rec["methodName"])
+            rec["affiliationType"] = affiliation_for(rec["patentType"])
             continue
+        ptype = patent_type_for(company, method)
         out[number] = {
             "number": number,
             "name": name,
             "company": company,
             "methodName": method,
-            "patentType": patent_type_for(company),
+            "patentType": ptype,
+            "affiliationType": affiliation_for(ptype),
             "categories": [],
             "category": "",
             "remark": "",
@@ -119,6 +163,37 @@ def read_master(wb):
             "lastSeenAt": "",
         }
     return out
+
+
+def apply_single_site_evidence(master, sites):
+    """
+    특허 한 건짜리 현장의 "구분" 열을 근거로 쓴다.
+
+    특허가 하나뿐인 현장의 구분은 곧 그 특허의 공법이므로 확실한 근거다.
+    다만 구분이 "DO"·"CNC" 일 때만 쓴다. 원본의 "POUR" 는 자사 계열을 POUR 로
+    묶어 세던 옛 방식이 섞여 있어(업체명이 DO공법인데 구분이 POUR 인 행이 있다)
+    근거로 쓰지 않는다. 우리가 지금 나누려는 것이 바로 그 묶음이다.
+
+    업체명으로 이미 정해진 것은 덮지 않는다. 미분류로 남은 것만 채운다.
+    """
+    per_site = {}
+    for row in sites:
+        per_site.setdefault(row["client"], set()).add(row["number"])
+
+    filled = []
+    for row in sites:
+        if len(per_site[row["client"]]) != 1:
+            continue
+        raw = row["siteClassRaw"]
+        if raw not in (TYPE_DO, TYPE_CNC):
+            continue
+        rec = master.get(row["number"])
+        if not rec or rec["patentType"] != TYPE_UNKNOWN:
+            continue                      # 업체명으로 이미 정해진 것은 그대로 둔다
+        rec["patentType"] = raw
+        rec["affiliationType"] = affiliation_for(raw)
+        filled.append((row["number"], row["client"], raw))
+    return filled
 
 
 def read_sites(wb, master):
@@ -149,15 +224,18 @@ def read_sites(wb, master):
         })
         # 마스터에 없는 번호는 여기서 미분류로 등록한다 (업체명은 엑셀에 있을 때만 담는다)
         if number not in master:
+            ptype = patent_type_for(company)
             master[number] = {
                 "number": number, "name": "", "company": company,
-                "methodName": "", "patentType": patent_type_for(company),
+                "methodName": "", "patentType": ptype,
+                "affiliationType": affiliation_for(ptype),
                 "categories": [], "category": "", "remark": "", "prefix": "",
                 "active": True, "firstSeenAt": "", "lastSeenAt": "",
             }
         elif not master[number]["company"] and company:
             master[number]["company"] = company
-            master[number]["patentType"] = patent_type_for(company)
+            master[number]["patentType"] = patent_type_for(company, master[number]["methodName"])
+            master[number]["affiliationType"] = affiliation_for(master[number]["patentType"])
     return rows
 
 
@@ -180,6 +258,7 @@ def main():
     master = read_master(wb)
     from_master = len(master)
     sites = read_sites(wb, master)
+    filled = apply_single_site_evidence(master, sites)
 
     # 현장에서 처음/마지막으로 본 날을 채운다 (공고일 기준. 없으면 비워 둔다)
     seen = {}
@@ -209,11 +288,13 @@ def main():
         lines.append(
             "INSERT INTO pour_patents "
             "(number, display, name, categories, company, prefix, remark, active, "
-            "created_at, updated_at, patent_type, method_name, first_seen_at, last_seen_at) VALUES ("
+            "created_at, updated_at, patent_type, method_name, first_seen_at, last_seen_at, "
+            "affiliation_type) VALUES ("
             f"{sql_text(rec['number'])}, {sql_text('제10-' + rec['number'] + '호')}, "
             f"{sql_text(rec['name'])}, NULL, {sql_text(rec['company'])}, NULL, NULL, 1, "
             f"NULL, NULL, {sql_text(rec['patentType'])}, {sql_text(rec['methodName'])}, "
-            f"{sql_text(rec['firstSeenAt'])}, {sql_text(rec['lastSeenAt'])})\n"
+            f"{sql_text(rec['firstSeenAt'])}, {sql_text(rec['lastSeenAt'])}, "
+            f"{sql_text(rec['affiliationType'])})\n"
             "ON CONFLICT(number) DO UPDATE SET\n"
             "  name = COALESCE(NULLIF(excluded.name, ''), pour_patents.name),\n"
             "  company = COALESCE(NULLIF(excluded.company, ''), pour_patents.company),\n"
@@ -222,10 +303,32 @@ def main():
             "                     THEN COALESCE(pour_patents.patent_type, excluded.patent_type)\n"
             "                     ELSE excluded.patent_type END,\n"
             "  first_seen_at = COALESCE(NULLIF(excluded.first_seen_at, ''), pour_patents.first_seen_at),\n"
-            "  last_seen_at = COALESCE(NULLIF(excluded.last_seen_at, ''), pour_patents.last_seen_at);"
+            "  last_seen_at = COALESCE(NULLIF(excluded.last_seen_at, ''), pour_patents.last_seen_at),\n"
+            "  affiliation_type = CASE WHEN excluded.affiliation_type = '미분류'\n"
+            "                          THEN COALESCE(pour_patents.affiliation_type, excluded.affiliation_type)\n"
+            "                          ELSE excluded.affiliation_type END;"
         )
     (BASE / "nextjs" / "drizzle" / "seed-patent-master.sql").write_text(
         "\n".join(lines) + "\n", encoding="utf-8")
+
+    # 원본 엑셀의 "구분" 열과 견주어 본다. 그 열은 현장 전체의 구분이므로 개별 특허의
+    # 공법과 곧바로 같지는 않지만, 특허 한 건짜리 현장에서는 같아야 한다.
+    # 어긋나는 것이 있으면 조용히 넘기지 않고 알린다.
+    single = {}
+    per_site = {}
+    for row in sites:
+        per_site.setdefault(row["client"], set()).add(row["number"])
+    disagree = []
+    for row in sites:
+        if len(per_site[row["client"]]) != 1:
+            continue
+        raw = row["siteClassRaw"]
+        if raw not in (TYPE_DO, TYPE_CNC, TYPE_POUR):
+            continue
+        got = master[row["number"]]["patentType"]
+        if got != raw:
+            disagree.append((row["number"], row["client"], raw, got))
+        single[row["number"]] = raw
 
     by_type = {}
     for rec in records:
@@ -236,9 +339,42 @@ def main():
         multi.setdefault(row["client"], set()).add(row["number"])
     multi_count = sum(1 for v in multi.values() if len(v) > 1)
 
-    print(f"특허 마스터        {len(records)}건 (「특허(N)」 {from_master}건 + 현장에서 새로 본 {len(records) - from_master}건)")
-    for t in (TYPE_POUR, TYPE_THIRD, TYPE_UNKNOWN):
-        print(f"  {t:<5} {by_type.get(t, 0)}건")
+    by_aff = {}
+    for rec in records:
+        by_aff[rec["affiliationType"]] = by_aff.get(rec["affiliationType"], 0) + 1
+    own_total = sum(by_type.get(t, 0) for t in (TYPE_POUR, TYPE_DO, TYPE_CNC))
+
+    print(f"특허 마스터        {len(records)}건 "
+          f"(「특허(N)」 {from_master}건 + 현장에서 새로 본 {len(records) - from_master}건)")
+    print("  공법별")
+    for t in (TYPE_POUR, TYPE_DO, TYPE_CNC, TYPE_THIRD, TYPE_UNKNOWN):
+        print(f"    {t:<6} {by_type.get(t, 0)}건")
+    print("  소속별")
+    for a in (AFF_OWN, AFF_THIRD, AFF_UNKNOWN):
+        print(f"    {a:<6} {by_aff.get(a, 0)}건")
+    print(f"  자사계열 전체 (POUR+DO+CNC)  {own_total}건")
+
+    if filled:
+        print(f"\n  특허 한 건짜리 현장의 '구분' 으로 채운 건 {len(filled)}개")
+        for number, client, raw in filled:
+            print(f"      {number} / {client} → {raw}")
+
+    # 구분이 POUR 인데 업체가 DO·CNC 인 것은 옛 묶음이다. 이번에 나눈 것이 맞다.
+    old_lumped = [d for d in disagree if d[2] == TYPE_POUR and d[3] in (TYPE_DO, TYPE_CNC)]
+    other = [d for d in disagree if d not in old_lumped]
+    if old_lumped:
+        seen_nums = sorted({d[0] for d in old_lumped})
+        print(f"\n  원본 '구분' 이 POUR 인데 업체가 DO·CNC 인 건 {len(old_lumped)}줄 "
+              f"(특허번호 {len(seen_nums)}개) — 자사 계열을 POUR 로 묶어 세던 옛 방식입니다.")
+        print("  이번 기준대로 DO·CNC 로 나눴습니다 (POUR 로 합치지 않았습니다).")
+        for number, client, raw, got in old_lumped[:6]:
+            print(f"      {number} / {client} — 원본:{raw} · 이번:{got}")
+    if other:
+        print(f"\n  ⚠ 그 밖에 어긋나는 건 {len(other)}개 (직접 확인이 필요합니다)")
+        for number, client, raw, got in other[:10]:
+            print(f"      {number} / {client} — 원본:{raw} · 판정:{got}")
+    if not disagree:
+        print("\n  원본 '구분' 열(특허 한 건짜리 현장)과 어긋나는 건 없음")
     print(f"현장별 특허 기록   {len(sites)}줄 · 현장 {len(site_names)}곳 · 특허 2개 이상 {multi_count}곳")
     print(f"\n  {out_json.relative_to(BASE.parent)}")
     print(f"  {(BASE / 'nextjs' / 'drizzle' / 'seed-patent-master.sql').relative_to(BASE.parent)}")

@@ -302,6 +302,8 @@
           var tag = document.createElement("span");
           tag.className = "patent-type";
           tag.setAttribute("data-type", text);
+          // 공법 옆에 소속을 함께 보여, 자사 계열인지 한눈에 알 수 있게 한다
+          tag.title = p.affiliation + " · " + text;
           tag.textContent = text;
           td.appendChild(tag);
         } else {
@@ -313,6 +315,17 @@
     });
     table.appendChild(body);
     box.appendChild(table);
+
+    // DO·CNC 가 든 현장에서만 알린다. POUR 로 합치지 않는다는 뜻을 분명히 하기 위해서다.
+    var ownOther = rows.filter(function (p) {
+      return p.type === PourPatents.TYPE_DO || p.type === PourPatents.TYPE_CNC;
+    });
+    if (ownOther.length) {
+      var note = document.createElement("div");
+      note.className = "patent-note";
+      note.textContent = "DO공법과 CNC는 자사 계열 공법으로 별도 분류됩니다.";
+      box.appendChild(note);
+    }
   }
 
   function openNotice(id) {
