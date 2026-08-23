@@ -6097,12 +6097,19 @@ window.SHIN2_CRM_APP_INIT = function(){
     const contactFields = [
       ['repName','대표자'], ['phone','전화번호'], ['address','주소'], ['bizRegNo','사업자번호']
     ];
+    // §상단 고객 인사이트 버튼 라운드 §1/§2 — 업체명 바로 아래 [고객 메모 정리] 버튼을
+    // 빼고(§1, 버튼만 — openMemoParseModal 함수/메모 데이터/customerActivities는 그대로
+    // 전부 남아있다, 아래 하단 어딘가에서 계속 열 수 있음) 같은 자리·같은 CSS 클래스
+    // (chart-memo-btn, 기존 높이/여백 그대로)로 [고객 인사이트] 버튼을 넣는다. 등록
+    // 여부만 아주 단순하게 ✓로 구분한다(§4, buildInsightRepTagsFull은 이미 하단 인사이트
+    // 아코디언 요약에도 쓰는 같은 함수 — 새 판정 로직을 안 만든다).
+    const insightRegistered = buildInsightRepTagsFull(co).shown.length > 0;
     wrap.innerHTML = `
       <div class="cdash-header">
         <div class="cdash-header-left">
           <div class="cdash-header-title">${esc(co.name)}</div>
           <div class="cdash-header-actions">
-            <button type="button" class="chart-memo-btn" id="chartMemoParseBtn">고객 메모 정리</button>
+            <button type="button" class="chart-memo-btn" id="chartInsightBtn">고객 인사이트${insightRegistered ? ' ✓' : ''}</button>
             <button type="button" class="co-text-action${editing ? ' primary' : ''}" id="chartEditBtn">${editing ? '수정 완료' : '수정'}</button>
           </div>
         </div>
@@ -6118,7 +6125,18 @@ window.SHIN2_CRM_APP_INIT = function(){
       </div>
     `;
     document.getElementById('chartCloseBtn').addEventListener('click', closeChart);
-    document.getElementById('chartMemoParseBtn').addEventListener('click', ()=> openMemoParseModal(co));
+    // §3 — 새 인사이트 UI를 만들지 않는다. 기존 하단 고객 인사이트 아코디언(renderInsightBlock,
+    // 저장 로직/데이터 구조 전부 그대로)을 펼침+수정 모드로 전환해 스크롤만 이동시킨다
+    // (§5 "같은 데이터/같은 편집 UI" — 별도 저장소나 별도 편집 폼을 새로 만들면 안 됨).
+    document.getElementById('chartInsightBtn').addEventListener('click', ()=>{
+      cardState.accordionOpen.insight = true;
+      cardState.sectionEdit.insight = true;
+      refreshChart();
+      requestAnimationFrame(()=>{
+        const target = document.getElementById('cdashInsightBlock');
+        if(target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    });
     document.getElementById('chartEditBtn').addEventListener('click', ()=>{
       cardState.chartEditing = !cardState.chartEditing;
       refreshChart();
