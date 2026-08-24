@@ -256,6 +256,16 @@
   .receivable-list-name{ font-size:13px; font-weight:600; color:var(--text); }
   .receivable-list-meta{ font-size:11px; color:var(--text-muted); margin-top:1px; }
   .receivable-list-amt{ font-size:13px; font-weight:700; color:#B91C1C; white-space:nowrap; }
+  /* §미수금 총액 표시 라운드: "미수금 업체" 팝업 상단 설명문 아래 전체 업체 합산 총 미수금
+     강조 박스 — 기존 빨강 강조(#B91C1C)와 옅은 빨강 배경을 그대로 재사용해 디자인 통일,
+     좁은 화면에서도 줄바꿈만 될 뿐 잘리지 않도록 white-space를 nowrap으로 두지 않는다. */
+  .receivable-grand-total{
+    display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 10px;
+    background:#FEF2F2; border:1px solid #FCA5A5; border-radius:8px;
+    padding:10px 14px; margin-bottom:12px;
+  }
+  .receivable-grand-total-label{ font-size:12.5px; font-weight:600; color:#B91C1C; }
+  .receivable-grand-total-amt{ font-size:clamp(15px, 4.2vw, 18px); font-weight:800; color:#B91C1C; word-break:keep-all; }
   /* §총 매출 Popover 전환 라운드: 오른쪽 전체높이 Drawer 대신 클릭한 금액 옆에 뜨는 작은
      floating popover — 배경 dim 없음(§4), position:fixed로 JS가 좌표를 직접 계산해서
      붙인다(§2). 디자인은 기존 side-drawer 계열과 같은 톤(흰 배경/얇은 회색 테두리/약한
@@ -8940,6 +8950,14 @@ window.SHIN2_CRM_APP_INIT = function(){
     else if(!s) s = '1만원 미만';
     return (neg ? '-' : '') + s;
   }
+  // §미수금 총액 표시 라운드: fmtKrwCompact와 달리 "0억 0,000만원"처럼 억/만원 두 단위를
+  // 항상 함께 보여준다(요청 형식 그대로) — 0원이어도 "0억 0만원"으로 자리표시가 유지된다.
+  function fmtEokMan(n){
+    const neg = n < 0; const abs = Math.abs(n);
+    const eok = Math.floor(abs / 100000000);
+    const man = Math.round((abs % 100000000) / 10000);
+    return (neg ? '-' : '') + eok.toLocaleString('ko-KR') + '억 ' + man.toLocaleString('ko-KR') + '만원';
+  }
   // 최근 실적 활동 — 실제 영업성과(시공/낙찰/등록/매출)와 직접 연결된 기록만(§5, 전화/메모/
   // 자료요청 같은 일반 CRM 활동은 절대 포함하지 않는다). 기존 buildSiteHistoryData를 그대로
   // 재사용(새 파싱 로직을 만들지 않음) — 그 결과는 이미 최신순이고 날짜는 M/D만 있다.
@@ -9440,8 +9458,16 @@ window.SHIN2_CRM_APP_INIT = function(){
     const wrap = document.getElementById('receivableDrawerBody');
     if(!wrap) return;
     const list = D.buildReceivableCompanies();
+    // §미수금 총액 표시 라운드: 업체별 미수금(x.total, 위 리스트에 표시되는 값과 동일한 소스)을
+    // 그대로 합산한다 — 별도 저장소 없이 렌더링마다 다시 계산되므로 업체 데이터가 바뀌면
+    // (추가/삭제/금액 변경) 이 팝업을 다시 열 때 항상 최신 값으로 자동 반영된다.
+    const grandTotal = list.reduce((sum, x)=> sum + x.total, 0);
     wrap.innerHTML = `
       <div class="pi-note" style="margin-bottom:8px;">2025현장 미수금관리 자료 기준 미수금이 남아있는 업체입니다. 총 미수금이 큰 업체부터 정렬됩니다.</div>
+      <div class="receivable-grand-total">
+        <span class="receivable-grand-total-label">총 미수금</span>
+        <span class="receivable-grand-total-amt">${esc(fmtEokMan(grandTotal))}</span>
+      </div>
       ${list.length ? list.map(x=> `
         <div class="receivable-list-row" data-id="${esc(x.co.id)}">
           <div>
