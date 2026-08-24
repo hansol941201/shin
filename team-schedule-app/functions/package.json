@@ -1,0 +1,19 @@
+{
+  "name": "team-schedule-app-functions",
+  "private": true,
+  "description": "team-schedule-app 공동 일정 백엔드 — Firestore 쓰기 + service account로 팀장 Google Calendar 연동. 프론트엔드(GitHub Pages)에는 어떤 credential도 들어가지 않는다.",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0",
+    "googleapis": "^144.0.0"
+  }
+}

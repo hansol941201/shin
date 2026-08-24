@@ -123,6 +123,8 @@ function SettingsPopover({ anchor, onClose }) {
     setReminderMinutes,
     sharedStatus,
     sharedEventCount,
+    sharedBackendActive,
+    googleSyncStatus,
   } = useApp();
   const [workStart, setWorkStart] = useState(Math.floor(settings.workStartMin / 60));
   const [workEnd, setWorkEnd] = useState(Math.floor(settings.workEndMin / 60));
@@ -173,93 +175,124 @@ function SettingsPopover({ anchor, onClose }) {
 
       <hr className="settings-sep" />
 
-      <div className="settings-block-title">팀장 캘린더</div>
-      {!googleConfigured && (
-        <div className="pv-hint">Google 연동이 설정되지 않았습니다. (README 참고)</div>
-      )}
-      {googleConfigured && !googleClientIdValid && (
-        <div className="pv-error">
-          Client ID 형식이 올바르지 않습니다({googleClientIdMasked || '값 없음'}).<br />
-          &quot;.apps.googleusercontent.com&quot;으로 끝나야 합니다.{' '}
-          {IS_DEV ? (
-            <>구글연동설정.bat을 다시 실행해 값을 다시 입력해주세요.</>
-          ) : (
-            <>저장소 Secret(VITE_GOOGLE_CLIENT_ID) 값을 확인한 뒤 재배포해주세요.</>
-          )}
-        </div>
-      )}
-      {googleConfigured && googleClientIdValid && (
-        <div className="pv-hint">설정된 Client ID: {googleClientIdMasked}</div>
-      )}
-      {googleConfigured && googleClientIdValid && !googleSignedIn && (
-        <div className="pv-hint">Google 캘린더를 먼저 연결해주세요.</div>
-      )}
-      {googleConfigured && googleSignedIn && (
+      {sharedBackendActive ? (
         <>
-          {calendarsLoading && <div className="pv-hint">캘린더 목록을 불러오는 중…</div>}
-          {calendarsError && <div className="pv-error">{calendarsError}</div>}
-          {!calendarsLoading && !calendarsError && (
-            <select
-              className="settings-select-full"
-              value={managerCalendarId}
-              onChange={(e) => selectManagerCalendar(e.target.value)}
-            >
-              <option value="">캘린더 선택</option>
-              {calendars.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.summary}{c.primary ? ' (기본)' : ''}
-                </option>
-              ))}
-            </select>
+          <div className="settings-block-title">Google 동기화</div>
+          <div className="settings-diag">
+            <div className="settings-diag-row">
+              <span>연결 상태</span>
+              <b className={googleSyncStatus?.ok ? 'diag-ok' : googleSyncStatus?.ok === false ? 'diag-bad' : ''}>
+                {googleSyncStatus?.ok === true ? '정상' : googleSyncStatus?.ok === false ? '실패' : '확인 중…'}
+              </b>
+            </div>
+            <div className="settings-diag-row">
+              <span>마지막 동기화</span>
+              <b>{googleSyncStatus?.lastSyncAt ? new Date(googleSyncStatus.lastSyncAt).toLocaleString('ko-KR') : '-'}</b>
+            </div>
+          </div>
+          {googleSyncStatus?.ok === false && googleSyncStatus?.message && (
+            <div className="pv-error">{googleSyncStatus.message}</div>
+          )}
+          <div className="pv-hint">
+            팀장님 Google Calendar는 서버(service account)가 대신 동기화합니다 —
+            이 화면에서 직접 로그인할 필요가 없습니다.
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="settings-block-title">팀장 캘린더</div>
+          {!googleConfigured && (
+            <div className="pv-hint">Google 연동이 설정되지 않았습니다. (README 참고)</div>
+          )}
+          {googleConfigured && !googleClientIdValid && (
+            <div className="pv-error">
+              Client ID 형식이 올바르지 않습니다({googleClientIdMasked || '값 없음'}).<br />
+              &quot;.apps.googleusercontent.com&quot;으로 끝나야 합니다.{' '}
+              {IS_DEV ? (
+                <>구글연동설정.bat을 다시 실행해 값을 다시 입력해주세요.</>
+              ) : (
+                <>저장소 Secret(VITE_GOOGLE_CLIENT_ID) 값을 확인한 뒤 재배포해주세요.</>
+              )}
+            </div>
+          )}
+          {googleConfigured && googleClientIdValid && (
+            <div className="pv-hint">설정된 Client ID: {googleClientIdMasked}</div>
+          )}
+          {googleConfigured && googleClientIdValid && !googleSignedIn && (
+            <div className="pv-hint">Google 캘린더를 먼저 연결해주세요.</div>
+          )}
+          {googleConfigured && googleSignedIn && (
+            <>
+              {calendarsLoading && <div className="pv-hint">캘린더 목록을 불러오는 중…</div>}
+              {calendarsError && <div className="pv-error">{calendarsError}</div>}
+              {!calendarsLoading && !calendarsError && (
+                <select
+                  className="settings-select-full"
+                  value={managerCalendarId}
+                  onChange={(e) => selectManagerCalendar(e.target.value)}
+                >
+                  <option value="">캘린더 선택</option>
+                  {calendars.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.summary}{c.primary ? ' (기본)' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </>
           )}
         </>
       )}
 
-      <hr className="settings-sep" />
+      {!sharedBackendActive && (
+        <>
+          <hr className="settings-sep" />
 
-      <div className="settings-block-title">일정 알림</div>
-      <div className="pv-reject-options">
-        <label className="pv-reject-option">
-          <input
-            type="radio"
-            name="reminder-mode"
-            checked={reminderMode === 'app'}
-            onChange={() => setReminderMode('app')}
-          />
-          앱 지정 알림 사용
-        </label>
-        <label className="pv-reject-option">
-          <input
-            type="radio"
-            name="reminder-mode"
-            checked={reminderMode === 'google_default'}
-            onChange={() => setReminderMode('google_default')}
-          />
-          Google 기본 알림 사용
-        </label>
-      </div>
-      {reminderMode === 'app' && (
-        <select
-          className="settings-select-full"
-          value={reminderMinutes}
-          onChange={(e) => setReminderMinutes(Number(e.target.value))}
-        >
-          {REMINDER_MINUTE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+          <div className="settings-block-title">일정 알림</div>
+          <div className="pv-reject-options">
+            <label className="pv-reject-option">
+              <input
+                type="radio"
+                name="reminder-mode"
+                checked={reminderMode === 'app'}
+                onChange={() => setReminderMode('app')}
+              />
+              앱 지정 알림 사용
+            </label>
+            <label className="pv-reject-option">
+              <input
+                type="radio"
+                name="reminder-mode"
+                checked={reminderMode === 'google_default'}
+                onChange={() => setReminderMode('google_default')}
+              />
+              Google 기본 알림 사용
+            </label>
+          </div>
+          {reminderMode === 'app' && (
+            <select
+              className="settings-select-full"
+              value={reminderMinutes}
+              onChange={(e) => setReminderMinutes(Number(e.target.value))}
+            >
+              {REMINDER_MINUTE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          )}
+          <div className="pv-hint">
+            한솔 요청을 수락해 Google Calendar에 실제 일정을 만들 때 이 알림이 함께 설정됩니다.
+          </div>
+
+          <hr className="settings-sep" />
+
+          <label className="settings-checkbox-row">
+            <input type="checkbox" checked={demoMode} onChange={(e) => setDemoMode(e.target.checked)} />
+            <span>샘플 데이터 사용 (개발용)</span>
+          </label>
+          {googleActive && <div className="pv-hint">Google 연동 중에는 사용되지 않습니다.</div>}
+        </>
       )}
-      <div className="pv-hint">
-        한솔 요청을 수락해 Google Calendar에 실제 일정을 만들 때 이 알림이 함께 설정됩니다.
-      </div>
-
-      <hr className="settings-sep" />
-
-      <label className="settings-checkbox-row">
-        <input type="checkbox" checked={demoMode} onChange={(e) => setDemoMode(e.target.checked)} />
-        <span>샘플 데이터 사용 (개발용)</span>
-      </label>
-      {googleActive && <div className="pv-hint">Google 연동 중에는 사용되지 않습니다.</div>}
 
       <hr className="settings-sep" />
 
@@ -285,28 +318,44 @@ function SettingsPopover({ anchor, onClose }) {
 
       <div className="settings-block-title">개발자 진단</div>
       <div className="settings-diag">
-        <div className="settings-diag-row">
-          <span>환경변수 로드됨</span>
-          <b className={googleConfigured ? 'diag-ok' : 'diag-bad'}>{googleConfigured ? '예' : '아니오'}</b>
-        </div>
-        <div className="settings-diag-row">
-          <span>Client ID 형식 정상</span>
-          <b className={googleClientIdValid ? 'diag-ok' : 'diag-bad'}>{googleClientIdValid ? '예' : '아니오'}</b>
-        </div>
+        {!sharedBackendActive && (
+          <>
+            <div className="settings-diag-row">
+              <span>환경변수 로드됨</span>
+              <b className={googleConfigured ? 'diag-ok' : 'diag-bad'}>{googleConfigured ? '예' : '아니오'}</b>
+            </div>
+            <div className="settings-diag-row">
+              <span>Client ID 형식 정상</span>
+              <b className={googleClientIdValid ? 'diag-ok' : 'diag-bad'}>{googleClientIdValid ? '예' : '아니오'}</b>
+            </div>
+            <div className="settings-diag-row">
+              <span>Google 연결 상태</span>
+              <b className={googleSignedIn ? 'diag-ok' : 'diag-bad'}>{googleSignedIn ? '연결됨' : '미연결'}</b>
+            </div>
+            {googleConfigured && (
+              <div className="settings-diag-row">
+                <span>Client ID</span>
+                <b>{googleClientIdMasked || '(비어있음)'}</b>
+              </div>
+            )}
+            <div className="settings-diag-row">
+              <span>VITE_GOOGLE_CLIENT_ID 존재</span>
+              <b className={googleConfigured ? 'diag-ok' : 'diag-bad'}>
+                {typeof import.meta.env.VITE_GOOGLE_CLIENT_ID === 'string' && import.meta.env.VITE_GOOGLE_CLIENT_ID.length > 0 ? '예' : '아니오'}
+              </b>
+            </div>
+          </>
+        )}
+        {sharedBackendActive && (
+          <div className="settings-diag-row">
+            <span>공동 DB 연결</span>
+            <b className="diag-ok">정상</b>
+          </div>
+        )}
         <div className="settings-diag-row">
           <span>현재 origin</span>
           <b>{window.location.origin}</b>
         </div>
-        <div className="settings-diag-row">
-          <span>Google 연결 상태</span>
-          <b className={googleSignedIn ? 'diag-ok' : 'diag-bad'}>{googleSignedIn ? '연결됨' : '미연결'}</b>
-        </div>
-        {googleConfigured && (
-          <div className="settings-diag-row">
-            <span>Client ID</span>
-            <b>{googleClientIdMasked || '(비어있음)'}</b>
-          </div>
-        )}
         <div className="settings-diag-row">
           <span>실행 프로젝트 경로</span>
           <b>{typeof __APP_PROJECT_ROOT__ !== 'undefined' ? __APP_PROJECT_ROOT__ : '(알 수 없음)'}</b>
@@ -322,12 +371,6 @@ function SettingsPopover({ anchor, onClose }) {
         <div className="settings-diag-row">
           <span>BASE_URL</span>
           <b>{import.meta.env.BASE_URL}</b>
-        </div>
-        <div className="settings-diag-row">
-          <span>VITE_GOOGLE_CLIENT_ID 존재</span>
-          <b className={googleConfigured ? 'diag-ok' : 'diag-bad'}>
-            {typeof import.meta.env.VITE_GOOGLE_CLIENT_ID === 'string' && import.meta.env.VITE_GOOGLE_CLIENT_ID.length > 0 ? '예' : '아니오'}
-          </b>
         </div>
       </div>
     </PopoverShell>
@@ -346,6 +389,8 @@ export default function Header() {
     calendarsError,
     googleAuthError,
     refreshGoogleEvents,
+    sharedBackendActive,
+    googleSyncStatus,
   } = useApp();
   const [settingsAnchor, setSettingsAnchor] = useState(null);
   const gearRef = useRef(null);
@@ -393,7 +438,19 @@ export default function Header() {
               {googleEventsLoading ? '…' : '↻'}
             </button>
           )}
-          <GoogleConnectButton />
+          {/* 공동 백엔드 모드에서는 사용자별 Google 로그인 버튼 자체가 없다 —
+              서버(service account)가 대신 동기화하므로, 아주 작은 상태
+              표시만 보여준다. 자세한 진단은 ⚙ 설정 팝오버에서 확인. */}
+          {sharedBackendActive ? (
+            <span
+              className={`sync-status-dot ${googleSyncStatus?.ok === false ? 'sync-status-bad' : 'sync-status-ok'}`}
+              title={googleSyncStatus?.ok === false ? `Google 동기화 실패: ${googleSyncStatus?.message || ''}` : 'Google 동기화 정상'}
+            >
+              ● Google 동기화
+            </span>
+          ) : (
+            <GoogleConnectButton />
+          )}
           <button ref={gearRef} className="icon-btn" onClick={openSettings} title="근무시간/캘린더 설정" aria-label="설정">⚙</button>
           <div className="role-switch view-switch" title="달력 보기 전환 — 팀장: 팀장님 실제 일정만 / 한솔: 내가 요청한 일정만">
             <button

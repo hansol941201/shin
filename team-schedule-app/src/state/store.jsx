@@ -33,7 +33,10 @@ import {
   setAccompanyIds as persistAccompanyIds,
 } from '../services/localSettings.js';
 
-const AppContext = createContext(null);
+// 다른 provider(SharedAppProvider, sharedStore.jsx)도 같은 context를 그대로
+// 써서 useApp()이 어느 provider 아래에서든 동일하게 동작하게 한다 —
+// AppProvider 자체의 로직은 아래 그대로 두고 절대 건드리지 않는다.
+export const AppContext = createContext(null);
 
 // Google 로그인 실패 원인을 콘솔이 아니라 화면에 한글로 보여주기 위한 매핑.
 // requestAccessToken()이 던지는 일반 Error(형식 오류 등)와, GIS 콜백이

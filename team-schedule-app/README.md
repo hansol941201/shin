@@ -46,7 +46,136 @@ npm run preview -- --port 5173 --strictPort
 
 ---
 
-## Google Calendar 연동 설정 (팀장님/관리자가 한 번만)
+## 공동 백엔드(서버리스) 설정 — 팀원 로그인 없이 다 같이 쓰기
+
+**이 섹션은 아래 "Google Calendar 연동 설정(기존 방식)"보다 우선합니다.**
+`VITE_FIREBASE_*` 6개 값이 전부 설정되면 앱은 자동으로 이 모드로
+전환되고, 팀원들은 Google 로그인 없이 바로 같은 일정을 보고 편집 코드만
+으로 추가/수정/삭제할 수 있습니다. 아래 절차를 관리자(팀장님 또는 IT
+담당자)가 한 번만 해두면 됩니다 — 이 저장소의 Claude 세션은 GCP/Firebase
+콘솔에 로그인할 수 없어서 이 단계는 반드시 사람이 직접 해야 합니다.
+
+### 1) Google Cloud: Calendar API + 서비스 계정
+
+1. https://console.cloud.google.com 접속 → 프로젝트 생성(또는 아래 3번의
+   Firebase 프로젝트를 먼저 만들면 여기 자동으로 같이 생김)
+2. **API 및 서비스 → 라이브러리** → `Google Calendar API` 검색 → 사용 설정
+3. **API 및 서비스 → 사용자 인증 정보 → 사용자 인증 정보 만들기 →
+   서비스 계정** → 이름은 아무거나(예: `team-schedule-calendar-bot`) →
+   만들기만 하면 됨(역할 부여는 생략 가능 — Calendar 권한은 다음 단계에서
+   캘린더 공유로 준다)
+4. 방금 만든 서비스 계정 클릭 → **키** 탭 → **키 추가 → 새 키 만들기 →
+   JSON** → 다운로드됨(예: `team-schedule-calendar-bot-xxxx.json`).
+   **이 파일은 절대 이 저장소에 커밋하지 않습니다** — 4단계(Cloud
+   Functions Secret)에서 내용만 그대로 붙여넣고 파일은 폐기하세요.
+5. 서비스 계정 이메일(`...@...iam.gserviceaccount.com` 형태, JSON 파일의
+   `client_email` 값)을 복사해둡니다.
+
+### 2) 팀장님 Google Calendar에 서비스 계정 공유
+
+1. 팀장님 계정으로 https://calendar.google.com 접속
+2. 왼쪽에서 실제 쓸 캘린더(보통 기본 캘린더) → **설정 및 공유**
+3. **특정 사용자와 공유** → 위에서 복사한 서비스 계정 이메일 추가 →
+   권한: **일정 변경** (또는 그 이상) → 저장
+4. 왼쪽 패널에서 그 캘린더의 **캘린더 ID**도 확인해둡니다(설정 페이지
+   맨 아래 "캘린더 통합" 섹션 — 기본 캘린더면 보통 팀장님 이메일 자체가
+   캘린더 ID입니다. 아니면 `xxxxx@group.calendar.google.com` 형태)
+
+### 3) Firebase 프로젝트 생성
+
+1. https://console.firebase.google.com → 프로젝트 추가 → (1번에서 만든
+   GCP 프로젝트가 있으면 그걸 그대로 선택 가능)
+2. **빌드 → Firestore Database** → 데이터베이스 만들기 → 위치는
+   `asia-northeast3`(서울) 권장 → 처음엔 아무 모드나 선택해도 무방(이후
+   4단계에서 `firebase deploy --only firestore:rules`로 이 저장소의
+   `firestore.rules`가 그대로 덮어씁니다)
+3. **프로젝트 설정 → 요금제** → Cloud Functions를 쓰려면 **Blaze(종량제)**
+   로 전환 필요(카드 등록 필요하지만, 이 정도 트래픽이면 매달 대부분
+   무료 한도 안에서 끝납니다)
+4. **프로젝트 설정 → 일반 → 내 앱 → 웹 앱 추가**(아이콘: `</>`) → 앱
+   닉네임 아무거나 → **Firebase Hosting은 설정하지 않아도 됨**(체크 해제)
+   → 등록하면 `firebaseConfig` 객체가 표시됩니다. 그 6개 값
+   (`apiKey`, `authDomain`, `projectId`, `storageBucket`,
+   `messagingSenderId`, `appId`)을 아래 6번에서 그대로 씁니다.
+
+### 4) Cloud Functions 배포 (이 저장소의 `functions/` 폴더)
+
+이 저장소에는 `functions/index.js`(Firestore 쓰기 + 서비스 계정으로
+Google Calendar 연동)가 이미 준비돼 있습니다. 로컬에 이 저장소를
+내려받은 뒤, 관리자 PC에서 딱 한 번 실행하면 됩니다.
+
+```bash
+npm install -g firebase-tools
+cd team-schedule-app
+firebase login
+firebase use --add          # 3번에서 만든 Firebase 프로젝트 선택
+
+# 비밀값 3개 등록 — 값을 붙여넣으라는 프롬프트가 뜹니다.
+firebase functions:secrets:set EDIT_CODE
+# → 팀원들에게 알려줄 짧은 편집 코드(숫자/문자 조합 권장, 예: 4~8자리)
+
+firebase functions:secrets:set GOOGLE_SERVICE_ACCOUNT_KEY
+# → 1-4단계에서 받은 JSON 파일의 전체 내용을 그대로 붙여넣기
+#   (예: cat team-schedule-calendar-bot-xxxx.json | firebase functions:secrets:set GOOGLE_SERVICE_ACCOUNT_KEY)
+
+# 캘린더 ID/알림 기본값 — Secret이 아니라 그냥 설정값(선택, 기본값 있음)
+firebase functions:config:set 2>/dev/null || true   # (v2 함수는 아래처럼 params로 직접 지정)
+```
+
+`MANAGER_CALENDAR_ID`(기본값 `primary`), `REMINDER_MODE`(기본값
+`app`), `REMINDER_MINUTES`(기본값 `30`)는 `functions/index.js`의
+`defineString(...)` 기본값을 그대로 써도 되고, 다른 캘린더 ID를 쓰려면
+배포 시 `firebase deploy --only functions --set-params MANAGER_CALENDAR_ID=...`
+형태로 넘기거나 `functions/.env` 파일(Firebase Functions params 규칙)로
+지정할 수 있습니다.
+
+```bash
+firebase deploy --only firestore:rules,functions
+```
+
+배포가 끝나면 Firebase 콘솔 → Functions에서 함수 목록(`verifyEditCode`,
+`acceptRequest`, `syncGoogleEvents` 등)이 보이고, 몇 분 안에
+`syncGoogleEvents`(5분 간격 스케줄)가 처음 실행되면서 `settings/sync`
+문서와 `googleEventsCache` 컬렉션이 채워집니다.
+
+### 5) GitHub Pages에 프론트엔드 설정값 등록
+
+저장소 → **Settings → Secrets and variables → Actions**에 아래 6개를
+추가하고(3-4단계에서 확인한 `firebaseConfig` 값), 배포 워크플로를 한 번
+더 실행(또는 아무 커밋 push)하면 다음 빌드부터 공동 백엔드 모드로
+전환됩니다:
+
+```
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+이 값들은 비밀값이 아닙니다(Firebase 클라이언트 SDK 설정은 원래
+브라우저에 그대로 노출되는 값입니다) — 실제 접근 제어는 Firestore 보안
+규칙(`firestore.rules`, 클라이언트 직접 쓰기 전면 차단)과 Cloud
+Functions의 편집 코드 검증이 담당합니다.
+
+### 완료 후 동작
+
+- 일반 팀원: 사이트 접속 → 로그인 없이 바로 일정 확인. 추가/수정/삭제를
+  처음 시도할 때만 "편집 코드 확인" 팝업이 뜨고, 한 번 맞으면 그 브라우저
+  에서는 약 90일간 다시 묻지 않습니다.
+- 팀장님이 휴대폰 Google Calendar에서 직접 일정을 넣거나 바꾸면, 최대
+  5분 안에(스케줄 동기화 주기) 사이트에도 반영됩니다.
+- 사이트에서 확정한 일정(수락/바로 확정)은 서버가 즉시 팀장님 Google
+  Calendar에 실제로 생성합니다.
+- 관리자는 ⚙ 설정 팝오버의 "Google 동기화" 섹션에서 마지막 동기화
+  시각/성공 여부만 확인할 수 있고, credential/토큰/시크릿 값은 어디에도
+  노출되지 않습니다.
+
+---
+
+## Google Calendar 연동 설정(기존 방식 — 위 "공동 백엔드"를 설정하지
+않았을 때만 쓰임)
 
 이 앱은 백엔드 서버 없이, 브라우저에서 Google Identity Services로 로그인해
 Google Calendar API를 직접 호출합니다. 비밀번호는 어떤 형태로도 저장하지

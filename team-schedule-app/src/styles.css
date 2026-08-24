@@ -920,6 +920,15 @@ button, select, input, textarea {
 .diag-ok { color: #2ea043; }
 .diag-bad { color: var(--pending-text); }
 
+/* 공동 백엔드 모드 — 사용자별 Google 로그인 버튼 대신 아주 작은 상태 점만 */
+.sync-status-dot {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.sync-status-bad { color: var(--pending-text); }
+
 /* ---------- Google 연결 버튼 ---------- */
 .google-btn {
   display: flex;
