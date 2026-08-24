@@ -8,6 +8,7 @@ import { subscribeSharedSchedules } from '../services/legacyScheduleAdapter.js';
 import {
   GOOGLE_CONFIGURED,
   GOOGLE_CLIENT_ID_VALID,
+  IS_DEV,
   maskedClientId,
   requestAccessToken,
   revokeAccessToken,
@@ -49,7 +50,9 @@ function describeGoogleAuthError(err) {
   if (code === 'invalid_client') {
     return (
       'Google Client ID가 올바르지 않습니다("invalid_client"). ' +
-      '구글연동설정.bat으로 Client ID를 다시 확인/입력해주세요.'
+      (IS_DEV
+        ? '구글연동설정.bat으로 Client ID를 다시 확인/입력해주세요.'
+        : '저장소 Secret(VITE_GOOGLE_CLIENT_ID) 값을 확인한 뒤 재배포해주세요.')
     );
   }
   if (err?.error_description) return err.error_description;

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useApp } from '../state/store.jsx';
 import PopoverShell from './PopoverShell.jsx';
-import { hasEverConnectedGoogle } from '../services/googleAuth.js';
+import { hasEverConnectedGoogle, IS_DEV } from '../services/googleAuth.js';
 
 // 상단 헤더에 항상 보이는 Google 연결 상태 버튼.
 // 상태(미설정/형식오류/미로그인/로그인됨)와 무관하게 절대 사라지지 않으며,
@@ -96,18 +96,34 @@ export default function GoogleConnectButton() {
           </div>
           {!googleConfigured && (
             <div className="pv-hint">
-              VITE_GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.<br />
-              Windows에서는 <b>구글연동설정.bat</b>을 실행해 Google Cloud에서
-              발급받은 OAuth Client ID를 입력하고, 팀장 일정 앱을 다시
-              실행해주세요. (README의 &quot;Google Calendar 연동 설정&quot; 참고)
+              Google Client ID: <b>미설정</b><br />
+              {IS_DEV ? (
+                <>
+                  Windows에서는 <b>구글연동설정.bat</b>을 실행해 Google Cloud에서
+                  발급받은 OAuth Client ID를 입력하고, 팀장 일정 앱을 다시
+                  실행해주세요. (README의 &quot;Google Calendar 연동 설정&quot; 참고)
+                </>
+              ) : (
+                <>
+                  Google 연동 설정이 배포에 적용되지 않았습니다. 저장소
+                  Settings → Secrets and variables → Actions에{' '}
+                  <b>VITE_GOOGLE_CLIENT_ID</b>를 등록한 뒤, 배포 워크플로를
+                  다시 실행(재배포)하면 반영됩니다.
+                </>
+              )}
             </div>
           )}
           {googleConfigured && !googleClientIdValid && (
             <div className="pv-error">
-              현재 값: {googleClientIdMasked || '(비어있음)'}<br />
+              Google Client ID: {googleClientIdMasked || '(비어있음)'}<br />
               Client ID는 &quot;.apps.googleusercontent.com&quot;으로 끝나야
-              합니다. <b>구글연동설정.bat</b>을 다시 실행해 값을 정확히
-              다시 입력해주세요.
+              합니다.{' '}
+              {IS_DEV ? (
+                <><b>구글연동설정.bat</b>을 다시 실행해 값을 정확히 다시 입력해주세요.</>
+              ) : (
+                <>저장소 Secret에 등록한 값이 올바른 Client ID 형식인지 확인 후
+                  재배포해주세요.</>
+              )}
             </div>
           )}
         </PopoverShell>

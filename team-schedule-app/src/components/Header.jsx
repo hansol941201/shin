@@ -5,6 +5,7 @@ import Legend from './Legend.jsx';
 import SummaryCards from './SummaryCards.jsx';
 import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
+import { IS_DEV } from '../services/googleAuth.js';
 import { REMINDER_MINUTE_OPTIONS } from '../services/localSettings.js';
 import netformLogo from '../assets/netform-logo.png';
 
@@ -179,8 +180,12 @@ function SettingsPopover({ anchor, onClose }) {
       {googleConfigured && !googleClientIdValid && (
         <div className="pv-error">
           Client ID 형식이 올바르지 않습니다({googleClientIdMasked || '값 없음'}).<br />
-          &quot;.apps.googleusercontent.com&quot;으로 끝나야 합니다. 구글연동설정.bat을
-          다시 실행해 값을 다시 입력해주세요.
+          &quot;.apps.googleusercontent.com&quot;으로 끝나야 합니다.{' '}
+          {IS_DEV ? (
+            <>구글연동설정.bat을 다시 실행해 값을 다시 입력해주세요.</>
+          ) : (
+            <>저장소 Secret(VITE_GOOGLE_CLIENT_ID) 값을 확인한 뒤 재배포해주세요.</>
+          )}
         </div>
       )}
       {googleConfigured && googleClientIdValid && (

@@ -31,6 +31,12 @@ const CLIENT_ID_SUFFIX = '.apps.googleusercontent.com';
 const RAW_CLIENT_ID = typeof import.meta !== 'undefined' ? import.meta.env.VITE_GOOGLE_CLIENT_ID : undefined;
 const CLIENT_ID = sanitizeClientId(RAW_CLIENT_ID);
 
+// production(= `vite build`, GitHub Pages 배포) 환경인지 여부. 로컬 개발
+// (`npm run dev`)에서만 Windows용 구글연동설정.bat 안내를 보여주고,
+// 배포된 사이트에서는 그 안내 대신 "Secret 등록/재배포" 안내를 보여주는
+// 데 사용한다(로컬 전용 파일을 배포 환경 사용자에게 안내하지 않기 위함).
+export const IS_DEV = Boolean(import.meta.env?.DEV);
+
 export const GOOGLE_CONFIGURED = Boolean(CLIENT_ID);
 // 형식까지 정상인지(끝이 .apps.googleusercontent.com이고 충분히 긴 값인지).
 // 이메일 주소나 client secret을 잘못 넣은 경우도 대부분 여기서 걸러진다.
@@ -116,7 +122,10 @@ export async function requestAccessToken({ prompt = 'consent' } = {}) {
   if (!GOOGLE_CLIENT_ID_VALID) {
     throw new Error(
       'Google Client ID 형식이 올바르지 않습니다. ".apps.googleusercontent.com"으로 ' +
-      '끝나는 값인지 확인해주세요. (구글연동설정.bat을 다시 실행해 값을 다시 입력하면 됩니다)'
+      '끝나는 값인지 확인해주세요. ' +
+      (IS_DEV
+        ? '(구글연동설정.bat을 다시 실행해 값을 다시 입력하면 됩니다)'
+        : '(저장소 Secret(VITE_GOOGLE_CLIENT_ID) 값을 확인한 뒤 재배포해주세요)')
     );
   }
   await loadGisScript();
