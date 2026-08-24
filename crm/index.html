@@ -485,6 +485,11 @@
      작게, 태그 박스 없이 순수 텍스트 한 줄만. */
   .insight-list-line2{ display:block; width:100%; font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; margin-top:1px; }
   .insight-tag{ display:inline-flex; align-items:center; max-width:100%; padding:2px 6px; font-size:10.5px; font-weight:650; color:#475569; background:#F1F5F9; border-radius:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* §고객 성향 한눈에 배지 라운드: 한줄 성향 문장 위에 얹는 대표 태그 1개 — 기존
+     .insight-tag 스타일 그대로 재사용하고 아래 텍스트와 살짝 떨어지도록 margin만 추가.
+     배지는 항상 딱 1개(§11 "태그 여러 개 나열 금지" 유지), 폭이 좁아도 컬럼 밖으로
+     넘치지 않도록 max-width:100%를 그대로 상속한다. */
+  .insight-tag-lead{ margin-bottom:2px; }
   /* §고객 인사이트 복수선택 라운드 §2/§10 — 카테고리별 체크박스 다중선택 그리드(작은 칩
      형태, 현재 .insight-tag/co-field와 같은 네이비/화이트 톤 유지, §21 "새 디자인 시스템
      금지"). */
@@ -5702,8 +5707,14 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 성향, 2줄=관심/공법 요약(비어있으면 그 줄 자체를 안 그림). 옛 데이터(oneLiner
       // 없음)는 전과 같은 카테고리 대표 태그+N 폴백을 그대로 유지한다(§12).
       const insightSummary = buildInsightListSummary(co);
+      // §고객 성향 한눈에 배지 라운드: oneLiner 모드일 때만 대표 태그 배지 1개를 문장 위에
+      // 얹는다(레거시 태그 모드는 이미 태그 자체가 배지 형태로 보이므로 중복 추가 안 함).
+      const leadBadge = insightSummary.mode === 'oneLiner' ? getInsightLeadBadge(co) : null;
+      const leadBadgeHtml = leadBadge
+        ? `<span class="insight-tag insight-tag-lead${leadBadge.important ? ' is-important' : ''}">${esc(leadBadge.text)}</span>`
+        : '';
       const insightInnerHtml = insightSummary.mode === 'oneLiner'
-        ? `<span class="insight-oneliner">${esc(insightSummary.line1)}</span>${insightSummary.line2 ? `<span class="insight-list-line2">${esc(insightSummary.line2)}</span>` : ''}`
+        ? `${leadBadgeHtml}<span class="insight-oneliner">${esc(insightSummary.line1)}</span>${insightSummary.line2 ? `<span class="insight-list-line2">${esc(insightSummary.line2)}</span>` : ''}`
         : (insightSummary.shown.length
           ? `${insightSummary.shown.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}${insightSummary.overflow ? `<span class="insight-tag insight-tag-more">+${esc(insightSummary.overflow)}</span>` : ''}`
           : `<span class="data-none">성향 미등록</span>`);
@@ -8925,6 +8936,23 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
     const fallback = buildInsightRepTagsFull(co);
     return { mode:'legacy', shown: fallback.shown, overflow: fallback.overflow };
+  }
+  // §고객 성향 한눈에 배지 라운드(신규) — "고객 성향" 컬럼을 클릭해서 팝오버를 열지 않아도
+  // 목록만 봐도 성향이 바로 눈에 들어오게, 한줄 성향(oneLiner) 문장 위에 대표 태그 1개를
+  // 작은 배지로 얹는다. §11에서 "태그 여러 개 나열은 하지 않는다"고 정리했던 결정은 그대로
+  // 지킨다 — 여기서도 배지는 딱 1개뿐이고, 값은 insightCategoryOrder(우선순위: 의사결정 →
+  // 관심 → 현재 공법 이용 → 타공법 이용 → 선호 → 가격 → 우려, ★importantTraits 먼저)가
+  // 이미 계산해 둔 첫 번째 실제 저장값을 그대로 쓴다 — 새 분류/문구를 만들어내지 않는다.
+  function getInsightLeadBadge(co){
+    const ci = co.customerInsight;
+    if(!ci) return null;
+    const importantSet = new Set(ci.importantTraits || []);
+    const categories = insightCategoryOrder(ci);
+    for(let i=0;i<categories.length;i++){
+      const values = categories[i][2];
+      if(values.length) return { text: values[0], important: importantSet.has(values[0]) };
+    }
+    return null;
   }
   function getTotalRevenue(co){
     const gs = co.partnerDashboard && co.partnerDashboard.gradeSales;
