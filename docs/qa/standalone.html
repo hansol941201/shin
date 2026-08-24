@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>POUR Q&amp;A 자료집 (독립본)</title>
+<style>
+  /* ============================================================
+     사내 미팅용 Q&A 자료집 — 기존 루트 사이트(../index.html)의 CSS와는
+     완전히 분리되어 있습니다. 모든 클래스/변수에 qna- 접두사를 사용해
+     혹시 같은 페이지에 다른 스타일이 섞이더라도 충돌하지 않게 했습니다.
+     ============================================================ */
+  :root{
+    --qna-bg:#f7f9fc;
+    --qna-card-bg:#ffffff;
+    --qna-border:#d9e0e9;
+    --qna-navy:#1f3a5f;
+    --qna-navy-dark:#152a45;
+    --qna-navy-soft:#eaf0f8;
+    --qna-blue-soft:#eaf2fe;
+    --qna-text:#1f2937;
+    --qna-text-gray:#667085;
+    --qna-text-faint:#9aa3af;
+    --qna-star:#b7791f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    background:var(--qna-bg);
+    color:var(--qna-text);
+  }
+  .qna-app{max-width:980px;margin:0 auto;padding:36px 24px 80px;}
+  /* 추천 패널을 오른쪽에 나란히 두기 위한 폭 — 질문 목록 자체의 실질 폭(약 980px 기준의 내용
+     영역)은 그대로 유지되도록, 목록 컬럼은 max-width로 다시 한 번 제한한다. */
+  .qna-app.has-reco{max-width:1280px;}
+
+  /* 전체 글씨 크기 축소(2026-08 2차 조정, 1차 대비 추가로 약 2px씩 축소) — 레이아웃·기능은 그대로 유지 */
+  .qna-title{font-size:21px;font-weight:800;color:var(--qna-navy);margin:0 0 4px;}
+  .qna-subtitle{font-size:11.5px;color:var(--qna-text-gray);margin:0 0 18px;}
+  .qna-logo{height:30px;width:auto;display:block;margin:0 0 14px;}
+
+  .qna-search-input{
+    width:100%;height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--qna-border);
+    font-size:13px;font-family:inherit;background:var(--qna-card-bg);color:var(--qna-text);margin-bottom:16px;
+  }
+  .qna-search-input:focus{outline:none;border-color:var(--qna-navy);box-shadow:0 0 0 3px var(--qna-blue-soft);}
+
+  /* 상단 3개 파트: 가장 먼저 눈에 들어와야 하는 큰 탭 */
+  .qna-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+  .qna-tab{
+    background:var(--qna-card-bg);border:1px solid var(--qna-border);border-radius:12px;
+    padding:13px 10px;font-size:14.5px;font-weight:800;color:var(--qna-text-gray);cursor:pointer;font-family:inherit;
+    text-align:center;transition:border-color .12s, color .12s, background .12s;
+  }
+  .qna-tab:hover{border-color:var(--qna-navy);color:var(--qna-navy);}
+  .qna-tab.active{background:var(--qna-navy);border-color:var(--qna-navy);color:#fff;}
+
+  .qna-toolbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+  .qna-toolbar-text{min-width:0;}
+  .qna-toolbar-label{font-size:13px;font-weight:700;color:var(--qna-navy);}
+  .qna-toolbar-desc{font-size:11px;color:var(--qna-text-gray);margin-top:3px;}
+  .qna-add-btn{
+    background:var(--qna-navy);color:#fff;border:none;border-radius:8px;padding:8px 14px;
+    font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;
+  }
+  .qna-add-btn:hover{background:var(--qna-navy-dark);}
+
+  .qna-list{border-top:1px solid var(--qna-border);}
+  .qna-item{padding:11px 4px;border-bottom:1px solid var(--qna-border);}
+  .qna-item-top{display:flex;align-items:flex-start;gap:10px;}
+  .qna-q-main{flex:1;min-width:0;}
+  .qna-q-text{font-size:13px;font-weight:700;line-height:1.5;color:var(--qna-text);}
+  .qna-badge{display:inline-block;margin-left:8px;font-size:11.5px;font-weight:700;color:var(--qna-star);}
+  .qna-part-tag{
+    flex:none;font-size:10.5px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);
+    padding:2px 9px;border-radius:999px;margin-top:2px;white-space:nowrap;
+  }
+  .qna-a-text{font-size:12px;line-height:1.65;color:var(--qna-text-gray);white-space:pre-wrap;margin:5px 0 8px;}
+  .qna-a-empty{font-size:11.5px;color:var(--qna-text-faint);margin:5px 0 8px;}
+
+  /* 관리 링크(수정 · 삭제) — 질문/답변 보기보다 절대 눈에 띄면 안 되는 아주 작은 보조 요소.
+     배경/테두리/그림자/아이콘 없이 텍스트만, 마우스를 올렸을 때만 살짝 진해진다. */
+  .qna-manage-inline{display:flex;align-items:center;gap:4px;flex:none;margin-top:2px;}
+  .qna-manage-btn{
+    background:none;border:none;padding:0;margin:0;font-size:11.5px;color:var(--qna-text-faint);
+    cursor:pointer;font-family:inherit;white-space:nowrap;
+  }
+  .qna-manage-btn:hover{color:var(--qna-text-gray);}
+  .qna-manage-btn.danger:hover{color:#c0392b;}
+  .qna-manage-sep{font-size:11.5px;color:var(--qna-text-faint);}
+
+  /* 1차 미팅 전용: 질문 한 줄 + [답변 보기] 토글 방식 (사내 FAQ 스타일, 카드/그림자 없음) */
+  .qna-row{padding:9px 4px;border-bottom:1px solid var(--qna-border);}
+  .qna-row-top{display:flex;align-items:flex-start;gap:10px;}
+  .qna-row-q{flex:1;min-width:0;font-size:13px;font-weight:600;line-height:1.45;color:var(--qna-text);}
+  /* 자주 나오는 질문의 반복 횟수 — 아주 작고 연하게, 화면을 복잡하게 만들지 않는다 */
+  .qna-count-tag{flex:none;font-size:10px;color:var(--qna-text-faint);margin-left:4px;}
+  .qna-row-part-tag{
+    flex:none;font-size:10.5px;font-weight:700;color:var(--qna-navy);background:var(--qna-navy-soft);
+    padding:2px 9px;border-radius:999px;white-space:nowrap;
+  }
+  /* 답변 보기 버튼 + 수정·삭제를 하나의 묶음으로 고정해, 질문이 길어져 줄바꿈되어도 오른쪽
+     위치가 흐트러지지 않게 한다. */
+  .qna-row-right{display:flex;align-items:center;gap:10px;flex:none;}
+  .qna-row-toggle{
+    flex:none;background:none;border:none;color:var(--qna-navy);font-size:11px;font-weight:700;
+    cursor:pointer;font-family:inherit;white-space:nowrap;padding:2px;
+  }
+  .qna-row-toggle:hover{text-decoration:underline;}
+  .qna-row-right .qna-manage-inline{margin-top:0;}
+  .qna-row-answer{
+    margin-top:6px;padding:9px 12px;border-radius:6px;background:var(--qna-navy-soft);
+    color:var(--qna-text);font-size:12px;line-height:1.6;white-space:pre-wrap;
+  }
+  .qna-row-answer.empty{color:var(--qna-text-faint);}
+
+  .qna-empty-state{padding:44px 10px;text-align:center;color:var(--qna-text-gray);font-size:12.5px;}
+
+  /* 오른쪽 패널: "AI 업무 제안" — 본문(질문 목록)은 그대로 두고 옆에만 붙는 보조 패널이라,
+     목록 컬럼 자체의 폭은 기존과 동일하게 유지한다. */
+  .qna-content-row{display:flex;align-items:flex-start;gap:24px;}
+  .qna-content-main{flex:1;min-width:0;max-width:980px;}
+  .qna-reco-panel{
+    flex:0 0 300px;width:300px;position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;
+    background:var(--qna-card-bg);border:1px solid var(--qna-navy);border-radius:10px;
+  }
+  .qna-reco-details summary{list-style:none;cursor:pointer;}
+  .qna-reco-details summary::-webkit-details-marker{display:none;}
+  .qna-reco-summary{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:1;
+    padding:12px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--qna-navy);border-radius:9px 9px 0 0;
+  }
+  .qna-reco-summary::after{content:'▾';font-size:11px;flex:none;transition:transform .15s;}
+  .qna-reco-details[open] .qna-reco-summary::after{transform:rotate(180deg);}
+  .qna-reco-body{padding:12px 14px 14px;}
+  .qna-ai-empty{font-size:11.5px;color:var(--qna-text-faint);margin:0 0 4px;}
+  .qna-ai-current{font-size:11px;color:var(--qna-text-gray);margin:0 0 12px;padding-bottom:10px;border-bottom:1px dashed var(--qna-border);line-height:1.5;}
+  .qna-ai-current b{color:var(--qna-navy);}
+  .qna-ai-item{padding:10px 0;border-top:1px solid var(--qna-border);}
+  .qna-ai-item:first-of-type{border-top:none;padding-top:0;}
+  .qna-ai-item-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;}
+  .qna-ai-tier{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;color:#fff;flex:none;}
+  .qna-ai-tier.tier-must{background:#c0392b;}
+  .qna-ai-tier.tier-frequent{background:var(--qna-star);}
+  .qna-ai-tier.tier-recommend{background:var(--qna-navy);}
+  .qna-ai-item-title{font-size:12.5px;font-weight:800;color:var(--qna-text);line-height:1.4;}
+  .qna-ai-item-reason{font-size:11px;color:var(--qna-text-gray);margin:3px 0 0;line-height:1.5;}
+  .qna-ai-item-actions{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+  .qna-ai-btn{
+    border:1px solid var(--qna-border);background:var(--qna-card-bg);color:var(--qna-text-gray);font-size:10.5px;font-weight:700;
+    padding:3px 9px;border-radius:6px;cursor:pointer;font-family:inherit;
+  }
+  .qna-ai-btn:hover{border-color:var(--qna-navy);color:var(--qna-navy);}
+  .qna-ai-btn.primary{background:var(--qna-navy);border-color:var(--qna-navy);color:#fff;}
+  .qna-ai-btn.primary:hover{background:var(--qna-navy-dark);}
+  .qna-ai-btn.danger:hover{border-color:#c0392b;color:#c0392b;}
+  .qna-ai-status{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--qna-text-faint);margin-top:7px;}
+  .qna-ai-status.done{color:#1f6f3f;}
+  .qna-ai-more{margin-top:10px;}
+  .qna-ai-more summary{list-style:none;cursor:pointer;font-size:11px;font-weight:700;color:var(--qna-navy);}
+  .qna-ai-more summary::-webkit-details-marker{display:none;}
+  .qna-ai-more[open] summary{margin-bottom:4px;}
+
+  @media (max-width:960px){
+    .qna-content-row{flex-direction:column;}
+    .qna-content-main{max-width:none;}
+    .qna-reco-panel{width:100%;flex:none;position:static;max-height:none;}
+    .qna-reco-summary{position:static;}
+  }
+
+  .qna-btn{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .qna-btn-primary{background:var(--qna-navy);color:#fff;}
+  .qna-btn-primary:hover{background:var(--qna-navy-dark);}
+  .qna-btn-ghost{background:var(--qna-bg);color:var(--qna-text-gray);}
+  .qna-btn-ghost:hover{background:var(--qna-blue-soft);}
+
+  /* 모달 */
+  .qna-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(10,16,26,.5);
+    align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .qna-modal-overlay.open{display:flex;}
+  .qna-modal{
+    background:var(--qna-card-bg);border-radius:14px;padding:26px;width:100%;max-width:560px;
+    max-height:88vh;overflow-y:auto;
+  }
+  .qna-modal h2{margin:0 0 18px;font-size:15.5px;color:var(--qna-navy);}
+  .qna-field{margin-bottom:16px;}
+  .qna-field label{display:block;font-size:11px;font-weight:700;color:var(--qna-text-gray);margin-bottom:6px;}
+  .qna-field select, .qna-field textarea{
+    width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--qna-border);
+    font-size:12.5px;font-family:inherit;resize:vertical;background:var(--qna-card-bg);color:var(--qna-text);
+  }
+  .qna-field textarea{min-height:80px;line-height:1.6;}
+  .qna-field-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--qna-text);cursor:pointer;}
+  .qna-field-check input{accent-color:var(--qna-navy);width:16px;height:16px;}
+  .qna-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+
+  .qna-toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--qna-navy);color:#fff;padding:10px 20px;border-radius:999px;font-size:11.5px;
+    opacity:0;transition:all .25s;pointer-events:none;z-index:200;
+  }
+  .qna-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:640px){
+    .qna-app{padding:24px 14px 60px;}
+    .qna-tabs{grid-template-columns:1fr;}
+  }
+
+  /* 다크 모드 — 시스템 설정을 따를 때(명시적 선택 없음)와, 뷰어가 명시적으로 다크를 고를 때 모두 대응 */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --qna-bg:#0f1720;
+      --qna-card-bg:#161f2c;
+      --qna-border:#2a3746;
+      --qna-navy:#4a7fd6;
+      --qna-navy-dark:#3564b0;
+      --qna-navy-soft:#1c2836;
+      --qna-blue-soft:#1c2836;
+      --qna-text:#e7ecf3;
+      --qna-text-gray:#9aa7b8;
+      --qna-text-faint:#6b7787;
+      --qna-star:#e0ac4c;
+    }
+    :root:not([data-theme="light"]) .qna-logo{background:#fff;padding:5px 10px;border-radius:6px;}
+  }
+  :root[data-theme="dark"] .qna-logo{background:#fff;padding:5px 10px;border-radius:6px;}
+  :root[data-theme="dark"]{
+    --qna-bg:#0f1720;
+    --qna-card-bg:#161f2c;
+    --qna-border:#2a3746;
+    --qna-navy:#4a7fd6;
+    --qna-navy-dark:#3564b0;
+    --qna-navy-soft:#1c2836;
+    --qna-blue-soft:#1c2836;
+    --qna-text:#e7ecf3;
+    --qna-text-gray:#9aa7b8;
+    --qna-text-faint:#6b7787;
+    --qna-star:#e0ac4c;
+  }
+</style>
+</head>
+<body>
+<!-- ============================================================
+     이 파일은 qa/index.html과 완전히 별개의 "독립 실행본"입니다.
+     - 회사 Firebase(qna_questions 컬렉션)와 실시간 동기화하지 않습니다.
+       이 페이지에서 등록/수정한 내용은 이 페이지를 여는 브라우저의
+       localStorage에만 저장되고, 실제 사내 Q&A 자료(qa/index.html)와는
+       공유되지 않습니다.
+     - 로고 이미지는 별도 파일 없이 data URI로 이 파일 안에 내장되어
+       있어, 이 파일 하나만 어디로 옮기거나 열어도 그대로 동작합니다.
+     - 다크 모드(시스템 설정)에서도 정상적으로 보이도록 색상을
+       보완했습니다.
+     실제 사내에서 계속 쓰는 운영 페이지는 qa/index.html이며, 이 파일은
+     그 페이지를 다른 곳에 공유·미리보기용으로 쓰기 위해 별도로 저장한
+     사본입니다.
+     ============================================================ -->
+
+
+<div class="qna-app has-reco">
+  <img src="data:image/webp;base64,UklGRo47AABXRUJQVlA4WAoAAAAwAAAAzwcA9QEASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZBTFBIJh4AAAEkBW3bSDV/2NvuJRARE+DBbJ6w8SJnFDiAXFUT33rg//+Rk2zbfjPb0hdCChAIJaGF3nsVBSTYAHul2BVQBBNFOWiHIvaux0HvReldbPTQwSCG0BIS0ttm+87vPK9Lcf+/ncLO+n+dETEBcKpte56kJ3vvZerRkDWUCRMoQAITBvDBioouICY4SEj5ynRFxAQU+J//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//+Z//OfMG7lz3eN7cnA/iOXPzaxYncuacruWJmqfhvC8JjjTzY9D1TYzWaXvZS3BGBEcGK16L0jjtriHBt7gyWDolijOHpa9ZOHNYMY03hyXjeHN4/THeHF56wMSZwwvDDZw5/LE3bw4P9+LN4bk+vDnpVAfOHHq/bybw5dCzvIXIl0P38uacOfSsCOfMoevbCM4cuv4TzplD+0d1OHNYPdPKmcOrz4dx5jDvJd4clrzKm8Oqx3hzeGWYkTOHZ0ZaOHN4bKSJM4enOvLm8FBz3px0vjlnDqWs1gJfDn1bUgW+HNq+bSrw5dC2sD5nDu1rIjlz6FnFm0PPPAtnDitm1uXMYdGMWM4cFk2wcObw6oO8Oay6jzeHzrEGzhxeG2XizPkODzHx5dB3cJCBL4e+E905cyhdjuHMIR5NEDhzvl0tRb4cur5vL/Ll0LGoEWcOKz+L4cyh4xveHOJCM2/O8240Zw6LJ9XlzGHeZCtnDgteCufMYdUQ3hxWdxc4c1g6zMyZw5x7wzhz0vEhIl8O3T91E/hy6D2awplDPB/Pm8MDDXhz3pWpnDm0L2vFmUPb8macOXS+F8WZQ5wu8uYw08qb87wdy5nD0kmRnDnpysQIvhxKBY+Y+HKItSN5c2jrLHLmMOc2A2dOOnWnkS+H3uMjDHw59O5tzZlD3JvAOztQTg33JFGJSgjEeiIH6p63K6nhnlZEen22dh39b3oY+E8jLHNd1Hyrk2nUfbkY6Xt+6CPynyBugYsY2r5MJgGR42rpoWtfN5H/BInvu4hh7ef1SYBlTDE99JwawIGC2K89xBA/jCIB0OMqPcTqjhwoSPjeSw1fCaNhGJHto4cVQ0z8J+iwi5z9xWgSYLzvsIce5oy28p8gbSs1rJluJQHGvvsCQLr0opX/BC3XU8OSTCsJgA6/0EPMeyGc/ySkbaMmXXvYSAOabgsALJ3IfwLof44Y4vXhIg2I+zYAUHqPAwUjTvuIYd5QkQY0Xuygh75P6/KfYNQZapg3kgg0/6aaHta834D/BMOvUcOrA4hA4mwnPSz/NEXgPsHoQmrSwSFEIGaagx7a1jbmP5nGFhJD78H+RCByUgU9dO2M5j6B8ZFiYigd7UgEjA8W0UPpSDT3CUzPFBJDXJtMBEwT8yRyiGe7GXlPYJ5VTQ0XNyYC5uezA8C3v5+JUdc87hHEznVSw9UtiIB5xFl66P2pn4FNehH/CKwZDmq+da2IAPQ7Tg+9WfeweaCUgwRRrzmIof2zWCpCrwP0EK+nc5/A+h41dM6LIQJCy+0BgM507hM0We4ihs4ZdYgAtN3jpYfXx0byniB1hYsYOmeYqECHzW56eOM1K+8JUpdTQ+czZirQ+CsXPbw+NZL3BE32UMPiyWYqEPehix4WTuc+Qcqv1LBgipkK1H+3hh5WLI/gPUHLA9Sw5GkTFQjPqKKHvlURvCfo9quHGP5xh4EKWGZX0EPH1/EC5wn6H/MRw1O3kYGw2TfoYc0XqSLnCcbkUMOzw8mA5akceuhZ34r3ZByVRw3PDycD4v0X6KFnWzLnCQwDrlKTjnQiA+axOfTQezCN8wTigDxiKP3YlgyIvU/RQymnH+cJwl8olWghbmsrUgHok00P8cQAI98Jol8tlIjhxhQ60Oe4hx7uv83Ed4KYV0up4aJ4OtBhnYceHn2I8wTRL9qpuZfWpwMtV3ro4ZVxnCcIn0MN3avq0xFbrvXQw6JnOE8Q/m9q6F4WTwYE69cuenjjWYvKaZCR6efmctR3aqafR0cFXKPxmSrwpdTAaPVypuKPDZhOmYr+2Lw83fvLbHu5ictUzMm3C3ITdk+mn1+MVJDGmf5OCY5A7Ad2YliZEU0GIGKJmx5WvhGtbrr70M+5fU3y80YN+vm7BgHX5ySqwLz0wLjvOir+5oCZiIr+u7wglrqNR39+yoGy6zz0QXpyXZNstEUl/TGja0KYjNRdhX62zzUrRsQ+9PedQRJo+GkNMSybGk0HIr4to4fl02JUGdoeCtfBifW6vrylFmX72vfju8cK6gvRfTKzX6Ls4cW7DAphnuYO9kCz1W5iWDbdQgcip+fTw7KMGFWGBeMidW91xnz5mxtl3fv75w8mqjBEvL7wvgS5821tqRCDzmPQB9ptpYYV/yIEUS/n0cOKhfVVmXRpQoTMfODUGVnuX3sVFbBg41N11Bj68lbeEy5vaJsZowhN1riDQNBkJzWsmkAIoifdoIee1fXVGErXHrPIyxJJX9RhUT4qZPGmwWoM0Zv/lVXeMH+AoACWl8oxGATWndSw4ElCYBpZTA/dKxLUGGL5XYKsLEM9kSH9dy8qpq9gulWNIXryu8mbdMCsAL0uY3AImv3sI4ZXHjLRARhRTg/dq2eUqTG0DTfr1KKn2lFRnd80VWWIxaPD5QxxlkH24r/DYJE4+KiHGObcayIEI857ySHecKsytD0Tq0tr8hEq7oF26gyLptWRtdohsjcJg0ZgGHbUSwyPD6AkDNnrpUdTjWDV2wk6tM6rUYGPjDKpMrz+WrSc4YEUmetxI4gEhttOU8MjvQiBsdder1bCkrfjdGdN1riVCM8NVWdY+KAgZ/b5EbKWuB+DSWDoZqOG2X0JgbH7fp9WwrIZMTqzhI9tqMie/f3UGV7rLmd4ebSs/dsTXALhNhs1zO5NCMSEXZoJndMEXVn45BpUaN/qxuoMr0fLmbSjlYzdeQWDTCDeUyQR825uLtABiNrn0UqIr4Tpybrno3LPiFBnuNAoY+j6V7RsNd6OQSewPHpJooWeVa1EQmBdV6WZMDNePxa9DRX8xiCVVnSnnGHRcEGmIqZVB6EgYmI+MXSvTKUEDReUaKaa91N1Y8+jov8So868GxPkDA8myZN423kMRkFMRg0x9HxXjxIkzivTSlizsLlOrFmBsuEL6gyvPyxr+Kk81f0eg1NQZzo19C6NoARx79q0EtqWJOjDFqDCF8SpM9/CBFmzjZWltxzBKjBPoYbuReGUIOwxzYSeVaIeLO2q0klvqjPM7itrmNNEhno5MWgFhulOYuj4rC4lgEdqtBLi2mj9lzDdpnR4IUmd4XNGWXN9bZadhAsYxIKEr2qIYfW8WFLiU1d8WgmXN9Z9xf2Ail82QaWtSJA1zHvUJDMR73mCWtB8YQ0xLJwUTgnC7z/u00qOJWmizuv2C8rnXRahznJbyhvuaysvhjH5GNyClEVOYpg/iRRY0k9LGglrN3UTdV2GN2qVD7O6qjPPAJmzz7PKSptd3mAXJC2nhiXTSIH59ktaCV37Wuu66q9EFVj0uDrDxwV5w5KRgozEzKrFoBdE/kYNa6eTAkPjc1oJfcdi9Vxdj6gBaX6EOpsgd3jKIh/isEIMiuT2DCxIOOYlhnkjjJQAYrO8Ggnxt0aC+tCe7fuwft9vv9zdh21aGMgpgykQsMPzGfjKFva3gExa79tU6mWAq5ICQSkbvnrSrVz4X5NsJG7HoBik7XMRw3OjLKSg9V6HVsIDHcRbXuxf8NvGJFBQVSZORP+Xb+0Istp/Qy2Dgx3VC0DKOpdy4SMGmTBmYpBM7L7LRQxPjDKREjusqNFKnt3dRZ1W5Ez/lc+JB5mN/LTaf9cGqRkYkqdg5zvLxJCKYBmIg09KxPB0H1IAKQsdGgldOwea9FlxC/3m/E8DkN3Ezzx+q01XNWkXFcy1ME4WWhzBoBmYh12lhsdSaEHSMq2ErjODBV1Wg+/9dnqgID9C5/1+w9G3KrD4WaMMWBZ5g2hg6F1NTcpJoQVRb2sllK531JV5/2sEGTbM9NxykQ50loEJxRhMA+haKNFCPJEmkgLxNYdGQqzqYdArOJ9VYRUvgyyPL7nlgvhh3YBr+zMG2YRhV6j5fmgvkIKYN0okjYS5t5t1CgVjVVjBvUGDyjFigNVZ4Am2QeTzV4mhc2kzgRTETcqVNJJ0eqTlnycwq1lgGUdfx6AbWF/IJ4a2RQ1pQeST1zUS+o6PMP3zBC4OC6jGv2IQDqKfrSCG9rWRtCB8rE0joe/sGOGfJxxPBtRn3qAcmF+mhp5dxMDY86I2yKthhlLVw/88gZe6BtDtTgzOAXzlJoa+dyy0ADqf92mBn4eXSKwQ8VHTP074NlsDJr4Qg3bGj6uIYdWsWGLi4Cy3FjA/cEliVzY+KnThiRu3ZrBsiiVAov7rDd5BvQVlxLBkZhwtMAza6dIAEP54jsQMrz4dE7KQfvEWDR7rIwSE+YlCDOJBg4+riWHR1AhaAB23awGIeOwaO7w0MSJUYUj2rRrvooSA6HVECupB0w1uYlj4CDVosUcLQNiYHHaY95TwDxNY/bgYAIlfuzC4JzT4gRpWjaEGsV9oATCm5LDD6tn/NIEFifQMYysxyAcQfdBHDD0PGIlB3Y/cGgCgbbaPGeKHln+YwJ1Gcsm/YfAPYrd5iGHh/SZi0PDzKkkDiP2yPOxs79QLGet1RR3g0wZilm9RDwCtfvAS8x0daiYGybNLNQAYbj/sZYZlcxNCxKLm21TClV7EHnHoA4wDfvHSQt+hIUZiEDPVoQHAMPQ4OyyZWzckLG7SZVSOimtM3Gvqk+qcg0xPeINmYOp3RKKFvhO9qEHkM3YNAIbeOeyw/F2DksWPfFQFPoxSgfPUzhN+fTnbp05sJb6njB/tuSEpyPEFxSywfGo4oZiVPiYXJ9mDZ2DokkMMpSuNqIF5TL5qe/cmQEj9lR06PlaynvurVODvIRXQ/v87249FbKU5ldElIcMH5edAlxVeFnhhMKEXy5Cla0rv2iAaQDcHMcQTCQIxMNx9TVJps24GIHG7lxniuljl6nMSVeDxPsWc8e8yhHqdkpO2qPi+jiA/zTv9zgTXNKQi9MxClr7liV2Ca3BPHjVpb0uRGBgfveDTANB6s5Ode3VTIaSg2S+a4mRzOYIpTibOZwxE4j73sJDODoJgm3j/78TQtamDSAxMY7K0AHTa6GSG9iWpQsjasnhZClvPBK90oWGeWIEsbdNNQTcIfyibGDrWplAD6J+lBaDjFokZ1i5JDlXzPGeSJUi5wAR3WUl0zEam38VD8A0iJuQTQ/tXdchBp0NaAFrsYof2tdYQtYuDQJ7gfgcTz0wS3yHT4g4QjIOwN23E0PEfetBqgxaA2J3s0LMnKjRtTUO5sn7CBPPvIPCim80jYnAOYI6HGOISMzlout6nAaDOlx5miDvrCSFoFc+BXEGHwxIL3/Z4Zu3syFL6wgzBOphVQc33eTQ5aPW9QwNA/U9q2Pl+7WoMOZN+aSVHPyf9f8YnCllgZWY4o7qbfUyOt4DgneFtGzEsfaUuOWjzpUsDQONPbczQu7unIdSsajLI0Wb409jP7Szw7FADk7Cp5ciyaJw5iAfxX9QQw+uv1CEH9d51agBo9ImPGXp3dxFCzHbFyRl0PC6x8G5oyGTAaWTp/DoBgnlC469qiWHhpAhyYJ3l1ACQuIAdeve3CC2r7QGyZnjIzQLtmUYGDRe5mZzuBkE9EBKWuIhh1eP0oM7kEg0AUe+wQ9+F1JCyZ0R5A/PXTLC6i/9M4+3IsvIJQ5APIHKjRAxreojkwDSpVANAzPseZojZrYSQMd+nIsgcWC8zwXNGvyVfRpbScvjr4B0kZPmIYcVwMzmwTC/WAFDnjWKJmW9/L0uImH1FfZA9GFnBBN+x+ClqEzL9PVEPAM13eYhh7ugwcmCZfFEDQMzrJcwQT95tCQmzLU0BBYieb2dSmu4f0zRkWnY36AKE9ps8xKQzww3kANJ/0wAQM7WWHZ5KF0LAqhe0AiUQ0nYy8e5q4Zfbipm43zHpA8DQaYuXFnr39xTpCSPOaQCIetbODn+/I/SreFwcKAIYx15igbY50X5otFNi8mNr0AmAOOgcMfRmtaQHxkFHNQCYx9nZYfHwUK+NHUygEBD2gYMFXr7j75ln25DllXsNugGAwfnEEH+PpwfQ6bCk/sDynI0dFg0TQ7i8Oc9HghxSgcanmeDmRn9HGJqNLF3/NoOOAG67Sg1/Sw0A6HZUA0DUK/k+Znh+pEVX1HDTLZSyU5lJII9k4L4qJjjV8DeSVyNL374UuPlOwT4YfIqatKZFAEC3bR71B6bHctjhyUcj9URN998qqTq54ZkUkEs68DGbwn43FzbZxqR4DPzN+rZgnzDqMjF0rGgdAFB/oVv9genBfHZ47UVRR9Ty/K0Q16UdHz3dNwbkk1DCASZ4PPmmev6BTOeb/g5UB/sgYsIVYli7IiUAoMm3bvUHxjvz2GHhK0rQaf1ZFfi+TwaFZ6/h2zzkyofLia/4LO1LrHYvnvfi3X1bRIOsEoKBN5jgN2E3EbkLmWYlgO4Awp4pIIbOL+sEgJD8SbX6A3FoHjusnvYX0Rvky5yQpAJ7jWQwM+kadishd2WgnNg/SKLd+DSjpXUjzQLILaXwDCeTkoduIsPDpLgj6BAAXqokhpgp0gMI+9Cu/kC8M58dVk8R/yR5t3xp78CZAuGqFi4PkJPamUB8YA2b4rtBhilB040SCzzc4i+GOJGl7xmDPgHeslPDN60BAOGf2dUfGB+66GOGhS9GhgxFzXIw8e1uqmwwMkdi4fzQ+ieNj0gsvGsagk4h/INqar5ZCQEA4f/OU39gevi4xAyvPW8NFYJWO3wssHpWjLJFzKphgZdGmwAger4NWZ6/Q9QrQMScCmJY9WZUAIAw4bL6AxiQxQ6vzYsMFRLvyWWCf9xlUjRovldigXtbAIh35yLL8swo0C1AvVmVxDD/mYgAgPDxlzUAdDnEDmu+CA8Rgqi3qpn49jVWNhhSzsQ11wip230svDuagI4BYj9wEJMKHzcHAIQ9cFEDQPtD7ND5n/AQIUj8lQm654nKZnybCVYPCJvmRJZFPQRdAzTY4qWFWHtXIAAMytcA0PmYxAydX7YOEYJuHiaIPZQN4CATvNbfhiylSeBn/QAk7fASQ9sAMRBgSJ4GgIGHvcywZsXRECF41snmQpzCdbnGBG3IdAfoHiBpo4cY5g41BgIM+tWr/mDoYYkZuj06uzaHVAusYYOfRypb2ORKJmxzW+sgIGktNTwzyhgI0G6zR/3BwHXsGOrVBpxTL53Psil9SNmg0QpvgFSON+ghhA67qXlPphsCwdBpi1f9QfKyUIMh2erF/GQRE9+P7ZVNHHQ6QBbFgx4CDN1/IobeY10DAQzt1rnUHzRZFmIwIke9QOxnHhboWhCjaGB+oyogDvcS9REAXY4TQ9zXIBAAIjdpAEhepwsoe1SN3SdP40tUDPQ4zgQrHzYoGkT8LAVA2bPAUG8APc9Rw71JAQGRG53qD1p+79YBFIxVYRUvyZLhXx41A08VM8FfWykbdC+m51kWo6OAEVeo4Q/tAgKivi5Wf9Bmo6Rran7EX55F0XKUvAFVjeVbiQl+aFE2eM1DLrs76Clg9O/UpM1NAgJi3ihUf9BqvUvPlLDcX3h+qAwZH7zht+zeqgCaHWdTPVrhwtZTc44DfYVwTzYxrP2mSUBA7BvPqT9oMtupY4qe5zfXwoby02If+n1fG3UAA8uYYE6qskGnM8QWhesswHTPH8TQ/mWDgICYOqL6g9hZTv2SON5vaHs7Um7q/OD237f1VIJhKhtcG65spierSGUlgd4C4OVKYoifxASEMl8esL7n1i3BHVf9hrinjrwMrUSGM0AlQMJWNuXjlA3qfUXJPlDQYVjeKqOGM8M0G9T73KY4zTM+V4HPuxyS9gMDrFo6vn9aWlrrZk0ot2iT5tdeLx/yIMMr96oG6HOBCZ7qJSga9M6SyLjmxoAOAyxvVVKzvxSt2SD+c6fS9DmJKvB4n0OiPvYy+EvXxd8ol/gwAA+kqYeIjEom3sX1lc00uZyK9HNH0GWAZWopMazNsGo2iPvApVOCp0vZyb9nYZh6gCarXSywdKJF0SBuhY9I/iMGnQaEZbiIYembVs0GdWZX6ZQ6HFO+0idAVmoyAgt6XWCCZ9oqG3TMp+H6ygp6DYh7z0UMS583ajawPlOiTzIu8yreH8nyUvJIgBknSUx8qwzKJj5E42QT0G9A7BduYliQLmo2ML1YrkuCu0uVTvoE5KV4bICB8B0TlEYrG8AiEr1BzwHxCx3EMH+YqNnAPL1YlxR+SOlq2qkMiM5lgjUpCpdyjJ1nFug7IHEdNcxPN2o2sGSU65HgGaX7HNQG3FPMBDfGK5vx/iJm+2L1HpC2hRpev0O7gWVyiR4p5qiyXW+qPmLmO5hUTw9TNKj3gZ1R7lBR9wGp66hJh4dqNzA9U6xDgiEORXsD1IeQtpuJlD1M2aDTQTb2t6NB/wEt1xND7+GB2g0iHs/VIVkWKdnPzVQIGO+/zAI9a5sqm3FcEZPvmwp6EEjdSgylY120Gwh35eqPoPV55Sq826BGIPwDBwt0PGtWNBBW+hjkDAOiugcYdtpHC3FfqnYDeCBXf2R6qlypHPOiQZVA0hEmeLGrskHTfP/ZZ4NeBNJPU8OlyRoOHrqkO4L6X9qVyb22KagUGF7OBNdFKxuMrfbbz4n6ERh2hhqubanh4N7fdUfQbo9XiaQ9PUG1QIaLiWuywsF7bj8V9QEdCfQ7Tk3a0FrDQfpvuiPoe1yJfuoIKiZyPRMsukPhknf7aRLoSoRRBcTQtbiehjOmZ+uOxA5/KM++ZFAz0PkiEzyapGyGkXl+WW7Vl4DxwSJi6Jxv1W4gDDqjNwJo+IfSLI4HdWN4xMHEsUDZIGKWyw8X2oLOBEwT8yRa6JxZV7sBdD8m6Y0gaX2NpBy+wlmxoHIg4RsPC8y9W1Q0aLfP97cqJ5p1J2B+4QYxdM6M0XDQI0t3BPVn/OFVito9Y0ygemDAMR8L3NJc2eDh/L/jWt4Y9CdgznQSQ2emWcNB5326IwhPX1OlCO6sGSkQ+EpgnFDKpOb1SGWL/MR7c9KZgaBHAWuGgxiWvmrRcNBtl+4IIHnM2mrZcx6a3sMMqgis30os8OogQdGg6cmbq37JrE+ByKkOYnjjVbOGM3Tbqz8Cof7IJaWyJq16uFk4yKIiQPPzTPBHg7JBf9tNrY0BnQpEve4khqXPm7QbCJ0P648ABGPsw1trZKpix1OJJhFkUhmgGxvpA4UTnr+ZqljQrYD1AycxzLvboDo65OT6e7jsAKRuzvXzlwkB13Vrrgo8MERJHs3199eJSvJArr8Pj1BXfxrWe9wXK0/l5l7KL/j/C8vKyZYU3GTepdw/v7jy/58xsY0F5LRFrr+z7pQVmJnLtmOAWD/K9XP2VGJQb0PuX6cD9TO5/h6kR4CU5U5ieOZ21RFSaE5p//93H/sw2ZGd2v91MwuEFAYcpCylhudGhDCFkoYcJP+XGv5xH+cMEjdQw9N9OGeQsp+a9Gt7zhl0+cVDC3FHe5FvBv1+8hDDzW04Z9DvBDVck8A5g2HXqLlX1uecGfpdJYaetQ34ZiD0u0YM3asS+GZgSL8k0UL3/Bi+GYS9WCDRwvJpMXwziHmlhBiWZVj4ZhD9gp0YVs4J45tB+OO1xLDmOc4ZmF6nhjfGc86gznsOYnjtUTPfDBp8WEUML95v5ptBo49qieFvgzln0PA7ani0N+cMmuyghhf6c84gZgc1vNCXcwZJW9zE8Nc0kW8GbXd6iHnWthH5ZoY7DntpoWd1S74ZGIacJIaejY34ZmDofpEYeldH8M1AaF5IDD1LI/hmIKQXSbTQ8WVdvhlYHr4k0cKaD+L5ZhDx5EWJFlZNj+SbQcRjpcTw+hTOGYS9Rg1LXuecgWUSNbRncM5AmGonhjfGGPlmED2jkhhm3x3GN4OGn9YQw1N3m/lm0HyhgxieGcU5g0bLqOG5VM4ZRK2lJuWmcs7A8JOPFuKZtiLfDFrvcxHz/dxJ4JuJXXe5aKF3TYrANQOxxx4PLaxd0ohvBmLPHGLoWBfFNwOxdzUx9OzluPA///P///mf//mf//mf//mf//mf//mf//mf//mf//mf//mf//n///zP//zP//zP//zP//zP//zP//zP//zP//zP//zP//zP//zP//zP//zP//zP//zP/7keVlA4IHIbAACQXwGdASrQB/YBPjEYiEQiIYkNABABglpbvwPTkKDAA1k7PQ5JdNvKH9S/BH0VS28H4x9l/vH4AfoB3gFT/4wBesTk/2d3l7P/d/bjjB93fPG5l85/++/SH3ceYB+rnro9LfmA/Y/1tfRB/xPUA/yv+79L32QPQA/bH07/ZU/tH/m9Jv//+wB///UA/+fWz9n/7j+Hnx08uPslr9W+Ow+U/wN46u9TiA5I/3V7Av6t+mj63v3M9iX9lQuQXZIdok82wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsC/6pUC7tEnm172tHogqE5ChI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BiTdHuSbbuAztaJ5tPWqWg2XBJCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR01FBK719w7EUknm2BgMeVO8h2iTzbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJEIri/p4B9DszQhI6bXwMerVE892iTzbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHDMEAIyWlD1kS8hQkcMlZsFQnIUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMSquGRSMp13hqHI6bT1qEnIo4Nkh2iTzbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUBfJaHJ5/7XsCdC456fW0hSzBvWT8HbM1d8+Wdai398GaLUjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptfBAVNbw3kSIVLixC7A9Ch93Qsvju6misLavQ3R1ob4MRbzat7RNituMU4KhOQoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYlVaWtZI2xtc3ImHCYmflm2RVMfzugSG+QvVX0K91DSnVOeQ8KF3nuzNZKhehqpCqIobxcFk6sPdn2wIdSLrmVnQ9Gh6JrJRsWJ+3ZJV72nNuyEF1OfmO9pzbskq97SxUGJ5RgMgblIuuZVznNPCcUhvac27JKXXNHt/9NdeYqjQ9JJws8Dzl19KCTu0SebYGKEjpqKd6VylH9EK+KmWIyHKSNFY1/RNc3/uEIp2ububoq+0cTfydjDIVmCRwnEt4iIuRQTBDbCxJrewrs3W8EioSIRbiCu1PIVGly9QAZIY9ITWShNTQoc2t2iolVvUcxpvBIqAznC+UkowqrU7voUVwRfP5tDJlXQp0gpyFCR02wMUJHDL7BWBBcT8EPo2EUa7Tw/RuXfnQfPBMYMMalTWOn/O/L892aiqRJvc5CawyZ2Cgi3pnN27JKve05t2MY4BY8aerG0S6EmtSqzV2auZpvBVl/qy9Nvac27FEufq3Mpj9UGeHrtgPaFDnPjz+jfnr9Nvac2Z6cWdhuOAqWdgrAb2O/A2oY3SnpKDCpWsW9sDFCR02wMUIfoppCn04g4puClIUs7wnBPhOkSn+4VKM83Ye1H+SOv5PZW/1kVDuTnVMdpQrvVLF8j0iM+vVl6be05t2SVe6JRqDgSGOjKiW2U91CtHlOoO7e05t2SU5eF4YM1SCLTqKEJ2dYd9m1Hl6r3tObdjJIlA9IVFKLCRHStw7qS/4R+Ar4kHp37b/aJ5tgYoSOGX2CtNMvBuHAAy2eQLCGlvNRWYgdPk5SD3jQUwSQkQi840dSQvuOIyZJqcru6eiyuGU4yOm09m7JDHpUJ9rOwXPP7OwVhl9grTUU70uXqADI8uLmxyHUUP4IQ7LQuOOpiNE5LtZAyTzHzBPNsDFCR02wMSqtLeyHTMCioJ339Gsimc4qYhttFR82ETMlM2aVsGyPG+SCoJitGuz5mnQYxxLZpfM9m60uDxWm3tObdklOaSd4RQkQi88cJxLeIa/+vTm3ZJV7jYH5O6lOIvpKEW8eCNt4taPnpGH0VjBAuMsMvoE3aLhcRw8VAwAqXPXSJJ5tgYoSOm2BFvHgkVCGQ5NUbpBoBGiWVuz6dOnWOVoCZOn2s7Bas1jWHD19Pp52CtH+vVl6be05t2SVe6JRpJ3aGwWrBUJnIOukSTzaaNKwAe2O2dV72nNgXdK0yKUUXni4wLMNcIK7AkVVpa1kY3ds0+mmw3N6cWlGCebYGKEjptgYlVaW9kO0Mo9kWtcUGJuiz6mkH6GReE8fnEjhmFqGcF5Xz8xSizBOMwTza+CCnISqutJISIRXzBPNsCGK1+4sEiCeN9iDrb6JgggEPz6MD9yVUtlj6LK0GXGQZk6W2rMQ85ME82wMUJHTbAxKq0t7IdokCFZABxQ54ZiXEcJx/ytMG0W6M90ixtc+I/+oiv1vwhpJIvZvzbskq97Tm3YxjgFj0dNNFmot5DpjNYG8cmAwiTzae/VYcCGSStzKzo9S65olJUzywYjs7mQg1pcHgqQW/gwllv+n3GCSNiYD11gs6kJZb/p9xgk0ChI6bYGKEjptPZkIKchQh/YCjb/OWYDCuyTgBgEb6HaJPNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkdNsDFCR02wMUJHTbAxQkcMvsFabYGJVnEeX9GgNBAcQmglChX9XK7tEnm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOBTtjGOAWPR02wMBtB8BdfPW9bdiZKwbJDtEnm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOm2BihI6bYGKEjptgYoSOmmAAP71xwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmem/ypAMU3Oo4/g4udsmVo2zv1IQ/Fd/+EIUP/TzdQsgAAAAAIe18Q4JpPZ7U56aekE71Muk9mge/fKplaCo8S0QIXyYudiGa64FjYJ+e4OSmhxJH54oCXAAAAAAHwaIu+kOvo93Qt/ED6WGIpmzFLswUM+9bBjo/n9k4Q+mxjD7uU2d2WcAAAAAIrBYw9Ox0brCHqxrYYIl8Q2/ijFZcBqVoqNeKRh2NufYGNtQ/OhCjKuqaRzbKw9Pc0adf80lnrwAAAAAGeQ0EjdyJyLc8MNDlOsSFHYyVpatz08KMfQx7csEdM28SjYapADAwAQHROLpxPpN6C5W4OE/rAAAAAAEFooT85KF9Uf0Czp1Fs4f04/yd7dTtaFADeEl9dMmHXkciTxvY5P/R5Xkv1PiYIOFVrA0AAAAAExroTI3038uVV4+72JSlOb0iH5jlzewEmZTX9CuFw3HrF9KVwpCgYakF7zuq2Pa901jmgKywObBdDCbPQ3xYJBGHGwwv6Y6AUEA794djAEhKc4mKM5IOT/GYP84AAAAAUB2oA2Vq8OGhRv+DVuyWRguS06AiUcQMeruQUCLymUSsaZsUQuDs8ahoYesCTMFtRzwWvkDwUDZFYCGJIyfwp7rlVmVPFfNvYFZ6kg8RyPpbw7db2bV/hIBsP7l+bxsd8utE3a9gVaODMvGMuwvNHWSRhweNYWbIarbRDbj5tmNf2ub2SkXrFqSYM/8qXahAAAAAAXGuyOpwzTRprYXYCq94VgWm7sCd+tkMjZrJIsd8Lmc3wu8w2LoHFxpK6uhju9opYRtzCm3Po6dD0lhvcbeeZ+nhN44xHb0A9xyf5dKVuS0KQCZmNM8Bn7cdyu1/UY32aHkBnpFJtZa8l06jM2JTe9jfpfXYe4zMCE9Sc/DMygDKOpjZ8nmIGaK85ReWv6AIa0nXYbj1bRiMWqTWjTRIdC1cLISEXke7jiegp3zkd1KpX6wChpUyaP3OcjuZwJSdElnILgqD+Wp4syDXVqCtEU9Ip7ACqfKDQEovLMDxYFwVX/wAmdKGqUNUnDCC2PccCKLyzA8WBbu40nE4hnmNiC3FdlccT0FO7ILgqCSnoT93mvYIjQVuOo0S48WYb97KRKLxqENaUNVy375lCR2m0SBzADE0ylDm84QVSogUNKZTiYy7thIAyWpob9s3+MeICUzM83CpxwhkYS2YJ9fba6ROFyYjiFw0LedIkJVYBFhQbCec5eeZ+nhN44xHb0A9xygaP4AsI0PnFnRSEyqhv3JRv6zpUOzdseJyW8sbySH/26RzZa9PwQIiNsofSFn5m6JzbAeTWNjUQtva8KfVzl8XPow9T41vq/G55dmpL3qvxpFqwpXCZRJwqzkqk51BemdqWdnx8HTDOhLFtHX0HBfeNXARKvzBEfUV6O6yPQT+dmFGAo2ftnhzCKCDoJjL3gK8Z6jjr9W60rM0HGtjQc7vkub8bXQyFzGW26Hq5DuZG5QUqOPKBw6nU7uJVsqI5PSYak9Uj7LBSQC/nTPUYVNLl1mXoepYeLedOAl0fC6z9FyZCQ2mG3i1EFuWFye5Np0bJ0MC5cxwtC1Vn4r/lv+KthDs7w4cNNi2kNKEMjPuwu2+/tniVc4U13ij2Oqyw7uqWk3w2QJS6p8Beuc9BvEVWc+Xt0NBR66z7L1kF/GVOuJalAXjZAUI+8aNAg4kE1+fE4UKNw5nJvNOdgEV0gqi6d90lv5Q0mxO/SI3zapsWrxoPdG3Edw8WuXXo59tGpP4iwo5KEvDT38gAVgQUzwL8fgDwmVSznQvDqGugJ72HfKMW2ueLU1NCDc97i1ShfjoJiGH3Pirgl7MJ8X/ojqvuwkCu6DhCYtNlT+hpq7Uiuoi1YZxOJxM+j4sSRalYM6UMPUbxC0nZPKzb8yOeIqMsYH3Y6ROfJh7DQqUtxp23eZxmaYJG+SvStrBwXK8+A6w4TW6jWaOBwXtFfBSYIhQ0un8vCVrkywW45V+7T04KhIxwm10B+ZedHo58CBLStV+KsZjOj540MLJlGnpk5JYPYFo2xbQPdu3ccjgCoErLGoUki7hPwOBLNvUaunPAnX+up8ZsESbB6ZfMFuQt4mYCqQ+fqYp5LdtKA7i3p38vgRkcq/dp6Zx9H+lB0emrC3ehGmyFW2C8aYqpeN4bbwrWJPh8I5tetkztRJGqyA+kc2FZ4n+uyFQi7BTIRIFME+43AOf4Gr17M6xRckVkrsJRVVaTfQG3ag+o/tQV1iNzgA+2WX9VW5x4ZL+zqrrS75DHrUxmjkVgnmwtAcOgKKjsUyOrKjMD++FYp2ukw6JVGjxMvP36fSWE/U2hqcGJ9N0c9Ds5MREF7BXWj32wQWtDc/Lfyy5YP4LRKd8QbDwUxbaxY1UJNrEer5akthKikSa1T/VkDYN9iDg6POPCrf4eDNnKbDJ/yADT56mwPnBs50BQfzoJ1/HceBpWJt9XwTlHYNRwiwtoNd6u76r7sJAuXH7OKVZbWoFxxcY28BQ0q3kiEpTuG6yjoDTlCNncTPH/AYjwCk2O1rUC4kfu89Bo74QH2ObAfJBvcObJoDygjkxGkZkoik+W4Pd1dxHPjSv29mJo/B71qOpsgTrNM5ZUDlYzvOvl0NVA9bXmnAW1niZZMaDLuUZR5xUS+dNn9xogWBadt9N+9P/81fndxXJLhIIhrxSUZAPzsSby9+jTULDcASSKYgiAAJuN3xWH0obHgq+omgIp2EbXrlOLSn11/f7C+PhyBVJ6qAqb5ED3Nx0M0dyRcUtQyhjPDaeBoS07YWrw5L419pdkLqsMzmZreGWtbY38AtAhV/Xp2ZQiiw6ESsmepzL0Bud1Iw0amkG5aiYV0se/JWXUaMkHC1sl//gA/H+w9w/nEUSZ6mi+9LFb/AtEqPfQniAZrPv03OVZKL4hE2N2+r4JyjxSzGOQ3GNa4tBMwr4XEGNr/0fhaphIFy5mOYPo9DrEbNhOIJtFLiuCrl2aqxAFZamMynyqHsCPotPn3XEwoav2cKYf2rXixGGzNeVNnAskeIURYJHy4SF+1E54pO7dGA9JX6mpyJdww/n6SiImTfQAOXvCK/52YytTs13piz5nvfeBcGHXo97+BJxxsCxAq21Lgdl6P4f4hpEjxf6gX4CMYD8LChqAaJh/P+uvmPmHJ/ae6LXuNnUzGm16DsVdBQUWNJqsJxTlIWC04Khg9heJNbvf6XHhtg7RSEG29ghKjs4IhkK7gB0BkQkvu8HIrBUlzCf41lriDOW817SaXfRbuJpsFVjBIMHZ3C+YRoXiDm1m0ZJZ1rGvSWYnifd4+npEgFaelwKzBXR3OuCKgSkJ0sl835n4mS2ZbgiD12NqsQT5J99GqMI8/wXv8q/Eogy+VoXU4Ljj2kJRYCqk7UBmEB22VeNuzn9+gB3lMyaDQqQ0zmGbY2hUu+28aKvMqbonaK9YaJa4XOTmmfCNZCOeZ+nRd/Wp3GCCGL3gzy02ynV7C3WDsCLIWJXmLehjb0lVi+ZqZw5XLzXerytFyGWnbUTSBc7H96rv7gt8rkywbUhF5iuHAi1tdRdrl7OcPz+kaZPnJ8DGvdiT1vD27RfCqtwwMCaxTJXjQQSq9R7Up+5MfjBY5gEr4HR/Es1JwImopTKwXcGvaErbPOuIvSD2xX8EJqKBZakUEogYboj1UEVSfg0xQv/TuQTmEReBuLMGVes/Io9deC1rSnEI+0hqMYwaT4ZhVjBhtUaqR3rCjmATllcj1k6ijZAsE8I6jFculYZUt6bv8OgMqN5+kf5eCxfgzvwzbOI9LRR5K+ka5AqHApXpmPDyho1m/K9M23//z/vL/n7dEO1ZpNsI1LnIJuBwP1FawVTjUUp9df3+vqNLYBaNwrwaupXbhix/Unz/ug8aHRYXGzEdnz0fC1wmahp/gltv82fpRt9rqyCx3/1blQAJ/fU4tG2Ekvgqmp0GJJGKIaRvpOecJyFwZd0NPZWQOstWpioarQLnhaSE3X3bwnCPYLrnhaNfhLyOtivJ2xQB+HQNmNJG9beoRrOVAyhezGkxxd7gqjFFUv7QWQaDLYHqekbbmYmnb2jDTyr9VE+EY5uz2pTvT6G5qIYEg4AJ8rV5ZMZNLlfnsqc+IHyctlplLNZZ/9QJJnjyX8i3WwhaVI9Pe0ZjmaL7FZ6s3/ySafe1SwUAkBNbidjn7AYC+OLbUDibjC8+EBZNp/js8NgdEFQMJFRkf+rs7MK9Y+shNJSNGys3ZNr8kehUJLDzEXqOoyJKUM91l9HZ8yTZVUUX2OOc9/01+g2Z/CmyLY8GrqVNUgslq7Da2IfcUTCwosvhyC65qPXDhd28RJ94Y/N6o8pQz9486xdPgPO8SABiYSOYS91i7OSZrwMbY5ICzGmowKlw2+s9KAdsZTiPur3MU739yRqiawGTdIoNpNHB4AR+yHeOMQa/2fsgZDy5v2P0iDYtCTMaeoCDCAwZ7TnVOBFeYguM+CCxrFcGLowye1eTrHdxuBTXYP26ga68tIXhgTFSMX36vv86lnrRDaHoNwXxGD0Am2xBJlbi58uboQQf/d/gWSAAPl/7iWIX409x7pMgW3pLYMldzbtGGXPstanuIKgVeJXQN8bhLPnqm4oonH2gRKqm0JrpKaZF7AVMcx6ceWAh2wm2iuCFH87wwdgNtUjiY4THRyDiF11/f62RnP8U//IL/0q/4GiWPrVMGpy2uV1QBUnJXjH/rtGFiZfEg4fYdqVcHgJ5HqOQSFA3IuN+Lg89gZ8Qor/0kqPtsBb1dtrl1pUBZYivC1B8+Fb9dTOMpTkSQSRVmWCr8DZHnqo2AyW9hg7uIo4PEFJ9/saQgV5j3W1w6U+awsOfY2FxYTdC+ZxXORB26jvD7NZfQw6T/utrh0p81hLKQkehlaK6zhNMhVFIjXR2UIL5HS40JhN0L9XZ4OoGqgZ/tQQW+D3H3e5N7qKtqWNrGLlSqxSM4+Von+RNqBzZUV1j6y/cbfIyTRTCqEz1SgXUeeSar6JgHo2La/wDmkEUfu3WdxZB+RIQy2WPZbtg7AE6usmETUBgmBPxnrtHyzb7qggoCiVAWABpSe8RbCrzeWRukQgK8nGUt39G4sDJYD8FRQyhktiOZZAlWDQVicZ+SkIZvMzLPGvLrXWk3srTNBP1CH9Dzh4+eeTX8T9JcO4lxT8EGkMsZwKpgi7MxdhelLwfm4rogUPH/gcGLhTZGRf0MEaM382R+iXLXIDt+vd1SmxIj3q1GNqcaAHxMYnV5aWYXHDzhFw00zc02kN/GogXGJ9AdH9/zgnO2XJ2KAOXmtdOAAAAAD7IdU/6iwXu0PddDXtt4DozN+CabFHdDMJuJNbftSN2G0mCLb4A0ryqYsUP7/7FMq7fV8E5R1KANBXk/e4xaSlsvVfdhIFdsAAAAACSHSf97kqMAsvVR0Frsoa9wcWhjsOcNT0YUcAEEccpZe3BtgUKeeqjQIsiwm6F80VHMLKf2fS9bZjqaIAAAAAABPGgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" alt="NETFORM" class="qna-logo" />
+  <div class="qna-title">Q&amp;A 자료집</div>
+  <p class="qna-subtitle">1차 미팅·2차 미팅·PT에서 받은 질문과 답변을 모아둔 사내 자료집입니다.</p>
+
+  <input type="text" id="qnaSearchInput" class="qna-search-input" placeholder="질문 검색하기" autocomplete="off" />
+
+  <div class="qna-tabs" id="qnaTabs"></div>
+
+  <div class="qna-content-row">
+    <div class="qna-content-main">
+      <div id="qnaMain"></div>
+    </div>
+    <!-- AI 업무 제안: 현재 탭에 쌓인 질문 전체를 분석해 준비하면 좋은 것/새로운 아이디어
+         2가지로 보여주는 보조 패널. 질문 목록의 구조·기능에는 관여하지 않는다. -->
+    <aside class="qna-reco-panel">
+      <details class="qna-reco-details" open>
+        <summary class="qna-reco-summary">AI 업무 제안</summary>
+        <div class="qna-reco-body" id="qnaRecoBody"></div>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<div class="qna-modal-overlay" id="qnaModalOverlay">
+  <div class="qna-modal" id="qnaModal"></div>
+</div>
+<div class="qna-toast" id="qnaToast"></div>
+
+
+
+<script>
+/* ============================================================
+   Q&A 자료집 — 완전 독립 페이지 (사내 미팅용 단순 Q&A)
+   업체/고객/담당자 등과 전혀 연결하지 않는다. 1차 미팅 / 2차 미팅 / PT
+   3개 파트로만 질문·답변을 분류해서 누적하는 자료집.
+   유사 질문이 반복되면 빈도(frequencyCount)를 누적하고, 사용자가 직접
+   지정한 중요 질문(isImportant)과 함께 목록 상단에 우선 노출한다.
+   ============================================================ */
+const QNA_STORAGE_KEY = 'qna-site-state-v6';
+function qnaUid(){ return 'q' + Math.random().toString(36).slice(2,10); }
+
+const QNA_PARTS = [
+  {key:'first_meeting', label:'1차 미팅'},
+  {key:'second_meeting', label:'2차 미팅'},
+  {key:'pt', label:'PT'}
+];
+function qnaPartLabel(key){
+  const p = QNA_PARTS.find(p=>p.key===key);
+  return p ? p.label : key;
+}
+// 이 횟수 이상 반복되면 "자주 나오는 질문"으로 표시하고 상단 우선순위를 준다.
+const QNA_FREQUENT_THRESHOLD = 3;
+// 새 질문 등록 시 이 값 이상 유사하면 "기존 질문과 유사합니다" 확인창을 띄운다.
+// 키워드 충돌 가드(아래)로 서로 다른 제품/주제를 묻는 질문이 잘못 묶이지 않도록 막는다.
+// 최종 판단은 항상 사람이 "기존 질문에 합칠까요?" 확인창에서 내린다 — 자동 병합은 하지 않는다.
+const QNA_SIMILAR_THRESHOLD = 0.45;
+// "~할 수 있나요?/가능한가요?/되나요?" 같은 흔한 질문 어미가 같다는 이유만으로 유사도가 높게
+// 나오는 걸 막기 위해, 유사도를 잴 때는 이런 흔한 어미를 먼저 떼어내고 남은 핵심 내용(무엇을
+// 묻는지)끼리 비교한다. 예: "관공사에 POUR공법 적용 가능한가요?" → "관공사에 POUR공법"
+const QNA_QUESTION_ENDINGS = [
+  '진행할 수 있나요', '진행이 가능한가요', '적용할 수 있나요', '적용이 가능한가요', '적용 가능한가요',
+  '가능한가요', '할 수 있나요', '받을 수 있나요', '해 주나요', '해주나요', '주나요',
+  '계획이 있나요', '문제는 없나요', '문제가 될 수 있는 부분은 없나요', '구성되나요', '다른가요',
+  '되는 건가요', '되는건가요', '되나요', '있나요', '인가요',
+];
+function qnaStripQuestionEnding(text){
+  let t = (text || '').trim().replace(/[?!.]+$/, '').trim();
+  for(const ending of QNA_QUESTION_ENDINGS){
+    if(t.endsWith(ending)){ t = t.slice(0, t.length - ending.length).trim(); break; }
+  }
+  return t;
+}
+// 문장이 비슷해도 실제로 묻는 대상(구체적인 제품/공법명)이나 주제(가격·마진·기간 등)가 다르면
+// 같은 질문으로 보면 안 된다. 예:
+//  · "POUR공법 관공사 적용이 가능한가요?" vs "아스팔트슁글도 관공사 적용이 가능한가요?" (제품이 다름)
+//  · "공종별로 예상 마진율이 다른가요?" vs "공종별로 시공 기간이 다른가요?" (같은 틀, 묻는 항목이 다름)
+// 'POUR'는 거의 모든 질문에 등장하는 회사명이라 구분 기준으로 쓸 수 없어 제외했다 — 대신 구체적인
+// 세부 제품/공법명만 넣어서, 한쪽이라도 특정 제품을 콕 집어 말하는데 다른 쪽은 그 제품을 전혀
+// 언급하지 않으면(둘 다 언급 안 하거나 같은 제품을 언급하면 통과) 무조건 다른 질문으로 본다.
+const QNA_SUBJECT_KEYWORDS = ['아스팔트슁글', '다모아', '루프마스터', '금속기와', '우레탄', '방수'];
+// 주제 키워드는 양쪽 모두 이 목록의 키워드를 언급했는데 겹치는 게 하나도 없을 때만(둘 다 언급이
+// 없으면 판단하지 않음) 다른 질문으로 본다.
+const QNA_TOPIC_KEYWORDS = ['마진', '단가', '가격', '조달', '계약', '하도급', '법적', '영업', '특허', '현장', '기간', '등록', '시공', '대금', '발주처', '병행', '관공사', '아파트', '입찰'];
+function qnaKeywordsIn(text, list){
+  return list.filter(k => (text||'').includes(k));
+}
+// 두 질문이 서로 다른 대상/주제를 가리키고 있으면 true — 이 경우 아무리 문장이 비슷해도 합치지 않는다.
+function qnaHasSubjectConflict(a, b){
+  const sa = qnaKeywordsIn(a, QNA_SUBJECT_KEYWORDS), sb = qnaKeywordsIn(b, QNA_SUBJECT_KEYWORDS);
+  if((sa.length || sb.length) && !sa.some(k => sb.includes(k))) return true; // 한쪽만 특정 제품을 언급 → 다른 질문
+  const ta = qnaKeywordsIn(a, QNA_TOPIC_KEYWORDS), tb = qnaKeywordsIn(b, QNA_TOPIC_KEYWORDS);
+  if(ta.length && tb.length && !ta.some(k => tb.includes(k))) return true; // 둘 다 주제어가 있는데 안 겹침 → 다른 질문
+  return false;
+}
+
+// 서강건설 1차 미팅에서 실제 나온 질문 — 처음 접속했을 때만 예시로 보이는 초기 자료.
+function qnaBuildSeedQuestions(){
+  const now = new Date().toISOString();
+  let order = 0;
+  // category는 화면에 표시하지 않는 내부 관리용 값이다(질문지 원본의 분류 제목을 그대로 보관).
+  const mk = (part, question, answer, category, freq, aliases) => {
+    const frequencyCount = freq || 1;
+    return {
+      id: qnaUid(), part, question, answer: answer || '', category: category || '',
+      createdAt: now, updatedAt: now, order: order++,
+      frequencyCount, isImportant: false, frequent: frequencyCount >= QNA_FREQUENT_THRESHOLD,
+      aliases: aliases || [], lastAskedAt: now, actionStates: {}
+    };
+  };
+  return [
+    // (주)서강건설 1차 미팅 질문 — 첨부해주신 원본 문서(1차질문.hwpx) 문구 그대로 반영.
+    // 두 번째로 첨부해주신 질문지(관급공사 적용 관련 3건 추가, 나머지 15건은 첫 번째 질문지와
+    // 완전히 동일한 문구라 중복 등록하지 않고 frequencyCount만 1건씩 올려 반영했다.
+    mk('first_meeting', 'POUR 제품이나 공법은 관공서·공공기관 발주 공사에도 적용할 수 있나요?', '', '관급공사 적용 관련'),
+    mk('first_meeting', 'POUR 아스팔트슁글도 관급공사에 적용하여 진행할 수 있나요?', '', '관급공사 적용 관련'),
+    mk('first_meeting', '현재 관급공사에 적용이 어려운 제품이 있다면, 향후 공공공사에도 적용할 수 있도록 추진할 계획이 있나요?', '', '관급공사 적용 관련'),
+    mk('first_meeting', 'POUR 제품이나 공법은 조달 등록이 되어 있나요?', '', '조달 관련', 2),
+    mk('first_meeting', '아스팔트슁글도 조달을 통해 진행할 수 있나요?', '', '조달 관련', 2),
+    mk('first_meeting', '현재 조달 등록이 되어 있지 않은 제품은 향후 등록 계획이 있나요?', '', '조달 관련', 2),
+    mk('first_meeting', '아파트 입찰에서는 결국 단가 경쟁이 발생하는데, 현장 상황에 따라 단가 조정이 가능한가요?', '', '가격 / 단가', 2),
+    mk('first_meeting', '견적 경쟁이 붙었을 때 본사에서 어느 정도까지 가격 협의나 지원이 가능한가요?', '', '가격 / 단가', 2),
+    mk('first_meeting', 'POUR공법으로 실제 공사를 진행하면 시공사가 가져갈 수 있는 평균적인 마진은 어느 정도인가요?', '', '수익 / 마진', 2),
+    mk('first_meeting', '공종별로 예상 마진율이 다른가요?', '', '수익 / 마진', 2),
+    mk('first_meeting', '일반 공사와 비교했을 때 POUR 협력사가 얻을 수 있는 수익적인 장점은 무엇인가요?', '', '수익 / 마진', 2),
+    mk('first_meeting', '현장 수주 후 실행공사를 진행할 때 POUR 측에서 대금 관련 부분까지 지원하는 경우가 있나요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '그렇게 진행하면 실질적으로 하도급 계약 형태가 되는 건가요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '계약이나 대금 지급 구조상 법적으로 문제가 될 수 있는 부분은 없나요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '실제 계약 관계는 발주처·시공사·POUR 중 어떻게 구성되나요?', '', '실행공사 / 계약 구조', 2),
+    mk('first_meeting', '현재 관공사 위주로 해왔는데, 아파트 민간시장에 처음 진입하는 업체도 지원받을 수 있나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '처음 아파트 영업을 시작할 때 POUR에서 어떤 자료나 지원을 받을 수 있나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '특허나 공법 스펙을 활용해서 아파트 입찰에 들어가는 방법도 안내해 주나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '아직 예정된 현장이 없는 상태에서도 협약 후 영업을 시작할 수 있나요?', '', '민간 아파트 영업 지원', 2),
+    mk('first_meeting', '현재 다모아(루프마스터) 공법도 병행할 예정인데 POUR공법과 같이 운영해도 되나요?', '', '타 공법 병행', 2),
+    mk('first_meeting', '유사한 공법을 병행하는 경우 협약이나 영업상 제한사항이 있나요?', '', '타 공법 병행', 2)
+  ];
+}
+
+function qnaLoadState(){
+  try{
+    const raw = localStorage.getItem(QNA_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed.questions)) parsed.questions = [];
+      parsed.questions.forEach(q => {
+        if(typeof q.frequencyCount !== 'number') q.frequencyCount = 1;
+        if(typeof q.isImportant !== 'boolean') q.isImportant = false;
+        if(!q.lastAskedAt) q.lastAskedAt = q.updatedAt || q.createdAt || new Date().toISOString();
+        if(typeof q.category !== 'string') q.category = ''; // 화면에는 쓰지 않는 내부 관리용 값
+        if(!Array.isArray(q.aliases)) q.aliases = []; // 병합된 과거 질문 원문(표현이 달랐던 문구들)
+        if(typeof q.frequent !== 'boolean') q.frequent = q.frequencyCount >= QNA_FREQUENT_THRESHOLD;
+        if(!q.actionStates || typeof q.actionStates !== 'object') q.actionStates = {}; // AI 업무 제안 실행/완료/제외 상태(질문별로 별도 저장)
+      });
+      return parsed;
+    }
+  }catch(e){}
+  return { questions: qnaBuildSeedQuestions() };
+}
+let qnaState = qnaLoadState();
+
+function qnaSaveState(){
+  localStorage.setItem(QNA_STORAGE_KEY, JSON.stringify(qnaState));
+  if(window.__qnaCloudSync && window.__qnaCloudSync.ready){
+    window.__qnaCloudSync.push('qna_questions', qnaState.questions);
+  }
+}
+
+// Firebase 실시간 동기화 연결(연결 안 되면 조용히 무시되고 localStorage 그대로 동작)
+function qnaIsUserTyping(){
+  const ae = document.activeElement;
+  return !!(ae && (ae.tagName === 'TEXTAREA' || (ae.tagName === 'INPUT' && ae.type !== 'checkbox')));
+}
+let qnaPendingCloudRender = false;
+document.addEventListener('focusout', ()=>{
+  if(qnaPendingCloudRender && !qnaIsUserTyping()){ qnaPendingCloudRender = false; qnaRenderAll(); }
+}, true);
+window.addEventListener('qna-cloud-sync-init', async (e) => {
+  try{ await e.detail.seedIfEmpty('qna_questions', qnaState.questions); }
+  catch(err){ console.error('[Q&A] 초기 동기화(시드) 실패', err); }
+});
+window.addEventListener('qna-cloud-sync-update', (e) => {
+  const { key, data } = e.detail;
+  if(data == null || key !== 'qna_questions') return;
+  qnaState.questions = data;
+  localStorage.setItem(QNA_STORAGE_KEY, JSON.stringify(qnaState));
+  if(qnaIsUserTyping()) qnaPendingCloudRender = true; else qnaRenderAll();
+});
+window.addEventListener('qna-cloud-sync-ready', () => qnaShowToast('실시간 동기화가 연결되었습니다'));
+
+function qnaEscapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function qnaShowToast(msg){
+  const t = document.getElementById('qnaToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(qnaShowToast._timer);
+  qnaShowToast._timer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+/* ---------- 유사 질문 감지 (문자 2-그램 기반, 확실히 비슷할 때만 물어보고 절대 자동 병합하지 않음) ---------- */
+function qnaBigrams(text){
+  const clean = (text||'').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+  const grams = new Set();
+  for(let i=0; i<clean.length-1; i++) grams.add(clean.slice(i, i+2));
+  return grams;
+}
+function qnaQuestionSimilarity(a, b){
+  // 묻는 대상(제품/공법)이 서로 다르면 문장이 아무리 비슷해도 유사하지 않은 것으로 본다.
+  // 예: "POUR공법 관공사 적용이 가능한가요?" vs "아스팔트슁글도 관공사 적용이 가능한가요?"
+  if(qnaHasSubjectConflict(a, b)) return 0;
+  // "~할 수 있나요?/가능한가요?" 같은 흔한 어미를 떼어내고 핵심 내용끼리만 비교한다 — 그래야
+  // "관공사에 POUR공법 적용 가능한가요?" / "관공사에도 POUR로 진행할 수 있나요?"처럼 어순·표현이
+  // 달라도 실제로 같은 걸 묻는 질문을 놓치지 않는다.
+  const ca = qnaStripQuestionEnding(a), cb = qnaStripQuestionEnding(b);
+  const ga = qnaBigrams(ca), gb = qnaBigrams(cb);
+  if(!ga.size || !gb.size) return 0;
+  let overlap = 0;
+  ga.forEach(g => { if(gb.has(g)) overlap++; });
+  // Dice 계수(2*교집합/전체합) — 길이가 크게 다른 두 질문은 자동으로 점수가 낮아진다.
+  return (2 * overlap) / (ga.size + gb.size);
+}
+// 같은 파트 안에서 가장 비슷한 기존 질문 1건을 찾는다(임계값 미만이면 null → 새 질문으로 등록).
+// 원본 질문(question)뿐 아니라 그 질문에 이미 병합된 과거 표현(aliases)과도 비교해서, 표현이
+// 조금씩 다른 질문이 여러 번 들어와도 계속 같은 대표 질문에 잘 모이도록 한다.
+function qnaFindMostSimilar(question, part, excludeId){
+  let best = null, bestScore = 0;
+  qnaState.questions.forEach(q => {
+    if(q.part !== part || q.id === excludeId) return;
+    const candidates = [q.question, ...(q.aliases || [])];
+    const s = Math.max(...candidates.map(c => qnaQuestionSimilarity(question, c)));
+    if(s > bestScore){ bestScore = s; best = q; }
+  });
+  return bestScore >= QNA_SIMILAR_THRESHOLD ? best : null;
+}
+
+/* ---------- 정렬: ① 직접 지정한 중요 질문 → ② 자주 나오는 질문(빈도 높은 순) → ③ 일반 질문 ---------- */
+function qnaSortTier(q){
+  if(q.isImportant) return 0;
+  if((q.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD) return 1;
+  return 2;
+}
+function qnaSortCompare(a, b){
+  const ta = qnaSortTier(a), tb = qnaSortTier(b);
+  if(ta !== tb) return ta - tb;
+  if(ta === 1){
+    const cd = (b.frequencyCount||1) - (a.frequencyCount||1);
+    if(cd !== 0) return cd;
+  }
+  return (a.order||0) - (b.order||0);
+}
+
+// 탐색 위치(현재 탭/검색어)는 데이터가 아니므로 localStorage에 저장하지 않는다.
+let qnaActiveTab = 'first_meeting';
+let qnaSearchQuery = '';
+// 1차 미팅에서만 쓰는 "답변 보기/닫기" 펼침 상태 — 여러 개를 동시에 열어둘 수 있도록 Set으로 관리.
+// (2차 미팅/PT는 기존 그대로 답변이 항상 함께 보이는 방식이라 이 상태를 쓰지 않는다.)
+let qnaOpenIds = new Set();
+// 오른쪽 "AI 업무 제안" 패널이 지금 어떤 질문을 기준으로 제안을 보여주고 있는지 — 질문 등록/수정/
+// 병합/답변 열람 시점마다 갱신된다. 데이터가 아니라 화면 상태라서 저장하지 않는다.
+let qnaRecoQuestionId = null;
+
+function qnaRenderTabs(){
+  document.getElementById('qnaTabs').innerHTML = QNA_PARTS.map(p => `
+    <button type="button" class="qna-tab ${qnaActiveTab===p.key?'active':''}" data-action="tab" data-part="${p.key}">${qnaEscapeHtml(p.label)}</button>
+  `).join('');
+}
+
+function qnaMatchesQuery(item, q){
+  return (item.question||'').toLowerCase().includes(q) || (item.answer||'').toLowerCase().includes(q);
+}
+function qnaVisibleList(){
+  const q = qnaSearchQuery.trim().toLowerCase();
+  if(q){
+    return qnaState.questions.filter(item => qnaMatchesQuery(item, q)).slice().sort(qnaSortCompare);
+  }
+  return qnaState.questions.filter(item => item.part === qnaActiveTab).slice().sort(qnaSortCompare);
+}
+
+function qnaRenderMain(){
+  const list = qnaVisibleList();
+  const isSearching = !!qnaSearchQuery.trim();
+  const label = isSearching ? `검색 결과 (${list.length}건)` : qnaPartLabel(qnaActiveTab);
+  // 1차 미팅에서만 소개 문구를 보여준다(다른 파트의 화면 구조는 그대로 유지).
+  const desc = (!isSearching && qnaActiveTab === 'first_meeting') ? '자주 나온 질문과 답변을 빠르게 확인하세요.' : '';
+  return `
+    <div class="qna-toolbar">
+      <div class="qna-toolbar-text">
+        <div class="qna-toolbar-label">${qnaEscapeHtml(label)}</div>
+        ${desc ? `<div class="qna-toolbar-desc">${qnaEscapeHtml(desc)}</div>` : ''}
+      </div>
+      <button type="button" class="qna-add-btn" data-action="add-open">+ 질문 추가</button>
+    </div>
+    <div id="qnaListArea">${qnaRenderListArea(list, isSearching)}</div>
+  `;
+}
+function qnaRenderListArea(list, showPartTag){
+  if(!list.length){
+    return `<div class="qna-empty-state">${qnaSearchQuery.trim() ? '해당하는 질문을 찾을 수 없습니다.' : '등록된 질문이 없습니다. [+ 질문 추가]로 첫 질문을 등록해보세요.'}</div>`;
+  }
+  return `<div class="qna-list">${list.map(item => (
+    item.part === 'first_meeting' ? qnaRenderRowToggle(item, showPartTag) : qnaRenderItem(item, showPartTag)
+  )).join('')}</div>`;
+}
+function qnaIsStarred(item){
+  return !!item.isImportant || (item.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD;
+}
+function qnaRenderBadge(item){
+  if(item.isImportant) return `<span class="qna-badge">★ 중요 질문</span>`;
+  if((item.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD) return `<span class="qna-badge">★ 자주 나오는 질문 · ${item.frequencyCount}회</span>`;
+  return '';
+}
+// 질문 오른쪽 끝에 붙는 아주 작은 관리 링크(수정 · 삭제) — 질문/답변 보기보다 절대 눈에 띄면 안 된다.
+function qnaRenderManageLinks(item){
+  return `
+    <span class="qna-manage-inline">
+      <button type="button" class="qna-manage-btn" data-action="edit" data-id="${item.id}">수정</button>
+      <span class="qna-manage-sep">·</span>
+      <button type="button" class="qna-manage-btn danger" data-action="delete" data-id="${item.id}">삭제</button>
+    </span>
+  `;
+}
+// 1차 미팅 전용: 질문 한 줄 + [답변 보기 ▼] — 클릭하면 그 질문 아래에만 답변이 펼쳐진다(여러 개 동시에 열람 가능).
+function qnaRenderRowToggle(item, showPartTag){
+  const isOpen = qnaOpenIds.has(item.id);
+  const isFrequent = (item.frequencyCount||1) >= QNA_FREQUENT_THRESHOLD;
+  const star = (item.isImportant || isFrequent) ? '★ ' : '';
+  // 빈도 횟수는 아주 작고 연한 회색으로만 — 화면이 복잡해 보이지 않게 최소한으로 표시한다.
+  const countTag = isFrequent ? `<span class="qna-count-tag">${item.frequencyCount}회</span>` : '';
+  return `
+    <div class="qna-row" data-id="${item.id}">
+      <div class="qna-row-top">
+        <span class="qna-row-q">${star}${qnaEscapeHtml(item.question)}</span>${countTag}
+        ${showPartTag ? `<span class="qna-row-part-tag">${qnaEscapeHtml(qnaPartLabel(item.part))}</span>` : ''}
+        <span class="qna-row-right">
+          <button type="button" class="qna-row-toggle" data-action="toggle-answer" data-id="${item.id}">${isOpen ? '답변 닫기 ▲' : '답변 보기 ▼'}</button>
+          ${qnaRenderManageLinks(item)}
+        </span>
+      </div>
+      ${isOpen ? `
+        <div class="qna-row-answer ${item.answer ? '' : 'empty'}">${item.answer ? qnaEscapeHtml(item.answer) : '아직 등록된 답변이 없습니다.'}</div>
+      ` : ''}
+    </div>
+  `;
+}
+// 2차 미팅 / PT 전용: 기존 그대로 — 질문 아래 답변이 항상 함께 보인다. 관리 링크만 질문 줄 오른쪽 끝으로 이동.
+function qnaRenderItem(item, showPartTag){
+  return `
+    <div class="qna-item" data-id="${item.id}">
+      <div class="qna-item-top">
+        <div class="qna-q-main">
+          <span class="qna-q-text">Q. ${qnaEscapeHtml(item.question)}</span>${qnaRenderBadge(item)}
+          ${item.answer ? `<p class="qna-a-text">${qnaEscapeHtml(item.answer)}</p>` : `<p class="qna-a-empty">등록된 답변이 없습니다.</p>`}
+        </div>
+        ${showPartTag ? `<span class="qna-part-tag">${qnaEscapeHtml(qnaPartLabel(item.part))}</span>` : ''}
+        ${qnaRenderManageLinks(item)}
+      </div>
+    </div>
+  `;
+}
+/* ============================================================
+   오른쪽 패널: "AI 업무 제안"
+   지금 보고 있는(가장 최근 등록·수정·열람한) 질문 "한 건"을 분석해서,
+   그 질문과 직접 관련된 실행 제안만 최대 3개를 우선 보여주고, 나머지는
+   "더보기"에 접어둔다. 이미 하고 있는 일(영업지원 동행, PT·공법설명회
+   지원, CAD·물량산출, 실행견적·자재견적 제공, 전문 시공팀·직영 시공
+   교육, 공사 진행관리·준공자료·하자대응·현장 품질관리, AI·드론 진단,
+   카탈로그·샘플 발송, 공법·영업 교육, 협력사 영업권/영업보고 시스템
+   등)을 "준비하세요"처럼 처음부터 다시 만들라고 권하지 않고, 지금 있는
+   자료를 이 질문/현장에 맞게 고치거나 골라 보내는 실행 위주로 제안한다.
+   질문 목록의 구조/데이터/기능(검색, 답변 보기/닫기, 1차·2차·PT,
+   질문 등록·수정·삭제, 저장 구조)에는 전혀 관여하지 않는다.
+   ============================================================ */
+// ------------------------------------------------------------------
+// 질문 "한 건"의 핵심 목적을 먼저 파악한 뒤(질문 유형 분류), 그 유형에 맞게 검수된
+// 자연스러운 문구 템플릿으로 제안을 만든다. 순서는 항상
+//   질문 목적 파악 → 필요한 확인 사항 → 시공사에 제공할 내용 → 다음 행동
+// 을 따르고, 단순히 키워드를 이어붙여 제목을 만들지 않는다.
+// ------------------------------------------------------------------
+
+// 질문 문장에서 "무엇에" 적용/설치/시공하려는지(장소·대상)를 추출한다.
+// 못 찾으면 null을 반환하고, 호출하는 쪽에서 "이 현장" 같은 일반적인 표현으로 대체한다.
+function qnaExtractSubject(question){
+  const m = (question||'').match(/([가-힣A-Za-z0-9·]{2,12})에(?:도|서)?\s*(적용|설치|시공|사용)/);
+  return m ? m[1] : null;
+}
+
+// 질문 유형 분류 — 우선순위가 높은 것부터 먼저 검사해 "가장 핵심에 가까운 목적" 하나만 고른다.
+// (여러 유형이 뒤섞여 애매한 제안이 나오지 않도록, 하나의 질문에는 하나의 대표 유형만 적용한다.)
+const QNA_QUESTION_TYPES = [
+  { key:'cost', categories:['가격 / 단가','수익 / 마진'], keywords:['단가','가격','견적','비용','마진','금액','예산'] },
+  { key:'quality', categories:[], keywords:['하자','품질','보증','유지관리','시험성적서','인증'] },
+  { key:'track-record', categories:[], keywords:['실적','신뢰','사례','경험'] },
+  { key:'bid', categories:[], keywords:['입찰','공고'] },
+  { key:'procurement', categories:['조달 관련','관급공사 적용 관련'], keywords:['조달','관급','관공서','공공기관','관공사'] },
+  { key:'explain', categories:[], keywords:['pt','설명','발표','설명회','교육','주민','입주민'] },
+  { key:'contract', categories:['실행공사 / 계약 구조'], keywords:['협약','계약','절차','체결','하도급','대금','법적'] },
+  { key:'sequence', categories:[], keywords:['시공 순서','공정','드론','진단'] },
+  { key:'apply', categories:['타 공법 병행'], keywords:['적용','현장 조건','시공 방법','병행','설치'] },
+];
+const QNA_GOV_KEYWORDS = ['조달','관급','관공서','공공기관','관공사'];
+
+function qnaClassifyQuestionType(q, haystack){
+  for(const t of QNA_QUESTION_TYPES){
+    const hit = (t.categories.length && t.categories.includes(q.category)) ||
+      t.keywords.some(k => haystack.includes(k.toLowerCase()));
+    if(hit) return t.key;
+  }
+  return 'general';
+}
+
+// 유형별 제안 템플릿 — 검수된 자연스러운 한국어 문장만 사용한다. 각 항목의 tier(0=필수,
+// 1=자주 요청, 2=추천)가 화면에 보이는 순서와 색을 결정한다.
+const QNA_TYPE_TEMPLATES = {
+  apply(q){
+    const subject = qnaExtractSubject(q.question) || '이 현장';
+    return [
+      { id:'apply-check', tier:0, title:`${subject} 적용 가능 여부 확인`,
+        desc:`${subject}의 장소와 사용 목적을 확인한 뒤 POUR 제품·공법을 적용할 수 있는지 검토하세요.`, button:'검토하기' },
+      { id:'apply-cases', tier:0, title:`비슷한 ${subject} 적용 사례 찾기`,
+        desc:'조건이 비슷한 현장 사례를 찾아 시공사에 보여주세요.', button:'사례 찾기' },
+      { id:'apply-product', tier:1, title:`${subject}에 맞는 제품 추천하기`,
+        desc:'설치 장소, 이용 인원, 주변 환경에 맞는 제품과 공법을 골라주세요.', button:'제품 고르기' },
+      { id:'apply-cost', tier:2, title:'예상 비용과 공사 기간 안내하기',
+        desc:'현장 규모를 확인해 대략적인 비용과 필요한 공사 기간을 알려주세요.', button:'계산하기' },
+    ];
+  },
+  cost(){
+    return [
+      { id:'cost-quantity', tier:0, title:'필요한 물량 산출하기',
+        desc:'도면을 보고 이 공사에 필요한 물량을 계산해서 시공사에 보내세요.', button:'산출하기' },
+      { id:'cost-estimate', tier:0, title:'예상 공사비 계산해서 보내기',
+        desc:'물량에 단가를 곱해 예상 공사비를 계산해서 알려주세요.', button:'계산하기' },
+      { id:'cost-compare', tier:1, title:'현장에 맞는 공법 비교하기',
+        desc:'다른 공법과 비용·기간·품질을 비교한 자료를 만들어 전달하세요.', button:'비교하기' },
+      { id:'cost-margin', tier:2, title:'이 공사가 남는지 확인하기',
+        desc:'예상 금액에서 자재비와 시공비를 빼서 수익을 확인하세요.', button:'계산하기' },
+    ];
+  },
+  quality(){
+    return [
+      { id:'quality-cert', tier:0, title:'필요한 인증·시험성적서 준비하기',
+        desc:'이 질문에 맞는 인증서·시험성적서를 찾아 골라 보내세요.', button:'자료 보내기' },
+      { id:'quality-prevent', tier:0, title:'하자 예방 방법 안내하기',
+        desc:'이런 조건에서 자주 생기는 하자와 예방 방법을 정리해서 알려주세요.', button:'안내하기' },
+      { id:'quality-maintenance', tier:1, title:'준공 후 유지관리 방법 안내하기',
+        desc:'시공이 끝난 뒤 관리하는 방법을 간단히 정리해서 전달하세요.', button:'안내하기' },
+      { id:'quality-cases', tier:2, title:'비슷한 현장의 하자 대응 사례 찾기',
+        desc:'비슷한 조건에서 하자가 생겼을 때 어떻게 대응했는지 사례를 찾아 보여주세요.', button:'사례 찾기' },
+    ];
+  },
+  'track-record'(){
+    return [
+      { id:'track-cases', tier:0, title:'비슷한 현장 사례 찾기',
+        desc:'이 현장과 조건이 비슷한 실적만 골라 시공사에 보내세요.', button:'사례 찾기' },
+      { id:'track-pt', tier:1, title:'발표 자료를 이 현장에 맞게 고치기',
+        desc:'있는 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고쳐서 보내세요.', button:'자료 보내기' },
+      { id:'track-contact', tier:2, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+    ];
+  },
+  bid(){
+    return [
+      { id:'bid-requirement', tier:0, title:'입찰 참여 조건 확인하기',
+        desc:'공고문에서 우리가 참여할 수 있는 조건인지 먼저 확인하세요.', button:'확인하기' },
+      { id:'bid-document', tier:0, title:'제출 서류 확인하기',
+        desc:'공고에서 요구하는 제출 서류를 빠짐없이 확인하세요.', button:'확인하기' },
+      { id:'bid-wording', tier:1, title:'설계 반영 문구 정리해서 보내기',
+        desc:'설계사무소에 바로 전달할 수 있게 문구를 정리해서 보내세요.', button:'자료 보내기' },
+    ];
+  },
+  procurement(){
+    return [
+      { id:'gov-check', tier:0, title:'관급공사에 사용할 수 있는지 확인하기',
+        desc:'제품 등록 여부와 발주 조건을 확인해 관급공사 적용 가능성을 검토하세요.', button:'확인하기' },
+      { id:'bid-requirement', tier:1, title:'입찰 참여 조건 확인하기',
+        desc:'공고문에서 우리가 참여할 수 있는 조건인지 먼저 확인하세요.', button:'확인하기' },
+      { id:'track-contact', tier:2, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+    ];
+  },
+  explain(){
+    return [
+      { id:'track-pt', tier:0, title:'발표 자료를 이 현장에 맞게 고치기',
+        desc:'있는 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고쳐서 보내세요.', button:'자료 보내기' },
+      { id:'explain-schedule', tier:1, title:'다음 설명 일정 잡기',
+        desc:'추가로 설명이 필요하면 담당자와 다음 일정을 미리 정해두세요.', button:'일정 잡기' },
+      { id:'sequence-visit', tier:2, title:'현장 방문 일정 잡기',
+        desc:'직접 현장을 보고 설명해야 이해가 빠르면 방문 일정을 잡으세요.', button:'일정 잡기' },
+    ];
+  },
+  contract(){
+    return [
+      { id:'contract-structure', tier:0, title:'계약 구조 정리해서 안내하기',
+        desc:'발주처·시공사·POUR 사이의 계약 관계를 정리해서 설명하세요.', button:'안내하기' },
+      { id:'bid-wording', tier:1, title:'설계 반영 문구 정리해서 보내기',
+        desc:'설계사무소에 바로 전달할 수 있게 문구를 정리해서 보내세요.', button:'자료 보내기' },
+      { id:'track-contact', tier:2, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+    ];
+  },
+  sequence(){
+    return [
+      { id:'sequence-doc', tier:0, title:'시공 순서 정리해서 보내기',
+        desc:'착공부터 마감까지 시공 순서를 그림과 함께 한 장으로 정리해서 보내세요.', button:'자료 보내기' },
+      { id:'sequence-drone', tier:1, title:'드론 진단이 필요한지 확인하기',
+        desc:'현장이 넓거나 접근이 어려우면 드론으로 미리 진단할지 확인하세요.', button:'확인하기' },
+      { id:'sequence-visit', tier:2, title:'현장 방문 일정 잡기',
+        desc:'직접 현장을 보고 확인해야 정확하게 답할 수 있습니다.', button:'일정 잡기' },
+    ];
+  },
+  general(){
+    return [
+      { id:'track-cases', tier:0, title:'비슷한 현장 사례 찾기',
+        desc:'이 현장과 조건이 비슷한 실적만 골라 시공사에 보내세요.', button:'사례 찾기' },
+      { id:'track-contact', tier:1, title:'다음 연락 일정 잡기',
+        desc:'답변한 뒤 다음에 연락할 담당자와 날짜를 미리 정해두세요.', button:'일정 잡기' },
+      { id:'track-pt', tier:2, title:'발표 자료를 이 현장에 맞게 고치기',
+        desc:'있는 PT 자료에서 이 현장 조건에 맞는 부분만 골라 고쳐서 보내세요.', button:'자료 보내기' },
+    ];
+  },
+};
+
+// 질문 한 건에 대해 자연스러운 문구의 제안을 만든다. 관급/조달과 관련된 질문이면(대표 유형이
+// 이미 조달인 경우는 제외) "관급공사에 사용할 수 있는지 확인하기" 항목을 추가로 붙인다.
+function qnaBuildRecoItems(q){
+  if(!q) return [];
+  const haystack = ((q.question||'') + ' ' + (q.category||'')).toLowerCase();
+  const type = qnaClassifyQuestionType(q, haystack);
+  const items = (QNA_TYPE_TEMPLATES[type] || QNA_TYPE_TEMPLATES.general)(q).slice();
+  const mentionsGov = QNA_GOV_KEYWORDS.some(k => haystack.includes(k));
+  if(type !== 'procurement' && mentionsGov && !items.some(it => it.id === 'gov-check')){
+    items.push({ id:'gov-check', tier:2, title:'관급공사에 사용할 수 있는지 확인하기',
+      desc:'제품 등록 여부와 발주 조건을 확인해 관급공사 적용 가능성을 검토하세요.', button:'확인하기' });
+  }
+  items.sort((a,b) => a.tier - b.tier);
+  return items.slice(0, 6);
+}
+const QNA_TIER_LABEL = { 0:'필수', 1:'자주 요청', 2:'추천' };
+const QNA_TIER_CLASS = { 0:'tier-must', 1:'tier-frequent', 2:'tier-recommend' };
+
+// 지금 패널이 다룰 질문 한 건을 정한다 — 직접 지정된 게 있으면 그걸, 없거나 현재 탭에 없으면
+// 지금 탭에서 우선순위가 가장 높은 질문(중요 → 자주 나오는 질문 → 최신 순)으로 대체한다.
+function qnaResolveRecoQuestion(){
+  if(qnaRecoQuestionId){
+    const found = qnaState.questions.find(q => q.id === qnaRecoQuestionId && q.part === qnaActiveTab);
+    if(found) return found;
+  }
+  const list = qnaState.questions.filter(q => q.part === qnaActiveTab).slice().sort(qnaSortCompare);
+  return list[0] || null;
+}
+function qnaRenderRecoItem(q, item){
+  const state = (q.actionStates && q.actionStates[item.id]) || null;
+  const tierLabel = QNA_TIER_LABEL[item.tier];
+  const tierClass = QNA_TIER_CLASS[item.tier];
+  const statusHtml = state === 'done'
+    ? `<div class="qna-ai-status done">완료됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${item.id}">되돌리기</button></div>`
+    : state === 'excluded'
+      ? `<div class="qna-ai-status">제외됨 <button type="button" class="qna-ai-btn" data-action="ai-undo" data-qid="${q.id}" data-aid="${item.id}">되돌리기</button></div>`
+      : `<div class="qna-ai-item-actions">
+          <button type="button" class="qna-ai-btn primary" data-action="ai-start" data-qid="${q.id}" data-aid="${item.id}">${qnaEscapeHtml(item.button)}</button>
+          <button type="button" class="qna-ai-btn" data-action="ai-done" data-qid="${q.id}" data-aid="${item.id}">완료</button>
+          <button type="button" class="qna-ai-btn danger" data-action="ai-exclude" data-qid="${q.id}" data-aid="${item.id}">제외</button>
+        </div>`;
+  return `
+    <div class="qna-ai-item">
+      <div class="qna-ai-item-head">
+        <span class="qna-ai-tier ${tierClass}">${tierLabel}</span>
+      </div>
+      <div class="qna-ai-item-title">${qnaEscapeHtml(item.title)}</div>
+      <div class="qna-ai-item-reason">${qnaEscapeHtml(item.desc)}</div>
+      ${statusHtml}
+    </div>
+  `;
+}
+function qnaRenderRecoPanel(){
+  const body = document.getElementById('qnaRecoBody');
+  if(!body) return;
+  const q = qnaResolveRecoQuestion();
+  if(!q){
+    body.innerHTML = `<p class="qna-ai-empty">질문이 등록되면 제안이 표시됩니다.</p>`;
+    return;
+  }
+  qnaRecoQuestionId = q.id;
+  const matches = qnaBuildRecoItems(q);
+  const main = matches.slice(0, 3);
+  const rest = matches.slice(3);
+  const shortQ = q.question.length > 46 ? q.question.slice(0, 46) + '…' : q.question;
+
+  const mainHtml = main.map(entry => qnaRenderRecoItem(q, entry)).join('');
+  const moreHtml = rest.length ? `
+    <details class="qna-ai-more">
+      <summary>더보기 (${rest.length})</summary>
+      ${rest.map(entry => qnaRenderRecoItem(q, entry)).join('')}
+    </details>
+  ` : '';
+
+  body.innerHTML = `
+    <p class="qna-ai-current">현재 질문: <b>${qnaEscapeHtml(shortQ)}</b></p>
+    ${mainHtml}
+    ${moreHtml}
+  `;
+}
+
+function qnaRenderAll(){
+  qnaRenderTabs();
+  document.getElementById('qnaMain').innerHTML = qnaRenderMain();
+  qnaRenderRecoPanel();
+}
+function qnaUpdateListUI(){
+  const area = document.getElementById('qnaListArea');
+  if(!area) return;
+  const list = qnaVisibleList();
+  area.innerHTML = qnaRenderListArea(list, !!qnaSearchQuery.trim());
+  qnaRenderRecoPanel();
+}
+
+/* ---------- 질문 등록/수정 모달 ---------- */
+function qnaCloseModal(){ document.getElementById('qnaModalOverlay').classList.remove('open'); }
+document.getElementById('qnaModalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'qnaModalOverlay') qnaCloseModal();
+});
+function qnaOpenQuestionModal(editId){
+  const modal = document.getElementById('qnaModal');
+  const overlay = document.getElementById('qnaModalOverlay');
+  const existing = editId ? qnaState.questions.find(q=>q.id===editId) : null;
+  const partOptions = QNA_PARTS.map(p => `<option value="${p.key}" ${ (existing ? existing.part===p.key : qnaActiveTab===p.key) ? 'selected':''}>${qnaEscapeHtml(p.label)}</option>`).join('');
+
+  modal.innerHTML = `
+    <h2>${existing ? '질문 수정' : '질문 추가'}</h2>
+    <form id="qnaQuestionForm">
+      <div class="qna-field">
+        <label>파트</label>
+        <select name="part">${partOptions}</select>
+      </div>
+      <div class="qna-field">
+        <label>질문</label>
+        <textarea name="question" placeholder="예: POUR공법은 어떤 공법인가요?">${qnaEscapeHtml(existing?.question || '')}</textarea>
+      </div>
+      <div class="qna-field">
+        <label>답변</label>
+        <textarea name="answer" placeholder="답변 내용을 입력하세요">${qnaEscapeHtml(existing?.answer || '')}</textarea>
+      </div>
+      <div class="qna-field">
+        <label class="qna-field-check">
+          <input type="checkbox" name="isImportant" ${existing?.isImportant ? 'checked':''} />
+          ☆ 중요 질문으로 지정
+        </label>
+      </div>
+      <div class="qna-modal-actions">
+        <button type="button" class="qna-btn qna-btn-ghost" id="qnaQuestionCancel">취소</button>
+        <button type="submit" class="qna-btn qna-btn-primary">${existing ? '저장' : '등록'}</button>
+      </div>
+    </form>
+  `;
+  overlay.classList.add('open');
+  modal.querySelector('#qnaQuestionCancel').onclick = qnaCloseModal;
+  modal.querySelector('#qnaQuestionForm').onsubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const question = f.question.value.trim();
+    if(!question){ qnaShowToast('질문을 입력해주세요'); return; }
+    const answer = f.answer.value.trim();
+    const part = f.part.value;
+    const isImportant = f.isImportant.checked;
+    const now = new Date().toISOString();
+
+    if(existing){
+      existing.part = part;
+      existing.question = question;
+      existing.answer = answer;
+      existing.isImportant = isImportant;
+      existing.updatedAt = now;
+      qnaActiveTab = part;
+      qnaRecoQuestionId = existing.id; // 방금 수정한 질문 기준으로 AI 업무 제안을 갱신한다
+      qnaSaveState(); qnaCloseModal(); qnaRenderAll();
+      qnaShowToast('질문이 수정되었습니다');
+      return;
+    }
+
+    // 새 질문 등록: 같은 파트 안에서 확실히 비슷한 기존 질문이 있으면 자동으로 합치지 않고 먼저 물어본다.
+    const similar = qnaFindMostSimilar(question, part, null);
+    if(similar){
+      const ok = confirm(`기존 질문과 유사합니다.\n\n"${similar.question}"\n\n기존 질문에 횟수를 추가할까요?\n(취소하면 새 질문으로 따로 등록합니다)`);
+      if(ok){
+        similar.frequencyCount = (similar.frequencyCount||1) + 1;
+        similar.frequent = similar.frequencyCount >= QNA_FREQUENT_THRESHOLD;
+        similar.lastAskedAt = now;
+        similar.isImportant = similar.isImportant || isImportant;
+        // 이번에 실제로 들어온 표현(원문)을 aliases에 남겨서 나중에 어떤 문구들이 이 질문으로
+        // 모였는지 추적할 수 있게 한다. 대표 질문 문구 자체와 같으면 중복으로 남기지 않는다.
+        if(!Array.isArray(similar.aliases)) similar.aliases = [];
+        if(question !== similar.question && !similar.aliases.includes(question)) similar.aliases.push(question);
+        if(answer && !similar.answer) similar.answer = answer; // 기존 답변이 비어있을 때만 이번 답변으로 채움 — 추측 답변 절대 생성하지 않음
+        qnaRecoQuestionId = similar.id; // 이번에 합쳐진 질문 기준으로 AI 업무 제안을 갱신한다
+        qnaSaveState(); qnaCloseModal();
+        qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaActiveTab = similar.part; qnaRenderAll();
+        qnaShowToast(`기존 질문 빈도가 추가되었습니다 (${similar.frequencyCount}회)`);
+        return;
+      }
+      // 취소하면 아래로 내려가 새 질문으로 등록
+    }
+
+    const partMax = qnaState.questions.filter(q=>q.part===part).reduce((m,q)=>Math.max(m,q.order), -1);
+    const newId = qnaUid();
+    qnaState.questions.push({
+      id: newId, part, question, answer, category: '', createdAt: now, updatedAt: now, order: partMax + 1,
+      frequencyCount: 1, isImportant, frequent: false, aliases: [], lastAskedAt: now, actionStates: {}
+    });
+    qnaActiveTab = part;
+    qnaRecoQuestionId = newId; // 방금 등록한 질문 기준으로 AI 업무 제안을 갱신한다
+    qnaSaveState(); qnaCloseModal();
+    qnaSearchQuery=''; document.getElementById('qnaSearchInput').value=''; qnaRenderAll();
+    qnaShowToast('질문이 등록되었습니다');
+  };
+  const firstField = modal.querySelector('select, textarea');
+  if(firstField) firstField.focus();
+}
+
+/* ---------- 화면 이벤트(delegated) ---------- */
+document.getElementById('qnaTabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action="tab"]');
+  if(!btn) return;
+  qnaActiveTab = btn.dataset.part;
+  qnaSearchQuery = '';
+  document.getElementById('qnaSearchInput').value = '';
+  qnaRenderAll();
+});
+const qnaMainEl = document.getElementById('qnaMain');
+qnaMainEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+
+  if(action === 'add-open'){
+    qnaOpenQuestionModal(null);
+  }
+  else if(action === 'toggle-answer'){
+    const id = btn.dataset.id;
+    if(qnaOpenIds.has(id)){
+      qnaOpenIds.delete(id);
+    } else {
+      qnaOpenIds.add(id);
+      qnaRecoQuestionId = id; // 방금 펼쳐본 질문 기준으로 AI 업무 제안을 갱신한다
+    }
+    qnaUpdateListUI();
+  }
+  else if(action === 'edit'){
+    qnaOpenQuestionModal(btn.dataset.id);
+  }
+  else if(action === 'delete'){
+    const item = qnaState.questions.find(q=>q.id===btn.dataset.id);
+    if(!item) return;
+    if(confirm('이 질문을 삭제하시겠습니까?')){
+      qnaState.questions = qnaState.questions.filter(q=>q.id!==item.id);
+      qnaOpenIds.delete(item.id);
+      if(qnaRecoQuestionId === item.id) qnaRecoQuestionId = null;
+      qnaSaveState(); qnaRenderAll();
+    }
+  }
+});
+document.getElementById('qnaSearchInput').addEventListener('input', (e)=>{
+  qnaSearchQuery = e.target.value;
+  document.getElementById('qnaMain').innerHTML = qnaRenderMain();
+  // AI 업무 제안 패널은 검색 중에는 그대로 두고, 지금 보고 있던 질문 기준 제안을 유지한다.
+});
+
+// AI 업무 제안 패널의 실행하기/완료/제외/되돌리기 — 질문마다 별도로 상태를 저장한다.
+document.getElementById('qnaRecoBody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  if(!['ai-start','ai-done','ai-exclude','ai-undo'].includes(action)) return;
+  const q = qnaState.questions.find(x => x.id === btn.dataset.qid);
+  if(!q) return;
+  if(!q.actionStates || typeof q.actionStates !== 'object') q.actionStates = {};
+  const aid = btn.dataset.aid;
+  if(action === 'ai-start'){
+    qnaShowToast('실행을 시작하세요');
+    return;
+  }
+  if(action === 'ai-done') q.actionStates[aid] = 'done';
+  else if(action === 'ai-exclude') q.actionStates[aid] = 'excluded';
+  else if(action === 'ai-undo') delete q.actionStates[aid];
+  qnaSaveState();
+  qnaRenderRecoPanel();
+});
+
+qnaRenderAll();
+</script>
+</body>
+</html>
