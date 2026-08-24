@@ -170,6 +170,18 @@ def build(with_records: bool = False) -> Path:
     docs.parent.mkdir(exist_ok=True)
     docs.write_text(page, encoding="utf-8")
 
+    # 더블클릭해서 바로 여는 낱개 파일. 링크도 로그인도 없이 쓸 수 있게 나눠 줄 때 쓴다.
+    # 문서 골격이 있어야 브라우저가 파일로 열 수 있다 (아티팩트는 자동으로 감싸 준다).
+    standalone = BASE.parent / "POUR-공사실적-관리.html"
+    standalone.write_text(
+        "<!doctype html>\n<html lang=\"ko\">\n<head>\n"
+        "<meta charset=\"utf-8\">\n"
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n"
+        "<title>한솔 POUR 공사실적 통합관리</title>\n"
+        "<style>html,body{margin:0;padding:0;background:#F4F6F8;}</style>\n"
+        "</head>\n<body>\n" + html + "\n</body>\n</html>\n",
+        encoding="utf-8")
+
     return out
 
 
@@ -182,3 +194,4 @@ if __name__ == "__main__":
         print("실제 실적이 들어 있습니다. 저장소에 올리거나 공개하지 마세요.")
     else:
         print("docs/index.html 생성 — GitHub Pages 용 (예시 자료)")
+    print("POUR-공사실적-관리.html 생성 — 더블클릭해서 여는 낱개 파일")
