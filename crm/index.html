@@ -479,6 +479,12 @@
      수익성 · 현장 경쟁력")이라 일반 텍스트로 보여준다. */
   .insight-fiveline-text{ font-size:12px; color:var(--text); font-weight:600; }
   .insight-fiveline-text.is-muted{ color:var(--text-faint); font-weight:500; }
+  /* §1차미팅 메모 자동정리 라운드 — 자동 정리 결과 미리보기. 기존 co-form-field 톤 그대로,
+     라벨 폭만 고정해서 여러 줄이 세로로 정렬되게 한다. */
+  .insight-preview-note{ font-size:11.5px; color:var(--text-muted); margin-bottom:8px; }
+  .insight-preview-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .insight-preview-label{ flex:0 0 84px; font-size:11.5px; font-weight:650; color:var(--text-muted); }
+  .insight-preview-row input{ flex:1; min-width:0; padding:6px 8px; border:1px solid #dce5ef; border-radius:6px; font-size:12.5px; }
   .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
   .stage-dn-cell.st-normal{ color:var(--text); }
   .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
@@ -3489,18 +3495,35 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 메모 자동분류 규칙에 실사용 중)의 '루프마스터'/'우레탄', 그리고 이번 요청 본문에서
   // 사용자가 직접 실제 사례로 언급한 '4A SYSTEM'/'에코크랙실'.
   const COMPETITOR_METHOD_DICT_KEY = 'shin2-competitor-method-dict';
+  // §1차미팅 메모 자동정리 라운드 — 사용자가 실제 동신도장 미팅 사례로 두 차례에 걸쳐 직접
+  // 언급한 실사용 공법명(PMC/슈퍼크랙실/나노크랙실/모노화학)을 추가로 시드에 넣는다 —
+  // 여전히 "실제로 확인된 이름만" 원칙 그대로, 코드 작성자가 지어낸 이름이 아니다.
   const COMPETITOR_METHOD_SEED = [
     { id:'cm_seed_1', category:'공법', name:'4A SYSTEM', workType:'' },
     { id:'cm_seed_2', category:'공법', name:'에코크랙실', workType:'' },
     { id:'cm_seed_3', category:'공법', name:'루프마스터', workType:'' },
-    { id:'cm_seed_4', category:'자재', name:'우레탄', workType:'' }
+    { id:'cm_seed_4', category:'자재', name:'우레탄', workType:'' },
+    { id:'cm_seed_5', category:'공법', name:'PMC', workType:'' },
+    { id:'cm_seed_6', category:'공법', name:'슈퍼크랙실', workType:'' },
+    { id:'cm_seed_7', category:'공법', name:'나노크랙실', workType:'' },
+    { id:'cm_seed_8', category:'공법', name:'모노화학', workType:'' }
   ];
   function loadCompetitorMethodDict(){
     let arr = readArr(COMPETITOR_METHOD_DICT_KEY);
     if(!arr.length){
       arr = COMPETITOR_METHOD_SEED.slice();
       try{ localStorage.setItem(COMPETITOR_METHOD_DICT_KEY, JSON.stringify(arr)); }catch(e){}
+      return arr;
     }
+    // §1차미팅 메모 자동정리 라운드 — 시드 목록이 나중에 늘어나도(이번처럼) 이미 사전이
+    // 채워진 기존 사용자에게는 예전엔 반영되지 않았다(위 if(!arr.length)는 최초 1회만
+    // 실행됨). 새로 추가된 시드 이름 중 아직 없는 것만 조용히 보충한다 — 사용자가 직접
+    // 추가/수정한 기존 항목은 전혀 건드리지 않는다.
+    let changed = false;
+    COMPETITOR_METHOD_SEED.forEach(seed=>{
+      if(!arr.some(x=> x.name === seed.name)){ arr.push(Object.assign({}, seed)); changed = true; }
+    });
+    if(changed){ try{ localStorage.setItem(COMPETITOR_METHOD_DICT_KEY, JSON.stringify(arr)); }catch(e){} }
     return arr;
   }
   function addCompetitorMethodEntry(entry){
@@ -5806,6 +5829,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardState.pourExpanded = false; cardState.pourYearFilter = 'all'; // §POUR 시공실적 라운드
     cardState.accordionOpen = { info: false, docs: false, insight: false }; // §고객카드 아코디언 라운드/§고객 성향 컬럼 라운드 §4: 업체를 새로 열 때는 항상 접힘부터 시작(§4, 별도 저장값 없음)
     cardState.insightSummaryExpanded = false; // §인사이트 요약 표시 라운드 §1/§8: 업체를 새로 열 때는 항상 "핵심 요약"부터 시작(전체보기는 매번 다시 눌러야 함)
+    cardState.insightQuickStep = 'note'; cardState.insightAdvancedOpen = false; cardState.insightParsedPreview = null; // §1차미팅 메모 자동정리 라운드: 업체를 새로 열 때는 항상 메모 입력 화면부터 시작
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -10927,6 +10951,110 @@ window.SHIN2_CRM_APP_INIT = function(){
   // D.setCustomerInsight로 실제 반영되고, 그 전까지는 co.customerInsight 원본을 전혀
   // 건드리지 않는다. 카드를 다시 열면(openCard) cardState 전체가 초기화되므로 draft도
   // 자동으로 사라진다 — 별도 저장소가 필요 없다(§4 기존 accordion 패턴과 동일 원칙).
+  /* ==========================================================================
+     §1차미팅 메모 자동정리 라운드 — "체크박스 대신 메모 한 번 → 자동 정리". 외부 AI API
+     없이 로컬 키워드/동의어 매칭만으로 동작한다(§ "AI/API 의존 금지"). 여기서 만드는
+     후보값은 무엇 하나 즉시 저장하지 않는다 — renderInsightBlock의 미리보기 화면에서
+     사람이 확인/수정한 뒤 [저장]을 눌러야만 기존 D.setCustomerInsight로 반영된다. 원문
+     (rawMeetingNote)은 이 함수가 절대 요약/삭제하지 않고 그대로 돌려준다(§ "원문은 반드시
+     보존"). 여기서 쓰는 카테고리 값(PRESET_INTEREST/PRESET_RELATIONSHIP/PRESET_BACKGROUND)
+     은 전부 이미 있는 사전 그대로다 — 새 태그 체계를 만들지 않는다.
+     ========================================================================== */
+  // 키워드 → 이미 있는 프리셋 값 매핑. 확신하기 애매한 건 넣지 않는다(§ "억지로 분류하지
+  // 말고 원문에만 남겨주세요") — 실제 사용자가 예시로 준 키워드만 우선 반영했고, 필요하면
+  // 이 배열에 그대로 항목을 추가하면 된다(로직 변경 없이 데이터만 늘리는 구조).
+  const INSIGHT_INTEREST_KEYWORD_MAP = [
+    [['돈','단가','비용'], '가격'],
+    [['마진','남는'], '마진'],
+    [['수익'], '수익성'],
+    [['이길 수','따낼','수주'], '수주 경쟁력'],
+  ];
+  const INSIGHT_BACKGROUND_KEYWORD_MAP = [
+    [['직접 시공','시공부터'], '직접 시공 경험'],
+    [['현장 출신','현장부터'], '현장 출신 대표'],
+  ];
+  const INSIGHT_RELATIONSHIP_KEYWORD_MAP = [
+    [['지인 많','업계 지인','아는 업체','인맥'], '업계 인맥 강함'],
+    [['지인소개','지인 소개','소개로'], '지인 소개'],
+  ];
+  // "쓰고 있음"/"사용 중"류는 사용공법 후보 판정에 쓰는 긍정 신호일 뿐 그 자체가 태그는
+  // 아니라 별도 값 매핑 없이 아래 extractMethodMentions에서 직접 처리한다.
+  const INSIGHT_NEGATION_MARKERS = ['사용하지 않','사용 안','안 씀','안씀','안 함','안함','아님','인지도가 낮','인지도가낮'];
+  function matchInsightKeywordMap(sentence, map, into){
+    map.forEach(([keywords, value])=>{
+      if(keywords.some(k=> sentence.includes(k)) && !into.includes(value)) into.push(value);
+    });
+  }
+  // "위즈페인팅 지인." 같은 짧은 문장에서 이름+관계를 뽑는다. 문장 전체가 이 패턴에
+  // 맞아떨어질 때만(확신이 높을 때만) 추출하고, 아니면 그냥 원문에만 남긴다.
+  function extractInsightRelatedContact(sentence){
+    // splitSentences는 문장 끝의 마침표를 지우지 않고 그대로 둔다("위즈페인팅 지인." 형태) —
+    // 끝의 문장부호는 무시하고 매칭한다.
+    const m = sentence.match(/^([가-힣A-Za-z0-9()㈜·\s]{2,14}?)\s*(지인|친분|인연|아는\s*사이)\s*[.!?。]?$/);
+    if(!m) return null;
+    return { name: m[1].trim(), note: m[2] };
+  }
+  // splitSentences(원본은 "자동정리 엔진" 스크립트, §고객 니즈 기반 영업지원 CRM 라운드)와
+  // 완전히 같은 규칙을 로컬로 재구현했다 — 서로 다른 <script> 블록이라 직접 참조하면
+  // "X is not defined"가 난다(§이 세션에서 반복됐던 크로스 스크립트 버그, 모듈별 로컬 상수
+  // 복제 관례를 그대로 따름 — normCompanyNameForPartnerMatch와 동일 패턴).
+  function insightSplitSentences(text){
+    return String(text || '')
+      .split(/\n+/)
+      .reduce((acc, line)=> acc.concat(line.split(/(?<=[.?!])\s+/)), [])
+      .map(s=> s.trim())
+      .filter(s=> s.length >= 2);
+  }
+  function parseInsightMeetingNote(rawText, dictNames){
+    const sentences = insightSplitSentences(rawText);
+    const interestTraits = [];
+    const backgroundTraits = [];
+    const relationshipTraits = [];
+    const relatedContacts = [];
+    const positiveMethods = [];
+    const negativeMethodNotes = [];
+    sentences.forEach(s=>{
+      matchInsightKeywordMap(s, INSIGHT_INTEREST_KEYWORD_MAP, interestTraits);
+      matchInsightKeywordMap(s, INSIGHT_BACKGROUND_KEYWORD_MAP, backgroundTraits);
+      matchInsightKeywordMap(s, INSIGHT_RELATIONSHIP_KEYWORD_MAP, relationshipTraits);
+      if(/신축/.test(s) && /(유지보수|전환)/.test(s) && !backgroundTraits.includes('신축→유지보수 전환')){
+        backgroundTraits.push('신축→유지보수 전환');
+      }
+      const contact = extractInsightRelatedContact(s);
+      if(contact) relatedContacts.push(contact);
+      // §"타공법명은 사전 자동 인식" — 기존 공유 사전(D.loadCompetitorMethodDict)에 실제
+      // 등록된 이름이 문장에 그대로 나올 때만 후보로 본다(임의 추측 금지). 부정 표현이
+      // 같은 문장에 있으면 "사용공법 확정"이 아니라 메모로만 남긴다 — 다른 문장에서
+      // 같은 이름이 긍정으로도 언급됐다면(예: "PMC, 슈퍼크랙실, 나노크랙실 사용") 그
+      // 이름은 그래도 사용공법으로 유지하고, 부정/평가 메모도 함께 보존한다(§ "단순
+      // 주사용 공법으로 확정하지 말고 원문/공법 평가 정보도 보존").
+      const mentioned = dictNames.filter(name=> s.includes(name));
+      if(mentioned.length){
+        const negated = INSIGHT_NEGATION_MARKERS.some(k=> s.includes(k));
+        if(negated){
+          mentioned.forEach(name=> negativeMethodNotes.push(`${name} ${s.includes('인지도') ? '인지도 낮게 평가' : '주사용 아님'}`));
+        } else {
+          mentioned.forEach(name=> { if(!positiveMethods.includes(name)) positiveMethods.push(name); });
+        }
+      }
+    });
+    // 한줄 성향/다음 대응은 "새 문장 생성"이 아니라, 위에서 이미 매칭한 값들을 정해진
+    // 규칙으로 짧게 조합만 한다(결정론적 — 같은 입력이면 항상 같은 결과, AI 아님).
+    const bgShort = backgroundTraits.includes('현장 출신 대표') ? '현장형 대표'
+      : backgroundTraits.includes('신축→유지보수 전환') ? '신축→유지보수 전환 업체' : '';
+    const hasProfit = interestTraits.includes('수익성') || interestTraits.includes('마진');
+    const hasBid = interestTraits.includes('수주 경쟁력');
+    const whatShort = hasProfit && hasBid ? '수익/수주 중심'
+      : hasProfit ? '수익성 중심' : hasBid ? '수주 경쟁력 중심'
+      : interestTraits.includes('가격') ? '가격 중심' : '';
+    const oneLiner = [bgShort, whatShort].filter(Boolean).join(' · ');
+    const nextAction = hasProfit && hasBid ? '수익성 + 수주 경쟁력 중심 제안'
+      : hasProfit ? '수익성 중심 제안' : hasBid ? '수주 경쟁력 중심 제안' : '';
+    return {
+      oneLiner, interestTraits, competitorCompanies: positiveMethods, relationshipTraits, relatedContacts,
+      backgroundTraits, methodNote: negativeMethodNotes.join('\n'), nextAction, rawMeetingNote: rawText
+    };
+  }
   function insightDraftFrom(ci){
     return {
       decisionTraits: (ci.decisionTraits || []).slice(),
@@ -11144,7 +11272,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       </div>` : '';
     const allDraftTraits = editing ? []
       .concat(draft.decisionTraits, draft.interestTraits, draft.currentUsageStatus ? [draft.currentUsageStatus] : [], draft.preferredCompanyTraits, draft.priceTraits, draft.materialPreferences, draft.barrierTraits) : [];
-    const editHtml = editing ? `
+    let editHtml = editing ? `
       <div class="co-form-field"><label>한줄 성향</label><input type="text" id="ciOneLinerInput" value="${esc(draft.oneLiner)}" placeholder="예: 현장형 대표 · 수익/수주 중심" /></div>
       <div class="co-form-field"><label>주요 관심 (복수선택)</label>${checkGrid('interestTraits', PRESET_INTEREST)}</div>
       ${methodUsageEditHtml}
@@ -11158,7 +11286,6 @@ window.SHIN2_CRM_APP_INIT = function(){
       ${backgroundEditHtml}
       <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
       <div class="co-form-field"><label>사업 / 현장 메모</label><textarea id="ciBusinessNoteInput" placeholder="예: POUR 적용 예정 현장 있음, 자본금 약 6.3억">${esc(draft.businessNote)}</textarea></div>
-      <div class="co-form-field"><label>미팅 원문 메모</label><textarea id="ciRawNoteInput" placeholder="미팅 직후 생각나는 대로 자유롭게 적어두는 원문 — 정리된 인사이트와 별도로 그대로 보존됩니다.">${esc(draft.rawMeetingNote)}</textarea></div>
       <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(draft.evidence)}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
       ${allDraftTraits.length ? `<div class="co-form-field"><label>★ 중요 표시(목록에 우선 표시할 항목 선택)</label>
         <div class="insight-check-grid">${allDraftTraits.map(t=> `<span class="insight-tag insight-star-chip${draft.importantTraits.includes(t) ? ' is-star' : ''}" data-star-toggle="${esc(t)}">${draft.importantTraits.includes(t) ? '★' : '☆'} ${esc(t)}</span>`).join('')}</div>
@@ -11167,6 +11294,49 @@ window.SHIN2_CRM_APP_INIT = function(){
         <button type="button" class="co-text-action primary" id="ciSaveBtn">저장</button>
       </div>
     ` : '';
+    // §1차미팅 메모 자동정리 라운드 §"핵심 UX"/"기존 체크박스는 고급 수정으로 이동" —
+    // 기본 화면은 큰 메모 입력창 하나 + [인사이트 자동 정리]뿐이다. 위에서 만든 전체
+    // 체크박스 폼(advancedFormHtml)은 그대로 남겨두되 [세부 태그 직접 수정 ▼]을 눌러야만
+    // 보인다 — "삭제"가 아니라 "기본 화면에서 숨김"(§ 요구사항 그대로).
+    const advancedFormHtml = editHtml;
+    const quickNoteStepHtml = (editing && cardState.insightQuickStep !== 'preview') ? `
+      <div class="co-form-field"><label>1차미팅 메모</label>
+        <textarea id="ciRawNoteQuickInput" rows="8" placeholder="생각나는 대로 자유롭게 적어주세요. 예: 기존 신축아파트 하다가 유지보수로 전환. 지인소개. 현장 출신 대표...">${esc(draft.rawMeetingNote)}</textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
+        <button type="button" class="co-text-action primary" id="ciAutoParseBtn">인사이트 자동 정리</button>
+        <button type="button" class="co-text-action" id="ciQuickSaveBtn">저장</button>
+      </div>
+      <div class="insight-expand-row" style="text-align:left;margin-top:10px;">
+        <button type="button" class="co-text-action" id="ciAdvancedToggleBtn">${cardState.insightAdvancedOpen ? '세부 태그 직접 수정 ▲' : '세부 태그 직접 수정 ▼'}</button>
+      </div>
+      ${cardState.insightAdvancedOpen ? `<div style="margin-top:10px;border-top:1px solid #EDF1F5;padding-top:10px;">${advancedFormHtml}</div>` : ''}
+    ` : '';
+    // §"자동 정리 결과를 바로 확정 저장하지 마세요" — 파싱 직후엔 cardState.insightParsedPreview
+    // 에만 담기고(co.customerInsight는 전혀 안 건드림), 여기서 사람이 확인/수정한 뒤
+    // [저장]을 눌러야만 draft에 반영돼 D.setCustomerInsight로 저장된다.
+    const previewStepHtml = (editing && cardState.insightQuickStep === 'preview') ? (()=>{
+      const p = cardState.insightParsedPreview || {};
+      const joinList = (arr)=> (arr || []).join(' · ');
+      const joinContacts = (arr)=> (arr || []).map(c=> c.note ? `${c.name}·${c.note}` : c.name).join(', ');
+      const pvRow = (id, label, value, placeholder)=> `<div class="insight-preview-row"><div class="insight-preview-label">${esc(label)}</div><input type="text" id="${id}" value="${esc(value)}" placeholder="${esc(placeholder || '')}" /></div>`;
+      return `
+        <div class="insight-preview-note">아래 결과를 확인하고, 틀린 부분만 고쳐서 저장하세요. 원문 메모는 그대로 보존됩니다.</div>
+        ${pvRow('pvOneLiner', '한줄 성향', p.oneLiner || '')}
+        ${pvRow('pvInterest', '관심', joinList(p.interestTraits), '· 로 구분')}
+        ${pvRow('pvMethods', '사용공법', joinList(p.competitorCompanies), '· 로 구분')}
+        ${pvRow('pvRelationship', '관계', joinList(p.relationshipTraits), '· 로 구분')}
+        ${pvRow('pvContacts', '관련 업체/인물', joinContacts(p.relatedContacts), '이름·관계, 이름·관계')}
+        ${pvRow('pvBackground', '배경', joinList(p.backgroundTraits), '· 로 구분')}
+        ${pvRow('pvMethodNote', '타사/경쟁 메모', (p.methodNote || '').replace(/\n/g, ' · '))}
+        ${pvRow('pvNextAction', '다음 대응', p.nextAction || '')}
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button type="button" class="co-text-action primary" id="ciPreviewSaveBtn">저장</button>
+          <button type="button" class="co-text-action" id="ciPreviewBackBtn">메모 다시 수정</button>
+        </div>
+      `;
+    })() : '';
+    editHtml = quickNoteStepHtml + previewStepHtml;
 
     wrap.innerHTML = `
       <div class="cdash-accordion-header" id="cdashInsightAccHeader">
@@ -11209,7 +11379,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       [
         ['ciOneLinerInput','oneLiner'], ['ciMethodNoteInput','methodNote'], ['ciNextInput','nextAction'],
         ['ciBackgroundNoteInput','backgroundNote'], ['ciBusinessNoteInput','businessNote'],
-        ['ciRawNoteInput','rawMeetingNote'], ['ciQuoteInput','keyQuote'], ['ciEvidenceInput','evidence']
+        ['ciRawNoteQuickInput','rawMeetingNote'], ['ciQuoteInput','keyQuote'], ['ciEvidenceInput','evidence']
       ].forEach(([id, key])=>{
         const el = document.getElementById(id);
         if(el) el.addEventListener('input', ()=>{ draft[key] = el.value; });
@@ -11317,20 +11487,70 @@ window.SHIN2_CRM_APP_INIT = function(){
         draft.relatedContacts.splice(idx, 1);
         renderInsightBlock(co);
       }));
-      document.getElementById('ciSaveBtn').addEventListener('click', ()=>{
-        draft.keyQuote = document.getElementById('ciQuoteInput').value.trim();
-        draft.nextAction = document.getElementById('ciNextInput').value.trim();
-        draft.evidence = document.getElementById('ciEvidenceInput').value.trim();
-        // §1차미팅 실전 기록 라운드 §3/§6/§8 — 신규 자유텍스트 필드 저장(추가만).
-        draft.oneLiner = document.getElementById('ciOneLinerInput').value.trim();
-        draft.methodNote = document.getElementById('ciMethodNoteInput').value.trim();
-        draft.backgroundNote = document.getElementById('ciBackgroundNoteInput').value.trim();
-        draft.businessNote = document.getElementById('ciBusinessNoteInput').value.trim();
-        draft.rawMeetingNote = document.getElementById('ciRawNoteInput').value; // §6 "생각나는 대로" 원문 — 줄바꿈/공백까지 그대로 보존, trim 안 함
+      // §1차미팅 메모 자동정리 라운드 — [저장]이 이제 3곳(세부 태그 폼 안 / 메모 입력
+      // 화면 / 자동정리 미리보기 화면)에서 나올 수 있어서, 실제 저장 동작은 한 곳으로
+      // 모은다(§ "새 저장 로직이 아니라 기존 D.setCustomerInsight 재사용"). trim은 여기서
+      // 한 번만 한다 — 위 input 리스너들은 입력 중 draft를 살아있게 유지하는 용도라 매
+      // 키 입력마다 trim할 필요는 없다.
+      const finishInsightSave = ()=>{
+        ['keyQuote','nextAction','evidence','oneLiner','methodNote','backgroundNote','businessNote'].forEach(k=>{
+          if(typeof draft[k] === 'string') draft[k] = draft[k].trim();
+        });
         D.setCustomerInsight(co.id, draft);
         cardState.sectionEdit.insight = false;
         cardState.insightDraft = null;
+        cardState.insightQuickStep = 'note';
+        cardState.insightAdvancedOpen = false;
+        cardState.insightParsedPreview = null;
         refreshChart();
+      };
+      const saveBtn = document.getElementById('ciSaveBtn');
+      if(saveBtn) saveBtn.addEventListener('click', finishInsightSave);
+      const quickSaveBtn = document.getElementById('ciQuickSaveBtn');
+      if(quickSaveBtn) quickSaveBtn.addEventListener('click', finishInsightSave);
+      // §"인사이트 자동 정리" — 원문을 로컬 키워드매칭(parseInsightMeetingNote)으로만
+      // 분석한다(외부 API 호출 없음). 결과는 즉시 저장되지 않고 미리보기 화면
+      // (cardState.insightParsedPreview)에만 채워진다.
+      const autoParseBtn = document.getElementById('ciAutoParseBtn');
+      if(autoParseBtn) autoParseBtn.addEventListener('click', ()=>{
+        const text = document.getElementById('ciRawNoteQuickInput').value;
+        draft.rawMeetingNote = text;
+        const dictNames = D.loadCompetitorMethodDict().map(d=> d.name);
+        cardState.insightParsedPreview = parseInsightMeetingNote(text, dictNames);
+        cardState.insightQuickStep = 'preview';
+        renderInsightBlock(co);
+      });
+      const advToggleBtn = document.getElementById('ciAdvancedToggleBtn');
+      if(advToggleBtn) advToggleBtn.addEventListener('click', ()=>{
+        cardState.insightAdvancedOpen = !cardState.insightAdvancedOpen;
+        renderInsightBlock(co);
+      });
+      const previewBackBtn = document.getElementById('ciPreviewBackBtn');
+      if(previewBackBtn) previewBackBtn.addEventListener('click', ()=>{
+        cardState.insightQuickStep = 'note';
+        cardState.insightParsedPreview = null;
+        renderInsightBlock(co);
+      });
+      const previewSaveBtn = document.getElementById('ciPreviewSaveBtn');
+      if(previewSaveBtn) previewSaveBtn.addEventListener('click', ()=>{
+        const parseInsightListInput = (text)=> String(text || '').split(/[·,]/).map(s=> s.trim()).filter(Boolean);
+        const parseInsightContactsInput = (text)=> String(text || '').split(',').map(s=> s.trim()).filter(Boolean).map(pair=>{
+          const parts = pair.split('·').map(x=> x && x.trim());
+          return parts[0] ? { name: parts[0], note: parts[1] || '' } : null;
+        }).filter(Boolean);
+        draft.oneLiner = document.getElementById('pvOneLiner').value.trim();
+        draft.interestTraits = parseInsightListInput(document.getElementById('pvInterest').value);
+        draft.competitorCompanies = parseInsightListInput(document.getElementById('pvMethods').value);
+        draft.relationshipTraits = parseInsightListInput(document.getElementById('pvRelationship').value);
+        draft.relatedContacts = parseInsightContactsInput(document.getElementById('pvContacts').value);
+        draft.backgroundTraits = parseInsightListInput(document.getElementById('pvBackground').value);
+        draft.methodNote = document.getElementById('pvMethodNote').value.trim();
+        draft.nextAction = document.getElementById('pvNextAction').value.trim();
+        // 사용공법을 확정하면 "타 공법사 이용" 상태도 자연스럽게 "있음"으로 맞춘다(이미
+        // 있는 필드 재사용 — §12 "저장된 정보가 없는 줄은 숨김"과 연결되는 기존 규칙,
+        // 새 필드 아님). 이미 다른 값이 설정돼 있으면 덮어쓰지 않는다.
+        if(draft.competitorCompanies.length && !draft.competitorUsageStatus) draft.competitorUsageStatus = '있음';
+        finishInsightSave();
       });
     }
   }
