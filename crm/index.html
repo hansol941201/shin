@@ -275,6 +275,25 @@
   .rev-pop-year-label{ color:var(--text-muted); }
   .rev-pop-year-value{ color:var(--text); font-weight:700; text-align:right; }
   .rev-pop-note{ font-size:12px; color:var(--text-muted); }
+  /* §고객 성향 미니 팝업 라운드 §3 — 약 190~210px 정사각형, 흰 배경/얇은 회색 테두리/
+     약한 그림자/작은 radius, 여백·글자 compact, 스크롤바 안 생기게(overflow hidden + 내용
+     자체를 압축 표시). rev-popover와 같은 fixed/overlay-없음 패턴. */
+  .insight-popover{
+    position:fixed; width:200px; max-width:92vw; background:#fff; border:1px solid var(--line);
+    border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,.13); z-index:401; overflow:hidden;
+    padding:10px 11px; box-sizing:border-box;
+  }
+  .insight-pop-title{ font-size:12.5px; font-weight:700; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:5px; }
+  .insight-pop-oneliner{ display:block; font-size:11.5px; font-weight:650; color:var(--text); line-height:1.35; }
+  .insight-pop-rows{ margin-top:6px; }
+  .insight-pop-row{ display:flex; align-items:baseline; gap:6px; padding:2px 0; font-size:11px; }
+  .insight-pop-row-label{ flex:0 0 30px; color:var(--text-faint); font-weight:600; }
+  .insight-pop-row-value{ flex:1; min-width:0; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .insight-pop-next{ margin-top:6px; padding-top:6px; border-top:1px solid #EDF1F5; font-size:11px; color:var(--text-muted); line-height:1.35; }
+  .insight-pop-foot{ margin-top:7px; text-align:right; }
+  .insight-pop-detail-btn{ background:none; border:none; padding:0; font-size:11px; font-weight:700; color:var(--blue); cursor:pointer; font-family:inherit; }
+  .insight-pop-detail-btn:hover{ text-decoration:underline; }
+  .insight-pop-empty{ font-size:11.5px; color:var(--text-muted); line-height:1.4; text-align:center; padding:10px 0; }
   /* §최근 요청 라운드: 최근 요청 Drawer 전용 — 미수금 Drawer의 .receivable-site-card를
      그대로 재사용하고(§22 디자인 통일), 요청 라벨/전화내용만 이 두 클래스로 추가한다. */
   .request-drawer-labels{ font-size:13px; font-weight:600; color:var(--text); margin:4px 0; }
@@ -445,7 +464,7 @@
      행 높이를 넘지 않도록 grade-badge와 같은 작은 중립 회색 배지 스타일을 재사용한다(§11
      "과도한 색상 사용 금지"). */
   .col-insight{ flex:0 0 150px; min-width:0; font-size:12px; }
-  .insight-cell{ display:flex; flex-wrap:wrap; gap:3px; align-items:center; min-width:0; width:100%; }
+  .insight-cell{ display:flex; flex-wrap:wrap; gap:3px; align-items:center; min-width:0; width:100%; cursor:pointer; }
   /* §1차미팅 실전 기록 라운드 §9 — 목록 "고객 성향" 한줄 성향 텍스트. 공간이 부족하면
      말줄임(공간에 따라 자동으로 짧게 보이게, JS로 강제로 자르지 않음). */
   .insight-oneliner{ font-size:11px; font-weight:650; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
@@ -2036,6 +2055,10 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
        회색 overlay 포함)와 완전히 분리해서 만든다. 이 root는 position:fixed 작은 카드만
        담고, overlay를 만들지 않는다(§4 "뒤의 업체 목록은 그대로 밝게 보여야 한다"). -->
   <div id="totalRevenuePopoverRoot"></div>
+  <!-- §고객 성향 미니 팝업 라운드: 목록 [고객 성향] 클릭 시 뜨는 작은 popover 전용 root —
+       totalRevenuePopoverRoot와 완전히 같은 패턴(overlay 없음, position:fixed 작은 카드만,
+       바깥클릭/ESC로 닫힘). -->
+  <div id="insightPopoverRoot"></div>
 </div>
 
 <script>
@@ -5273,6 +5296,11 @@ window.SHIN2_CRM_APP_INIT = function(){
   let sortMode = 'yearPour';
   let currentPage = 1;
   const PAGE_SIZE = 15;
+  // §고객 성향 미니 팝업 라운드 — 목록 [고객 성향] 클릭 시 뜨는 작은 popover 상태.
+  // DISPLAY ONLY(§10) — 여기엔 co.customerInsight 등 실제 데이터를 절대 담지 않고, 지금
+  // 어떤 업체의 popover가 열려 있는지(companyId)만 기억한다. 페이지 이동/큰 모달이 아니라
+  // 목록 옆에 뜨는 절대위치 div 하나뿐이다.
+  let insightPopoverCompanyId = null;
   // §2 필터 칩 정의 — "진행중"은 buildProgressStages(co).hasAny(=Partner Dashboard 진행
   // 데이터가 실제로 있음)를 그대로 쓴다. 질문서/1차미팅/2차미팅/MOU는 그 안에서 "현재 단계"
   // (buildProgressStages의 currentIdx, 이미 §진행 기록 라운드에서 만든 계산)로 좁힌다.
@@ -5651,12 +5679,16 @@ window.SHIN2_CRM_APP_INIT = function(){
       // §1차미팅 실전 기록 라운드 §9 — 한줄 성향(oneLiner)이 있으면 그 문장을 주 텍스트로,
       // 보조 태그는 최대 2개만(관계/사용공법). 옛 데이터(oneLiner 없음)는 기존 카테고리
       // 대표 3개+N 방식 그대로 폴백(buildInsightListSummary 안에서 처리, 새 판정 없음).
+      // §고객 성향 미니 팝업 라운드 §7 — 셀 자체는 여전히 compact하게(태그 여러 개 길게
+      // 나열 안 함), 그리고 셀 전체를 클릭 가능하게 만든다(data-insight-cell). 개별 tooltip
+      // 문구(전체 몇 개 등)는 빼고 "고객 인사이트 보기" 하나로 통일한다.
       const insightSummary = buildInsightListSummary(co);
-      const insightHtml = insightSummary.mode === 'oneLiner'
-        ? `<span class="insight-cell" title="${esc(insightSummary.primary)}"><span class="insight-oneliner">${esc(insightSummary.primary)}</span>${insightSummary.subTags.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}</span>`
+      const insightInnerHtml = insightSummary.mode === 'oneLiner'
+        ? `<span class="insight-oneliner">${esc(insightSummary.primary)}</span>${insightSummary.subTags.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}`
         : (insightSummary.shown.length
-          ? `<span class="insight-cell" title="${esc(insightSummary.overflow ? '전체 ' + (insightSummary.shown.length + insightSummary.overflow) + '개 · 고객카드에서 확인' : '')}">${insightSummary.shown.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}${insightSummary.overflow ? `<span class="insight-tag insight-tag-more">+${esc(insightSummary.overflow)}</span>` : ''}</span>`
-          : `<span class="insight-cell"><span class="data-none">성향 미등록</span></span>`);
+          ? `${insightSummary.shown.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}${insightSummary.overflow ? `<span class="insight-tag insight-tag-more">+${esc(insightSummary.overflow)}</span>` : ''}`
+          : `<span class="data-none">성향 미등록</span>`);
+      const insightHtml = `<span class="insight-cell" data-insight-cell="${esc(co.id)}" title="고객 인사이트 보기">${insightInnerHtml}</span>`;
       // §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N"은 메인 목록에서 뺐지만
       // (§1), 기한 초과 여부(rowOverdueClass, 행 왼쪽 빨간 라인)는 계속 필요해서 계산
       // 자체는 그대로 둔다 — r.progress도 위 enriched에서 이미 계산된
@@ -5738,6 +5770,15 @@ window.SHIN2_CRM_APP_INIT = function(){
       el.addEventListener('click', (e)=>{
         e.stopPropagation();
         openCard(el.getAttribute('data-relation-open'));
+      });
+    });
+    // §고객 성향 미니 팝업 라운드 — [고객 성향] 셀 클릭 -> 작은 popover(페이지 이동/큰 모달
+    // 아님). 행 클릭(고객카드 열기)으로 전파되지 않도록 stopPropagation.
+    listEl.querySelectorAll('[data-insight-cell]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const co = D.findCompany(el.getAttribute('data-insight-cell'));
+        if(co) openInsightPopover(co, el);
       });
     });
     listEl.querySelectorAll('[data-contrib-detail]').forEach(btn=>{
@@ -10226,6 +10267,118 @@ window.SHIN2_CRM_APP_INIT = function(){
       document.addEventListener('keydown', onEsc);
     }, 0);
     closeTotalRevenuePopoverOutsideHandlers = ()=>{
+      document.removeEventListener('click', onOutside);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }
+
+  /* ==========================================================================
+     §고객 성향 미니 팝업 라운드 — 목록 [고객 성향] 클릭 시 작은 popover(약 190~210px
+     정사각형)를 띄운다. totalRevenuePopoverRoot와 완전히 같은 패턴(overlay 없음,
+     바깥클릭/ESC로 닫힘, 화면 밖으로 안 잘리게 위치 자동 보정)을 그대로 따른다.
+     DISPLAY ONLY — 여기서 만드는 값은 전부 이미 저장된 co.customerInsight를 다르게
+     요약해서 보여줄 뿐, 아무것도 새로 저장하지 않는다(§10).
+     ========================================================================== */
+  // 태그를 많이 나열하지 않는다(§2) — "PMC 외 2"/"단가 · 마진 +2" 형태로만 압축한다.
+  function buildInsightPopoverSummary(co){
+    const ci = co.customerInsight;
+    if(!ci) return null;
+    const hasAny = !!(ci.oneLiner || (ci.interestTraits && ci.interestTraits.length) || (ci.competitorCompanies && ci.competitorCompanies.length)
+      || (ci.relationshipTraits && ci.relationshipTraits.length) || (ci.relatedContacts && ci.relatedContacts.length) || ci.nextAction);
+    if(!hasAny) return null;
+    const oneLinerLines = ci.oneLiner ? ci.oneLiner.split(' · ') : [];
+    const interestList = ci.interestTraits || [];
+    const interestText = interestList.length ? (interestList.slice(0,2).join(' · ') + (interestList.length > 2 ? ` +${interestList.length - 2}` : '')) : '';
+    const methodList = ci.competitorCompanies || [];
+    const methodText = methodList.length ? (methodList.length === 1 ? methodList[0] : `${methodList[0]} 외 ${methodList.length - 1}`) : '';
+    const relationText = (ci.relationshipTraits && ci.relationshipTraits[0]) || (ci.relatedContacts && ci.relatedContacts[0] && ci.relatedContacts[0].name) || '';
+    return { oneLinerLines, interestText, methodText, relationText, nextAction: ci.nextAction || '' };
+  }
+  let closeInsightPopoverOutsideHandlers = null;
+  function closeInsightPopover(){
+    const root = document.getElementById('insightPopoverRoot');
+    if(root) root.innerHTML = '';
+    insightPopoverCompanyId = null;
+    if(closeInsightPopoverOutsideHandlers){
+      closeInsightPopoverOutsideHandlers();
+      closeInsightPopoverOutsideHandlers = null;
+    }
+  }
+  // positionRevPopover(§총 매출 Popover 전환 라운드)와 완전히 같은 규칙 — 오른쪽/아래
+  // 우선, 공간 부족하면 왼쪽/위로, 마지막엔 화면 안쪽으로 clamp(§4/§9 "화면 밖으로 잘리면
+  // 안 됨", "고정 좌표 하드코딩 금지" — 매번 anchorEl 실측 좌표 기준으로 계산).
+  function positionInsightPopover(pop, anchorEl){
+    const rect = anchorEl.getBoundingClientRect();
+    const margin = 8;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const popW = pop.offsetWidth || 210;
+    const popH = pop.offsetHeight || 210;
+    let left = rect.right + margin;
+    if(left + popW > vw - margin) left = rect.left - popW - margin;
+    left = Math.min(Math.max(left, margin), Math.max(margin, vw - popW - margin));
+    let top = rect.bottom + margin;
+    if(top + popH > vh - margin) top = rect.top - popH - margin;
+    top = Math.min(Math.max(top, margin), Math.max(margin, vh - popH - margin));
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+  function openInsightPopover(co, anchorEl){
+    if(insightPopoverCompanyId === co.id){ closeInsightPopover(); return; } // 같은 셀 다시 클릭하면 닫기
+    closeInsightPopover();
+    if(typeof closeTotalRevenuePopover === 'function') closeTotalRevenuePopover();
+    const root = document.getElementById('insightPopoverRoot');
+    if(!root) return;
+    insightPopoverCompanyId = co.id;
+    const s = buildInsightPopoverSummary(co);
+    const row = (label, value)=> value ? `<div class="insight-pop-row"><span class="insight-pop-row-label">${esc(label)}</span><span class="insight-pop-row-value">${esc(value)}</span></div>` : '';
+    const bodyHtml = s ? `
+      ${s.oneLinerLines.map(l=> `<div class="insight-pop-oneliner">${esc(l)}</div>`).join('')}
+      <div class="insight-pop-rows">
+        ${row('관심', s.interestText)}
+        ${row('공법', s.methodText)}
+        ${row('관계', s.relationText)}
+      </div>
+      ${s.nextAction ? `<div class="insight-pop-next">${esc(s.nextAction)}</div>` : ''}
+      <div class="insight-pop-foot"><button type="button" class="insight-pop-detail-btn" id="insightPopDetailBtn">상세 &gt;</button></div>
+    ` : `
+      <div class="insight-pop-empty">아직 등록된<br>고객 인사이트가 없습니다.</div>
+      <div class="insight-pop-foot"><button type="button" class="insight-pop-detail-btn" id="insightPopRegisterBtn">등록하기 &gt;</button></div>
+    `;
+    root.innerHTML = `
+      <div class="insight-popover" id="insightPopover">
+        <div class="insight-pop-title">${esc(co.name)}</div>
+        ${bodyHtml}
+      </div>
+    `;
+    const pop = document.getElementById('insightPopover');
+    positionInsightPopover(pop, anchorEl);
+    const detailBtn = document.getElementById('insightPopDetailBtn');
+    if(detailBtn) detailBtn.addEventListener('click', ()=>{
+      closeInsightPopover();
+      openCard(co.id); // §6 "새로운 상세 인사이트 화면을 만들지 말고 기존 UI를 그대로 재사용"
+      cardState.accordionOpen.insight = true;
+      cardState.insightSummaryExpanded = true;
+      refreshChart();
+      requestAnimationFrame(()=>{ document.getElementById('cdashInsightBlock')?.scrollIntoView({ behavior:'smooth', block:'start' }); });
+    });
+    const registerBtn = document.getElementById('insightPopRegisterBtn');
+    if(registerBtn) registerBtn.addEventListener('click', ()=>{
+      closeInsightPopover();
+      openCard(co.id);
+      cardState.accordionOpen.insight = true;
+      cardState.sectionEdit.insight = true;
+      refreshChart();
+      requestAnimationFrame(()=>{ document.getElementById('cdashInsightBlock')?.scrollIntoView({ behavior:'smooth', block:'start' }); });
+    });
+    // §5 — 바깥 클릭/ESC로 닫힘. 열리는 클릭 자체가 바로 document까지 버블링돼 즉시
+    // 닫히지 않도록(§ "열자마자 닫힘" 방지) 등록을 다음 tick으로 미룬다.
+    const onOutside = (e)=>{ if(!pop.contains(e.target)) closeInsightPopover(); };
+    const onEsc = (e)=>{ if(e.key === 'Escape') closeInsightPopover(); };
+    setTimeout(()=>{
+      document.addEventListener('click', onOutside);
+      document.addEventListener('keydown', onEsc);
+    }, 0);
+    closeInsightPopoverOutsideHandlers = ()=>{
       document.removeEventListener('click', onOutside);
       document.removeEventListener('keydown', onEsc);
     };
