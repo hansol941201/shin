@@ -172,10 +172,9 @@ def build(with_records: bool = False) -> Path:
 
     # 더블클릭해서 바로 여는 낱개 파일. 링크도 로그인도 없이 쓸 수 있게 나눠 줄 때 쓴다.
     # 문서 골격이 있어야 브라우저가 파일로 열 수 있다 (아티팩트는 자동으로 감싸 준다).
-    # 저장소에 그대로 두고 내려받아 쓰므로, 손으로 복사하지 않고 여기서 만든다.
-    folder = BASE.parent / "월말실적정리"
-    folder.mkdir(exist_ok=True)
-    standalone = folder / "POUR공사실적관리.html"
+    # 나눠 줄 때와 wolmal-siljeok 저장소에 올릴 때 쓴다.
+    # 이 저장소에는 두지 않는다 (preview.html 과 같은 내용이라 두 벌이 된다).
+    standalone = BASE.parent / "POUR공사실적관리.html"
     standalone.write_text(
         "<!doctype html>\n<html lang=\"ko\">\n<head>\n"
         "<meta charset=\"utf-8\">\n"
@@ -197,4 +196,5 @@ if __name__ == "__main__":
         print("실제 실적이 들어 있습니다. 저장소에 올리거나 공개하지 마세요.")
     else:
         print("docs/index.html 생성 — GitHub Pages 용 (예시 자료)")
-    print("월말실적정리/POUR공사실적관리.html 생성 — 더블클릭해서 여는 낱개 파일")
+    print("POUR공사실적관리.html 생성 — 더블클릭해서 여는 낱개 파일")
+    print("  (별도 저장소 hansol941201/wolmal-siljeok 에 올리는 파일입니다)")
