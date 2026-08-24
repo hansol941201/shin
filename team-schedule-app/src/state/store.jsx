@@ -485,6 +485,26 @@ export function AppProvider({ children }) {
     fetchGoogleEvents();
   }, [fetchGoogleEvents]);
 
+  // 팀장님이 휴대폰 Google 캘린더에서 추가·수정·삭제한 일정도 이 화면에
+  // 자동 반영한다. 페이지가 열려 있는 동안 1분마다 갱신하고, 다른 앱이나
+  // 잠금 화면에서 돌아온 즉시 한 번 더 갱신한다.
+  useEffect(() => {
+    if (!googleActive) return undefined;
+
+    const refresh = () => {
+      if (document.visibilityState === 'visible') fetchGoogleEvents();
+    };
+    const intervalId = window.setInterval(refresh, 60 * 1000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [googleActive, fetchGoogleEvents]);
+
   // 화면에 보여줄 최종 일정 목록: Google에서 가져온 확정 일정 + 우리 쪽
   // 승인대기/시간변경/확정 요청. 한솔이 요청해서 확정된 일정은 실제로는
   // Google Calendar에도 생성돼 있지만, 화면에는 "한솔 요청 출처"가 살아있는
