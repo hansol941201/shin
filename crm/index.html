@@ -1908,7 +1908,6 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   <input type="password" id="gatePasswordInput" class="gate-input" placeholder="비밀번호" autocomplete="off" />
   <div class="gate-error" id="gateError" style="display:none;"></div>
   <button type="button" id="gateEnterBtn" class="gate-enter-btn">들어가기</button>
-  <button type="button" id="gateNoVaultBtn" class="gate-sub-link" style="display:none;">계정정보가 아직 없어요 — 한솔 업무페이지에서 먼저 잠금을 해제해주세요</button>
 </div>
 
 <div class="app" id="appRoot" style="display:none;">
@@ -2257,12 +2256,15 @@ window.SHIN2_CRM_OCR = (function(){
 
 <script>
 /* ==========================================================================
-   Gate — v2/index.html의 사이트 잠금과 동일한 비밀번호(계정함 마스터 비밀번호)로만
-   열람을 확인한다. 계정함(shin2-accounts-vault)의 개별 레코드는 이 페이지에서 절대
-   읽거나 복호화하지 않는다 — 오직 "이 비밀번호가 맞는지"만 PBKDF2+AES-GCM check로
-   검증한다(기존 v2 게이트와 동일 알고리즘/파라미터, salt/check 메타데이터만 읽음).
-   계정함이 아직 한 번도 만들어지지 않은 브라우저(=v2를 먼저 연 적이 없음)에서는 CRM
-   단독으로 새 비밀번호를 만들지 않는다 — 먼저 v2에서 잠금을 풀어달라고 안내한다.
+   Gate(§v2 제거 라운드 — 완전 독립화) — 계정함(shin2-accounts-vault)이 이미 있는
+   기기에서는 그 마스터 비밀번호로만 열람을 확인한다. 개별 레코드는 이 페이지에서
+   절대 읽거나 복호화하지 않는다 — 오직 "이 비밀번호가 맞는지"만 PBKDF2+AES-GCM
+   check로 검증한다(과거 v2 게이트와 동일 알고리즘/파라미터, salt/check 메타데이터만
+   읽음 — v2는 삭제되었지만 이 로컬 계정함 데이터 자체는 그대로 남아있어도 되는 순수
+   브라우저 localStorage 값이라 계속 재사용한다). 계정함이 아직 없는 새 기기(=한 번도
+   비밀번호를 만든 적 없음)는 더 이상 v2로 안내하지 않고 즉시 로컬 전용 모드로 앱을
+   연다 — 클라우드 동기화는 계정함/로그인이 생기면 자동으로 붙는다(아래 Firebase
+   모듈의 onAuthStateChanged가 담당, 여기서 새 계정 생성 UI를 만들지 않음).
    ========================================================================== */
 (function(){
   'use strict';
@@ -2295,7 +2297,6 @@ window.SHIN2_CRM_OCR = (function(){
   const gatePasswordInput = document.getElementById('gatePasswordInput');
   const gateError = document.getElementById('gateError');
   const gateEnterBtn = document.getElementById('gateEnterBtn');
-  const gateNoVaultBtn = document.getElementById('gateNoVaultBtn');
   const appRoot = document.getElementById('appRoot');
 
   // SHIN2_CRM_APP_INIT은 이 스크립트보다 아래쪽 <script>에서 정의된다(파싱 순서상 아직 없을 수
@@ -2311,11 +2312,10 @@ window.SHIN2_CRM_OCR = (function(){
 
   const existing = loadVaultRaw();
   if(!existing){
-    gateDesc.textContent = '아직 계정정보가 없습니다.';
-    gatePasswordInput.style.display = 'none';
-    gateEnterBtn.style.display = 'none';
-    gateNoVaultBtn.style.display = 'inline-block';
-    gateNoVaultBtn.addEventListener('click', ()=>{ window.open('../v2/', '_blank', 'noopener'); });
+    // 계정함이 없는 새 기기(v2를 열어본 적 없음) — v2가 삭제되었으므로 더 이상 안내할 곳이
+    // 없다. 즉시 로컬 전용 모드로 앱을 연다(새 계정 생성 UI는 만들지 않음, §v2 제거 라운드).
+    showApp();
+    return;
   } else {
     try{
       if(localStorage.getItem(CRM_SESSION_KEY) === '1'){ showApp(); return; }
@@ -2329,7 +2329,7 @@ window.SHIN2_CRM_OCR = (function(){
     gateEnterBtn.disabled = true;
     try{
       const current = loadVaultRaw();
-      if(!current){ showGateError('아직 계정정보가 없습니다. 한솔 업무페이지에서 먼저 잠금을 해제해주세요.'); return; }
+      if(!current){ showApp(); return; }
       const saltBytes = new Uint8Array(bufFromB64(current.salt));
       const rawBytes = await deriveRawKeyBytes(pw, saltBytes);
       const key = await importAesKey(rawBytes);
