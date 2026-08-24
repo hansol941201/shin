@@ -446,6 +446,9 @@
      "과도한 색상 사용 금지"). */
   .col-insight{ flex:0 0 150px; min-width:0; font-size:12px; }
   .insight-cell{ display:flex; flex-wrap:wrap; gap:3px; align-items:center; min-width:0; width:100%; }
+  /* §1차미팅 실전 기록 라운드 §9 — 목록 "고객 성향" 한줄 성향 텍스트. 공간이 부족하면
+     말줄임(공간에 따라 자동으로 짧게 보이게, JS로 강제로 자르지 않음). */
+  .insight-oneliner{ font-size:11px; font-weight:650; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
   .insight-tag{ display:inline-flex; align-items:center; max-width:100%; padding:2px 6px; font-size:10.5px; font-weight:650; color:#475569; background:#F1F5F9; border-radius:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   /* §고객 인사이트 복수선택 라운드 §2/§10 — 카테고리별 체크박스 다중선택 그리드(작은 칩
      형태, 현재 .insight-tag/co-field와 같은 네이비/화이트 톤 유지, §21 "새 디자인 시스템
@@ -471,7 +474,11 @@
   .insight-summary-row{ display:flex; align-items:flex-start; gap:10px; padding:3px 0; }
   .insight-summary-row-label{ flex:0 0 72px; font-size:11px; font-weight:650; color:var(--text-muted); padding-top:3px; }
   .insight-summary-row-tags{ flex:1; display:flex; flex-wrap:wrap; gap:4px; min-width:0; }
-  .insight-expand-row{ margin-top:6px; }
+  .insight-expand-row{ margin-top:6px; text-align:right; }
+  /* §1차미팅 실전 기록 라운드 §2 — 5줄 요약은 태그 칩이 아니라 짧은 문장(예: "마진 · 단가 ·
+     수익성 · 현장 경쟁력")이라 일반 텍스트로 보여준다. */
+  .insight-fiveline-text{ font-size:12px; color:var(--text); font-weight:600; }
+  .insight-fiveline-text.is-muted{ color:var(--text-faint); font-weight:500; }
   .stage-dn-cell{ display:inline-flex; align-items:center; gap:4px; }
   .stage-dn-cell.st-normal{ color:var(--text); }
   .stage-dn-cell.st-warning{ color:#C2670F; } /* 연한 주황 — 기한 임박(§5/§6) */
@@ -3452,9 +3459,18 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 새 필드로 "추가"한다. 기존 필드는 전혀 지우지 않는다 — 이전 라운드의
   // competitorUsageTraits(다중선택 성향 태그)도 그대로 남겨두고 화면에서만 새 구조로
   // 대체한다(§20 "데이터 보호").
+  // §1차미팅 실전 기록 라운드 — "정보는 많이 저장, 화면엔 중요한 것만"을 위한 신규 필드
+  // 추가. 전부 co.customerInsight 안에 추가만 한다(§12 "새 필드는 기존 데이터와 충돌하지
+  // 않게 추가", §setCustomerInsight의 저장 경로/updateCompany는 손대지 않았으므로 기존
+  // 인사이트와 완전히 같은 cloud 동기화 방식을 그대로 물려받는다 — §13 "새 저장구조를
+  // 만들지 않는다"). oneLiner(한줄 성향)/businessNote(사업·현장 메모)/methodNote(공법
+  // 관련 메모)/rawMeetingNote(미팅 원문 메모)는 자유 텍스트, relationshipTraits/
+  // backgroundTraits는 복수선택 배열(기존 decisionTraits 등과 동일한 방식), relatedContacts
+  // 는 {name, note} 객체 배열(관련 업체/인물 + 관계 설명).
   const CUSTOMER_INSIGHT_FIELDS = ['decisionStyle','interests','needs','concerns','preferredContact','keyQuote','nextAction','evidence','tags','insightIds','customInsights','importantInsightIds',
     'decisionTraits','interestTraits','priceTraits','materialPreferences','competitorUsageTraits','competitorCompanies','preferredCompanyTraits','preferredCompanies','barrierTraits','importantTraits',
-    'currentUsageStatus','competitorUsageStatus'];
+    'currentUsageStatus','competitorUsageStatus',
+    'oneLiner','relationshipTraits','relatedContacts','backgroundTraits','backgroundNote','businessNote','methodNote','rawMeetingNote'];
   function setCustomerInsight(companyId, patch){
     const co = findCompany(companyId); if(!co) return null;
     const merged = Object.assign({}, co.customerInsight || {});
@@ -5609,10 +5625,15 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 등 다른 곳에서도 재사용한다(같은 값을 두 번 계산하지 않기 위해 한 곳에만 정의).
       // §고객 인사이트 사전 라운드 §12: 대표 태그 최대 3개 + 나머지는 "+N"으로 요약(전체는
       // 고객카드에서 확인). buildInsightRepTagsFull이 ★중요 우선순위까지 이미 계산해 둔다.
-      const insightRep = buildInsightRepTagsFull(co);
-      const insightHtml = insightRep.shown.length
-        ? `<span class="insight-cell" title="${esc(insightRep.overflow ? '전체 ' + (insightRep.shown.length + insightRep.overflow) + '개 · 고객카드에서 확인' : '')}">${insightRep.shown.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}${insightRep.overflow ? `<span class="insight-tag insight-tag-more">+${esc(insightRep.overflow)}</span>` : ''}</span>`
-        : `<span class="insight-cell"><span class="data-none">성향 미등록</span></span>`;
+      // §1차미팅 실전 기록 라운드 §9 — 한줄 성향(oneLiner)이 있으면 그 문장을 주 텍스트로,
+      // 보조 태그는 최대 2개만(관계/사용공법). 옛 데이터(oneLiner 없음)는 기존 카테고리
+      // 대표 3개+N 방식 그대로 폴백(buildInsightListSummary 안에서 처리, 새 판정 없음).
+      const insightSummary = buildInsightListSummary(co);
+      const insightHtml = insightSummary.mode === 'oneLiner'
+        ? `<span class="insight-cell" title="${esc(insightSummary.primary)}"><span class="insight-oneliner">${esc(insightSummary.primary)}</span>${insightSummary.subTags.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}</span>`
+        : (insightSummary.shown.length
+          ? `<span class="insight-cell" title="${esc(insightSummary.overflow ? '전체 ' + (insightSummary.shown.length + insightSummary.overflow) + '개 · 고객카드에서 확인' : '')}">${insightSummary.shown.map(t=> `<span class="insight-tag">${esc(t)}</span>`).join('')}${insightSummary.overflow ? `<span class="insight-tag insight-tag-more">+${esc(insightSummary.overflow)}</span>` : ''}</span>`
+          : `<span class="insight-cell"><span class="data-none">성향 미등록</span></span>`);
       // §최근 시공 강화/현재 단계 숨김 라운드: "현재 단계 · D+N"은 메인 목록에서 뺐지만
       // (§1), 기한 초과 여부(rowOverdueClass, 행 왼쪽 빨간 라인)는 계속 필요해서 계산
       // 자체는 그대로 둔다 — r.progress도 위 enriched에서 이미 계산된
@@ -8638,6 +8659,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     ['barrierTraits', '우려 / 장벽', PRESET_BARRIER],
   ];
   const INSIGHT_PREFERRED_SECTION = ['preferredCompanyTraits', '선호 업체 / 공법', PRESET_PREFERRED_COMPANY];
+  // §1차미팅 실전 기록 라운드 §7/§8 — "관계/인맥"과 "배경/경력"은 기존 복수선택 인사이트에
+  // 없던 새 카테고리라 신규 프리셋을 만들었다(§ "새로 정의가 필요한... 신규 작성" 관례를
+  // 그대로 따름, 기존 프리셋은 전혀 안 건드림).
+  const PRESET_RELATIONSHIP = ['업계 인맥 강함','소개 네트워크 강함','협력업체 인맥 있음','아파트 관계자 인맥 있음','시공사 인맥 있음','현장소장 인맥 있음','대표자 인맥 있음','지인 소개','기존 거래관계','관계 중심 영업 가능'];
+  const PRESET_BACKGROUND = ['현장 출신 대표','직접 시공 경험','신축 경험','유지보수 경험','신축→유지보수 전환','기술자 출신','영업 출신','사업 확장 중'];
 
   // §고객 인사이트 사전 라운드 — INSIGHT_DICTIONARY(id/카테고리/문구 500개+, 아래 별도
   // 정의)를 id로 조회하기 위한 캐시 Map. 사전 자체는 static이라 한 번만 만든다(§성능 원칙).
@@ -8739,6 +8765,27 @@ window.SHIN2_CRM_APP_INIT = function(){
       ['영업 포인트', barrierTraits],
     ].filter(([, vals])=> vals.length);
   }
+  // §1차미팅 실전 기록 라운드 §2/§4 — 고객카드 기본 화면 "5줄 요약". 전부 실제 저장된
+  // 값만 사용한다(새 문장을 만들지 않음): ①한줄 성향(oneLiner, 자유입력) ②관심
+  // (interestTraits, ★ 우선 최대 4개) ③사용공법(competitorCompanies — 기존 "타 공법사
+  // 이용" 기능의 실제 업체·공법명 그대로 재사용, 새 필드 아님) ④관계(relationshipTraits +
+  // relatedContacts 이름) ⑤대응(nextAction, 기존 필드 재사용). "저장된 정보가 없는 줄은
+  // 숨김"(§11)이 원칙이지만 ③사용공법만 예외로 항상 보이고 값이 없으면 "확인 안 됨"을
+  // 보여준다(§4 "없으면: 확인 안 됨" — 명시적 요구).
+  function buildInsightFiveLineSummary(ci){
+    const importantSet = new Set(ci.importantTraits || []);
+    const byImportant = (arr)=> arr.slice().sort((a,b)=> (importantSet.has(b)?1:0) - (importantSet.has(a)?1:0));
+    const rows = [];
+    if(ci.oneLiner) rows.push({ key:'oneLiner', label:'한줄 성향', text: ci.oneLiner });
+    const interest = byImportant(ci.interestTraits || []).slice(0,4);
+    if(interest.length) rows.push({ key:'interest', label:'관심', text: interest.join(' · ') });
+    const methods = (ci.competitorCompanies || []).slice(0,3);
+    rows.push({ key:'methods', label:'사용공법', text: methods.length ? methods.join(' · ') : '확인 안 됨' });
+    const relationParts = (ci.relationshipTraits || []).slice(0,2).concat((ci.relatedContacts || []).map(c=> c.name).filter(Boolean).slice(0,2));
+    if(relationParts.length) rows.push({ key:'relation', label:'관계', text: relationParts.join(' · ') });
+    if(ci.nextAction) rows.push({ key:'response', label:'대응', text: ci.nextAction });
+    return rows;
+  }
   function buildInsightRepTagsFull(co){
     const ci = co.customerInsight;
     if(!ci) return { shown: [], overflow: 0 };
@@ -8773,6 +8820,24 @@ window.SHIN2_CRM_APP_INIT = function(){
     return { shown: tags.slice(0, 3), overflow: 0 };
   }
   function buildInsightRepTags(co){ return buildInsightRepTagsFull(co).shown; }
+  // §1차미팅 실전 기록 라운드 §9 — 고객목록 "고객 성향" 컬럼. oneLiner(한줄 성향)가 있으면
+  // 그 문장을 그대로 주 텍스트로 쓰고(태그 나열 대신), 보조 태그는 최대 2개(관계 1개 +
+  // 사용공법/타사이용 1개)만 붙인다 — "+N" 카운트는 표시하지 않는다(§9 "숫자만 크게 보여
+  // 주는 방식은 최소화"). oneLiner가 아직 없는 업체(기존 데이터, 이번 라운드 이전에 저장된
+  // 인사이트)는 기존 buildInsightRepTagsFull 결과(카테고리 대표 3개+N)로 그대로 폴백한다
+  // — 데이터 마이그레이션 없이도 예전처럼 계속 보인다(§12).
+  function buildInsightListSummary(co){
+    const ci = co.customerInsight;
+    if(ci && ci.oneLiner){
+      const subTags = [];
+      const methodTag = competitorUsageRepValue(ci);
+      if(methodTag) subTags.push(methodTag);
+      if(ci.relationshipTraits && ci.relationshipTraits.length) subTags.push(ci.relationshipTraits[0]);
+      return { mode:'oneLiner', primary: ci.oneLiner, subTags: subTags.slice(0,2) };
+    }
+    const fallback = buildInsightRepTagsFull(co);
+    return { mode:'legacy', shown: fallback.shown, overflow: fallback.overflow };
+  }
   function getTotalRevenue(co){
     const gs = co.partnerDashboard && co.partnerDashboard.gradeSales;
     return (typeof gs === 'number') ? gs : null; // null=데이터 없음, 0=실제 0원(§ 구분)
@@ -10878,7 +10943,16 @@ window.SHIN2_CRM_APP_INIT = function(){
       importantTraits: (ci.importantTraits || []).slice(),
       keyQuote: ci.keyQuote || '',
       nextAction: ci.nextAction || '',
-      evidence: ci.evidence || ''
+      evidence: ci.evidence || '',
+      // §1차미팅 실전 기록 라운드 §3/§7/§8/§6 — 신규 필드(추가만, 위 기존 필드는 전혀 안 바뀜).
+      oneLiner: ci.oneLiner || '',
+      relationshipTraits: (ci.relationshipTraits || []).slice(),
+      relatedContacts: (ci.relatedContacts || []).map(c=> Object.assign({}, c)),
+      backgroundTraits: (ci.backgroundTraits || []).slice(),
+      backgroundNote: ci.backgroundNote || '',
+      businessNote: ci.businessNote || '',
+      methodNote: ci.methodNote || '',
+      rawMeetingNote: ci.rawMeetingNote || ''
     };
   }
   // §고객 인사이트 공법/경쟁관계 라운드 §1/§16/§17 — 보기(펼침) 화면 렌더 순서:
@@ -10895,8 +10969,12 @@ window.SHIN2_CRM_APP_INIT = function(){
     const ci = co.customerInsight || {};
     if(editing && !cardState.insightDraft) cardState.insightDraft = insightDraftFrom(ci);
     const draft = editing ? cardState.insightDraft : null;
+    // §1차미팅 실전 기록 라운드 §9 — 아코디언이 접혀있을 때(고객 인사이트 title 옆) 보이는
+    // 요약 배지도 목록과 같은 우선순위: 한줄 성향이 있으면 그 문장, 없으면 기존 카테고리
+    // 대표 3개+N으로 폴백.
+    const listSummary = buildInsightListSummary(co);
     const repTags = buildInsightRepTags(co);
-    const summaryText = repTags.length ? repTags.join(' · ') : '';
+    const summaryText = listSummary.mode === 'oneLiner' ? listSummary.primary : (repTags.length ? repTags.join(' · ') : '');
     const row = (label, value)=> `<div class="co-field"><div class="co-field-label">${esc(label)}</div><div class="co-field-value">${value}</div></div>`;
     const simpleGroup = ([key, label])=>{
       const vals = ci[key] || [];
@@ -10933,30 +11011,46 @@ window.SHIN2_CRM_APP_INIT = function(){
       ci.evidence ? row('근거', esc(ci.evidence)) : ''
     ].join('');
     const hasAny = !!(groupHtml || fallbackHtml || tailHtml);
-    // §인사이트 요약 표시 라운드 §1/§2/§8 — 인사이트가 많이 등록된 업체(예: 동신도장)일수록
-    // 카드가 하염없이 길어지던 문제를 "저장/편집은 그대로 두고 보기 화면만" 2단계로 바꾼다.
-    // 기본은 "핵심 요약"(4줄, buildInsightSummaryGroups), [전체 인사이트 N개 보기] 클릭
-    // 시에만 기존 groupHtml(§3~§5에서 이미 완성돼 있던 전체 상세, 한 글자도 안 고침)을
-    // 그대로 보여준다 — "새 상세 UI"가 아니라 "기존 상세 UI를 펼침 뒤로 숨겼다가 보여줌".
-    // 핵심 발언/다음 대응/근거(tailHtml)는 요약이든 전체보기든 항상 같은 자리(하단)에
-    // 한 번만 보인다(§6, 중복 렌더링 방지).
+    // §1차미팅 실전 기록 라운드 §2/§5/§6 — "정보는 많이 저장, 화면엔 중요한 것만". 기본은
+    // 5줄 요약(buildInsightFiveLineSummary — 한줄성향/관심/사용공법/관계/대응, §11 "정보
+    // 없는 줄은 숨김"·사용공법만 예외), [상세보기] 클릭 시에만 아래 순서로 전체를 보여준다:
+    // 배경/경력 → 관계/인맥 → 사업/현장 → 주요 관심 → 현재 사용 공법 → 공법 관련 메모 →
+    // 고객 성향(=기존 groupHtml, §3~§5에서 이미 완성돼 있던 전체 복수선택 인사이트를 한
+    // 글자도 안 고치고 "고객 성향" 소제목만 붙여 재사용) → 핵심 발언/다음 대응/근거
+    // (기존 tailHtml 그대로) → 미팅 원문 메모. 상세 안에서 "주요 관심"/"현재 사용 공법"이
+    // "고객 성향" 그룹과 중복으로 다시 나오는 것은 사용자가 준 예시 구조를 그대로 따른
+    // 것이다(§5 원문 예시에 두 곳 다 있음) — 데이터를 두 번 저장하는 게 아니라 같은 필드를
+    // 두 자리에서 보여주는 것뿐이다.
+    const viewGroupBlock = (label, innerHtml)=> innerHtml ? `<div class="insight-view-group"><div class="insight-view-group-title">${esc(label)}</div>${innerHtml}</div>` : '';
+    const freeTextBlock = (text)=> text ? `<div style="margin-top:4px;font-size:12px;color:var(--text);white-space:pre-wrap;">${esc(text)}</div>` : '';
+    const tagListBlock = (vals)=> vals.length ? `<div>${vals.map(v=> `<span class="insight-tag">${esc(v)}</span>`).join(' ')}</div>` : '';
+    const backgroundGroupHtml = viewGroupBlock('배경 / 경력', tagListBlock(ci.backgroundTraits || []) + freeTextBlock(ci.backgroundNote));
+    const relationInner = tagListBlock(ci.relationshipTraits || []) + ((ci.relatedContacts||[]).length ? `<div style="margin-top:4px;">${(ci.relatedContacts||[]).map(c=> `<span class="insight-tag">${esc(c.name)}${c.note ? ' · ' + esc(c.note) : ''}</span>`).join(' ')}</div>` : '');
+    const relationGroupHtml = viewGroupBlock('관계 / 인맥', relationInner);
+    const businessGroupHtml = ci.businessNote ? viewGroupBlock('사업 / 현장', freeTextBlock(ci.businessNote)) : '';
+    const interestOnlyGroupHtml = viewGroupBlock('주요 관심', tagListBlock(ci.interestTraits || []));
+    const methodsOnlyGroupHtml = viewGroupBlock('현재 사용 공법', tagListBlock(ci.competitorCompanies || []));
+    const methodNoteGroupHtml = ci.methodNote ? viewGroupBlock('공법 관련 메모', freeTextBlock(ci.methodNote)) : '';
+    const customerTraitsGroupHtml = groupHtml ? viewGroupBlock('고객 성향', groupHtml) : '';
+    const rawMeetingGroupHtml = ci.rawMeetingNote ? viewGroupBlock('미팅 원문 메모', freeTextBlock(ci.rawMeetingNote)) : '';
     const summaryExpanded = !!cardState.insightSummaryExpanded;
-    const totalInsightCount = insightAllTraits(ci).length;
-    const summaryGroups = buildInsightSummaryGroups(ci);
-    const summaryGroupsHtml = summaryGroups.map(([label, vals])=> `
+    const toggleHtml = `<div class="insight-expand-row"><button type="button" class="co-text-action" id="cdashInsightExpandToggle">${summaryExpanded ? '요약만 보기 ▲' : '상세보기 ▼'}</button></div>`;
+    const fiveLineRows = buildInsightFiveLineSummary(ci);
+    const fiveLineHtml = fiveLineRows.map(r=> `
       <div class="insight-summary-row">
-        <div class="insight-summary-row-label">${esc(label)}</div>
-        <div class="insight-summary-row-tags">${vals.map(v=> `<span class="insight-tag">${esc(v)}</span>`).join(' ')}</div>
+        <div class="insight-summary-row-label">${esc(r.label)}</div>
+        <div class="insight-summary-row-tags"><span class="insight-fiveline-text${r.text === '확인 안 됨' ? ' is-muted' : ''}">${esc(r.text)}</span></div>
       </div>`).join('');
-    const expandToggleHtml = totalInsightCount > 0 ? `
-      <div class="insight-expand-row">
-        <button type="button" class="co-text-action" id="cdashInsightExpandToggle">${summaryExpanded ? '요약만 보기 ▲' : `전체 인사이트 ${totalInsightCount}개 보기 ▼`}</button>
-      </div>` : '';
-    const summaryBodyHtml = summaryGroupsHtml
-      ? (summaryGroupsHtml + tailHtml + expandToggleHtml)
-      : (tailHtml || '<div class="cdash-field-value is-muted">등록된 고객 인사이트가 없습니다.</div>');
-    const detailBodyHtml = (groupHtml + fallbackHtml) + tailHtml + expandToggleHtml;
-    const bodyHtml = !hasAny ? '<div class="cdash-field-value is-muted">등록된 고객 인사이트가 없습니다.</div>'
+    const summaryBodyHtml = fiveLineHtml + toggleHtml;
+    const detailBodyHtml = backgroundGroupHtml + relationGroupHtml + businessGroupHtml + interestOnlyGroupHtml + methodsOnlyGroupHtml + methodNoteGroupHtml + customerTraitsGroupHtml + fallbackHtml + tailHtml + rawMeetingGroupHtml + toggleHtml;
+    // §12 "저장된 정보가 없는 줄은 숨김" — 신규 필드(oneLiner 등)까지 포함해 정말 아무것도
+    // 없을 때만(사용공법 "확인 안 됨" 포함해서도 다른 실제 데이터가 전혀 없을 때) 기존
+    // 문구를 그대로 보여준다.
+    const hasAnyNew = !!(ci.oneLiner || (ci.relationshipTraits && ci.relationshipTraits.length) || (ci.relatedContacts && ci.relatedContacts.length)
+      || (ci.backgroundTraits && ci.backgroundTraits.length) || ci.backgroundNote || ci.businessNote || ci.methodNote || ci.rawMeetingNote
+      || (ci.competitorCompanies && ci.competitorCompanies.length));
+    const hasAnyTotal = hasAny || hasAnyNew;
+    const bodyHtml = !hasAnyTotal ? '<div class="cdash-field-value is-muted">등록된 고객 인사이트가 없습니다.</div>'
       : (summaryExpanded ? detailBodyHtml : summaryBodyHtml);
 
     const checkGrid = (fieldKey, presets)=> `
@@ -11006,23 +11100,65 @@ window.SHIN2_CRM_APP_INIT = function(){
         ` : ''}
       </div>`;
     })() : '';
-    const methodGroupEditHtml = editing ? `
+    // §1차미팅 실전 기록 라운드 §10 — "1차미팅 직후 가장 중요한 정보부터 빠르게 입력"할 수
+    // 있도록 편집 폼 순서를 재배치한다. 각 필드의 실제 UI/저장 로직은 이전 라운드에서 이미
+    // 완성된 것을 그대로 재사용하고(checkGrid/radioGroup/companyChipRow/competitorDropdownHtml
+    // 전부 안 바꿈), "공법/경쟁 관계" 그룹만 두 조각으로 나눠 순서를 옮겼다: 타 공법사 이용
+    // (③ 현재 사용공법)은 위로, 현재 공법 이용 형태+선호 업체/공법(⑧)은 원래 자리 근처에
+    // 남긴다 — 필드 자체(currentUsageStatus/competitorUsageStatus/competitorCompanies/
+    // preferredCompanyTraits/preferredCompanies)는 전혀 안 바뀐다.
+    // editing이 아니면 draft가 null이라 아래 블록들이 draft[...]를 참조하는 순간 바로
+    // 죽는다(§ 이전 라운드에도 같은 이유로 겪었던 버그) — editing일 때만 계산한다.
+    const methodUsageEditHtml = editing ? `
       <div class="co-form-field insight-method-group">
-        <label style="font-weight:700;">공법 / 경쟁 관계</label>
-        <div class="co-form-field"><label>현재 공법 이용 형태 (대표 1개 선택)</label>${radioGroup('currentUsageStatus', PRESET_CURRENT_USAGE)}</div>
+        <label style="font-weight:700;">현재 사용공법 (타 공법사 이용)</label>
         <div class="co-form-field"><label>타 공법사 이용</label>${radioGroup('competitorUsageStatus', COMPETITOR_STATUS_OPTIONS)}${competitorDropdownHtml}</div>
+      </div>
+      <div class="co-form-field"><label>공법 관련 메모</label><textarea id="ciMethodNoteInput" placeholder="예: 슈퍼크랙실 사용, 모노화학은 주로 사용하지 않음">${esc(draft.methodNote)}</textarea></div>` : '';
+    const preferredGroupEditHtml = editing ? `
+      <div class="co-form-field insight-method-group">
+        <label style="font-weight:700;">선호 업체 / 공법</label>
+        <div class="co-form-field"><label>현재 공법 이용 형태 (대표 1개 선택)</label>${radioGroup('currentUsageStatus', PRESET_CURRENT_USAGE)}</div>
         <div class="co-form-field"><label>${esc(INSIGHT_PREFERRED_SECTION[1])} (복수선택)</label>${checkGrid(INSIGHT_PREFERRED_SECTION[0], INSIGHT_PREFERRED_SECTION[2])}
           <div class="co-field-label" style="margin-top:6px;">선호 업체/공법명</div>${companyChipRow('preferredCompanies', 'ciPreferredAddBtn', 'ciPreferredInput')}
         </div>
       </div>` : '';
+    // §7 — "관계/인맥"은 복수선택(relationshipTraits, 기존 checkGrid 재사용) + 관련 업체·
+    // 인물 자유입력(relatedContacts, 이름+관계설명 두 칸)을 함께 등록한다.
+    const relatedContactsEditHtml = editing ? `
+      <div class="insight-check-grid" style="margin-bottom:4px;">
+        ${draft.relatedContacts.length ? draft.relatedContacts.map((c,i)=> `<span class="insight-tag">${esc(c.name)}${c.note ? ' · ' + esc(c.note) : ''} <button type="button" class="insight-tag-x" data-remove-contact="${i}">×</button></span>`).join('') : '<span class="cdash-field-value is-muted" style="font-size:11px;">아직 등록된 관련 업체/인물이 없습니다.</span>'}
+      </div>
+      <div class="cdash-mini-add-row">
+        <input type="text" id="ciContactNameInput" placeholder="업체/인물명 (예: 위즈페인팅)" style="flex:1;" />
+        <input type="text" id="ciContactNoteInput" placeholder="관계 (예: 지인)" style="flex:1;" />
+        <button type="button" class="co-text-action" id="ciContactAddBtn">+ 추가</button>
+      </div>` : '';
+    const relationshipEditHtml = editing ? `
+      <div class="co-form-field"><label>관계 / 인맥 (복수선택)</label>${checkGrid('relationshipTraits', PRESET_RELATIONSHIP)}
+        <div class="co-field-label" style="margin-top:6px;">관련 업체/인물 + 관계</div>${relatedContactsEditHtml}
+      </div>` : '';
+    const backgroundEditHtml = editing ? `
+      <div class="co-form-field"><label>배경 / 경력 (복수선택)</label>${checkGrid('backgroundTraits', PRESET_BACKGROUND)}
+        <textarea id="ciBackgroundNoteInput" placeholder="자유메모" style="margin-top:6px;">${esc(draft.backgroundNote)}</textarea>
+      </div>` : '';
     const allDraftTraits = editing ? []
       .concat(draft.decisionTraits, draft.interestTraits, draft.currentUsageStatus ? [draft.currentUsageStatus] : [], draft.preferredCompanyTraits, draft.priceTraits, draft.materialPreferences, draft.barrierTraits) : [];
     const editHtml = editing ? `
-      ${INSIGHT_SECTION_ORDER.map(([key, label, presets])=> `<div class="co-form-field"><label>${esc(label)} (복수선택)</label>${checkGrid(key, presets)}</div>`).join('')}
-      ${methodGroupEditHtml}
-      ${INSIGHT_SECTION_ORDER_TAIL.map(([key, label, presets])=> `<div class="co-form-field"><label>${esc(label)} (복수선택)</label>${checkGrid(key, presets)}</div>`).join('')}
-      <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
+      <div class="co-form-field"><label>한줄 성향</label><input type="text" id="ciOneLinerInput" value="${esc(draft.oneLiner)}" placeholder="예: 현장형 대표 · 수익/수주 중심" /></div>
+      <div class="co-form-field"><label>주요 관심 (복수선택)</label>${checkGrid('interestTraits', PRESET_INTEREST)}</div>
+      ${methodUsageEditHtml}
+      ${relationshipEditHtml}
       <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(draft.nextAction)}</textarea></div>
+      <div class="co-form-field"><label>의사결정 / 업무 성향 (복수선택)</label>${checkGrid('decisionTraits', PRESET_DECISION)}</div>
+      <div class="co-form-field"><label>가격 / 비용 성향 (복수선택)</label>${checkGrid('priceTraits', PRESET_PRICE)}</div>
+      ${preferredGroupEditHtml}
+      <div class="co-form-field"><label>자료 / 설명 선호 (복수선택)</label>${checkGrid('materialPreferences', PRESET_MATERIAL)}</div>
+      <div class="co-form-field"><label>우려 / 장벽 (복수선택)</label>${checkGrid('barrierTraits', PRESET_BARRIER)}</div>
+      ${backgroundEditHtml}
+      <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
+      <div class="co-form-field"><label>사업 / 현장 메모</label><textarea id="ciBusinessNoteInput" placeholder="예: POUR 적용 예정 현장 있음, 자본금 약 6.3억">${esc(draft.businessNote)}</textarea></div>
+      <div class="co-form-field"><label>미팅 원문 메모</label><textarea id="ciRawNoteInput" placeholder="미팅 직후 생각나는 대로 자유롭게 적어두는 원문 — 정리된 인사이트와 별도로 그대로 보존됩니다.">${esc(draft.rawMeetingNote)}</textarea></div>
       <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(draft.evidence)}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
       ${allDraftTraits.length ? `<div class="co-form-field"><label>★ 중요 표시(목록에 우선 표시할 항목 선택)</label>
         <div class="insight-check-grid">${allDraftTraits.map(t=> `<span class="insight-tag insight-star-chip${draft.importantTraits.includes(t) ? ' is-star' : ''}" data-star-toggle="${esc(t)}">${draft.importantTraits.includes(t) ? '★' : '☆'} ${esc(t)}</span>`).join('')}</div>
@@ -11036,7 +11172,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       <div class="cdash-accordion-header" id="cdashInsightAccHeader">
         <span class="cdash-accordion-chevron${open ? ' is-open' : ''}">▶</span>
         <div class="cdash-bcol-title">고객 인사이트</div>
-        ${open ? `<button type="button" class="cdash-mini-edit" id="cdashInsightToggle">${editing ? '완료' : '수정'}</button>` : (summaryText ? `<span class="cdash-accordion-summary">${esc(summaryText)}${repTags.length && buildInsightRepTagsFull(co).overflow ? ' +' + esc(buildInsightRepTagsFull(co).overflow) : ''}</span>` : '')}
+        ${open ? `<button type="button" class="cdash-mini-edit" id="cdashInsightToggle">${editing ? '완료' : '수정'}</button>` : (summaryText ? `<span class="cdash-accordion-summary">${esc(summaryText)}${listSummary.mode === 'legacy' && listSummary.overflow ? ' +' + esc(listSummary.overflow) : ''}</span>` : '')}
       </div>
       <div class="cdash-accordion-body" id="cdashInsightAccBody" style="${open ? '' : 'display:none;'}">
         ${editing ? editHtml : bodyHtml}
@@ -11063,6 +11199,21 @@ window.SHIN2_CRM_APP_INIT = function(){
       refreshChart();
     });
     if(editing){
+      // §1차미팅 실전 기록 라운드 — 자유텍스트 입력칸(한줄 성향 등)이 폼 위쪽으로 옮겨오면서,
+      // 그 아래 체크박스/칩 추가 등 다른 조작을 할 때마다 renderInsightBlock이 전체를 다시
+      // 그려 draft에 반영 안 된 입력값이 사라지는 문제가 생겼다(실제 테스트로 재현 확인:
+      // 한줄 성향을 먼저 입력하고 다른 항목을 조작하면 저장 시 빈 값으로 덮어써짐). 저장
+      // 버튼 클릭 시점에만 DOM에서 읽던 방식 대신, 입력할 때마다 draft에도 즉시 반영해서
+      // 재렌더링을 견디게 한다(체크박스/칩이 이미 change 즉시 draft를 갱신하는 것과 동일한
+      // 원칙 — 저장 로직/필드 자체는 안 바뀜, 값이 사라지지 않게 하는 것뿐).
+      [
+        ['ciOneLinerInput','oneLiner'], ['ciMethodNoteInput','methodNote'], ['ciNextInput','nextAction'],
+        ['ciBackgroundNoteInput','backgroundNote'], ['ciBusinessNoteInput','businessNote'],
+        ['ciRawNoteInput','rawMeetingNote'], ['ciQuoteInput','keyQuote'], ['ciEvidenceInput','evidence']
+      ].forEach(([id, key])=>{
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', ()=>{ draft[key] = el.value; });
+      });
       // 체크박스 토글: 각 값이 있으면 제거, 없으면 추가만 한다(§2 "라디오처럼 기존 선택이
       // 해제되는 방식 금지" — 같은 카테고리 안에서도 서로 무관하게 켜고 끈다). 전체를
       // 다시 그리지 않아 포커스/스크롤이 안 흔들린다.
@@ -11150,10 +11301,32 @@ window.SHIN2_CRM_APP_INIT = function(){
         draft[arrName].splice(idx, 1);
         renderInsightBlock(co);
       }));
+      // §7 — "관련 업체/인물" 추가/삭제. relatedContacts는 {name, note} 객체 배열이라
+      // 이름만 담는 draft[arrName]용 범용 remove-name/companyChipRow와는 별도로 다룬다.
+      const contactAddBtn = document.getElementById('ciContactAddBtn');
+      if(contactAddBtn) contactAddBtn.addEventListener('click', ()=>{
+        const nameInput = document.getElementById('ciContactNameInput');
+        const noteInput = document.getElementById('ciContactNoteInput');
+        const name = nameInput.value.trim();
+        if(!name) return;
+        draft.relatedContacts.push({ name, note: noteInput.value.trim() });
+        renderInsightBlock(co);
+      });
+      wrap.querySelectorAll('[data-remove-contact]').forEach(btn=> btn.addEventListener('click', ()=>{
+        const idx = parseInt(btn.getAttribute('data-remove-contact'), 10);
+        draft.relatedContacts.splice(idx, 1);
+        renderInsightBlock(co);
+      }));
       document.getElementById('ciSaveBtn').addEventListener('click', ()=>{
         draft.keyQuote = document.getElementById('ciQuoteInput').value.trim();
         draft.nextAction = document.getElementById('ciNextInput').value.trim();
         draft.evidence = document.getElementById('ciEvidenceInput').value.trim();
+        // §1차미팅 실전 기록 라운드 §3/§6/§8 — 신규 자유텍스트 필드 저장(추가만).
+        draft.oneLiner = document.getElementById('ciOneLinerInput').value.trim();
+        draft.methodNote = document.getElementById('ciMethodNoteInput').value.trim();
+        draft.backgroundNote = document.getElementById('ciBackgroundNoteInput').value.trim();
+        draft.businessNote = document.getElementById('ciBusinessNoteInput').value.trim();
+        draft.rawMeetingNote = document.getElementById('ciRawNoteInput').value; // §6 "생각나는 대로" 원문 — 줄바꿈/공백까지 그대로 보존, trim 안 함
         D.setCustomerInsight(co.id, draft);
         cardState.sectionEdit.insight = false;
         cardState.insightDraft = null;
