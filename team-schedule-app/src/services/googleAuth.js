@@ -163,38 +163,20 @@ export async function fetchUserInfo(accessToken) {
   return res.json();
 }
 
-// ---- 세션(액세스 토큰) 저장 ----
-// localStorage를 사용해 앱을 완전히 껐다가 다시 켜도(데스크톱 앱 창을 새로
-// 열어도) 이전 로그인 정보가 남아있게 한다. 액세스 토큰 자체는 Google이
-// 발급한 짧은 수명(보통 1시간)의 토큰이라 그대로 저장해도 유출 시 위험이
-// 제한적이며, 순수 프론트엔드 토큰 클라이언트 방식에는애초에 refresh
-// token이 발급되지 않는다. 만료된 토큰은 loadSession()에서 자동으로
-// 무효 처리되고, 대신 EVER_CONNECTED_KEY를 별도로 남겨 "이전에 최소 한 번
-// 연결에 성공한 사용자"인지를 기억한다 — 이 값이 있으면 앱 실행 시 사용자
-// 상호작용 없이 조용히 토큰 재획득(prompt: '')을 시도하고, 그마저 실패할
-// 때만(=Google 세션 자체가 끊긴 경우) "Google 캘린더 연결" 버튼을 다시
-// 누르게 한다(Google Identity Services 권장 방식).
-export function saveSession(session) {
-  try {
-    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {
-    /* noop */
-  }
-}
-
-export function loadSession() {
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const session = JSON.parse(raw);
-    if (!session?.accessToken || !session?.expiresAt) return null;
-    if (Date.now() >= session.expiresAt - 30000) return null; // 만료 임박이면 무효 처리
-    return session;
-  } catch {
-    return null;
-  }
-}
-
+// ---- 세션(액세스 토큰) ----
+// access token은 절대 localStorage에 저장하지 않는다 — React state(메모리)
+// 에만 두고, 탭을 새로고침하거나 앱을 다시 열면 매번 사라진다. 대신
+// EVER_CONNECTED_KEY(민감하지 않은 boolean 플래그)만 남겨 "이전에 최소
+// 한 번 연결에 성공한 사용자"인지를 기억하고, 앱 시작 시 이 값이 있으면
+// 사용자 상호작용 없이 조용히 토큰을 다시 발급받는다(prompt: '' —
+// Google Identity Services 권장 방식). 순수 프론트엔드 토큰 클라이언트
+// 방식에는 애초에 refresh token이 발급되지 않으므로, "몇 주/몇 달 동안
+// 재로그인 없이" 유지하려면 서버 쪽에서 refresh token을 보관하는
+// Authorization Code Flow가 필요하다(이 앱은 GitHub Pages 정적 사이트라
+// 서버가 없어 적용하지 않았다).
+//
+// clearSession()은 과거 버전이 localStorage에 남겨뒀을 수 있는 access
+// token 흔적을 정리하기 위해서만 남겨둔다(이제 아무것도 쓰지 않음).
 export function clearSession() {
   try {
     window.localStorage.removeItem(SESSION_KEY);
@@ -224,6 +206,29 @@ export function markEverConnectedGoogle() {
 export function clearEverConnectedGoogle() {
   try {
     window.localStorage.removeItem(EVER_CONNECTED_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
+// 마지막으로 연결에 성공한 Google 계정 이메일(민감정보 아님 — 헤더에
+// 이미 그대로 표시됨). 저장해둔 캘린더 선택(managerCalendarId)이 지금
+// 로그인한 계정 것인지 판단하는 데만 쓴다 — 계정이 바뀌면 캘린더를
+// 다시 선택하게 하고, 같은 계정이면 그대로 기억해둔 값을 계속 쓴다.
+const LAST_CONNECTED_EMAIL_KEY = 'team-schedule-app:googleLastConnectedEmail';
+
+export function getLastConnectedEmail() {
+  try {
+    return window.localStorage.getItem(LAST_CONNECTED_EMAIL_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setLastConnectedEmail(email) {
+  try {
+    if (email) window.localStorage.setItem(LAST_CONNECTED_EMAIL_KEY, email);
+    else window.localStorage.removeItem(LAST_CONNECTED_EMAIL_KEY);
   } catch {
     /* noop */
   }

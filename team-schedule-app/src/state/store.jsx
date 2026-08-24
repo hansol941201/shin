@@ -13,12 +13,12 @@ import {
   requestAccessToken,
   revokeAccessToken,
   fetchUserInfo,
-  saveSession,
-  loadSession,
   clearSession,
   hasEverConnectedGoogle,
   markEverConnectedGoogle,
   clearEverConnectedGoogle,
+  getLastConnectedEmail,
+  setLastConnectedEmail,
 } from '../services/googleAuth.js';
 import {
   getDemoModeFlag,
@@ -307,6 +307,19 @@ export function AppProvider({ children }) {
 
   const googleActive = GOOGLE_CONFIGURED && googleSignedIn && Boolean(managerCalendarId) && Boolean(accessToken);
 
+  // 로그인한 Google 계정이 지난번과 달라졌으면, 예전 계정 기준으로
+  // 기억해둔 팀장 캘린더 선택을 그대로 쓰지 않고 초기화해서 다시
+  // 고르게 한다(같은 계정이면 아무것도 하지 않고 그대로 유지).
+  const reconcileAccountEmail = useCallback((email) => {
+    if (!email) return;
+    const last = getLastConnectedEmail();
+    if (last && last !== email) {
+      setManagerCalendarIdState('');
+      persistManagerCalendarId('');
+    }
+    setLastConnectedEmail(email);
+  }, []);
+
   const loadCalendars = useCallback(async (token) => {
     const tok = token;
     if (!tok) return;
@@ -321,26 +334,21 @@ export function AppProvider({ children }) {
     setCalendars(res.calendars);
   }, []);
 
-  // 앱을 껐다가 다시 켜도(데스크톱 앱 창을 새로 열어도) 매번 "Google 캘린더
-  // 연결"을 다시 누를 필요가 없도록 세션 복원을 시도한다.
-  // 1) 아직 유효한 토큰이 로컬에 남아있으면 그대로 복원.
-  // 2) 토큰은 만료됐지만 예전에 최소 한 번 연결에 성공한 적이 있다면,
-  //    사용자 상호작용 없이 조용히 재획득(prompt: '')을 시도한다. 이미 이
-  //    브라우저에 Google 로그인이 되어 있고 이 앱에 동의한 이력이 있으면
-  //    보통 팝업 없이 성공한다(Google 권장 방식).
-  // 3) 그마저 실패하면(=Google 세션 자체가 끊겼거나 동의가 철회됨) 조용히
-  //    포기하고 "Google 캘린더 연결" 버튼을 그대로 보여준다 — 오류 팝업을
-  //    띄우지 않는다.
+  // 앱을 껐다가 다시 켜도(탭 새로고침 포함) 매번 "Google 캘린더 연결"을
+  // 다시 누를 필요가 없도록, access token은 저장하지 않고 매번 조용히
+  // 다시 발급받는 방식으로 세션을 복원한다.
+  // 1) 예전에 최소 한 번이라도 연결에 성공한 적이 있다면(hasEverConnectedGoogle),
+  //    사용자 상호작용 없이 조용히 토큰 재획득(prompt: '')을 시도한다. 이미
+  //    이 브라우저에 Google 로그인이 되어 있고 이 앱에 동의한 이력이 있으면
+  //    보통 팝업 없이 성공한다(Google Identity Services 권장 방식).
+  // 2) 실패하면(=Google 세션 자체가 끊겼거나 동의가 철회된 경우 — 예: 계정
+  //    로그아웃, 권한 철회, 브라우저 정책으로 자동 인증 불가) 조용히 포기
+  //    하고 "Google 다시 연결" 버튼을 그대로 보여준다 — 오류 팝업을
+  //    띄우지 않는다. 매번 무조건 연결 버튼을 보여주는 게 아니라, 이
+  //    자동 재획득이 실패했을 때만 버튼을 노출하는 것이 핵심이다.
   useEffect(() => {
-    const session = loadSession();
-    if (session) {
-      setAccessToken(session.accessToken);
-      setGoogleUserEmail(session.email || '');
-      setGoogleSignedIn(true);
-      setGoogleRestoring(false);
-      loadCalendars(session.accessToken);
-      return;
-    }
+    // 과거 버전이 localStorage에 남겨뒀을 수 있는 access token 흔적 정리.
+    clearSession();
 
     if (!hasEverConnectedGoogle() || !GOOGLE_CONFIGURED || !GOOGLE_CLIENT_ID_VALID) {
       setGoogleRestoring(false);
@@ -357,17 +365,17 @@ export function AppProvider({ children }) {
         const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('silent-reauth-timeout')), 6000));
         const response = await Promise.race([requestAccessToken({ prompt: '' }), timeout]);
         if (cancelled) return;
-        const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
         const info = await fetchUserInfo(response.access_token);
         if (cancelled) return;
-        const newSession = { accessToken: response.access_token, expiresAt, email: info?.email || '' };
-        saveSession(newSession);
-        setAccessToken(newSession.accessToken);
-        setGoogleUserEmail(newSession.email);
+        // access token은 여기서 끝 — localStorage에는 저장하지 않고
+        // React state(메모리)에만 둔다.
+        setAccessToken(response.access_token);
+        setGoogleUserEmail(info?.email || '');
+        reconcileAccountEmail(info?.email || '');
         setGoogleSignedIn(true);
-        await loadCalendars(newSession.accessToken);
+        await loadCalendars(response.access_token);
       } catch {
-        // 조용히 실패 처리: 사용자가 직접 "Google 캘린더 연결"을 누르게 둔다.
+        // 조용히 실패 처리: 사용자가 직접 "Google 다시 연결"을 누르게 둔다.
       } finally {
         if (!cancelled) setGoogleRestoring(false);
       }
@@ -395,21 +403,22 @@ export function AppProvider({ children }) {
       } catch {
         response = await requestAccessToken({ prompt: 'consent' });
       }
-      const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
       const info = await fetchUserInfo(response.access_token);
-      const session = { accessToken: response.access_token, expiresAt, email: info?.email || '' };
-      saveSession(session);
+      // access token은 localStorage에 저장하지 않는다 — "다음에도 이
+      // 계정으로 연결한 적이 있다"는 사실만 markEverConnectedGoogle()로
+      // 기억해두고, 실제 토큰은 React state(메모리)에만 둔다.
       markEverConnectedGoogle();
-      setAccessToken(session.accessToken);
-      setGoogleUserEmail(session.email);
+      setAccessToken(response.access_token);
+      setGoogleUserEmail(info?.email || '');
+      reconcileAccountEmail(info?.email || '');
       setGoogleSignedIn(true);
-      await loadCalendars(session.accessToken);
+      await loadCalendars(response.access_token);
     } catch (err) {
       setGoogleAuthError(describeGoogleAuthError(err));
     } finally {
       setGoogleAuthLoading(false);
     }
-  }, [loadCalendars]);
+  }, [loadCalendars, reconcileAccountEmail]);
 
   // 사용자가 명시적으로 연결을 끊는 경우에만 "다음에 앱을 열 때도 조용히
   // 재연결을 시도"하는 표시(everConnected)까지 지운다. 그래야 로그아웃한
