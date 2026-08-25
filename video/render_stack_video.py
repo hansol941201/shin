@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops, ImageFilter
 
 import imageio_ffmpeg
 
@@ -47,6 +47,8 @@ ZOOM_END = 1.05
 ZOOM_SHAPE = 2.2
 
 PAPER_W = 1080.0    # 카메라 배율 1.0 기준 종이 가로 폭(px)
+
+BG_SS = 1.10        # 배경을 화면보다 크게 그려두고 카메라가 그 안을 파고든다
 
 # 장별 안착 위치/각도. 실제 서류 더미처럼 조금씩 어긋나게 배치한다.
 #   dx, dy      : 화면 중앙 기준 안착 오프셋(px)
@@ -85,28 +87,104 @@ def zoom_at(t):
 
 
 # ---------------------------------------------------------------- 배경
+BW, BH = int(round(W * BG_SS)), int(round(H * BG_SS))
+
+
+def _fields():
+    yy, xx = np.mgrid[0:BH, 0:BW].astype(np.float32)
+    return xx / (BW - 1.0), yy / (BH - 1.0)
+
+
 def make_background():
-    """짙은 네이비-차콜 그라데이션 + 중앙 은은한 광량 + 비네팅."""
+    """기존 톤(짙은 네이비 → 차콜, 중앙이 가장 밝은 배치)은 그대로 두고,
+    그 위에 부드러운 조명 · 옅은 추상 장식 · 바닥면 암시를 아주 낮은 대비로
+    얹어 공간감만 더한다. 장식은 문서가 놓이는 중앙에서 거의 지워지므로
+    시선은 계속 화면 한가운데에 머문다."""
+    fx, fy = _fields()
+    ar = BW / float(BH)
+
+    # 1) 세로 기본 그라데이션 (기존과 동일한 색 계열)
+    top = np.array([17, 27, 43], np.float32)
+    bot = np.array([7, 11, 18], np.float32)
+    img = top[None, None, :] * (1.0 - fy)[..., None] + bot[None, None, :] * fy[..., None]
+
+    # 2) 중앙 주광 — 문서가 놓일 자리가 가장 밝다
+    key = np.clip(1.0 - (((fx - 0.50) / 0.63) ** 2 + ((fy - 0.44) / 0.71) ** 2), 0, 1) ** 1.8
+    img += key[..., None] * np.array([14, 22, 36], np.float32)
+
+    # 3) 왼쪽 위에서 비스듬히 떨어지는 아주 약한 방향광
+    img += (np.clip(0.62 * (1.0 - fy) + 0.38 * (1.0 - fx), 0, 1) ** 2.4)[..., None] \
+        * np.array([3, 5, 8], np.float32)
+
+    # 4) 문서가 놓이는 면을 암시하는 옅은 수평 띠 + 아래쪽 감광
+    img += np.exp(-(((fy - 0.71) / 0.15) ** 2))[..., None] * np.array([3, 5, 9], np.float32)
+    img -= (np.clip((fy - 0.78) / 0.22, 0, 1) ** 1.5)[..., None] * np.array([3, 5, 8], np.float32)
+
+    # 5) 추상 장식 — 동심원 호, 사선 광선, 큰 블러 덩어리, 헤어라인
+    dec = np.zeros((BH, BW), np.float32)
+
+    def arcs(cx, cy, radii, width, weight):
+        r = np.sqrt(((fx - cx) * ar) ** 2 + (fy - cy) ** 2)
+        for rad in radii:
+            dec[:] += weight * np.exp(-(((r - rad) / width) ** 2))
+
+    arcs(-0.14, -0.10, (0.62, 0.80, 1.03, 1.29), 0.016, 0.90)
+    arcs(1.16, 1.12, (0.52, 0.68, 0.92), 0.018, 0.75)
+
+    sweep = fx * 0.60 + fy * 0.80
+    dec += 0.45 * np.exp(-(((sweep - 0.34) / 0.13) ** 2))
+    dec += 0.28 * np.exp(-(((sweep - 1.14) / 0.10) ** 2))
+
+    for bx, by, bs, bw in ((0.13, 0.20, 0.26, 0.40), (0.89, 0.16, 0.23, 0.34),
+                           (0.08, 0.86, 0.24, 0.32), (0.94, 0.84, 0.22, 0.28)):
+        dec += bw * np.exp(-(((fx - bx) ** 2 + ((fy - by) / ar) ** 2) / (2 * bs * bs)))
+
+    line = fx * 0.88 - fy * 0.47
+    for c in (-0.26, -0.11, 0.04, 0.36, 0.55, 0.70):
+        dec += 0.42 * np.exp(-(((line - c) / 0.0030) ** 2))
+
+    guard = 1.0 - 0.94 * np.exp(-((((fx - 0.5) / 0.36) ** 2) + (((fy - 0.50) / 0.30) ** 2)))
+    dec = np.clip(dec, 0.0, 1.0) * guard
+    img += dec[..., None] * np.array([7, 11, 18], np.float32)
+
+    # 6) 비네팅 — 가장자리를 눌러 중앙으로 시선을 모은다
+    r2 = ((fx - 0.5) / 0.5) ** 2 + ((fy - 0.5) / 0.5) ** 2
+    img *= np.clip(1.0 - 0.36 * r2 ** 1.35, 0.0, 1.0)[..., None]
+
+    return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB")
+
+
+def make_pool_mask():
+    """더미 아래에 넓게 깔리는 은은한 앰비언트 그림자."""
+    fx, fy = _fields()
+    d = ((fx - 0.500) / 0.42) ** 2 + ((fy - 0.545) / 0.20) ** 2
+    pool = np.exp(-(d ** 1.05)) - np.exp(-1.0)
+    pool = np.clip(pool / (1.0 - np.exp(-1.0)), 0.0, 1.0)
+    return Image.fromarray((pool * 255).astype(np.uint8), "L")
+
+
+def make_grain():
+    """화면 고정형 미세 질감. 반해상도 노이즈를 키워 필름 그레인처럼 뭉치게 한다."""
+    rng = np.random.default_rng(20260825)
+    small = rng.normal(0.0, 3.0, (H // 2, W // 2, 3)).astype(np.float32)
+    small += rng.normal(0.0, 1.2, (H // 2, W // 2, 1))
+    g = Image.fromarray(np.clip(small + 128.0, 0, 255).astype(np.uint8), "RGB")
+    return g.resize((W, H), Image.BILINEAR)
+
+
+def make_lens_vignette():
+    """합성이 끝난 화면 전체에 아주 약하게 얹는 렌즈 비네팅."""
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    v = yy / (H - 1.0)
+    r2 = ((xx / (W - 1.0) - 0.5) / 0.5) ** 2 + ((yy / (H - 1.0) - 0.5) / 0.5) ** 2
+    v = np.clip(1.0 - 0.10 * r2 ** 1.4, 0.0, 1.0) * 255.0
+    return Image.merge("RGB", [Image.fromarray(v.astype(np.uint8), "L")] * 3)
 
-    top = np.array([17, 26, 41], np.float32)
-    bottom = np.array([8, 12, 20], np.float32)
-    bg = top[None, None, :] * (1.0 - v)[..., None] + bottom[None, None, :] * v[..., None]
 
-    # 더미가 놓일 자리에 아주 옅은 광량
-    nx = (xx - W * 0.5) / (W * 0.62)
-    ny = (yy - H * 0.46) / (H * 0.70)
-    glow = np.clip(1.0 - (nx * nx + ny * ny), 0.0, 1.0) ** 1.8
-    bg += glow[..., None] * np.array([13, 21, 34], np.float32)
-
-    # 비네팅
-    vx = (xx - W * 0.5) / (W * 0.5)
-    vy = (yy - H * 0.5) / (H * 0.5)
-    vign = np.clip(1.0 - 0.34 * (vx * vx + vy * vy) ** 1.25, 0.0, 1.0)
-    bg *= vign[..., None]
-
-    return Image.fromarray(np.clip(bg, 0, 255).astype(np.uint8), "RGB")
+def cam_crop(img, z):
+    """배경/풀 마스크에서 카메라 배율 z에 해당하는 영역을 잘라 화면 크기로."""
+    cw, ch = BW / z, BH / z
+    box = ((BW - cw) / 2.0, (BH - ch) / 2.0, (BW + cw) / 2.0, (BH + ch) / 2.0)
+    return img.resize((W, H), Image.BICUBIC, box=box)
 
 
 # ---------------------------------------------------------------- 종이 그리기
@@ -154,6 +232,10 @@ def main():
     paper_h = PAPER_W / aspect
 
     background = make_background()
+    pool_mask = make_pool_mask()
+    grain = make_grain()
+    lens_vignette = make_lens_vignette()
+    black_full = Image.new("RGB", (W, H), (0, 0, 0))
     cx0, cy0 = W / 2.0, H / 2.0
 
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
@@ -174,7 +256,22 @@ def main():
     for f in range(N_FRAMES):
         t = f / float(FPS)
         z = zoom_at(t)
-        frame = background.copy()
+
+        # 배경(카메라 배율 반영) + 화면 고정 미세 질감
+        frame = cam_crop(background, z)
+        frame = ImageChops.add(frame, grain, 1.0, -128)
+
+        # 더미가 쌓일수록 바닥에 넓은 앰비언트 그림자가 서서히 짙어진다
+        settled = 0.0
+        for i, cfg in enumerate(LAYOUT):
+            ts = T_FIRST + i * STAGGER
+            if t < ts:
+                break
+            settled += min(max(ease_land(min((t - ts) / DROP, 1.0)), 0.0), 1.0)
+        if settled > 0.0:
+            opacity = 0.30 * (settled / len(LAYOUT))
+            lut = [int(round(v * opacity)) for v in range(256)]
+            frame.paste(black_full, (0, 0), cam_crop(pool_mask, z).point(lut))
 
         for i, cfg in enumerate(LAYOUT):
             t_start = T_FIRST + i * STAGGER
@@ -210,6 +307,7 @@ def main():
 
             paste_paper(frame, sources[i], w, h, angle, x, y)
 
+        frame = ImageChops.multiply(frame, lens_vignette)
         proc.stdin.write(frame.tobytes())
         if (f + 1) % 30 == 0:
             print("  %3d / %d 프레임" % (f + 1, N_FRAMES), flush=True)

@@ -10,3 +10,6 @@ node_modules/
 # 렌더 스크립트 캐시
 __pycache__/
 *.pyc
+
+# 모자이크 처리 전 원본 문서 이미지(개인정보 포함) — 커밋 금지
+video/_src_private/
