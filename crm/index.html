@@ -982,6 +982,27 @@
   .pi-note{ font-size:11.5px; color:var(--text-muted); margin-bottom:10px; }
   .pi-result-box{ background:#F5F7FA; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
 
+  /* §전화 요청 기록 라운드(신규) — .pi-overlay/.pi-panel/.pi-head/.pi-title/.pi-body를
+     그대로 재사용하고(새 모달 디자인 시스템 안 만듦) 폭만 좁힌다(§요청사항 "모달을 과도
+     하게 크게 만들지 마"). 필드 사이 간격은 co-form-field, 선택형 버튼은 고객 인사이트
+     수정화면과 같은 .insight-check-item을 그대로 재사용해 디자인 톤을 통일한다. */
+  .phone-req-panel{ max-width:440px; }
+  .phone-req-body .co-form-field{ margin-bottom:12px; max-width:none; }
+  .phone-req-field-label{ font-size:12px; font-weight:650; color:var(--text); margin-bottom:5px; }
+  .phone-req-materials-extra{ margin-top:6px; }
+  .phone-req-err{ color:#B91C1C; font-size:12px; margin-bottom:8px; }
+  .phone-req-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+  /* 저장 완료 안내 — 화면 어디서 저장하든(§요청사항 "작은 완료 안내") 잠깐 떴다 사라지는
+     토스트 하나. 이 파일에 기존 toast 컴포넌트가 없어 최소 형태로 새로 만들었다. */
+  .phone-req-toast{
+    position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(8px);
+    background:var(--navy); color:#fff; font-size:12.5px; font-weight:600;
+    padding:10px 16px; border-radius:8px; box-shadow:0 8px 24px rgba(23,48,92,.28);
+    z-index:500; opacity:0; transition:opacity .18s ease, transform .18s ease; pointer-events:none;
+  }
+  .phone-req-toast.is-visible{ opacity:1; transform:translateX(-50%) translateY(0); }
+  @media (prefers-reduced-motion: reduce){ .phone-req-toast{ transition:none; } }
+
   /* ==========================================================================
      영업 대시보드형 고객카드(§ 한 장짜리 영업 대시보드 라운드) — 3단 고정 구조:
      1단 헤더(진한 남색 바) + 4분할, 2단 고객 주요 질문(전체 폭), 3단 반응/액션/요약 3분할.
@@ -2046,6 +2067,11 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
             <button type="button" id="crmSyncDiagBtn">동기화 진단(업체 1건 추적)</button>
           </div>
         </div>
+        <!-- §전화 요청 기록 라운드(신규) — "+ 고객 등록"과 같은 줄, 작은 보조 버튼으로
+             배치(§요청사항 "작은 버튼"). 새 데이터/화면 체계가 아니라 기존
+             addActivity/requestedMaterials를 그대로 쓰는 입력 지름길일 뿐이라 주 CTA인
+             "+ 고객 등록"보다 튀지 않게 list-secondary-link 톤을 그대로 쓴다. -->
+        <button type="button" id="crmPhoneRequestBtn" class="list-secondary-link">+ 전화 요청 기록</button>
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
       </div>
     </div>
@@ -2137,6 +2163,10 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
        totalRevenuePopoverRoot와 완전히 같은 패턴(overlay 없음, position:fixed 작은 카드만,
        바깥클릭/ESC로 닫힘). -->
   <div id="insightPopoverRoot"></div>
+  <!-- §전화 요청 기록 라운드(신규): 목록 상단 "+ 전화 요청 기록" 버튼이 여는 중앙 모달
+       전용 root — 다른 중앙 모달과 같은 .pi-overlay/.pi-panel 패턴, 폭만 작게(§요청사항
+       "모달을 과도하게 크게 만들지 마"). -->
+  <div id="phoneReqModalRoot"></div>
 </div>
 
 <script>
@@ -3807,7 +3837,11 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
      얹는다. sourceType은 'manual'(직원이 직접 추가) 또는 'call-extract'(전화기록 원문에서
      규칙 기반으로 자동 추출)이다.
      ================================================================ */
-  const REQUESTED_MATERIAL_TYPES = ['단가표','시방서','실적자료','카탈로그','특허자료','시험성적서','협약업체리스트','MSDS'];
+  // §전화 요청 기록 라운드(신규) — "전화 요청 기록" 모달의 자료 체크리스트(회사소개서/
+  // 시공사례/견적서/도면)가 이미 있던 8종과 겹치지 않으므로 뒤에 이어붙인다(§ 기존 프리셋은
+  // 절대 안 지우고 합집합으로만 확장하는 이 세션의 관례 그대로 — 카탈로그/시험성적서는
+  // 이미 있어서 다시 추가하지 않음).
+  const REQUESTED_MATERIAL_TYPES = ['단가표','시방서','실적자료','카탈로그','특허자료','시험성적서','협약업체리스트','MSDS','회사소개서','시공사례','견적서','도면'];
   const REQUESTED_MATERIAL_STATUSES = ['요청','준비중','발송완료'];
   function addRequestedMaterial(companyId, fields){
     const co = findCompany(companyId); if(!co) return null;
@@ -3839,10 +3873,68 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     if(exists) return null;
     return addRequestedMaterial(companyId, fields);
   }
+  /* ==========================================================================
+     §전화 요청 기록 라운드(신규) — "고객관리 목록 상단 + 전화 요청 기록" 모달의 저장
+     동작을 한 곳에 모은 오케스트레이터. 새 저장소를 전혀 만들지 않는다:
+     ①activityText를 만들어 기존 addActivity(companyId, text)로 customerActivities에
+     한 건 추가(§ 기존 전화기록 구조 그대로) ②선택된 자료마다 방금 만든 활동의 id를
+     sourceActivityId로 넘겨 기존 addRequestedMaterialIfNew로 co.requestedMaterials에
+     추가(멱등 — 같은 자료를 두 번 넘겨도 중복 저장 안 됨, 아래서 호출 전에 한 번 더
+     Set으로 중복 제거도 해 둔다). activityText 자체도 "요청" 표현 + 자료명을 그대로
+     포함하도록 만들어서 기존 extractRequestLabelsFromText/buildRequestHistory(Index)가
+     별도 수정 없이 바로 이 기록을 인식한다(§ 새 추출기 없음). companies/customerActivities
+     레코드는 updateCompany/saveActivities를 통해서만 patch되므로 기존 메모·인사이트·다른
+     업체 데이터는 전혀 건드리지 않는다.
+     ========================================================================== */
+  function logPhoneRequest(companyId, fields){
+    const co = findCompany(companyId); if(!co) return null;
+    const requestType = (fields.requestType || '').trim();
+    const requestContent = (fields.requestContent || '').trim();
+    const callMemo = (fields.callMemo || '').trim();
+    const nextAction = (fields.nextAction || '').trim();
+    const dueDate = (fields.dueDate || '').trim(); // YYYY-MM-DD(<input type=date> 원본값)
+    // 같은 자료를 체크리스트+직접입력 양쪽에 똑같이 넣어도(예: 체크 "카탈로그" + 직접입력
+    // "카탈로그") 한 번만 반영되도록 여기서 먼저 중복을 없앤다.
+    const materials = Array.from(new Set((fields.materials || []).map(m=> String(m || '').trim()).filter(Boolean)));
+    const materialsText = materials.length ? materials.join(', ') + ' 요청' : '';
+    const parts = ['전화'];
+    if(requestType) parts.push(requestType);
+    if(materialsText) parts.push(materialsText);
+    else if(requestContent) parts.push(requestContent);
+    if(callMemo) parts.push(callMemo);
+    else if(nextAction) parts.push(nextAction);
+    const activityText = parts.join(' · ');
+    const rec = addActivity(companyId, activityText);
+    const addedMaterials = [];
+    materials.forEach(m=>{
+      const added = addRequestedMaterialIfNew(companyId, {
+        materialType: m, evidence: requestContent || activityText,
+        sourceType: 'manual', sourceActivityId: rec.id
+      });
+      if(added) addedMaterials.push(added);
+    });
+    // §전화 요청 기록 라운드(신규) — "다음 행동"/"예정일"은 이미 있는 co.nextActions
+    // 구조(§9 "새 저장소를 만들지 않고 기존 활동기록을 재사용"과 같은 원칙)를 그대로 쓴다.
+    // 예정일을 저장할 전용 필드는 이 파일 어디에도 없어서(§13 "다음 확인일을 안전하게
+    // 저장할 기존 필드가 없어... 보류"), 새 필드를 만드는 대신 텍스트에 사람이 읽을 수
+    // 있게 그대로 포함한다 — 값 자체를 지어내지 않고 입력받은 그대로만 붙인다.
+    let addedNextAction = null;
+    if(nextAction){
+      const naText = dueDate ? (nextAction + ' (예정일 ' + dueDate.replace(/-/g, '.') + ')') : nextAction;
+      addedNextAction = addNextAction(companyId, naText, requestContent || activityText);
+    }
+    return { activity: rec, addedMaterials, addedNextAction, companyId };
+  }
   const REQUEST_MATERIAL_KEYWORDS = {
     '단가표': ['단가표','가격표'], '시방서': ['시방서'], '실적자료': ['실적자료','시공실적'],
     '카탈로그': ['카탈로그'], '특허자료': ['특허자료','특허증'], '시험성적서': ['시험성적서','성적서'],
-    '협약업체리스트': ['협약업체','협력업체 리스트'], 'MSDS': ['msds']
+    '협약업체리스트': ['협약업체','협력업체 리스트'], 'MSDS': ['msds'],
+    // §전화 요청 기록 라운드(신규) — 위 REQUESTED_MATERIAL_TYPES 확장분과 짝을 맞춘
+    // 키워드. ALL_REQUEST_KEYWORDS(REQUEST_MATERIAL_KEYWORDS ∪ EXTRA_REQUEST_KEYWORDS)에도
+    // 그대로 합쳐져서 "최근 요청" 라벨 추출(extractRequestLabelsFromText)이 전화 요청
+    // 기록으로 만든 활동 텍스트도 그대로 인식한다(§ 새 추출기를 따로 만들지 않음).
+    '회사소개서': ['회사소개서','회사 소개서'], '시공사례': ['시공사례','시공 사례'],
+    '견적서': ['견적서'], '도면': ['도면']
   };
   // "단가 관련 이야기함"처럼 자료명만 언급된 경우를 요청으로 오판하지 않도록, 명확한
   // 요청 표현이 같은 문장에 함께 있을 때만 추출한다(§15).
@@ -5113,7 +5205,8 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     previewPartnerImport, applyPartnerImport,
     previewPourTrackImport, applyPourTrackImport,
     REQUESTED_MATERIAL_TYPES, REQUESTED_MATERIAL_STATUSES,
-    addRequestedMaterial, removeRequestedMaterial, setRequestedMaterialStatus, extractRequestedMaterialsFromActivities,
+    addRequestedMaterial, addRequestedMaterialIfNew, removeRequestedMaterial, setRequestedMaterialStatus, extractRequestedMaterialsFromActivities,
+    logPhoneRequest,
     buildUnregisteredCompanies, getCompany2025Revenue, getCompany2024Revenue, getCompanyTotalRevenueAllYears,
     buildRevenue2026Index, getCompany2026Revenue, buildUnregisteredCompanies2026,
     getCompanyReceivable, buildReceivableCompanies,
@@ -13569,7 +13662,159 @@ window.SHIN2_CRM_APP_INIT = function(){
     }
   }
 
+  /* ==========================================================================
+     §전화 요청 기록 라운드(신규) — 목록 상단 "+ 전화 요청 기록" 버튼이 여는 작은 중앙
+     모달. 저장 시 새 저장소를 전혀 만들지 않고 D.logPhoneRequest(위, SHIN2_CRM_DATA)만
+     호출한다 — 이 스크립트는 화면(입력 수집/검증/렌더링)만 담당한다. 업체는 반드시
+     companyId로만 연결한다(§요청사항) — 업체명은 datalist 후보를 보여주는 입력 보조일
+     뿐이고, 저장 직전 정확히 일치하는 기존 업체(D.loadCompanies())를 다시 찾아 그 id를
+     쓴다(§업체명 관계표시 라운드의 cdashRelationAddBtn과 완전히 같은 검증 패턴 재사용 —
+     부분/유사일치로 새 업체를 만들지 않는다).
+     ========================================================================== */
+  const PHONE_REQ_TYPES = ['자료 요청','견적 문의','기술 문의','미팅 요청','기타'];
+  const PHONE_REQ_MATERIAL_OPTIONS = ['회사소개서','시공사례','견적서','시험성적서','카탈로그','도면','기타'];
+  let phoneReqState = null;
+  function openPhoneRequestModal(){
+    phoneReqState = {
+      companyName: '', requestType: PHONE_REQ_TYPES[0], requestContent: '',
+      materials: [], materialsCustom: '', callMemo: '', nextAction: '', dueDate: '', error: ''
+    };
+    renderPhoneRequestModal();
+  }
+  function closePhoneRequestModal(){
+    phoneReqState = null;
+    const root = document.getElementById('phoneReqModalRoot');
+    if(root) root.innerHTML = '';
+  }
+  // 이 파일에 기존 toast 컴포넌트가 없어 최소 형태로 새로 만들었다(§요청사항 "작은 완료
+  // 안내") — 별도 상태 저장 없이 DOM에 붙였다가 잠깐 후 스스로 지워진다.
+  function showPhoneReqToast(msg){
+    const el = document.createElement('div');
+    el.className = 'phone-req-toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(()=> el.classList.add('is-visible'));
+    setTimeout(()=>{
+      el.classList.remove('is-visible');
+      setTimeout(()=> el.remove(), 220);
+    }, 1800);
+  }
+  function renderPhoneRequestModal(){
+    const root = document.getElementById('phoneReqModalRoot');
+    if(!root) return;
+    if(!phoneReqState){ root.innerHTML = ''; return; }
+    const s = phoneReqState;
+    const companies = D.loadCompanies();
+    root.innerHTML = `
+      <div class="pi-overlay" id="phoneReqOverlay">
+        <div class="pi-panel phone-req-panel" role="dialog" aria-modal="true" aria-label="전화 요청 기록">
+          <div class="pi-head">
+            <div class="pi-title">전화 요청 기록</div>
+            <button type="button" class="chart-close-btn" id="phoneReqCloseBtn" aria-label="닫기">&times;</button>
+          </div>
+          <div class="pi-body phone-req-body">
+            ${s.error ? `<div class="phone-req-err">${esc(s.error)}</div>` : ''}
+            <div class="co-form-field">
+              <div class="phone-req-field-label">업체 선택</div>
+              <input type="text" id="phoneReqCompanyInput" list="phoneReqCompanyList" placeholder="업체명 입력 후 목록에서 선택" value="${esc(s.companyName)}" />
+              <datalist id="phoneReqCompanyList">${companies.map(c=> `<option value="${esc(c.name)}"></option>`).join('')}</datalist>
+            </div>
+            <div class="co-form-field">
+              <div class="phone-req-field-label">요청 유형</div>
+              <div class="insight-check-grid">
+                ${PHONE_REQ_TYPES.map(t=> `<span class="insight-check-item${s.requestType === t ? ' is-checked' : ''}" data-phonereq-type="${esc(t)}" tabindex="0" role="button">${esc(t)}</span>`).join('')}
+              </div>
+            </div>
+            <div class="co-form-field">
+              <div class="phone-req-field-label">요청 내용</div>
+              <textarea id="phoneReqContentInput" rows="2" placeholder="예: 회사소개서와 시공사례 자료를 보내달라고 요청">${esc(s.requestContent)}</textarea>
+            </div>
+            <div class="co-form-field">
+              <div class="phone-req-field-label">요청받은 자료</div>
+              <div class="insight-check-grid">
+                ${PHONE_REQ_MATERIAL_OPTIONS.map(m=> `<label class="insight-check-item${s.materials.includes(m) ? ' is-checked' : ''}"><input type="checkbox" value="${esc(m)}" ${s.materials.includes(m) ? 'checked' : ''}/><span class="insight-choice-label">${esc(m)}</span></label>`).join('')}
+              </div>
+              <div class="phone-req-materials-extra">
+                <input type="text" id="phoneReqMaterialsCustomInput" placeholder="직접 입력(쉼표로 구분)" value="${esc(s.materialsCustom)}" />
+              </div>
+            </div>
+            <div class="co-form-field">
+              <div class="phone-req-field-label">통화 메모 (선택)</div>
+              <textarea id="phoneReqMemoInput" rows="2" placeholder="예: 유지보수 현장 적용 가능 여부도 문의">${esc(s.callMemo)}</textarea>
+            </div>
+            <div class="co-form-field">
+              <div class="phone-req-field-label">다음 행동 (선택)</div>
+              <input type="text" id="phoneReqNextInput" placeholder="예: 회사소개서 전달, 견적서 준비" value="${esc(s.nextAction)}" />
+            </div>
+            <div class="co-form-field">
+              <div class="phone-req-field-label">예정일 (선택)</div>
+              <input type="date" id="phoneReqDueInput" value="${esc(s.dueDate)}" />
+            </div>
+            <div class="phone-req-actions">
+              <button type="button" class="co-text-action" id="phoneReqCancelBtn">취소</button>
+              <button type="button" class="co-text-action primary" id="phoneReqSaveBtn">기록 저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('phoneReqCloseBtn').addEventListener('click', closePhoneRequestModal);
+    document.getElementById('phoneReqCancelBtn').addEventListener('click', closePhoneRequestModal);
+    document.getElementById('phoneReqOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'phoneReqOverlay') closePhoneRequestModal(); });
+
+    const companyInput = document.getElementById('phoneReqCompanyInput');
+    companyInput.addEventListener('input', ()=>{ s.companyName = companyInput.value; });
+
+    root.querySelectorAll('[data-phonereq-type]').forEach(chip=>{
+      chip.addEventListener('click', ()=>{ s.requestType = chip.getAttribute('data-phonereq-type'); renderPhoneRequestModal(); });
+      chip.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); chip.click(); } });
+    });
+    root.querySelectorAll('.insight-check-grid input[type=checkbox]').forEach(input=>{
+      input.addEventListener('change', ()=>{
+        const v = input.value;
+        const idx = s.materials.indexOf(v);
+        if(input.checked){ if(idx === -1) s.materials.push(v); }
+        else if(idx !== -1) s.materials.splice(idx, 1);
+        input.closest('.insight-check-item').classList.toggle('is-checked', input.checked);
+      });
+    });
+    [
+      ['phoneReqContentInput','requestContent'], ['phoneReqMaterialsCustomInput','materialsCustom'],
+      ['phoneReqMemoInput','callMemo'], ['phoneReqNextInput','nextAction'], ['phoneReqDueInput','dueDate']
+    ].forEach(([id, key])=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('input', ()=>{ s[key] = el.value; });
+    });
+
+    document.getElementById('phoneReqSaveBtn').addEventListener('click', (e)=>{
+      const name = (companyInput.value || '').trim();
+      if(!name){ s.error = '업체를 선택해주세요.'; renderPhoneRequestModal(); return; }
+      // §업체명 관계표시 라운드와 같은 원칙 — 정확히 일치하는 기존 업체명만 허용한다
+      // (부분/유사일치 금지, 새 업체를 임의 생성하지 않는다).
+      const target = companies.find(c=> c.name === name);
+      if(!target){ s.error = 'CRM에 등록된 정확한 업체명을 목록에서 선택해주세요.'; renderPhoneRequestModal(); return; }
+      if(!s.requestContent.trim()){ s.error = '요청 내용을 입력해주세요.'; renderPhoneRequestModal(); return; }
+      const customMaterials = s.materialsCustom.split(',').map(x=> x.trim()).filter(Boolean);
+      const materials = s.materials.concat(customMaterials);
+      e.currentTarget.disabled = true;
+      D.logPhoneRequest(target.id, {
+        requestType: s.requestType, requestContent: s.requestContent, materials,
+        callMemo: s.callMemo, nextAction: s.nextAction, dueDate: s.dueDate
+      });
+      const savedName = target.name;
+      closePhoneRequestModal();
+      // §요청사항 "저장 후 목록을 다시 렌더링하고, 방금 기록한 업체가 바로 갱신되게" —
+      // 최근 활동/최근 요청/요청자료는 전부 렌더링할 때마다 다시 계산되는 값이라(별도
+      // 캐시 없음) renderList() 한 번이면 목록 쪽은 즉시 반영되고, 이 업체의 고객카드는
+      // 다음에 열 때 activitiesForCompany/co.requestedMaterials를 그대로 다시 읽어
+      // 자동으로 최신 상태가 된다(§ 새 push 배선 불필요).
+      renderList();
+      showPhoneReqToast('전화 요청 기록을 저장했습니다 — ' + savedName);
+    });
+  }
+
   // ---------------- 진입 ----------------
+  document.getElementById('crmPhoneRequestBtn').addEventListener('click', openPhoneRequestModal);
   document.getElementById('crmAddBtn').addEventListener('click', openAddCompanyForm);
   // 기존 두 함수(openPartnerImportModal/openPourImportModal)는 그대로 두고, 드롭다운 메뉴
   // 항목을 눌렀을 때 각각 그대로 호출한다 — 메뉴 클릭 후에는 메뉴를 닫는다.
