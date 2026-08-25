@@ -490,13 +490,71 @@
      배지는 항상 딱 1개(§11 "태그 여러 개 나열 금지" 유지), 폭이 좁아도 컬럼 밖으로
      넘치지 않도록 max-width:100%를 그대로 상속한다. */
   .insight-tag-lead{ margin-bottom:2px; }
-  /* §고객 인사이트 복수선택 라운드 §2/§10 — 카테고리별 체크박스 다중선택 그리드(작은 칩
-     형태, 현재 .insight-tag/co-field와 같은 네이비/화이트 톤 유지, §21 "새 디자인 시스템
-     금지"). */
-  .insight-check-grid{ display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
-  .insight-check-item{ display:inline-flex; align-items:center; gap:4px; padding:3px 8px; font-size:11.5px; border:1px solid #dce5ef; border-radius:14px; cursor:pointer; background:#fff; user-select:none; }
-  .insight-check-item input{ margin:0; }
-  .insight-check-item.is-checked{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  /* §고객 인사이트 복수선택 라운드 §2/§10 — 카테고리별 체크박스 다중선택 그리드. §고객
+     인사이트 수정화면 정리 라운드(신규)에서 "알약 칩 나열"을 "작은 사각형 선택 항목"으로
+     바꿨다 — 데이터/이벤트 구조(checkbox change, data-insight-cat 등)는 전혀 안 건드리고
+     보이는 모양만 바꾼 것. 항목 간격 6px(§요청사항 그대로). */
+  .insight-check-grid{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .insight-check-item{
+    display:flex; align-items:center; gap:6px; position:relative;
+    padding:6px 10px; font-size:12px; font-weight:600; line-height:1.25;
+    border:1px solid var(--line); border-radius:6px; cursor:pointer;
+    background:#fff; color:#334155; user-select:none;
+  }
+  /* 네이티브 checkbox는 시각적으로만 숨긴다(§요청사항 "label 클릭과 키보드 접근성은
+     유지") — display:none 대신 화면 밖으로 클립만 해서 Tab 포커스/스크린리더는 그대로
+     인식하고, change 이벤트도 기존과 완전히 동일하게 동작한다. */
+  .insight-check-item input[type=checkbox]{
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  /* 체크 표시는 checkbox가 아닌 radio 칩/사전 검색 칩(둘 다 같은 .insight-check-item
+     클래스를 재사용)에도 똑같이 필요해서, input 유무와 무관하게 클래스 하나로 그린다. */
+  .insight-check-item::before{
+    content:''; flex:none; width:14px; height:14px; border-radius:4px;
+    border:1.5px solid #cbd5e1; background:#fff; box-sizing:border-box;
+  }
+  /* §요청사항 "선택 항목 전체를 진한 네이비로 칠하지 마" — 배경은 아주 옅은 네이비 톤만,
+     체크 표시(왼쪽 작은 사각형)만 진한 네이비로 채운다. */
+  .insight-check-item.is-checked{ background:rgba(23,48,92,.06); border-color:rgba(23,48,92,.35); color:var(--navy); }
+  .insight-check-item.is-checked::before{
+    content:'✓'; display:flex; align-items:center; justify-content:center;
+    background:var(--navy); border-color:var(--navy); color:#fff; font-size:9.5px; font-weight:800;
+  }
+  .insight-check-item:focus-within{ outline:2px solid var(--navy); outline-offset:1px; }
+  .insight-choice-label{ overflow:hidden; text-overflow:ellipsis; }
+  /* §고객 인사이트 수정화면 정리 라운드(신규) — 편집 화면 상단(한줄 성향/다음 대응)은
+     기존 .co-form-field(max-width:520px)보다 넓게 쓴다. */
+  .insight-edit-top{ display:flex; flex-direction:column; gap:12px; margin-bottom:18px; }
+  .insight-edit-top .co-form-field{ max-width:none; margin-bottom:0; }
+  /* 카테고리 2열 그리드 — 좁은 화면(≤760px, 다른 카드 상세 2열 영역과 같은 기준점)에서는
+     자동 1열로 전환. 각 카테고리는 흰 카드가 아니라 얇은 구분선 하나로만 구분한다. */
+  .insight-edit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; margin-bottom:18px; }
+  @media (max-width:760px){ .insight-edit-grid{ grid-template-columns:1fr; } }
+  .insight-edit-section{ padding-bottom:14px; border-bottom:1px solid var(--line); min-width:0; }
+  .insight-section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .insight-section-title{ font-size:12.5px; font-weight:700; color:var(--text); }
+  .insight-section-count{ font-size:11px; color:var(--text-muted); font-weight:600; white-space:nowrap; }
+  /* 현재 사용공법/선호 업체·공법/관계·인맥처럼 입력요소가 많은 영역만 접을 수 있는
+     소그룹으로 — 제목 버튼 전체가 클릭 영역(키보드 Tab+Enter로도 접근 가능한 <button>). */
+  .insight-collapsible-toggle{
+    display:flex; width:100%; align-items:center; justify-content:space-between; gap:8px;
+    background:none; border:none; padding:0; margin:0 0 8px; cursor:pointer; font:inherit; text-align:left; color:inherit;
+  }
+  .insight-edit-collapsible .insight-collapsible-toggle{ margin-bottom:0; }
+  .insight-edit-collapsible[data-open="true"] .insight-collapsible-toggle{ margin-bottom:8px; }
+  .insight-section-head-right{ display:flex; align-items:center; gap:6px; flex:none; }
+  .insight-collapsible-chevron{ font-size:9px; color:var(--text-muted); }
+  .insight-edit-collapsible-body{ margin-top:2px; }
+  .insight-edit-extra{ margin-bottom:8px; }
+  /* 저장 버튼 — 편집 영역 하단 오른쪽, 스크롤 중에도 항상 보이도록 sticky(§요청사항
+     "스크롤 중에도 찾기 쉽게"). .cdash-body가 실제 스크롤 컨테이너라 bottom:0 기준으로
+     그 안에서 붙는다. */
+  .insight-edit-save-bar{
+    position:sticky; bottom:-1px; margin-top:4px; padding:10px 0 4px;
+    display:flex; justify-content:flex-end;
+    background:linear-gradient(to top, #fff 55%, rgba(255,255,255,0));
+  }
   .insight-view-group{ margin-bottom:10px; }
   .insight-view-group-title{ font-size:10.5px; color:var(--text-muted); margin-bottom:3px; font-weight:650; }
   .insight-tag-x{ background:none; border:none; color:#94a3b8; cursor:pointer; padding:0 0 0 3px; font-size:11px; line-height:1; }
@@ -5901,6 +5959,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardState.accordionOpen = { info: false, docs: false, insight: false }; // §고객카드 아코디언 라운드/§고객 성향 컬럼 라운드 §4: 업체를 새로 열 때는 항상 접힘부터 시작(§4, 별도 저장값 없음)
     cardState.insightSummaryExpanded = false; // §인사이트 요약 표시 라운드 §1/§8: 업체를 새로 열 때는 항상 "핵심 요약"부터 시작(전체보기는 매번 다시 눌러야 함)
     cardState.insightQuickStep = 'note'; cardState.insightAdvancedOpen = false; cardState.insightParsedPreview = null; // §1차미팅 메모 자동정리 라운드: 업체를 새로 열 때는 항상 메모 입력 화면부터 시작
+    cardState.insightSubOpen = null; // §고객 인사이트 수정화면 정리 라운드: 접이식 소그룹 열림 상태도 업체마다 새로 계산(이 업체 데이터 기준으로 자동 펼침)
     cardView.style.display = 'block';
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
     renderChart(co);
@@ -11405,13 +11464,26 @@ window.SHIN2_CRM_APP_INIT = function(){
 
     const checkGrid = (fieldKey, presets)=> `
       <div class="insight-check-grid" data-insight-cat="${fieldKey}">
-        ${presets.map(opt=> `<label class="insight-check-item${draft[fieldKey].includes(opt) ? ' is-checked' : ''}"><input type="checkbox" value="${esc(opt)}" ${draft[fieldKey].includes(opt) ? 'checked' : ''}/> ${esc(opt)}</label>`).join('')}
+        ${presets.map(opt=> `<label class="insight-check-item${draft[fieldKey].includes(opt) ? ' is-checked' : ''}"><input type="checkbox" value="${esc(opt)}" ${draft[fieldKey].includes(opt) ? 'checked' : ''}/><span class="insight-choice-label">${esc(opt)}</span></label>`).join('')}
+      </div>`;
+    // §고객 인사이트 수정화면 정리 라운드(신규) — checkGrid(위, 로직 안 바뀜)를 그대로
+    // 감싸서 섹션 제목(왼쪽)+현재 선택 개수(오른쪽)를 함께 렌더링한다. draft[fieldKey]
+    // 길이를 세기만 할 뿐 새 계산은 없다.
+    const editSection = (fieldKey, label, presets)=> `
+      <div class="insight-edit-section">
+        <div class="insight-section-head">
+          <span class="insight-section-title">${esc(label)}</span>
+          ${draft[fieldKey].length ? `<span class="insight-section-count">${draft[fieldKey].length}개</span>` : ''}
+        </div>
+        ${checkGrid(fieldKey, presets)}
       </div>`;
     // §6/§7 — "현재 공법 이용 형태"/"타 공법사 이용 상태"는 1개만 대표로 고르는 단일선택
     // 영역이다. 체크박스가 아니라 클릭형 칩으로 만들고, 같은 값을 다시 누르면 선택 해제된다.
+    // tabindex/role은 §고객 인사이트 수정화면 정리 라운드에서 추가(키보드로 Enter/Space
+    // 눌러도 선택되게 함 — 값/저장 로직은 그대로).
     const radioGroup = (fieldKey, presets)=> `
       <div class="insight-check-grid" data-insight-radio="${fieldKey}">
-        ${presets.map(opt=> `<span class="insight-check-item${draft[fieldKey] === opt ? ' is-checked' : ''}" data-radio-value="${esc(opt)}">${esc(opt)}</span>`).join('')}
+        ${presets.map(opt=> `<span class="insight-check-item${draft[fieldKey] === opt ? ' is-checked' : ''}" data-radio-value="${esc(opt)}" tabindex="0" role="button">${esc(opt)}</span>`).join('')}
       </div>`;
     const companyChipRow = (arrName, addBtnId, inputId)=> `
       <div class="insight-check-grid" style="margin-bottom:4px;">
@@ -11435,7 +11507,7 @@ window.SHIN2_CRM_APP_INIT = function(){
         </div>
         <input type="text" id="ciCompetitorSearchInput" value="${esc(searchVal)}" placeholder="타 공법사/공법 검색..." style="width:100%;box-sizing:border-box;margin-bottom:4px;padding:5px 8px;border:1px solid #dce5ef;border-radius:6px;font-size:12px;" />
         <div class="insight-check-grid" id="ciCompetitorDictList">
-          ${dict.map(d=> `<span class="insight-check-item insight-dict-chip${draft.competitorCompanies.includes(d.name) ? ' is-checked' : ''}" data-dict-name="${esc(d.name)}" title="${esc(d.category)}${d.workType ? ' · ' + esc(d.workType) : ''}">${esc(d.name)}</span>`).join('')}
+          ${dict.map(d=> `<span class="insight-check-item insight-dict-chip${draft.competitorCompanies.includes(d.name) ? ' is-checked' : ''}" data-dict-name="${esc(d.name)}" tabindex="0" role="button" title="${esc(d.category)}${d.workType ? ' · ' + esc(d.workType) : ''}">${esc(d.name)}</span>`).join('')}
         </div>
         <button type="button" class="co-text-action" id="ciCompetitorAddToggleBtn" style="margin-top:4px;">+ 타 공법사/공법 직접 추가</button>
         ${cardState.insightCompetitorAddOpen ? `
@@ -11459,20 +11531,50 @@ window.SHIN2_CRM_APP_INIT = function(){
     // preferredCompanyTraits/preferredCompanies)는 전혀 안 바뀐다.
     // editing이 아니면 draft가 null이라 아래 블록들이 draft[...]를 참조하는 순간 바로
     // 죽는다(§ 이전 라운드에도 같은 이유로 겪었던 버그) — editing일 때만 계산한다.
-    const methodUsageEditHtml = editing ? `
-      <div class="co-form-field insight-method-group">
-        <label style="font-weight:700;">현재 사용공법 (타 공법사 이용)</label>
-        <div class="co-form-field"><label>타 공법사 이용</label>${radioGroup('competitorUsageStatus', COMPETITOR_STATUS_OPTIONS)}${competitorDropdownHtml}</div>
+    // §고객 인사이트 수정화면 정리 라운드(신규) — "현재 사용공법"/"선호 업체·공법"/"관계·
+    // 인맥"/"배경·경력"처럼 입력요소가 여러 개 겹치는 영역만 접이식 소그룹으로 감싼다
+    // (§요청사항). 열림 상태는 cardState.insightSubOpen(§evidenceOpen과 같은 nested-object
+    // 패턴)에 저장해서, 다른 입력(체크박스 등) 때문에 renderInsightBlock이 통째로 다시
+    // 그려져도 접힘 상태가 되돌아가지 않는다. 처음 여는 업체는 이미 값이 들어있는
+    // 소그룹만 자동으로 펼쳐서 보여준다 — 값이 있는데 접혀서 안 보이면 "사라진 것처럼"
+    // 느껴지는 걸 막기 위함(§완료 후 확인 "저장 후 값이 유지되는지"와 같은 원칙).
+    const subOpenState = cardState.insightSubOpen || (cardState.insightSubOpen = {});
+    const collapsibleSection = (key, label, countText, bodyHtml, hasData)=>{
+      if(!(key in subOpenState)) subOpenState[key] = !!hasData;
+      const isOpen = !!subOpenState[key];
+      return `
+        <div class="insight-edit-section insight-edit-collapsible" data-open="${isOpen}">
+          <button type="button" class="insight-collapsible-toggle" data-sub-toggle="${key}">
+            <span class="insight-section-title">${esc(label)}</span>
+            <span class="insight-section-head-right">
+              ${countText ? `<span class="insight-section-count">${esc(countText)}</span>` : ''}
+              <span class="insight-collapsible-chevron">${isOpen ? '▲' : '▼'}</span>
+            </span>
+          </button>
+          ${isOpen ? `<div class="insight-edit-collapsible-body">${bodyHtml}</div>` : ''}
+        </div>`;
+    };
+    const methodUsageBodyHtml = editing ? `
+      <div class="co-form-field"><label>타 공법사 이용</label>${radioGroup('competitorUsageStatus', COMPETITOR_STATUS_OPTIONS)}${competitorDropdownHtml}</div>
+      <div class="co-form-field"><label>공법 관련 메모</label><textarea id="ciMethodNoteInput" placeholder="예: 슈퍼크랙실 사용, 모노화학은 주로 사용하지 않음">${esc(draft.methodNote)}</textarea></div>
+    ` : '';
+    const methodUsageEditHtml = editing ? collapsibleSection(
+      'methodUsage', '현재 사용공법 (타 공법사 이용)', draft.competitorUsageStatus || '',
+      methodUsageBodyHtml,
+      !!(draft.competitorUsageStatus || draft.methodNote || draft.competitorCompanies.length)
+    ) : '';
+    const preferredBodyHtml = editing ? `
+      <div class="co-form-field"><label>현재 공법 이용 형태 (대표 1개 선택)</label>${radioGroup('currentUsageStatus', PRESET_CURRENT_USAGE)}</div>
+      <div class="co-form-field"><label>${esc(INSIGHT_PREFERRED_SECTION[1])} (복수선택)</label>${checkGrid(INSIGHT_PREFERRED_SECTION[0], INSIGHT_PREFERRED_SECTION[2])}
+        <div class="co-field-label" style="margin-top:6px;">선호 업체/공법명</div>${companyChipRow('preferredCompanies', 'ciPreferredAddBtn', 'ciPreferredInput')}
       </div>
-      <div class="co-form-field"><label>공법 관련 메모</label><textarea id="ciMethodNoteInput" placeholder="예: 슈퍼크랙실 사용, 모노화학은 주로 사용하지 않음">${esc(draft.methodNote)}</textarea></div>` : '';
-    const preferredGroupEditHtml = editing ? `
-      <div class="co-form-field insight-method-group">
-        <label style="font-weight:700;">선호 업체 / 공법</label>
-        <div class="co-form-field"><label>현재 공법 이용 형태 (대표 1개 선택)</label>${radioGroup('currentUsageStatus', PRESET_CURRENT_USAGE)}</div>
-        <div class="co-form-field"><label>${esc(INSIGHT_PREFERRED_SECTION[1])} (복수선택)</label>${checkGrid(INSIGHT_PREFERRED_SECTION[0], INSIGHT_PREFERRED_SECTION[2])}
-          <div class="co-field-label" style="margin-top:6px;">선호 업체/공법명</div>${companyChipRow('preferredCompanies', 'ciPreferredAddBtn', 'ciPreferredInput')}
-        </div>
-      </div>` : '';
+    ` : '';
+    const preferredGroupEditHtml = editing ? collapsibleSection(
+      'preferred', '선호 업체 / 공법',
+      draft.preferredCompanyTraits.length ? draft.preferredCompanyTraits.length + '개' : '',
+      preferredBodyHtml,
+      !!(draft.currentUsageStatus || draft.preferredCompanyTraits.length || draft.preferredCompanies.length)
+    ) : '';
     // §7 — "관계/인맥"은 복수선택(relationshipTraits, 기존 checkGrid 재사용) + 관련 업체·
     // 인물 자유입력(relatedContacts, 이름+관계설명 두 칸)을 함께 등록한다.
     const relatedContactsEditHtml = editing ? `
@@ -11484,35 +11586,59 @@ window.SHIN2_CRM_APP_INIT = function(){
         <input type="text" id="ciContactNoteInput" placeholder="관계 (예: 지인)" style="flex:1;" />
         <button type="button" class="co-text-action" id="ciContactAddBtn">+ 추가</button>
       </div>` : '';
-    const relationshipEditHtml = editing ? `
+    const relationshipBodyHtml = editing ? `
       <div class="co-form-field"><label>관계 / 인맥 (복수선택)</label>${checkGrid('relationshipTraits', PRESET_RELATIONSHIP)}
         <div class="co-field-label" style="margin-top:6px;">관련 업체/인물 + 관계</div>${relatedContactsEditHtml}
-      </div>` : '';
-    const backgroundEditHtml = editing ? `
-      <div class="co-form-field"><label>배경 / 경력 (복수선택)</label>${checkGrid('backgroundTraits', PRESET_BACKGROUND)}
-        <textarea id="ciBackgroundNoteInput" placeholder="자유메모" style="margin-top:6px;">${esc(draft.backgroundNote)}</textarea>
-      </div>` : '';
+      </div>
+    ` : '';
+    const relationshipEditHtml = editing ? collapsibleSection(
+      'relationship', '관계 / 인맥',
+      (draft.relationshipTraits.length + draft.relatedContacts.length) ? (draft.relationshipTraits.length + draft.relatedContacts.length) + '개' : '',
+      relationshipBodyHtml,
+      !!(draft.relationshipTraits.length || draft.relatedContacts.length)
+    ) : '';
+    const backgroundBodyHtml = editing ? `
+      ${checkGrid('backgroundTraits', PRESET_BACKGROUND)}
+      <textarea id="ciBackgroundNoteInput" placeholder="자유메모" style="margin-top:6px;">${esc(draft.backgroundNote)}</textarea>
+    ` : '';
+    const backgroundEditHtml = editing ? collapsibleSection(
+      'background', '배경 / 경력',
+      draft.backgroundTraits.length ? draft.backgroundTraits.length + '개' : '',
+      backgroundBodyHtml,
+      !!(draft.backgroundTraits.length || draft.backgroundNote)
+    ) : '';
     const allDraftTraits = editing ? []
       .concat(draft.decisionTraits, draft.interestTraits, draft.currentUsageStatus ? [draft.currentUsageStatus] : [], draft.preferredCompanyTraits, draft.priceTraits, draft.materialPreferences, draft.barrierTraits) : [];
+    // §고객 인사이트 수정화면 정리 라운드(신규) — 편집 폼 레이아웃을 통째로 다시 짰다:
+    // ①맨 위 한줄 성향/다음 대응(넓은 입력칸, .insight-edit-top) ②카테고리 2열 그리드
+    // (.insight-edit-grid — 좁은 화면 자동 1열) ③핵심 발언/사업 메모/근거/★중요 표시
+    // (.insight-edit-extra) ④저장 버튼(하단 오른쪽 고정, .insight-edit-save-bar). 각 필드의
+    // id/값/checkGrid·radioGroup·companyChipRow 호출은 전부 그대로 재사용 — 배치만 바뀌었다.
     let editHtml = editing ? `
-      <div class="co-form-field"><label>한줄 성향</label><input type="text" id="ciOneLinerInput" value="${esc(draft.oneLiner)}" placeholder="예: 현장형 대표 · 수익/수주 중심" /></div>
-      <div class="co-form-field"><label>주요 관심 (복수선택)</label>${checkGrid('interestTraits', PRESET_INTEREST)}</div>
-      ${methodUsageEditHtml}
-      ${relationshipEditHtml}
-      <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(draft.nextAction)}</textarea></div>
-      <div class="co-form-field"><label>의사결정 / 업무 성향 (복수선택)</label>${checkGrid('decisionTraits', PRESET_DECISION)}</div>
-      <div class="co-form-field"><label>가격 / 비용 성향 (복수선택)</label>${checkGrid('priceTraits', PRESET_PRICE)}</div>
-      ${preferredGroupEditHtml}
-      <div class="co-form-field"><label>자료 / 설명 선호 (복수선택)</label>${checkGrid('materialPreferences', PRESET_MATERIAL)}</div>
-      <div class="co-form-field"><label>우려 / 장벽 (복수선택)</label>${checkGrid('barrierTraits', PRESET_BARRIER)}</div>
-      ${backgroundEditHtml}
-      <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
-      <div class="co-form-field"><label>사업 / 현장 메모</label><textarea id="ciBusinessNoteInput" placeholder="예: POUR 적용 예정 현장 있음, 자본금 약 6.3억">${esc(draft.businessNote)}</textarea></div>
-      <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(draft.evidence)}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
-      ${allDraftTraits.length ? `<div class="co-form-field"><label>★ 중요 표시(목록에 우선 표시할 항목 선택)</label>
-        <div class="insight-check-grid">${allDraftTraits.map(t=> `<span class="insight-tag insight-star-chip${draft.importantTraits.includes(t) ? ' is-star' : ''}" data-star-toggle="${esc(t)}">${draft.importantTraits.includes(t) ? '★' : '☆'} ${esc(t)}</span>`).join('')}</div>
-      </div>` : ''}
-      <div style="display:flex;gap:10px;margin-top:6px;">
+      <div class="insight-edit-top">
+        <div class="co-form-field"><label>한줄 성향</label><input type="text" id="ciOneLinerInput" value="${esc(draft.oneLiner)}" placeholder="예: 현장형 대표 · 수익/수주 중심" /></div>
+        <div class="co-form-field"><label>다음 대응 포인트</label><textarea id="ciNextInput">${esc(draft.nextAction)}</textarea></div>
+      </div>
+      <div class="insight-edit-grid">
+        ${editSection('decisionTraits', '의사결정 / 업무 성향', PRESET_DECISION)}
+        ${editSection('interestTraits', '주요 관심', PRESET_INTEREST)}
+        ${editSection('priceTraits', '가격 / 비용 성향', PRESET_PRICE)}
+        ${editSection('materialPreferences', '자료 / 설명 선호', PRESET_MATERIAL)}
+        ${editSection('barrierTraits', '우려 / 장벽', PRESET_BARRIER)}
+        ${methodUsageEditHtml}
+        ${preferredGroupEditHtml}
+        ${relationshipEditHtml}
+        ${backgroundEditHtml}
+      </div>
+      <div class="insight-edit-extra">
+        <div class="co-form-field"><label>핵심 발언</label><input type="text" id="ciQuoteInput" value="${esc(draft.keyQuote)}" placeholder="미팅에서 실제로 나온 발언" /></div>
+        <div class="co-form-field"><label>사업 / 현장 메모</label><textarea id="ciBusinessNoteInput" placeholder="예: POUR 적용 예정 현장 있음, 자본금 약 6.3억">${esc(draft.businessNote)}</textarea></div>
+        <div class="co-form-field"><label>근거</label><input type="text" id="ciEvidenceInput" value="${esc(draft.evidence)}" placeholder="예: 2026.08.21 · 1차미팅" /></div>
+        ${allDraftTraits.length ? `<div class="co-form-field"><label>★ 중요 표시(목록에 우선 표시할 항목 선택)</label>
+          <div class="insight-check-grid">${allDraftTraits.map(t=> `<span class="insight-tag insight-star-chip${draft.importantTraits.includes(t) ? ' is-star' : ''}" data-star-toggle="${esc(t)}">${draft.importantTraits.includes(t) ? '★' : '☆'} ${esc(t)}</span>`).join('')}</div>
+        </div>` : ''}
+      </div>
+      <div class="insight-edit-save-bar">
         <button type="button" class="co-text-action primary" id="ciSaveBtn">저장</button>
       </div>
     ` : '';
@@ -11627,6 +11753,24 @@ window.SHIN2_CRM_APP_INIT = function(){
           const fieldKey = el.closest('[data-insight-radio]').getAttribute('data-insight-radio');
           const val = el.getAttribute('data-radio-value');
           draft[fieldKey] = (draft[fieldKey] === val) ? '' : val;
+          renderInsightBlock(co);
+        });
+      });
+      // §고객 인사이트 수정화면 정리 라운드(신규) — 단일선택 칩/사전 검색 칩은 실제
+      // <input>이 아니라 클릭용 <span tabindex="0" role="button">이라 Enter/Space가
+      // 기본으로 동작하지 않는다. 값/저장 로직은 안 건드리고 키보드로도 같은 click을
+      // 발생시키기만 한다(§요청사항 "키보드 접근성은 유지").
+      wrap.querySelectorAll('.insight-check-item[role="button"]').forEach(el=>{
+        el.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); }
+        });
+      });
+      // 접이식 소그룹(현재 사용공법/선호 업체·공법/관계·인맥/배경·경력) 펼침·접힘 토글 —
+      // cardState.insightSubOpen에 저장해서 다른 입력 때문에 다시 그려져도 유지된다.
+      wrap.querySelectorAll('[data-sub-toggle]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const key = btn.getAttribute('data-sub-toggle');
+          subOpenState[key] = !subOpenState[key];
           renderInsightBlock(co);
         });
       });
