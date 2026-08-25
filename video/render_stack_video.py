@@ -28,19 +28,20 @@ FPS = 30
 DURATION = 7.0
 N_FRAMES = int(round(DURATION * FPS))          # 210
 
+# 영상에 쓰는 문서(순서대로). 07_물량산출내역서는 제외했다.
+# 다시 넣으려면 아래 목록에 추가하고 LAYOUT에도 한 줄 늘리면 된다.
 FILES = [
     "02_안내사항.png",
     "03_원가계산서.png",
     "04_집계표.png",
     "06_산출내역서.png",
-    "07_물량산출내역서.png",
 ]
 
 # 타임라인(초)
 T_FIRST = 0.25      # 첫 장이 내려오기 시작하는 시각(그 전은 빈 배경)
-STAGGER = 1.05      # 장 사이 간격
+STAGGER = 1.40      # 장 사이 간격
 DROP = 1.00         # 한 장이 내려와 안착하기까지 걸리는 시간
-# -> 마지막 장 안착 = 0.25 + 4*1.05 + 1.00 = 5.45s, 이후 1.55s 정지 화면
+# -> 마지막 장 안착 = 0.25 + 3*1.40 + 1.00 = 5.45s, 이후 1.55s 정지 화면
 
 # 카메라(전체 화면) 확대: 1.00 -> 1.05, 후반부로 갈수록 조금 더 밀어 넣는다
 ZOOM_END = 1.05
@@ -60,8 +61,7 @@ LAYOUT = [
     dict(dx=-24, dy= 16, angle=-2.4, lift=1.000, drift= 78, d_angle= 2.1),
     dict(dx= 28, dy=  4, angle= 1.8, lift=1.007, drift=-86, d_angle=-1.9),
     dict(dx=-13, dy=-11, angle= 2.5, lift=1.014, drift= 66, d_angle= 2.2),
-    dict(dx= 17, dy=-20, angle=-1.5, lift=1.021, drift=-72, d_angle=-1.7),
-    dict(dx= -5, dy=  3, angle= 1.0, lift=1.028, drift= 58, d_angle= 1.4),
+    dict(dx= -5, dy=  3, angle= 1.0, lift=1.021, drift= 58, d_angle= 1.4),
 ]
 
 Y_START = -600.0    # 화면 밖(위쪽)에서 출발
