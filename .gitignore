@@ -6,3 +6,7 @@
 # 이 프로젝트는 빌드 단계가 없는 정적 사이트입니다. node_modules는 브라우저에서
 # 직접 쓰이지 않으므로(Firebase는 CDN ESM으로 로드) 저장소에 포함하지 않습니다.
 node_modules/
+
+# 렌더 스크립트 캐시
+__pycache__/
+*.pyc
