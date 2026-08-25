@@ -12,7 +12,10 @@
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand">
-      <span class="brand-title">AI 전략회의실</span>
+      <div class="brand-text">
+        <span class="brand-title">AI 전략회의실</span>
+        <span class="brand-desc">Claude 기반 전문가 전략회의</span>
+      </div>
       <span class="demo-badge" id="demoBadge" hidden>예시</span>
     </div>
     <div class="conn-status" id="connStatus">
@@ -67,8 +70,10 @@
   <!-- ============ 2. 진행 화면 ============ -->
   <section class="view" id="viewProgress" hidden>
     <div class="progress-card">
+      <span class="progress-status-badge" aria-hidden="true">진행 중</span>
       <h2>전략회의 진행 중</h2>
       <p class="progress-sub" id="progressModeLabel">전략회의 모드로 진행합니다.</p>
+      <div class="progress-bar" aria-hidden="true"><div class="progress-bar-fill"></div></div>
       <ul class="step-list" id="stepList"></ul>
     </div>
   </section>
