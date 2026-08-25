@@ -107,6 +107,17 @@
     border:none; border-radius:6px; cursor:pointer;
   }
   .list-add-btn:hover{ background:var(--navy-hover); }
+  /* §전화 요청 기록 버튼 확대 라운드(신규) — 원래 쓰던 .list-secondary-link(작은 밑줄
+     텍스트)가 잘 안 보인다는 피드백으로, "+ 고객 등록"과 같은 높이의 진짜 버튼으로
+     바꾼다. 다만 주 CTA(+ 고객 등록, 진한 네이비 채움)보다는 한 단계 낮은 톤(흰 배경 +
+     네이비 테두리/글자)을 써서 위계는 그대로 유지한다. */
+  .list-phone-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    height:32px; padding:0 14px; font-size:13px; font-weight:650; color:var(--navy);
+    background:#fff; border:1.5px solid var(--navy); border-radius:6px; cursor:pointer; font-family:inherit;
+  }
+  .list-phone-btn:hover{ background:#EEF2F8; }
+  .list-phone-btn .list-phone-btn-icon{ font-size:15px; line-height:1; }
   .list-secondary-actions{ display:flex; gap:14px; align-items:center; }
   .list-secondary-link{
     font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline;
@@ -2067,11 +2078,12 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
             <button type="button" id="crmSyncDiagBtn">동기화 진단(업체 1건 추적)</button>
           </div>
         </div>
-        <!-- §전화 요청 기록 라운드(신규) — "+ 고객 등록"과 같은 줄, 작은 보조 버튼으로
-             배치(§요청사항 "작은 버튼"). 새 데이터/화면 체계가 아니라 기존
-             addActivity/requestedMaterials를 그대로 쓰는 입력 지름길일 뿐이라 주 CTA인
-             "+ 고객 등록"보다 튀지 않게 list-secondary-link 톤을 그대로 쓴다. -->
-        <button type="button" id="crmPhoneRequestBtn" class="list-secondary-link">+ 전화 요청 기록</button>
+        <!-- §전화 요청 기록 라운드(신규) — "+ 고객 등록"과 같은 줄에 배치. 처음엔 작은
+             밑줄 텍스트(list-secondary-link)였는데 잘 안 보인다는 피드백으로 같은 높이의
+             테두리형 버튼(.list-phone-btn)+📞 아이콘으로 키웠다(§전화 요청 기록 버튼 확대
+             라운드) — 다만 진한 네이비로 채운 주 CTA "+ 고객 등록"보다는 한 단계 낮은
+             톤(흰 배경+네이비 테두리)이라 위계는 그대로 유지된다. -->
+        <button type="button" id="crmPhoneRequestBtn" class="list-phone-btn"><span class="list-phone-btn-icon" aria-hidden="true">📞</span>전화 요청 기록</button>
         <button type="button" id="crmAddBtn" class="list-add-btn">+ 고객 등록</button>
       </div>
     </div>
@@ -13672,12 +13684,10 @@ window.SHIN2_CRM_APP_INIT = function(){
      부분/유사일치로 새 업체를 만들지 않는다).
      ========================================================================== */
   const PHONE_REQ_TYPES = ['자료 요청','견적 문의','기술 문의','미팅 요청','기타'];
-  const PHONE_REQ_MATERIAL_OPTIONS = ['회사소개서','시공사례','견적서','시험성적서','카탈로그','도면','기타'];
   let phoneReqState = null;
   function openPhoneRequestModal(){
     phoneReqState = {
-      companyName: '', requestType: PHONE_REQ_TYPES[0], requestContent: '',
-      materials: [], materialsCustom: '', callMemo: '', nextAction: '', dueDate: '', error: ''
+      companyName: '', requestType: PHONE_REQ_TYPES[0], requestContent: '', callMemo: '', error: ''
     };
     renderPhoneRequestModal();
   }
@@ -13730,25 +13740,8 @@ window.SHIN2_CRM_APP_INIT = function(){
               <textarea id="phoneReqContentInput" rows="2" placeholder="예: 회사소개서와 시공사례 자료를 보내달라고 요청">${esc(s.requestContent)}</textarea>
             </div>
             <div class="co-form-field">
-              <div class="phone-req-field-label">요청받은 자료</div>
-              <div class="insight-check-grid">
-                ${PHONE_REQ_MATERIAL_OPTIONS.map(m=> `<label class="insight-check-item${s.materials.includes(m) ? ' is-checked' : ''}"><input type="checkbox" value="${esc(m)}" ${s.materials.includes(m) ? 'checked' : ''}/><span class="insight-choice-label">${esc(m)}</span></label>`).join('')}
-              </div>
-              <div class="phone-req-materials-extra">
-                <input type="text" id="phoneReqMaterialsCustomInput" placeholder="직접 입력(쉼표로 구분)" value="${esc(s.materialsCustom)}" />
-              </div>
-            </div>
-            <div class="co-form-field">
               <div class="phone-req-field-label">통화 메모 (선택)</div>
               <textarea id="phoneReqMemoInput" rows="2" placeholder="예: 유지보수 현장 적용 가능 여부도 문의">${esc(s.callMemo)}</textarea>
-            </div>
-            <div class="co-form-field">
-              <div class="phone-req-field-label">다음 행동 (선택)</div>
-              <input type="text" id="phoneReqNextInput" placeholder="예: 회사소개서 전달, 견적서 준비" value="${esc(s.nextAction)}" />
-            </div>
-            <div class="co-form-field">
-              <div class="phone-req-field-label">예정일 (선택)</div>
-              <input type="date" id="phoneReqDueInput" value="${esc(s.dueDate)}" />
             </div>
             <div class="phone-req-actions">
               <button type="button" class="co-text-action" id="phoneReqCancelBtn">취소</button>
@@ -13769,18 +13762,8 @@ window.SHIN2_CRM_APP_INIT = function(){
       chip.addEventListener('click', ()=>{ s.requestType = chip.getAttribute('data-phonereq-type'); renderPhoneRequestModal(); });
       chip.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); chip.click(); } });
     });
-    root.querySelectorAll('.insight-check-grid input[type=checkbox]').forEach(input=>{
-      input.addEventListener('change', ()=>{
-        const v = input.value;
-        const idx = s.materials.indexOf(v);
-        if(input.checked){ if(idx === -1) s.materials.push(v); }
-        else if(idx !== -1) s.materials.splice(idx, 1);
-        input.closest('.insight-check-item').classList.toggle('is-checked', input.checked);
-      });
-    });
     [
-      ['phoneReqContentInput','requestContent'], ['phoneReqMaterialsCustomInput','materialsCustom'],
-      ['phoneReqMemoInput','callMemo'], ['phoneReqNextInput','nextAction'], ['phoneReqDueInput','dueDate']
+      ['phoneReqContentInput','requestContent'], ['phoneReqMemoInput','callMemo']
     ].forEach(([id, key])=>{
       const el = document.getElementById(id);
       if(el) el.addEventListener('input', ()=>{ s[key] = el.value; });
@@ -13794,12 +13777,12 @@ window.SHIN2_CRM_APP_INIT = function(){
       const target = companies.find(c=> c.name === name);
       if(!target){ s.error = 'CRM에 등록된 정확한 업체명을 목록에서 선택해주세요.'; renderPhoneRequestModal(); return; }
       if(!s.requestContent.trim()){ s.error = '요청 내용을 입력해주세요.'; renderPhoneRequestModal(); return; }
-      const customMaterials = s.materialsCustom.split(',').map(x=> x.trim()).filter(Boolean);
-      const materials = s.materials.concat(customMaterials);
       e.currentTarget.disabled = true;
+      // §전화 요청 기록 화면 단순화 라운드(신규) — 요청받은 자료/다음 행동/예정일 입력을
+      // 없앴다(§요청사항). 날짜는 이 화면에서 따로 받지 않아도 addActivity 내부에서
+      // nowIso()로 항상 자동 기록된다(§ 저장 시각 = 실제 전화 받은 시각으로 취급).
       D.logPhoneRequest(target.id, {
-        requestType: s.requestType, requestContent: s.requestContent, materials,
-        callMemo: s.callMemo, nextAction: s.nextAction, dueDate: s.dueDate
+        requestType: s.requestType, requestContent: s.requestContent, callMemo: s.callMemo
       });
       const savedName = target.name;
       closePhoneRequestModal();
