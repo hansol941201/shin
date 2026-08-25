@@ -1003,6 +1003,18 @@
   .phone-req-materials-extra{ margin-top:6px; }
   .phone-req-err{ color:#B91C1C; font-size:12px; margin-bottom:8px; }
   .phone-req-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+  /* §업체명 정규화 매칭 라운드(신규) — 정규화 이름이 같은 업체가 2개 이상일 때만 뜨는
+     선택 목록. 임의로 아무거나 저장하지 않고 사람이 직접 고른다(§요청사항). */
+  .phone-req-dup-panel{ margin-top:4px; }
+  .phone-req-dup-title{ font-size:12px; color:var(--text-muted); margin-bottom:8px; }
+  .phone-req-dup-row{
+    display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%;
+    padding:8px 10px; margin-bottom:6px; text-align:left; cursor:pointer;
+    background:#fff; border:1px solid var(--line); border-radius:6px; font-family:inherit;
+  }
+  .phone-req-dup-row:hover{ background:#EEF2F8; border-color:var(--navy); }
+  .phone-req-dup-name{ font-size:13px; font-weight:650; color:var(--text); }
+  .phone-req-dup-meta{ font-size:11px; color:var(--text-muted); }
   /* 저장 완료 안내 — 화면 어디서 저장하든(§요청사항 "작은 완료 안내") 잠깐 떴다 사라지는
      토스트 하나. 이 파일에 기존 toast 컴포넌트가 없어 최소 형태로 새로 만들었다. */
   .phone-req-toast{
@@ -5218,7 +5230,7 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     previewPourTrackImport, applyPourTrackImport,
     REQUESTED_MATERIAL_TYPES, REQUESTED_MATERIAL_STATUSES,
     addRequestedMaterial, addRequestedMaterialIfNew, removeRequestedMaterial, setRequestedMaterialStatus, extractRequestedMaterialsFromActivities,
-    logPhoneRequest,
+    logPhoneRequest, normCompanyName,
     buildUnregisteredCompanies, getCompany2025Revenue, getCompany2024Revenue, getCompanyTotalRevenueAllYears,
     buildRevenue2026Index, getCompany2026Revenue, buildUnregisteredCompanies2026,
     getCompanyReceivable, buildReceivableCompanies,
@@ -13687,7 +13699,8 @@ window.SHIN2_CRM_APP_INIT = function(){
   let phoneReqState = null;
   function openPhoneRequestModal(){
     phoneReqState = {
-      companyName: '', requestType: PHONE_REQ_TYPES[0], requestContent: '', callMemo: '', error: ''
+      companyName: '', requestType: PHONE_REQ_TYPES[0], requestContent: '', callMemo: '', error: '',
+      duplicateCandidates: null // §업체명 정규화 매칭 라운드(신규): 정규화 이름이 같은 업체가 2개 이상이면 여기 채워지고, 하나 고를 때까지 저장을 미룬다.
     };
     renderPhoneRequestModal();
   }
@@ -13743,17 +13756,33 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div class="phone-req-field-label">통화 메모 (선택)</div>
               <textarea id="phoneReqMemoInput" rows="2" placeholder="예: 유지보수 현장 적용 가능 여부도 문의">${esc(s.callMemo)}</textarea>
             </div>
-            <div class="phone-req-actions">
-              <button type="button" class="co-text-action" id="phoneReqCancelBtn">취소</button>
-              <button type="button" class="co-text-action primary" id="phoneReqSaveBtn">기록 저장</button>
-            </div>
+            ${s.duplicateCandidates ? `
+              <div class="phone-req-dup-panel">
+                <div class="phone-req-dup-title">이름이 같은 업체가 여러 개 있습니다. 연결할 업체를 선택해주세요.</div>
+                ${s.duplicateCandidates.map(c=> `
+                  <button type="button" class="phone-req-dup-row" data-phonereq-candidate="${esc(c.id)}">
+                    <span class="phone-req-dup-name">${esc(c.name)}</span>
+                    <span class="phone-req-dup-meta">${esc([c.address, c.phone].filter(Boolean).join(' · ') || ('ID: ' + c.id))}</span>
+                  </button>
+                `).join('')}
+                <button type="button" class="co-text-action" id="phoneReqDupBackBtn">다시 입력</button>
+              </div>
+            ` : `
+              <div class="phone-req-actions">
+                <button type="button" class="co-text-action" id="phoneReqCancelBtn">취소</button>
+                <button type="button" class="co-text-action primary" id="phoneReqSaveBtn">기록 저장</button>
+              </div>
+            `}
           </div>
         </div>
       </div>
     `;
     document.getElementById('phoneReqCloseBtn').addEventListener('click', closePhoneRequestModal);
-    document.getElementById('phoneReqCancelBtn').addEventListener('click', closePhoneRequestModal);
     document.getElementById('phoneReqOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'phoneReqOverlay') closePhoneRequestModal(); });
+    // §업체명 정규화 매칭 라운드(신규) — 후보 선택 화면에서는 취소/저장 버튼이 렌더링되지
+    // 않으므로(위 duplicateCandidates 분기) 있을 때만 연결한다.
+    const cancelBtn = document.getElementById('phoneReqCancelBtn');
+    if(cancelBtn) cancelBtn.addEventListener('click', closePhoneRequestModal);
 
     const companyInput = document.getElementById('phoneReqCompanyInput');
     companyInput.addEventListener('input', ()=>{ s.companyName = companyInput.value; });
@@ -13769,18 +13798,10 @@ window.SHIN2_CRM_APP_INIT = function(){
       if(el) el.addEventListener('input', ()=>{ s[key] = el.value; });
     });
 
-    document.getElementById('phoneReqSaveBtn').addEventListener('click', (e)=>{
-      const name = (companyInput.value || '').trim();
-      if(!name){ s.error = '업체를 선택해주세요.'; renderPhoneRequestModal(); return; }
-      // §업체명 관계표시 라운드와 같은 원칙 — 정확히 일치하는 기존 업체명만 허용한다
-      // (부분/유사일치 금지, 새 업체를 임의 생성하지 않는다).
-      const target = companies.find(c=> c.name === name);
-      if(!target){ s.error = 'CRM에 등록된 정확한 업체명을 목록에서 선택해주세요.'; renderPhoneRequestModal(); return; }
-      if(!s.requestContent.trim()){ s.error = '요청 내용을 입력해주세요.'; renderPhoneRequestModal(); return; }
-      e.currentTarget.disabled = true;
-      // §전화 요청 기록 화면 단순화 라운드(신규) — 요청받은 자료/다음 행동/예정일 입력을
-      // 없앴다(§요청사항). 날짜는 이 화면에서 따로 받지 않아도 addActivity 내부에서
-      // nowIso()로 항상 자동 기록된다(§ 저장 시각 = 실제 전화 받은 시각으로 취급).
+    // §업체명 정규화 매칭 라운드(신규) — 실제 저장까지 담당하는 공통 함수. 정상 저장
+    // 버튼과, 아래 중복 후보 목록에서 하나를 고르는 클릭 둘 다 여기로 모인다(로직 중복
+    // 방지). D.logPhoneRequest는 그대로 재사용 — 여기서는 어떤 업체 id로 보낼지만 정한다.
+    const finishSave = (target)=>{
       D.logPhoneRequest(target.id, {
         requestType: s.requestType, requestContent: s.requestContent, callMemo: s.callMemo
       });
@@ -13793,7 +13814,32 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 자동으로 최신 상태가 된다(§ 새 push 배선 불필요).
       renderList();
       showPhoneReqToast('전화 요청 기록을 저장했습니다 — ' + savedName);
+    };
+    const saveBtn = document.getElementById('phoneReqSaveBtn');
+    if(saveBtn) saveBtn.addEventListener('click', ()=>{
+      const name = (companyInput.value || '').trim();
+      if(!name){ s.error = '업체를 선택해주세요.'; renderPhoneRequestModal(); return; }
+      if(!s.requestContent.trim()){ s.error = '요청 내용을 입력해주세요.'; renderPhoneRequestModal(); return; }
+      // §업체명 정규화 매칭 라운드(신규) — "정확히 같은 문자열"이 아니라 "주식회사/(주)/㈜/
+      // 공백을 뺀 정규화 이름"이 같은 업체를 찾는다(§요청사항). normCompanyName은 매출
+      // 중복업체 판정 등에서 이미 쓰던 정규화 함수를 그대로 재사용한다(새 규칙 발명 없음).
+      // 매칭 0건이면 여전히 저장하지 않고(§ 새 업체를 임의 생성하지 않는다), 2건 이상이면
+      // 임의로 아무거나 고르지 않고 선택 화면을 보여준다(§요청사항).
+      const typedNorm = D.normCompanyName(name);
+      const matches = companies.filter(c=> D.normCompanyName(c.name) === typedNorm);
+      if(!matches.length){ s.error = 'CRM에 등록된 업체를 찾을 수 없습니다. 목록에서 정확한 업체명을 선택해주세요.'; renderPhoneRequestModal(); return; }
+      if(matches.length > 1){ s.error = ''; s.duplicateCandidates = matches; renderPhoneRequestModal(); return; }
+      saveBtn.disabled = true;
+      finishSave(matches[0]);
     });
+    root.querySelectorAll('[data-phonereq-candidate]').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        const target = companies.find(c=> c.id === row.getAttribute('data-phonereq-candidate'));
+        if(target) finishSave(target);
+      });
+    });
+    const dupBackBtn = document.getElementById('phoneReqDupBackBtn');
+    if(dupBackBtn) dupBackBtn.addEventListener('click', ()=>{ s.duplicateCandidates = null; renderPhoneRequestModal(); });
   }
 
   // ---------------- 진입 ----------------
