@@ -3929,6 +3929,15 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
     else if(nextAction) parts.push(nextAction);
     const activityText = parts.join(' · ');
     const rec = addActivity(companyId, activityText);
+    // §전화 요청 기록 화면 단순화 라운드에서 "요청받은 자료" 체크리스트를 없애면서
+    // co.requestedMaterials가 더 이상 채워지지 않게 됐다 — 그런데 고객카드의 "최근 요청 /
+    // 고객 메모" 미리보기(buildRequestListItems)는 D.memosFor(메모)와
+    // co.requestedMaterials(요청자료) "이 두 가지만" 합쳐서 보여주고 customerActivities는
+    // 전혀 읽지 않는다(§13142 buildRequestListItems 정의 그대로). 그래서 활동 기록에는
+    // 정상 저장되는데도 카드의 "최근 요청" 박스에는 하나도 안 보이는 회귀가 생겼다 —
+    // 여기서 같은 텍스트를 메모로도 함께 남겨서(기존 D.addMemo 재사용, 새 저장소 아님)
+    // "최근 요청 / 고객 메모" 미리보기에도 즉시 나타나게 고친다.
+    addMemo(companyId, activityText);
     const addedMaterials = [];
     materials.forEach(m=>{
       const added = addRequestedMaterialIfNew(companyId, {
