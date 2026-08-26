@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // 클릭 위치 근처에 뜨는 작은 팝오버 공용 셸.
 // 바깥 영역 클릭/ESC 시 닫힌다. 뷰포트를 벗어나지 않도록 위치를 보정한다.
-export default function PopoverShell({ anchor, onClose, children, width = 300 }) {
+export default function PopoverShell({ anchor, onClose, children, width = 300, className = '' }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({ left: anchor.x, top: anchor.y, opacity: 0 });
 
@@ -46,7 +46,7 @@ export default function PopoverShell({ anchor, onClose, children, width = 300 })
   return (
     <div
       ref={ref}
-      className="popover-shell"
+      className={`popover-shell${className ? ` ${className}` : ''}`}
       style={{ left: pos.left, top: pos.top, opacity: pos.opacity, width }}
       role="dialog"
     >

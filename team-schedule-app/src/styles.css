@@ -593,6 +593,17 @@ button, select, input, textarea {
   font-size: 14px;
   transition: opacity .08s ease;
 }
+/* 공유 일정 상세 팝업: 배정자가 "조재연"이면 아주 연한 빨강, 그 외에는
+   아주 연한 하늘색 — 글자 색은 그대로 두고 배경/테두리만 바꿔 가독성을
+   유지한다. */
+.popover-shell.pv-shell-assignee-red {
+  background: #FFF3F3;
+  border-color: #F7C9C9;
+}
+.popover-shell.pv-shell-assignee-blue {
+  background: #F1F8FF;
+  border-color: #C9DEF7;
+}
 .pv-head {
   display: flex;
   align-items: center;

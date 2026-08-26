@@ -38,8 +38,13 @@ export default function EventDetailPopover({ event: eventProp, anchor, onClose }
   // readOnly 플래그를 이중으로 검사해 실수로라도 아래의 수정/삭제 로직에
   // 도달하지 않게 한다.
   if (event.source === 'shared_team_calendar' || event.readOnly) {
+    // 배정자(담당자) 이름에 따라 팝업 배경색만 다르게 표시한다(카드 색상은
+    // 그대로) — 화면에 보이는 텍스트가 아니라 이벤트 데이터의 assignee
+    // 필드값으로 판별하며, 공백 차이로 오판하지 않도록 trim() 후 비교한다.
+    const assigneeName = (event.assignee || '').trim();
+    const assigneeClass = assigneeName === '조재연' ? 'pv-shell-assignee-red' : 'pv-shell-assignee-blue';
     return (
-      <PopoverShell anchor={anchor} onClose={onClose} width={296}>
+      <PopoverShell anchor={anchor} onClose={onClose} width={296} className={assigneeClass}>
         <div className="pv-head">
           <span className="pv-status-badge pv-status-shared">공유 일정</span>
           <button className="pv-close" onClick={onClose} aria-label="닫기">✕</button>
