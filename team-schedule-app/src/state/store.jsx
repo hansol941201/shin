@@ -58,6 +58,11 @@ function describeGoogleAuthError(err) {
   return 'Google 로그인에 실패했거나 취소되었습니다.';
 }
 
+// 다른 팀 Firebase 공유 일정을 화면에 보여줄지 여부. 구독/중복제거 로직은
+// 그대로 두고(나중에 다시 켤 수 있도록) 화면에 합치는 단계에서만 끈다 —
+// "코드는 남기고 화면에서만 숨겨달라"는 요청에 따른 것.
+const SHOW_SHARED_EVENTS = false;
+
 export function AppProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   // 팀장 전용 달력이다 — 역할/화면 전환 개념 자체가 없다.
@@ -356,7 +361,9 @@ export function AppProvider({ children }) {
       });
     };
 
-    const sharedVisible = sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents));
+    const sharedVisible = SHOW_SHARED_EVENTS
+      ? sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents))
+      : [];
 
     if (googleActive) return [...googleEvents, ...sharedVisible];
     // Google 미연동 상태에서는 개발/시연용 샘플 일정만 대신 보여준다

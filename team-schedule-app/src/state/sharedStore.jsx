@@ -15,6 +15,10 @@ import { DEFAULT_SETTINGS, getWeekStart, addDays } from '../utils/time.js';
 import { subscribeSharedSchedules } from '../services/legacyScheduleAdapter.js';
 import * as backend from '../services/sharedBackend.js';
 
+// store.jsx의 AppProvider와 동일한 스위치 — 다른 팀 공유 일정 구독/중복
+// 제거 로직은 그대로 두고, 화면에 합치는 단계에서만 숨긴다.
+const SHOW_SHARED_EVENTS = false;
+
 export function SharedAppProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [cursorDate, setCursorDate] = useState(() => new Date());
@@ -122,7 +126,9 @@ export function SharedAppProvider({ children }) {
       });
     };
 
-    const sharedVisible = sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents));
+    const sharedVisible = SHOW_SHARED_EVENTS
+      ? sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents))
+      : [];
     return [...googleEvents, ...sharedVisible];
   }, [googleEvents, sharedEvents]);
 
