@@ -1,0 +1,330 @@
+<title>넷폼알앤디 특허 대장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#eef0ec; --surface:#fff; --sunken:#f6f7f4;
+  --ink:#171b1a; --ink2:#3f4644; --muted:#727b77;
+  --line:#d9ddd6; --line-soft:#e7eae4;
+  --accent:#0d6157; --accent-ink:#0a4a42; --accent-soft:#e0edea;
+  --warn:#8a570c; --warn-soft:#f5ebd9;
+  --dim:#6d7570; --dim-soft:#e9ebe7;
+  --shadow:0 1px 2px rgba(23,27,26,.05),0 10px 30px -22px rgba(23,27,26,.5);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#111514; --surface:#191e1d; --sunken:#141917;
+    --ink:#e8ebe9; --ink2:#bcc4c0; --muted:#848d89;
+    --line:#2a3130; --line-soft:#222827;
+    --accent:#57bfae; --accent-ink:#7ed4c4; --accent-soft:#15302c;
+    --warn:#d2a24f; --warn-soft:#2e2617;
+    --dim:#8b938f; --dim-soft:#232827;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -22px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#111514; --surface:#191e1d; --sunken:#141917;
+  --ink:#e8ebe9; --ink2:#bcc4c0; --muted:#848d89;
+  --line:#2a3130; --line-soft:#222827;
+  --accent:#57bfae; --accent-ink:#7ed4c4; --accent-soft:#15302c;
+  --warn:#d2a24f; --warn-soft:#2e2617;
+  --dim:#8b938f; --dim-soft:#232827;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -22px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1320px; margin:0 auto; padding:0 20px 72px}
+
+/* ---------- masthead ---------- */
+.mast{padding:44px 0 26px; display:flex; flex-wrap:wrap; gap:32px; align-items:flex-end; justify-content:space-between}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; font-weight:500;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 10px;
+}
+h1{
+  font-family:"Gothic A1","Noto Sans KR",sans-serif; font-weight:800;
+  font-size:clamp(30px,4.4vw,44px); line-height:1.12; letter-spacing:-.02em;
+  margin:0; text-wrap:balance;
+}
+.lede{margin:12px 0 0; max-width:52ch; color:var(--ink2); font-size:14.5px}
+.stats{display:flex; gap:0; border:1px solid var(--line); background:var(--surface); border-radius:4px; box-shadow:var(--shadow)}
+.stat{padding:14px 22px; border-right:1px solid var(--line-soft); min-width:104px}
+.stat:last-child{border-right:0}
+.stat b{
+  display:block; font-family:"Gothic A1",sans-serif; font-weight:800; font-size:28px;
+  line-height:1.1; font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+}
+.stat span{font-size:11.5px; color:var(--muted); letter-spacing:.02em}
+.stat.is-reg b{color:var(--accent)}
+.stat.is-pend b{color:var(--warn)}
+
+/* ---------- sticky control deck ---------- */
+.deck{position:sticky; top:0; z-index:20; background:var(--ground); padding-top:2px}
+.deck::after{content:""; display:block; height:1px; background:var(--line)}
+.tabs{display:flex; gap:2px; overflow-x:auto; scrollbar-width:thin; padding-bottom:0}
+.tab{
+  flex:0 0 auto; display:inline-flex; align-items:center; gap:7px;
+  font:inherit; font-size:13.5px; font-weight:500; color:var(--muted);
+  background:transparent; border:0; border-bottom:2px solid transparent;
+  padding:11px 14px; cursor:pointer; white-space:nowrap; border-radius:3px 3px 0 0;
+}
+.tab:hover{color:var(--ink); background:var(--sunken)}
+.tab[aria-selected="true"]{color:var(--accent-ink); border-bottom-color:var(--accent); font-weight:700}
+.tab:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.tcount{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-variant-numeric:tabular-nums;
+  color:var(--muted); background:var(--dim-soft); border-radius:2px; padding:1px 5px;
+}
+.tab[aria-selected="true"] .tcount{color:var(--accent-ink); background:var(--accent-soft)}
+
+.tools{display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:14px 0 16px}
+.search{position:relative; flex:1 1 300px; max-width:420px}
+.search svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted)}
+.search input{
+  width:100%; font:inherit; font-size:14px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  padding:9px 12px 9px 34px;
+}
+.search input::placeholder{color:var(--muted)}
+.search input:focus-visible{outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent)}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:3px; overflow:hidden; background:var(--surface)}
+.seg button{
+  font:inherit; font-size:13px; color:var(--muted); background:transparent; border:0;
+  border-right:1px solid var(--line-soft); padding:9px 14px; cursor:pointer;
+}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--ink); background:var(--sunken)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft); color:var(--accent-ink); font-weight:700}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.count{
+  margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:12px;
+  color:var(--muted); font-variant-numeric:tabular-nums;
+}
+
+/* ---------- panel ---------- */
+.panelhead{padding:6px 0 18px; max-width:70ch}
+.panelhead h2{
+  font-family:"Gothic A1",sans-serif; font-weight:700; font-size:19px;
+  margin:0; letter-spacing:-.01em;
+}
+.blurb{margin:7px 0 0; color:var(--ink2); font-size:14px}
+.pmeta{
+  margin:8px 0 0; font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  color:var(--muted); letter-spacing:.02em;
+}
+
+.tablewrap{
+  overflow-x:auto; background:var(--surface); border:1px solid var(--line);
+  border-radius:4px; box-shadow:var(--shadow);
+}
+table{border-collapse:collapse; width:100%; min-width:940px}
+thead th{
+  position:sticky; top:0; z-index:5; background:var(--sunken);
+  text-align:left; font-size:11px; font-weight:700; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); white-space:nowrap;
+  padding:11px 14px; border-bottom:1px solid var(--line);
+}
+tbody td{
+  padding:11px 14px; border-bottom:1px solid var(--line-soft);
+  vertical-align:top; font-size:13.5px; color:var(--ink2); word-break:keep-all;
+}
+td[data-label="특허권자"],td[data-label="창작자/상표권자"],
+td[data-label="디자인권자"]{white-space:nowrap}
+td[data-label="발명자"]{min-width:80px}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--sunken)}
+td.mono{
+  font-family:"IBM Plex Mono","Noto Sans KR",monospace; font-size:12.5px;
+  font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink2);
+}
+td.narrow{white-space:nowrap}
+td.c-name{color:var(--ink); font-weight:500; min-width:280px; max-width:520px}
+td.empty{color:var(--muted)}
+td.c-status,th.c-status{width:1%; white-space:nowrap; padding-right:6px}
+td.c-gongjong,th.c-gongjong{width:1%; padding-left:6px}
+td.c-gongjong{display:table-cell; line-height:1.45}
+.tag{
+  display:inline-block; margin:0 4px 3px 0; padding:2px 7px; white-space:nowrap;
+  font-size:11px; font-weight:500; letter-spacing:.01em; color:var(--accent-ink);
+  background:var(--accent-soft); border-radius:2px;
+}
+td.c-gongjong .tag:last-child{margin-bottom:0}
+
+.pill{
+  display:inline-block; font-size:11px; font-weight:700; letter-spacing:.02em;
+  padding:3px 8px; border-radius:2px; white-space:nowrap;
+}
+.p-reg{background:var(--accent-soft); color:var(--accent-ink)}
+.p-pend{background:var(--warn-soft); color:var(--warn)}
+.p-expired{background:var(--dim-soft); color:var(--dim)}
+
+tr.grouprow th{
+  position:static; background:var(--surface); text-align:left; padding:16px 14px 7px;
+  border-bottom:1px solid var(--line); text-transform:none; letter-spacing:0;
+}
+tr.grouprow .gname{
+  font-family:"Gothic A1",sans-serif; font-weight:800; font-size:14px;
+  color:var(--accent-ink); letter-spacing:.01em;
+}
+tr.grouprow + tr td{border-top:0}
+
+.noresult{
+  margin:18px 0 0; padding:22px; text-align:center; color:var(--muted); font-size:14px;
+  background:var(--surface); border:1px dashed var(--line); border-radius:4px;
+}
+
+footer{
+  margin-top:44px; padding-top:18px; border-top:1px solid var(--line);
+  display:flex; flex-wrap:wrap; gap:8px 20px; justify-content:space-between;
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);
+}
+
+/* ---------- cards on narrow screens ---------- */
+@media (max-width:880px){
+  .tablewrap{border:0; background:transparent; box-shadow:none; overflow:visible}
+  table,tbody,tr,td{display:block; width:auto}
+  table{min-width:0}
+  thead{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+  tbody tr{
+    background:var(--surface); border:1px solid var(--line); border-radius:4px;
+    padding:12px 14px; margin-bottom:10px; box-shadow:var(--shadow);
+  }
+  tbody tr:hover td{background:transparent}
+  tbody td{border:0; padding:3px 0; display:flex; gap:12px; align-items:baseline}
+  tbody td::before{
+    content:attr(data-label); flex:0 0 78px; font-size:10.5px; font-weight:700;
+    letter-spacing:.07em; text-transform:uppercase; color:var(--muted);
+  }
+  td.c-status{padding:0 0 6px}
+  td.c-status::before{content:none}
+  td.c-gongjong{display:block; padding:0 0 8px}
+  td.c-gongjong::before{content:none}
+  td.c-gongjong.empty{display:none}
+  td.c-name{max-width:none; font-size:14.5px}
+  tbody td[data-label]{white-space:normal}
+  tr.grouprow{background:transparent; border:0; box-shadow:none; padding:0; margin:16px 0 8px}
+  tr.grouprow th{display:block; padding:0; background:transparent; border-bottom:1px solid var(--line); padding-bottom:6px}
+  .mast{gap:20px}
+  .stats{width:100%; display:grid; grid-template-columns:1fr 1fr}
+  .stat{min-width:0; border-right:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+  .stat:nth-child(2n){border-right:0}
+  .stat:nth-child(n+3){border-bottom:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <div>
+    <p class="eyebrow">Netform R&amp;D · Intellectual Property Register</p>
+    <h1>넷폼알앤디 특허 대장</h1>
+    <p class="lede">POUR·CNC·DO·DETEX·올리뉴 다섯 개 공법과 ㈜석민이앤씨·㈜스퀘어씨엠 명의 건을 포함한 특허·상표·디자인 보유 현황입니다.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>__TOTAL__</b><span>전체 특허</span></div>
+    <div class="stat is-reg"><b>__REG__</b><span>등록완료</span></div>
+    <div class="stat is-pend"><b>__PEND__</b><span>출원·심사중</span></div>
+    <div class="stat"><b>__IP__</b><span>상표·디자인</span></div>
+  </div>
+</header>
+
+<div class="deck">
+  <div class="tabs" role="tablist" aria-label="특허 시트">
+__TABS__
+  </div>
+  <div class="tools">
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="search" id="q" placeholder="특허번호, 특허명, 공종, 발명자로 검색" aria-label="특허 검색" autocomplete="off">
+    </label>
+    <div class="seg" role="group" aria-label="등록 상태 필터">
+      <button type="button" data-f="all" aria-pressed="true">전체</button>
+      <button type="button" data-f="reg" aria-pressed="false">등록</button>
+      <button type="button" data-f="pend" aria-pressed="false">출원·심사중</button>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+</div>
+
+__PANELS__
+
+<footer>
+  <span>출처: POUR 특허 리스트.xlsx · 9개 시트</span>
+  <span>최종 기재일 __UPDATED__</span>
+</footer>
+</div>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var q = document.getElementById('q');
+  var countEl = document.getElementById('count');
+  var segs = Array.prototype.slice.call(document.querySelectorAll('.seg button'));
+  var filter = 'all';
+  var active = 0;
+
+  function apply(){
+    var term = q.value.trim().toLowerCase();
+    var panel = panels[active];
+    var rows = panel.querySelectorAll('tbody tr');
+    var shown = 0, total = 0;
+    var pendingGroup = null, groupHits = 0;
+    for (var i = 0; i < rows.length; i++){
+      var r = rows[i];
+      if (r.hasAttribute('data-group')){
+        if (pendingGroup) pendingGroup.hidden = groupHits === 0;
+        pendingGroup = r; groupHits = 0;
+        continue;
+      }
+      total++;
+      var okS = filter === 'all' || r.getAttribute('data-s') === filter;
+      var okQ = !term || r.getAttribute('data-q').indexOf(term) !== -1;
+      var vis = okS && okQ;
+      r.hidden = !vis;
+      if (vis){ shown++; groupHits++; }
+    }
+    if (pendingGroup) pendingGroup.hidden = groupHits === 0;
+    panel.querySelector('.noresult').hidden = shown !== 0;
+    panel.querySelector('.tablewrap').hidden = shown === 0;
+    countEl.textContent = shown === total ? total + '건' : shown + ' / ' + total + '건';
+  }
+
+  function select(i){
+    active = i;
+    tabs.forEach(function(t, n){
+      t.setAttribute('aria-selected', n === i ? 'true' : 'false');
+      t.tabIndex = n === i ? 0 : -1;
+    });
+    panels.forEach(function(p, n){ p.hidden = n !== i; });
+    apply();
+  }
+
+  tabs.forEach(function(t, i){
+    t.addEventListener('click', function(){ select(i); });
+    t.addEventListener('keydown', function(e){
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var n = (i + d + tabs.length) % tabs.length;
+      tabs[n].focus(); select(n);
+    });
+  });
+  segs.forEach(function(b){
+    b.addEventListener('click', function(){
+      filter = b.getAttribute('data-f');
+      segs.forEach(function(o){ o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      apply();
+    });
+  });
+  q.addEventListener('input', apply);
+  select(0);
+})();
+</script>

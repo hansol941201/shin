@@ -2,9 +2,12 @@
 """POUR 특허 리스트.xlsx -> 단일 HTML 대장."""
 import html, re, os, datetime, openpyxl
 
-SRC = '/root/.claude/uploads/f3446a2d-0ddb-5b55-94d7-b6e25753b3e8/d70180ed-POUR_____.xlsx'
-TPL = '/tmp/claude-0/-home-user-shin/f3446a2d-0ddb-5b55-94d7-b6e25753b3e8/scratchpad/template.html'
-OUT = '/home/user/shin/docs/patents/index.html'
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'POUR 특허 리스트.xlsx')
+TPL = os.path.join(HERE, 'template.html')
+OUT = os.path.join(HERE, 'index.html')
 
 
 def conv(c):
@@ -28,6 +31,36 @@ for ws in wb.worksheets:
                 if not grid[r][c]:
                     grid[r][c] = v
     sheets[ws.title] = grid
+
+# 공종이 기재된 시트들. 전체·POUR 시트에는 공종 열이 없어 여기서 끌어다 붙인다.
+GONGJONG_SRC = [('POUR공법_공종별 분류', '공종'), ('CNC공법', '구분'), ('DO공법', '구분'),
+                ('DETEX공법', '비고'), ('(주)석민이앤씨', '구분')]
+# 공종 열이 이미 있거나(공종별 분류) 공종 개념이 없는(상표) 시트는 제외
+NO_GONGJONG = {'POUR공법_공종별 분류', '넷폼알앤디 상표등록증 외'}
+
+
+def pkey(num, name):
+    """특허번호를 우선 키로 쓰고, 번호가 없는 출원 건은 특허명으로 맞춘다."""
+    n = re.sub(r'[\s제호]', '', num or '')
+    if re.match(r'^\d+-\d+$', n):
+        return n
+    return 'T:' + re.sub(r'\s', '', name) if name else ''
+
+
+GONGJONG = {}
+for _sheet, _col in GONGJONG_SRC:
+    _grid = sheets[_sheet]
+    _cols = _grid[1]
+    _i, _j, _t = _cols.index(_col), _cols.index('특허번호'), _cols.index('특허명')
+    for _row in _grid[2:]:
+        _row = (list(_row) + [''] * len(_cols))[:len(_cols)]
+        _k, _v = pkey(_row[_j], _row[_t]), _row[_i].strip()
+        if not _k or not _v or _v == '제외':
+            continue
+        GONGJONG.setdefault(_k, [])
+        if _v not in GONGJONG[_k]:
+            GONGJONG[_k].append(_v)
+
 
 CFG = [
     ('전체 특허 리스트', '전체',
@@ -92,6 +125,7 @@ for idx, (sheet, label, blurb) in enumerate(CFG):
 
     gcol = '공종' if '공종' in cols else None
     show = [c for c in cols if c != gcol]
+    add_gongjong = sheet not in NO_GONGJONG
 
     rows_html, last_group, groups = [], None, 0
     tally = {'reg': 0, 'pend': 0, 'expired': 0}
@@ -104,15 +138,21 @@ for idx, (sheet, label, blurb) in enumerate(CFG):
             groups += 1
             rows_html.append(
                 '<tr class="grouprow" data-group="1"><th colspan="%d" scope="colgroup">'
-                '<span class="gname">%s</span></th></tr>' % (len(show) + 1, esc(last_group)))
+                '<span class="gname">%s</span></th></tr>'
+                % (len(show) + 1 + add_gongjong, esc(last_group)))
         cells = ['<td class="c-status"><span class="pill p-%s">%s</span></td>' % (skey, esc(slabel))]
+        tags = GONGJONG.get(pkey(d.get('특허번호', ''), d.get('특허명', '')), []) if add_gongjong else []
+        if add_gongjong:
+            cells.append('<td class="c-gongjong%s" data-label="공종">%s</td>' % (
+                '' if tags else ' empty',
+                ''.join('<span class="tag">%s</span>' % esc(t) for t in tags) if tags else '&mdash;'))
         for c in show:
             v = d.get(c, '')
             cl = [x for x in ('mono' if c in MONO else '', 'narrow' if c in NARROW else '',
                               'c-name' if c in ('특허명',) else '', '' if v else 'empty') if x]
             cells.append('<td%s data-label="%s">%s</td>' % (
                 ' class="%s"' % ' '.join(cl) if cl else '', esc(c), esc(v) if v else '&mdash;'))
-        blob = ' '.join(v for v in row if v).lower()
+        blob = ' '.join([v for v in row if v] + tags).lower()
         rows_html.append('<tr data-s="%s" data-q="%s">%s</tr>' % (skey, esc(blob), ''.join(cells)))
 
     if sheet == '전체 특허 리스트':
@@ -127,7 +167,8 @@ for idx, (sheet, label, blurb) in enumerate(CFG):
                 'aria-selected="false" tabindex="-1">%s<span class="tcount">%d</span></button>'
                 % (tid, tid, esc(label), len(body)))
 
-    thead = '<th scope="col" class="c-status">상태</th>' + ''.join(
+    thead = ('<th scope="col" class="c-status">상태</th>'
+             + ('<th scope="col" class="c-gongjong">공종</th>' if add_gongjong else '')) + ''.join(
         '<th scope="col"%s>%s</th>' % (' class="narrow"' if c in NARROW else '', esc(c)) for c in show)
 
     meta = []
