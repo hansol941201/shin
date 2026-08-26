@@ -1,21 +1,21 @@
 /**
- * team-schedule-app 공동 일정 백엔드.
+ * team-schedule-app 공동 일정 백엔드 (팀장 전용 달력).
  *
- * 목적: 일반 팀원이 브라우저에서 Google 계정으로 직접 로그인하지 않아도
+ * 목적: 팀원이 브라우저에서 Google 계정으로 직접 로그인하지 않아도
  * 되게 한다. Google Calendar에 실제로 쓰는 주체는 이 서버(Cloud
  * Functions)뿐이고, 서버는 "서비스 계정(service account)"으로 인증한다.
  * 서비스 계정 키(JSON)는 Firebase Functions의 Secret으로만 저장되며,
  * 프론트엔드(GitHub Pages) 코드에는 어떤 credential도 들어가지 않는다.
  *
  * 데이터 흐름:
- *   - 팀원 요청/개인일정/상태 전이 → 전부 이 파일의 콜러블 함수를 거쳐
- *     Firestore `events` 컬렉션에 기록된다(클라이언트는 이 컬렉션에
- *     직접 쓸 수 없다 — firestore.rules 참고).
- *   - 확정(수락/바로 확정/시간변경 수락)될 때만 서비스 계정으로 실제
- *     팀장 Google Calendar에 이벤트를 생성/수정/삭제한다.
- *   - 팀장 Google Calendar 원본 일정은 `syncGoogleEvents`가 주기적으로
- *     읽어와 `googleEventsCache` 컬렉션에 그대로 미러링한다(클라이언트는
- *     이 컬렉션을 실시간으로 구독만 한다 — Google API를 직접 부르지 않음).
+ *   - 일정 추가/수정/삭제 → 이 파일의 콜러블 함수를 거쳐 서비스 계정으로
+ *     실제 팀장 Google Calendar에 반영하고, 그 결과를 `googleEventsCache`
+ *     컬렉션에도 즉시 반영한다(클라이언트는 이 컬렉션을 실시간으로
+ *     구독만 하므로, 다음 정기 동기화를 기다리지 않고 바로 화면에
+ *     반영된다).
+ *   - `syncGoogleEvents`가 5분마다 팀장 Google Calendar 전체를 다시 읽어
+ *     `googleEventsCache`를 최신 상태로 맞춘다 — 팀장님이 휴대폰에서
+ *     직접 등록/수정/삭제한 일정도 이 주기 안에 반영된다.
  *   - 편집(추가/수정/삭제) 기능을 쓰려면 "편집 코드"를 한 번 확인받아야
  *     한다(verifyEditCode). 코드 원문은 서버 Secret에만 있고, 검증에
  *     성공하면 만료시간이 있는 불투명 토큰만 클라이언트에 내려준다 —
@@ -63,7 +63,7 @@ function buildReminders(mode, minutes) {
 }
 
 // 편집 토큰 검증 — 만료됐거나 없으면 HttpsError를 던진다. 모든 쓰기성
-// 콜러블 함수(조회 전용 제외)는 진입 시 이 함수를 제일 먼저 부른다.
+// 콜러블 함수는 진입 시 이 함수를 제일 먼저 부른다.
 async function assertEditToken(token) {
   if (!token || typeof token !== 'string') {
     throw new HttpsError('unauthenticated', '편집 코드 확인이 필요합니다.');
@@ -109,7 +109,7 @@ function describeGoogleError(err) {
     return '이 캘린더에는 일정 등록 권한이 없습니다. 팀장님 Google Calendar 공유 설정에서 서비스 계정에 "일정 변경" 권한을 부여했는지 확인해주세요.';
   }
   if (status === 404) {
-    return '선택한 캘린더를 찾을 수 없습니다. MANAGER_CALENDAR_ID 설정을 확인해주세요.';
+    return '선택한 캘린더나 일정을 찾을 수 없습니다.';
   }
   if (status === 429) {
     return 'Google Calendar 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.';
@@ -127,6 +127,26 @@ async function hasConflict({ calendar, calendarId, startISO, endISO, excludeEven
   });
   const items = (res.data.items || []).filter((e) => e.status !== 'cancelled' && e.id !== excludeEventId);
   return items.length > 0;
+}
+
+// Google Calendar API가 돌려준 이벤트 하나를 googleEventsCache 문서
+// 형태로 변환해서 즉시 반영한다(다음 정기 동기화를 기다리지 않고
+// 클라이언트 화면에 바로 보이게 하기 위함).
+async function upsertCacheDoc(gEvent) {
+  const isAllDay = Boolean(gEvent.start?.date && !gEvent.start?.dateTime);
+  await db
+    .collection('googleEventsCache')
+    .doc(gEvent.id)
+    .set({
+      googleEventId: gEvent.id,
+      title: gEvent.summary || '(제목 없음)',
+      start: isAllDay ? `${gEvent.start.date}T00:00:00+09:00` : gEvent.start.dateTime,
+      end: isAllDay ? `${gEvent.end.date}T00:00:00+09:00` : gEvent.end.dateTime,
+      allDay: isAllDay,
+      location: gEvent.location || '',
+      memo: gEvent.description || '',
+      updatedAt: gEvent.updated || nowISO(),
+    });
 }
 
 // ---------------------------------------------------------------------
@@ -148,253 +168,71 @@ exports.verifyEditCode = onCall({ region: REGION, secrets: [EDIT_CODE] }, async 
 });
 
 // ---------------------------------------------------------------------
-// 2) 승인대기 요청 생성 (Google 미접촉)
-// ---------------------------------------------------------------------
-exports.addRequest = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { title, start, end, location, memo } = request.data || {};
-  if (!title || !start || !end) throw new HttpsError('invalid-argument', '일정명/시작/종료 시간이 필요합니다.');
-  const now = nowISO();
-  const doc = {
-    title,
-    start,
-    end,
-    location: location || '',
-    memo: memo || '',
-    requester: '한솔',
-    manager: '팀장',
-    status: 'pending',
-    googleCalendarEventId: null,
-    createdAt: now,
-    updatedAt: now,
-    source: 'platform',
-  };
-  const ref = await db.collection('events').add(doc);
-  return { ok: true, id: ref.id };
-});
-
-// ---------------------------------------------------------------------
-// 3) 한솔 개인 일정 (승인 절차 없음, Google 미접촉)
-// ---------------------------------------------------------------------
-exports.addPersonalEvent = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { title, start, end, location, memo } = request.data || {};
-  if (!title || !start || !end) throw new HttpsError('invalid-argument', '일정명/시작/종료 시간이 필요합니다.');
-  const now = nowISO();
-  const doc = {
-    title,
-    start,
-    end,
-    location: location || '',
-    memo: memo || '',
-    requester: '한솔',
-    owner: 'hansol',
-    status: 'confirmed',
-    googleCalendarEventId: null,
-    createdAt: now,
-    updatedAt: now,
-    source: 'hansol_personal',
-  };
-  const ref = await db.collection('events').add(doc);
-  return { ok: true, id: ref.id };
-});
-
-// 공통: draft를 곧바로 확정 처리(겹침 확인 → Google 생성 → Firestore 기록).
-async function confirmDraftOnGoogle(draft) {
-  const calendar = await getCalendarClient();
-  const calendarId = MANAGER_CALENDAR_ID.value();
-  const conflict = await hasConflict({ calendar, calendarId, startISO: draft.start, endISO: draft.end });
-  if (conflict) {
-    return { error: '해당 시간에 이미 다른 일정이 등록되어 있습니다.\n다른 시간을 선택해주세요.' };
-  }
-  let created;
-  try {
-    const res = await calendar.events.insert({
-      calendarId,
-      requestBody: {
-        summary: draft.title,
-        location: draft.location || undefined,
-        description: draft.memo || undefined,
-        start: { dateTime: draft.start, timeZone: 'Asia/Seoul' },
-        end: { dateTime: draft.end, timeZone: 'Asia/Seoul' },
-        reminders: buildReminders(REMINDER_MODE.value(), REMINDER_MINUTES.value()),
-      },
-    });
-    created = res.data;
-  } catch (err) {
-    logger.error('confirmDraftOnGoogle insert failed', err);
-    return { error: `Google Calendar 일정 등록에 실패했습니다.\n${describeGoogleError(err)}` };
-  }
-  return { ok: true, googleEventId: created.id };
-}
-
-// ---------------------------------------------------------------------
-// 4) 한솔이 "승인 없이 바로 확정"
+// 2) 일정 추가 — 승인 절차 없이 곧바로 확정하고 실제 Google Calendar에
+//    생성한다(팀장 전용 달력이라 요청/승인 개념이 없다).
 // ---------------------------------------------------------------------
 exports.addAndConfirmRequest = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async (request) => {
   await assertEditToken(request.data?.token);
   const { title, start, end, location, memo } = request.data || {};
   if (!title || !start || !end) throw new HttpsError('invalid-argument', '일정명/시작/종료 시간이 필요합니다.');
-  const draft = { title, start, end, location: location || '', memo: memo || '' };
-  const result = await confirmDraftOnGoogle(draft);
-  if (result.error) return { error: result.error };
-
-  const now = nowISO();
-  const ref = await db.collection('events').add({
-    ...draft,
-    requester: '한솔',
-    manager: '팀장',
-    status: 'confirmed',
-    googleCalendarEventId: result.googleEventId,
-    createdAt: now,
-    updatedAt: now,
-    source: 'platform',
-  });
-  return { ok: true, id: ref.id };
-});
-
-// ---------------------------------------------------------------------
-// 5) 팀장 수락 (pending → confirmed, Google 실제 생성)
-// ---------------------------------------------------------------------
-exports.acceptRequest = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id } = request.data || {};
-  if (!id) throw new HttpsError('invalid-argument', 'id가 필요합니다.');
-  const ref = db.collection('events').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return { error: '요청을 찾을 수 없습니다.' };
-  const target = snap.data();
-
-  const result = await confirmDraftOnGoogle(target);
-  if (result.error) return { error: result.error };
-
-  await ref.update({ status: 'confirmed', googleCalendarEventId: result.googleEventId, updatedAt: nowISO() });
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 6) 거절 (Google 미접촉)
-// ---------------------------------------------------------------------
-exports.rejectRequest = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id, reason, detail } = request.data || {};
-  if (!id) throw new HttpsError('invalid-argument', 'id가 필요합니다.');
-  const now = nowISO();
-  await db.collection('events').doc(id).update({
-    status: 'rejected',
-    rejectionReason: reason || 'unavailable',
-    rejectionDetail: detail || '',
-    updatedAt: now,
-    rejectedAt: now,
-  });
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 7) 팀장 시간변경 제안 (Google 미접촉)
-// ---------------------------------------------------------------------
-exports.proposeReschedule = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id, proposedStart, proposedEnd } = request.data || {};
-  if (!id || !proposedStart || !proposedEnd) throw new HttpsError('invalid-argument', '필수 값이 없습니다.');
-  await db.collection('events').doc(id).update({
-    status: 'reschedule_requested',
-    proposedStart,
-    proposedEnd,
-    updatedAt: nowISO(),
-  });
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 8) 한솔이 시간변경 수락 → confirmed, Google 실제 생성(제안된 시간으로)
-// ---------------------------------------------------------------------
-exports.acceptReschedule = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id } = request.data || {};
-  if (!id) throw new HttpsError('invalid-argument', 'id가 필요합니다.');
-  const ref = db.collection('events').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return { error: '요청을 찾을 수 없습니다.' };
-  const target = snap.data();
-  if (!target.proposedStart || !target.proposedEnd) return { error: '제안된 시간이 없습니다.' };
-
-  const result = await confirmDraftOnGoogle({ ...target, start: target.proposedStart, end: target.proposedEnd });
-  if (result.error) return { error: result.error };
-
-  await ref.update({
-    start: target.proposedStart,
-    end: target.proposedEnd,
-    proposedStart: admin.firestore.FieldValue.delete(),
-    proposedEnd: admin.firestore.FieldValue.delete(),
-    status: 'confirmed',
-    googleCalendarEventId: result.googleEventId,
-    updatedAt: nowISO(),
-  });
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 9) "다른 시간 선택" — 제안 거절 처리(Google 미접촉)
-// ---------------------------------------------------------------------
-exports.cancelReschedule = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id } = request.data || {};
-  if (!id) throw new HttpsError('invalid-argument', 'id가 필요합니다.');
-  await db.collection('events').doc(id).update({ status: 'rejected', updatedAt: nowISO(), rejectedAt: nowISO() });
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 10) 승인대기 요청 취소(요청자 본인) — 아직 Google에 없으므로 그냥 삭제
-// ---------------------------------------------------------------------
-exports.cancelOwnRequest = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id } = request.data || {};
-  if (!id) throw new HttpsError('invalid-argument', 'id가 필요합니다.');
-  await db.collection('events').doc(id).delete();
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 11) 일정 수정 — pending/개인일정은 Firestore만, confirmed(Google 연동)는
-//     겹침 재확인 후 Google도 함께 patch.
-// ---------------------------------------------------------------------
-exports.updateEvent = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { id, patch } = request.data || {};
-  if (!id || !patch) throw new HttpsError('invalid-argument', '필수 값이 없습니다.');
-  const ref = db.collection('events').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return { error: '일정을 찾을 수 없습니다.' };
-  const target = snap.data();
-
-  const nextStart = patch.start ?? target.start;
-  const nextEnd = patch.end ?? target.end;
-  if (new Date(nextStart) >= new Date(nextEnd)) {
-    return { error: '시작 시간이 종료 시간보다 빨라야 합니다.' };
-  }
-
-  if (target.status !== 'confirmed' || !target.googleCalendarEventId) {
-    await ref.update({ ...patch, updatedAt: nowISO() });
-    return { ok: true };
-  }
 
   const calendar = await getCalendarClient();
   const calendarId = MANAGER_CALENDAR_ID.value();
-  const conflict = await hasConflict({
-    calendar,
-    calendarId,
-    startISO: nextStart,
-    endISO: nextEnd,
-    excludeEventId: target.googleCalendarEventId,
-  });
-  if (conflict) return { error: '해당 시간에 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
+  const conflict = await hasConflict({ calendar, calendarId, startISO: start, endISO: end });
+  if (conflict) {
+    return { error: '해당 시간에 이미 다른 일정이 등록되어 있습니다.\n다른 시간을 선택해주세요.' };
+  }
 
+  let created;
   try {
-    await calendar.events.patch({
+    const res = await calendar.events.insert({
       calendarId,
-      eventId: target.googleCalendarEventId,
+      requestBody: {
+        summary: title,
+        location: location || undefined,
+        description: memo || undefined,
+        start: { dateTime: start, timeZone: 'Asia/Seoul' },
+        end: { dateTime: end, timeZone: 'Asia/Seoul' },
+        reminders: buildReminders(REMINDER_MODE.value(), REMINDER_MINUTES.value()),
+      },
+    });
+    created = res.data;
+  } catch (err) {
+    logger.error('addAndConfirmRequest insert failed', err);
+    return { error: `Google Calendar 일정 등록에 실패했습니다.\n${describeGoogleError(err)}` };
+  }
+
+  await upsertCacheDoc(created);
+  return { ok: true, googleEventId: created.id };
+});
+
+// ---------------------------------------------------------------------
+// 3) 일정 수정 — 겹침 재확인 후 Google Calendar에도 반영.
+// ---------------------------------------------------------------------
+exports.updateEvent = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async (request) => {
+  await assertEditToken(request.data?.token);
+  const { googleEventId, patch } = request.data || {};
+  if (!googleEventId || !patch) throw new HttpsError('invalid-argument', '필수 값이 없습니다.');
+
+  const calendar = await getCalendarClient();
+  const calendarId = MANAGER_CALENDAR_ID.value();
+
+  if (patch.start && patch.end) {
+    const conflict = await hasConflict({
+      calendar,
+      calendarId,
+      startISO: patch.start,
+      endISO: patch.end,
+      excludeEventId: googleEventId,
+    });
+    if (conflict) return { error: '해당 시간에 다른 일정이 있습니다.\n다른 시간을 선택해주세요.' };
+  }
+
+  let patched;
+  try {
+    const res = await calendar.events.patch({
+      calendarId,
+      eventId: googleEventId,
       requestBody: {
         summary: patch.title,
         location: patch.location,
@@ -404,65 +242,42 @@ exports.updateEvent = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_
         reminders: buildReminders(REMINDER_MODE.value(), REMINDER_MINUTES.value()),
       },
     });
+    patched = res.data;
   } catch (err) {
     logger.error('updateEvent patch failed', err);
     return { error: describeGoogleError(err) };
   }
 
-  await ref.update({ ...patch, updatedAt: nowISO() });
+  await upsertCacheDoc(patched);
   return { ok: true };
 });
 
 // ---------------------------------------------------------------------
-// 12) 일정 삭제 — confirmed(Google 연동)는 Google에서도 삭제.
+// 4) 일정 삭제 — Google Calendar에서 삭제하고 캐시에서도 즉시 제거.
 // ---------------------------------------------------------------------
 exports.deleteEventAction = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async (request) => {
   await assertEditToken(request.data?.token);
-  const { id } = request.data || {};
-  if (!id) throw new HttpsError('invalid-argument', 'id가 필요합니다.');
-  const ref = db.collection('events').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return { error: '일정을 찾을 수 없습니다.' };
-  const target = snap.data();
+  const { googleEventId } = request.data || {};
+  if (!googleEventId) throw new HttpsError('invalid-argument', 'googleEventId가 필요합니다.');
 
-  if (target.status === 'confirmed' && target.googleCalendarEventId) {
-    try {
-      const calendar = await getCalendarClient();
-      await calendar.events.delete({ calendarId: MANAGER_CALENDAR_ID.value(), eventId: target.googleCalendarEventId });
-    } catch (err) {
-      // 이미 Google 쪽에서 지워진 경우(404)는 그냥 우리 쪽도 정리하고 넘어간다.
-      if (err?.code !== 404) {
-        logger.error('deleteEventAction failed', err);
-        return { error: describeGoogleError(err) };
-      }
+  try {
+    const calendar = await getCalendarClient();
+    await calendar.events.delete({ calendarId: MANAGER_CALENDAR_ID.value(), eventId: googleEventId });
+  } catch (err) {
+    // 이미 Google 쪽에서 지워진 경우(404)는 캐시만 정리하고 넘어간다.
+    if (err?.code !== 404) {
+      logger.error('deleteEventAction failed', err);
+      return { error: describeGoogleError(err) };
     }
   }
 
-  await ref.delete();
+  await db.collection('googleEventsCache').doc(googleEventId).delete().catch(() => {});
   return { ok: true };
 });
 
 // ---------------------------------------------------------------------
-// 13) 한솔 동행 토글 — 원본 일정을 복제하지 않고 id(Set)만 관리.
-// ---------------------------------------------------------------------
-exports.toggleAccompany = onCall({ region: REGION }, async (request) => {
-  await assertEditToken(request.data?.token);
-  const { key } = request.data || {};
-  if (!key) throw new HttpsError('invalid-argument', 'key가 필요합니다.');
-  const ref = db.collection('settings').doc('accompany');
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const ids = new Set(snap.exists ? snap.data().ids || [] : []);
-    if (ids.has(key)) ids.delete(key);
-    else ids.add(key);
-    tx.set(ref, { ids: [...ids] });
-  });
-  return { ok: true };
-});
-
-// ---------------------------------------------------------------------
-// 14) 팀장 Google Calendar → googleEventsCache 동기화.
-//     스케줄(5분 간격) + 수동 트리거(콜러블) 둘 다 제공.
+// 5) 팀장 Google Calendar → googleEventsCache 동기화.
+//    스케줄(5분 간격) + 수동 트리거(콜러블) 둘 다 제공.
 // ---------------------------------------------------------------------
 async function runGoogleSync() {
   const calendar = await getCalendarClient();
@@ -527,9 +342,6 @@ exports.syncGoogleEvents = onSchedule(
 );
 
 // 관리자 설정 화면의 "지금 동기화" 버튼 등에서 즉시 호출할 수 있는 수동 트리거.
-// 편집 코드 없이도(=읽기 성격) 호출 가능하지만, 남용 방지를 위해 최소한
-// editToken 여부와 무관하게 호출량 자체는 Cloud Functions 기본 과금/쿼터로
-// 제한된다. 필요하면 이후 관리자 전용 토큰으로 더 좁혀도 된다.
 exports.refreshGoogleEvents = onCall({ region: REGION, secrets: [GOOGLE_SERVICE_ACCOUNT_KEY] }, async () => {
   try {
     await runGoogleSync();

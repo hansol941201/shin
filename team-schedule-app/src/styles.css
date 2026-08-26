@@ -267,8 +267,7 @@ button, select, input, textarea {
   width: 8px; height: 8px; border-radius: 2px; display: inline-block;
 }
 .legend-confirmed { background: var(--confirmed-bg); border-left: 2px solid var(--confirmed-border); }
-.legend-pending { background: var(--own-bg); border: 1px solid var(--own-border); }
-.legend-woodpecker { width: 16px; height: 16px; object-fit: contain; }
+.legend-shared { background: var(--shared-bg); border: 1px solid var(--shared-border); }
 
 /* ---------- 상단 요약 카드: 팀장/한솔 필터에 따라 숫자가 바뀐다 ---------- */
 .summary-bar {

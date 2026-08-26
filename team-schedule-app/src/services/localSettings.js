@@ -5,16 +5,10 @@
 //   붙일 알림(reminders) 설정. 'google_default'면 캘린더 자체 기본 알림을
 //   그대로 쓰고(useDefault:true), 'app'이면 이 앱이 지정한 분(minutes) 전
 //   팝업 알림을 명시적으로 붙인다.
-// - accompanyIds: "한솔 동행" 표시가 켜진 일정의 식별자 목록. 원본 일정을
-//   복제하지 않고 이 id 목록만 이 앱 저장소에 따로 저장한다 — Google
-//   Calendar/공유 Firebase 어느 쪽에도 쓰지 않는다. 식별자는 Google
-//   일정이면 googleEventId, 공유 일정이면 그 일정의 id를 그대로 쓴다.
-
 const DEMO_MODE_KEY = 'team-schedule-app:demoMode';
 const MANAGER_CALENDAR_KEY = 'team-schedule-app:managerCalendarId';
 const REMINDER_MODE_KEY = 'team-schedule-app:reminderMode';
 const REMINDER_MINUTES_KEY = 'team-schedule-app:reminderMinutes';
-const ACCOMPANY_IDS_KEY = 'team-schedule-app:hansolAccompanyIds';
 
 export const REMINDER_MINUTE_OPTIONS = [
   { value: 10, label: '10분 전' },
@@ -91,20 +85,3 @@ export function setReminderMinutes(minutes) {
   }
 }
 
-export function getAccompanyIds() {
-  try {
-    const raw = window.localStorage.getItem(ACCOMPANY_IDS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-export function setAccompanyIds(ids) {
-  try {
-    window.localStorage.setItem(ACCOMPANY_IDS_KEY, JSON.stringify(ids));
-  } catch {
-    /* noop */
-  }
-}

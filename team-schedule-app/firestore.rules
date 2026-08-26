@@ -10,10 +10,6 @@ rules_version = '2';
 // 쪽(functions/index.js의 assertEditToken)에서 이뤄진다.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /events/{eventId} {
-      allow read: if true;
-      allow write: if false;
-    }
     match /googleEventsCache/{eventId} {
       allow read: if true;
       allow write: if false;

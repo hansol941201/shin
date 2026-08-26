@@ -1,11 +1,10 @@
 // 공동(로그인 없는) 백엔드 모드용 provider.
 //
-// store.jsx의 AppProvider(사용자별 Google OAuth + localStorage)는 이
-// 파일이 전혀 건드리지 않는다 — SHARED_BACKEND_CONFIGURED(=VITE_FIREBASE_*
-// Secret이 등록된 경우)일 때만 App.jsx가 AppProvider 대신 이 provider를
-// 마운트한다. 둘 다 store.jsx가 export하는 같은 AppContext를 쓰므로,
-// 모든 화면 컴포넌트는 useApp()만 그대로 쓰면 되고 어느 provider가
-// 떠 있는지 알 필요가 없다.
+// store.jsx의 AppProvider(사용자별 Google OAuth)는 이 파일이 전혀 건드리지
+// 않는다 — SHARED_BACKEND_CONFIGURED(=VITE_FIREBASE_* Secret이 등록된
+// 경우)일 때만 App.jsx가 AppProvider 대신 이 provider를 마운트한다. 둘 다
+// store.jsx가 export하는 같은 AppContext를 쓰므로, 모든 화면 컴포넌트는
+// useApp()만 그대로 쓰면 되고 어느 provider가 떠 있는지 알 필요가 없다.
 //
 // 데이터는 전부 Firestore 실시간 리스너(sharedBackend.js)로 받고, 쓰기는
 // 전부 Cloud Functions 콜러블로 보낸다. 이 파일 자체는 Google API를
@@ -18,10 +17,7 @@ import * as backend from '../services/sharedBackend.js';
 
 export function SharedAppProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [role, setRole] = useState('coordinator');
-  const [view] = useState('month');
   const [cursorDate, setCursorDate] = useState(() => new Date());
-  const currentWeekStart = useMemo(() => getWeekStart(cursorDate), [cursorDate]);
 
   const [focusedEvent, setFocusedEvent] = useState(null);
   const focusEvent = useCallback((event) => {
@@ -33,14 +29,10 @@ export function SharedAppProvider({ children }) {
   const clearFocusedEvent = useCallback(() => setFocusedEvent(null), []);
 
   // ---- Firestore 실시간 구독 ----
-  const [platformEvents, setPlatformEvents] = useState([]); // events 컬렉션(승인대기/확정/거절/개인일정)
   const [googleEvents, setGoogleEvents] = useState([]); // googleEventsCache 컬렉션
-  const [accompanyIds, setAccompanyIds] = useState(new Set());
   const [syncStatus, setSyncStatus] = useState(null);
 
-  useEffect(() => backend.subscribeEvents(setPlatformEvents), []);
   useEffect(() => backend.subscribeGoogleEventsCache(setGoogleEvents), []);
-  useEffect(() => backend.subscribeAccompanyIds(setAccompanyIds), []);
   useEffect(() => backend.subscribeSyncStatus(setSyncStatus), []);
 
   // ---- 다른 팀 Firebase(읽기 전용) — 기존 store.jsx와 동일한 방식 재사용 ----
@@ -85,45 +77,31 @@ export function SharedAppProvider({ children }) {
     return res;
   }, []);
 
-  const addRequest = useMemo(() => guarded(backend.addRequest), [guarded]);
-  const addPersonalEvent = useMemo(() => guarded(backend.addPersonalEvent), [guarded]);
-  const addAndConfirmRequest = useMemo(
-    () => guarded((draft) => backend.addAndConfirmRequest(draft)),
-    [guarded]
+  const addEvent = useMemo(() => guarded(backend.addAndConfirmRequest), [guarded]);
+  // 화면 쪽(EventDetailPopover)은 이 앱 내부 id(예: "google_xyz")로 부르므로,
+  // 여기서 실제 Google 이벤트 id(googleCalendarEventId)로 바꿔서 서버에
+  // 보낸다 — 서버는 Firestore에 platform 일정 컬렉션을 두지 않고 항상
+  // 실제 Google 이벤트 id를 기준으로 동작한다.
+  const updateEvent = useMemo(
+    () =>
+      guarded((id, patch) => {
+        const target = googleEvents.find((e) => e.id === id);
+        if (!target) return Promise.resolve({ error: '일정을 찾을 수 없습니다.' });
+        return backend.updateEvent({ googleEventId: target.googleCalendarEventId, patch });
+      }),
+    [guarded, googleEvents]
   );
-  const acceptRequest = useMemo(() => guarded((id) => backend.acceptRequest({ id })), [guarded]);
-  const rejectRequest = useMemo(
-    () => guarded((id, reason, detail) => backend.rejectRequest({ id, reason, detail })),
-    [guarded]
-  );
-  const proposeReschedule = useMemo(
-    () => guarded((id, proposedStart, proposedEnd) => backend.proposeReschedule({ id, proposedStart, proposedEnd })),
-    [guarded]
-  );
-  const acceptReschedule = useMemo(() => guarded((id) => backend.acceptReschedule({ id })), [guarded]);
-  const cancelReschedule = useMemo(() => guarded((id) => backend.cancelReschedule({ id })), [guarded]);
-  const cancelOwnRequest = useMemo(() => guarded((id) => backend.cancelOwnRequest({ id })), [guarded]);
-  const updateEvent = useMemo(() => guarded((id, patch) => backend.updateEvent({ id, patch })), [guarded]);
-  const deleteEventAction = useMemo(() => guarded((id) => backend.deleteEventAction({ id })), [guarded]);
-
-  // 한솔 동행 — 원본 일정을 복제하지 않고 id(googleEventId 또는 공유
-  // 일정 id)만 태그한다(기존 store.jsx와 동일한 규칙).
-  const accompanyKeyOf = useCallback((event) => {
-    if (!event) return null;
-    if (event.source === 'google') return event.googleEventId || null;
-    if (event.source === 'shared_team_calendar') return event.id || null;
-    return null;
-  }, []);
-  const toggleAccompanyRaw = useMemo(() => guarded((key) => backend.toggleAccompany({ key })), [guarded]);
-  const toggleAccompany = useCallback(
-    (event) => {
-      const key = accompanyKeyOf(event);
-      if (key) toggleAccompanyRaw(key);
-    },
-    [accompanyKeyOf, toggleAccompanyRaw]
+  const deleteEventAction = useMemo(
+    () =>
+      guarded((id) => {
+        const target = googleEvents.find((e) => e.id === id);
+        if (!target) return Promise.resolve({ error: '일정을 찾을 수 없습니다.' });
+        return backend.deleteEventAction({ googleEventId: target.googleCalendarEventId });
+      }),
+    [guarded, googleEvents]
   );
 
-  // ---- 병합된 events (기존 store.jsx의 로직과 동일) ----
+  // ---- 병합된 events ----
   const events = useMemo(() => {
     const isDuplicateOfGoogle = (shared, googleList) => {
       const sStart = new Date(shared.start);
@@ -143,23 +121,10 @@ export function SharedAppProvider({ children }) {
         return a === b || a.includes(b) || b.includes(a);
       });
     };
-    const tagAccompany = (list) =>
-      list.map((e) => {
-        const key = accompanyKeyOf(e);
-        return key && accompanyIds.has(key) ? { ...e, hansolAccompany: true } : e;
-      });
 
-    const sharedVisible = tagAccompany(sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents)));
-    const hansolConfirmedGoogleIds = new Set(
-      platformEvents
-        .filter((e) => e.source === 'platform' && e.status === 'confirmed' && e.googleCalendarEventId)
-        .map((e) => e.googleCalendarEventId)
-    );
-    const googleVisible = tagAccompany(
-      googleEvents.filter((g) => !(g.googleEventId && hansolConfirmedGoogleIds.has(g.googleEventId)))
-    );
-    return [...googleVisible, ...platformEvents, ...sharedVisible];
-  }, [platformEvents, googleEvents, sharedEvents, accompanyIds, accompanyKeyOf]);
+    const sharedVisible = sharedEvents.filter((s) => !isDuplicateOfGoogle(s, googleEvents));
+    return [...googleEvents, ...sharedVisible];
+  }, [googleEvents, sharedEvents]);
 
   const updateSettings = useCallback((patch) => setSettings((s) => ({ ...s, ...patch })), []);
 
@@ -167,23 +132,10 @@ export function SharedAppProvider({ children }) {
     () => ({
       settings,
       updateSettings,
-      role,
-      setRole,
-      view,
-      setView: () => {}, // 월간 전용 — 기존 정책과 동일
-      currentWeekStart,
       cursorDate,
       setCursorDate,
       events,
-      addRequest,
-      addAndConfirmRequest,
-      addPersonalEvent,
-      acceptRequest,
-      rejectRequest,
-      proposeReschedule,
-      acceptReschedule,
-      cancelReschedule,
-      cancelOwnRequest,
+      addEvent,
       updateEvent,
       deleteEventAction,
       focusedEvent,
@@ -217,7 +169,6 @@ export function SharedAppProvider({ children }) {
       setReminderMinutes: () => {},
       sharedStatus,
       sharedEventCount: sharedEvents.length,
-      toggleAccompany,
       demoMode: false,
       setDemoMode: () => {},
       // 편집 코드 게이트
@@ -231,20 +182,9 @@ export function SharedAppProvider({ children }) {
     [
       settings,
       updateSettings,
-      role,
-      view,
-      currentWeekStart,
       cursorDate,
       events,
-      addRequest,
-      addAndConfirmRequest,
-      addPersonalEvent,
-      acceptRequest,
-      rejectRequest,
-      proposeReschedule,
-      acceptReschedule,
-      cancelReschedule,
-      cancelOwnRequest,
+      addEvent,
       updateEvent,
       deleteEventAction,
       focusedEvent,
@@ -253,7 +193,6 @@ export function SharedAppProvider({ children }) {
       syncStatus,
       sharedStatus,
       sharedEvents,
-      toggleAccompany,
       editCodeGateOpen,
       editCodeError,
       editCodeSubmitting,

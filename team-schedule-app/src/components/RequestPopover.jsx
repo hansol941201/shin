@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import PopoverShell from './PopoverShell.jsx';
 import { formatHM, parseHM } from '../utils/time.js';
 
-// 빈 시간 클릭/드래그 후 뜨는 일정 요청 입력 팝오버.
-// 시작/종료 시간은 30분 단위 선택지가 아니라 <input type="time">으로 자유롭게
-// 입력한다(근무시간 범위에 갇히지 않음 — 07:30, 21:00 등도 그대로 입력 가능).
+// 날짜 칸의 `+` 버튼을 눌렀을 때 뜨는 일정 추가 팝오버. 팀장 전용 달력이라
+// 승인 절차 없이 곧바로 확정되고, 실제 Google Calendar에도 바로 등록된다.
+// 시작/종료 시간은 30분 단위 선택지가 아니라 <input type="time">으로
+// 자유롭게 입력한다(근무시간 범위에 갇히지 않음 — 07:30, 21:00 등도 그대로
+// 입력 가능).
 export default function RequestPopover({ anchor, day, initialStart, initialEnd, onClose, onSubmit }) {
   const [startMin, setStartMin] = useState(initialStart);
   const [endMin, setEndMin] = useState(initialEnd);
@@ -12,24 +14,17 @@ export default function RequestPopover({ anchor, day, initialStart, initialEnd, 
   const [location, setLocation] = useState('');
   const [memo, setMemo] = useState('');
   const [error, setError] = useState('');
-  const [warning, setWarning] = useState(''); // 한솔 개인 일정과 겹칠 때: 막지 않고 경고만
   const [submitting, setSubmitting] = useState(false);
-  // 기본은 기존과 동일하게 "팀장님께 요청"(승인대기)이지만, 체크하면
-  // 승인 절차 없이 곧바로 확정 등록한다(요청하신 대로 "내가 확정"할 수
-  // 있게 하는 옵션 — 강제하지 않고 매번 선택할 수 있게 기본은 꺼둠).
-  const [confirmNow, setConfirmNow] = useState(false);
 
-  async function handleSubmit(force) {
-    if (!force) {
-      setError('');
-      if (!title.trim()) {
-        setError('일정명을 입력해주세요.');
-        return;
-      }
-      if (endMin <= startMin) {
-        setError('종료시간은 시작시간보다 늦어야 합니다.');
-        return;
-      }
+  async function handleSubmit() {
+    setError('');
+    if (!title.trim()) {
+      setError('일정명을 입력해주세요.');
+      return;
+    }
+    if (endMin <= startMin) {
+      setError('종료시간은 시작시간보다 늦어야 합니다.');
+      return;
     }
     setSubmitting(true);
     const result = await onSubmit({
@@ -38,15 +33,8 @@ export default function RequestPopover({ anchor, day, initialStart, initialEnd, 
       memo: memo.trim(),
       startMin,
       endMin,
-      force: Boolean(force),
-      confirmNow,
     });
     setSubmitting(false);
-    if (result && result.warning) {
-      setWarning(result.warning);
-      return;
-    }
-    setWarning('');
     if (result && result.error) {
       setError(result.error);
     }
@@ -98,36 +86,10 @@ export default function RequestPopover({ anchor, day, initialStart, initialEnd, 
         rows={2}
       />
 
-      {warning ? (
-        <>
-          <div className="pv-warning">{warning}</div>
-          <div className="pv-actions">
-            <button className="pv-btn" onClick={() => setWarning('')} disabled={submitting}>취소</button>
-            <button className="pv-btn pv-btn-primary" onClick={() => handleSubmit(true)} disabled={submitting}>
-              {submitting ? '확인 중…' : '계속'}
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <label className="pv-confirm-now-row">
-            <input
-              type="checkbox"
-              checked={confirmNow}
-              onChange={(e) => setConfirmNow(e.target.checked)}
-            />
-            승인 없이 바로 확정
-          </label>
-          {error && <div className="pv-error">{error}</div>}
-          <button
-            className={`pv-submit${confirmNow ? ' pv-submit-confirm-now' : ''}`}
-            onClick={() => handleSubmit(false)}
-            disabled={submitting}
-          >
-            {submitting ? '확인 중…' : confirmNow ? '바로 확정하기' : '팀장님께 요청'}
-          </button>
-        </>
-      )}
+      {error && <div className="pv-error">{error}</div>}
+      <button className="pv-submit" onClick={handleSubmit} disabled={submitting}>
+        {submitting ? '등록 중…' : '일정 추가'}
+      </button>
     </PopoverShell>
   );
 }

@@ -1,11 +1,11 @@
 // 공동 일정 백엔드(Firestore + Cloud Functions) 클라이언트.
 //
 // 이 모듈이 하는 일은 딱 두 가지뿐이다:
-//   1) `events`/`googleEventsCache`/`settings/*` 컬렉션을 실시간(onSnapshot)
-//      으로 구독해서 모든 접속자가 같은 데이터를 본다.
-//   2) 추가/수정/삭제 등 쓰기 동작은 전부 Cloud Functions 콜러블 함수를
-//      호출한다 — 이 클라이언트는 Firestore에 절대 직접 쓰지 않는다
-//      (firestore.rules가 클라이언트 쓰기를 막아두기도 했다).
+//   1) `googleEventsCache`/`settings/sync` 컬렉션을 실시간(onSnapshot)으로
+//      구독해서 모든 접속자가 같은 데이터를 본다.
+//   2) 추가/수정/삭제는 전부 Cloud Functions 콜러블 함수를 호출한다 —
+//      이 클라이언트는 Firestore에 절대 직접 쓰지 않는다(firestore.rules가
+//      클라이언트 쓰기를 막아두기도 했다).
 //
 // Google Calendar API는 이 모듈이 직접 부르지 않는다. 서버(Cloud
 // Functions)만 서비스 계정으로 Google을 호출하고, 그 결과를
@@ -15,8 +15,8 @@
 //
 // VITE_FIREBASE_* 환경변수가 설정되어 있지 않으면(=아직 관리자가 백엔드
 // 설정을 마치지 않은 상태) SHARED_BACKEND_CONFIGURED가 false가 되고,
-// store.jsx는 기존 방식(로컬 localStorage + 사용자 Google OAuth)을 그대로
-// 쓴다 — 이 파일이 존재한다고 해서 기존 동작이 바뀌지 않는다.
+// store.jsx는 기존 방식(로컬 + 사용자 Google OAuth)을 그대로 쓴다 — 이
+// 파일이 존재한다고 해서 기존 동작이 바뀌지 않는다.
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, doc, onSnapshot } from 'firebase/firestore';
@@ -117,18 +117,11 @@ function callable(name) {
   };
 }
 
-export const addRequest = callable('addRequest');
-export const addPersonalEvent = callable('addPersonalEvent');
+// 일정 추가 — 승인 절차 없이 곧바로 확정하고 실제 Google Calendar에
+// 생성한다(functions/index.js의 addAndConfirmRequest).
 export const addAndConfirmRequest = callable('addAndConfirmRequest');
-export const acceptRequest = callable('acceptRequest');
-export const rejectRequest = callable('rejectRequest');
-export const proposeReschedule = callable('proposeReschedule');
-export const acceptReschedule = callable('acceptReschedule');
-export const cancelReschedule = callable('cancelReschedule');
-export const cancelOwnRequest = callable('cancelOwnRequest');
 export const updateEvent = callable('updateEvent');
 export const deleteEventAction = callable('deleteEventAction');
-export const toggleAccompany = callable('toggleAccompany');
 
 // 관리자 설정 화면의 "지금 동기화" 버튼용 — 편집 코드 없이도 부를 수 있게
 // 별도 처리(서버 함수 자체는 편집 토큰을 요구하지 않는다).
@@ -146,11 +139,6 @@ export async function refreshGoogleEvents() {
 // ---------------------------------------------------------------------
 // 실시간 구독
 // ---------------------------------------------------------------------
-export function subscribeEvents(onData) {
-  return onSnapshot(collection(getDb(), 'events'), (snap) => {
-    onData(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
-}
 
 // googleEventsCache 문서는 Cloud Functions가 Google Calendar API 응답을
 // 그대로 미러링해둔 것(functions/index.js의 runGoogleSync 참고) — 여기서는
@@ -172,8 +160,6 @@ export function subscribeGoogleEventsCache(onData) {
           allDay: Boolean(data.allDay),
           location: data.location || '',
           memo: data.memo || '',
-          requester: '팀장',
-          manager: '팀장',
           status: 'confirmed',
           createdAt: data.updatedAt,
           updatedAt: data.updatedAt,
@@ -181,12 +167,6 @@ export function subscribeGoogleEventsCache(onData) {
         };
       })
     );
-  });
-}
-
-export function subscribeAccompanyIds(onData) {
-  return onSnapshot(doc(getDb(), 'settings', 'accompany'), (snap) => {
-    onData(new Set(snap.exists() ? snap.data().ids || [] : []));
   });
 }
 

@@ -7,29 +7,14 @@ import PopoverShell from './PopoverShell.jsx';
 import GoogleConnectButton from './GoogleConnectButton.jsx';
 import { IS_DEV } from '../services/googleAuth.js';
 import { REMINDER_MINUTE_OPTIONS } from '../services/localSettings.js';
-import netformLogo from '../assets/netform-logo.png';
-
-// MonthView의 visibleByRole과 동일한 규칙 — 한솔 개인 일정은 팀장 화면에서
-// 검색 결과에도 나오지 않게 한다(달력에서도 안 보이는 일정을 검색으로
-// 찾을 수 있으면 화면 필터링과 어긋난다).
-function visibleByRole(e, role) {
-  if (e.source === 'hansol_personal') return role === 'coordinator';
-  return true;
-}
 
 const SEARCH_TYPE_LABEL = {
-  google: '팀장 일정',
-  hansol_personal: '내 일정',
+  google: '확정 일정',
   shared_team_calendar: '공유 일정',
 };
 
 function searchTypeLabel(e) {
-  if (SEARCH_TYPE_LABEL[e.source]) return SEARCH_TYPE_LABEL[e.source];
-  // platform: 상태에 따라 확정/승인대기 등으로 구분해 보여준다.
-  if (e.status === 'pending') return '승인대기';
-  if (e.status === 'reschedule_requested') return '시간변경 요청';
-  if (e.status === 'rejected') return '거절';
-  return '내 요청';
+  return SEARCH_TYPE_LABEL[e.source] || '일정';
 }
 
 const MAX_SEARCH_RESULTS = 8;
@@ -39,7 +24,7 @@ const MAX_SEARCH_RESULTS = 8;
 // 참고). 현재 로드되어 있는 events 안에서만 찾으므로, Google 일정은 아직
 // 한 번도 불러오지 않은 먼 과거/미래 달까지는 찾지 못할 수 있다.
 function SearchBox() {
-  const { events, role, focusEvent } = useApp();
+  const { events, focusEvent } = useApp();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = useRef(null);
@@ -48,14 +33,13 @@ function SearchBox() {
     const q = query.trim().toLowerCase();
     if (!q) return [];
     return events
-      .filter((e) => visibleByRole(e, role))
       .filter((e) => {
         const haystack = `${e.title || ''} ${e.location || ''} ${e.memo || ''}`.toLowerCase();
         return haystack.includes(q);
       })
       .sort((a, b) => new Date(a.start) - new Date(b.start))
       .slice(0, MAX_SEARCH_RESULTS);
-  }, [events, role, query]);
+  }, [events, query]);
 
   function pick(e) {
     focusEvent(e);
@@ -281,7 +265,7 @@ function SettingsPopover({ anchor, onClose }) {
             </select>
           )}
           <div className="pv-hint">
-            한솔 요청을 수락해 Google Calendar에 실제 일정을 만들 때 이 알림이 함께 설정됩니다.
+            일정을 추가할 때 Google Calendar에 이 알림이 함께 설정됩니다.
           </div>
 
           <hr className="settings-sep" />
@@ -381,8 +365,6 @@ export default function Header() {
   const {
     cursorDate,
     setCursorDate,
-    role,
-    setRole,
     googleActive,
     googleEventsLoading,
     googleEventsError,
@@ -415,7 +397,6 @@ export default function Header() {
     <>
       <header className="topbar">
         <div className="topbar-left">
-          <img className="topbar-logo" src={netformLogo} alt="NETFORM" />
           <SearchBox />
         </div>
 
@@ -452,20 +433,6 @@ export default function Header() {
             <GoogleConnectButton />
           )}
           <button ref={gearRef} className="icon-btn" onClick={openSettings} title="근무시간/캘린더 설정" aria-label="설정">⚙</button>
-          <div className="role-switch view-switch" title="달력 보기 전환 — 팀장: 팀장님 실제 일정만 / 한솔: 내가 요청한 일정만">
-            <button
-              className={role === 'manager' ? 'active' : ''}
-              onClick={() => setRole('manager')}
-            >
-              팀장
-            </button>
-            <button
-              className={role === 'coordinator' ? 'active' : ''}
-              onClick={() => setRole('coordinator')}
-            >
-              한솔
-            </button>
-          </div>
         </div>
 
         {settingsAnchor && <SettingsPopover anchor={settingsAnchor} onClose={() => setSettingsAnchor(null)} />}
