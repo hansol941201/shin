@@ -12,24 +12,33 @@
      있고, 반대로 CRM 전용 규칙을 추가하다 v2 셀렉터와 충돌할 위험도 있다. 두 파일이
      완전히 독립적으로 배포/롤백될 수 있도록 값만 그대로 복제했다 — 색/간격 값이 바뀌면
      양쪽을 각각 맞춰야 하지만, 지금 단계에서는 안전성이 더 중요하다고 판단했다.) ───────── */
+  /* §디자인 토큰 통합 라운드(신규): 이 파일에는 :root 토큰 블록이 4곳(여기 + 이전
+     "ChatGPT FINAL VISUAL PASS" + "FINAL VISUAL MATCH" + "HANSOL CRM corporate
+     visual override")에 걸쳐 나뉘어 있었고, 뒤에 나오는 블록이 CSS 캐스케이드로 앞
+     블록의 값을 덮어써 왔다(마지막 override 블록이 최종 승자). 실제 화면에 적용되던
+     "최종 유효값"만 그대로 여기 한 곳에 모았다 — 값 자체는 하나도 바꾸지 않았으므로
+     화면은 이전과 완전히 동일하게 렌더링된다(순수 정리, §0 "시각적 변화 없음"). 뒤에
+     남아있던 3개 :root 블록은 이제 빈 곳이 아니라 아예 제거했고, 그 블록들이 갖고
+     있던 선택자 규칙(.rising-section 등)은 그대로 남겨뒀다 — 토큰 선언만 통합. */
   :root{
-    /* §첫 화면 최종 수정 라운드: WHITE+NAVY+LIGHT BLUE+COOL GRAY 4계열로 통일 — 이 토큰들이
-       파일 전체에서 재사용되므로 값만 바꿔도 앱 전체 톤이 일관되게 맞춰진다(개별 컴포넌트를
-       하나씩 다시 칠하지 않음). */
-    --bg: #F8FAFC;
+    --bg: #F4F7FB;
     --surface: #FFFFFF;
-    --navy: #172A52;
-    --navy-hover: #223A6B;
-    --text: #1E293B;
-    --text-muted: #64748B;
-    --text-faint: #94A3B8;
-    --line: #E2E8F0;
-    /* §고객관리 CRM 첫화면 대시보드 개편 라운드: 상승/유지/감소/경고 4색 규칙 — 화면 전체에서
-       이 네 토큰만 재사용한다(동전/별 아이콘 대신 색+텍스트로만 구분, §1). */
-    --up: #16A34A; --up-bg: #ECFDF3;
-    --flat: #2563EB; --flat-bg: #EFF6FF;
-    --down: #DC2626; --down-bg: #FEF2F2;
-    --warn: #C2670A; --warn-bg: #FFF7ED;
+    --navy: #082F67;
+    --navy-hover: #213D70;
+    --text: #13243E;
+    --text-muted: #66758D;
+    --text-faint: #98A5B7;
+    --line: #DFE7F1;
+    --soft-blue: #F1F6FC;
+    --soft-blue-2: #EAF2FB;
+    --blue: #0B5BD3;
+    /* 상승/유지/감소/경고 4색 규칙 — 화면 전체에서 이 토큰만 재사용한다. --up/--green,
+       --down 은 각각 "완료·상승"/"미응답·긴급" 전용 색(§리디자인 원칙)과 동일한 값이라
+       별도 --red 토큰을 새로 만들지 않고 --down을 그대로 그 의미로 재사용한다. */
+    --up: #169B62; --up-bg: #EDF9F3; --green: #079455;
+    --flat: #2E78D2; --flat-bg: #EEF6FF;
+    --down: #D85858; --down-bg: #FFF1F1;
+    --warn: #D08A28; --warn-bg: #FFF7E9;
   }
   *{ box-sizing:border-box; }
   html,body{
@@ -85,6 +94,8 @@
   .list-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .list-title-row{ display:flex; align-items:center; gap:8px; }
   .list-title{ font-size:19px; font-weight:700; color:var(--text); }
+  /* §목록 헤더 비주얼 패스 라운드(신규): "N개 업체 · 관리 필요 M" 요약 텍스트 */
+  .list-summary{ font-size:12.5px; color:var(--text-muted); }
   /* §미등록 업체 관리 라운드: 작은 경고 배지 — 큰 경고창 형태 금지(§요청), 평소 화면을
      방해하지 않는 인라인 텍스트+옅은 배경 정도만. */
   .unreg-badge{
@@ -976,7 +987,7 @@
 
   /* ---- Partner Dashboard 이관(§ Partner Dashboard 이관 라운드) ---- */
   .pi-overlay{ position:fixed; inset:0; background:rgba(20,24,34,0.45); display:flex; align-items:center; justify-content:center; z-index:300; padding:20px; }
-  .pi-panel{ background:#fff; border-radius:12px; width:100%; max-width:920px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+  .pi-panel{ background:#fff; border-radius:10px; width:100%; max-width:920px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; } /* §팝업/드로어 색상 통일 라운드: 12px→10px, 나머지 요청 팔레트 원칙과 이미 일치 */
   .pi-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); }
   .pi-title{ font-size:14px; font-weight:700; color:var(--text); }
   .pi-body{ padding:16px 18px; overflow-y:auto; font-size:12.5px; color:var(--text); }
@@ -1546,20 +1557,8 @@
      디자인 전용 CSS 오버라이드. HTML/JS/Firebase/데이터/계산/이벤트 로직은 변경하지 않는다.
      첫 화면과 업체 상세카드의 색감·간격·테이블 밀도만 동일한 CRM 톤으로 통일한다.
      ───────────────────────────────────────────────────────────────────── */
-  :root{
-    --bg:#F4F7FB;
-    --surface:#FFFFFF;
-    --navy:#17305C;
-    --navy-hover:#214274;
-    --text:#17233A;
-    --text-muted:#64748B;
-    --text-faint:#94A3B8;
-    --line:#DFE6EF;
-    --soft-blue:#F1F6FC;
-    --soft-blue-2:#EAF2FB;
-  }
-
-  body{ background:linear-gradient(180deg,#F7F9FC 0,#F4F7FB 100%); }
+  /* §목록 헤더 비주얼 패스 라운드(신규): "그라데이션 사용 금지" 원칙에 따라 단색으로. */
+  body{ background:var(--bg); }
   .app{
     max-width:1480px;
     padding:24px 28px 54px;
@@ -1792,7 +1791,7 @@
     padding:15px 48px 15px 18px;
     margin-bottom:11px;
     border-radius:11px;
-    background:linear-gradient(100deg,#17305C 0%,#1D3A69 100%);
+    background:var(--navy); /* §목록 헤더 비주얼 패스 라운드(신규): 그라데이션 → 단색 */
     box-shadow:0 5px 15px rgba(23,48,92,.12);
   }
   .cdash-header-title{
@@ -1959,12 +1958,6 @@
    FINAL VISUAL MATCH — reference dashboard screenshot
    VISUAL ONLY: no HTML/JS/Firebase/data/calculation changes.
    ======================================================================== */
-:root{
-  --bg:#F7F9FC; --surface:#FFFFFF; --navy:#17305C; --navy-hover:#213D70;
-  --text:#172033; --text-muted:#66758D; --text-faint:#98A5B7; --line:#E6EBF2;
-  --up:#169B62; --up-bg:#EDF9F3; --flat:#2E78D2; --flat-bg:#EEF6FF;
-  --down:#D85858; --down-bg:#FFF1F1; --warn:#D08A28; --warn-bg:#FFF7E9;
-}
 html,body{background:#F7F9FC;font-size:13px}
 .app{max-width:1480px;padding:22px 24px 46px}
 .topbar{margin-bottom:16px}.brand{font-size:20px;font-weight:750;letter-spacing:-.3px}.brand-sub{font-size:11.5px}
@@ -2013,9 +2006,103 @@ html,body{background:#F7F9FC;font-size:13px}
 @media(max-width:1100px){.app{padding-left:14px;padding-right:14px}.co-table-head,.co-row{grid-template-columns:140px 130px 50px 120px 74px 74px 90px 62px 130px 90px!important}.rising-grid{grid-template-columns:repeat(5,minmax(160px,1fr))!important}.rising-section{overflow-x:auto}.co-table-head,.co-list{min-width:1060px}.co-list{overflow:visible}#listView{overflow-x:auto}}
 @media(max-width:760px){.app{padding:14px 10px 32px}.topbar{margin-bottom:12px}.rising-grid{grid-template-columns:repeat(5,165px)!important}.list-search-row{flex-direction:row!important;min-width:430px}.list-sort-select{width:auto!important}.co-table-head,.co-list{min-width:1060px}.co-row{grid-template-columns:140px 130px 50px 120px 74px 74px 90px 62px 130px 90px!important}}
 
-/* HANSOL CRM corporate visual override */
-:root{--navy:#082f67;--blue:#0b5bd3;--bg:#f4f7fb;--line:#dfe7f1;--text:#13243e;--green:#079455}
-html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),transparent 28%),var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.brand-wrap{display:flex!important;align-items:center!important;gap:10px!important}.brand-logo{display:block!important;height:30px!important;width:auto!important}.list-add-btn{background:linear-gradient(180deg,#0b3978,#082f67)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:linear-gradient(90deg,#079455,#12b76a)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 68px 160px 92px 92px 140px 82px 168px 106px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:linear-gradient(135deg,#082f67,#123f7c)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+/* HANSOL CRM corporate visual override (§디자인 토큰 통합 라운드: 여기 있던 :root
+   토큰 재선언은 맨 위 통합 :root 블록으로 옮겼다 — 값은 그대로, 선언 위치만 이동) */
+html,body{background:var(--bg)!important;color:var(--text)!important}body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif!important;letter-spacing:-.015em}.app{max-width:1580px!important;margin:0 auto!important;padding:24px 30px 48px!important}.brand{color:var(--navy)!important;font-size:25px!important;font-weight:800!important}.brand-wrap{display:flex!important;align-items:center!important;gap:10px!important}.brand-logo{display:block!important;height:30px!important;width:auto!important}.list-add-btn{background:var(--navy)!important;border:0!important;border-radius:7px!important;box-shadow:0 4px 12px rgba(8,47,103,.16)!important}.rising-section{background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:14px 16px 15px!important;box-shadow:0 3px 14px rgba(23,48,92,.055)!important}.rising-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}.rising-card{border:1px solid #e1e8f1!important;background:#fff!important;border-radius:10px!important;padding:12px 13px 10px!important;box-shadow:0 2px 8px rgba(22,44,78,.045)!important}.rising-rank{background:var(--navy)!important;color:#fff!important;border-radius:5px!important}.rising-up{color:var(--green)!important;font-weight:800!important}.rising-bar{height:4px!important;background:#edf2f7!important}.rising-bar-fill{background:var(--green)!important}.list-filter-chip{border:1px solid #dce5ef!important;background:#fff!important;border-radius:7px!important;font-weight:650!important}.list-filter-chip.is-active{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}.list-search-row{background:#fff!important;border:1px solid var(--line)!important;border-radius:11px!important;padding:10px!important;box-shadow:0 2px 8px rgba(22,44,78,.035)!important}.search-box,.list-sort-select{height:39px!important;border:1px solid #dce5ef!important;border-radius:8px!important;background:#fff!important}.co-table-head,.co-row{display:grid!important;grid-template-columns:minmax(180px,1fr) 150px 68px 160px 92px 92px 140px 82px 168px 106px!important;gap:12px!important;align-items:center!important}.co-table-head{margin-top:12px!important;padding:10px 14px!important;border:1px solid var(--line)!important;border-radius:10px 10px 0 0!important;background:#f9fbfd!important;color:#4b607c!important;font-weight:750!important}.co-list{background:#fff!important;border:1px solid var(--line)!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow:hidden!important}.co-row{min-height:50px!important;padding:6px 14px!important;border-bottom:1px solid #e8eef5!important;align-items:center!important}.co-row:hover{background:#f7fbff!important;box-shadow:inset 3px 0 0 var(--blue)!important}.col-name{font-weight:800!important;color:#142945!important}.col-yr{color:#0866df!important;font-weight:800!important;font-size:13px!important}.col-total,.col-revenue,.col-yr-revenue,.col-total-revenue{color:#172d4d!important;font-weight:750!important}.grade-badge{border-radius:5px!important;font-weight:800!important}.contrib-cell{border-radius:7px!important;padding:6px 9px!important}.contrib-cell.lv-high{background:#ecfdf3!important}.contrib-cell.lv-mid{background:#fff7ed!important}.contrib-cell.lv-low{background:#fff1f2!important}.contrib-cell.lv-insufficient{background:#f3f6f9!important}.list-pagination .active{background:var(--navy)!important;color:#fff!important}.coin-icon,.money-icon,[class*="coin-icon"],[class*="money-icon"]{display:none!important}#cardView .card-header,#cardView .detail-header{background:var(--navy)!important;border-radius:11px!important}@media(max-width:1180px){.app{padding:18px 16px 40px!important}.rising-section{overflow-x:auto!important}.rising-grid{grid-template-columns:repeat(5,190px)!important}.co-table-head,.co-list{min-width:1220px!important}#listView{overflow-x:auto!important}}
+
+/* ==========================================================================
+   §2-Pane 셸 전환 라운드(신규) — "왼쪽 40% 목록 + 오른쪽 60% 상세"가 나란히 보이는
+   인라인 레이아웃. listView/cardView 내부 마크업/렌더 함수는 전혀 안 바꿨고, 이
+   래퍼(.crm-split)와 아래 규칙만 새로 추가했다. 기본(클래스 없음) = 분할 상태(상세
+   열림), .detail-closed = 목록이 전체 폭을 차지(상세 닫힘) — openCard/openList/
+   showCustomerTab이 이 클래스를 토글한다.
+   ========================================================================== */
+.crm-split{ display:flex; align-items:flex-start; gap:20px; }
+.crm-split #listView{ flex:0 0 40%; max-width:40%; min-width:0; overflow-x:auto; }
+.crm-split #cardView{ flex:0 0 60%; max-width:60%; min-width:0; }
+.crm-split.detail-closed #listView{ flex:1 1 100%; max-width:100%; }
+.crm-split.detail-closed #cardView{ display:none!important; }
+/* 카드가 열려도 목록이 화면 밖으로 완전히 밀려나지 않고 40% 폭 안에서 가로 스크롤로
+   기존 넓은 표(.co-table-head/.co-row)를 그대로 보여준다 — 좁은 목록 전용 템플릿은
+   다음 라운드(§목록 행 템플릿 compact/wide 분기)에서 추가한다. */
+#cardView .chart-overlay{
+  position:static!important; inset:auto!important; z-index:auto!important;
+  background:transparent!important; padding:0!important; display:block!important;
+  backdrop-filter:none!important; overflow-y:visible!important;
+}
+#cardView .chart-panel{
+  width:100%!important; max-width:none!important; min-width:0!important;
+  max-height:none!important; border-radius:10px!important;
+  box-shadow:0 1px 3px rgba(15,23,42,.06)!important;
+  border:1px solid var(--line)!important;
+}
+
+/* ==========================================================================
+   §목록 행 템플릿 compact/wide 분기 라운드(신규) — 상세 패널이 열려있을 때(목록
+   40% 폭)는 기존 10컬럼 넓은 표(.co-table-head/.co-row) 대신 업체명/최근 현장명/
+   최근 연락일/상태 배지/우선순위 색선 5가지만 보여주는 좁은 행(.co-row-compact)을
+   쓴다. 기존 넓은 표의 CSS(.co-table-head/.co-row grid-template-columns 등)는 전혀
+   안 건드렸다 — 상세 닫힘(.detail-closed) 상태에서는 지금까지와 완전히 동일하다.
+   ========================================================================== */
+.crm-split:not(.detail-closed) .co-table-head{ display:none!important; }
+.co-row-compact{
+  display:flex!important; align-items:center; gap:10px;
+  padding:8px 12px!important; min-height:auto!important;
+}
+.co-row-compact .col-name{ flex:1 1 auto; min-width:0; }
+.co-row-compact .col-compact-site{ flex:0 0 auto; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:var(--text-muted); }
+.co-row-compact .col-compact-contact{ flex:0 0 auto; width:44px; font-size:10.5px; color:var(--text-faint); text-align:right; }
+.co-row-compact .col-compact-stage{ flex:0 0 auto; }
+.row-priority-line{ flex:0 0 auto; width:4px; align-self:stretch; border-radius:2px; margin-left:2px; }
+.row-priority-line.pl-red{ background:var(--down); }
+.row-priority-line.pl-orange{ background:var(--warn); }
+.row-priority-line.pl-gray{ background:var(--line); }
+.co-row.is-selected{ background:var(--soft-blue)!important; border:1px solid var(--navy)!important; }
+
+/* ==========================================================================
+   §상세 패널 내부 재설계 라운드(신규) — 헤더 담당자/이메일/전화 기록/작업 더보기,
+   업체 상황 요약, 진행상황 stepper 날짜, "실적과 매출" 블록, "다음 행동" 강조 블록,
+   "활동 기록" 타임라인에 필요한 CSS만 추가한다. 기존 .cdash-* 클래스 정의는 그대로
+   두고, 새 요소에만 새 클래스를 붙였다.
+   ========================================================================== */
+/* 업체 상황 1~2문장 요약 */
+.cdash-situation-summary{ font-size:12.5px; line-height:1.5; color:var(--text-muted); padding:8px 2px 12px; }
+/* 진행상황 stepper 아래 완료 날짜 */
+.stage-step-date{ margin-top:2px; font-size:8.5px; color:var(--text-faint); white-space:nowrap; }
+.cdash-progress-stepper-wrap .stage-step-date{ font-size:10.5px; margin-top:4px; }
+/* 요청사항: 현재 단계는 초록/회색이 아니라 짙은 남색으로 — 목록의 미니 stepper도
+   같은 클래스를 공유하므로 함께 적용된다(팔레트 원칙과 일치, 별도 색 추가 아님). */
+.stage-step-dot.current{ background:#fff; border-color:var(--navy); }
+/* "실적과 매출"은 4항목이라(기존 5칸 grid와 다름) 이 id에서만 4열로 오버라이드한다 —
+   .cdash-glance-stats 자체(5열)는 기존 cdashGlanceStats에서 그대로 쓰여 손대지 않음. */
+#cdashPerfRevenueStats.cdash-glance-stats{ grid-template-columns:repeat(4,1fr); }
+/* "실적과 매출"/"다음 행동" 강조 */
+.cdash-highlight-block{ border-left:3px solid var(--navy); background:var(--soft-blue); }
+.chart-na-item{ align-items:flex-start; }
+.chart-na-item-main{ flex:1; min-width:0; }
+.chart-na-meta{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+.chart-na-log-btn{ border:1px solid var(--line); background:#fff; border-radius:5px; font-size:10.5px; padding:1px 7px; cursor:pointer; color:var(--text-muted); }
+.chart-na-log-btn:hover{ background:var(--bg); }
+.cdash-na-add-row{ flex-wrap:wrap; }
+.cdash-na-add-row input[type="date"]{ flex:0 0 auto; width:130px; }
+/* §상세 패널 내부 재설계 라운드(신규) — 상세 패널이 60% 폭 인라인 패널로 좁아지면서
+   (§2-Pane 셸 전환 라운드), 예전에 거의 풀스크린 폭을 전제로 짜여 있던
+   .cdash-header-left(제목+버튼 한 줄, flex-wrap:nowrap)가 좁은 폭에서 버튼 글자가
+   줄바꿈되며 세로로 찌그러지는 문제가 있었다 — 레이아웃 로직/텍스트는 그대로 두고,
+   좁을 때는 제목 줄 아래로 버튼들이 자연스럽게 줄바꿈되도록만 고친다. */
+.cdash-header-left{ flex-wrap:wrap; row-gap:8px; }
+.cdash-header-actions{ flex-wrap:wrap; }
+.cdash-header-actions .co-text-action,
+.cdash-header-actions .chart-memo-btn{ white-space:nowrap; }
+/* 헤더 담당자/이메일/전화 기록/작업 더보기 */
+.cdash-header-more-wrap{ position:relative; }
+.cdash-header-more-menu{ display:none; position:absolute; top:100%; left:0; margin-top:4px; background:#fff; border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 20px rgba(15,23,42,.14); z-index:30; min-width:120px; overflow:hidden; }
+.cdash-header-more-menu.is-open{ display:block; }
+.cdash-header-more-menu button{ display:block; width:100%; text-align:left; padding:8px 12px; border:0; background:none; font-size:12.5px; color:var(--text); cursor:pointer; }
+.cdash-header-more-menu button:hover{ background:var(--bg); }
+/* 활동 기록 타임라인: renderTimelineSection이 원래부터 쓰던 .chart-timeline-*
+   클래스(§1378~1383에 이미 정의됨, 새 팔레트와도 그대로 맞음)를 재사용 — 새 CSS
+   불필요, DOM 슬롯(#chartTimeline)만 되살렸다. */
 </style>
 </head>
 <body>
@@ -2055,10 +2142,24 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
        구성한다(§1/§2). 이전에 논의됐던 "1차/2차 미팅을 잡아야 할 업체" 알림 배너는 여기
        만들지 않는다 — 해당 업무 데이터/자동 Todo(§고객 진행단계 연동 라운드)는 그대로
        살아있고 v2의 "내 할 일"에서 계속 보인다(§1, 첫 화면 표시만 뺀 것). -->
+  <!-- §2-Pane 셸 전환 라운드(신규): listView/cardView를 감싸는 새 래퍼. 기존에는
+       cardView가 position:fixed 오버레이로 listView 위를 완전히 덮는 방식이었는데,
+       요청에 따라 "왼쪽 40% 목록 + 오른쪽 60% 상세"가 나란히 보이는 인라인 2-pane으로
+       바꾼다. listView/cardView 자체의 내부 마크업/렌더 함수는 전혀 안 건드리고, 이
+       래퍼 div와 아래 CSS만 새로 추가했다 — openCard/openList의 기존
+       cardView.style.display 토글도 그대로 둔 채(다른 코드가 이 값으로 "카드가
+       열려있는지" 판단하는 부분이 있어 §14099 그대로 유지), .detail-closed 클래스
+       토글만 추가로 얹는다(§순수 레이아웃 전환, 기존 로직 변경 없음). 기본값은
+       detail-closed(카드가 처음부터 열려있지 않은 상태의 시각적 초기값과 일치). -->
+  <div class="crm-split detail-closed" id="crmSplit">
   <div id="listView">
     <div class="list-toolbar">
       <div class="list-title-row">
-        <div class="list-title" id="crmListTitle">고객</div>
+        <div class="list-title" id="crmListTitle">고객관리</div>
+        <!-- §목록 헤더 비주얼 패스 라운드(신규): "N개 업체 · 관리 필요 M" 요약 — 값은
+             renderList()가 managementNeedCache 계산 직후에 채운다(새 계산 아님, 이미
+             있는 값 재사용). -->
+        <span class="list-summary" id="crmListSummary"></span>
         <!-- §미등록 업체 관리 라운드: 매출자료-CRM 비교 결과 미등록 업체가 있을 때만 보이는
              작은 경고 배지. 0건이면 아예 렌더링하지 않는다(§ "0개면 표시 안 해도 됨"). -->
         <button type="button" class="unreg-badge" id="crmUnregBadge" style="display:none;"></button>
@@ -2160,6 +2261,7 @@ html,body{background:radial-gradient(circle at 75% -10%,rgba(11,91,211,.055),tra
   </div>
 
   <div id="cardView" style="display:none;"></div>
+  </div>
   <!-- §업무관리 탭 1차 구축 라운드 §1/§15: listView/cardView와 완전히 별개인 세 번째 최상위
        view — 읽기 전용, companies/activities를 매번 새로 조회만 한다(별도 저장소 없음). -->
   <div id="workQueueView" style="display:none;"></div>
@@ -3706,10 +3808,18 @@ window.SHIN2_RECEIVABLES_2024_SNAPSHOT = []; // 2024년 미수금 원본 파일 
   // 완료된 항목은 "다음 행동" 활성 목록에서는 빠지지만 배열에서 삭제하지 않고, 완료 사실을
   // customerActivities에도 기록해 활동/완료이력에 남긴다(§9 — 새 저장소를 만들지 않고 기존
   // 활동기록을 재사용).
-  function addNextAction(companyId, text, evidence){
+  // §상세 패널 내부 재설계 라운드(신규): "처리기한"/"담당자"는 기존 nextActions 항목에
+  // 없던 필드다 — 4번째 인자 opts로 선택 추가했다(deadline/assignee 둘 다 optional).
+  // 기존 호출부 3곳(§4045/§12614/§12722)은 모두 opts 없이 3개 인자만 넘기므로 그대로
+  // 동작하고(값은 null), 예전에 저장된 항목도 이 두 필드가 없을 뿐 그대로 읽힌다 —
+  // 화면에서는 값이 없으면 "미설정"으로 표시하고 절대 지어내지 않는다(§요청사항).
+  function addNextAction(companyId, text, evidence, opts){
     const co = findCompany(companyId); if(!co) return null;
     const list = (co.nextActions || []).slice();
-    list.push({ id: genId('na'), text, evidence: evidence || '', done:false, completedAt:null, createdAt: nowIso() });
+    list.push({
+      id: genId('na'), text, evidence: evidence || '', done:false, completedAt:null, createdAt: nowIso(),
+      deadline: (opts && opts.deadline) || null, assignee: (opts && opts.assignee) || null
+    });
     return updateCompany(companyId, { nextActions: list });
   }
   function removeNextAction(companyId, itemId){
@@ -5498,6 +5608,7 @@ window.SHIN2_CRM_APP_INIT = function(){
   const listEl = document.getElementById('crmList');
   const listView = document.getElementById('listView');
   const cardView = document.getElementById('cardView');
+  const crmSplit = document.getElementById('crmSplit'); // §2-Pane 셸 전환 라운드(신규)
   const searchInput = document.getElementById('crmSearchInput');
   const listTitle = document.getElementById('crmListTitle');
   let searchQuery = '';
@@ -5520,13 +5631,27 @@ window.SHIN2_CRM_APP_INIT = function(){
   // §2 필터 칩 정의 — "진행중"은 buildProgressStages(co).hasAny(=Partner Dashboard 진행
   // 데이터가 실제로 있음)를 그대로 쓴다. 질문서/1차미팅/2차미팅/MOU는 그 안에서 "현재 단계"
   // (buildProgressStages의 currentIdx, 이미 §진행 기록 라운드에서 만든 계산)로 좁힌다.
+  // §필터 4개+더보기 라운드(신규): 기존 필터는 하나도 안 지웠다(§원칙 "삭제 금지") —
+  // 'focus'(집중관리)/'noResponse'(미응답) 2개만 새로 추가했다. 어떤 것을 "빠른 칩"으로
+  // 보여줄지는 렌더링(QUICK_FILTER_KEYS, renderFilterChips)에서만 결정하고, FILTER_DEFS
+  // 자체는 필터링 로직의 단일 출처로 계속 전부를 담는다.
   const FILTER_DEFS = [
-    ['all','전체'], ['inProgress','진행중'], ['q','질문서'],
-    ['m1','1차미팅'], ['m2','2차미팅'], ['mou','MOU'], ['partner','협력업체']
+    ['all','전체'], ['focus','집중관리'], ['noResponse','미응답'],
+    ['inProgress','진행중'], ['q','질문서'], ['m1','1차미팅'], ['m2','2차미팅'],
+    ['mou','MOU'], ['partner','협력업체']
   ];
-  function matchesFilter(co, progress, key){
+  // 빠른 칩 4개(요청 순서: 전체/집중관리/미응답/MOU) — 나머지는 renderFilterChips가
+  // "더보기" 드롭다운에 넣는다. FILTER_DEFS 순서와 무관하게 이 배열이 노출 우선순위를 정한다.
+  const QUICK_FILTER_KEYS = ['all', 'focus', 'noResponse', 'mou'];
+  let closeFilterMoreOutsideHandler = null; // renderFilterChips()가 매 렌더링마다 재등록·정리
+  let closeHeaderMoreOutsideHandler = null; // renderChartHeader()가 매 렌더링마다 재등록·정리(§상세 패널 내부 재설계 라운드)
+  function matchesFilter(co, progress, key, acts, hasPour){
     if(key === 'all') return true;
     if(key === 'partner') return co.partnerStatus === 'partner';
+    // §필터 4개+더보기 라운드(신규): 새 판정 로직 없이 computePriorityLevel/
+    // classifyManagementNeed(둘 다 위에서 이미 정의됨)만 재사용한다.
+    if(key === 'focus') return computePriorityLevel(co, acts, progress, hasPour) !== 'gray';
+    if(key === 'noResponse') return classifyManagementNeed(co, acts, progress, hasPour).type === 'firstActivity';
     if(key === 'inProgress') return progress.hasAny;
     if(!progress.hasAny) return false;
     return progress.stages[progress.currentIdx].key === key;
@@ -5662,16 +5787,30 @@ window.SHIN2_CRM_APP_INIT = function(){
       rows.sort((a,b)=> (b.pourCount - a.pourCount) || String(a.co.name||'').localeCompare(String(b.co.name||''), 'ko'));
     }
   }
+  // §필터 4개+더보기 라운드(신규): 기존 8개 필터 칩을 전부 한 줄에 늘어놓던 방식에서,
+  // QUICK_FILTER_KEYS 4개만 눈에 띄는 칩으로 보여주고 나머지 6개는 "더보기 ▾" 드롭다운
+  // 안에 넣는 방식으로 바꿨다. FILTER_DEFS/matchesFilter는 그대로이므로 더보기 안에
+  // 들어간 필터도 클릭하면 이전과 완전히 같은 결과로 필터링된다 — 노출 위치만 바뀐다.
+  // 드롭다운 열기/닫기는 기존 §데이터 업데이트 드롭다운(crmUpdateMenuWrap, §14134)과
+  // 완전히 같은 패턴(바깥 클릭 시 닫힘)을 재사용한다.
   function renderFilterChips(counts){
     const wrap = document.getElementById('crmFilterRow');
     if(!wrap) return;
-    // §관리필요 업체 라운드 §1: 기존 7개 필터 칩은 전혀 안 바꿨다 — 가장 오른쪽에 "관리필요
-    // N" 버튼만 추가(margin-left:auto로 오른쪽 정렬, §mgmt-need-chip CSS). 이 버튼은
-    // FILTER_DEFS/data-filter 목록에 없으므로 목록을 필터링하지 않고 클릭 시 중앙 모달만
-    // 연다(§2).
-    wrap.innerHTML = FILTER_DEFS.map(([key,label])=>
+    const quickDefs = QUICK_FILTER_KEYS.map(k=> FILTER_DEFS.find(([key])=> key === k)).filter(Boolean);
+    const moreDefs = FILTER_DEFS.filter(([key])=> !QUICK_FILTER_KEYS.includes(key));
+    const moreIsActive = moreDefs.some(([key])=> key === filterKey);
+    wrap.innerHTML = quickDefs.map(([key,label])=>
       `<button type="button" class="list-filter-chip${filterKey===key?' is-active':''}" data-filter="${esc(key)}">${esc(label)} ${counts[key]||0}</button>`
-    ).join('') + `<button type="button" class="list-filter-chip mgmt-need-chip" id="mgmtNeedBtn">관리필요 ${counts.manageNeeded||0}</button>`;
+    ).join('') + `
+      <div class="update-menu-wrap filter-more-wrap" id="crmFilterMoreWrap">
+        <button type="button" class="list-filter-chip${moreIsActive?' is-active':''}" id="crmFilterMoreBtn">더보기 ▾</button>
+        <div class="update-menu" id="crmFilterMoreMenu">
+          ${moreDefs.map(([key,label])=>
+            `<button type="button" data-filter="${esc(key)}"${filterKey===key?' class="is-active"':''}>${esc(label)} ${counts[key]||0}</button>`
+          ).join('')}
+        </div>
+      </div>
+    ` + `<button type="button" class="list-filter-chip mgmt-need-chip" id="mgmtNeedBtn">관리필요 ${counts.manageNeeded||0}</button>`;
     wrap.querySelectorAll('[data-filter]').forEach(btn=> btn.addEventListener('click', ()=>{
       filterKey = btn.getAttribute('data-filter');
       currentPage = 1;
@@ -5679,6 +5818,22 @@ window.SHIN2_CRM_APP_INIT = function(){
     }));
     const mgmtBtn = document.getElementById('mgmtNeedBtn');
     if(mgmtBtn) mgmtBtn.addEventListener('click', ()=> openManagementNeedModal());
+    const moreBtn = document.getElementById('crmFilterMoreBtn');
+    const moreMenu = document.getElementById('crmFilterMoreMenu');
+    // §필터 4개+더보기 라운드(신규): renderFilterChips는 renderList()가 호출될 때마다
+    // (검색/필터/정렬/페이지 변경 등) 매번 다시 실행되어 이 wrap의 DOM 자체가 새로
+    // 만들어진다 — document에 바깥클릭 리스너를 매번 새로 addEventListener만 하면
+    // 이전 렌더링에서 붙인 리스너가 안 지워진 채 계속 쌓인다(메모리 누수). 이전
+    // 렌더링에서 등록해 둔 리스너를 먼저 지우고 나서 새로 하나만 등록한다.
+    if(moreBtn && moreMenu){
+      moreBtn.addEventListener('click', (e)=>{ e.stopPropagation(); moreMenu.classList.toggle('is-open'); });
+      if(closeFilterMoreOutsideHandler) document.removeEventListener('click', closeFilterMoreOutsideHandler);
+      closeFilterMoreOutsideHandler = (e)=>{
+        const moreWrap = document.getElementById('crmFilterMoreWrap');
+        if(moreWrap && !moreWrap.contains(e.target)) moreMenu.classList.remove('is-open');
+      };
+      document.addEventListener('click', closeFilterMoreOutsideHandler);
+    }
   }
   // §업체명 왼쪽 금액 이동 라운드 §6: "총 매출" 헤더 옆 화살표를 현재 sortMode에 맞춰
   // 갱신한다 — renderList()가 헤더 자체를 다시 그리지 않아서(정적 HTML) 화살표만 별도로
@@ -5746,7 +5901,11 @@ window.SHIN2_CRM_APP_INIT = function(){
     if(typeof closeContribPopover === 'function') closeContribPopover();
     if(typeof closeTrendPopover === 'function') closeTrendPopover();
     const companies = D.loadCompanies();
-    listTitle.textContent = '고객 ' + companies.length;
+    // §목록 헤더 비주얼 패스 라운드(신규): 제목 "고객관리" + 요약 "N개 업체 · 관리 필요
+    // M"으로 바꿨다. M은 managementNeedCache.counts.total이 계산된 뒤에 채워야 해서
+    // listTitle 갱신을 그 계산 이후로 옮겼다(아래 §managementNeedCache = ... 참고) —
+    // 여기서는 우선 업체 수만 넣어두고 아래에서 완성한다(빈 화면 방지, 즉시 반영).
+    listTitle.textContent = '고객관리';
     // §미등록 업체 관리 라운드: 별도 저장소 없이 매번 다시 계산한다(§ "등록 후" 요구사항 —
     // 사용자가 업체를 등록하면 다음 renderList()에서 자동으로 줄어든다).
     renderUnregisteredBadge();
@@ -5774,7 +5933,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       const acts = D.activitiesForCompany(co.id);
       const progress = buildProgressStages(co);
       const pourCount = (co.pourTrackRecords || []).length;
-      return { co, acts, summary: acts[0] || null, progress, pourCount };
+      // §필터 4개+더보기 라운드(신규): hasPour는 이미 위에서 렌더링당 한 번만 만든
+      // pourLatestIndex를 조회만 한다(computeManagementNeedList와 같은 패턴, §성능 원칙) —
+      // matchesFilter의 focus/noResponse 판정과 Stage 3의 우선순위 색선이 모두 이 값을 쓴다.
+      const hasPour = pourLatestIndex.get(co.id) != null;
+      return { co, acts, summary: acts[0] || null, progress, pourCount, hasPour };
     });
 
     // §고객관리 CRM 첫화면 대시보드 개편 라운드: 예전의 "★ 상위 20%" 표시는 별표를 절대
@@ -5783,16 +5946,20 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderRisingSection(companies);
 
     const filterCounts = {};
-    FILTER_DEFS.forEach(([key])=>{ filterCounts[key] = enriched.filter(r=> matchesFilter(r.co, r.progress, key)).length; });
+    FILTER_DEFS.forEach(([key])=>{ filterCounts[key] = enriched.filter(r=> matchesFilter(r.co, r.progress, key, r.acts, r.hasPour)).length; });
     // §관리필요 업체 라운드: renderList()가 이미 매번 계산해 둔 enriched(co/acts/progress)를
     // 그대로 재사용해 관리필요 목록을 한 번만 계산하고, 모달/버튼/고객카드 배너가 모두 이
     // 캐시(managementNeedCache)만 조회한다(§ "같은 계산을 여러 곳에서 반복하지 않는다").
     managementNeedCache = computeManagementNeedList(enriched, pourLatestIndex);
     filterCounts.manageNeeded = managementNeedCache.counts.total;
+    // §목록 헤더 비주얼 패스 라운드(신규): 요약 문구 완성 — managementNeedCache가 막
+    // 계산된 시점이라 여기서 채운다(위 listTitle 주석 참고).
+    const listSummaryEl = document.getElementById('crmListSummary');
+    if(listSummaryEl) listSummaryEl.textContent = `${companies.length}개 업체 · 관리 필요 ${managementNeedCache.counts.total}`;
     renderFilterChips(filterCounts);
 
     const rows = enriched
-      .filter(r=> matchesFilter(r.co, r.progress, filterKey))
+      .filter(r=> matchesFilter(r.co, r.progress, filterKey, r.acts, r.hasPour))
       .filter(r=> matchesSearch(r.co, r.acts, searchQuery));
     applySort(rows, contribIndex);
 
@@ -5805,6 +5972,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       renderPagination(0);
       return;
     }
+    // §목록 행 템플릿 compact/wide 분기 라운드(신규): 상세 패널이 열려있는지(=목록이
+    // 40% 폭인지)는 이미 openCard/openList가 관리하는 currentCompanyId 존재 여부와
+    // 정확히 같은 상태다 — crmSplit의 DOM 클래스를 다시 읽지 않고 이 변수 하나로
+    // 판단한다(§상태의 단일 출처).
+    const compactMode = !!currentCompanyId;
     // §최근 활동일/단계 D+N 복원 라운드(→§최근 활동일 정정 라운드→§2026 매출/자재판매/
     // 미수금 라운드→§최근 시공 강화/현재 단계 숨김 라운드): 7개 컬럼(협력사/최근 시공/
     // 1년 실적/2026 매출/실적↔매출/주요 공종/최근 흐름)을 렌더링한다. "현재 단계·D+N"은
@@ -5923,6 +6095,11 @@ window.SHIN2_CRM_APP_INIT = function(){
       // 자체는 그대로 둔다 — r.progress도 위 enriched에서 이미 계산된
       // buildProgressStages() 결과를 그대로 재사용한다(중복 계산 금지, §26과 같은 원칙).
       const stageInfo = stageDurationFromProgress(r.progress);
+      // §목록 행 템플릿 compact/wide 분기 라운드(신규): 관리 우선순위 색(빨강/주황/회색)은
+      // computePriorityLevel(co, acts, progress, hasPour) 하나로만 계산한다(§2에서 이미
+      // 정의) — stageInfo를 다시 만들지 않고 progress/acts/hasPour 모두 위에서 이미
+      // 계산된 값을 그대로 넘긴다.
+      const priorityLevel = computePriorityLevel(co, r.acts, r.progress, r.hasPour);
       // §단계 진행상황/다음 행동 컬럼 라운드 §1: "주요 공종"은 메인 목록에서 더 이상
       // 렌더링하지 않지만, 계산(buildTopCategoriesText)은 그대로 호출해 둔다 — 다른 화면이
       // 나중에 다시 필요로 할 수 있어 값 자체는 계속 살아있다(§ "데이터 제거가 아니라 숨김").
@@ -5981,6 +6158,30 @@ window.SHIN2_CRM_APP_INIT = function(){
             <span class="relation-badge ${relBadgeClass}">${esc(relFirst.relation)}</span>
             ${relEntries.length > 1 ? `<span class="relation-badge">+${relEntries.length - 1}</span>` : ''}
           </div>` : '';
+      const isSelected = co.id === currentCompanyId ? ' is-selected' : '';
+      // §목록 행 템플릿 compact/wide 분기 라운드(신규): 상세 패널이 열려있으면(목록이
+      // 40% 폭) 기존 넓은 행 대신, 업체명/최근 현장명/최근 연락일/상태 배지/
+      // 관리 우선순위 색선 5가지만 보여주는 좁은 행으로 바꾼다. 계산은 위에서 이미 끝난
+      // 값(latestPourRec/r.summary/r.progress/priorityLevel)을 그대로 재사용 —
+      // compactMode에 따라 마크업만 분기한다(중복 계산 없음).
+      if(compactMode){
+        const siteName = latestPourRec && latestPourRec.client ? latestPourRec.client : null;
+        const lastContactHtml = r.summary
+          ? esc(fmtRelativeActivityDate(r.summary.createdAt))
+          : '<span class="data-none">—</span>';
+        return `
+      <div class="co-row co-row-compact${rowOverdueClass}${isSelected}" data-id="${esc(co.id)}">
+        <div class="col-name">
+          <div class="col-name-top">
+            <span class="co-name-badges">${partnerGlyphHtml(co)}<span class="co-name-text">${esc(co.name)}</span>${receivableBadgeHtml}</span>
+          </div>
+        </div>
+        <div class="col-compact-site">${siteName ? esc(siteName) : '<span class="data-none">—</span>'}</div>
+        <div class="col-compact-contact">${lastContactHtml}</div>
+        <div class="col-compact-stage">${buildStageBadgeHtml(r.progress)}</div>
+        <div class="row-priority-line pl-${priorityLevel}" title="${priorityLevel==='red'?'기한 초과':(priorityLevel==='orange'?'관리 필요':'일반')}"></div>
+      </div>`;
+      }
       return `
       <div class="co-row${rowOverdueClass}" data-id="${esc(co.id)}">
         <div class="col-name">
@@ -6123,7 +6324,15 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardState.insightQuickStep = 'note'; cardState.insightAdvancedOpen = false; cardState.insightParsedPreview = null; // §1차미팅 메모 자동정리 라운드: 업체를 새로 열 때는 항상 메모 입력 화면부터 시작
     cardState.insightSubOpen = null; // §고객 인사이트 수정화면 정리 라운드: 접이식 소그룹 열림 상태도 업체마다 새로 계산(이 업체 데이터 기준으로 자동 펼침)
     cardView.style.display = 'block';
+    if(crmSplit) crmSplit.classList.remove('detail-closed'); // §2-Pane 셸 전환 라운드
     history.replaceState(null, '', '?company=' + encodeURIComponent(id));
+    // §목록 행 템플릿 compact/wide 분기 라운드(신규): renderList()의 compactMode는
+    // currentCompanyId 유무로 결정되는데(위에서 이미 설정됨), 목록 자체는 openList()/
+    // 검색·필터·정렬 변경 때만 다시 그려지고 openCard()에서는 여태 다시 그리지 않았다
+    // — 그래서 카드를 열어도 왼쪽 목록이 여전히 넓은(wide) 10컬럼 그대로였다. 카드를
+    // 열 때도 목록을 다시 그려 compact 5컬럼으로 전환하고, 선택된 행에 강조 표시가
+    // 붙게 한다.
+    renderList();
     renderChart(co);
   }
   function openList(){
@@ -6131,6 +6340,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     cardView.innerHTML = '';
     cardView.style.display = 'none';
     listView.style.display = 'block';
+    if(crmSplit) crmSplit.classList.add('detail-closed'); // §2-Pane 셸 전환 라운드
     document.body.classList.remove('chart-lock');
     history.replaceState(null, '', location.pathname);
     renderList();
@@ -6266,6 +6476,58 @@ window.SHIN2_CRM_APP_INIT = function(){
     `;
   }
 
+  // §상세 패널 내부 재설계 라운드(신규): "업체 상황" 1~2문장 요약 — AI 호출 없이, 이미
+  // 계산된 값(buildGlanceStats/buildProgressStages)만 문장으로 조립한다. 정보가 거의
+  // 없는 업체는 억지로 문장을 만들지 않고 짧게 안내만 한다(§요청사항 "지어내지 않는다").
+  function buildCustomerSituationSummary(co){
+    const g = buildGlanceStats(co);
+    const progress = buildProgressStages(co);
+    if(!progress.hasAny && g.pourCount === 0) return '아직 진행 기록이 없는 업체입니다.';
+    const parts = [];
+    if(g.mainCategoryText && g.mainCategoryText !== '—'){
+      parts.push(`${esc(g.mainCategoryText)} 관련 실적이 있는 업체입니다.`);
+    } else {
+      parts.push('POUR 시공실적 기록이 있는 업체입니다.');
+    }
+    if(progress.hasAny){
+      const stage = progress.stages[progress.currentIdx];
+      parts.push(`현재 ${esc(g.stageText)} 단계${stage.state === 'scheduled' ? '(일정 예정)' : ''}입니다.`);
+    } else {
+      parts.push('아직 협약 절차가 시작되지 않았습니다.');
+    }
+    return parts.join(' ');
+  }
+  function renderSituationSummary(co){
+    const wrap = document.getElementById('cdashSituationSummary');
+    if(!wrap) return;
+    wrap.innerHTML = `<div class="cdash-situation-summary">${buildCustomerSituationSummary(co)}</div>`;
+  }
+
+  // §상세 패널 내부 재설계 라운드(신규): "실적과 매출" — 요청하신 4항목만 모은 블록.
+  // 총 실적/2026 매출은 buildGlanceStats(co)가 이미 계산해 둔 값을 그대로 재사용한다
+  // (새 계산 없음). 평균 계약 금액은 buildRevenueContributionIndex().perUnit(실적↔매출
+  // 컬럼과 완전히 같은 값, "실적 1건당 평균 매출"), 최근 12개월 상담 건수는
+  // D.activitiesForCompany(co.id)를 날짜로만 걸러 센다 — 둘 다 이미 있는 데이터에서
+  // 새로 집계만 할 뿐 별도 저장이나 새 판정 로직은 없다.
+  function renderPerfRevenueStats(co){
+    const wrap = document.getElementById('cdashPerfRevenueStats');
+    if(!wrap) return;
+    const g = buildGlanceStats(co);
+    const contrib = buildRevenueContributionIndex().get(co.id);
+    const perUnitText = (contrib && typeof contrib.perUnit === 'number') ? fmtKrwCompact(contrib.perUnit) : null;
+    const DAY_MS = 86400000;
+    const recentActCount = D.activitiesForCompany(co.id).filter(a=>{
+      const t = new Date(a.createdAt).getTime();
+      return !isNaN(t) && (Date.now() - t) <= 365 * DAY_MS;
+    }).length;
+    wrap.innerHTML = `
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">총 실적</div><div class="cdash-glance-stat-value">${g.pourCount ? `${g.pourCount}건` : '없음'}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">2026 매출</div><div class="cdash-glance-stat-value${g.revenue2026Text ? '' : ' is-muted'}">${g.revenue2026Text ? esc(g.revenue2026Text) : '데이터 없음'}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">평균 계약 금액</div><div class="cdash-glance-stat-value${perUnitText ? '' : ' is-muted'}">${perUnitText ? '약 ' + esc(perUnitText) : '데이터 부족'}</div></div>
+      <div class="cdash-glance-stat"><div class="cdash-glance-stat-label">최근 12개월 상담 건수</div><div class="cdash-glance-stat-value${recentActCount ? '' : ' is-muted'}">${recentActCount}건</div></div>
+    `;
+  }
+
   // ---- §고객카드 레이아웃 재배치 라운드 §6/§7: "최근 요청 / 고객 메모" — 2단 왼쪽
   // 30~35%. 데이터 소스는 기존 buildRequestListItems(co) 그대로(§요청자료 정리 라운드에서
   // 만든 함수, 메모 D.memosFor + 요청자료 co.requestedMaterials 병합) — 새 데이터/함수를
@@ -6338,6 +6600,18 @@ window.SHIN2_CRM_APP_INIT = function(){
                  아닌 업체는 renderMgmtNeedBanner가 아무것도 그리지 않는다. -->
             <div id="cdashMgmtNeedBanner"></div>
 
+            <!-- §상세 패널 내부 재설계 라운드(신규): 업체 상황 1~2문장 요약 — 새 계산이
+                 아니라 buildCustomerSituationSummary(co)(아래 신규 함수, 이미 있는
+                 progress/glance 값만 문장으로 조립)를 그대로 출력한다. -->
+            <div id="cdashSituationSummary"></div>
+
+            <!-- §상세 패널 내부 재설계 라운드(신규): renderMeetingRecordSection(co)는 이미
+                 있던 함수(§고객카드 레이아웃 재배치 라운드 §4에서 만들어졌지만 그 뒤
+                 어딘가에서 호출부와 DOM 슬롯만 없어져 있었다) — buildProgressStages/
+                 buildStageStepperHtml을 그대로 재사용해 등록→질문서→1차미팅→2차미팅→MOU
+                 가로 stepper를 그린다. 계산 로직은 전혀 안 바꿨다, 다시 연결만 했다. -->
+            <div class="cdash-block" id="cdashMeetingBlock"></div>
+
             <!-- §고객카드 레이아웃 재배치 라운드 §2/§3: 상단 네이비 헤더는 그대로(chartHeader),
                  바로 아래 "핵심 현황"을 한 줄(현재단계|주요시공|총실적|총매출|2026매출|미수금
                  6칸)로 배치한다. 옛 왼쪽 "핵심 한 줄 요약"(cdashSummaryCol)은 최종 구조(§10)에
@@ -6346,11 +6620,25 @@ window.SHIN2_CRM_APP_INIT = function(){
               <div class="cdash-glance-stats" id="cdashGlanceStats"></div>
             </div>
 
-            <!-- §고객카드 레이아웃 재배치 라운드 §4: 옛 "진행 기록" 큰 박스(날짜별 상세 목록)를
-                 "진행상황" 전체폭 가로 stepper로 단순화했다(renderMeetingRecordSection 내부만
-                 재구성 — buildProgressStages/resolveNewMouForCompany 등 데이터 계산은 전혀
-                 안 바꿈, 목록 화면의 buildStageStepperHtml을 그대로 재사용). -->
-            <div class="cdash-block" id="cdashMeetingBlock"></div>
+            <!-- §상세 패널 내부 재설계 라운드(신규): "실적과 매출" — 요청하신 4항목(총 실적/
+                 2026년 매출/평균 계약 금액/최근 12개월 상담 건수)만 따로 모은 숫자 중심
+                 블록. 위 cdashGlanceStats는 이미 있던 정보라 그대로 두고, 새로 요청된 두 값
+                 (평균 계약 금액/최근 12개월 상담 건수)이 포함된 별도 블록을 추가했다 —
+                 기존 5칸 grid를 고쳐서 6번째 칸을 끼워넣지 않는다. -->
+            <div class="cdash-glance-row">
+              <div class="cdash-glance-stats" id="cdashPerfRevenueStats"></div>
+            </div>
+
+            <!-- §상세 패널 내부 재설계 라운드(신규): "다음 행동"을 다시 화면에 노출한다
+                 (§고객카드 레이아웃 재배치 라운드 §5에서 화면에서만 뺐던 것을 요청에 따라
+                 되살림 — renderNextActionsCol 함수/co.nextActions 데이터는 그때도 지금도
+                 그대로). 강조를 위해 별도 클래스(cdash-highlight-block)를 얹었다. -->
+            <div class="cdash-block cdash-highlight-block" id="cdashNextActionsCol"></div>
+
+            <!-- §목록 헤더 비주얼 패스 라운드: 이 자리에 있던 #cdashMeetingBlock div가 위
+                 §상세 패널 내부 재설계 라운드에서 새로 추가한 것과 id가 중복돼 있었다 —
+                 이 div는 renderMeetingRecordSection() 호출부가 없어 죽어있던 것이라(§card
+                 저장소와 동일하게 확인됨) 중복만 제거했다, 위쪽 것 하나만 유지. -->
 
             <!-- §고객카드 레이아웃 재배치 라운드 §6: 왼쪽 30~35%에 "최근 요청/고객 메모"
                  (cdashReqPreviewBlock, renderReqPreview — 이미 있던 함수, 제목만 바꿈),
@@ -6386,13 +6674,26 @@ window.SHIN2_CRM_APP_INIT = function(){
                  (cardState.accordionOpen/sectionEdit)을 그대로 재사용한다 — 새 UI 패턴을
                  만들지 않는다. -->
             <div class="cdash-block" id="cdashInsightBlock"></div>
+
+            <!-- §상세 패널 내부 재설계 라운드(신규): "활동 기록" — buildTimelineEntries/
+                 renderTimelineSection은 이미 있던 함수인데(전화/메모/일정/서류/업무를
+                 합쳐 최신순으로 보여줌) 그릴 대상 div(#chartTimeline)가 없어서 계속
+                 아무것도 안 그리고 있었다(호출부는 이미 있었음). 그 div를 화면 맨
+                 아래에 새로 추가해서 다시 연결한다 — 새 계산/새 저장 없음, 이미 있는
+                 데이터를 한 화면에 모아 보여주기만 한다. -->
+            <div class="cdash-block" id="chartTimeline"></div>
           </div>
         </div>
       </div>
     `;
-    document.body.classList.add('chart-lock');
+    // §2-Pane 셸 전환 라운드: body.chart-lock(overflow:hidden)은 카드가 전체화면
+    // 오버레이였을 때 배경(목록) 스크롤을 막기 위한 것이었다 — 이제 카드는 목록 옆에
+    // 나란히 흐르는 인라인 패널이라 배경을 잠글 이유가 없고, 오히려 페이지 전체
+    // 스크롤을 막아버려 긴 목록/카드를 볼 수 없게 만든다. CSS 규칙과 openList()의 remove
+    // 호출은 그대로 남겨뒀다(무해) — 여기 add 호출만 없앤다.
     renderChartHeader(co);
     renderMgmtNeedBanner(co);
+    renderSituationSummary(co); // §상세 패널 내부 재설계 라운드(신규)
     renderBasicInfoCol(co);
     // renderInterestCol(co); — §중복정보 제거 라운드: "POUR 활용현황" 칸을 화면에서
     // 제거하면서 이 호출도 뺐다. 함수 자체(및 co.interestFields 데이터/D.addInterestField/
@@ -6402,15 +6703,16 @@ window.SHIN2_CRM_APP_INIT = function(){
     renderReqPreview(co);
     renderReactionsCol(co);
     renderInsightBlock(co); // §고객 성향 컬럼 라운드 §3
-    // renderNextActionsCol(co); — §고객카드 레이아웃 재배치 라운드 §5: "다음 행동" 카드를
-    // 화면에서 뺐다(§10 최종 구조에 없음). 함수 자체와 co.nextActions 원본 데이터는 전혀
-    // 지우지 않았다 — 그릴 DOM 슬롯(cdashNextActionsCol)이 없어졌을 뿐이다.
-    // renderSummaryCol(co); — 같은 라운드 §3: "핵심 한 줄 요약" 칸도 화면에서 뺐다(함수/
-    // co.memoSummary 데이터 그대로).
+    renderNextActionsCol(co); // §상세 패널 내부 재설계 라운드(신규) — "다음 행동" 재노출
+    // renderSummaryCol(co); — §고객카드 레이아웃 재배치 라운드 §3: "핵심 한 줄 요약" 칸은
+    // 화면에서 뺐다(함수/co.memoSummary 데이터 그대로) — 위 renderSituationSummary(신규,
+    // 서로 다른 함수)가 요청하신 "1~2문장 요약"을 대신한다.
     // §9: cdashDocStatusBlock(서류 현황)은 이제 하단 3분할 안에 있지만, 렌더 함수는 그대로
     // renderDocCounts(co) 안에서 renderDocStatusBlock(co, list)를 호출해 채운다(아래에서
     // 이미 호출됨, 여기서 중복 호출하지 않는다).
     renderGlanceRow(co);
+    renderPerfRevenueStats(co); // §상세 패널 내부 재설계 라운드(신규) — "실적과 매출"
+    renderTimelineSection(co); // §상세 패널 내부 재설계 라운드(신규) — "활동 기록" 재연결
 
     if(cardState.chartEditing){ renderBasicInfoForm(co); }
     else { renderBasicInfoView(co); }
@@ -6450,8 +6752,12 @@ window.SHIN2_CRM_APP_INIT = function(){
   function renderChartHeader(co){
     const wrap = document.getElementById('chartHeader');
     const editing = cardState.chartEditing;
+    // §상세 패널 내부 재설계 라운드(신규): 요청하신 "담당자/전화번호/이메일"이 원래
+    // 여기 없었다 — contactName/email 두 필드를 추가했다(기존 4필드는 그대로 유지,
+    // 삭제 없음). 필드 목록 자체는 CO_FIELD_LABELS에 이미 있던 라벨을 그대로 쓴다.
     const contactFields = [
-      ['repName','대표자'], ['phone','전화번호'], ['address','주소'], ['bizRegNo','사업자번호']
+      ['repName','대표자'], ['contactName','담당자'], ['phone','전화번호'], ['email','이메일'],
+      ['address','주소'], ['bizRegNo','사업자번호']
     ];
     // §상단 고객 인사이트 버튼 라운드 §1/§2 — 업체명 바로 아래 [고객 메모 정리] 버튼을
     // 빼고(§1, 버튼만 — openMemoParseModal 함수/메모 데이터/customerActivities는 그대로
@@ -6465,6 +6771,13 @@ window.SHIN2_CRM_APP_INIT = function(){
         <div class="cdash-header-left">
           <div class="cdash-header-title">${esc(co.name)}</div>
           <div class="cdash-header-actions">
+            <!-- §상세 패널 내부 재설계 라운드(신규): "전화 기록" 버튼 — 기존
+                 openPhoneRequestModal()을 이 업체명으로 프리필해서 그대로 연다(새 모달
+                 아님). crm은 card와 달리 헤더에 "고객 정보"/"서류 현황" 버튼이 원래
+                 없어서(그 내용이 이미 cdash-quad에 항상 펼쳐진 칸으로 보이는 구조라
+                 §고객카드 레이아웃 재배치 방식 자체가 다름) "작업 더보기" 드롭다운은
+                 만들지 않았다 — 묶을 버튼이 없는데 드롭다운만 흉내내지 않는다. -->
+            <button type="button" class="chart-memo-btn" id="chartPhoneReqBtn">전화 기록</button>
             <button type="button" class="chart-memo-btn" id="chartInsightBtn">고객 인사이트${insightRegistered ? ' ✓' : ''}</button>
             <button type="button" class="co-text-action${editing ? ' primary' : ''}" id="chartEditBtn">${editing ? '수정 완료' : '수정'}</button>
           </div>
@@ -6481,6 +6794,7 @@ window.SHIN2_CRM_APP_INIT = function(){
       </div>
     `;
     document.getElementById('chartCloseBtn').addEventListener('click', closeChart);
+    document.getElementById('chartPhoneReqBtn').addEventListener('click', ()=> openPhoneRequestModal(co.name));
     // §3 — 새 인사이트 UI를 만들지 않는다. 기존 하단 고객 인사이트 아코디언(renderInsightBlock,
     // 저장 로직/데이터 구조 전부 그대로)을 펼침+수정 모드로 전환해 스크롤만 이동시킨다
     // (§5 "같은 데이터/같은 편집 UI" — 별도 저장소나 별도 편집 폼을 새로 만들면 안 됨).
@@ -7002,6 +7316,27 @@ window.SHIN2_CRM_APP_INIT = function(){
     }).join('');
     return `<div class="stage-stepper">${stepsHtml}</div>`;
   }
+  // §상세 패널 내부 재설계 라운드(신규): 목록 행의 미니 stepper(buildStageStepperHtml,
+  // 위 함수, 그대로 유지)와 달리 상세 패널의 진행상황 stepper에는 "각 단계 아래에 완료
+  // 날짜 표시"가 필요해서, 별도 함수로 날짜 한 줄만 덧붙인다 — progress.stages[i]가 이미
+  // 갖고 있는 dateDisplay를 그대로 읽을 뿐 새 계산은 없다(§ buildProgressStages 로직 변경
+  // 없음). 목록 쪽 stepper는 계속 buildStageStepperHtml을 그대로 쓰므로 영향 없다.
+  function buildStageStepperWithDatesHtml(progress){
+    if(!progress.hasAny) return '<span class="data-none">데이터 없음</span>';
+    const stepsHtml = progress.stages.map((s,i)=>{
+      const cls = s.state === 'done' ? 'done' : (i === progress.currentIdx ? 'current' : 'pending');
+      const dotContent = cls === 'done' ? '✓' : '';
+      const dateLine = (s.state === 'done' && s.dateDisplay && s.dateDisplay !== '—')
+        ? `<span class="stage-step-date">${esc(s.dateDisplay)}</span>` : '';
+      return `<div class="stage-step">
+          <span class="stage-step-line"></span>
+          <span class="stage-step-dot ${cls}">${dotContent}</span>
+          <span class="stage-step-label">${esc(s.label)}</span>
+          ${dateLine}
+        </div>`;
+    }).join('');
+    return `<div class="stage-stepper stage-stepper-with-dates">${stepsHtml}</div>`;
+  }
   function computeNextActionLabel(progress){
     if(!progress.hasAny) return null;
     const byKey = {}; progress.stages.forEach(s=>{ byKey[s.key] = s; });
@@ -7350,7 +7685,7 @@ window.SHIN2_CRM_APP_INIT = function(){
     const progress = buildProgressStages(co);
     wrap.innerHTML = `
       <div class="cdash-col-title-row"><div class="cdash-col-title">진행상황</div></div>
-      <div class="cdash-progress-stepper-wrap">${buildStageStepperHtml(progress)}</div>
+      <div class="cdash-progress-stepper-wrap">${buildStageStepperWithDatesHtml(progress)}</div>
       ${buildProgressCurrentStageDetailHtml(progress)}
     `;
   }
@@ -7566,6 +7901,19 @@ window.SHIN2_CRM_APP_INIT = function(){
     const last = actsWithTs[actsWithTs.length - 1];
     if(daysSince(last.ts) >= 60) return { type:'reuse', anchorTs: last.ts, days: daysSince(last.ts), activity: last.activity, hasPour };
     return { type:'none' };
+  }
+  // §필터 4개+더보기 라운드(신규) — 목록 행의 "관리 우선순위" 색선(빨강/주황/회색)과
+  // "집중관리" 빠른 필터가 공유하는 단일 헬퍼. 새 판정 로직을 만들지 않고 이미 있는
+  // 두 신호만 합성한다: 빨강=기한초과(stageDurationFromProgress, §단계 체류기간(D+N)
+  // 라운드와 완전히 같은 계산), 주황=관리필요(classifyManagementNeed, 바로 위 함수)
+  // type이 'none'/'unknown'이 아닌 경우. progress는 이미 계산된 값을 그대로 받아
+  // buildProgressStages를 다시 부르지 않는다(§성능 원칙, 위 stageInfo 계산과 동일 패턴).
+  function computePriorityLevel(co, acts, progress, hasPour){
+    const stageInfo = stageDurationFromProgress(progress);
+    if(stageInfo && stageInfo.status === 'overdue') return 'red';
+    const need = classifyManagementNeed(co, acts, progress, hasPour);
+    if(need.type === 'firstActivity' || need.type === 'l2Stall' || need.type === 'reuse') return 'orange';
+    return 'gray';
   }
   const MGMT_NEED_REASON_LABEL = { firstActivity:'첫 활동 없음', l2Stall:'L2 정체', reuse:'재사용 필요' };
   const MGMT_NEED_NEXT_ACTION = { firstActivity:'영업 시작 지원', l2Stall:'L3 지원 제안', reuse:'재사용 지원' };
@@ -8289,12 +8637,17 @@ window.SHIN2_CRM_APP_INIT = function(){
   // 변경 금지").
   function showCustomerTab(){
     document.getElementById('workQueueView').style.display = 'none';
+    // §2-Pane 셸 전환 라운드: 예전엔 카드가 열려있으면 listView를 아예 display:none으로
+    // 숨겼다(카드가 풀스크린 오버레이였을 때는 어차피 안 보였으니 문제 없었음) — 이제
+    // listView는 상세가 열려있어도 왼쪽 40%로 계속 보여야 하므로 더 이상 숨기지 않고,
+    // crmSplit의 detail-closed 클래스로만 레이아웃을 결정한다.
+    listView.style.display = 'block';
     if(currentCompanyId && D.findCompany(currentCompanyId)){
       cardView.style.display = 'block';
-      listView.style.display = 'none';
+      crmSplit.classList.remove('detail-closed');
     } else {
-      listView.style.display = 'block';
       cardView.style.display = 'none';
+      crmSplit.classList.add('detail-closed');
     }
     updateTopTabsUI('customer');
   }
@@ -12468,6 +12821,22 @@ window.SHIN2_CRM_APP_INIT = function(){
     const glance = buildGlanceStats(co);
     const noContact = buildCustomerInfoFacts(co).length === 0;
     const emptyText = (glance.stageText === '미확인' && noContact) ? '진행단계 확인 필요' : '—';
+    // §상세 패널 내부 재설계 라운드(신규): 요청 항목대로 항목마다 해야 할 일/요청 일시/
+    // 처리기한/남은 기간/담당자를 보여준다. 요청일시(createdAt)는 원래 있던 값이고,
+    // 처리기한/담당자는 없으면 "미설정"으로만 표시한다(위 addNextAction 주석과 같은
+    // 원칙 — 가짜 값 금지). 남은 기간은 deadline이 있을 때만 계산한다.
+    const DAY_MS = 86400000;
+    const buildNaMetaHtml = (it)=>{
+      const requestedText = fmtRelativeActivityDate(it.createdAt);
+      const deadlineText = it.deadline ? fmtDate(it.deadline) : '미설정';
+      let remainText = '—';
+      if(it.deadline){
+        const diffDays = Math.ceil((new Date(it.deadline).getTime() - Date.now()) / DAY_MS);
+        remainText = diffDays > 0 ? `D-${diffDays}` : (diffDays === 0 ? 'D-day' : `D+${-diffDays}`);
+      }
+      const assigneeText = it.assignee || '미설정';
+      return `<div class="chart-na-meta">요청 ${esc(requestedText)} · 기한 ${esc(deadlineText)} · 남은 기간 ${esc(remainText)} · 담당 ${esc(assigneeText)}</div>`;
+    };
     wrap.innerHTML = `
       <div class="cdash-bcol-title-row">
         <div class="cdash-bcol-title">다음 행동</div>
@@ -12477,9 +12846,13 @@ window.SHIN2_CRM_APP_INIT = function(){
         ${(active.length || autoTodos.length) ? [
           ...active.map(it=> `
             <div class="chart-na-item">
-              <span>☐ ${esc(it.text)}</span>
+              <div class="chart-na-item-main">
+                <span>☐ ${esc(it.text)}</span>
+                ${buildNaMetaHtml(it)}
+              </div>
               <span class="chart-na-actions">
-                <button type="button" class="chart-na-complete-btn" data-complete-na="${esc(it.id)}">완료</button>
+                <button type="button" class="chart-na-complete-btn" data-complete-na="${esc(it.id)}">완료 처리</button>
+                <button type="button" class="chart-na-log-btn" data-log-na="${esc(it.id)}">기록 남기기</button>
                 ${editing ? `<button type="button" class="chart-tag-del" data-del="${esc(it.id)}">삭제</button>` : ''}
               </span>
             </div>
@@ -12494,8 +12867,10 @@ window.SHIN2_CRM_APP_INIT = function(){
           `)
         ].join('') : `<div class="cdash-field-value is-muted">${esc(emptyText)}</div>`}
       </div>
-      ${editing ? `<div class="cdash-mini-add-row">
+      ${editing ? `<div class="cdash-mini-add-row cdash-na-add-row">
           <input type="text" id="chartNextActionsInput" placeholder="우리가 다음에 해야 할 행동" />
+          <input type="date" id="chartNextActionsDeadline" title="처리기한(선택)" />
+          <input type="text" id="chartNextActionsAssignee" placeholder="담당자(선택)" style="width:90px;" />
           <button type="button" class="co-text-action primary" id="chartNextActionsAddBtn">추가</button>
         </div>` : ''}
       ${pourSupports.length ? `
@@ -12520,12 +12895,27 @@ window.SHIN2_CRM_APP_INIT = function(){
       D.removeNextAction(co.id, btn.getAttribute('data-del'));
       refreshChart();
     }));
+    // §상세 패널 내부 재설계 라운드(신규) — "기록 남기기": 새 저장 방식을 만들지 않고
+    // 이미 있는 D.addMemo(companyId, text)를 그대로 재사용한다. 어떤 다음 행동에 대한
+    // 기록인지 알 수 있도록 항목 문구를 메모 앞에 붙인다.
+    wrap.querySelectorAll('[data-log-na]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const itemId = btn.getAttribute('data-log-na');
+      const item = active.find(x=> x.id === itemId);
+      const note = window.prompt('이 다음 행동에 대한 기록을 남겨주세요.');
+      if(note == null || !note.trim()) return;
+      D.addMemo(co.id, (item ? `[${item.text}] ` : '') + note.trim());
+      refreshChart();
+    }));
     if(editing){
       const doAdd = ()=>{
         const input = document.getElementById('chartNextActionsInput');
         const text = input.value.trim();
         if(!text) return;
-        D.addNextAction(co.id, text);
+        const deadlineInput = document.getElementById('chartNextActionsDeadline');
+        const assigneeInput = document.getElementById('chartNextActionsAssignee');
+        const deadline = deadlineInput && deadlineInput.value ? deadlineInput.value : null;
+        const assignee = assigneeInput && assigneeInput.value.trim() ? assigneeInput.value.trim() : null;
+        D.addNextAction(co.id, text, '', { deadline, assignee });
         refreshChart();
       };
       document.getElementById('chartNextActionsAddBtn').addEventListener('click', doAdd);
@@ -13876,9 +14266,13 @@ window.SHIN2_CRM_APP_INIT = function(){
      ========================================================================== */
   const PHONE_REQ_TYPES = ['자료 요청','견적 문의','기술 문의','미팅 요청','기타'];
   let phoneReqState = null;
-  function openPhoneRequestModal(){
+  // §상세 패널 내부 재설계 라운드(신규): 상세 패널의 "전화 기록" 버튼이 이 모달을 열 때
+  // 지금 보고 있는 업체명을 미리 채워 넣을 수 있도록 openAddCompanyForm(prefillName)과
+  // 같은 패턴으로 선택 인자를 추가했다. 인자 없이 부르면(목록 상단 "전화 요청 기록"
+  // 버튼 등 기존 호출부) 예전과 완전히 동일하게 빈 값으로 시작한다.
+  function openPhoneRequestModal(prefillName){
     phoneReqState = {
-      companyName: '', requestType: PHONE_REQ_TYPES[0], requestContent: '', callMemo: '', error: '',
+      companyName: prefillName || '', requestType: PHONE_REQ_TYPES[0], requestContent: '', callMemo: '', error: '',
       duplicateCandidates: null // §업체명 정규화 매칭 라운드(신규): 정규화 이름이 같은 업체가 2개 이상이면 여기 채워지고, 하나 고를 때까지 저장을 미룬다.
     };
     renderPhoneRequestModal();
