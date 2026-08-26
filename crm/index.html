@@ -9399,7 +9399,14 @@ window.SHIN2_CRM_APP_INIT = function(){
             <button type="button" class="chart-close-btn" id="unregCloseBtn" aria-label="닫기">&times;</button>
           </div>
           <div class="pi-body">
-            <div class="pi-note">2026년 매출현황에는 있으나 고객관리에 등록되지 않은 업체입니다. 업체명을 클릭하면 고객 등록 화면이 열리고 업체명만 미리 입력됩니다 — 매출금액은 자동 저장되지 않으며, 확인 후 직접 저장해야 등록됩니다.</div>
+            <!-- §미등록 업체 판정 기준 안내 라운드(신규): "미등록 업체"가 정확히 무슨 뜻인지,
+                 어떤 기준으로 CRM 등록 여부를 가리는지 물어보는 경우가 있어 모달 안에 판정
+                 기준을 문구로 안내한다. 판정 로직(buildUnregisteredCompanies2026/
+                 normCompanyNameForRevenue)은 전혀 바꾸지 않았다 — 이미 있는 계산 결과를
+                 설명하는 문구만 추가. -->
+            <div class="pi-note">"미등록 업체"는 2026년 매출현황(컨설팅+기술자문료+특허료+자재판매) 데이터에는 매출 기록이 있는데, CRM 고객 목록에는 등록되어 있지 않은 업체를 뜻합니다.</div>
+            <div class="pi-note" style="margin-top:6px;">판정 기준: 매출현황 업체명과 CRM 업체명을 정규화(법인 표기·공백·괄호·점·하이픈 등 제거, 대소문자 무시)해서 완전히 일치할 때만 "등록됨"으로 봅니다. 이름이 비슷하다는 이유만으로는 자동으로 연결하지 않으며, 별도로 저장하지 않고 화면을 열 때마다 다시 계산하므로 CRM에 등록하는 즉시 목록에서 빠집니다.</div>
+            <div class="pi-note" style="margin-top:6px;">업체명을 클릭하면 고객 등록 화면이 열리고 업체명만 미리 입력됩니다 — 매출금액은 자동 저장되지 않으며, 확인 후 직접 저장해야 등록됩니다.</div>
             ${list.length ? `
               <table class="pi-sample-table" style="margin-top:10px;">
                 <thead><tr><th>업체명</th><th>2026 매출</th><th>최근 매출일</th><th>최근 현장명</th><th>상태</th></tr></thead>
