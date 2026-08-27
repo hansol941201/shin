@@ -781,6 +781,112 @@
   .top-icon-btn:disabled{color:var(--text-light-gray);cursor:not-allowed;background:var(--bg);}
   .top-icon-btn:disabled:hover{border-color:var(--card-border);background:var(--bg);}
 
+
+  /* ---------- 일정 (월간 달력) ---------- */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:8px 0 14px;}
+  .cal-title-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .cal-title{font-size:20px;font-weight:800;margin:0;}
+  .cal-legend{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+    border:1px solid #f0b6b3;background:#fdecea;color:#a3231d;font-size:12.5px;font-weight:700;}
+  .cal-legend i{width:10px;height:10px;border-radius:3px;background:#c2201a;display:block;}
+  .cal-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .cal-month{font-size:16px;font-weight:800;min-width:120px;text-align:center;}
+  .cal-nav-btn{width:34px;height:34px;border:1px solid var(--card-border);border-radius:8px;background:#fff;
+    color:var(--text-dark);font-size:15px;font-weight:700;cursor:pointer;}
+  .cal-nav-btn:hover{background:var(--hover-blue-soft);border-color:var(--hover-blue);}
+  .cal-today-btn{height:34px;padding:0 13px;border:1px solid var(--card-border);border-radius:8px;background:#fff;
+    font-size:13px;font-weight:700;color:var(--text-dark);cursor:pointer;}
+  .cal-today-btn:hover{background:var(--hover-blue-soft);border-color:var(--hover-blue);}
+  .cal-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .cal-chip{border:1px solid var(--card-border);border-radius:999px;background:#fff;color:var(--text-gray);
+    padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .cal-chip:hover{background:var(--hover-blue-soft);border-color:var(--hover-blue);}
+  .cal-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .cal-chip .chip-count{margin-left:6px;font-size:11px;opacity:.75;}
+
+  .cal-sample-note{margin:0 0 12px;padding:9px 12px;border:1px dashed var(--card-border);border-radius:9px;
+    background:var(--bg);color:var(--text-gray);font-size:12.5px;}
+  .cal-sample-tag{font-size:11.5px;color:var(--text-light-gray);font-weight:700;}
+  .cal-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;}
+  .cal-board{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;overflow:hidden;}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#f2f5f9;border-bottom:1px solid var(--card-border);}
+  .cal-weekdays span{padding:9px 0;text-align:center;font-size:12.5px;font-weight:700;color:var(--text-gray);}
+  .cal-weekdays span.sun{color:#c2201a;}
+  .cal-weekdays span.sat{color:#2563eb;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+  .cal-cell{min-width:0;min-height:118px;padding:6px 7px 8px;border-right:1px solid #eef1f5;border-bottom:1px solid #eef1f5;
+    background:#fff;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;font:inherit;overflow:hidden;}
+  .cal-cell:nth-child(7n){border-right:none;}
+  .cal-cell:hover{background:var(--hover-blue-soft);}
+  .cal-cell.other{background:#fafbfd;}
+  .cal-cell.other .cal-daynum{color:var(--text-light-gray);}
+  .cal-cell.selected{background:#eaf2fe;box-shadow:inset 0 0 0 2px var(--accent);}
+  .cal-daynum{font-size:13px;font-weight:700;color:var(--text-dark);display:flex;align-items:center;gap:5px;}
+  .cal-cell.sun .cal-daynum,.cal-cell.holiday .cal-daynum{color:#c2201a;}
+  .cal-cell.sat .cal-daynum{color:#2563eb;}
+  .cal-cell.today .cal-daynum .num{background:var(--accent);color:#fff;border-radius:50%;
+    width:23px;height:23px;display:inline-flex;align-items:center;justify-content:center;}
+  .cal-holiday-name{font-size:10.5px;font-weight:700;color:#c2201a;}
+  .cal-events{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  /* 조재연 일정 — 빨간색 계열로 강조하되 글자는 진하게 두어 대비를 확보한다 */
+  .cal-event{display:flex;align-items:center;gap:5px;min-width:0;padding:3px 6px;border-radius:6px;
+    border:1px solid #f0b6b3;border-left:3px solid #c2201a;background:#fdecea;color:#8f1b16;
+    font-size:11.5px;font-weight:700;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .cal-event .ev-type{flex:none;padding:1px 5px;border-radius:4px;background:#c2201a;color:#fff;font-size:10px;font-weight:800;}
+  .cal-event .ev-time{flex:none;font-size:10.5px;color:#a3231d;font-variant-numeric:tabular-nums;}
+  .cal-event .ev-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .cal-more{align-self:flex-start;border:none;background:none;padding:1px 2px;color:var(--accent);
+    font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;}
+
+  .cal-side{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px;}
+  .cal-side-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+  .cal-side-date{font-size:14.5px;font-weight:800;}
+  .cal-side-count{font-size:12px;color:var(--text-gray);}
+  .cal-detail{border:1px solid #f0b6b3;border-left:4px solid #c2201a;border-radius:10px;background:#fff;
+    padding:11px 12px;margin-bottom:9px;}
+  .cal-detail-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+  .cal-detail-type{padding:2px 8px;border-radius:999px;background:#c2201a;color:#fff;font-size:11px;font-weight:800;}
+  .cal-detail-status{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;
+    border:1px solid var(--card-border);color:var(--text-gray);background:var(--bg);}
+  .cal-detail-status.done{background:#e7f7ee;border-color:#b7e4c9;color:#14713c;}
+  .cal-detail-time{margin-left:auto;font-size:12px;font-weight:700;color:#8f1b16;}
+  .cal-detail-title{font-size:14px;font-weight:800;color:#8f1b16;margin-bottom:5px;word-break:keep-all;}
+  .cal-detail-meta{display:grid;grid-template-columns:56px 1fr;gap:3px 8px;font-size:12.5px;color:var(--text-dark);}
+  .cal-detail-meta dt{color:var(--text-gray);font-weight:700;}
+  .cal-detail-meta dd{margin:0;word-break:keep-all;}
+  .cal-detail-actions{display:flex;gap:6px;margin-top:9px;}
+  .cal-detail-actions button{border:1px solid var(--card-border);background:#fff;border-radius:7px;
+    padding:5px 11px;font-size:12px;font-weight:700;color:var(--text-gray);cursor:pointer;}
+  .cal-detail-actions button:hover{background:var(--hover-blue-soft);border-color:var(--hover-blue);color:var(--text-dark);}
+  .cal-detail-actions button.danger:hover{background:#fdecea;border-color:#f0b6b3;color:#a3231d;}
+  .cal-empty{padding:18px 4px;color:var(--text-light-gray);font-size:13px;text-align:center;}
+
+  .sch-form{display:grid;gap:11px;}
+  .sch-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .sch-form label{display:block;font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:4px;}
+  .sch-form input,.sch-form select,.sch-form textarea{width:100%;border:1px solid var(--card-border);border-radius:8px;
+    padding:9px 10px;font:inherit;font-size:13.5px;color:var(--text-dark);background:#fff;}
+  .sch-form textarea{min-height:64px;resize:vertical;}
+  .sch-form .hint{font-size:11.5px;color:var(--text-light-gray);}
+
+  @media (max-width:980px){
+    .cal-layout{grid-template-columns:minmax(0,1fr);}   /* 좁은 화면에서는 선택한 날 목록을 달력 아래로 */
+    .cal-cell{min-height:96px;}
+  }
+  @media (max-width:640px){
+    /* 작은 화면에서는 7칸을 그대로 담고, 자세한 내용은 달력 아래 선택 날짜 목록에서 본다 */
+    .cal-cell{min-height:70px;padding:4px 3px;gap:2px;}
+    .cal-daynum{font-size:12px;gap:2px;}
+    .cal-cell.today .cal-daynum .num{width:20px;height:20px;}
+    .cal-holiday-name{display:none;}
+    .cal-weekdays span{font-size:11.5px;padding:7px 0;}
+    .cal-event{padding:2px 3px;gap:0;border-left-width:2px;font-size:9.5px;}
+    .cal-event .ev-type,.cal-event .ev-time{display:none;}
+    .cal-more{font-size:9.5px;}
+    .cal-title{font-size:18px;}
+    .sch-form .row2{grid-template-columns:1fr;}
+  }
+
   @media (max-width:760px){
     .sidebar{position:fixed;left:0;top:var(--topbar-h,128px);bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
     .sidebar.open{transform:translateX(0);}
@@ -808,6 +914,7 @@
   </div>
   <div class="topbar-row topbar-row-actions">
     <div class="top-actions">
+      <button class="top-icon-btn" id="scheduleTopLink" title="일정 (월간 달력)" style="width:auto;padding:0 12px;font-size:13px;font-weight:700;">일정</button>
       <button class="top-icon-btn" id="noteBtn" title="오늘 할 일">📝<span class="badge-dot" id="todoBadge">0</span></button>
       <button class="top-icon-btn" id="notifBtn" title="알림 (미연결 — 연결된 기존 기능 없음)" disabled>🔔</button>
       <button class="top-icon-btn" id="userBtn" title="사용자 (미연결 — 연결된 기존 기능 없음)" disabled>👤</button>
@@ -838,6 +945,7 @@
     <div class="sidebar-primary-group">
       <button type="button" class="nav-item" id="homeNavLink">홈</button>
       <button type="button" class="nav-item" id="todayFooterLink">처리할 업무</button>
+      <button type="button" class="nav-item" id="scheduleNavLink">일정</button>
     </div>
 
     <div class="nav-section collapsed" id="guideNavSection">
@@ -908,7 +1016,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets', 'schedules'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -969,6 +1077,9 @@
     })();
   }
 </script>
+
+<!-- 일정(월간 달력) 데이터 계층 — 화면 코드와 분리되어 있어 나중에 서버 API 로 바꿀 때 이 파일만 교체하면 된다. -->
+<script src="js/schedule-data.js"></script>
 
 <script>
 /* ---------- State ---------- */
@@ -1034,6 +1145,8 @@ const DEFAULT_STATE = {
   // 이후에는 사용자가 [질문 편집]/[편집]으로 직접 관리한다(자동 생성이 다시 덮어쓰지 않는다).
   phoneQuestionSets:{},
   phoneProcedureSets:{},
+  // 일정(월간 달력) — 담당자·현장·공종 등을 함께 보관한다
+  schedules:[],
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
@@ -1059,13 +1172,14 @@ function loadState(){
       if(!Array.isArray(parsed.callLogs)) parsed.callLogs = [];
       if(!parsed.phoneQuestionSets || typeof parsed.phoneQuestionSets !== 'object') parsed.phoneQuestionSets = {};
       if(!parsed.phoneProcedureSets || typeof parsed.phoneProcedureSets !== 'object') parsed.phoneProcedureSets = {};
+      if(!Array.isArray(parsed.schedules)) parsed.schedules = [];
       return parsed;
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 /* 컬렉션 이름 ↔ state 필드 매핑 (Firestore 실시간 동기화용) */
-const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
+const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets', 'schedules'];
 function getCloudSlice(key){
   if(key === 'companies') return state.companies;
   if(key === 'workflow') return state.guides;
@@ -1081,6 +1195,7 @@ function getCloudSlice(key){
   if(key === 'callLogs') return state.callLogs;
   if(key === 'phoneQuestionSets') return state.phoneQuestionSets;
   if(key === 'phoneProcedureSets') return state.phoneProcedureSets;
+  if(key === 'schedules') return state.schedules;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -1102,6 +1217,7 @@ function applyCloudSlice(key, data){
   else if(key === 'callLogs') state.callLogs = data;
   else if(key === 'phoneQuestionSets') state.phoneQuestionSets = data;
   else if(key === 'phoneProcedureSets') state.phoneProcedureSets = data;
+  else if(key === 'schedules') state.schedules = Array.isArray(data) ? data : [];
 }
 
 function saveState(){
@@ -1475,6 +1591,14 @@ document.getElementById('todayFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'today'};
   saveState(); render();
 });
+function goSchedule(){
+  state.currentView = {type:'schedule'};
+  saveState();
+  render();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.getElementById('scheduleNavLink').addEventListener('click', goSchedule);
+document.getElementById('scheduleTopLink').addEventListener('click', goSchedule);
 document.getElementById('materialsFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'materials'};
   saveState(); render();
@@ -1584,6 +1708,8 @@ function renderContent(){
     el.innerHTML = renderMaterialsToolView();
   } else if(state.currentView.type === 'home'){
     el.innerHTML = renderHomeView();
+  } else if(state.currentView.type === 'schedule'){
+    el.innerHTML = renderScheduleView();
   } else {
     // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 홈으로 이동
     // 할 일 목록은 상단 📝 노트 패널로 이동했습니다.
@@ -1910,6 +2036,54 @@ contentEl.addEventListener('click', (e)=>{
   const action = btn.dataset.action;
   const guideId = btn.dataset.guide || btn.dataset.id;
   const guide = guideId ? state.guides.find(g=>g.id===guideId) : null;
+
+  // ---- 일정(월간 달력) ----
+  if(action === 'cal-prev' || action === 'cal-next'){
+    const step = action === 'cal-next' ? 1 : -1;
+    const moved = new Date(calendarView.year, calendarView.month + step, 1);
+    calendarView.year = moved.getFullYear();
+    calendarView.month = moved.getMonth();
+    calendarView.expanded = {};
+    renderContent();
+    return;
+  }
+  if(action === 'cal-today'){
+    const now = new Date();
+    calendarView.year = now.getFullYear();
+    calendarView.month = now.getMonth();
+    calendarView.selected = todayKey();
+    calendarView.expanded = {};
+    renderContent();
+    return;
+  }
+  if(action === 'cal-filter'){
+    calendarView.filter = btn.dataset.type || '전체';   // 월 이동·날짜 선택·더보기에도 같은 조건이 유지된다
+    calendarView.expanded = {};
+    renderContent();
+    return;
+  }
+  if(action === 'cal-more' || action === 'cal-less'){
+    e.stopPropagation();
+    const key = btn.dataset.date;
+    if(action === 'cal-more') calendarView.expanded[key] = true;
+    else delete calendarView.expanded[key];
+    renderContent();
+    return;
+  }
+  if(action === 'cal-day'){
+    const key = btn.dataset.date;
+    calendarView.selected = key;
+    const picked = new Date(key);
+    if(!Number.isNaN(picked.getTime()) && picked.getMonth() !== calendarView.month){
+      calendarView.year = picked.getFullYear();
+      calendarView.month = picked.getMonth();
+    }
+    renderContent();
+    return;
+  }
+  if(action === 'cal-add'){ openScheduleModal(null); return; }
+  if(action === 'cal-edit'){ const found = ScheduleStore.find(btn.dataset.id); if(found) openScheduleModal(found); return; }
+  if(action === 'cal-delete'){ deleteSchedule(btn.dataset.id); return; }
 
   if(action === 'ai-mode'){
     // 유형 버튼은 항상 하나가 선택되어 있어야 한다(기본값 업무보고) — 같은 버튼을 다시 눌러도 해제되지 않는다.
@@ -3740,6 +3914,246 @@ function renderHomeView(){
 }
 
 // 바로가기는 상단 헤더로 이동했으므로(검색창 옆) 업무도구에는 더 이상 중복 표시하지 않는다.
+/* ==========================================================================
+   일정 (월간 달력)
+   - 데이터 읽기/쓰기는 js/schedule-data.js 의 ScheduleStore 가 담당한다.
+   - 이 화면은 '조재연' 담당 일정만 보여 준다(원본은 지우지 않고 화면에서만 거른다).
+   ========================================================================== */
+const calendarView = {
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),          // 0-11
+  selected: todayKey(),
+  filter: '전체',
+  expanded: {}                            // 날짜별 '+N건 더보기' 펼침 상태
+};
+const CAL_PREVIEW = 2;                    // 한 칸에 기본으로 보여 줄 일정 수
+
+/* 저장소를 현재 프로젝트의 state + saveState() 에 연결한다.
+   나중에 서버 API 로 옮길 때는 이 어댑터만 바꾸면 된다. */
+ScheduleStore.use({
+  read(){ return state.schedules || []; },
+  write(rows){ state.schedules = rows; saveState(); }
+});
+
+function calFilterOptions(){ return { type: calendarView.filter }; }
+
+/* 저장된 일정이 하나도 없을 때만 예시를 화면에 띄운다.
+   예시는 저장소에 쓰지 않으므로 기존 일정 데이터는 어떤 경우에도 바뀌지 않는다. */
+function calendarRows(){
+  const saved = ScheduleStore.list();
+  if(saved.length) return { rows: saved, sample: false };
+  return { rows: sampleSchedules().map((row, index) => ({ ...row, id: `sample-${index + 1}`, sample: true })), sample: true };
+}
+
+function renderScheduleView(){
+  const { year, month } = calendarView;
+  const { rows: all, sample: usingSample } = calendarRows();
+  const byDate = groupByDate(all, calFilterOptions());
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const monthCount = [...byDate.entries()]
+    .filter(([key]) => key.startsWith(monthPrefix))
+    .reduce((sum, [, rows]) => sum + rows.length, 0);
+
+  const first = new Date(year, month, 1);
+  const start = new Date(year, month, 1 - first.getDay());          // 그 주 일요일부터
+  const cells = [];
+  for(let i = 0; i < 42; i += 1){
+    const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    cells.push(renderCalendarCell(day, byDate));
+    if(i >= 34 && day.getMonth() !== month && day.getDay() === 6) break;   // 6주가 필요 없으면 5주까지만
+  }
+
+  return `
+    <div class="view-topbar"><span class="crumb">SCHEDULE</span></div>
+    <div class="cal-head">
+      <div class="cal-title-wrap">
+        <h1 class="cal-title">${escapeHtml(SCHEDULE_OWNER_FOCUS)} 일정</h1>
+        <span class="cal-legend"><i></i>${escapeHtml(SCHEDULE_OWNER_FOCUS)} 담당 일정만 표시</span>
+      </div>
+      <div class="cal-tools">
+        <button type="button" class="cal-nav-btn" data-action="cal-prev" title="이전 달">‹</button>
+        <span class="cal-month">${year}년 ${month + 1}월</span>
+        <button type="button" class="cal-nav-btn" data-action="cal-next" title="다음 달">›</button>
+        <button type="button" class="cal-today-btn" data-action="cal-today">오늘</button>
+        <button type="button" class="btn btn-primary" data-action="cal-add">+ 일정추가</button>
+      </div>
+    </div>
+
+    ${usingSample ? `<div class="cal-sample-note">저장된 일정이 없어 <b>예시</b>를 보여 주고 있습니다. 저장소에는 기록되지 않으며, 일정을 하나라도 추가하면 사라집니다.</div>` : ''}
+    <div class="cal-filters">${renderCalendarFilters(all)}</div>
+
+    <div class="cal-layout">
+      <div class="cal-board">
+        <div class="cal-weekdays">
+          ${WEEKDAY_KO.map((name, index) => `<span class="${index === 0 ? 'sun' : index === 6 ? 'sat' : ''}">${name}</span>`).join('')}
+        </div>
+        <div class="cal-grid">${cells.join('')}</div>
+      </div>
+      ${renderCalendarSide(byDate)}
+    </div>
+    <div class="cal-empty" style="text-align:left;padding-top:10px;">${year}년 ${month + 1}월 · ${monthCount}건</div>
+  `;
+}
+
+function renderCalendarFilters(all){
+  const counts = new Map();
+  for(const item of visibleSchedules(all)){
+    counts.set(item.type, (counts.get(item.type) || 0) + 1);
+  }
+  const total = visibleSchedules(all).length;
+  const chip = (id, count) => `
+    <button type="button" class="cal-chip ${calendarView.filter === id ? 'active' : ''}" data-action="cal-filter" data-type="${escapeHtml(id)}">
+      ${escapeHtml(id)}<span class="chip-count">${count}</span>
+    </button>`;
+  return [chip('전체', total), ...SCHEDULE_TYPE_IDS.map(id => chip(id, counts.get(id) || 0))].join('');
+}
+
+function renderCalendarCell(dayObj, byDate){
+  const key = dateKeyOf(dayObj);
+  const rows = byDate.get(key) || [];
+  const classes = ['cal-cell'];
+  if(dayObj.getMonth() !== calendarView.month) classes.push('other');
+  if(dayObj.getDay() === 0) classes.push('sun');
+  if(dayObj.getDay() === 6) classes.push('sat');
+  if(key === todayKey()) classes.push('today');
+  if(key === calendarView.selected) classes.push('selected');
+  const holiday = holidayName(key);
+  if(holiday) classes.push('holiday');
+
+  const open = calendarView.expanded[key];
+  const shown = open ? rows : rows.slice(0, CAL_PREVIEW);
+  const rest = rows.length - shown.length;
+
+  return `
+    <button type="button" class="${classes.join(' ')}" data-action="cal-day" data-date="${key}">
+      <span class="cal-daynum"><span class="num">${dayObj.getDate()}</span>${holiday ? `<span class="cal-holiday-name">${escapeHtml(holiday)}</span>` : ''}</span>
+      <span class="cal-events">
+        ${shown.map(item => `
+          <span class="cal-event" title="${escapeHtml(item.title)}">
+            <span class="ev-type">${escapeHtml(item.type)}</span>
+            ${item.time ? `<span class="ev-time">${escapeHtml(item.time)}</span>` : ''}
+            <span class="ev-title">${escapeHtml(item.title)}</span>
+          </span>`).join('')}
+        ${rest > 0 ? `<span class="cal-more" data-action="cal-more" data-date="${key}">+${rest}건 더보기</span>` : ''}
+        ${open && rows.length > CAL_PREVIEW ? `<span class="cal-more" data-action="cal-less" data-date="${key}">접기</span>` : ''}
+      </span>
+    </button>`;
+}
+
+function renderCalendarSide(byDate){
+  const key = calendarView.selected;
+  const rows = byDate.get(key) || [];
+  return `
+    <aside class="cal-side">
+      <div class="cal-side-head">
+        <span class="cal-side-date">${escapeHtml(formatDateKo(key))}</span>
+        <span class="cal-side-count">${rows.length}건</span>
+      </div>
+      ${rows.length ? rows.map(renderScheduleDetail).join('')
+        : `<div class="cal-empty">${escapeHtml(SCHEDULE_OWNER_FOCUS)} 담당 일정이 없습니다.</div>`}
+    </aside>`;
+}
+
+function renderScheduleDetail(item){
+  const owners = ownerList(item).join(', ');
+  const meta = [
+    ['담당자', owners],
+    ['현장명', item.site],
+    ['공종', item.trade],
+    ['요청 업체', item.client],
+    ['메모', item.memo]
+  ].filter(([, value]) => value);
+  const time = item.time ? `${formatTimeKo(item.time)}${item.endTime ? ` ~ ${formatTimeKo(item.endTime)}` : ''}` : '시간 미정';
+  return `
+    <div class="cal-detail">
+      <div class="cal-detail-top">
+        <span class="cal-detail-type">${escapeHtml(item.type)}</span>
+        <span class="cal-detail-status ${item.status === '확정' ? 'done' : ''}">${escapeHtml(item.status)}</span>
+        <span class="cal-detail-time">${escapeHtml(time)}</span>
+      </div>
+      <div class="cal-detail-title">${escapeHtml(item.title)}</div>
+      ${meta.length ? `<dl class="cal-detail-meta">${meta.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join('')}</dl>` : ''}
+      ${item.sample
+        ? `<div class="cal-detail-actions"><span class="cal-sample-tag">예시 · 저장되지 않음</span></div>`
+        : `<div class="cal-detail-actions">
+            <button type="button" data-action="cal-edit" data-id="${escapeHtml(item.id)}">수정</button>
+            <button type="button" class="danger" data-action="cal-delete" data-id="${escapeHtml(item.id)}">삭제</button>
+          </div>`}
+    </div>`;
+}
+
+/* 일정 등록·수정 창 — 기존 modalOverlay 를 그대로 쓴다. */
+function openScheduleModal(item){
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('modal');
+  const value = item || { date: calendarView.selected, time: '', endTime: '', type: '영업', title: '',
+    status: '미확정', owners: [SCHEDULE_OWNER_FOCUS], site: '', trade: '', client: '', memo: '' };
+  const owners = ownerList(value).join(', ') || SCHEDULE_OWNER_FOCUS;
+  modal.innerHTML = `
+    <h2>${item ? '일정 수정' : '일정 추가'}</h2>
+    <form id="scheduleForm" class="sch-form">
+      <div class="row2">
+        <div><label>날짜</label><input type="date" name="date" value="${escapeHtml(value.date)}" required /></div>
+        <div><label>유형</label><select name="type">${SCHEDULE_TYPE_IDS.map(id => `<option ${id === value.type ? 'selected' : ''}>${id}</option>`).join('')}</select></div>
+      </div>
+      <div><label>일정명</label><input type="text" name="title" value="${escapeHtml(value.title)}" placeholder="예) 한솔아파트 현장설명회" required /></div>
+      <div class="row2">
+        <div><label>시작 시간</label><input type="time" name="time" value="${escapeHtml(value.time)}" /></div>
+        <div><label>종료 시간</label><input type="time" name="endTime" value="${escapeHtml(value.endTime)}" /></div>
+      </div>
+      <div class="row2">
+        <div><label>상태</label><select name="status">${SCHEDULE_STATUSES.map(id => `<option ${id === value.status ? 'selected' : ''}>${id}</option>`).join('')}</select></div>
+        <div><label>담당자</label><input type="text" name="owners" value="${escapeHtml(owners)}" placeholder="쉼표로 여러 명" /></div>
+      </div>
+      <div class="row2">
+        <div><label>현장명</label><input type="text" name="site" value="${escapeHtml(value.site)}" /></div>
+        <div><label>공종</label><input type="text" name="trade" value="${escapeHtml(value.trade)}" /></div>
+      </div>
+      <div><label>요청 업체</label><input type="text" name="client" value="${escapeHtml(value.client)}" /></div>
+      <div><label>메모</label><textarea name="memo" placeholder="상세 내용">${escapeHtml(value.memo)}</textarea></div>
+      <div class="hint">담당자에 ‘${escapeHtml(SCHEDULE_OWNER_FOCUS)}’ 이 없으면 저장은 되지만 이 달력에는 보이지 않습니다.</div>
+      <div class="modal-actions">
+        ${item ? `<button type="button" class="btn btn-ghost" id="scheduleDelete">삭제</button>` : ''}
+        <button type="button" class="btn btn-ghost" id="scheduleCancel">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>`;
+  overlay.classList.add('open');
+  modal.querySelector('#scheduleCancel').onclick = closeModal;
+  const deleteBtn = modal.querySelector('#scheduleDelete');
+  if(deleteBtn) deleteBtn.onclick = () => { closeModal(); deleteSchedule(item.id); };
+  modal.querySelector('#scheduleForm').onsubmit = (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const input = {
+      date: form.date.value, time: form.time.value, endTime: form.endTime.value,
+      type: form.type.value, title: form.title.value, status: form.status.value,
+      owners: form.owners.value, site: form.site.value, trade: form.trade.value,
+      client: form.client.value, memo: form.memo.value
+    };
+    if(!input.title.trim()){ showToast('일정명을 입력해주세요'); return; }
+    if(item) ScheduleStore.update(item.id, input);
+    else ScheduleStore.add(input);
+    calendarView.selected = input.date;
+    const picked = new Date(input.date);
+    if(!Number.isNaN(picked.getTime())){ calendarView.year = picked.getFullYear(); calendarView.month = picked.getMonth(); }
+    closeModal();
+    render();
+    showToast(item ? '일정을 수정했습니다' : '일정을 추가했습니다');
+  };
+  const firstInput = modal.querySelector('input,select,textarea');
+  if(firstInput) firstInput.focus();
+}
+
+function deleteSchedule(id){
+  const item = ScheduleStore.find(id);
+  if(!item) return;
+  if(!confirm(`‘${item.title}’ 일정을 삭제할까요?`)) return;
+  ScheduleStore.remove(id);
+  render();
+  showToast('일정을 삭제했습니다');
+}
+
 function renderWorkToolsRow(){
   return `
     <div class="worktools-row">
