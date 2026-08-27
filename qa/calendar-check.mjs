@@ -98,6 +98,7 @@ await page.click('#scheduleForm button[type="submit"]'); await page.waitForTimeo
 ok('일정 추가됨', (await page.textContent('.cal-side')).includes('테스트 현장설명회'));
 const stored = await page.evaluate(()=>JSON.parse(localStorage.getItem('work-guide-state-v1')).schedules.map(s=>s.title));
 ok('localStorage 에 저장', stored.includes('테스트 현장설명회'), `${stored.length}건`);
+ok('클라우드 동기화 대상 아님', await page.evaluate(()=>!CLOUD_COLLECTIONS.includes('schedules') && getCloudSlice('schedules')===null));
 
 await page.click('.cal-detail:has-text("테스트 현장설명회") [data-action="cal-edit"]'); await page.waitForTimeout(400);
 await page.fill('#scheduleForm input[name="title"]','테스트 현장설명회(수정)');

@@ -1016,7 +1016,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets', 'schedules'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -1145,7 +1145,7 @@ const DEFAULT_STATE = {
   // 이후에는 사용자가 [질문 편집]/[편집]으로 직접 관리한다(자동 생성이 다시 덮어쓰지 않는다).
   phoneQuestionSets:{},
   phoneProcedureSets:{},
-  // 일정(월간 달력) — 담당자·현장·공종 등을 함께 보관한다
+  // 일정(월간 달력) — 이 브라우저에만 저장한다(클라우드 동기화 안 함)
   schedules:[],
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
@@ -1179,7 +1179,7 @@ function loadState(){
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 /* 컬렉션 이름 ↔ state 필드 매핑 (Firestore 실시간 동기화용) */
-const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets', 'schedules'];
+const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
 function getCloudSlice(key){
   if(key === 'companies') return state.companies;
   if(key === 'workflow') return state.guides;
@@ -1195,7 +1195,6 @@ function getCloudSlice(key){
   if(key === 'callLogs') return state.callLogs;
   if(key === 'phoneQuestionSets') return state.phoneQuestionSets;
   if(key === 'phoneProcedureSets') return state.phoneProcedureSets;
-  if(key === 'schedules') return state.schedules;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -1217,7 +1216,6 @@ function applyCloudSlice(key, data){
   else if(key === 'callLogs') state.callLogs = data;
   else if(key === 'phoneQuestionSets') state.phoneQuestionSets = data;
   else if(key === 'phoneProcedureSets') state.phoneProcedureSets = data;
-  else if(key === 'schedules') state.schedules = Array.isArray(data) ? data : [];
 }
 
 function saveState(){
@@ -3929,6 +3927,7 @@ const calendarView = {
 const CAL_PREVIEW = 2;                    // 한 칸에 기본으로 보여 줄 일정 수
 
 /* 저장소를 현재 프로젝트의 state + saveState() 에 연결한다.
+   일정은 클라우드 동기화 대상이 아니라 이 브라우저(localStorage)에만 저장된다.
    나중에 서버 API 로 옮길 때는 이 어댑터만 바꾸면 된다. */
 ScheduleStore.use({
   read(){ return state.schedules || []; },

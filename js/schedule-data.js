@@ -2,7 +2,7 @@
    일정(월간 달력) 데이터 계층
    화면 코드와 분리되어 있어 나중에 서버 API 로 바꿀 때 이 파일만 교체하면 된다.
    저장된 일정이 없을 때만 화면에 예시를 띄우며, 예시는 저장소에 절대 기록하지 않는다.
-   기본 저장소는 index.html 의 state.schedules + saveState() (localStorage + Firestore)이며,
+   기본 저장소는 index.html 의 state.schedules + saveState() (이 브라우저의 localStorage)이며,
    ScheduleStore.use({ read, write }) 로 다른 저장소를 끼워 넣을 수 있다.
    ========================================================================== */
 
