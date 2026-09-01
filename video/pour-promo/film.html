@@ -6,79 +6,97 @@
 @font-face{font-family:P;src:url(fonts/Pretendard-Bold.woff2) format('woff2');font-weight:700;font-display:block}
 @font-face{font-family:P;src:url(fonts/Pretendard-ExtraBold.woff2) format('woff2');font-weight:800;font-display:block}
 @font-face{font-family:P;src:url(fonts/Pretendard-Black.woff2) format('woff2');font-weight:900;font-display:block}
+
+/* ===== 디자인 토큰 — 네이비 / 블루 / 화이트 단일 계열 ===== */
 :root{
-  --navy:#0A1B33; --navy2:#0F2647; --navy3:#16385F;
-  --accent:#2F7BE8; --accent2:#5AA0FF;
-  --line:rgba(255,255,255,.16); --ink:#0A1B33; --paper:#FFFFFF; --mist:#EDF1F6;
+  --navy-900:#061223; --navy-800:#0A1B33; --navy-700:#102A4C; --navy-600:#16375F;
+  --blue-600:#1E5FBF; --blue-500:#2F7BE8; --blue-400:#5AA0FF; --blue-100:#D6E6FB;
+  --paper:#F4F7FB; --white:#FFFFFF;
+  --ink-1:#FFFFFF; --ink-2:rgba(255,255,255,.74); --ink-3:rgba(255,255,255,.50);
+  --hair:rgba(255,255,255,.14); --hair-2:rgba(255,255,255,.22);
+  --shadow-1:0 12px 32px rgba(2,10,22,.34);
+  --shadow-2:0 24px 64px rgba(2,10,22,.48);
+  /* 레이아웃: 안전 여백 120px(6.25%), 8px 베이스라인 */
+  --m:120px; --r:12px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1920px;height:1080px;overflow:hidden;background:#000}
 body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.02em}
-#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--navy)}
-.scene{position:absolute;inset:0;opacity:0;will-change:opacity}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--navy-800)}
+.scene{position:absolute;inset:0;opacity:0;will-change:opacity,transform}
 .bg{position:absolute;inset:-4%;background-size:cover;background-position:center;will-change:transform}
 .bg img{width:100%;height:100%;object-fit:cover;display:block}
 .veil{position:absolute;inset:0}
-.v-navy{background:linear-gradient(90deg,rgba(10,27,51,.94) 0%,rgba(10,27,51,.80) 42%,rgba(10,27,51,.42) 100%)}
-.v-deep{background:linear-gradient(180deg,rgba(10,27,51,.86) 0%,rgba(10,27,51,.92) 100%)}
-.v-soft{background:linear-gradient(180deg,rgba(10,27,51,.30) 0%,rgba(10,27,51,.86) 100%)}
+.v-navy{background:linear-gradient(90deg,rgba(6,18,35,.95) 0%,rgba(6,18,35,.82) 44%,rgba(6,18,35,.46) 100%)}
+.v-deep{background:linear-gradient(180deg,rgba(10,27,51,.90) 0%,rgba(6,18,35,.94) 100%)}
+.v-soft{background:linear-gradient(180deg,rgba(6,18,35,.34) 0%,rgba(6,18,35,.88) 100%)}
 .el{position:absolute;opacity:0;will-change:transform,opacity}
 
-/* typography */
-.kicker{font-size:22px;font-weight:700;letter-spacing:.22em;color:var(--accent2)}
-.h1{font-size:96px;font-weight:800;color:#fff;line-height:1.08;letter-spacing:-.035em}
-.h2{font-size:64px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.035em}
-.h3{font-size:44px;font-weight:700;color:#fff;letter-spacing:-.03em}
-.lbl{font-size:26px;font-weight:600;color:rgba(255,255,255,.72)}
-.num{font-weight:900;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+/* ===== 타이포 스케일 — 위계를 4단계로 고정 =====
+   Display 104 / Title 72 / Section 56 / Sub 44 / Body 34 / Label 22        */
+.t-display{font-size:104px;font-weight:900;line-height:1.06;letter-spacing:-.045em;color:var(--ink-1)}
+.t-title  {font-size:72px; font-weight:800;line-height:1.10;letter-spacing:-.04em; color:var(--ink-1)}
+.t-section{font-size:56px; font-weight:800;line-height:1.14;letter-spacing:-.035em;color:var(--ink-1)}
+.t-sub    {font-size:44px; font-weight:700;line-height:1.24;letter-spacing:-.03em; color:var(--ink-1)}
+.t-body   {font-size:34px; font-weight:600;line-height:1.40;letter-spacing:-.025em;color:var(--ink-2)}
+.t-small  {font-size:26px; font-weight:600;line-height:1.44;letter-spacing:-.02em; color:var(--ink-2)}
+.kicker   {font-size:22px; font-weight:700;letter-spacing:.22em;color:var(--blue-400)}
+.eyebrow  {font-size:20px; font-weight:700;letter-spacing:.16em;color:var(--blue-400)}
+.h1{font-size:72px;font-weight:800;color:var(--ink-1);line-height:1.10;letter-spacing:-.04em}
+.h2{font-size:56px;font-weight:800;color:var(--ink-1);line-height:1.14;letter-spacing:-.035em}
+.h3{font-size:44px;font-weight:700;color:var(--ink-1);letter-spacing:-.03em}
+.lbl{font-size:26px;font-weight:600;color:var(--ink-2)}
+.num{font-weight:900;color:var(--ink-1);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
 
-/* chips / cards */
-.chip{display:flex;align-items:center;gap:22px}
-.chip .bar{width:8px;height:52px;background:var(--accent);border-radius:2px}
-.chip .tx{font-size:60px;font-weight:800;color:#fff;letter-spacing:-.035em}
-.card{position:absolute;border-radius:14px;overflow:hidden;background:#0d2242;
-  box-shadow:0 26px 70px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.10)}
+/* ===== 컴포넌트 — 모서리/테두리/그림자/간격 통일 ===== */
+.chip{display:flex;align-items:center;gap:20px}
+.chip .bar{width:6px;background:var(--blue-500);border-radius:3px}
+.chip .tx{font-size:56px;font-weight:800;color:var(--ink-1);letter-spacing:-.035em}
+.card{position:absolute;border-radius:var(--r);overflow:hidden;background:var(--navy-700);
+  box-shadow:var(--shadow-2);border:1px solid var(--hair)}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
-.card .cap{position:absolute;left:0;right:0;bottom:0;padding:14px 18px;font-size:22px;font-weight:600;color:#fff;
-  background:linear-gradient(180deg,rgba(10,27,51,0),rgba(10,27,51,.92))}
-.pedestal{position:absolute;border-radius:16px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.5);
-  display:flex;align-items:center;justify-content:center;overflow:hidden}
-.pedestal img{max-width:82%;max-height:74%;object-fit:contain}
-
-/* placeholder */
-.ph{position:absolute;inset:0;background:
-   repeating-linear-gradient(135deg,rgba(47,123,232,.14) 0 14px,rgba(47,123,232,.04) 14px 28px),#10243f;
-   border:2px dashed rgba(90,160,255,.55);border-radius:12px;
-   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:18px}
-.ph .t{font-size:22px;font-weight:700;color:#9FC4FF;letter-spacing:-.02em;line-height:1.3}
-.ph .s{font-size:16px;font-weight:600;color:rgba(159,196,255,.62);letter-spacing:.06em}
-.pedestal .ph{background:repeating-linear-gradient(135deg,rgba(47,123,232,.10) 0 14px,rgba(255,255,255,0) 14px 28px),#F2F6FC;border-color:rgba(47,123,232,.45)}
-.pedestal .ph .t{color:#2F7BE8}.pedestal .ph .s{color:rgba(47,123,232,.6)}
-
-/* step boxes */
-.box{position:absolute;border-radius:16px;background:rgba(255,255,255,.055);
-  border:1px solid rgba(255,255,255,.16);overflow:hidden;backdrop-filter:blur(2px)}
-.box .hd{display:flex;align-items:center;gap:14px;padding:22px 26px 16px}
-.box .hd .dot{width:12px;height:12px;border-radius:50%;background:var(--accent)}
-.box .hd .t{font-size:32px;font-weight:800;color:#fff;letter-spacing:-.03em}
-.box .media{position:relative;margin:0 26px 26px;border-radius:10px;overflow:hidden;background:#0d2242}
+.card .cap{position:absolute;left:0;right:0;bottom:0;padding:44px 22px 18px;
+  font-size:22px;font-weight:600;color:var(--ink-1);letter-spacing:-.02em;
+  background:linear-gradient(180deg,rgba(6,18,35,0),rgba(6,18,35,.90))}
+.pedestal{position:absolute;border-radius:var(--r);background:var(--white);
+  box-shadow:var(--shadow-2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.box{position:absolute;border-radius:var(--r);background:rgba(255,255,255,.05);
+  border:1px solid var(--hair);overflow:hidden}
+.box .hd{display:flex;align-items:center;gap:14px;padding:24px 24px 16px}
+.box .hd .dot{width:10px;height:10px;border-radius:50%;background:var(--blue-500);flex:none}
+.box .hd .t{font-size:32px;font-weight:800;color:var(--ink-1);letter-spacing:-.03em}
+.box .media{position:relative;margin:0 24px 24px;border-radius:8px;overflow:hidden;background:var(--navy-700)}
 .box .media img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
-
-/* list rows */
 .row{display:flex;align-items:center;gap:18px}
-.row .k{width:14px;height:14px;border:3px solid var(--accent);border-radius:50%}
-.row .t{font-size:40px;font-weight:700;color:#fff;letter-spacing:-.03em}
+.row .k{width:12px;height:12px;border:3px solid var(--blue-500);border-radius:50%;flex:none}
+.row .t{font-size:40px;font-weight:700;color:var(--ink-1);letter-spacing:-.03em}
 
-/* subtitle */
-#sub{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);max-width:1480px;
-  padding:16px 34px;border-radius:10px;background:rgba(6,16,31,.72);
-  font-size:34px;font-weight:600;color:#fff;text-align:center;letter-spacing:-.025em;line-height:1.35;
-  border:1px solid rgba(255,255,255,.10);opacity:0;white-space:pre-wrap}
-#prog{position:absolute;left:0;bottom:0;height:4px;background:var(--accent)}
-.wm{position:absolute;left:84px;top:66px;display:flex;align-items:center;gap:16px}
-.wm .m{font-size:30px;font-weight:900;color:#fff;letter-spacing:.30em}
-.wm .r{width:64px;height:2px;background:var(--accent)}
+/* 원본 미투입 슬롯 — AI로 대체하지 않고 무엇이 필요한지 표기 */
+.ph{position:absolute;inset:0;background:
+   repeating-linear-gradient(135deg,rgba(47,123,232,.13) 0 14px,rgba(47,123,232,.04) 14px 28px),var(--navy-700);
+   border:2px dashed rgba(90,160,255,.48);border-radius:8px;
+   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:18px}
+.ph .t{font-size:22px;font-weight:700;color:var(--blue-400);letter-spacing:-.02em;line-height:1.3}
+.ph .s{font-size:16px;font-weight:600;color:rgba(90,160,255,.60);letter-spacing:.06em}
+.pedestal .ph{background:repeating-linear-gradient(135deg,rgba(47,123,232,.09) 0 14px,rgba(255,255,255,0) 14px 28px),var(--paper);
+  border-color:rgba(47,123,232,.40)}
+.pedestal .ph .t{color:var(--blue-500)}.pedestal .ph .s{color:rgba(47,123,232,.58)}
+
+/* ===== 고정 워드마크 — 모든 장면에서 같은 위치·크기 ===== */
+#mark{position:absolute;left:120px;top:64px;display:flex;align-items:center;gap:14px;opacity:0;z-index:50}
+#mark .m{font-size:28px;font-weight:900;color:var(--ink-1);letter-spacing:.30em;line-height:1}
+#mark .r{width:52px;height:2px;background:var(--blue-500)}
+
+/* ===== 자막 — 안전 여백 확보, 모바일 가독성 ===== */
+#sub{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);
+  max-width:1440px;padding:18px 36px;border-radius:8px;
+  background:rgba(6,18,35,.82);border:1px solid rgba(255,255,255,.12);
+  font-size:36px;font-weight:600;color:var(--white);text-align:center;
+  letter-spacing:-.025em;line-height:1.34;opacity:0;white-space:pre-wrap;
+  text-shadow:0 2px 8px rgba(0,0,0,.45)}
+#prog{position:absolute;left:0;bottom:0;height:3px;background:var(--blue-500);opacity:.85}
 svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 </style></head>
-<body><div id="stage"></div><div id="sub"></div><div id="prog"></div>
+<body><div id="stage"></div><div id="mark"><div class="m">POUR</div><div class="r"></div></div>
+<div id="sub"></div><div id="prog"></div>
 <script src="film.js"></script></body></html>

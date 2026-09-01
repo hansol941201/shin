@@ -1,7 +1,8 @@
 /* ===== POUR B2B film — deterministic timeline renderer ===== */
 const AVAILABLE = window.__ASSETS__ || {};      // slot -> filename (injected by renderer)
-const RATE = 9.2;                                // chars/sec narration pace
-const PAD  = 0.22;                               // pause after each line
+const RATE = 9.2;                                // 초당 낭독 글자수
+const PAD  = 0.24;                               // 줄 사이 호흡
+const MINL = 1.34;                               // 자막 최소 노출(짧은 줄도 읽을 시간 확보)
 
 const stage = document.getElementById('stage');
 const subEl = document.getElementById('sub');
@@ -79,7 +80,7 @@ let clock = 0;
 for (const s of SCRIPT){
   const start = clock, arr = [];
   s.lines.forEach((tx,i)=>{
-    const d = Math.max(1.05, tx.replace(/\s/g,'').length / RATE) + PAD;
+    const d = Math.max(MINL, tx.replace(/\s/g,'').length / RATE) + PAD;
     arr.push({tx, t0:clock, t1:clock+d});
     clock += d;
   });
@@ -261,13 +262,14 @@ function words(el,t0,o={}){
   return el;
 }
 
-const MOVE={                       // [들어오는 방향], [나가는 방향], [살아있는 동안의 느린 이동]
-  s1:{i:[46,0],  o:[-46,0], p:[0,-12]},
-  s2:{i:[0,54],  o:[0,-54], p:[14,0]},
-  s3:{i:[-46,0], o:[46,0],  p:[0,-14]},
-  s4:{i:[0,48],  o:[0,-48], p:[-14,0]},
-  s5:{i:[52,0],  o:[-52,0], p:[0,-16]},
-  fin:{i:[0,34], o:[0,0],   p:[0,-8]},
+/* 장면 전환은 은은한 페이드 + 짧은 슬라이드로만. 방향은 흐름을 따라간다. */
+const MOVE={                       // [들어오는 방향], [나가는 방향], [살아있는 동안의 아주 느린 이동]
+  s1:{i:[20,0],  o:[-20,0], p:[0,-6]},
+  s2:{i:[0,26],  o:[0,-26], p:[6,0]},
+  s3:{i:[-20,0], o:[20,0],  p:[0,-7]},
+  s4:{i:[0,24],  o:[0,-24], p:[-6,0]},
+  s5:{i:[22,0],  o:[-22,0], p:[0,-8]},
+  fin:{i:[0,18], o:[0,0],   p:[0,-4]},
 };
 function pushPaint(el,t0,t1,d,inD,outD){
   const I=d.i||[0,0], O=d.o||[0,0], P=d.p||[0,0];
@@ -280,7 +282,7 @@ function pushPaint(el,t0,t1,d,inD,outD){
     const life=c01((T-t0)/Math.max(.001,t1-t0));
     const x=I[0]*(1-pi)+O[0]*po+P[0]*life;
     const y=I[1]*(1-pi)+O[1]*po+P[1]*life;
-    const k=1+.058*(1-pi)+.058*po+.014*life;   // 전환 중 줌으로 이동해도 여백이 안 보인다
+    const k=1+.018*(1-pi)+.018*po+.006*life;   // 전환 중 최소 줌 — 이동해도 여백이 안 보이는 정도까지만
     el.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${k.toFixed(4)})`;
   });
 }
@@ -301,37 +303,26 @@ function sub(parent, ta, tb, d){
   return g;
 }
 
-/* 카드에 빛이 한 번 스쳐 지나간다 — 착지 순간의 액센트 */
-function sheen(el,t0,o={}){
-  const d=o.d||.72;
-  const sh=mk('div','',{position:'absolute',left:0,top:0,right:0,bottom:0,pointerEvents:'none',opacity:0,
-    background:'linear-gradient(105deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.34) 50%,rgba(255,255,255,0) 62%)',
-    backgroundSize:'260% 100%'},el);
-  reg(T=>{
-    const p=c01((T-t0)/d);
-    sh.style.opacity = (p>0&&p<1)? Math.sin(p*Math.PI)*(o.a||1) : 0;
-    sh.style.backgroundPosition = `${(150-270*p).toFixed(1)}% 0`;
-  });
-  return sh;
+function scene(id){
+  const s=mk('div','scene'); s.id=id;
+  const b=SCN[id];
+  pushPaint(s,b.t0,b.t1,MOVE[id]||{},.35,.45);
+  return s;
 }
-/* 충격파 링 — 강한 순간에만.
-   scale로 키우면 테두리까지 같이 굵어져 도넛이 된다. 지름을 직접 키운다. */
-function shock(parent,t0,x,y,o={}){
-  const d=o.d||.8, r=o.r||520, w=o.w||2;
-  const e=mk('div','',{position:'absolute',left:x+'px',top:y+'px',width:'0px',height:'0px',
-    borderRadius:'50%',border:w+'px solid '+(o.c||'#2F7BE8'),opacity:0,pointerEvents:'none',
-    boxSizing:'border-box'},parent);
-  reg(T=>{
-    const p=c01((T-t0)/d), k=outQuint(p), sz=k*r*2;
-    e.style.opacity=(p>0&&p<1)?(1-p)*(o.a||.5):0;
-    e.style.width=sz.toFixed(1)+'px'; e.style.height=sz.toFixed(1)+'px';
-    e.style.marginLeft=(-sz/2).toFixed(1)+'px'; e.style.marginTop=(-sz/2).toFixed(1)+'px';
-  });
-  return e;
+
+/* FINAL overlaps the tail of scene 5 */
+SCN.s5.t1 = L('s5',5)+0.10;
+SCN.fin.t0 = L('s5',5)-0.10;
+
+function sub(parent, ta, tb, d){
+  const g = mk('div','',{position:'absolute',inset:'0',opacity:0,willChange:'transform,opacity'},parent);
+  pushPaint(g,ta,tb,d||{},.42,.38);
+  return g;
 }
+
 function chip(parent,text,x,y,t,size){
   const c=mk('div','chip el',px({left:x,top:y,opacity:1}),parent);
-  const bar=mk('div','bar',px({height:(size||60)*.86,transformOrigin:'50% 100%',opacity:0}),c);
+  const bar=mk('div','bar',px({height:(size||56)*.86,transformOrigin:'50% 100%',opacity:0}),c);
   const tx=mk('div','tx',px({fontSize:size||60}),c,text);
   reg(T=>{ const q=outQuint(c01((T-t)/.32));
     bar.style.opacity=q>0?1:0; bar.style.transform=`scaleY(${q.toFixed(3)})`; });
@@ -361,11 +352,9 @@ function sectionLabel(parent,text,t,sub2){
   const bg=mk('div','bg',{},S); slot(bg,'apt_wide_1','대단지 아파트 전경',{left:0,top:0,width:'100%',height:'100%'});
   kenburns(bg,B.t0,B.t1,1.05,1.19);
   mk('div','veil v-navy',{},S);
-  const wm=mk('div','wm el',{},S,'<div class="m">POUR</div><div class="r"></div>');
-  fade(wm,B.t0+.2,.8);
 
   /* --- phase A : 3 keywords + 3 field cards --- */
-  const A=sub(S,B.t0,L('s1',4)+.30,{o:[-70,0]});
+  const A=sub(S,B.t0,L('s1',4)+.30,{o:[-22,0]});
   const k=mk('div','el',px({left:120,top:322,opacity:1}),A,'<div class="kicker">새로운 공법을 찾는 이유</div>');
   wipe(k,L('s1',0)+.25,{d:.5,dir:'right'});
   chip(A,'더 나은 현장',120,392,L('s1',1));
@@ -374,19 +363,19 @@ function sectionLabel(parent,text,t,sub2){
 
   const cards=[['diag_1','현장진단'],['meet_1','시공사 협의'],['seminar_1','공법설명회']];
   cards.forEach(([key,cap],i)=>{
-    const c=mk('div','card el',px({left:1150+i*0,top:250+i*212,width:600,height:190}),A);
+    const c=mk('div','card el',px({left:1140,top:252+i*208,width:660,height:188}),A);
     slot(c,key,cap,{left:0,top:0,width:'100%',height:'100%'});
     mk('div','cap',{},c,cap);
-    revealCard(c,L('s1',1)+.32+i*.30,{d:.66,dir:'left'}); sheen(c,L('s1',1)+.62+i*.30);
+    revealCard(c,L('s1',1)+.32+i*.30,{d:.66,dir:'left'});
   });
 
   /* --- phase B : 4-step process chain (화면 전체를 쓰는 4-up) --- */
-  const Bp=sub(S,L('s1',5)-.10,B.t1,{i:[80,0]});
+  const Bp=sub(S,L('s1',5)-.10,B.t1,{i:[24,0]});
   mk('div','veil v-deep',{opacity:.62},Bp);
 
-  const hk=mk('div','el',px({left:90,top:120,opacity:1}),Bp,'<div class="kicker">PROCESS</div>');
+  const hk=mk('div','el',px({left:120,top:132,opacity:1}),Bp,'<div class="kicker">PROCESS</div>');
   wipe(hk,L('s1',5),{d:.42,dir:'right'});
-  const hh=mk('div','el',px({left:90,top:158,fontSize:56,fontWeight:800,color:'#fff',
+  const hh=mk('div','el',px({left:120,top:170,fontSize:56,fontWeight:800,color:'var(--ink-1)',
     letterSpacing:'-.035em',opacity:1}),Bp,'기술이 현장에 닿기까지');
   wipe(hh,L('s1',5)+.12,{d:.58,dir:'up'});
 
@@ -394,8 +383,8 @@ function sectionLabel(parent,text,t,sub2){
                ['적용 방안','cad_1','CAD 도면'],['실제 시공','construction_1','시공 현장']];
   const ST=[L('s1',6),L('s1',7),L('s1',7)+.92,L('s1',8)+.55];
 
-  const M0=90, GAP=20, CW=Math.round((1920-M0*2-GAP*3)/4), CH=556, CY=292;
-  const RY=258;                                   // 진행 레일
+  const M0=120, GAP=24, CW=Math.round((1920-M0*2-GAP*3)/4), CH=556, CY=296;
+  const RY=262;                                   // 진행 레일
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); Bp.appendChild(svg);
   const base=document.createElementNS('http://www.w3.org/2000/svg','line');
   base.setAttribute('x1',M0); base.setAttribute('x2',1920-M0);
@@ -404,7 +393,7 @@ function sectionLabel(parent,text,t,sub2){
   svg.appendChild(base); fade(base,L('s1',5)+.30,.5);
   const fill=document.createElementNS('http://www.w3.org/2000/svg','line');
   fill.setAttribute('x1',M0); fill.setAttribute('y1',RY); fill.setAttribute('y2',RY);
-  fill.setAttribute('stroke','#2F7BE8'); fill.setAttribute('stroke-width',2);
+  fill.setAttribute('stroke','var(--blue-500)'); fill.setAttribute('stroke-width',2);
   svg.appendChild(fill);
   const cx=i=>M0+i*(CW+GAP)+CW/2;
   reg(T=>{
@@ -418,7 +407,7 @@ function sectionLabel(parent,text,t,sub2){
     const x=M0+i*(CW+GAP);
     /* 레일 위 노드 */
     const dot=mk('div','el',px({left:cx(i)-9,top:RY-9,width:18,height:18,borderRadius:9,
-      background:'#2F7BE8',boxShadow:'0 0 0 5px rgba(47,123,232,.20)'}),Bp);
+      background:'var(--blue-500)',boxShadow:'0 0 0 5px rgba(47,123,232,.20)'}),Bp);
     snap(dot,ST[i],{d:.30,s0:.2});
 
     /* 사진은 틀을 꽉 채운다. 문서는 상단(제목부)이 보이도록 위 기준 crop */
@@ -430,15 +419,15 @@ function sectionLabel(parent,text,t,sub2){
     const foot=mk('div','',px({position:'absolute',left:0,right:0,bottom:0,padding:'70px 28px 26px',
       background:'linear-gradient(180deg,rgba(8,20,38,0) 0%,rgba(8,20,38,.86) 46%,rgba(8,20,38,.97) 100%)',
       opacity:0}),card);
-    mk('div','',px({fontSize:20,fontWeight:800,color:'#5AA0FF',letterSpacing:'.16em',marginBottom:8}),foot,'0'+(i+1));
-    mk('div','',px({fontSize:40,fontWeight:800,color:'#fff',letterSpacing:'-.035em'}),foot,st[0]);
-    revealCard(card,ST[i],{d:.62,dir:'down'}); sheen(card,ST[i]+.34,{d:.85});
+    mk('div','',px({fontSize:20,fontWeight:800,color:'var(--blue-400)',letterSpacing:'.16em',marginBottom:8}),foot,'0'+(i+1));
+    mk('div','',px({fontSize:40,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.035em'}),foot,st[0]);
+    revealCard(card,ST[i],{d:.62,dir:'down'});
     wipe(foot,ST[i]+.26,{d:.44,dir:'up'});
   });
 
   /* 마지막에 결론을 우상단에 놓아 상단 여백도 채운다 */
-  const tail=mk('div','el',px({left:1060,top:168,width:770,textAlign:'right',fontSize:44,fontWeight:800,
-    color:'#5AA0FF',letterSpacing:'-.035em',whiteSpace:'nowrap',opacity:1}),Bp,'POUR가 함께하는 과정');
+  const tail=mk('div','el',px({left:1040,top:176,width:740,textAlign:'right',fontSize:44,fontWeight:800,
+    color:'var(--blue-400)',letterSpacing:'-.035em',whiteSpace:'nowrap',opacity:1}),Bp,'POUR가 함께하는 과정');
   words(tail,L('s1',9),{step:.10,d:.46,dy:18});
 })();
 
@@ -453,10 +442,10 @@ function sectionLabel(parent,text,t,sub2){
   const MIL=[0,18500,73200,184000,420000,870000,1340000,1920000,2310000,2570000,2600000];
   const CT0=B.t0+.18, CD=1.35;
   const wrapN=mk('div','el',px({left:0,top:300,width:1920,textAlign:'center'}),S);
-  const nEl=mk('div','num',px({fontSize:210,lineHeight:'1'}),wrapN,'0');
-  const uEl=mk('div','el',px({left:0,top:552,width:1920,textAlign:'center',fontSize:56,fontWeight:700,
-              color:'#5AA0FF',letterSpacing:'.30em'}),S,'세대');
-  const rule=mk('div','el',px({left:810,top:640,width:300,height:5,background:'#2F7BE8',transformOrigin:'50% 50%'}),S);
+  const nEl=mk('div','num',px({fontSize:210,lineHeight:'1.22'}),wrapN,'0');
+  const uEl=mk('div','el',px({left:0,top:572,width:1920,textAlign:'center',fontSize:56,fontWeight:700,
+              color:'var(--blue-400)',letterSpacing:'.30em'}),S,'세대');
+  const rule=mk('div','el',px({left:810,top:658,width:300,height:5,background:'var(--blue-500)',transformOrigin:'50% 50%'}),S);
   reg(T=>{
     const p=c01((T-CT0)/CD);
     const idx=Math.min(MIL.length-1, Math.floor(Math.pow(p,.62)*(MIL.length-1)+1e-6));
@@ -468,46 +457,43 @@ function sectionLabel(parent,text,t,sub2){
     wrapN.style.transform=`scale(${(0.92+0.08*app)*kick})`;
     nEl.style.color = p>=1 ? '#FFFFFF' : 'rgba(255,255,255,.88)';
   });
-  shock(S,CT0+CD,960,400,{d:.9,r:760,a:.45,w:3});
-  shock(S,CT0+CD+.12,960,400,{d:1.15,r:1150,a:.22,w:2});
   fade(uEl,CT0+CD-.05,.34,CT0+2.55,.42);
   reg(T=>{ const e=outQuint(c01((T-(CT0+CD))/.45));
     rule.style.opacity=e*(1-c01((T-(CT0+2.55))/.42));
     rule.style.transform=`scaleX(${e.toFixed(3)})`; });
 
-  const badge=mk('div','el',px({left:120,top:150}),S,
+  const badge=mk('div','el',px({left:120,top:132}),S,
     '<div class="kicker" style="margin-bottom:12px">경험과 데이터</div>'+
-    '<div style="font-size:64px;font-weight:900;color:#fff;letter-spacing:-.04em;font-variant-numeric:tabular-nums">'+
-    '2,600,000<span style="font-size:34px;font-weight:700;color:#5AA0FF;margin-left:14px;letter-spacing:.1em">세대</span></div>');
+    '<div style="font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em;font-variant-numeric:tabular-nums">'+
+    '2,600,000<span style="font-size:34px;font-weight:700;color:var(--blue-400);margin-left:14px;letter-spacing:.1em">세대</span></div>');
   wipe(badge,CT0+2.45,{d:.52,dir:'right',out:L('s2',4)-.15,outD:.4});
 
   /* --- site mosaic fills --- */
-  const M=sub(S,CT0+2.6,L('s2',2)+.15,{i:[0,60],o:[0,-60]});
-  const tiles=[[200,300,440,400],[660,300,600,400],[1280,300,440,400],
-               [200,720,288,250],[508,720,288,250],[816,720,288,250],[1124,720,288,250],[1432,720,288,250]];
+  const M=sub(S,CT0+2.6,L('s2',2)+.15,{i:[0,24],o:[0,-24]});
+  const tiles=[[120,262,488,358],[632,262,656,358],[1312,262,488,358],
+               [120,644,316,246],[461,644,316,246],[802,644,316,246],[1143,644,316,246],[1484,644,316,246]];
   const MT=[0,.26,.52,.86,1.02,1.18,1.34,1.50];
   tiles.forEach((t,i)=>{
     const c=mk('div','card el',px({left:t[0],top:t[1],width:t[2],height:t[3]}),M);
     slot(c,'apt_'+(i+1),'아파트 현장 '+(i+1),{left:0,top:0,width:'100%',height:'100%'});
     revealCard(c,CT0+2.75+MT[i],{d:.46,dir:['down','right','left','up'][i%4]});
-    sheen(c,CT0+2.95+MT[i],{d:.55,a:.8});
   });
-  const mcap=mk('div','el',px({left:120,top:170,opacity:1}),M,
+  const mcap=mk('div','el',px({left:1080,top:186,width:700,textAlign:'right',opacity:1}),M,
     '<div class="kicker">전국 아파트 현장</div>');
-  wipe(mcap,CT0+2.9,{d:.44,dir:'right'});
+  wipe(mcap,CT0+2.9,{d:.44,dir:'left'});
 
   /* --- diagnosis / conditions --- */
-  const D=sub(S,L('s2',2)+.05,L('s2',4)-.05,{i:[70,0],o:[-70,0]});
-  const big=mk('div','card el',px({left:900,top:210,width:900,height:660}),D);
+  const D=sub(S,L('s2',2)+.05,L('s2',4)-.05,{i:[22,0],o:[-22,0]});
+  const big=mk('div','card el',px({left:900,top:262,width:900,height:628}),D);
   slot(big,'drone_1','드론 외벽진단 / 현장분석',{left:0,top:0,width:'100%',height:'100%'});
-  revealCard(big,L('s2',2)+.12,{d:.78,dir:'left'}); sheen(big,L('s2',2)+.55,{d:.95});
-  const dk=mk('div','el',px({left:120,top:236,opacity:1}),D,'<div class="kicker">현장 진단</div>');
+  revealCard(big,L('s2',2)+.12,{d:.78,dir:'left'});
+  const dk=mk('div','el',px({left:120,top:268,opacity:1}),D,'<div class="kicker">현장 진단</div>');
   wipe(dk,L('s2',2)+.15,{d:.44,dir:'right'});
   ['외벽 상태','적용 환경','공정 조건','현장 요구사항'].forEach((t,i)=>
-    keyRow(D,t,120,320+i*104,L('s2',2)+.42+i*.46,42));
+    keyRow(D,t,120,352+i*104,L('s2',2)+.42+i*.46,42));
 
   /* --- conclusion flow --- */
-  const F=sub(S,L('s2',4)-.10,B.t1,{i:[0,70]});
+  const F=sub(S,L('s2',4)-.10,B.t1,{i:[0,24]});
   const fl=[['경험 · 데이터',L('s2',4)],['현장 분석',L('s2',4)+.85],['적합한 적용 방향',L('s2',5)+.35]];
   fl.forEach(([t,tt],i)=>{
     const e=mk('div','el',px({left:0,top:300+i*168,width:1920,textAlign:'center',
@@ -515,7 +501,7 @@ function sectionLabel(parent,text,t,sub2){
     words(e,tt,{step:.09,d:.44,dy:20});
     if(i>0){
       const a=mk('div','el',px({left:0,top:246+i*168,width:1920,textAlign:'center',
-        fontSize:34,color:'#2F7BE8',fontWeight:800}),F,'↓');
+        fontSize:34,color:'var(--blue-500)',fontWeight:800}),F,'↓');
       fade(a,tt-.18,.3);
     }
   });
@@ -526,7 +512,7 @@ function sectionLabel(parent,text,t,sub2){
   const S=scene('s3'), B=SCN.s3, C=i=>L('s3',i);
 
   /* ---- 3-1 기술개발 · 자재생산 (용인공장 full bleed) ---- */
-  const A=sub(S,B.t0-.05,C(2)-.15,{o:[-80,0]});
+  const A=sub(S,B.t0-.05,C(2)-.15,{o:[-24,0]});
   const bgA=mk('div','bg',{},A); slot(bgA,'factory_yongin','용인공장 전경',{left:0,top:0,width:'100%',height:'100%'});
   kenburns(bgA,B.t0,C(2),1.04,1.14);
   mk('div','veil',{background:'linear-gradient(180deg,rgba(10,27,51,.86) 0%,rgba(10,27,51,.62) 40%,rgba(10,27,51,.93) 100%)'},A);
@@ -540,13 +526,13 @@ function sectionLabel(parent,text,t,sub2){
     const k='material_'+idx;
     const fb=fitBox(k, mw-PAD*2, mh-PAD*2);
     const pw=fb.w+PAD*2, ph=fb.h+PAD*2;
-    const p=mk('div','pedestal el',px({left:mx0+i*(mw+gap)+(mw-pw)/2,top:960-40-ph,width:pw,height:ph}),A);
+    const p=mk('div','pedestal el',px({left:mx0+i*(mw+gap)+(mw-pw)/2,top:930-ph,width:pw,height:ph}),A);
     slot(p,k,'POUR 자재 '+idx,{left:PAD,top:PAD,width:fb.w,height:fb.h},'contain');
     rise(p,C(1)-.15+i*.30,{d:.62,dy:46,s0:.86,ez:outBack});
   });
 
   /* ---- 3-2 공법설명회 ---- */
-  const Bx=sub(S,C(2)-.15,C(3)-.15,{i:[80,0],o:[0,-70]});
+  const Bx=sub(S,C(2)-.15,C(3)-.15,{i:[24,0],o:[0,-24]});
   mk('div','veil v-deep',{},Bx);
   sectionLabel(Bx,'공법설명회',C(2)-.05,'POUR SUPPORT 02');
   const semLb={1:'공법설명회 현장',2:'공법설명회 발표',3:'시공사 참석'};
@@ -557,29 +543,33 @@ function sectionLabel(parent,text,t,sub2){
     const c=mk('div','card el',px({left:sx0+i*(sw+sgap),top:900-sh-60,width:sw,height:sh}),Bx);
     slot(c,'seminar_'+idx,semLb[idx],{left:0,top:0,width:'100%',height:'100%'});
     mk('div','cap',{},c,semLb[idx]);
-    revealCard(c,C(2)+.42+i*.36,{d:.62,dir:i%2?'right':'down'}); sheen(c,C(2)+.75+i*.36,{d:.8});
+    revealCard(c,C(2)+.42+i*.36,{d:.62,dir:i%2?'right':'down'});
   });
 
   /* ---- 3-3 기술자료 (stacking) ---- */
-  const Cx=sub(S,C(3)-.15,C(4)-.15,{i:[0,80],o:[-80,0]});
+  const Cx=sub(S,C(3)-.15,C(4)-.15,{i:[0,24],o:[-24,0]});
   mk('div','veil v-deep',{},Cx);
   sectionLabel(Cx,'현장 맞춤 기술자료',C(3)-.05,'POUR SUPPORT 03');
   /* 세로형 문서는 잘리지 않게 흰 바탕에 contain, 사진은 cover */
   const docs=[['consulting_1','컨설팅 내역서',660,258,392,524,'contain'],
               ['tech_doc_1','기술자료',1004,414,660,442,'cover'],
-              ['cad_1','CAD 도면',742,606,404,300,'contain']];
+              ['cad_1','CAD 도면',742,578,404,300,'contain']];
   docs.forEach(([k,lb,x,y,w,h,fit],i)=>{
     if(fit==='contain'){ const fb=fitBox(k,w,h); x+=Math.round((w-fb.w)/2); y+=Math.round((h-fb.h)/2); w=fb.w; h=fb.h; }
     const c=mk('div','card el',px({left:x,top:y,width:w,height:h,zIndex:10+i}),Cx);
     slot(c,k,lb,{left:0,top:0,width:'100%',height:'100%'},fit, fit==='contain'?DOCBG:null);
-    mk('div','cap',{},c,lb);
+    /* 카드가 계단식으로 겹치므로 라벨은 항상 드러나는 좌상단에.
+       자료 자체의 인쇄 제목과 경쟁하지 않도록 작은 태그로 둔다. */
+    mk('div','',px({position:'absolute',left:14,top:14,padding:'7px 14px',borderRadius:6,
+      fontSize:20,fontWeight:700,color:'var(--ink-1)',letterSpacing:'-.01em',
+      background:'rgba(6,18,35,.86)',border:'1px solid rgba(255,255,255,.18)'}),c,lb);
     dropCard(c,C(3)+.10+i*.62,{d:.68,rot:[-3.2,2.4,-1.8][i],dy:-64});
-    const t=mk('div','el',px({left:150,top:404+i*94,fontSize:34,fontWeight:700,color:'#fff',opacity:1}),Cx,'· '+lb);
+    const t=mk('div','el',px({left:120,top:404+i*94,fontSize:34,fontWeight:700,color:'var(--ink-1)',opacity:1}),Cx,'· '+lb);
     wipe(t,C(3)+.20+i*.62,{d:.44,dir:'right'});
   });
 
   /* ---- 3-4 AI · 디지털 ---- */
-  const Dx=sub(S,C(4)-.15,C(6)+.55,{i:[80,0],o:[0,-70]});
+  const Dx=sub(S,C(4)-.15,C(6)+.55,{i:[24,0],o:[0,-24]});
   const bgD=mk('div','bg',{},Dx); slot(bgD,'drone_1','드론 외벽진단',{left:0,top:0,width:'100%',height:'100%'});
   kenburns(bgD,C(4),C(6)+.55,1.14,1.02);
   mk('div','veil v-navy',{},Dx);
@@ -588,12 +578,12 @@ function sectionLabel(parent,text,t,sub2){
                 ['AI 분석','ai_1','AI 분석'],['기술검토','review_1','기술검토']];
   const svgD=document.createElementNS('http://www.w3.org/2000/svg','svg'); Dx.appendChild(svgD);
   dsteps.forEach((s,i)=>{
-    const y=402+i*152, tt=C(4)+.45+i*.85;
+    const y=300+i*154, tt=C(4)+.45+i*.85;
     const g=mk('div','el',px({left:980,top:y,width:800,height:126,opacity:1}),Dx);
     const bx=mk('div','box',px({position:'absolute',left:0,top:0,width:800,height:126,opacity:0}),g);
     const th=mk('div','',px({position:'absolute',left:14,top:14,width:170,height:98,borderRadius:8,overflow:'hidden',opacity:0}),bx);
     slot(th,s[1],s[2],{left:0,top:0,width:'100%',height:'100%'});
-    const nm=mk('div','',px({position:'absolute',left:210,top:38,fontSize:38,fontWeight:800,color:'#fff',letterSpacing:'-.03em',opacity:0}),bx,s[0]);
+    const nm=mk('div','',px({position:'absolute',left:210,top:38,fontSize:36,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.03em',opacity:0}),bx,s[0]);
     const no=mk('div','',px({position:'absolute',right:26,top:44,fontSize:22,fontWeight:700,color:'rgba(90,160,255,.85)',letterSpacing:'.14em',opacity:0}),bx,'0'+(i+1));
     wipe(bx,tt,{d:.40,dir:'right',r:16});
     revealCard(th,tt+.16,{d:.40,dir:'right',r:8});
@@ -602,20 +592,20 @@ function sectionLabel(parent,text,t,sub2){
     if(i<3){
       const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
       ln.setAttribute('x1',1060);ln.setAttribute('x2',1060);
-      ln.setAttribute('y1',y+126);ln.setAttribute('y2',y+152);
-      ln.setAttribute('stroke','#2F7BE8');ln.setAttribute('stroke-width',3);
-      svgD.appendChild(ln); drawLine(ln,tt+.44,.28,26);
+      ln.setAttribute('y1',y+126);ln.setAttribute('y2',y+154);
+      ln.setAttribute('stroke','var(--blue-500)');ln.setAttribute('stroke-width',3);
+      svgD.appendChild(ln); drawLine(ln,tt+.44,.28,28);
     }
   });
 
   /* ---- 3-5 공사 전 · 중 · 후 ---- */
-  const Ex=sub(S,C(6)+.45,C(8)+1.30,{i:[0,80],o:[0,-80]});
+  const Ex=sub(S,C(6)+.45,C(8)+1.30,{i:[0,24],o:[0,-24]});
   mk('div','veil v-deep',{},Ex);
   sectionLabel(Ex,'공사 전 · 중 · 후 현장관리',C(6)+.55,'POUR SUPPORT 05');
   const phs=[['공사 전','kakao_1','현장 공유 커뮤니케이션'],['공사 중','rooftop_1','옥상 방수 도장 작업'],['공사 후','netform_doc','NETFORM 준공 공문']];
   const svgE=document.createElementNS('http://www.w3.org/2000/svg','svg'); Ex.appendChild(svgE);
   phs.forEach(([t,k,lb],i)=>{
-    const x=136+i*568, tt=C(6)+1.00+i*.50;
+    const x=136+i*568, tt=C(6)+.78+i*.50;
     const g=mk('div','el',px({left:x,top:372,width:512,height:496,opacity:1}),Ex);
     const bx=mk('div','box',px({position:'absolute',left:0,top:0,width:512,height:496,opacity:0}),g);
     const hd=mk('div','hd',{},bx);
@@ -628,27 +618,26 @@ function sectionLabel(parent,text,t,sub2){
     wipe(ttl,tt+.18,{d:.36,dir:'right'});
     revealCard(md,tt+.26,{d:.46,dir:'down',r:10});
     if(i<2){
-      const ar=mk('div','el',px({left:x+512+8,top:594,fontSize:40,color:'#2F7BE8',fontWeight:800,width:48,textAlign:'center'}),Ex,'→');
+      const ar=mk('div','el',px({left:x+512+8,top:594,fontSize:40,color:'var(--blue-500)',fontWeight:800,width:48,textAlign:'center'}),Ex,'→');
       fade(ar,tt+.40,.28);
     }
   });
 
   /* ---- 3-6 60명 전문 인력 ---- */
-  const Fx=sub(S,C(8)+1.20,B.t1,{i:[0,80]});
+  const Fx=sub(S,C(8)+1.20,B.t1,{i:[0,24]});
   mk('div','veil v-deep',{},Fx);
   const W0=C(8)+1.25;
   const hub=mk('div','',{position:'absolute',inset:'0'},Fx);
-  reg(T=>{ hub.style.opacity=1-c01((T-(C(10)-.30))/.34); });
+  reg(T=>{ hub.style.opacity=1-c01((T-(C(10)-.52))/.30); });
   const svgF=document.createElementNS('http://www.w3.org/2000/svg','svg'); hub.appendChild(svgF);
   const CX=960, CY=540;
   const cen=mk('div','el',px({left:CX-140,top:CY-58,width:280,height:116,borderRadius:12,
-    background:'#2F7BE8',display:'flex',alignItems:'center',justifyContent:'center',
-    fontSize:38,fontWeight:800,color:'#fff',letterSpacing:'-.03em',boxShadow:'0 20px 60px rgba(47,123,232,.45)'}),hub,'하나의 현장');
+    background:'var(--blue-500)',display:'flex',alignItems:'center',justifyContent:'center',
+    fontSize:36,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.03em',boxShadow:'0 20px 60px rgba(47,123,232,.45)'}),hub,'하나의 현장');
   snap(cen,W0,{d:.36,s0:.66});
-  shock(hub,W0+.06,CX,CY,{d:1.0,r:620,a:.4,w:2});
   const sat=['기술개발','자재생산','공법설명회','기술자료','AI 분석','현장관리','기술지원','영업지원'];
   sat.forEach((t,i)=>{
-    const a=(-90+i*45)*Math.PI/180, rx=560, ry=352;
+    const a=(-90+i*45)*Math.PI/180, rx=560, ry=318;
     const x=CX+Math.cos(a)*rx, y=CY+Math.sin(a)*ry, tt=W0+.25+i*.17;
     const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
     const ux=(x-CX), uy=(y-CY), d=Math.hypot(ux,uy);
@@ -658,22 +647,21 @@ function sectionLabel(parent,text,t,sub2){
     svgF.appendChild(ln); drawLine(ln,tt,.30,Math.hypot(x2-x1,y2-y1));
     const n=mk('div','el',px({left:x-108,top:y-32,width:216,height:64,borderRadius:32,
       background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,255,255,.22)',
-      display:'flex',alignItems:'center',justifyContent:'center',fontSize:27,fontWeight:700,color:'#fff'}),hub,t);
+      display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,fontWeight:700,color:'var(--ink-1)'}),hub,t);
     snap(n,tt+.16,{d:.34,s0:.58,dx:-ux/d*44,dy:-uy/d*44});
   });
-  const big60=mk('div','el',px({left:0,top:246,width:1920,textAlign:'center',fontSize:250,fontWeight:900,
-    color:'#fff',letterSpacing:'-.05em',lineHeight:'1'}),Fx,'60');
-  snap(big60,C(10)-.20,{d:.44,s0:.58});
-  shock(Fx,C(10)-.16,960,372,{d:.85,r:760,a:.5,w:3});
-  const lbl60=mk('div','el',px({left:0,top:534,width:1920,textAlign:'center',fontSize:60,fontWeight:800,
-    color:'#5AA0FF',letterSpacing:'-.03em'}),Fx,'60명 전문 인력');
+  const big60=mk('div','el',px({left:0,top:238,width:1920,textAlign:'center',fontSize:200,fontWeight:900,
+    color:'var(--ink-1)',letterSpacing:'-.05em',lineHeight:'1.22'}),Fx,'60');
+  snap(big60,C(10)-.08,{d:.44,s0:.58});
+  const lbl60=mk('div','el',px({left:0,top:534,width:1920,textAlign:'center',fontSize:56,fontWeight:800,
+    color:'var(--blue-400)',letterSpacing:'-.03em'}),Fx,'60명 전문 인력');
   words(lbl60,C(10)+.24,{step:.10,d:.42,dy:18});
-  const mv=mk('div','el',px({left:0,top:636,width:1920,textAlign:'center',fontSize:36,fontWeight:600,
+  const mv=mk('div','el',px({left:0,top:636,width:1920,textAlign:'center',fontSize:34,fontWeight:600,
     color:'rgba(255,255,255,.80)',letterSpacing:'-.025em'}),Fx,'하나의 현장을 중심으로 함께 움직입니다.');
   words(mv,C(10)+.72,{step:.055,d:.40,dy:14});
   const fin3=mk('div','el',px({left:0,top:742,width:1920,textAlign:'center'}),Fx,
     '<span style="display:inline-block;padding:16px 44px;border:2px solid #2F7BE8;border-radius:50px;'+
-    'font-size:42px;font-weight:800;color:#fff;letter-spacing:-.03em">POUR 통합 지원 체계</span>');
+    'font-size:40px;font-weight:800;color:#fff;letter-spacing:-.03em">POUR 통합 지원 체계</span>');
   snap(fin3,C(11)+.15,{d:.46,s0:.80});
 })();
 
@@ -689,62 +677,62 @@ function sectionLabel(parent,text,t,sub2){
     const x=132+i*572;
     const g=mk('div','el',px({left:x,top:132,width:540}),S);
     const bar=mk('div','',px({width:540,height:4,background:'rgba(255,255,255,.16)',borderRadius:2,marginBottom:22}),g);
-    const fill=mk('div','',px({width:0,height:4,background:'#2F7BE8',borderRadius:2}),bar);
+    const fill=mk('div','',px({width:0,height:4,background:'var(--blue-500)',borderRadius:2}),bar);
     const rw=mk('div','',px({display:'flex',alignItems:'baseline',gap:16}),g);
     const num=mk('div','',px({fontSize:34,fontWeight:900,color:'rgba(255,255,255,.35)',letterSpacing:'.06em'}),rw,n);
     const lb=mk('div','',px({fontSize:30,fontWeight:700,color:'rgba(255,255,255,.42)',letterSpacing:'-.03em'}),rw,t);
-    const ck=mk('div','',px({fontSize:30,fontWeight:900,color:'#2F7BE8',opacity:0}),rw,'✓');
+    const ck=mk('div','',px({fontSize:30,fontWeight:900,color:'var(--blue-500)',opacity:0}),rw,'✓');
     wipe(g,B.t0+.15+i*.14,{d:.50,dir:'right'});
     reg(T=>{
       const on=T>=ACT[i], done=T>=CHK[i];
       const p=c01((T-ACT[i])/(CHK[i]-ACT[i]));
       fill.style.width=(540*outCubic(p)).toFixed(1)+'px';
-      num.style.color = done?'#2F7BE8' : on?'#fff':'rgba(255,255,255,.35)';
+      num.style.color = done?'var(--blue-500)' : on?'#fff':'rgba(255,255,255,.35)';
       lb.style.color  = on?'#fff':'rgba(255,255,255,.42)';
       ck.style.opacity= outBack(c01((T-CHK[i])/.34));
     });
   });
   const intro=mk('div','el',px({left:0,top:470,width:1920,textAlign:'center'}),S,
     '<div class="kicker" style="margin-bottom:20px">COOPERATION PROCESS</div>'+
-    '<div style="font-size:76px;font-weight:800;color:#fff;letter-spacing:-.04em">협력 프로세스</div>');
+    '<div style="font-size:72px;font-weight:800;color:#fff;letter-spacing:-.04em">협력 프로세스</div>');
   wipe(intro.firstElementChild,B.t0+.30,{d:.44,dir:'right',out:C(1)-.35,outD:.4});
   words(intro.lastElementChild,B.t0+.44,{step:.10,d:.48,dy:26,out:C(1)-.35,outD:.4});
   intro.style.opacity=1;
 
   /* STEP 01 */
-  const P1=sub(S,C(1)-.15,C(4)-.15,{i:[70,0],o:[-70,0]});
-  const c1=mk('div','card el',px({left:132,top:346,width:800,height:520}),P1);
+  const P1=sub(S,C(1)-.15,C(4)-.15,{i:[22,0],o:[-22,0]});
+  const c1=mk('div','card el',px({left:120,top:346,width:800,height:520}),P1);
   slot(c1,'hq_meeting','POUR 본사 미팅',{left:0,top:0,width:'100%',height:'100%'});
-  revealCard(c1,C(1),{d:.70,dir:'right'}); sheen(c1,C(1)+.42,{d:.9});
-  const h1=mk('div','el',px({left:1006,top:340,fontSize:46,fontWeight:800,color:'#fff',letterSpacing:'-.035em'}),P1,'POUR 본사 미팅');
+  revealCard(c1,C(1),{d:.70,dir:'right'});
+  const h1=mk('div','el',px({left:1004,top:352,fontSize:44,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.035em'}),P1,'POUR 본사 미팅');
   wipe(h1,C(1)+.12,{d:.52,dir:'up'});
   ['기술 운영 방식','현장 지원 체계','협력 방향'].forEach((t,i)=>
     keyRow(P1,t,1006,452+i*106,C(2)+.05+i*.72,42));
 
   /* STEP 02 */
-  const P2=sub(S,C(4)-.15,C(7)-.15,{i:[70,0],o:[-70,0]});
+  const P2=sub(S,C(4)-.15,C(7)-.15,{i:[22,0],o:[-22,0]});
   const c2=mk('div','card el',px({left:988,top:346,width:800,height:520}),P2);
   slot(c2,'site_visit','시공사 방문 미팅',{left:0,top:0,width:'100%',height:'100%'});
-  revealCard(c2,C(4),{d:.70,dir:'left'}); sheen(c2,C(4)+.42,{d:.9});
-  const h2=mk('div','el',px({left:132,top:328,fontSize:46,fontWeight:800,color:'#fff',letterSpacing:'-.035em'}),P2,'시공사 방문 미팅');
+  revealCard(c2,C(4),{d:.70,dir:'left'});
+  const h2=mk('div','el',px({left:120,top:352,fontSize:44,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.035em'}),P2,'시공사 방문 미팅');
   wipe(h2,C(4)+.12,{d:.52,dir:'up'});
   ['주요 사업','현장 운영 방향','POUR 적용 방식','지원 내용'].forEach((t,i)=>
-    keyRow(P2,t,132,436+i*104,C(5)+.05+i*.78,42));
+    keyRow(P2,t,120,436+i*104,C(5)+.05+i*.78,42));
 
   /* STEP 03 — 실제 MOU 문서 */
   const P3=sub(S,C(7)-.15,B.t1,{i:[70,0]});
-  const h3=mk('div','el',px({left:0,top:300,width:1920,textAlign:'center',fontSize:46,fontWeight:800,
-    color:'#fff',letterSpacing:'-.035em'}),P3,'MOU 체결');
+  const h3=mk('div','el',px({left:0,top:238,width:1920,textAlign:'center',fontSize:44,fontWeight:800,
+    color:'var(--ink-1)',letterSpacing:'-.035em'}),P3,'MOU 체결');
   wipe(h3,C(7)+.10,{d:.52,dir:'up'});
   const DPAD=26, dfb=fitBox('mou_doc',600-DPAD*2,560-DPAD*2,0.76);
   const dw=dfb.w+DPAD*2, dh=dfb.h+DPAD*2;
-  const doc=mk('div','pedestal el',px({left:960-dw/2,top:372+(560-dh)/2,width:dw,height:dh}),P3);
+  const doc=mk('div','pedestal el',px({left:960-dw/2,top:330+(560-dh)/2,width:dw,height:dh}),P3);
   slot(doc,'mou_doc','POUR공법 특허 사용<br>MOU 체결서',{left:DPAD,top:DPAD,width:dfb.w,height:dfb.h},'contain');
   dropCard(doc,C(7)+.60,{d:.86,rot:-2.2,dy:-70});
-  const hs=mk('div','card el',px({left:1310,top:640,width:400,height:292}),P3);
+  const hs=mk('div','card el',px({left:1330,top:604,width:400,height:286}),P3);
   slot(hs,'handshake','악수 (협약 체결)',{left:0,top:0,width:'100%',height:'100%'});
   revealCard(hs,C(8)+.25,{d:.56,dir:'left'});
-  const t3=mk('div','el',px({left:210,top:700,fontSize:40,fontWeight:700,color:'rgba(255,255,255,.9)',letterSpacing:'-.03em'}),P3,
+  const t3=mk('div','el',px({left:120,top:640,fontSize:40,fontWeight:700,color:'rgba(255,255,255,.9)',letterSpacing:'-.03em'}),P3,
     'POUR공법 특허 사용<br>MOU 체결');
   words(t3,C(8)+.05,{step:.09,d:.44,dy:18});
 })();
@@ -761,48 +749,45 @@ function sectionLabel(parent,text,t,sub2){
     color:'rgba(255,255,255,.86)',letterSpacing:'-.03em'}),S,'좋은 공법의 기준은 결국');
   words(t1,B.t0+.25,{step:.085,d:.42,dy:18,out:C(1)-.25,outD:.35});
   const t2=mk('div','el',px({left:0,top:452,width:1920,textAlign:'center',fontSize:104,fontWeight:900,
-    color:'#fff',letterSpacing:'-.045em'}),S,'현장에서 이기는 것');
+    color:'var(--ink-1)',letterSpacing:'-.045em'}),S,'현장에서 이기는 것');
   snap(t2,B.t0+1.20,{d:.42,s0:.80,out:C(1)-.25,outD:.35});
-  shock(S,B.t0+1.24,960,504,{d:.9,r:1100,a:.45,w:3});
 
   /* 선택 → 적용 → 수주 → 실적 */
-  const CH=sub(S,C(1)-.15,B.t1,{i:[0,50]});
+  const CH=sub(S,C(1)-.15,B.t1,{i:[0,22]});
   const CHAIN=['선택','적용','수주','실적'];
   const WT=[C(1)+.05,C(1)+.52,C(2)+.05,C(2)+.62];
   CHAIN.forEach((w,i)=>{
-    const x=272+i*380;
+    const x=210+i*400;
     const e=mk('div','el',px({left:x,top:250,width:300,textAlign:'center',fontSize:82,fontWeight:900,
-      color:'#fff',letterSpacing:'-.04em'}),CH,w);
+      color:'var(--ink-1)',letterSpacing:'-.04em'}),CH,w);
     snap(e,WT[i],{d:.30,s0:.62});
-    shock(CH,WT[i]+.02,x+150,296,{d:.55,r:300,a:.35,w:2});
     reg(T=>{ const up=outCubic(c01((T-C(3))/.6)); e.style.top=(250-118*up)+'px';
       e.style.fontSize=(82-24*up)+'px'; });
     if(i<3){
-      const a=mk('div','el',px({left:x+300-10,top:272,width:100,textAlign:'center',fontSize:44,
-        color:'#2F7BE8',fontWeight:800}),CH,'→');
+      const a=mk('div','el',px({left:x+300,top:274,width:100,textAlign:'center',fontSize:44,
+        color:'var(--blue-500)',fontWeight:800}),CH,'→');
       fade(a,WT[i]+.30,.24);
       reg(T=>{ const up=outCubic(c01((T-C(3))/.6)); a.style.top=(272-112*up)+'px'; });
     }
   });
 
   /* 실적으로 채워지는 현장들 */
-  const M=sub(S,C(3)-.15,B.t1,{i:[0,70]});
-  const tiles=[[150,300,470,330],[640,300,470,330],[1130,300,640,330],
-               [150,650,390,300],[560,650,390,300],[970,650,390,300],[1380,650,390,300]];
+  const M=sub(S,C(3)-.15,B.t1,{i:[0,24]});
+  const tiles=[[120,262,544,352],[688,262,544,352],[1256,262,544,352],
+               [120,638,402,254],[546,638,402,254],[972,638,402,254],[1398,638,402,254]];
   tiles.forEach((t,i)=>{
     const c=mk('div','card el',px({left:t[0],top:t[1],width:t[2],height:t[3]}),M);
     slot(c,'apt_'+(i+1),'아파트 현장 '+(i+1),{left:0,top:0,width:'100%',height:'100%'});
     revealCard(c,C(3)+.05+i*.19,{d:.38,dir:['up','left','down','right'][i%4]});
-    sheen(c,C(3)+.22+i*.19,{d:.5,a:.85});
   });
   const o1=mk('div','el',px({left:0,top:452,width:1920,textAlign:'center'}),M,
     '<span style="display:inline-block;padding:18px 46px;border-radius:8px;background:rgba(6,16,31,.80);'+
-    'font-size:62px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많이 수주</span>');
-  snap(o1,C(3)+.55,{d:.36,s0:.84,out:C(4)+.15,outD:.3});
+    'font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많이 수주</span>');
+  snap(o1,C(3)+.55,{d:.36,s0:.84,out:C(4)+.02,outD:.26});
   const o2=mk('div','el',px({left:0,top:452,width:1920,textAlign:'center'}),M,
     '<span style="display:inline-block;padding:18px 46px;border-radius:8px;background:rgba(47,123,232,.92);'+
-    'font-size:62px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많은 실적</span>');
-  snap(o2,C(4)+.20,{d:.36,s0:.84});
+    'font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많은 실적</span>');
+  snap(o2,C(4)+.36,{d:.36,s0:.84});
 })();
 
 /* ============================ FINAL ============================ */
@@ -819,9 +804,9 @@ function sectionLabel(parent,text,t,sub2){
     color:'rgba(255,255,255,.80)',letterSpacing:'-.03em'}),S,'기술부터 영업, 현장 적용까지');
   words(f1,C(5)+.15,{step:.085,d:.44,dy:18,out:LE('s5',7)+.35,outD:.55});
   const f2=mk('div','el',px({left:0,top:712,width:1920,textAlign:'center',fontSize:56,fontWeight:800,
-    color:'#fff',letterSpacing:'-.035em',lineHeight:'1.32'}),S,'시공사가 이길 수 있는<br>모든 과정에 POUR가 함께합니다.');
+    color:'var(--ink-1)',letterSpacing:'-.035em',lineHeight:'1.32'}),S,'시공사가 이길 수 있는<br>모든 과정에 POUR가 함께합니다.');
   words(f2,C(6)+.15,{step:.075,d:.46,dy:22,out:LE('s5',7)+.35,outD:.55});
-  const rl=mk('div','el',px({left:910,top:626,width:100,height:3,background:'#2F7BE8',transformOrigin:'50% 50%'}),S);
+  const rl=mk('div','el',px({left:910,top:626,width:100,height:3,background:'var(--blue-500)',transformOrigin:'50% 50%'}),S);
   reg(T=>{ const e=outQuint(c01((T-(LE('s5',7)+.55))/.7));
     rl.style.opacity=e; rl.style.transform=`scaleX(${e.toFixed(3)})`; });
 })();
@@ -837,6 +822,27 @@ reg(T=>{
   subEl.style.opacity=Math.min(a,b)*0.97;
 });
 reg(T=>{ progEl.style.width=(1920*c01(T/TOTAL))+'px'; });
+
+/* ===== 고정 워드마크 =====
+   무대 바깥 레이어에 두어 장면 전환(슬라이드/줌)의 영향을 받지 않는다.
+   따라서 전 장면에서 위치·크기가 완전히 동일하다.
+   실제 로고 파일이 들어오면 텍스트 대신 원본을 쓰고, 높이만 고정해
+   가로세로비를 유지한다(찌그러짐 방지). */
+(function(){
+  const mark=document.getElementById('mark');
+  const lg=AVAILABLE['pour_logo'];
+  if(lg){
+    const H=30, r=(lg.w&&lg.h)? lg.w/lg.h : 3.4;
+    mark.innerHTML='';
+    const im=mk('img','',{height:H+'px',width:Math.round(H*r)+'px',objectFit:'contain',display:'block'},mark);
+    im.src='assets/'+lg.f;
+  }
+  const OUT=SCN.fin.t0;                       // 엔딩에서는 중앙 로고에 자리를 내준다
+  reg(T=>{
+    const o=outCubic(c01((T-0.35)/.7)) * (1-c01((T-(OUT-.45))/.5));
+    mark.style.opacity=o*0.92;
+  });
+})();
 
 window.__TOTAL__ = TOTAL;
 window.seek = function(T){ for(const p of painters) p(T); };

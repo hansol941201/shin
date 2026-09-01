@@ -6,7 +6,8 @@
   "scripts": {
     "setup": "npm i && mkdir -p fonts && cp node_modules/pretendard/dist/web/static/woff2/*.woff2 fonts/",
     "render": "node render.js",
-    "probe": "node probe.js"
+    "probe": "node probe.js",
+    "audit": "node audit.js"
   },
   "dependencies": {
     "image-size": "1.1.1",
