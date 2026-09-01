@@ -71,6 +71,24 @@ body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:
 .row .k{width:12px;height:12px;border:3px solid var(--blue-500);border-radius:50%;flex:none}
 .row .t{font-size:40px;font-weight:700;color:var(--ink-1);letter-spacing:-.03em}
 
+/* ===== 밝은 섹션 =====
+   전 장면이 네이비면 단조롭다. 토큰만 뒤집어 같은 컴포넌트를 화이트로 쓴다. */
+.v-light{background:linear-gradient(180deg,#FFFFFF 0%,#F2F6FC 56%,#E6EDF7 100%)}
+.light{
+  --ink-1:#08182E; --ink-2:rgba(8,24,46,.70); --ink-3:rgba(8,24,46,.46);
+  --hair:rgba(8,24,46,.13); --hair-2:rgba(8,24,46,.22);
+  --blue-400:#1E5FBF;
+  --shadow-1:0 10px 26px rgba(8,24,46,.10);
+  --shadow-2:0 22px 52px rgba(8,24,46,.16);
+}
+.light .card{background:#FFFFFF;border-color:rgba(8,24,46,.10)}
+.light .card .cap{color:#08182E;
+  background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.94))}
+.light .box{background:#FFFFFF;border-color:rgba(8,24,46,.10);box-shadow:var(--shadow-1)}
+.light .box .media{background:#E8EEF6}
+.light .row .k{border-color:var(--blue-500)}
+.light .chip .bar{background:var(--blue-500)}
+
 /* 원본 미투입 슬롯 — AI로 대체하지 않고 무엇이 필요한지 표기 */
 .ph{position:absolute;inset:0;background:
    repeating-linear-gradient(135deg,rgba(47,123,232,.13) 0 14px,rgba(47,123,232,.04) 14px 28px),var(--navy-700);
@@ -78,9 +96,10 @@ body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:
    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:18px}
 .ph .t{font-size:22px;font-weight:700;color:var(--blue-400);letter-spacing:-.02em;line-height:1.3}
 .ph .s{font-size:16px;font-weight:600;color:rgba(90,160,255,.60);letter-spacing:.06em}
-.pedestal .ph{background:repeating-linear-gradient(135deg,rgba(47,123,232,.09) 0 14px,rgba(255,255,255,0) 14px 28px),var(--paper);
-  border-color:rgba(47,123,232,.40)}
-.pedestal .ph .t{color:var(--blue-500)}.pedestal .ph .s{color:rgba(47,123,232,.58)}
+.pedestal .ph,.light .ph{background:repeating-linear-gradient(135deg,rgba(30,95,191,.10) 0 14px,rgba(255,255,255,0) 14px 28px),#EAF0F8;
+  border-color:rgba(30,95,191,.34)}
+.pedestal .ph .t,.light .ph .t{color:#1E5FBF}
+.pedestal .ph .s,.light .ph .s{color:rgba(30,95,191,.60)}
 
 /* ===== 고정 워드마크 — 모든 장면에서 같은 위치·크기 ===== */
 #mark{position:absolute;left:120px;top:64px;display:flex;align-items:center;gap:14px;opacity:0;z-index:50}

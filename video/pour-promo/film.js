@@ -361,13 +361,6 @@ function sectionLabel(parent,text,t,sub2){
   chip(A,'새로운 기회',120,506,L('s1',2));
   chip(A,'시장 경쟁력',120,620,L('s1',3));
 
-  const cards=[['diag_1','현장진단'],['meet_1','시공사 협의'],['seminar_1','공법설명회']];
-  cards.forEach(([key,cap],i)=>{
-    const c=mk('div','card el',px({left:1140,top:252+i*208,width:660,height:188}),A);
-    slot(c,key,cap,{left:0,top:0,width:'100%',height:'100%'});
-    mk('div','cap',{},c,cap);
-    revealCard(c,L('s1',1)+.32+i*.30,{d:.66,dir:'left'});
-  });
 
   /* --- phase B : 4-step process chain (화면 전체를 쓰는 4-up) --- */
   const Bp=sub(S,L('s1',5)-.10,B.t1,{i:[24,0]});
@@ -533,7 +526,8 @@ function sectionLabel(parent,text,t,sub2){
 
   /* ---- 3-2 공법설명회 ---- */
   const Bx=sub(S,C(2)-.15,C(3)-.15,{i:[24,0],o:[0,-24]});
-  mk('div','veil v-deep',{},Bx);
+  Bx.classList.add('light');
+  mk('div','veil v-light',{},Bx);
   sectionLabel(Bx,'공법설명회',C(2)-.05,'POUR SUPPORT 02');
   const semLb={1:'공법설명회 현장',2:'공법설명회 발표',3:'시공사 참석'};
   const semIdx=series('seminar_',3), sn=semIdx.length;
@@ -548,7 +542,8 @@ function sectionLabel(parent,text,t,sub2){
 
   /* ---- 3-3 기술자료 (stacking) ---- */
   const Cx=sub(S,C(3)-.15,C(4)-.15,{i:[0,24],o:[-24,0]});
-  mk('div','veil v-deep',{},Cx);
+  Cx.classList.add('light');
+  mk('div','veil v-light',{},Cx);
   sectionLabel(Cx,'현장 맞춤 기술자료',C(3)-.05,'POUR SUPPORT 03');
   /* 세로형 문서는 잘리지 않게 흰 바탕에 contain, 사진은 cover */
   const docs=[['consulting_1','컨설팅 내역서',660,258,392,524,'contain'],
@@ -600,7 +595,8 @@ function sectionLabel(parent,text,t,sub2){
 
   /* ---- 3-5 공사 전 · 중 · 후 ---- */
   const Ex=sub(S,C(6)+.45,C(8)+1.30,{i:[0,24],o:[0,-24]});
-  mk('div','veil v-deep',{},Ex);
+  Ex.classList.add('light');
+  mk('div','veil v-light',{},Ex);
   sectionLabel(Ex,'공사 전 · 중 · 후 현장관리',C(6)+.55,'POUR SUPPORT 05');
   const phs=[['공사 전','kakao_1','현장 공유 커뮤니케이션'],['공사 중','rooftop_1','옥상 방수 도장 작업'],['공사 후','netform_doc','NETFORM 준공 공문']];
   const svgE=document.createElementNS('http://www.w3.org/2000/svg','svg'); Ex.appendChild(svgE);
@@ -668,7 +664,8 @@ function sectionLabel(parent,text,t,sub2){
 /* ============================ SCENE 4 ============================ */
 (function(){
   const S=scene('s4'), B=SCN.s4, C=i=>L('s4',i);
-  mk('div','veil',{background:'linear-gradient(180deg,#0A1B33 0%,#0F2647 100%)'},S);
+  S.classList.add('light');
+  mk('div','veil v-light',{},S);
 
   const rail=[['01','POUR 본사 미팅'],['02','시공사 방문 미팅'],['03','MOU 체결']];
   const CHK=[C(3)+.95, C(6)+1.50, C(8)+1.20];
@@ -676,19 +673,19 @@ function sectionLabel(parent,text,t,sub2){
   rail.forEach(([n,t],i)=>{
     const x=132+i*572;
     const g=mk('div','el',px({left:x,top:132,width:540}),S);
-    const bar=mk('div','',px({width:540,height:4,background:'rgba(255,255,255,.16)',borderRadius:2,marginBottom:22}),g);
+    const bar=mk('div','',px({width:540,height:4,background:'var(--hair-2)',borderRadius:2,marginBottom:22}),g);
     const fill=mk('div','',px({width:0,height:4,background:'var(--blue-500)',borderRadius:2}),bar);
     const rw=mk('div','',px({display:'flex',alignItems:'baseline',gap:16}),g);
-    const num=mk('div','',px({fontSize:34,fontWeight:900,color:'rgba(255,255,255,.35)',letterSpacing:'.06em'}),rw,n);
-    const lb=mk('div','',px({fontSize:30,fontWeight:700,color:'rgba(255,255,255,.42)',letterSpacing:'-.03em'}),rw,t);
+    const num=mk('div','',px({fontSize:34,fontWeight:900,color:'var(--ink-3)',letterSpacing:'.06em'}),rw,n);
+    const lb=mk('div','',px({fontSize:30,fontWeight:700,color:'var(--ink-3)',letterSpacing:'-.03em'}),rw,t);
     const ck=mk('div','',px({fontSize:30,fontWeight:900,color:'var(--blue-500)',opacity:0}),rw,'✓');
     wipe(g,B.t0+.15+i*.14,{d:.50,dir:'right'});
     reg(T=>{
       const on=T>=ACT[i], done=T>=CHK[i];
       const p=c01((T-ACT[i])/(CHK[i]-ACT[i]));
       fill.style.width=(540*outCubic(p)).toFixed(1)+'px';
-      num.style.color = done?'var(--blue-500)' : on?'#fff':'rgba(255,255,255,.35)';
-      lb.style.color  = on?'#fff':'rgba(255,255,255,.42)';
+      num.style.color = done?'var(--blue-500)' : on?'var(--ink-1)':'var(--ink-3)';
+      lb.style.color  = on?'var(--ink-1)':'var(--ink-3)';
       ck.style.opacity= outBack(c01((T-CHK[i])/.34));
     });
   });
@@ -732,7 +729,7 @@ function sectionLabel(parent,text,t,sub2){
   const hs=mk('div','card el',px({left:1330,top:604,width:400,height:286}),P3);
   slot(hs,'handshake','악수 (협약 체결)',{left:0,top:0,width:'100%',height:'100%'});
   revealCard(hs,C(8)+.25,{d:.56,dir:'left'});
-  const t3=mk('div','el',px({left:120,top:640,fontSize:40,fontWeight:700,color:'rgba(255,255,255,.9)',letterSpacing:'-.03em'}),P3,
+  const t3=mk('div','el',px({left:120,top:640,fontSize:40,fontWeight:700,color:'var(--ink-2)',letterSpacing:'-.03em'}),P3,
     'POUR공법 특허 사용<br>MOU 체결');
   words(t3,C(8)+.05,{step:.09,d:.44,dy:18});
 })();
@@ -838,9 +835,20 @@ reg(T=>{ progEl.style.width=(1920*c01(T/TOTAL))+'px'; });
     im.src='assets/'+lg.f;
   }
   const OUT=SCN.fin.t0;                       // 엔딩에서는 중앙 로고에 자리를 내준다
+  /* 밝은 섹션 구간 — 워드마크가 흰 배경 위에서 사라지지 않도록 색을 뒤집는다 */
+  const LIGHT=[[L('s3',2)-.15, L('s3',4)-.15],
+               [L('s3',6)+.45, L('s3',8)+1.30],
+               [SCN.s4.t0,     SCN.s4.t1]];
+  const txt=mark.querySelector('.m');
   reg(T=>{
     const o=outCubic(c01((T-0.35)/.7)) * (1-c01((T-(OUT-.45))/.5));
     mark.style.opacity=o*0.92;
+    let f=0;
+    for(const [a,b] of LIGHT) f=Math.max(f, Math.min(c01((T-a+.18)/.36), 1-c01((T-(b-.18))/.36)));
+    if(txt){
+      const r=Math.round(255+(8-255)*f), g=Math.round(255+(24-255)*f), bl=Math.round(255+(46-255)*f);
+      txt.style.color=`rgb(${r},${g},${bl})`;
+    }
   });
 })();
 
