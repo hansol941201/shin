@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const fs=require('fs'),path=require('path'),{spawn}=require('child_process');
 
-const FFMPEG=process.env.FFMPEG||'ffmpeg';  // libx264 포함 빌드 필요
+const FFMPEG=process.env.FFMPEG||'/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2';
 const FPS=+(process.env.FPS||30);
 const OUT=process.env.OUT||'POUR_홍보영상.mp4';
 const W=1920,H=1080;
@@ -12,8 +12,9 @@ console.log(`[assets] ${have.length}/${SLOTS.length} 매칭됨: ${have.join(', '
 if(miss.length) console.log(`[assets] 누락(플레이스홀더 처리): ${miss.join(', ')}`);
 
 (async()=>{
-  const browser=await chromium.launch({...(process.env.CHROME?{executablePath:process.env.CHROME}:{}),args:['--force-color-profile=srgb','--disable-lcd-text','--font-render-hinting=none']});
+  const browser=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--force-color-profile=srgb','--disable-lcd-text','--font-render-hinting=none']});
   const page=await browser.newPage({viewport:{width:W,height:H},deviceScaleFactor:1});
+  await require('./alpha')(browser,A);
   await page.addInitScript(a=>{window.__ASSETS__=a;},A);
   const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto('file://'+path.resolve('film.html'),{waitUntil:'load'});

@@ -75,8 +75,9 @@ const SCRIPT = [
 ];
 
 /* build cue table: L(sceneId, idx) -> start time ; scene bounds */
+const OPEN = 4.0;                                // #13 오프닝 타이틀 카드
 const CUE = {}, SCN = {};
-let clock = 0;
+let clock = OPEN;
 for (const s of SCRIPT){
   const start = clock, arr = [];
   s.lines.forEach((tx,i)=>{
@@ -87,9 +88,10 @@ for (const s of SCRIPT){
   CUE[s.id] = arr;
   SCN[s.id] = {t0:start, t1:clock};
 }
-const OUTRO = 3.4;                 // final logo hold after last line
+const OUTRO = 6.2;                 // 엔딩 로고 + 문의 정보 노출
 const TOTAL = clock + OUTRO;
 SCN.fin = {t0:clock, t1:TOTAL};
+SCN.open = {t0:0, t1:OPEN+0.35};
 const L = (s,i) => CUE[s][i].t0;
 const LE= (s,i) => CUE[s][i].t1;
 
@@ -111,7 +113,8 @@ function slot(parent, key, label, css, fit, bg, pos){
   const a = AVAILABLE[key];
   if(a){
     const i = mk('img','',{width:'100%',height:'100%',objectFit:fit||'cover',
-      objectPosition:pos||'center',display:'block'},wrap);
+      objectPosition:pos||'center',display:'block',
+      filter:(a.alpha? 'none' : (TONE[key]||'contrast(1.03) saturate(0.96)'))},wrap);
     i.src = 'assets/'+(typeof a==='string'?a:a.f);
   } else {
     mk('div','ph',{},wrap,`<div class="t">${label}</div><div class="s">원본 이미지 필요 · ${key}</div>`);
@@ -125,6 +128,19 @@ function series(prefix,n){
   return got.length? got : Array.from({length:n},(_,i)=>i+1);
 }
 const DOCBG='#F4F7FB';
+/* #9 원본마다 촬영 조건이 달라 톤이 튄다. 슬롯별로 최소 보정만 적용해
+   한 편의 영상으로 보이게 맞춘다(내용은 건드리지 않는다). */
+const TONE={
+  factory_yongin:'contrast(1.06) saturate(0.94) brightness(1.01)',
+  seminar_1:     'contrast(1.08) saturate(0.88) brightness(1.03)',
+  tech_doc_1:    'contrast(1.05) saturate(0.93)',
+  hq_meeting:    'contrast(1.06) saturate(0.90)',
+  site_visit:    'contrast(1.06) saturate(0.90)',
+  rooftop_1:     'contrast(1.05) saturate(0.92)',
+  drone_1:       'contrast(1.06) saturate(0.92)',
+  drone_2:       'contrast(1.06) saturate(0.92)',
+  apt_wide_1:    'contrast(1.05) saturate(0.94)',
+};
 /* 이미지 실제 비율. 없으면 null */
 function ratioOf(key){ const a=AVAILABLE[key]; return (a&&a.w&&a.h)? a.w/a.h : null; }
 /* 주어진 최대 박스 안에서 이미지 비율에 정확히 맞는 크기.
@@ -346,6 +362,37 @@ function sectionLabel(parent,text,t,sub2){
   return w;
 }
 
+/* ============================ OPENING ============================
+   #13 시작 3초 안에 POUR공법이 어떤 기술인지 전달한다.
+   문구는 시공사가 보내준 'POUR 컨설팅 내역서'의 공종 표기에서 가져왔다.
+   (외벽 복합시트 방수 / 도장 / 균열 보수 / 옥상 방수, 개발운영사 넷폼알앤디)  */
+(function(){
+  const S=scene('open'), B=SCN.open;
+  const bg=mk('div','bg',{},S); slot(bg,'apt_wide_1','대단지 아파트 전경',{left:0,top:0,width:'100%',height:'100%'});
+  kenburns(bg,B.t0,B.t1,1.12,1.02);
+  mk('div','veil',{background:'linear-gradient(90deg,rgba(6,18,35,.96) 0%,rgba(6,18,35,.88) 46%,rgba(6,18,35,.58) 100%)'},S);
+
+  const k=mk('div','el',px({left:120,top:392,opacity:1}),S,
+    '<div class="kicker">아파트 외벽 · 옥상 유지보수 공법</div>');
+  wipe(k,B.t0+.35,{d:.5,dir:'right'});
+
+  const t=mk('div','el',px({left:120,top:436,fontSize:104,fontWeight:900,color:'var(--ink-1)',
+    letterSpacing:'-.045em',lineHeight:'1.22',opacity:1}),S,'POUR공법');
+  wipe(t,B.t0+.55,{d:.68,dir:'up'});
+
+  const rl=mk('div','el',px({left:120,top:596,width:120,height:4,background:'var(--blue-500)',
+    transformOrigin:'0 50%'}),S);
+  reg(T=>{ const e=outQuint(c01((T-(B.t0+1.00))/.5)); rl.style.opacity=e; rl.style.transform=`scaleX(${e.toFixed(3)})`; });
+
+  const d=mk('div','el',px({left:120,top:632,fontSize:44,fontWeight:700,color:'var(--ink-1)',
+    letterSpacing:'-.03em',opacity:1}),S,'복합시트 방수 · 도장 · 균열 보수');
+  words(d,B.t0+1.16,{step:.09,d:.46,dy:18});
+
+  const c=mk('div','el',px({left:120,top:708,fontSize:26,fontWeight:600,color:'var(--ink-2)',
+    letterSpacing:'-.02em',opacity:1}),S,'주식회사 넷폼알앤디 · POUR공법 개발운영사');
+  wipe(c,B.t0+1.72,{d:.5,dir:'right'});
+})();
+
 /* ============================ SCENE 1 ============================ */
 (function(){
   const S=scene('s1'), B=SCN.s1;
@@ -511,17 +558,27 @@ function sectionLabel(parent,text,t,sub2){
   mk('div','veil',{background:'linear-gradient(180deg,rgba(10,27,51,.86) 0%,rgba(10,27,51,.62) 40%,rgba(10,27,51,.93) 100%)'},A);
   sectionLabel(A,'기술개발 · 자재생산',B.t0+.10,'POUR SUPPORT 01');
   const matIdx=series('material_',4), mn=matIdx.length;
-  const mw = mn>=4?340 : mn===3?400 : mn===2?460 : 420;
-  const mh = mn>=3?400 : 440;
-  const gap = 36, span = mn*mw + (mn-1)*gap, mx0 = (1920-span)/2;
-  const PAD=34;
+  const GAPM=40, BASE=900, MAXH=mn>=4?400:440;
+  const colW=Math.floor((1920-240-GAPM*(mn-1))/mn);
+  const PAD=30;
   matIdx.forEach((idx,i)=>{
-    const k='material_'+idx;
-    const fb=fitBox(k, mw-PAD*2, mh-PAD*2);
-    const pw=fb.w+PAD*2, ph=fb.h+PAD*2;
-    const p=mk('div','pedestal el',px({left:mx0+i*(mw+gap)+(mw-pw)/2,top:930-ph,width:pw,height:ph}),A);
-    slot(p,k,'POUR 자재 '+idx,{left:PAD,top:PAD,width:fb.w,height:fb.h},'contain');
-    rise(p,C(1)-.15+i*.30,{d:.62,dy:46,s0:.86,ez:outBack});
+    const k='material_'+idx, a=AVAILABLE[k], cut=!!(a&&a.alpha);
+    const colX=120+i*(colW+GAPM);
+    if(cut){
+      /* 누끼 자재 — 흰 카드 없이 배경 위에 제품만. 아래 기준선에 맞춰 정렬한다.
+         라벨·색상·형태는 원본 그대로, 어떤 보정도 걸지 않는다. */
+      const fb=fitBox(k, colW, MAXH);
+      const w=mk('div','el',px({left:colX+(colW-fb.w)/2, top:BASE-fb.h, width:fb.w, height:fb.h,
+        filter:'drop-shadow(0 20px 30px rgba(2,10,22,.50))'}),A);
+      slot(w,k,'POUR 자재 '+idx,{left:0,top:0,width:'100%',height:'100%'},'contain');
+      rise(w,C(1)-.15+i*.42,{d:.66,dy:52,s0:.84,ez:outBack});
+    } else {
+      const fb=fitBox(k, colW-PAD*2, MAXH-PAD*2);
+      const pw=fb.w+PAD*2, ph=fb.h+PAD*2;
+      const p=mk('div','pedestal el',px({left:colX+(colW-pw)/2, top:BASE-ph, width:pw, height:ph}),A);
+      slot(p,k,'POUR 자재 '+idx,{left:PAD,top:PAD,width:fb.w,height:fb.h},'contain');
+      rise(p,C(1)-.15+i*.42,{d:.66,dy:52,s0:.84,ez:outBack});
+    }
   });
 
   /* ---- 3-2 공법설명회 ---- */
@@ -791,21 +848,41 @@ function sectionLabel(parent,text,t,sub2){
 (function(){
   const S=scene('fin'), B=SCN.fin, C=i=>L('s5',i);
   mk('div','veil',{background:'radial-gradient(120% 90% at 50% 40%,#122C51 0%,#0A1B33 62%,#06111F 100%)'},S);
-  const lg=mk('div','el',px({left:610,top:326,width:700,height:260,display:'flex',
+  const lg=mk('div','el',px({left:610,top:246,width:700,height:240,display:'flex',
     alignItems:'center',justifyContent:'center'}),S);
   slot(lg,'pour_logo','POUR 로고',{left:0,top:0,width:'100%',height:'100%'},'contain');
   revealCard(lg,B.t0+.20,{d:.95,dir:'right',r:0,zoom:.10});
   reg(T=>{ const p=outCubic(c01((T-(LE('s5',7)+.15))/1.1));
     lg.style.transform=`translate(0px,${(-26*p).toFixed(1)}px) scale(${(1+0.045*p).toFixed(4)})`; });
-  const f1=mk('div','el',px({left:0,top:640,width:1920,textAlign:'center',fontSize:40,fontWeight:600,
+  const f1=mk('div','el',px({left:0,top:530,width:1920,textAlign:'center',fontSize:40,fontWeight:600,
     color:'rgba(255,255,255,.80)',letterSpacing:'-.03em'}),S,'기술부터 영업, 현장 적용까지');
   words(f1,C(5)+.15,{step:.085,d:.44,dy:18,out:LE('s5',7)+.35,outD:.55});
-  const f2=mk('div','el',px({left:0,top:712,width:1920,textAlign:'center',fontSize:56,fontWeight:800,
+  const f2=mk('div','el',px({left:0,top:596,width:1920,textAlign:'center',fontSize:56,fontWeight:800,
     color:'var(--ink-1)',letterSpacing:'-.035em',lineHeight:'1.32'}),S,'시공사가 이길 수 있는<br>모든 과정에 POUR가 함께합니다.');
   words(f2,C(6)+.15,{step:.075,d:.46,dy:22,out:LE('s5',7)+.35,outD:.55});
-  const rl=mk('div','el',px({left:910,top:626,width:100,height:3,background:'var(--blue-500)',transformOrigin:'50% 50%'}),S);
+  const rl=mk('div','el',px({left:910,top:516,width:100,height:3,background:'var(--blue-500)',transformOrigin:'50% 50%'}),S);
   reg(T=>{ const e=outQuint(c01((T-(LE('s5',7)+.55))/.7));
-    rl.style.opacity=e; rl.style.transform=`scaleX(${e.toFixed(3)})`; });
+    rl.style.opacity=e*(1-c01((T-(LE('s5',7)+1.05))/.45));
+    rl.style.transform=`scaleX(${e.toFixed(3)})`; });
+
+  /* #14 문의 정보 — 컨설팅 내역서에 인쇄된 회사 정보 그대로 */
+  const CT=LE('s5',7)+1.30;
+  const line=mk('div','el',px({left:660,top:640,width:600,height:1,background:'var(--hair-2)',
+    transformOrigin:'50% 50%'}),S);
+  reg(T=>{ const e=outQuint(c01((T-CT)/.6)); line.style.opacity=e*.9; line.style.transform=`scaleX(${e.toFixed(3)})`; });
+
+  const co=mk('div','el',px({left:0,top:686,width:1920,textAlign:'center',fontSize:34,fontWeight:800,
+    color:'var(--ink-1)',letterSpacing:'-.03em',opacity:1}),S,'주식회사 넷폼알앤디');
+  wipe(co,CT+.18,{d:.5,dir:'up'});
+
+  const tel=mk('div','el',px({left:0,top:742,width:1920,textAlign:'center',fontSize:44,fontWeight:800,
+    color:'var(--blue-400)',letterSpacing:'-.01em',opacity:1}),S,'TEL. 070-7705-1311');
+  wipe(tel,CT+.40,{d:.5,dir:'up'});
+
+  const ad=mk('div','el',px({left:0,top:806,width:1920,textAlign:'center',fontSize:26,fontWeight:600,
+    color:'var(--ink-2)',letterSpacing:'-.02em',lineHeight:'1.5',opacity:1}),S,
+    'FAX. 031-373-2734　|　경기도 오산시 서동로 77, 3층');
+  wipe(ad,CT+.60,{d:.5,dir:'up'});
 })();
 
 /* ============================ SUBTITLES + DRIVER ============================ */

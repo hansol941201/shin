@@ -1,5 +1,19 @@
 const fs=require('fs'),path=require('path');
 const {imageSize}=require('image-size');
+/* 누끼(투명 배경) 여부 판정 — PNG는 IHDR color type, WebP는 VP8X alpha 플래그 */
+function hasAlpha(buf){
+  if(buf.length>26 && buf.toString('ascii',1,4)==='PNG'){
+    const ct=buf[25];                       // 4=Gray+A, 6=RGBA
+    return ct===4||ct===6;
+  }
+  if(buf.length>16 && buf.toString('ascii',0,4)==='RIFF' && buf.toString('ascii',8,12)==='WEBP'){
+    const fmt=buf.toString('ascii',12,16);
+    if(fmt==='VP8X') return (buf[20]&0x10)!==0;
+    if(fmt==='VP8L') return true;           // 무손실은 알파 가능
+    return false;                            // 'VP8 ' 손실은 알파 없음
+  }
+  return false;                              // JPEG 등
+}
 const SLOTS=['apt_wide_1','diag_1','meet_1','seminar_1','seminar_2','seminar_3','analysis_1',
  'consulting_1','tech_doc_1','cad_1','construction_1','apt_1','apt_2','apt_3','apt_4','apt_5',
  'apt_6','apt_7','apt_8','drone_1','drone_2','data_1','ai_1','review_1','factory_yongin',
@@ -19,9 +33,10 @@ function resolve(dir){
   /* 실제 픽셀 크기를 함께 넘겨 틀을 이미지 비율에 맞춘다 (여백/잘림 방지) */
   const out={};
   for(const k in A){
-    let w=null,h=null;
-    try{ const d=imageSize(fs.readFileSync(path.join(dir,A[k]))); w=d.width; h=d.height; }catch(e){}
-    out[k]={f:A[k], w, h};
+    let w=null,h=null,al=false;
+    try{ const buf=fs.readFileSync(path.join(dir,A[k]));
+         const d=imageSize(buf); w=d.width; h=d.height; al=hasAlpha(buf); }catch(e){}
+    out[k]={f:A[k], w, h, alpha:al};
   }
   return {A:out, have:Object.keys(out), miss:SLOTS.filter(s=>!out[s]), SLOTS};
 }
