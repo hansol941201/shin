@@ -2,7 +2,8 @@ const {chromium}=require('playwright');const path=require('path'),fs=require('fs
 const TS=process.argv.slice(2).map(Number);
 (async()=>{
   const b=await chromium.launch(process.env.CHROME?{executablePath:process.env.CHROME}:{});const p=await b.newPage({viewport:{width:1920,height:1080}});
-  await p.addInitScript(()=>{window.__ASSETS__={};});
+  const {A}=require('./assets').resolve('assets');
+  await p.addInitScript(a=>{window.__ASSETS__=a;},A);
   const errs=[];p.on('pageerror',e=>errs.push(String(e)));
   await p.goto('file://'+path.resolve('film.html'),{waitUntil:'load'});
   await p.evaluate(()=>document.fonts.ready);

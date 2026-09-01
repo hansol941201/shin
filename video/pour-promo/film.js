@@ -105,8 +105,8 @@ const UNITLESS=new Set(['fontWeight','opacity','zIndex','lineHeight','flex','fle
 function px(o){ const r={}; for(const k in o) r[k]=(typeof o[k]==='number'&&!UNITLESS.has(k))?o[k]+'px':String(o[k]); return r; }
 
 /* image slot: real asset if present, else labelled placeholder (never AI-substituted) */
-function slot(parent, key, label, css, fit){
-  const wrap = mk('div','', Object.assign({position:'absolute',overflow:'hidden'}, px(css||{})), parent);
+function slot(parent, key, label, css, fit, bg){
+  const wrap = mk('div','', Object.assign({position:'absolute',overflow:'hidden'}, bg?{background:bg}:{}, px(css||{})), parent);
   const f = AVAILABLE[key];
   if(f){
     const i = mk('img','',{width:'100%',height:'100%',objectFit:fit||'cover',display:'block'},wrap);
@@ -116,6 +116,13 @@ function slot(parent, key, label, css, fit){
   }
   return wrap;
 }
+
+/* 연번 슬롯 중 실제 파일이 있는 것만. 하나도 없으면 어떤 원본이 필요한지 보이도록 전량 유지 */
+function series(prefix,n){
+  const got=[]; for(let i=1;i<=n;i++) if(AVAILABLE[prefix+i]) got.push(i);
+  return got.length? got : Array.from({length:n},(_,i)=>i+1);
+}
+const DOCBG='#F4F7FB';
 
 /* ---------- animation primitives ---------- */
 function fade(el,t0,d,t1,d1){
@@ -222,8 +229,9 @@ function sectionLabel(parent,text,t,sub2){
   steps.forEach((s,i)=>{
     const x=176+i*400;
     const g=mk('div','el',px({left:x,top:300,width:344}),Bp);
+    const isDoc = s[1]==='consulting_1'||s[1]==='cad_1';
     const th=mk('div','card',px({position:'relative',width:344,height:214,left:0,top:0}),g);
-    slot(th,s[1],s[2],{left:0,top:0,width:'100%',height:'100%'});
+    slot(th,s[1],s[2],{left:0,top:0,width:'100%',height:'100%'}, isDoc?'contain':'cover', isDoc?DOCBG:null);
     mk('div','',px({marginTop:26,fontSize:38,fontWeight:800,color:'#fff',letterSpacing:'-.03em'}),g,s[0]);
     mk('div','',px({marginTop:8,fontSize:20,fontWeight:600,color:'rgba(255,255,255,.5)',letterSpacing:'.10em'}),g,'0'+(i+1));
     rise(g,ST[i],{d:.66,dy:34,s0:.94});
@@ -326,10 +334,13 @@ function sectionLabel(parent,text,t,sub2){
   kenburns(bgA,B.t0,C(2),1.04,1.14);
   mk('div','veil',{background:'linear-gradient(180deg,rgba(10,27,51,.86) 0%,rgba(10,27,51,.62) 40%,rgba(10,27,51,.93) 100%)'},A);
   sectionLabel(A,'기술개발 · 자재생산',B.t0+.10,'POUR SUPPORT 01');
-  const mats=[['material_1','POUR 자재 ①'],['material_2','POUR 자재 ②'],['material_3','POUR 자재 ③'],['material_4','POUR 자재 ④']];
-  mats.forEach(([k,lb],i)=>{
-    const p=mk('div','pedestal el',px({left:214+i*376,top:520,width:340,height:400}),A);
-    slot(p,k,lb,{left:'9%',top:'13%',width:'82%',height:'74%'},'contain');
+  const matIdx=series('material_',4), mn=matIdx.length;
+  const mw = mn>=4?340 : mn===3?400 : mn===2?460 : 420;
+  const mh = mn>=3?400 : 440;
+  const gap = 36, span = mn*mw + (mn-1)*gap, mx0 = (1920-span)/2;
+  matIdx.forEach((idx,i)=>{
+    const p=mk('div','pedestal el',px({left:mx0+i*(mw+gap),top:960-mh-40,width:mw,height:mh}),A);
+    slot(p,'material_'+idx,'POUR 자재 '+idx,{left:'5%',top:'6%',width:'90%',height:'88%'},'contain');
     rise(p,C(1)-.15+i*.30,{d:.62,dy:46,s0:.86,ez:outBack});
   });
 
@@ -337,10 +348,14 @@ function sectionLabel(parent,text,t,sub2){
   const Bx=sub(S,C(2)-.15,C(3)-.15);
   mk('div','veil v-deep',{},Bx);
   sectionLabel(Bx,'공법설명회',C(2)-.05,'POUR SUPPORT 02');
-  [['seminar_1','공법설명회 현장'],['seminar_2','공법설명회 발표'],['seminar_3','시공사 참석']].forEach(([k,lb],i)=>{
-    const c=mk('div','card el',px({left:200+i*524,top:392,width:496,height:440}),Bx);
-    slot(c,k,lb,{left:0,top:0,width:'100%',height:'100%'});
-    mk('div','cap',{},c,lb);
+  const semLb={1:'공법설명회 현장',2:'공법설명회 발표',3:'시공사 참석'};
+  const semIdx=series('seminar_',3), sn=semIdx.length;
+  const sw = sn>=3?496 : sn===2?700 : 960, sh = sn>=3?440 : sn===2?470 : 500;
+  const sgap=32, sspan=sn*sw+(sn-1)*sgap, sx0=(1920-sspan)/2;
+  semIdx.forEach((idx,i)=>{
+    const c=mk('div','card el',px({left:sx0+i*(sw+sgap),top:900-sh-60,width:sw,height:sh}),Bx);
+    slot(c,'seminar_'+idx,semLb[idx],{left:0,top:0,width:'100%',height:'100%'});
+    mk('div','cap',{},c,semLb[idx]);
     rise(c,C(2)+.42+i*.36,{d:.6,dy:38,s0:.93});
   });
 
@@ -348,12 +363,16 @@ function sectionLabel(parent,text,t,sub2){
   const Cx=sub(S,C(3)-.15,C(4)-.15);
   mk('div','veil v-deep',{},Cx);
   sectionLabel(Cx,'현장 맞춤 기술자료',C(3)-.05,'POUR SUPPORT 03');
-  [['consulting_1','컨설팅 내역서'],['tech_doc_1','기술자료'],['cad_1','CAD 도면']].forEach(([k,lb],i)=>{
-    const c=mk('div','card el',px({left:640+i*220,top:330+i*74,width:640,height:452,zIndex:10+i}),Cx);
-    slot(c,k,lb,{left:0,top:0,width:'100%',height:'100%'});
+  /* 세로형 문서는 잘리지 않게 흰 바탕에 contain, 사진은 cover */
+  const docs=[['consulting_1','컨설팅 내역서',660,258,392,524,'contain'],
+              ['tech_doc_1','기술자료',1004,414,660,442,'cover'],
+              ['cad_1','CAD 도면',742,606,404,300,'contain']];
+  docs.forEach(([k,lb,x,y,w,h,fit],i)=>{
+    const c=mk('div','card el',px({left:x,top:y,width:w,height:h,zIndex:10+i}),Cx);
+    slot(c,k,lb,{left:0,top:0,width:'100%',height:'100%'},fit, fit==='contain'?DOCBG:null);
     mk('div','cap',{},c,lb);
     rise(c,C(3)+.10+i*.62,{d:.6,dy:44,dx:-30,s0:.94});
-    const t=mk('div','el',px({left:190,top:404+i*94,fontSize:34,fontWeight:700,color:'#fff'}),Cx,'· '+lb);
+    const t=mk('div','el',px({left:150,top:404+i*94,fontSize:34,fontWeight:700,color:'#fff'}),Cx,'· '+lb);
     rise(t,C(3)+.16+i*.62,{d:.5,dy:16,dx:-12});
   });
 
