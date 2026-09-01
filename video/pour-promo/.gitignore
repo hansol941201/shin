@@ -1,0 +1,8 @@
+node_modules/
+fonts/
+probe/
+*.mp4
+*.webm
+render.log
+assets/*
+!assets/map.json
