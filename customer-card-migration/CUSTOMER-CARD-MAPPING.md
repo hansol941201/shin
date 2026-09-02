@@ -160,7 +160,11 @@
   3. 허들·보류 탭에 있으면 → `허들·보류`
   4. 진행 현황 탭에만 있으면 → `MOU 진행 중`
   5. 협력업체 리스트/등급 현황에만 있으면 → `기존 협력업체·MOU 상태 확인 필요`
-  6. **위 판정과 모순되는 근거가 있으면 우선순위로 덮어쓰지 않고** → `상태 충돌·담당자 확인 필요`
+  6. 위 판정과 모순되는 근거가 있고 **체결일도 없으면** → `상태 충돌·담당자 확인 필요`
+- **체결일이 있으면 충돌이 있어도 `MOU 체결 완료` 입니다.** 다른 메뉴에 미체결로 남아 있더라도
+  결국 MOU 를 체결한 곳이기 때문입니다. 충돌을 지우는 것이 아니라 상태를 우선 확정하는 것이며,
+  `validation.statusConflict = true` 와 `validation.conflictResolvedBySigning = true` 로 계속 추적됩니다
+  (해당 6개사 — 원본 사이트에서 [진행 현황]·[허들·보류] 정리 필요).
 - **카드 위치** 헤더 배지 + 첫 화면 요약 + 카드 왼쪽 테두리 색
 - **배지 색상**
 
@@ -174,7 +178,8 @@
   | 기존 협력업체·MOU 상태 확인 필요 | 회색 | `pcm-badge--unknown` / `pcm-card--unknown` |
   | 상태 충돌·담당자 확인 필요 | 빨강 | `pcm-badge--alert` / `pcm-card--alert` |
 
-- **검증** `상태 충돌` 이면 `validation.statusConflict = true` 이고 충돌 사유가 `validation.messages` 에 들어 있습니다.
+- **검증** 충돌이 있으면 `validation.statusConflict = true` 이고 사유가 `validation.messages` 에 들어 있습니다.
+  체결일로 상태가 확정된 경우 `validation.conflictResolvedBySigning = true` 가 함께 붙습니다.
 
 ### `mou.statusCandidate`
 - **표시명** 우선순위 판정 · **형식** `enum` (위와 동일)
@@ -235,6 +240,12 @@
 **검증** — 정상 순서는 `발송 ≤ 회신 ≤ 1차 ≤ 2차 ≤ 체결`. 어긋나면 `validation.dateError = true`.
 예) `mou.signedAt` 이 `secondMeetingCompletedAt` 보다 이르면 날짜 오류.
 
+**단계 건너뛰기는 오류가 아닙니다.** 미팅 없이 바로 체결하거나 1차를 건너뛰고 체결하는 업체가 실제로 있어,
+**체결이 확인된 업체는 중간 단계 날짜가 비어 있어도 오류로 보지 않습니다.**
+어떤 단계에 기록이 없는지는 `mou.skippedSteps`(문자열 배열, 참고 정보)에 남깁니다 — 45개사.
+아직 체결되지 않은 업체의 단계 공백은 입력 누락일 수 있어 확인 필요로 계속 표시합니다.
+원본 사이트도 같은 전제를 두고 있습니다(내부 로직에 `qReplySkipped`/`m1Skipped`/`m2Skipped` 플래그 정의).
+
 ### `mou.signedAtSources` / `mou.partnerListMouMark`
 - **표시명** 체결일 출처 / 협력업체 리스트 원본 표기
 - **형식** `{menu, date}[]` / `string | null`
@@ -259,9 +270,10 @@
 | `hold.isOnHold` | 허들·보류 여부 | `boolean` | 허들·보류 탭 존재 여부 | — |
 | `hold.startedAt` | 보류 시작일 | `null` (전건) | **원본에 없음** | 미확인 |
 | `hold.reason` | 보류 사유 | `string \| null` | 허들·보류 탭 **비고/사유** 열 | “사유 미기재” |
-| `hold.decision` | 결정 상태 | `"결정 미입력" \| null` | 액션 결정 (localStorage, 미수집) | 결정 미입력 |
+| `hold.decision` | 결정 상태 | `"결정 미입력" \| null` | 액션 결정 (localStorage, 미수집) | 결정 미입력 · 체결로 정리된 건은 `null` |
 | `hold.nextReviewAt` | 재접근 예정일 | `null` (전건) | **원본에 없음** | 미확인 |
 | `hold.isClosed` | 종결 여부 | `false` (전건) | 종결 상태 저장 필드 없음 | 아니오 |
+| `hold.resolvedBySigning` | 체결로 정리된 보류 이력 | `boolean` | 허들 등록 후 체결일 확인됨 | — |
 | `hold.needsOwnerCheck` | 담당자 확인 필요 | `boolean` | 상태 충돌 또는 사유 미기재 | — |
 | `hold.isSuspectedHold` | 보류 의심 | `boolean` | **진행 현황**에 있으나 비고가 보류성 | — |
 
@@ -310,14 +322,15 @@
 | 필드 | 뜻 | 건수 |
 |---|---|---|
 | `validation.possibleDuplicate` | 중복 의심 | 17 |
-| `validation.statusConflict` | 상태 충돌 | 7 |
+| `validation.statusConflict` | 상태 충돌 (체결일로 정리된 6건 포함) | 7 |
 | `validation.dateError` | 날짜 순서 오류 | 8 |
+| `validation.conflictResolvedBySigning` | 충돌이 있었으나 체결일로 상태 확정 | 6 |
 | `validation.missingMouDate` | 체결 완료인데 체결일 없음 | 0 |
 | `validation.mouDateMismatch` | 메뉴 간 체결일 값 불일치 | 25 |
-| `validation.missingHoldReason` | 보류 사유 없음 | 18 |
-| `validation.missingNextAction` | 다음 액션 없음 | 20 |
+| `validation.missingHoldReason` | 보류 사유 없음 (결정 대기 중인 업체 기준) | 15 |
+| `validation.missingNextAction` | 다음 액션 없음 (결정 대기 중인 업체 기준) | 17 |
 | `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 71 |
-| `validation.needsReview` | 위 중 하나라도 해당 | 211 |
+| `validation.needsReview` | 위 중 하나라도 해당 | 203 |
 | `validation.messages[]` | `{type, message}` — 사람이 읽을 수 있는 사유 전문 | — |
 
 `messages[].type` 은 `statusConflict` / `dateError` / `possibleDuplicate` / `review` 네 가지입니다.

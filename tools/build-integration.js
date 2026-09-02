@@ -436,10 +436,17 @@ for (const rec of all) {
   }
 
   rec.statusCandidate = candidate;
-  rec.status = rec.conflicts.length ? STATUS.CONFLICT : candidate;
+  // 체결일이 확인된 업체는 다른 메뉴에 미체결로 남아 있더라도 결국 MOU 를 체결한 곳이므로
+  // 최종 상태를 'MOU 체결 완료'로 둔다. 충돌 사실은 지우지 않고 validation.statusConflict 와
+  // 검증 메시지로 계속 표시한다. 체결 근거가 없는 충돌만 '상태 충돌·담당자 확인 필요'로 남긴다.
+  rec.status = (rec.conflicts.length && !rec.dates.mou) ? STATUS.CONFLICT : candidate;
+  rec.conflictResolvedBySigning = rec.conflicts.length > 0 && !!rec.dates.mou;
+  if (rec.conflictResolvedBySigning) {
+    rec.reviews.push(`다른 메뉴에 미체결(진행 현황 또는 허들·보류)로 남아 있으나 MOU 체결일(${rec.dates.mou})이 확인되어 최종 상태를 'MOU 체결 완료'로 두었습니다. 원본의 미체결 기록은 그대로 보존했으니 원본 사이트 정리가 필요합니다.`);
+  }
 
   // 4-4) 진행 단계
-  if (rec.stageNum == null && rec.dates.mou) rec.stageNum = 5;  // 협력업체 리스트에서만 체결이 확인된 업체
+  if (rec.dates.mou) rec.stageNum = 5;  // 체결일이 확인되면 단계는 MOU 체결 (원본 행별 단계는 attempts 에 보존)
   rec.stageLabel = rec.stageNum == null ? null : STAGE[rec.stageNum];
   rec.seedStageMismatch = rec.seedStage != null && rec.stageNum != null && rec.seedStage !== rec.stageNum;
 
@@ -468,16 +475,35 @@ for (const rec of all) {
   if (rec.statusCandidate === STATUS.PARTNER_UNKNOWN) {
     rec.reviews.push('협력업체 리스트/등급 현황에만 존재하고 MOU 진행·체결 근거가 없습니다.');
   }
-  if (rec.inHold && !rec.holdReason) {
+  // 이후 체결이 확인된 허들 이력은 결정을 기다리는 보류가 아니라 지나간 이력이다.
+  rec.holdResolvedBySigning = rec.inHold && !!rec.dates.mou;
+  const holdOpen = rec.inHold && !rec.holdResolvedBySigning;
+  if (holdOpen && !rec.holdReason) {
     rec.reviews.push('허들·보류 사유가 기재되어 있지 않습니다.');
     const holdAttempt = rec.attempts.find(a => a.isHold && a.siteText);
     if (holdAttempt && rec.attempts.length === 1) {
       rec.reviews.push(`허들·보류 사유 칸은 비어 있고 '현장' 칸에 "${holdAttempt.siteText}" 가 입력되어 있습니다 — 사유가 잘못된 칸에 들어갔을 가능성. 원본 값을 그대로 두었습니다.`);
     }
   }
-  if (rec.inHold) rec.reviews.push('허들·보류 액션 결정(재접근/종결/보류 유지/재발송/확인 필요)이 원본 공개 데이터에 없습니다.');
-  if (rec.dates.m1 && !rec.dates.qReply) rec.reviews.push('1차 미팅 기록은 있으나 질문서 회신일이 비어 있습니다.');
-  if (rec.dates.m2 && !rec.dates.m1) rec.reviews.push('2차 미팅 기록은 있으나 1차 미팅일이 비어 있습니다.');
+  if (holdOpen) rec.reviews.push('허들·보류 액션 결정(재접근/종결/보류 유지/재발송/확인 필요)이 원본 공개 데이터에 없습니다.');
+  if (rec.holdResolvedBySigning) rec.reviews.push('허들·보류에 등록된 이력이 있으나 이후 MOU 체결이 확인되어 결정 대기 대상에서 제외했습니다.');
+  // 중간 단계 건너뛰기
+  // 미팅 없이 바로 체결하거나 1차를 건너뛰고 체결하는 경우가 실제로 있으므로,
+  // 체결이 확인된 업체는 단계가 비어 있어도 오류로 보지 않는다.
+  // 대신 어떤 단계에 날짜 기록이 없는지를 중립 정보(mou.skippedSteps)로만 남긴다.
+  // 아직 체결되지 않은 업체는 입력 누락일 수 있으므로 확인 필요로 계속 표시한다.
+  const hasPipeline = !!(rec.dates.qSent || rec.dates.qReply || rec.dates.m1 || rec.dates.m2);
+  if (rec.dates.mou) {
+    rec.skippedSteps = hasPipeline
+      ? [['질문서 발송', rec.dates.qSent], ['질문서 회신', rec.dates.qReply],
+         ['1차 미팅', rec.dates.m1], ['2차 미팅', rec.dates.m2]]
+        .filter(x => !x[1]).map(x => x[0])
+      : [];
+  } else {
+    rec.skippedSteps = [];
+    if (rec.dates.m1 && !rec.dates.qReply) rec.reviews.push('1차 미팅 기록은 있으나 질문서 회신일이 비어 있습니다.');
+    if (rec.dates.m2 && !rec.dates.m1) rec.reviews.push('2차 미팅 기록은 있으나 1차 미팅일이 비어 있습니다.');
+  }
   if (rec.dates.mou && !rec.inPartner) rec.reviews.push('MOU 체결일이 있으나 협력업체 리스트(내부용)에서 확인되지 않습니다.');
   if (rec.inPartner && !rec.codes.length) rec.reviews.push('협력업체 리스트에 있으나 업체코드가 비어 있습니다.');
   if (rec.seedStageMismatch) {
@@ -598,7 +624,7 @@ const companies = all
         currentStageDate: rec.currentStageDate,
         elapsedDays: rec.elapsedDays,
         isStalled: rec.isStalled,
-        nextAction: rec.inHold ? '결정 미입력' : null,
+        nextAction: (rec.inHold && !rec.holdResolvedBySigning) ? '결정 미입력' : null,
         nextActionDueAt: null,
         questionnaireSentAt: rec.dates.qSent,
         questionnaireReceivedAt: rec.dates.qReply,
@@ -610,6 +636,8 @@ const companies = all
         secondMeetingManager: null,
         signedAt: rec.dates.mou,
         signedAtSources: rec.mouSources,
+        // 체결 업체 중 날짜 기록이 없는 단계 (생략했거나 기록되지 않음). 오류가 아니라 참고 정보.
+        skippedSteps: rec.skippedSteps || [],
         rawLabels: rec.rawLabels,
         partnerListMouMark: rec.partnerMouMark,
         attempts: rec.attempts,
@@ -619,10 +647,11 @@ const companies = all
         isOnHold: rec.inHold,
         startedAt: null,
         reason: rec.inHold ? (rec.holdReason || null) : null,
-        decision: rec.inHold ? '결정 미입력' : null,
+        decision: (rec.inHold && !rec.holdResolvedBySigning) ? '결정 미입력' : null,
         nextReviewAt: null,
         isClosed: false,
-        needsOwnerCheck: conflicts.length > 0 || (rec.inHold && !rec.holdReason),
+        resolvedBySigning: !!rec.holdResolvedBySigning,
+        needsOwnerCheck: conflicts.length > 0 || (rec.inHold && !rec.holdResolvedBySigning && !rec.holdReason),
         isSuspectedHold: !!rec.holdSuspect,
       },
 
@@ -651,8 +680,9 @@ const companies = all
         dateError: dateErrors.length > 0,
         missingMouDate: rec.statusCandidate === STATUS.DONE_NODATE,
         mouDateMismatch: !!rec.mouDateMismatch,
-        missingHoldReason: rec.inHold && !rec.holdReason,
-        missingNextAction: rec.inHold,
+        conflictResolvedBySigning: !!rec.conflictResolvedBySigning,
+        missingHoldReason: rec.inHold && !rec.holdResolvedBySigning && !rec.holdReason,
+        missingNextAction: rec.inHold && !rec.holdResolvedBySigning,
         partnerWithoutMouStatus: rec.statusCandidate === STATUS.PARTNER_UNKNOWN,
         needsReview: (dupNotes.length + conflicts.length + dateErrors.length + reviews.length) > 0,
         messages: [

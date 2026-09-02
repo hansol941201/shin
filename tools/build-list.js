@@ -28,6 +28,7 @@ const rows = d.companies.map((c, i) => ({
   qs: c.mou.questionnaireSentAt, qr: c.mou.questionnaireReceivedAt,
   m1: c.mou.firstMeetingCompletedAt, m2: c.mou.secondMeetingCompletedAt,
   raw: c.mou.rawLabels,
+  skipped: c.mou.skippedSteps || [],
   mouSrc: c.mou.signedAtSources,
   plMark: c.mou.partnerListMouMark,
   attempts: (c.mou.attempts || []).length > 1 ? c.mou.attempts : null,
@@ -366,6 +367,10 @@ function detail(r){
     +g('1차/2차 미팅 예정일','원본에 필드 없음 — '+NA)
     +g('담당자','원본에 필드 없음 — '+NA)
     +'</div>';
+  if(r.skipped&&r.skipped.length){
+    h+='<p class="src">체결까지 날짜 기록이 없는 단계: '+esc(r.skipped.join(', '))
+      +' — 미팅 없이 바로 체결하는 경우가 있어 오류로 보지 않습니다.</p>';
+  }
   var raws=[];
   ['qSent','qReply','m1','m2','mou'].forEach(function(k,i){
     var lbl=['질문서 발송','질문서 회신','1차 미팅','2차 미팅','MOU 체결'][i];

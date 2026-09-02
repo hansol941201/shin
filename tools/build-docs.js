@@ -83,8 +83,12 @@ ${S.menuCounts.filter(m => !m.match).length === 0
 ${tbl(['최종 상태', '업체 수', '우선순위만 적용했을 때'],
   d.statusVocabulary.map(s => [s, S.byStatus[s], S.byStatusCandidate[s]]))}
 
-- **상태 충돌·담당자 확인 필요(${S.byStatus['상태 충돌·담당자 확인 필요']}건)** 는 우선순위로 조용히 덮어쓰지 않고 별도 상태로 올린 건입니다.
-  원래 우선순위대로라면 어떤 상태였을지는 \`mou.statusCandidate\` 에 남아 있습니다.
+- **체결일이 확인된 업체는 다른 메뉴에 미체결로 남아 있더라도 \`MOU 체결 완료\` 로 둡니다.**
+  결국 MOU 를 체결한 곳이기 때문입니다. 충돌 사실은 지우지 않고 \`validation.statusConflict\` 와
+  검증 메시지로 계속 표시하므로, 원본 사이트 정리 대상은 그대로 추적됩니다
+  (이렇게 정리된 업체 **${rows(c => c.validation.conflictResolvedBySigning).length}개사**).
+- **상태 충돌·담당자 확인 필요(${S.byStatus['상태 충돌·담당자 확인 필요']}건)** 는 **체결 근거가 없는** 충돌만 남긴 것입니다.
+  우선순위대로라면 어떤 상태였을지는 \`mou.statusCandidate\` 에 있습니다.
 - **MOU 체결 완료·체결일 미확인 = 0건.** 체결 표시(\`mouDone\`, 협력업체 리스트의 “ㅇ”)가 있는 업체는
   **전건 날짜가 함께 입력**되어 있었습니다. 억지로 채우지 않고 0으로 보고합니다.
 - **종결 = 0건.** 원본에 종결 상태를 저장하는 필드가 없습니다(§7 참조).
@@ -101,8 +105,14 @@ ${tbl(['진행 단계', '업체 수'], d.stageVocabulary.map(s => [s, S.byStage[
 
 ## 4. 상태 충돌 — ${conflicts.length}개사
 
-${tbl(['업체', '최종 상태', '우선순위 판정', '충돌 내용'],
-  conflicts.map(c => [nm(c), c.mou.status, c.mou.statusCandidate, msgs(c, 'statusConflict').join('<br>')]))}
+충돌이 검출된 업체는 **${conflicts.length}개사**입니다. 이 중 **${conflicts.filter(c => c.validation.conflictResolvedBySigning).length}개사**는
+MOU 체결일이 확인되어 최종 상태를 \`MOU 체결 완료\` 로 두었고(충돌 표시는 유지),
+체결 근거가 없는 **${conflicts.filter(c => !c.validation.conflictResolvedBySigning).length}개사**만 \`상태 충돌·담당자 확인 필요\` 로 남겼습니다.
+
+${tbl(['업체', '최종 상태', 'MOU 체결일', '충돌 내용'],
+  conflicts.map(c => [nm(c), c.mou.status, c.mou.signedAt || '없음', msgs(c, 'statusConflict').join('<br>')]))}
+
+> 원본 사이트에서는 이 ${conflicts.length}개사가 여전히 [진행 현황] 또는 [허들·보류]에 남아 있습니다. **원본 정리가 필요합니다.**
 
 ---
 
@@ -111,6 +121,19 @@ ${tbl(['업체', '최종 상태', '우선순위 판정', '충돌 내용'],
 정상 순서: 질문서 발송 → 회신 → 1차 미팅 → 2차 미팅 → MOU 체결
 
 ${tbl(['업체', '오류 내용'], dateErrs.map(c => [nm(c), msgs(c, 'dateError').join('<br>')]))}
+
+### 단계를 건너뛴 것은 오류로 보지 않습니다
+
+미팅 없이 바로 체결하거나 1차 미팅을 건너뛰고 체결하는 업체가 실제로 있습니다.
+따라서 **체결이 확인된 업체는 중간 단계 날짜가 비어 있어도 오류로 표시하지 않습니다.**
+대신 어떤 단계에 날짜 기록이 없는지를 \`mou.skippedSteps\` 에 참고 정보로만 남겼습니다
+(해당 업체 **${rows(c => (c.mou.skippedSteps || []).length).length}개사**).
+
+원본 사이트도 같은 전제를 두고 있습니다 — 내부 로직에 \`qReplySkipped\` / \`m1Skipped\` / \`m2Skipped\`
+(단계 생략) 플래그가 정의되어 있습니다.
+
+아직 체결되지 않은 업체의 단계 공백은 입력 누락일 수 있어 확인 필요로 계속 표시합니다
+(현재 ${rows(c => !c.mou.signedAt && c.validation.messages.some(m => m.message.indexOf('미팅 기록은 있으나') > -1)).length}개사).
 
 ---
 
@@ -148,11 +171,14 @@ ${tbl(['업체', '원본 행'],
 | 항목 | 건수 |
 |---|---|
 | 허들·보류로 등록된 업체(원본 행 기준) | ${rows(c => c.hold.isOnHold).length} |
+| 그중 이후 MOU 체결이 확인되어 결정 대기에서 제외 | ${rows(c => c.hold.resolvedBySigning).length} |
 | 그중 최종 상태가 “허들·보류” | ${S.byStatus['허들·보류']} |
-| 상태 충돌로 재분류된 건 | ${rows(c => c.hold.isOnHold && c.mou.status === '상태 충돌·담당자 확인 필요').length} |
 | **보류 사유 미기재** | **${S.missingHoldReason}** |
 | **다음 액션(결정) 미입력** | **${S.missingNextAction} (전건)** |
 | 진행 현황에 있으나 비고가 보류성 → 보류 의심 | ${rows(c => c.hold.isSuspectedHold).length} |
+
+**보류 사유·다음 액션 건수는 아직 결정이 필요한 업체 기준**입니다. 이후 MOU 체결이 확인된 허들 이력
+(${rows(c => c.hold.resolvedBySigning).length}개사)은 지나간 이력으로 보고 결정 대기 대상에서 제외했습니다.
 
 **다음 액션이 전건 미입력인 이유**: 원본의 “액션 결정”(재접근/종결/보류 유지/재발송/확인 필요) 셀렉트는
 브라우저 \`localStorage.hurdleActions\` 에만 저장되고 배포 데이터에 포함되지 않습니다.
@@ -171,6 +197,9 @@ ${tbl(['업체', '마지막 진행일', '경과일', '단계'],
 대부분 1~4일 차이로, 체결일과 등록일을 다르게 적었을 가능성이 높습니다.
 어느 쪽이 맞는지 알 수 없어 **양쪽 값을 모두 \`mou.signedAtSources\` 에 보존**하고,
 대표값 \`mou.signedAt\` 은 신규 MOU 프로세스 쪽 값을 사용했습니다.
+
+> **이 ${mismatch.length}개사는 전건 \`MOU 체결 완료\` 입니다.** 날짜 값만 며칠 어긋난 것이라 상태 분류에는 영향이 없고,
+> 어느 날짜가 맞는지 확인이 필요하다는 데이터 품질 메모입니다.
 
 ${tbl(['업체', '체결 완료 탭', '협력업체 리스트', '차이(일)'],
   mismatch.map(c => {

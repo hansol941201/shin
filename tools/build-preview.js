@@ -97,7 +97,10 @@ samples.push({
 });
 samples.push({
   heading: '8. 상태 충돌 · 날짜 오류',
-  note: `실제 수집 데이터 · 상태 충돌 ${S.statusConflict}개사, 날짜 오류 ${S.dateError}개사.`,
+  note: `실제 수집 데이터 · 충돌 검출 ${S.statusConflict}개사, 날짜 오류 ${S.dateError}개사.<br>
+    아래 업체는 [체결 완료]와 [허들·보류]에 동시 등록되어 있지만 <strong>MOU 체결일이 확인되어 최종 상태는 “MOU 체결 완료”</strong>입니다.
+    충돌을 지우는 것이 아니라 상태를 먼저 확정하고, 충돌 사실은 빨간 주의 박스와 [검증] 탭에 그대로 남겨 원본 정리 대상으로 추적합니다.
+    체결 근거가 없는 충돌 ${S.byStatus['상태 충돌·담당자 확인 필요']}개사만 “상태 충돌·담당자 확인 필요”로 남습니다.`,
   company: find('삼호종합건설㈜') || pick(c => c.validation.statusConflict, c => (c.validation.dateError ? 10 : 0) + c.validation.messages.length),
 });
 
