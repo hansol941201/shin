@@ -17,16 +17,18 @@ git clone --depth 1 https://github.com/pourservice/partner-dashboard /경로/par
 node tools/build-integration.js [원본 index.html 경로] [출력 폴더]
 node tools/build-preview.js
 node tools/build-docs.js
+node tools/build-list.js
 ```
 
 기본 경로는 `/home/user/pourservice/partner-dashboard/index.html` → `customer-card-migration/` 입니다.
-세 스크립트는 순서대로 실행해야 합니다(뒤의 둘이 `companies-integrated.json` 을 읽습니다).
+`build-integration.js` 를 먼저 실행해야 합니다(나머지 셋이 `companies-integrated.json` 을 읽습니다).
 
 | 스크립트 | 하는 일 | 산출물 |
 |---|---|---|
 | `build-integration.js` | 원본 `index.html` 의 내장 시드(`const DATA`, `CHANGELOG`, `CHECKLIST_DATA`)를 파싱해 업체 단위로 통합·검증 | `companies-integrated.json` |
 | `build-preview.js` | 상태별 샘플 8종을 실제 데이터에서 골라 시안·마크업 생성 | `customer-card-preview.html`, `customer-card-component.html` |
 | `build-docs.js` | 검증 수치를 JSON 에서 직접 계산해 보고서 작성 | `DATA-VALIDATION-REPORT.md` |
+| `build-list.js` | 전체 업체 표 목록을 데이터 내장 단일 HTML 로 생성 | `companies-list.html` |
 
 `customer-card-component.css` / `.js` / `README.md` / `CUSTOMER-CARD-MAPPING.md` 는 손으로 작성한 파일이라
 스크립트가 덮어쓰지 않습니다.

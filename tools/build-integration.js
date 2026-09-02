@@ -439,11 +439,8 @@ for (const rec of all) {
   rec.status = rec.conflicts.length ? STATUS.CONFLICT : candidate;
 
   // 4-4) 진행 단계
-  if (rec.stageNum == null) {
-    rec.stageLabel = rec.dates.mou ? STAGE[5] : null;
-  } else {
-    rec.stageLabel = STAGE[rec.stageNum];
-  }
+  if (rec.stageNum == null && rec.dates.mou) rec.stageNum = 5;  // 협력업체 리스트에서만 체결이 확인된 업체
+  rec.stageLabel = rec.stageNum == null ? null : STAGE[rec.stageNum];
   rec.seedStageMismatch = rec.seedStage != null && rec.stageNum != null && rec.seedStage !== rec.stageNum;
 
   // 현재 단계 진입일 = 해당 단계를 성립시킨 마지막 날짜

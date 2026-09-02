@@ -88,7 +88,7 @@ document.getElementById('lastUpdate').textContent = new Date().toLocaleDateStrin
 | 1차 미팅 완료 | 8 |
 | 2차 미팅 대기 | 0 |
 | 2차 미팅 완료·MOU 체결 준비 | 3 |
-| MOU 체결 | 93 |
+| MOU 체결 | 216 |
 
 “2차 미팅 대기”가 0인 이유: 원본이 2차 미팅 **예정일**(`m2Scheduled`)을 저장하지 않아
 해당 단계로 넘어가는 업체가 구조적으로 생기지 않습니다. 2차 미팅을 조율 중인 업체는

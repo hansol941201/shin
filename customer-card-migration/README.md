@@ -20,13 +20,18 @@
 | `customer-card-component.css` | `pcm-` 접두사 카드 스타일 | ✅ 그대로 복사 |
 | `customer-card-component.js` | 카드 렌더 + 상세 펼치기 + 탭 (`window.PCMCard`) | ✅ 그대로 복사 |
 | `customer-card-component.html` | 카드 마크업 구조 (빈 템플릿 + 실제 렌더 결과) | ✅ 참고용 마크업 |
-| `customer-card-preview.html` | 상태별 카드 8종 + 전체 353개사 시안 | ❌ 확인용 |
+| `companies-list.html` | **전체 353개사 표 목록** (검색·필터·정렬·상세 펼치기·CSV) | ❌ 확인·공유용 |
+| `customer-card-preview.html` | 상태별 카드 8종 + 전체 353개사 카드 시안 | ❌ 확인용 |
 | `CUSTOMER-CARD-MAPPING.md` | 필드 매핑표 (출처·변환·검증·표시 위치) | ❌ 문서 |
 | `DATA-VALIDATION-REPORT.md` | 중복·상태 충돌·날짜 오류·누락 보고서 | ❌ 문서 |
 | `README.md` | 이 문서 | ❌ 문서 |
 
-**먼저 볼 것** — `customer-card-preview.html` 을 브라우저에서 열면(더블클릭) 카드가 어떻게 보이는지 바로 확인할 수 있습니다.
-같은 폴더의 `.css` / `.js` 를 상대경로로 읽으므로 **폴더째** 열어야 합니다.
+**먼저 볼 것**
+
+- `companies-list.html` — **353개사 전체를 표로** 봅니다. 데이터가 파일 안에 들어 있어
+  **더블클릭 한 번으로 열립니다.** 다른 파일이 필요 없어 그대로 전달·공유해도 됩니다.
+- `customer-card-preview.html` — 카드가 어떻게 보이는지 확인합니다.
+  같은 폴더의 `.css` / `.js` 를 상대경로로 읽으므로 **폴더째** 열어야 합니다.
 
 ---
 
