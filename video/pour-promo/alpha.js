@@ -3,7 +3,7 @@
 const path=require('path');
 module.exports = async function measureAlpha(browser, A){
   const page=await browser.newPage();
-  await page.goto('file://'+path.resolve('film.html').replace(/[^/]+$/,''),{waitUntil:'domcontentloaded'}).catch(()=>{});
+  await page.goto('file://'+path.resolve(process.env.FILM||'film.html').replace(/[^/]+$/,''),{waitUntil:'domcontentloaded'}).catch(()=>{});
   const files={}; for(const k in A) files[k]=A[k].f;
   const res=await page.evaluate(async(files)=>{
     const out={};

@@ -7,7 +7,10 @@
     "setup": "npm i && mkdir -p fonts && cp node_modules/pretendard/dist/web/static/woff2/*.woff2 fonts/",
     "render": "node render.js",
     "probe": "node probe.js",
-    "audit": "node audit.js"
+    "audit": "node audit.js",
+    "render:v9": "FILM=film2.html OUT=POUR_홍보영상_v9_라이트.mp4 node render.js",
+    "audit:v9": "FILM=film2.html node audit.js",
+    "luma": "FILM=film2.html node luma.js"
   },
   "dependencies": {
     "image-size": "1.1.1",

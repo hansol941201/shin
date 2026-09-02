@@ -6,7 +6,7 @@ const TS=process.argv.slice(2).map(Number);
   await require('./alpha')(b,A);
   await p.addInitScript(a=>{window.__ASSETS__=a;},A);
   const errs=[];p.on('pageerror',e=>errs.push(String(e)));
-  await p.goto('file://'+path.resolve('film.html'),{waitUntil:'load'});
+  await p.goto('file://'+path.resolve(process.env.FILM||'film.html'),{waitUntil:'load'});
   await p.evaluate(()=>document.fonts.ready);
   await p.waitForFunction(()=>typeof window.seek==='function');
   if(errs.length){console.error('PAGE ERRORS:\n'+errs.join('\n'));process.exit(1);}
