@@ -404,15 +404,12 @@ function sectionLabel(parent,text,t,sub2){
 
   /* --- phase A : 3 keywords + 3 field cards --- */
   const A=sub(S,B.t0,L('s1',4)+.30,{o:[-22,0]});
-  /* 좌: 키워드 / 우: 현장 점검 실사 — 분할 레이아웃 */
-  const shot=mk('div','card el',px({left:1010,top:190,width:790,height:700}),A);
+  /* 배경 전체를 사진으로 채우고 좌측에 밝은 워시를 깔아 글자를 얹는다 */
+  const shot=mk('div','bg',{},A);
   slot(shot,['ai_inspect_1','apt_wide_1'],'태블릿으로 현장을 점검하는 건설 전문가',
        {left:0,top:0,width:'100%',height:'100%'});
-  revealCard(shot,L('s1',0)+.10,{d:.9,dir:'left',zoom:.16});
-  reg(T=>{ const im=shot.querySelector('img'); if(!im) return;
-    const q=inOut(c01((T-(L('s1',0)+.10))/9));      /* 느린 패닝 */
-    im.style.transformOrigin='60% 40%';
-    im.style.transform=`scale(${(1.16-0.10*outQuint(c01((T-(L('s1',0)+.10))/.9))+0.03*q).toFixed(4)}) translateX(${(-10*q).toFixed(1)}px)`; });
+  kenburns(shot,L('s1',0),L('s1',4)+.30,1.14,1.03,'62%','42%');   /* 느린 푸시인 */
+  mk('div','veil v-wash',{},A);
 
   const k=mk('div','el',px({left:120,top:314,opacity:1}),A,'<div class="kicker">새로운 공법을 찾는 이유</div>');
   wipe(k,L('s1',0)+.25,{d:.5,dir:'right'});
@@ -543,9 +540,11 @@ function sectionLabel(parent,text,t,sub2){
 
   /* --- diagnosis / conditions --- */
   const D=sub(S,L('s2',2)+.05,L('s2',4)-.05,{i:[22,0],o:[-22,0]});
-  const big=mk('div','card el',px({left:900,top:262,width:900,height:628}),D);
+  /* 좌측 리스트 / 우측 사진 — 사진을 배경 전체로 채우고 좌측에 밝은 워시 */
+  const big=mk('div','bg',{},D);
   slot(big,['ai_engineer_1','drone_1'],'현장 조건과 공법을 분석하는 엔지니어',{left:0,top:0,width:'100%',height:'100%'});
-  revealCard(big,L('s2',2)+.12,{d:.78,dir:'left'});
+  kenburns(big,L('s2',2),L('s2',4),1.12,1.02,'64%','46%');
+  mk('div','veil v-wash',{},D);
   const dk=mk('div','el',px({left:120,top:268,opacity:1}),D,'<div class="kicker">현장 진단</div>');
   wipe(dk,L('s2',2)+.15,{d:.44,dir:'right'});
   ['외벽 상태','적용 환경','공정 조건','현장 요구사항'].forEach((t,i)=>
