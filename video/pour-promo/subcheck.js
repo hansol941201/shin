@@ -1,7 +1,7 @@
 /* 모든 자막의 실제 색·대비·줄수·위치를 측정한다 */
 const {chromium}=require('playwright');const path=require('path');
 (async()=>{
-  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--allow-file-access-from-files']});
   const p=await b.newPage({viewport:{width:1920,height:1080}});
   const {A}=require('./assets').resolve('assets');
   await require('./alpha')(b,A);

@@ -16,12 +16,15 @@ module.exports = async function measureAlpha(browser, A){
         const g=c.getContext('2d',{willReadFrequently:true});
         g.drawImage(im,0,0,W,H);
         const d=g.getImageData(0,0,W,H).data;
-        /* 테두리 픽셀 중 투명 비율 — 누끼는 가장자리가 비어 있다 */
-        let edge=0, clear=0;
+        /* 누끼 판정: 전체 투명 픽셀 비율 + 네 모서리.
+           내용에 맞춰 타이트하게 자른 컷아웃은 테두리가 제품에 닿으므로
+           테두리 비율만으로는 놓친다. */
         const at=(x,y)=>d[(y*W+x)*4+3];
-        for(let x=0;x<W;x++){ for(const y of [0,H-1]){ edge++; if(at(x,y)<16) clear++; } }
-        for(let y=0;y<H;y++){ for(const x of [0,W-1]){ edge++; if(at(x,y)<16) clear++; } }
-        out[k]= clear/edge > 0.55;
+        let clear=0;
+        for(let q=3;q<d.length;q+=4) if(d[q]<16) clear++;
+        const ratio=clear/(W*H);
+        const corners=[at(0,0),at(W-1,0),at(0,H-1),at(W-1,H-1)].filter(v=>v<16).length;
+        out[k]= ratio>0.08 && corners>=3;
       }catch(e){ out[k]=false; }
     }
     return out;

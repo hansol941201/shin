@@ -3,7 +3,7 @@ const {chromium}=require('playwright');const path=require('path');
 const STEP=+(process.env.STEP||0.25);
 const SAFE={l:96,r:1824,t:40,b:1044};       // 5% 타이틀 세이프
 (async()=>{
-  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--allow-file-access-from-files']});
   const p=await b.newPage({viewport:{width:1920,height:1080}});
   const {A}=require('./assets').resolve('assets');
   await p.addInitScript(a=>{window.__ASSETS__=a;},A);

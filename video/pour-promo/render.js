@@ -12,7 +12,7 @@ console.log(`[assets] ${have.length}/${SLOTS.length} 매칭됨: ${have.join(', '
 if(miss.length) console.log(`[assets] 누락(플레이스홀더 처리): ${miss.join(', ')}`);
 
 (async()=>{
-  const browser=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--force-color-profile=srgb','--disable-lcd-text','--font-render-hinting=none']});
+  const browser=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--allow-file-access-from-files','--force-color-profile=srgb','--disable-lcd-text','--font-render-hinting=none']});
   const page=await browser.newPage({viewport:{width:W,height:H},deviceScaleFactor:1});
   await require('./alpha')(browser,A);
   await page.addInitScript(a=>{window.__ASSETS__=a;},A);

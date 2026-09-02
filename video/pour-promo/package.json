@@ -11,7 +11,8 @@
     "render:v9": "FILM=film2.html OUT=POUR_홍보영상_v9_라이트.mp4 node render.js",
     "audit:v9": "FILM=film2.html node audit.js",
     "luma": "FILM=film2.html node luma.js",
-    "subcheck": "FILM=film2.html node subcheck.js"
+    "subcheck": "FILM=film2.html node subcheck.js",
+    "cutout": "node cutout.js"
   },
   "dependencies": {
     "image-size": "1.1.1",
