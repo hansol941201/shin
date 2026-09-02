@@ -603,21 +603,35 @@ function sectionLabel(parent,text,t,sub2){
   const Bx=sub(S,C(2)-.15,C(3)-.15,{i:[24,0],o:[0,-24]});
   Bx.classList.add('deep');
   mk('div','veil v-hero',{},Bx);
-  const bgB=mk('div','bg',{opacity:.26},Bx);
+  const semN=series('seminar_',3).length;
+  const bgB=mk('div','bg',{opacity: semN===1 ? 1 : .26},Bx);
   slot(bgB,['seminar_1'],'공법설명회 현장',{left:0,top:0,width:'100%',height:'100%'});
-  kenburns(bgB,C(2),C(3),1.10,1.02);
-  mk('div','veil v-deep',{opacity:.55},Bx);
+  kenburns(bgB,C(2),C(3),1.10,1.02,'64%','44%');
+  /* 사진 한 장이면 배경으로 꽉 채우고 좌측만 어둡게 눌러 글자를 받는다 */
+  mk('div','veil '+(semN===1?'v-deepL':'v-deep'),{opacity: semN===1 ? 1 : .55},Bx);
   sectionLabel(Bx,'공법설명회',C(2)-.05,'POUR SUPPORT 02');
   const semLb={1:'공법설명회 현장',2:'공법설명회 발표',3:'시공사 참석'};
   const semIdx=series('seminar_',3), sn=semIdx.length;
-  const sw = sn>=3?496 : sn===2?700 : 960, sh = sn>=3?440 : sn===2?470 : 500;
-  const sgap=32, sspan=sn*sw+(sn-1)*sgap, sx0=(1920-sspan)/2;
-  semIdx.forEach((idx,i)=>{
-    const c=mk('div','card el',px({left:sx0+i*(sw+sgap),top:900-sh-60,width:sw,height:sh}),Bx);
-    slot(c,'seminar_'+idx,semLb[idx],{left:0,top:0,width:'100%',height:'100%'});
-    mk('div','cap',{},c,semLb[idx]);
-    revealCard(c,C(2)+.42+i*.36,{d:.62,dir:i%2?'right':'down'});
-  });
+  /* 사진이 여러 장일 때만 카드로 비교 배치한다. 한 장이면 위 배경으로 충분하다. */
+  if(sn>1){
+    const sw = sn>=3?496:700, sh = sn>=3?440:470;
+    const sgap=32, sspan=sn*sw+(sn-1)*sgap, sx0=(1920-sspan)/2;
+    semIdx.forEach((idx,i)=>{
+      const c=mk('div','card el',px({left:sx0+i*(sw+sgap),top:900-sh-60,width:sw,height:sh}),Bx);
+      slot(c,'seminar_'+idx,semLb[idx],{left:0,top:0,width:'100%',height:'100%'});
+      mk('div','cap',{},c,semLb[idx]);
+      revealCard(c,C(2)+.42+i*.36,{d:.62,dir:i%2?'right':'down'});
+    });
+  } else {
+    /* 한 장이면 배경 위에 핵심 장점만 얹는다. 자막과 같은 문장을 반복하지 않는다. */
+    const one=mk('div','el',px({left:120,top:452,width:900,opacity:1}),Bx);
+    const oneK=mk('div','',px({fontSize:22,fontWeight:700,letterSpacing:'.22em',
+      color:'var(--teal-400)',marginBottom:16,opacity:0}),one,'선정으로 이어지는 설명회');
+    const oneT=mk('div','',px({fontSize:72,fontWeight:900,color:'var(--ink-1)',
+      letterSpacing:'-.04em',lineHeight:'1.16',opacity:0}),one,'높은 선정률');
+    wipe(oneK,C(2)+.45,{d:.44,dir:'right'});
+    wipe(oneT,C(2)+.62,{d:.60,dir:'up'});
+  }
 
   /* ---- 3-3 기술자료 (stacking) ---- */
   const Cx=sub(S,C(3)-.15,C(4)-.15,{i:[0,24],o:[-24,0]});
@@ -756,7 +770,7 @@ function sectionLabel(parent,text,t,sub2){
   const ACT=[C(1)-.15, C(4)-.15, C(7)-.15];
   rail.forEach(([n,t],i)=>{
     const x=132+i*572;
-    const g=mk('div','el',px({left:x,top:132,width:540}),S);
+    const g=mk('div','el',px({left:x,top:132,width:540,zIndex:20}),S);
     const bar=mk('div','',px({width:540,height:4,background:'var(--hair-2)',borderRadius:2,marginBottom:22}),g);
     const fill=mk('div','',px({width:0,height:4,background:'var(--blue-500)',borderRadius:2}),bar);
     const rw=mk('div','',px({display:'flex',alignItems:'baseline',gap:16}),g);
@@ -782,9 +796,11 @@ function sectionLabel(parent,text,t,sub2){
 
   /* STEP 01 */
   const P1=sub(S,C(1)-.15,C(4)-.15,{i:[22,0],o:[-22,0]});
-  const c1=mk('div','card el',px({left:120,top:346,width:800,height:520}),P1);
+  /* 사진을 배경 전체로, 텍스트가 놓이는 우측만 밝게 눌러준다 */
+  const c1=mk('div','bg',{},P1);
   slot(c1,['hq_meeting','ai_meeting_1'],'밝은 회의실에서 도면을 검토하는 관계자',{left:0,top:0,width:'100%',height:'100%'});
-  revealCard(c1,C(1),{d:.70,dir:'right'});
+  kenburns(c1,C(1),C(4),1.12,1.02,'38%','46%');
+  mk('div','veil v-wash-r',{},P1);
   const h1=mk('div','el',px({left:1004,top:352,fontSize:44,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.035em'}),P1,'POUR 본사 미팅');
   wipe(h1,C(1)+.12,{d:.52,dir:'up'});
   ['기술 운영 방식','현장 지원 체계','협력 방향'].forEach((t,i)=>
@@ -792,9 +808,10 @@ function sectionLabel(parent,text,t,sub2){
 
   /* STEP 02 */
   const P2=sub(S,C(4)-.15,C(7)-.15,{i:[22,0],o:[-22,0]});
-  const c2=mk('div','card el',px({left:988,top:346,width:800,height:520}),P2);
+  const c2=mk('div','bg',{},P2);
   slot(c2,['site_visit','ai_inspect_1'],'시공사 방문 · 현장 확인',{left:0,top:0,width:'100%',height:'100%'});
-  revealCard(c2,C(4),{d:.70,dir:'left'});
+  kenburns(c2,C(4),C(7),1.12,1.02,'62%','46%');
+  mk('div','veil v-wash',{},P2);
   const h2=mk('div','el',px({left:120,top:352,fontSize:44,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.035em'}),P2,'시공사 방문 미팅');
   wipe(h2,C(4)+.12,{d:.52,dir:'up'});
   ['주요 사업','현장 운영 방향','POUR 적용 방식','지원 내용'].forEach((t,i)=>
