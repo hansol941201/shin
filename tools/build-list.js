@@ -6,66 +6,17 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const DIR = path.join(__dirname, '..', 'customer-card-migration');
+const Core = require('./integration-core.js');
 const d = JSON.parse(fs.readFileSync(path.join(DIR, 'companies-integrated.json'), 'utf8'));
 const S = d.summary;
+const CORE_SRC = fs.readFileSync(path.join(__dirname, 'integration-core.js'), 'utf8');
 
-// 목록에 필요한 필드만 담아 파일을 가볍게 유지한다
-const rows = d.companies.map((c, i) => ({
-  n: i + 1,
-  id: c.id,
-  name: c.companyName,
-  names: c.originalNames,
-  code: c.companyCode,
-  bizno: c.businessNumber,
-  status: c.mou.status,
-  cand: c.mou.statusCandidate,
-  stage: c.mou.stage,
-  partner: c.isExistingPartner,
-  newco: c.isNewCompany,
-  grade: c.grade,
-  mou: c.mou.signedAt,
-  year: c.mou.signedAt ? c.mou.signedAt.slice(0, 4) : null,
-  qs: c.mou.questionnaireSentAt, qr: c.mou.questionnaireReceivedAt,
-  m1: c.mou.firstMeetingCompletedAt, m2: c.mou.secondMeetingCompletedAt,
-  raw: c.mou.rawLabels,
-  skipped: c.mou.skippedSteps || [],
-  mouSrc: c.mou.signedAtSources,
-  plMark: c.mou.partnerListMouMark,
-  attempts: (c.mou.attempts || []).length > 1 ? c.mou.attempts : null,
-  last: c.lastActivityAt,
-  days: c.mou.elapsedDays,
-  stalled: c.mou.isStalled,
-  hold: c.hold.isOnHold,
-  holdReason: c.hold.reason,
-  action: c.mou.nextAction,
-  suspect: c.hold.isSuspectedHold,
-  tabs: c.sourceTabs,
-  region: c.profile.region, ceo: c.profile.ceo, phone: c.profile.phone,
-  email: c.profile.email, addr: c.profile.address, capital: c.profile.capital,
-  sites: c.sites.map(s => s.rawText),
-  notes: c.notes,
-  gh: c.gradeHistory,
-  sales: c.salesTotal,
-  v: c.validation,
-}));
+// 목록 행은 코어가 만든다 — 동기화 시 브라우저에서 도는 함수와 동일하다.
+const rows = Core.toListRows(d);
 
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const years = [...new Set(rows.map(r => r.year).filter(Boolean))].sort().reverse();
 
-const tiles = [
-  ['all', '전체 고유 업체', S.totalCompanies],
-  ['s:MOU 체결 완료', 'MOU 체결 완료', S.byStatus['MOU 체결 완료']],
-  ['s:MOU 체결 완료·체결일 미확인', '체결일 미확인', S.byStatus['MOU 체결 완료·체결일 미확인']],
-  ['s:MOU 진행 중', 'MOU 진행 중', S.byStatus['MOU 진행 중']],
-  ['s:허들·보류', '허들·보류', S.byStatus['허들·보류']],
-  ['s:종결', '종결', S.byStatus['종결']],
-  ['s:기존 협력업체·MOU 상태 확인 필요', '협력업체·상태 확인 필요', S.byStatus['기존 협력업체·MOU 상태 확인 필요']],
-  ['s:상태 충돌·담당자 확인 필요', '상태 충돌·담당자 확인', S.byStatus['상태 충돌·담당자 확인 필요']],
-  ['f:possibleDuplicate', '중복 의심', S.possibleDuplicate],
-  ['f:dateError', '날짜 오류', S.dateError],
-  ['f:mouDateMismatch', '체결일 값 불일치', S.mouDateMismatch],
-  ['f:__stalled', '장기 미진행', S.stalled],
-];
 
 const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -109,6 +60,30 @@ font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-it
 .tile[data-k="s:기존 협력업체·MOU 상태 확인 필요"] b{color:var(--unknown)}
 .tile[data-k="s:상태 충돌·담당자 확인 필요"] b,.tile[data-k^="f:"] b{color:var(--alert)}
 
+.syncbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:12px;padding:10px 14px;
+background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:12.5px;color:var(--mid)}
+.syncbar .dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;margin-right:6px}
+.syncbar.snap{border-left:3px solid var(--unknown)}
+.syncbar.ok{border-left:3px solid var(--done)}
+.syncbar.busy{border-left:3px solid var(--ongoing)}
+.syncbar.err{border-left:3px solid var(--alert);background:var(--alertBg);color:var(--alert)}
+.syncbar strong{color:var(--fg)}
+.syncbar.err strong{color:var(--alert)}
+.syncbar .grow{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.syncreport{margin-top:12px;background:var(--card);border:1px solid var(--line);
+border-left:3px solid var(--ongoing);border-radius:10px;padding:14px 16px}
+.syncreport h3{margin:0 0 8px;font-size:14px;font-weight:800}
+.syncreport h4{margin:14px 0 6px;font-size:12px;color:var(--mid);font-weight:700}
+.syncreport .delta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.syncreport .delta span{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-size:12px}
+.syncreport .delta span b{font-variant-numeric:tabular-nums}
+.syncreport .up{color:var(--done)}.syncreport .down{color:var(--alert)}
+.syncreport ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.syncreport li{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:12px}
+.syncreport .none{color:var(--lt);font-size:12px}
+.syncreport .close{float:right}
+.spin{display:inline-block;animation:pcmspin .9s linear infinite}
+@keyframes pcmspin{to{transform:rotate(360deg)}}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 10px}
 .bar input[type=search]{flex:1 1 220px;min-width:0;padding:8px 11px;border:1px solid var(--line2);border-radius:7px;background:#fff}
 .bar select{padding:8px 10px;border:1px solid var(--line2);border-radius:7px;background:#fff}
@@ -168,7 +143,8 @@ tr.detail>td{background:#f7f8fb;padding:14px 16px}
 @media (max-width:640px){.wrap{padding:14px 10px 48px}h1{font-size:17px}th,td{padding:7px 8px}}
 @media print{
   body{background:#fff}
-  .bar,.headbtns,.tiles,.btn{display:none}
+  .bar,.headbtns,.tiles,.btn,.syncreport .close{display:none}
+  .syncbar{border:1px solid #ccc}
   .tablewrap{border:none;overflow:visible}
   th{position:static}
   tr{break-inside:avoid}
@@ -187,50 +163,30 @@ tr.detail>td{background:#f7f8fb;padding:14px 16px}
     읽기 전용으로 조사해 업체 단위로 통합한 목록입니다. 원본 ${S.rawRowsCollected.toLocaleString('ko-KR')}행 → 고유 업체 <strong>${S.totalCompanies}개사</strong>.<br>
     확인되지 않은 값은 지어내지 않고 <strong>“미확인”</strong>으로 표시했습니다. 행을 클릭하면 상세가 펼쳐집니다.
   </p>
-  <div class="asof">
-    <b>데이터 기준일 ${d.sourceUpdatedAt}</b>
-    <b>조사일 ${d.generatedAt}</b>
-    <b>데이터 내 최신 날짜 ${d.source.latestDateInData}</b>
-    <b>경과일 ${d.generatedAt} 기준</b>
-  </div>
+  <div class="asof" id="asof"></div>
   <div class="headbtns">
-    <button class="btn primary" id="csv">현재 목록 CSV 내려받기</button>
+    <button class="btn primary" id="sync">🔄 원본과 동기화</button>
+    <button class="btn" id="syncFileBtn" title="사내망·CORS 등으로 직접 연결이 막힐 때 사용">파일로 동기화</button>
+    <button class="btn" id="csv">현재 목록 CSV 내려받기</button>
     <button class="btn" id="expandAll">전체 펼치기</button>
     <button class="btn" id="printBtn">인쇄</button>
     <a class="btn" href="${d.source.url}" target="_blank" rel="noopener">원본 사이트 열기 ↗</a>
   </div>
 </header>
 
-<div class="tiles" id="tiles">
-${tiles.map(([k, label, v]) => `  <button class="tile${k === 'all' ? ' on' : ''}" data-k="${esc(k)}"><b>${v}</b><span>${esc(label)}</span></button>`).join('\n')}
-</div>
+<div class="syncbar" id="syncbar"></div>
+<section class="syncreport" id="syncreport" hidden></section>
+<input type="file" id="syncFile" accept=".html,.htm,.json" multiple hidden>
+
+<div class="tiles" id="tiles"></div>
 
 <div class="bar">
   <input type="search" id="q" placeholder="업체명 · 업체코드 · 대표자 검색" aria-label="검색">
-  <select id="fStatus" aria-label="최종 상태"><option value="">최종 상태 — 전체</option>
-${d.statusVocabulary.map(s => `    <option value="${esc(s)}">${esc(s)} (${S.byStatus[s] || 0})</option>`).join('\n')}
-  </select>
-  <select id="fStage" aria-label="진행 단계"><option value="">진행 단계 — 전체</option>
-${d.stageVocabulary.map(s => `    <option value="${esc(s)}">${esc(s)} (${rows.filter(r => r.stage === s).length})</option>`).join('\n')}
-    <option value="__none">단계 없음 (협력업체 리스트 전용) (${rows.filter(r => !r.stage).length})</option>
-  </select>
-  <select id="fYear" aria-label="체결 연도"><option value="">체결 연도 — 전체</option>
-${years.map(y => `    <option value="${y}">${y}년 (${rows.filter(r => r.year === y).length})</option>`).join('\n')}
-  </select>
-  <select id="fPartner" aria-label="기존 협력업체"><option value="">기존 협력업체 — 전체</option>
-    <option value="y">예 (${S.existingPartners})</option>
-    <option value="n">아니오 (${S.totalCompanies - S.existingPartners})</option>
-  </select>
-  <select id="fFlag" aria-label="검증"><option value="">검증 — 전체</option>
-    <option value="statusConflict">상태 충돌 (${S.statusConflict})</option>
-    <option value="dateError">날짜 오류 (${S.dateError})</option>
-    <option value="possibleDuplicate">중복 의심 (${S.possibleDuplicate})</option>
-    <option value="mouDateMismatch">체결일 값 불일치 (${S.mouDateMismatch})</option>
-    <option value="missingMouDate">체결일 미확인 (${S.missingMouDate})</option>
-    <option value="missingHoldReason">허들 사유 미기재 (${S.missingHoldReason})</option>
-    <option value="partnerWithoutMouStatus">협력업체·MOU 상태 없음 (${S.partnerWithoutMouStatus})</option>
-    <option value="__stalled">장기 미진행 (${S.stalled})</option>
-  </select>
+  <select id="fStatus" aria-label="최종 상태"></select>
+  <select id="fStage" aria-label="진행 단계"></select>
+  <select id="fYear" aria-label="체결 연도"></select>
+  <select id="fPartner" aria-label="기존 협력업체"></select>
+  <select id="fFlag" aria-label="검증"></select>
   <label class="chk"><input type="checkbox" id="pii"> 개인정보 표시</label>
   <button class="btn" id="reset">필터 초기화</button>
   <span class="count" id="count"></span>
@@ -274,11 +230,33 @@ ${years.map(y => `    <option value="${y}">${y}년 (${rows.filter(r => r.year ==
 </p>
 </div>
 
-<script id="data" type="application/json">${JSON.stringify(rows).replace(/</g, '\\u003c')}</script>
+<!-- 통합 로직 원본. 빌드(Node)와 동기화(브라우저)가 같은 코드를 쓴다. -->
+<script>${CORE_SRC.replace(/<\/script/gi, '<\\/script')}</script>
+<script id="data" type="application/json">${JSON.stringify({
+  rows,
+  summary: S,
+  statusVocabulary: d.statusVocabulary,
+  stageVocabulary: d.stageVocabulary,
+  meta: {
+    generatedAt: d.generatedAt,
+    sourceUpdatedAt: d.sourceUpdatedAt,
+    sourceUrl: d.source.url,
+    latestDateInData: d.source.latestDateInData,
+    rawRows: S.rawRowsCollected,
+    firebaseUrl: 'https://pour-partner-dashboard-default-rtdb.asia-southeast1.firebasedatabase.app',
+  },
+}).replace(/</g, '\\u003c')}</script>
 <script>
 (function(){
 'use strict';
-var ROWS = JSON.parse(document.getElementById('data').textContent);
+var BOOT = JSON.parse(document.getElementById('data').textContent);
+var ROWS = BOOT.rows;
+var SUMMARY = BOOT.summary;
+var VOCAB = { status: BOOT.statusVocabulary, stage: BOOT.stageVocabulary };
+var META = BOOT.meta;
+var BASELINE = BOOT.rows;                 // 내장 스냅샷 (비교 기준)
+var SOURCE = { kind: 'snapshot', at: META.sourceUpdatedAt, note: null };
+var CHANGED = null;                       // 동기화 후 변경된 업체명 집합
 var NA = '미확인';
 var VAR = {'MOU 체결 완료':'done','MOU 체결 완료·체결일 미확인':'nodate','MOU 진행 중':'ongoing',
 '허들·보류':'hold','종결':'closed','기존 협력업체·MOU 상태 확인 필요':'unknown','상태 충돌·담당자 확인 필요':'alert'};
@@ -298,11 +276,83 @@ function mBiz(s){if(!has(s))return s;var x=String(s).replace(/\\D/g,'');return x
 var P={ceo:mName,phone:mPhone,email:mMail,addr:mAddr,bizno:mBiz};
 function pii(k,v){return showPII?v:(P[k]?P[k](v):v);}
 
-var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',sort:'n',dir:1,tile:'all'};
+var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',sort:'n',dir:1,tile:'all',changedOnly:false};
+
+// ── 현재 데이터에서 요약 수치를 다시 계산 (동기화 후에도 화면 숫자가 맞도록) ──
+function recount(rowsArr){
+  var byStatus={}; VOCAB.status.forEach(function(k){byStatus[k]=0;});
+  var byStage={}; VOCAB.stage.forEach(function(k){byStage[k]=0;});
+  var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateMismatch:0,missingMouDate:0,
+         missingHoldReason:0,partnerWithoutMouStatus:0,__stalled:0};
+  var noStage=0, partners=0, years={};
+  rowsArr.forEach(function(r){
+    if(byStatus[r.status]!==undefined)byStatus[r.status]++;
+    if(r.stage){ if(byStage[r.stage]!==undefined)byStage[r.stage]++; } else noStage++;
+    if(r.partner)partners++;
+    if(r.year)years[r.year]=(years[r.year]||0)+1;
+    Object.keys(f).forEach(function(k){ if(k==='__stalled'){ if(r.stalled)f[k]++; } else if(r.v&&r.v[k])f[k]++; });
+  });
+  return {total:rowsArr.length,byStatus:byStatus,byStage:byStage,noStage:noStage,partners:partners,years:years,flags:f};
+}
+var COUNTS = recount(ROWS);
+
+var TILE_DEFS=[
+  ['all','전체 고유 업체',function(){return COUNTS.total;}],
+  ['s:MOU 체결 완료','MOU 체결 완료',function(){return COUNTS.byStatus['MOU 체결 완료'];}],
+  ['s:MOU 체결 완료·체결일 미확인','체결일 미확인',function(){return COUNTS.byStatus['MOU 체결 완료·체결일 미확인'];}],
+  ['s:MOU 진행 중','MOU 진행 중',function(){return COUNTS.byStatus['MOU 진행 중'];}],
+  ['s:허들·보류','허들·보류',function(){return COUNTS.byStatus['허들·보류'];}],
+  ['s:종결','종결',function(){return COUNTS.byStatus['종결'];}],
+  ['s:기존 협력업체·MOU 상태 확인 필요','협력업체·상태 확인 필요',function(){return COUNTS.byStatus['기존 협력업체·MOU 상태 확인 필요'];}],
+  ['s:상태 충돌·담당자 확인 필요','상태 충돌·담당자 확인',function(){return COUNTS.byStatus['상태 충돌·담당자 확인 필요'];}],
+  ['f:possibleDuplicate','중복 의심',function(){return COUNTS.flags.possibleDuplicate;}],
+  ['f:dateError','날짜 오류',function(){return COUNTS.flags.dateError;}],
+  ['f:mouDateMismatch','체결일 값 불일치',function(){return COUNTS.flags.mouDateMismatch;}],
+  ['f:__stalled','장기 미진행',function(){return COUNTS.flags.__stalled;}]
+];
+
+function renderControls(){
+  document.getElementById('tiles').innerHTML=TILE_DEFS.map(function(t){
+    return '<button class="tile" data-k="'+esc(t[0])+'"><b>'+t[2]()+'</b><span>'+esc(t[1])+'</span></button>';
+  }).join('');
+  function opts(sel,head,list,cur){
+    var el=document.getElementById(sel);
+    el.innerHTML='<option value="">'+esc(head)+'</option>'+list.map(function(o){
+      return '<option value="'+esc(o[0])+'">'+esc(o[1])+' ('+o[2]+')</option>';}).join('');
+    el.value=cur||'';
+  }
+  opts('fStatus','최종 상태 — 전체',VOCAB.status.map(function(k){return [k,k,COUNTS.byStatus[k]];}),state.status);
+  opts('fStage','진행 단계 — 전체',VOCAB.stage.map(function(k){return [k,k,COUNTS.byStage[k]];})
+       .concat([['__none','단계 없음 (협력업체 리스트 전용)',COUNTS.noStage]]),state.stage);
+  opts('fYear','체결 연도 — 전체',Object.keys(COUNTS.years).sort().reverse()
+       .map(function(y){return [y,y+'년',COUNTS.years[y]];}),state.year);
+  opts('fPartner','기존 협력업체 — 전체',[['y','예',COUNTS.partners],['n','아니오',COUNTS.total-COUNTS.partners]],state.partner);
+  opts('fFlag','검증 — 전체',[
+    ['statusConflict','상태 충돌',COUNTS.flags.statusConflict],
+    ['dateError','날짜 오류',COUNTS.flags.dateError],
+    ['possibleDuplicate','중복 의심',COUNTS.flags.possibleDuplicate],
+    ['mouDateMismatch','체결일 값 불일치',COUNTS.flags.mouDateMismatch],
+    ['missingMouDate','체결일 미확인',COUNTS.flags.missingMouDate],
+    ['missingHoldReason','허들 사유 미기재',COUNTS.flags.missingHoldReason],
+    ['partnerWithoutMouStatus','협력업체·MOU 상태 없음',COUNTS.flags.partnerWithoutMouStatus]
+  ].concat(CHANGED?[['__changed','이번 동기화로 바뀐 업체',CHANGED.size]]:[]),state.flag);
+  document.getElementById('asof').innerHTML=[
+    '데이터 기준일 '+esc(SOURCE.kind==='snapshot'?META.sourceUpdatedAt:SOURCE.at),
+    '조사일 '+esc(META.generatedAt),
+    '데이터 내 최신 날짜 '+esc(META.latestDateInData),
+    '경과일 '+esc(META.generatedAt)+' 기준'
+  ].map(function(t){return '<b>'+t+'</b>';}).join('');
+  syncTiles();
+}
+
 var view=[];
 var openIds={};
 
-function flagOf(r,f){ if(f==='__stalled')return !!r.stalled; return !!(r.v&&r.v[f]); }
+function flagOf(r,f){
+  if(f==='__stalled')return !!r.stalled;
+  if(f==='__changed')return !!(CHANGED&&CHANGED.has(r.name));
+  return !!(r.v&&r.v[f]);
+}
 
 function apply(){
   var q=state.q.trim().toLowerCase();
@@ -496,6 +546,7 @@ document.getElementById('tiles').addEventListener('click',function(e){
   syncTiles();apply();
 });
 function bindSel(id,key){document.getElementById(id).addEventListener('change',function(){state[key]=this.value;syncTiles();apply();});}
+// 옵션이 다시 그려져도 리스너가 유지되도록 change 는 요소 자체에 건다 (innerHTML 교체는 요소를 지우지 않음)
 bindSel('fStatus','status');bindSel('fStage','stage');bindSel('fYear','year');bindSel('fPartner','partner');bindSel('fFlag','flag');
 document.getElementById('q').addEventListener('input',function(){state.q=this.value;apply();});
 document.getElementById('pii').addEventListener('change',function(){showPII=this.checked;render();});
@@ -538,6 +589,240 @@ document.getElementById('csv').addEventListener('click',function(){
   setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 });
 
+
+// ═══════════════════════════════════════════════════════════
+// 원본 사이트 동기화
+//
+// 원본이 화면에 그리는 데이터 = index.html 안의 시드(const DATA)
+//                              + Firebase Realtime Database 의 수정분
+// 두 곳을 모두 읽어 IntegrationCore 로 다시 통합한다. 통합 규칙은 빌드 때와 같은 코드다.
+// 원본은 읽기만 하고 아무것도 쓰지 않는다.
+// ═══════════════════════════════════════════════════════════
+var SYNC_CACHE_KEY='pour_mou_list_sync_v1';
+
+function setSyncBar(kind,html,actions){
+  var el=document.getElementById('syncbar');
+  el.className='syncbar '+kind;
+  el.innerHTML=html+(actions?'<span class="grow">'+actions+'</span>':'');
+}
+function idleBar(){
+  if(SOURCE.kind==='snapshot'){
+    setSyncBar('snap','<strong>내장 스냅샷</strong> · 원본 배포 '+esc(META.sourceUpdatedAt)
+      +' 기준 · 파일에 저장된 데이터를 보고 있습니다. 최신 상태를 보려면 [원본과 동기화]를 누르세요.');
+  }else{
+    setSyncBar('ok','<strong>동기화됨</strong> · '+esc(SOURCE.at)
+      +(SOURCE.note?' · '+esc(SOURCE.note):'')
+      +' · 이 결과는 이 브라우저에만 저장됩니다.',
+      '<button class="btn" id="dlJson">통합 JSON 내려받기</button>'
+      +'<button class="btn" id="clearSync">스냅샷으로 되돌리기</button>');
+    var dl=document.getElementById('dlJson'); if(dl)dl.onclick=downloadSynced;
+    var cs=document.getElementById('clearSync'); if(cs)cs.onclick=clearSync;
+  }
+}
+
+function fetchText(url){
+  return fetch(url,{cache:'no-store',mode:'cors'}).then(function(res){
+    if(!res.ok)throw new Error('HTTP '+res.status+' — '+url);
+    return res.text();
+  });
+}
+
+function runSync(sourceHtml,fbJson,label){
+  var parsed=IntegrationCore.parseSourceHtml(sourceHtml);
+  var merged=IntegrationCore.applySiteOverrides(parsed.DATA,fbJson||{});
+  var payload=IntegrationCore.build({
+    DATA:merged.DATA,
+    hurdleActions:merged.hurdleActions,
+    overridesApplied:merged.applied,
+    changelog:parsed.changelog,
+    checklist:parsed.checklist,
+    generatedAt:new Date().toISOString().slice(0,10),
+    sourceUpdatedAt:new Date().toISOString().slice(0,10),
+    sourceUrl:META.sourceUrl
+  });
+  applySynced(payload,label,merged.applied);
+  try{
+    localStorage.setItem(SYNC_CACHE_KEY,JSON.stringify({at:new Date().toISOString(),label:label,payload:payload}));
+  }catch(e){ /* 용량 초과 등 — 화면 반영에는 지장 없음 */ }
+}
+
+var SYNCED_PAYLOAD=null;
+function applySynced(payload,label,applied){
+  SYNCED_PAYLOAD=payload;
+  var next=IntegrationCore.toListRows(payload);
+  var diff=diffRows(BASELINE,next);
+  ROWS=next; COUNTS=recount(ROWS);
+  CHANGED=new Set(diff.changed.map(function(x){return x.name;})
+    .concat(diff.added.map(function(x){return x.name;})));
+  SOURCE={kind:'synced',at:new Date().toLocaleString('ko-KR'),note:label};
+  openIds={};
+  renderControls(); apply();
+  renderReport(diff,applied);
+  idleBar();
+}
+
+function diffRows(oldRows,newRows){
+  var om={},nm={};
+  oldRows.forEach(function(r){om[r.name]=r;});
+  newRows.forEach(function(r){nm[r.name]=r;});
+  var added=[],removed=[],changed=[];
+  newRows.forEach(function(r){
+    var o=om[r.name];
+    if(!o){added.push(r);return;}
+    var fields=[];
+    if(o.status!==r.status)fields.push({f:'최종 상태',a:o.status,b:r.status});
+    if(o.stage!==r.stage)fields.push({f:'진행 단계',a:o.stage||'미확인',b:r.stage||'미확인'});
+    if(o.mou!==r.mou)fields.push({f:'MOU 체결일',a:o.mou||'미확인',b:r.mou||'미확인'});
+    if(o.grade!==r.grade)fields.push({f:'등급',a:o.grade||'미확인',b:r.grade||'미확인'});
+    if((o.action||'')!==(r.action||''))fields.push({f:'다음 액션',a:o.action||'미확인',b:r.action||'미확인'});
+    if((o.holdReason||'')!==(r.holdReason||''))fields.push({f:'보류 사유',a:o.holdReason||'미기재',b:r.holdReason||'미기재'});
+    if(o.qs!==r.qs)fields.push({f:'질문서 발송',a:o.qs||'미확인',b:r.qs||'미확인'});
+    if(o.qr!==r.qr)fields.push({f:'질문서 회신',a:o.qr||'미확인',b:r.qr||'미확인'});
+    if(o.m1!==r.m1)fields.push({f:'1차 미팅',a:o.m1||'미확인',b:r.m1||'미확인'});
+    if(o.m2!==r.m2)fields.push({f:'2차 미팅',a:o.m2||'미확인',b:r.m2||'미확인'});
+    if(fields.length)changed.push({name:r.name,fields:fields});
+  });
+  oldRows.forEach(function(r){ if(!nm[r.name])removed.push(r); });
+  return {added:added,removed:removed,changed:changed,oldCounts:recount(oldRows),newCounts:recount(newRows)};
+}
+
+function renderReport(diff,applied){
+  var el=document.getElementById('syncreport');
+  var a=diff.oldCounts,b=diff.newCounts;
+  function delta(label,x,y){
+    var d=y-x;
+    return '<span>'+esc(label)+' <b>'+x+' → '+y+'</b>'
+      +(d?' <b class="'+(d>0?'up':'down')+'">'+(d>0?'+':'')+d+'</b>':'')+'</span>';
+  }
+  var deltas=[delta('전체 업체',a.total,b.total)]
+    .concat(VOCAB.status.map(function(k){return delta(k,a.byStatus[k],b.byStatus[k]);}))
+    .concat([delta('상태 충돌',a.flags.statusConflict,b.flags.statusConflict),
+             delta('날짜 오류',a.flags.dateError,b.flags.dateError),
+             delta('중복 의심',a.flags.possibleDuplicate,b.flags.possibleDuplicate)]);
+
+  function list(title,items,fmt){
+    if(!items.length)return '<h4>'+esc(title)+' (0)</h4><p class="none">없음</p>';
+    var cap=items.slice(0,50);
+    return '<h4>'+esc(title)+' ('+items.length+')</h4><ul>'+cap.map(fmt).join('')+'</ul>'
+      +(items.length>cap.length?'<p class="none">… 외 '+(items.length-cap.length)+'건. [검증 — 이번 동기화로 바뀐 업체] 필터로 전체를 볼 수 있습니다.</p>':'');
+  }
+
+  var noChange=!diff.added.length&&!diff.removed.length&&!diff.changed.length;
+  el.hidden=false;
+  el.innerHTML='<button class="btn close" id="closeReport">닫기</button>'
+    +'<h3>동기화 결과</h3>'
+    +'<p class="none">내장 스냅샷(원본 배포 '+esc(META.sourceUpdatedAt)+' 기준)과 방금 받아온 원본을 비교했습니다.'
+    +(applied&&applied.length?' 원격 수정분: '+esc(applied.join(', '))+'.':' 원격에 별도 수정분은 없었습니다.')+'</p>'
+    +(noChange
+      ? '<p class="none" style="margin-top:10px"><strong>변경 없음</strong> — 원본이 내장 스냅샷과 같습니다.</p>'
+      : '<div class="delta" style="margin-top:10px">'+deltas.join('')+'</div>'
+        +list('신규 업체',diff.added,function(r){return '<li><strong>'+esc(r.name)+'</strong> — '+esc(r.status)+' / '+esc(r.stage||'미확인')+'</li>';})
+        +list('사라진 업체',diff.removed,function(r){return '<li><strong>'+esc(r.name)+'</strong> — 원본에서 삭제됨 (이전 상태: '+esc(r.status)+')</li>';})
+        +list('변경된 업체',diff.changed,function(c){
+            return '<li><strong>'+esc(c.name)+'</strong><br><span class="src">'
+              +c.fields.map(function(f){return esc(f.f)+': '+esc(f.a)+' → '+esc(f.b);}).join(' · ')+'</span></li>';}));
+  document.getElementById('closeReport').onclick=function(){el.hidden=true;};
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function downloadSynced(){
+  if(!SYNCED_PAYLOAD)return;
+  var blob=new Blob([JSON.stringify(SYNCED_PAYLOAD,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='companies-integrated_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
+function clearSync(){
+  try{localStorage.removeItem(SYNC_CACHE_KEY);}catch(e){}
+  ROWS=BASELINE; COUNTS=recount(ROWS); CHANGED=null; SYNCED_PAYLOAD=null;
+  SOURCE={kind:'snapshot',at:META.sourceUpdatedAt,note:null};
+  if(state.flag==='__changed')state.flag='';
+  openIds={}; document.getElementById('syncreport').hidden=true;
+  renderControls(); apply(); idleBar();
+}
+
+function doSync(){
+  setSyncBar('busy','<span class="spin">⟳</span> <strong>원본에서 데이터를 받아오는 중…</strong>');
+  var base=META.sourceUrl.replace(/\\/?$/,'/');
+  var htmlUrl=base+'index.html?_='+Date.now();
+  var sourceHtml=null;
+  fetchText(htmlUrl)
+    .then(function(txt){
+      sourceHtml=txt;
+      // 원본 HTML 에 적힌 databaseURL 을 그대로 사용 (바뀌어도 따라감)
+      var m=txt.match(/databaseURL:\\s*["']([^"']+)["']/);
+      var fbBase=(m?m[1]:META.firebaseUrl).replace(/\\/?$/,'');
+      return fetchText(fbBase+'/partner.json?_='+Date.now())
+        .then(function(j){ try{return JSON.parse(j);}catch(e){return {};} })
+        .catch(function(e){ FB_ERR=e; return null; });
+    })
+    .then(function(fb){
+      var label=fb?'원본 HTML + Firebase 수정분':'원본 HTML만 (Firebase 읽기 실패 — 시드 기준)';
+      runSync(sourceHtml,fb,label);
+      if(!fb&&FB_ERR){
+        var el=document.getElementById('syncbar');
+        el.insertAdjacentHTML('beforeend','<span style="color:var(--nodate)">· Firebase 수정분은 읽지 못했습니다 ('+esc(FB_ERR.message)+')</span>');
+      }
+    })
+    .catch(function(err){
+      setSyncBar('err','<strong>동기화 실패</strong> — '+esc(err.message||String(err))
+        +'<br>브라우저가 로컬 파일(file://)에서 외부 사이트를 읽지 못하도록 막았을 가능성이 큽니다(CORS). '
+        +'원본 사이트를 브라우저로 연 뒤 <em>다른 이름으로 저장</em>해서 받은 index.html 을 [파일로 동기화]로 넣으면 같은 결과를 얻습니다.',
+        '<button class="btn" id="retrySync">다시 시도</button><button class="btn" id="openSrc">원본 열기</button>');
+      var r=document.getElementById('retrySync'); if(r)r.onclick=doSync;
+      var o=document.getElementById('openSrc'); if(o)o.onclick=function(){window.open(META.sourceUrl,'_blank','noopener');};
+    });
+}
+var FB_ERR=null;
+
+// 파일로 동기화 — CORS 로 직접 연결이 막힐 때의 대안
+document.getElementById('syncFileBtn').addEventListener('click',function(){
+  document.getElementById('syncFile').click();
+});
+document.getElementById('syncFile').addEventListener('change',function(e){
+  var files=[].slice.call(e.target.files||[]);
+  if(!files.length)return;
+  var htmlFile=files.filter(function(f){return /\\.html?$/i.test(f.name);})[0];
+  var jsonFile=files.filter(function(f){return /\\.json$/i.test(f.name);})[0];
+  if(!htmlFile){
+    setSyncBar('err','<strong>원본 index.html 이 필요합니다.</strong> 원본 사이트를 브라우저로 연 뒤 저장한 HTML 파일을 선택하세요. (Firebase 수정분 JSON 을 함께 선택하면 같이 반영합니다.)');
+    e.target.value='';return;
+  }
+  setSyncBar('busy','<span class="spin">⟳</span> <strong>파일에서 읽는 중…</strong>');
+  var read=function(f){return new Promise(function(res,rej){
+    var fr=new FileReader(); fr.onload=function(){res(fr.result);}; fr.onerror=rej; fr.readAsText(f,'utf-8');});};
+  read(htmlFile).then(function(txt){
+    return (jsonFile?read(jsonFile).then(function(j){try{return JSON.parse(j);}catch(x){return null;}}):Promise.resolve(null))
+      .then(function(fb){
+        runSync(txt,fb,'파일'+(fb?' (HTML + Firebase JSON)':' (HTML만)'));
+      });
+  }).catch(function(err){
+    setSyncBar('err','<strong>파일을 읽지 못했습니다</strong> — '+esc(err.message||String(err)));
+  });
+  e.target.value='';
+});
+document.getElementById('sync').addEventListener('click',doSync);
+
+// 이전에 동기화한 결과가 이 브라우저에 남아 있으면 복원
+(function restore(){
+  var raw=null; try{raw=localStorage.getItem(SYNC_CACHE_KEY);}catch(e){}
+  if(!raw)return;
+  try{
+    var c=JSON.parse(raw);
+    if(!c||!c.payload)return;
+    SYNCED_PAYLOAD=c.payload;
+    var next=IntegrationCore.toListRows(c.payload);
+    var diff=diffRows(BASELINE,next);
+    ROWS=next; COUNTS=recount(ROWS);
+    CHANGED=new Set(diff.changed.map(function(x){return x.name;}).concat(diff.added.map(function(x){return x.name;})));
+    SOURCE={kind:'synced',at:new Date(c.at).toLocaleString('ko-KR'),note:(c.label||'')+' · 이전 동기화 결과'};
+  }catch(e){}
+})();
+
+renderControls();
+idleBar();
 apply();
 })();
 </script>

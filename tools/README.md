@@ -23,9 +23,13 @@ node tools/build-list.js
 기본 경로는 `/home/user/pourservice/partner-dashboard/index.html` → `customer-card-migration/` 입니다.
 `build-integration.js` 를 먼저 실행해야 합니다(나머지 셋이 `companies-integrated.json` 을 읽습니다).
 
+`integration-core.js` 는 `companies-list.html` 안에 그대로 인라인되어, 동기화 버튼이 브라우저에서 실행합니다.
+**코어를 고치면 목록 HTML 도 반드시 다시 만들어야** 빌드 결과와 동기화 결과가 어긋나지 않습니다.
+
 | 스크립트 | 하는 일 | 산출물 |
 |---|---|---|
-| `build-integration.js` | 원본 `index.html` 의 내장 시드(`const DATA`, `CHANGELOG`, `CHECKLIST_DATA`)를 파싱해 업체 단위로 통합·검증 | `companies-integrated.json` |
+| `integration-core.js` | **통합 로직 본체.** Node(빌드)와 브라우저(목록의 동기화 버튼)가 같은 코드를 쓰도록 분리한 순수 모듈 | — (다른 스크립트가 사용) |
+| `build-integration.js` | 원본 `index.html` 을 파싱해 코어로 통합 | `companies-integrated.json` |
 | `build-preview.js` | 상태별 샘플 8종을 실제 데이터에서 골라 시안·마크업 생성 | `customer-card-preview.html`, `customer-card-component.html` |
 | `build-docs.js` | 검증 수치를 JSON 에서 직접 계산해 보고서 작성 | `DATA-VALIDATION-REPORT.md` |
 | `build-list.js` | 전체 업체 표 목록을 데이터 내장 단일 HTML 로 생성 | `companies-list.html` |
@@ -41,6 +45,13 @@ node tools/build-list.js
 사이트는 로드 시 이 시드 위에 Firebase Realtime Database 와 브라우저 `localStorage` 값을 덮어씁니다.
 **그 두 곳은 비공개라 접근하지 않았고**, 따라서 산출물은 GitHub Pages 에 배포된 공개 기준값입니다.
 자세한 내용은 `customer-card-migration/DATA-VALIDATION-REPORT.md` §10 을 보세요.
+
+## 동기화 검증
+
+목록 HTML 의 [파일로 동기화] 에 **빌드에 쓴 것과 같은 `index.html`** 을 넣으면
+“변경 없음”이 나와야 합니다. 브라우저 통합 결과가 Node 빌드와 같다는 뜻입니다.
+변경 감지는 원본을 일부러 수정한 픽스처(업체 추가·삭제·체결·등급 변경)와
+Firebase 수정분 JSON(`hurdleActions` 등)으로 확인했습니다.
 
 ## 검증 도구
 
