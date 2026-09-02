@@ -29,7 +29,7 @@ low resolution, oversaturated, HDR halo, fisheye distortion
 ## 1. `ai_city_1` — 도시 · 건축물 전경
 
 - **비율 16:9** · 권장 2560×1440 이상
-- **삽입 위치** 오프닝 **0:00–0:04** (배경, 불투명도 28%) / SCENE 2 카운트업 **0:25–0:29** (배경, 22%)
+- **삽입 위치** SCENE 2 카운트업 **0:21–0:25** (배경, 불투명도 22%)
 - 딥블루 위에 옅게 깔리므로 **하늘과 건물 실루엣의 대비가 명확한 컷**이 좋습니다.
 
 ```
@@ -41,9 +41,9 @@ slightly elevated drone perspective, balanced horizon, no people in focus
 
 ## 2. `ai_inspect_1` — 태블릿으로 현장을 점검하는 건설 전문가
 
-- **비율 대략 8:7 (세로로 여유 있는 프레임)** · 권장 1600×1400 이상
-- **삽입 위치** SCENE 1 도입 **0:05–0:13** (우측 분할, 790×700) / SCENE 4 STEP 02 대체
-- 우측 배치이므로 **인물이 화면 왼쪽을 바라보는 구도**가 자연스럽습니다.
+- **비율 16:9** · 권장 2560×1440 이상 (배경 전체로 사용)
+- **삽입 위치** SCENE 1 도입 **0:00–0:09** (배경 전체 · 좌측 밝은 워시) / SCENE 4 STEP 02 대체
+- 좌측이 흰 면으로 덮이므로 **인물과 주요 피사체가 화면 오른쪽에 오는 구도**가 좋습니다.
 
 ```
 A Korean construction professional in a clean light grey work jacket and white safety helmet,
@@ -54,8 +54,8 @@ calm confident expression, three-quarter view facing left, waist-up framing
 
 ## 3. `ai_engineer_1` — 현장 조건과 공법을 분석하는 엔지니어
 
-- **비율 3:2 가로** · 권장 1800×1200 이상
-- **삽입 위치** SCENE 2 현장진단 **0:33–0:38** (우측 대형 카드 900×628) / SCENE 1 프로세스 01 대체
+- **비율 16:9** · 권장 2560×1440 이상 (배경 전체로 사용)
+- **삽입 위치** SCENE 2 현장진단 **0:29–0:34** (배경 전체 · 좌측 밝은 워시) / SCENE 1 프로세스 01 대체
 
 ```
 A Korean structural engineer studying exterior wall condition data,
@@ -66,8 +66,9 @@ focused professional expression, clean modern construction environment, medium s
 
 ## 4. `ai_meeting_1` — 밝은 회의실 도면 검토
 
-- **비율 3:2 가로** · 권장 1800×1200 이상
-- **삽입 위치** SCENE 4 STEP 01 **1:09–1:16** (좌측 카드 800×520)
+- **비율 16:9** · 권장 2560×1440 이상 (배경 전체로 사용)
+- **삽입 위치** SCENE 4 STEP 01 **1:05–1:12** (배경 전체 · 우측 밝은 워시)
+- 우측이 흰 면으로 덮이므로 **인물이 화면 왼쪽에 오는 구도**가 좋습니다.
 
 ```
 Four Korean construction company professionals in business casual reviewing
@@ -92,7 +93,7 @@ realistic work textures, safe and organized site, medium wide shot
 ## 6. `ai_team_1` — 여러 분야 현장 전문가 협업
 
 - **비율 3:4 세로** · 권장 1200×1600 이상
-- **삽입 위치** 3-6 60명 전문 인력 **1:12–1:18** (우측 배경, 740×1080, 불투명도 55%)
+- **삽입 위치** 3-6 60명 전문 인력 **1:08–1:14** (우측 배경, 740×1080, 불투명도 55%)
 - 우측에 세로로 깔리고 좌측으로 갈수록 흐려지므로 **인물이 오른쪽에 모인 구도**가 좋습니다.
 
 ```
@@ -106,7 +107,7 @@ vertical composition with the group positioned toward the right
 ## 7. `ai_result_1` — 완성된 현대식 건축물 · 성과
 
 - **비율 16:9** · 권장 2560×1440 이상
-- **삽입 위치** SCENE 5 클라이맥스 **1:30–1:44** (배경, 불투명도 30%)
+- **삽입 위치** SCENE 5 클라이맥스 **1:26–1:40** (배경, 불투명도 30%)
 - 딥블루 위 옅은 배경이므로 **하단이 밝고 상단이 정돈된 컷**이 자막 가독성에 유리합니다.
 
 ```

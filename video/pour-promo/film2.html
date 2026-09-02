@@ -114,12 +114,15 @@ body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:
 #mark .r{width:52px;height:2px;background:var(--teal-500)}
 
 /* ===== 자막 — 안전 여백 확보, 모바일 가독성 ===== */
-#sub{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);
-  max-width:1440px;padding:18px 36px;border-radius:8px;
-  background:rgba(7,27,51,.90);border:1px solid rgba(255,255,255,.14);
-  font-size:36px;font-weight:600;color:var(--white);text-align:center;
-  letter-spacing:-.025em;line-height:1.34;opacity:0;white-space:pre-wrap;
-  text-shadow:0 2px 8px rgba(0,0,0,.45)}
+/* left:50% 만 주면 절대배치 박스의 가용 폭이 1920-960=960px 로 잘려
+   max-width 가 무시된다. left/right 0 + auto 마진으로 중앙 정렬한다. */
+#sub{position:absolute;left:0;right:0;bottom:116px;
+  margin-left:auto;margin-right:auto;width:fit-content;max-width:1560px;padding:22px 44px;border-radius:12px;
+  background:rgba(16,42,67,.90);
+  font-size:42px;font-weight:700;color:#FFFFFF;text-align:center;
+  letter-spacing:-.02em;line-height:1.35;opacity:0;
+  word-break:keep-all;overflow-wrap:break-word;   /* 한국어는 어절 단위로만 줄바꿈 */
+  text-shadow:none;backdrop-filter:none}
 #prog{position:absolute;left:0;bottom:0;height:3px;background:var(--teal-500);opacity:.9}
 svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 </style></head>

@@ -75,7 +75,7 @@ const SCRIPT = [
 ];
 
 /* build cue table: L(sceneId, idx) -> start time ; scene bounds */
-const OPEN = 4.0;                                // #13 오프닝 타이틀 카드
+const OPEN = 0;                                  // 오프닝 타이틀 카드 제거
 const CUE = {}, SCN = {};
 let clock = OPEN;
 for (const s of SCRIPT){
@@ -91,7 +91,6 @@ for (const s of SCRIPT){
 const OUTRO = 6.2;                 // 엔딩 로고 + 문의 정보 노출
 const TOTAL = clock + OUTRO;
 SCN.fin = {t0:clock, t1:TOTAL};
-SCN.open = {t0:0, t1:OPEN+0.35};
 const L = (s,i) => CUE[s][i].t0;
 const LE= (s,i) => CUE[s][i].t1;
 
@@ -364,39 +363,6 @@ function sectionLabel(parent,text,t,sub2){
   return w;
 }
 
-/* ============================ OPENING ============================
-   #13 시작 3초 안에 POUR공법이 어떤 기술인지 전달한다.
-   문구는 시공사가 보내준 'POUR 컨설팅 내역서'의 공종 표기에서 가져왔다.
-   (외벽 복합시트 방수 / 도장 / 균열 보수 / 옥상 방수, 개발운영사 넷폼알앤디)  */
-(function(){
-  const S=scene('open'), B=SCN.open; S.classList.add('deep');
-  mk('div','veil v-hero',{},S);
-  const bg=mk('div','bg',{opacity:.28},S);
-  slot(bg,'ai_city_1','현대 도시 · 건축물 전경',{left:0,top:0,width:'100%',height:'100%'});
-  kenburns(bg,B.t0,B.t1,1.14,1.02);
-  mk('div','veil v-deepL',{},S);
-
-  const k=mk('div','el',px({left:120,top:392,opacity:1}),S,
-    '<div class="kicker">아파트 외벽 · 옥상 유지보수 공법</div>');
-  wipe(k,B.t0+.35,{d:.5,dir:'right'});
-
-  const t=mk('div','el',px({left:120,top:436,fontSize:104,fontWeight:900,color:'var(--ink-1)',
-    letterSpacing:'-.045em',lineHeight:'1.22',opacity:1}),S,'POUR공법');
-  wipe(t,B.t0+.55,{d:.68,dir:'up'});
-
-  const rl=mk('div','el',px({left:120,top:596,width:120,height:4,background:'var(--blue-500)',
-    transformOrigin:'0 50%'}),S);
-  reg(T=>{ const e=outQuint(c01((T-(B.t0+1.00))/.5)); rl.style.opacity=e; rl.style.transform=`scaleX(${e.toFixed(3)})`; });
-
-  const d=mk('div','el',px({left:120,top:632,fontSize:44,fontWeight:700,color:'var(--ink-1)',
-    letterSpacing:'-.03em',opacity:1}),S,'복합시트 방수 · 도장 · 균열 보수');
-  words(d,B.t0+1.16,{step:.09,d:.46,dy:18});
-
-  const c=mk('div','el',px({left:120,top:708,fontSize:26,fontWeight:600,color:'var(--ink-2)',
-    letterSpacing:'-.02em',opacity:1}),S,'주식회사 넷폼알앤디 · POUR공법 개발운영사');
-  wipe(c,B.t0+1.72,{d:.5,dir:'right'});
-})();
-
 /* ============================ SCENE 1 ============================ */
 (function(){
   const S=scene('s1'), B=SCN.s1;
@@ -526,8 +492,8 @@ function sectionLabel(parent,text,t,sub2){
 
   /* --- site mosaic fills --- */
   const M=sub(S,CT0+2.6,L('s2',2)+.15,{i:[0,24],o:[0,-24]});
-  const tiles=[[120,262,488,358],[632,262,656,358],[1312,262,488,358],
-               [120,644,316,246],[461,644,316,246],[802,644,316,246],[1143,644,316,246],[1484,644,316,246]];
+  const tiles=[[120,250,488,336],[632,250,656,336],[1312,250,488,336],
+               [120,610,316,240],[461,610,316,240],[802,610,316,240],[1143,610,316,240],[1484,610,316,240]];
   const MT=[0,.26,.52,.86,1.02,1.18,1.34,1.50];
   tiles.forEach((t,i)=>{
     const c=mk('div','card el',px({left:t[0],top:t[1],width:t[2],height:t[3]}),M);
@@ -576,7 +542,7 @@ function sectionLabel(parent,text,t,sub2){
   mk('div','veil',{background:'linear-gradient(180deg,rgba(7,27,51,.88) 0%,rgba(7,27,51,.60) 42%,rgba(7,27,51,.94) 100%)'},A);
   sectionLabel(A,'기술개발 · 자재생산',B.t0+.10,'POUR SUPPORT 01');
   const matIdx=series('material_',4), mn=matIdx.length;
-  const GAPM=40, BASE=900, MAXH=mn>=4?400:440;
+  const GAPM=40, BASE=850, MAXH=mn>=4?380:420;
   const colW=Math.floor((1920-240-GAPM*(mn-1))/mn);
   const PAD=30;
   matIdx.forEach((idx,i)=>{
@@ -640,7 +606,7 @@ function sectionLabel(parent,text,t,sub2){
   /* 세로형 문서는 잘리지 않게 흰 바탕에 contain, 사진은 cover */
   const docs=[['consulting_1','컨설팅 내역서',660,258,392,524,'contain'],
               ['tech_doc_1','기술자료',1004,414,660,442,'cover'],
-              ['cad_1','CAD 도면',742,578,404,300,'contain']];
+              ['cad_1','CAD 도면',742,550,404,300,'contain']];
   docs.forEach(([k,lb,x,y,w,h,fit],i)=>{
     if(fit==='contain'){ const fb=fitBox(k,w,h); x+=Math.round((w-fb.w)/2); y+=Math.round((h-fb.h)/2); w=fb.w; h=fb.h; }
     const c=mk('div','card el',px({left:x,top:y,width:w,height:h,zIndex:10+i}),Cx);
@@ -666,7 +632,7 @@ function sectionLabel(parent,text,t,sub2){
                 ['AI 분석','ai_1','AI 분석'],['기술검토','review_1','기술검토']];
   const svgD=document.createElementNS('http://www.w3.org/2000/svg','svg'); Dx.appendChild(svgD);
   dsteps.forEach((s,i)=>{
-    const y=300+i*154, tt=C(4)+.45+i*.85;
+    const y=286+i*146, tt=C(4)+.45+i*.85;
     const g=mk('div','el',px({left:980,top:y,width:800,height:126,opacity:1}),Dx);
     const bx=mk('div','box',px({position:'absolute',left:0,top:0,width:800,height:126,opacity:0}),g);
     const th=mk('div','',px({position:'absolute',left:14,top:14,width:170,height:98,borderRadius:8,overflow:'hidden',opacity:0}),bx);
@@ -680,9 +646,9 @@ function sectionLabel(parent,text,t,sub2){
     if(i<3){
       const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
       ln.setAttribute('x1',1060);ln.setAttribute('x2',1060);
-      ln.setAttribute('y1',y+126);ln.setAttribute('y2',y+154);
+      ln.setAttribute('y1',y+126);ln.setAttribute('y2',y+146);
       ln.setAttribute('stroke','var(--blue-500)');ln.setAttribute('stroke-width',3);
-      svgD.appendChild(ln); drawLine(ln,tt+.44,.28,28);
+      svgD.appendChild(ln); drawLine(ln,tt+.44,.28,20);
     }
   });
 
@@ -696,8 +662,8 @@ function sectionLabel(parent,text,t,sub2){
   const svgE=document.createElementNS('http://www.w3.org/2000/svg','svg'); Ex.appendChild(svgE);
   phs.forEach(([t,k,lb],i)=>{
     const x=136+i*568, tt=C(6)+.78+i*.50;
-    const g=mk('div','el',px({left:x,top:372,width:512,height:496,opacity:1}),Ex);
-    const bx=mk('div','box',px({position:'absolute',left:0,top:0,width:512,height:496,opacity:0}),g);
+    const g=mk('div','el',px({left:x,top:352,width:512,height:498,opacity:1}),Ex);
+    const bx=mk('div','box',px({position:'absolute',left:0,top:0,width:512,height:498,opacity:0}),g);
     const hd=mk('div','hd',{},bx);
     const dot=mk('div','dot',px({opacity:0}),hd);
     const ttl=mk('div','t',px({opacity:0}),hd,t);
@@ -754,7 +720,7 @@ function sectionLabel(parent,text,t,sub2){
   const mv=mk('div','el',px({left:0,top:636,width:1920,textAlign:'center',fontSize:34,fontWeight:600,
     color:'rgba(255,255,255,.80)',letterSpacing:'-.025em'}),Fx,'하나의 현장을 중심으로 함께 움직입니다.');
   words(mv,C(10)+.72,{step:.055,d:.40,dy:14});
-  const fin3=mk('div','el',px({left:0,top:742,width:1920,textAlign:'center'}),Fx,
+  const fin3=mk('div','el',px({left:0,top:722,width:1920,textAlign:'center'}),Fx,
     '<span style="display:inline-block;padding:16px 44px;border:2px solid #2F7BE8;border-radius:50px;'+
     'font-size:40px;font-weight:800;color:#fff;letter-spacing:-.03em">POUR 통합 지원 체계</span>');
   snap(fin3,C(11)+.15,{d:.46,s0:.80});
@@ -824,10 +790,10 @@ function sectionLabel(parent,text,t,sub2){
   wipe(h3,C(7)+.10,{d:.52,dir:'up'});
   const DPAD=26, dfb=fitBox('mou_doc',600-DPAD*2,560-DPAD*2,0.76);
   const dw=dfb.w+DPAD*2, dh=dfb.h+DPAD*2;
-  const doc=mk('div','pedestal el',px({left:960-dw/2,top:330+(560-dh)/2,width:dw,height:dh}),P3);
+  const doc=mk('div','pedestal el',px({left:960-dw/2,top:290+(560-dh)/2,width:dw,height:dh}),P3);
   slot(doc,'mou_doc','POUR공법 특허 사용<br>MOU 체결서',{left:DPAD,top:DPAD,width:dfb.w,height:dfb.h},'contain');
   dropCard(doc,C(7)+.60,{d:.86,rot:-2.2,dy:-70});
-  const hs=mk('div','card el',px({left:1330,top:604,width:400,height:286}),P3);
+  const hs=mk('div','card el',px({left:1330,top:564,width:400,height:286}),P3);
   slot(hs,'handshake','악수 (협약 체결)',{left:0,top:0,width:'100%',height:'100%'});
   revealCard(hs,C(8)+.25,{d:.56,dir:'left'});
   const t3=mk('div','el',px({left:120,top:640,fontSize:40,fontWeight:700,color:'var(--ink-2)',letterSpacing:'-.03em'}),P3,
@@ -873,8 +839,8 @@ function sectionLabel(parent,text,t,sub2){
 
   /* 실적으로 채워지는 현장들 */
   const M=sub(S,C(3)-.15,B.t1,{i:[0,24]});
-  const tiles=[[120,262,544,352],[688,262,544,352],[1256,262,544,352],
-               [120,638,402,254],[546,638,402,254],[972,638,402,254],[1398,638,402,254]];
+  const tiles=[[120,250,544,330],[688,250,544,330],[1256,250,544,330],
+               [120,604,402,246],[546,604,402,246],[972,604,402,246],[1398,604,402,246]];
   tiles.forEach((t,i)=>{
     const c=mk('div','card el',px({left:t[0],top:t[1],width:t[2],height:t[3]}),M);
     slot(c,'apt_'+(i+1),'아파트 현장 '+(i+1),{left:0,top:0,width:'100%',height:'100%'});
@@ -938,8 +904,8 @@ reg(T=>{
   for(const c of ALL){ if(T>=c.t0-.12 && T<c.t1-.04){ cur=c; break; } }
   if(!cur){ subEl.style.opacity=0; return; }
   if(subEl.dataset.tx!==cur.tx){ subEl.dataset.tx=cur.tx; subEl.textContent=cur.tx; }
-  const a=outCubic(c01((T-cur.t0)/.20)), b=1-c01((T-(cur.t1-.16))/.16);
-  subEl.style.opacity=Math.min(a,b)*0.97;
+  const a=c01((T-cur.t0)/.20), b=1-c01((T-(cur.t1-.20))/.20);   /* 0.2초 페이드 인·아웃 */
+  subEl.style.opacity=Math.min(a,b);
 });
 reg(T=>{ progEl.style.width=(1920*c01(T/TOTAL))+'px'; });
 
@@ -959,7 +925,7 @@ reg(T=>{ progEl.style.width=(1920*c01(T/TOTAL))+'px'; });
   }
   const OUT=SCN.fin.t0;                       // 엔딩에서는 중앙 로고에 자리를 내준다
   /* 딥블루 구간 — 그 외에는 모두 밝은 면이므로 워드마크는 기본이 네이비다 */
-  const DEEPZ=[[0, SCN.s1.t0+.25],                       // 오프닝
+  const DEEPZ=[
                [SCN.s2.t0-.2, SCN.s2.t0+4.9],            // 260만 카운트업
                [SCN.s3.t0-.2, L('s3',3)-.15],            // 3-1 기술개발·자재생산 + 3-2 공법설명회
                [L('s3',4)-.15, L('s3',6)+.55],           // 3-4 AI·디지털
