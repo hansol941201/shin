@@ -14,6 +14,11 @@ const outCubic = t => 1-Math.pow(1-t,3);
 const outQuint = t => 1-Math.pow(1-t,5);
 const outExpo  = t => t>=1?1:1-Math.pow(2,-11*t);
 const outBack  = t => t<=0?0 : t>=1?1 : 1+2.4*Math.pow(t-1,3)+1.4*Math.pow(t-1,2);
+/* 딥블루 면이 걷히는 동안 글자색을 배경 진행도 f 에 그대로 비례시키면
+   f=0.5 에서 '중간 회색 글자 위 중간 톤 배경'이 되어 오히려 가장 안 읽힌다.
+   전환을 f=0.56~0.70 구간으로 압축해 양 끝의 읽히는 색에 오래 머물게 한다.
+   교차점(f≈0.63)에서도 어두운 색 4.0:1 / 흰색 3.9:1 로 둘 다 확보된다. */
+const deepMix = f => { const x=c01((f-0.56)/0.14); return x*x*(3-2*x); };
 const inOut    = t => t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 
 /* ---------- painters ---------- */
@@ -406,7 +411,7 @@ function sectionLabel(parent,text,t,sub2){
   const base=document.createElementNS('http://www.w3.org/2000/svg','line');
   base.setAttribute('x1',M0); base.setAttribute('x2',1920-M0);
   base.setAttribute('y1',RY); base.setAttribute('y2',RY);
-  base.setAttribute('stroke','rgba(255,255,255,.14)'); base.setAttribute('stroke-width',2);
+  base.setAttribute('stroke','rgba(12,44,82,.18)'); base.setAttribute('stroke-width',2);
   svg.appendChild(base); fade(base,L('s1',5)+.30,.5);
   const fill=document.createElementNS('http://www.w3.org/2000/svg','line');
   fill.setAttribute('x1',M0); fill.setAttribute('y1',RY); fill.setAttribute('y2',RY);
@@ -445,7 +450,7 @@ function sectionLabel(parent,text,t,sub2){
 
   /* 마지막에 결론을 우상단에 놓아 상단 여백도 채운다 */
   const tail=mk('div','el',px({left:1040,top:176,width:740,textAlign:'right',fontSize:44,fontWeight:800,
-    color:'var(--blue-400)',letterSpacing:'-.035em',whiteSpace:'nowrap',opacity:1}),Bp,'POUR가 함께하는 과정');
+    color:'var(--blue-600)',letterSpacing:'-.035em',whiteSpace:'nowrap',opacity:1}),Bp,'POUR가 함께하는 과정');
   words(tail,L('s1',9),{step:.10,d:.46,dy:18});
 })();
 
@@ -486,9 +491,18 @@ function sectionLabel(parent,text,t,sub2){
 
   const badge=mk('div','el',px({left:120,top:132}),S,
     '<div class="kicker" style="margin-bottom:12px">경험과 데이터</div>'+
-    '<div style="font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em;font-variant-numeric:tabular-nums">'+
-    '2,600,000<span style="font-size:34px;font-weight:700;color:var(--blue-400);margin-left:14px;letter-spacing:.1em">세대</span></div>');
+    '<div style="font-size:56px;font-weight:900;color:var(--ink-1);letter-spacing:-.04em;font-variant-numeric:tabular-nums">'+
+    '2,600,000<span style="font-size:34px;font-weight:700;color:var(--blue-600);margin-left:14px;letter-spacing:.1em">세대</span></div>');
   wipe(badge,CT0+2.45,{d:.52,dir:'right',out:L('s2',4)-.15,outD:.4});
+  /* 배지와 모자이크 캡션은 딥블루 패널이 걷히는 순간을 가로질러 살아있다.
+     한쪽 배경에만 맞춘 고정색은 반드시 반대쪽에서 안 보이므로
+     NZ 의 불투명도를 그대로 받아 색을 보간한다. */
+  const lerpCol=(a,b,f)=>`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*f)).join(',')})`;
+  const adapt=[];
+  const onDeep=(el,light,deep)=>{ if(el) adapt.push([el,light,deep]); };
+  onDeep(badge.querySelector('.kicker'), [21,87,184],  [74,147,245]);
+  onDeep(badge.querySelector('div:nth-child(2)'), [12,44,82], [255,255,255]);
+  onDeep(badge.querySelector('span'), [21,87,184], [125,180,255]);
 
   /* --- site mosaic fills --- */
   const M=sub(S,CT0+2.6,L('s2',2)+.15,{i:[0,24],o:[0,-24]});
@@ -503,6 +517,11 @@ function sectionLabel(parent,text,t,sub2){
   const mcap=mk('div','el',px({left:1080,top:186,width:700,textAlign:'right',opacity:1}),M,
     '<div class="kicker">전국 아파트 현장</div>');
   wipe(mcap,CT0+2.9,{d:.44,dir:'left'});
+  /* 모자이크 사진 위 캡션이라 딥 패널이 걷히는 끝자락에서도 배경이 어둡다.
+     밝은 쪽 색을 blue-600 보다 한 단계 더 진하게 잡아 3:1 을 확보한다. */
+  onDeep(mcap.querySelector('.kicker'), [17,70,140], [74,147,245]);
+  reg(T=>{ const f=deepMix(parseFloat(NZ.style.opacity)||0);
+    for(const [el,lt,dp] of adapt) el.style.color=lerpCol(lt,dp,f); });
 
   /* --- diagnosis / conditions --- */
   const D=sub(S,L('s2',2)+.05,L('s2',4)-.05,{i:[22,0],o:[-22,0]});
@@ -521,7 +540,7 @@ function sectionLabel(parent,text,t,sub2){
   const fl=[['경험 · 데이터',L('s2',4)],['현장 분석',L('s2',4)+.85],['적합한 적용 방향',L('s2',5)+.35]];
   fl.forEach(([t,tt],i)=>{
     const e=mk('div','el',px({left:0,top:300+i*168,width:1920,textAlign:'center',
-      fontSize:i===2?68:56,fontWeight:i===2?900:800,color:i===2?'#fff':'rgba(255,255,255,.86)',letterSpacing:'-.035em'}),F,t);
+      fontSize:i===2?68:56,fontWeight:i===2?900:800,color:i===2?'var(--ink-1)':'var(--ink-2)',letterSpacing:'-.035em'}),F,t);
     words(e,tt,{step:.09,d:.44,dy:20});
     if(i>0){
       const a=mk('div','el',px({left:0,top:246+i*168,width:1920,textAlign:'center',
@@ -614,7 +633,7 @@ function sectionLabel(parent,text,t,sub2){
     /* 카드가 계단식으로 겹치므로 라벨은 항상 드러나는 좌상단에.
        자료 자체의 인쇄 제목과 경쟁하지 않도록 작은 태그로 둔다. */
     mk('div','',px({position:'absolute',left:14,top:14,padding:'7px 14px',borderRadius:6,
-      fontSize:20,fontWeight:700,color:'var(--ink-1)',letterSpacing:'-.01em',
+      fontSize:20,fontWeight:700,color:'#FFFFFF',letterSpacing:'-.01em',
       background:'rgba(6,18,35,.86)',border:'1px solid rgba(255,255,255,.18)'}),c,lb);
     dropCard(c,C(3)+.10+i*.62,{d:.68,rot:[-3.2,2.4,-1.8][i],dy:-64});
     const t=mk('div','el',px({left:120,top:404+i*94,fontSize:34,fontWeight:700,color:'var(--ink-1)',opacity:1}),Cx,'· '+lb);
@@ -694,7 +713,7 @@ function sectionLabel(parent,text,t,sub2){
   const CX=960, CY=540;
   const cen=mk('div','el',px({left:CX-140,top:CY-58,width:280,height:116,borderRadius:12,
     background:'var(--blue-500)',display:'flex',alignItems:'center',justifyContent:'center',
-    fontSize:36,fontWeight:800,color:'var(--ink-1)',letterSpacing:'-.03em',boxShadow:'0 20px 60px rgba(47,123,232,.45)'}),hub,'하나의 현장');
+    fontSize:36,fontWeight:800,color:'#FFFFFF',letterSpacing:'-.03em',boxShadow:'0 20px 60px rgba(47,123,232,.45)'}),hub,'하나의 현장');
   snap(cen,W0,{d:.36,s0:.66});
   const sat=['기술개발','자재생산','공법설명회','기술자료','AI 분석','현장관리','기술지원','영업지원'];
   sat.forEach((t,i)=>{
@@ -704,10 +723,10 @@ function sectionLabel(parent,text,t,sub2){
     const ux=(x-CX), uy=(y-CY), d=Math.hypot(ux,uy);
     const x1=CX+ux/d*78, y1=CY+uy/d*62, x2=CX+ux/d*(d-46), y2=CY+uy/d*(d-46);
     ln.setAttribute('x1',x1);ln.setAttribute('y1',y1);ln.setAttribute('x2',x2);ln.setAttribute('y2',y2);
-    ln.setAttribute('stroke','rgba(90,160,255,.55)');ln.setAttribute('stroke-width',2);
+    ln.setAttribute('stroke','rgba(21,87,184,.42)');ln.setAttribute('stroke-width',2);
     svgF.appendChild(ln); drawLine(ln,tt,.30,Math.hypot(x2-x1,y2-y1));
     const n=mk('div','el',px({left:x-108,top:y-32,width:216,height:64,borderRadius:32,
-      background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,255,255,.22)',
+      background:'var(--paper)',border:'1px solid var(--hair-2)',boxShadow:'0 6px 20px rgba(12,44,82,.10)',
       display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,fontWeight:700,color:'var(--ink-1)'}),hub,t);
     snap(n,tt+.16,{d:.34,s0:.58,dx:-ux/d*44,dy:-uy/d*44});
   });
@@ -715,14 +734,14 @@ function sectionLabel(parent,text,t,sub2){
     color:'var(--ink-1)',letterSpacing:'-.05em',lineHeight:'1.22'}),Fx,'60');
   snap(big60,C(10)-.08,{d:.44,s0:.58});
   const lbl60=mk('div','el',px({left:0,top:534,width:1920,textAlign:'center',fontSize:56,fontWeight:800,
-    color:'var(--blue-400)',letterSpacing:'-.03em'}),Fx,'60명 전문 인력');
+    color:'var(--blue-600)',letterSpacing:'-.03em'}),Fx,'60명 전문 인력');
   words(lbl60,C(10)+.24,{step:.10,d:.42,dy:18});
   const mv=mk('div','el',px({left:0,top:636,width:1920,textAlign:'center',fontSize:34,fontWeight:600,
-    color:'rgba(255,255,255,.80)',letterSpacing:'-.025em'}),Fx,'하나의 현장을 중심으로 함께 움직입니다.');
+    color:'var(--ink-2)',letterSpacing:'-.025em'}),Fx,'하나의 현장을 중심으로 함께 움직입니다.');
   words(mv,C(10)+.72,{step:.055,d:.40,dy:14});
   const fin3=mk('div','el',px({left:0,top:722,width:1920,textAlign:'center'}),Fx,
-    '<span style="display:inline-block;padding:16px 44px;border:2px solid #2F7BE8;border-radius:50px;'+
-    'font-size:40px;font-weight:800;color:#fff;letter-spacing:-.03em">POUR 통합 지원 체계</span>');
+    '<span style="display:inline-block;padding:16px 44px;border:2px solid var(--blue-600);border-radius:50px;'+
+    'font-size:40px;font-weight:800;color:var(--ink-1);letter-spacing:-.03em">POUR 통합 지원 체계</span>');
   snap(fin3,C(11)+.15,{d:.46,s0:.80});
 })();
 
@@ -755,7 +774,7 @@ function sectionLabel(parent,text,t,sub2){
   });
   const intro=mk('div','el',px({left:0,top:470,width:1920,textAlign:'center'}),S,
     '<div class="kicker" style="margin-bottom:20px">COOPERATION PROCESS</div>'+
-    '<div style="font-size:72px;font-weight:800;color:#fff;letter-spacing:-.04em">협력 프로세스</div>');
+    '<div style="font-size:72px;font-weight:800;color:var(--ink-1);letter-spacing:-.04em">협력 프로세스</div>');
   wipe(intro.firstElementChild,B.t0+.30,{d:.44,dir:'right',out:C(1)-.35,outD:.4});
   words(intro.lastElementChild,B.t0+.44,{step:.10,d:.48,dy:26,out:C(1)-.35,outD:.4});
   intro.style.opacity=1;
@@ -925,17 +944,32 @@ reg(T=>{ progEl.style.width=(1920*c01(T/TOTAL))+'px'; });
   }
   const OUT=SCN.fin.t0;                       // 엔딩에서는 중앙 로고에 자리를 내준다
   /* 딥블루 구간 — 그 외에는 모두 밝은 면이므로 워드마크는 기본이 네이비다 */
-  const DEEPZ=[
-               [SCN.s2.t0-.2, SCN.s2.t0+4.9],            // 260만 카운트업
-               [SCN.s3.t0-.2, L('s3',3)-.15],            // 3-1 기술개발·자재생산 + 3-2 공법설명회
-               [L('s3',4)-.15, L('s3',6)+.55],           // 3-4 AI·디지털
-               [SCN.s5.t0-.2, SCN.fin.t1]];              // 클라이맥스 + 엔딩
+  /* 워드마크 색은 '지금 화면이 어두운가'를 하드코딩한 구간표가 아니라
+     실제 DOM 에서 읽는다. 구간표는 타임라인을 고칠 때마다 어긋나서
+     밝은 배경 위에 흰 글씨가 남는 순간(42.5s/45.5s/50.5s)을 만들었다.
+     .deep 요소의 유효 불투명도(조상 opacity 누적)가 곧 어두운 정도다.
+     이 painter 는 마지막에 등록되므로 다른 painter 가 opacity 를 다 쓴 뒤 읽는다. */
   const txt=mark.querySelector('.m');
+  const stage=document.getElementById('stage')||document.body;
+  const effOpacity=el=>{
+    let o=1;
+    for(let n=el; n && n!==stage.parentElement; n=n.parentElement){
+      const v=parseFloat(n.style.opacity);
+      if(!Number.isNaN(v)) o*=v;
+      if(o<=0) break;
+    }
+    return o;
+  };
   reg(T=>{
     const o=outCubic(c01((T-0.35)/.7)) * (1-c01((T-(OUT-.45))/.5));
     mark.style.opacity=o*0.92;
     let f=0;
-    for(const [a,b] of DEEPZ) f=Math.max(f, Math.min(c01((T-a+.18)/.36), 1-c01((T-(b-.18))/.36)));
+    for(const el of document.querySelectorAll('.deep')){
+      const e=effOpacity(el);
+      if(e>f) f=e;
+      if(f>=1) break;
+    }
+    f=deepMix(f);
     if(txt){
       const r=Math.round(12+(255-12)*f), g=Math.round(44+(255-44)*f), bl=Math.round(82+(255-82)*f);
       txt.style.color=`rgb(${r},${g},${bl})`;
