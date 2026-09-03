@@ -547,6 +547,7 @@ function absorbPartner(rows, menu, master) {
     addMenu(rec, menu);
     rec.inPartner = true;
     if (menu === MENU.PL_CONTRACTOR) rec.inContractorList = true;
+    if (menu === MENU.PL_INTERNAL) rec.inInternalList = true;
     if (master) {
       const p = rec.profile;
       // 상호 변경 업체는 '현재 상호' 행의 값이 이깁니다. 이전 상호 행은 빈 칸만 채웁니다.
@@ -804,14 +805,14 @@ for (const rec of all) {
     rec.holdSuspect = true;
   }
 
-  // 실제 MOU 체결 기준은 [협력업체 리스트(시공사 발송용)] 등재다(사용자 확정).
-  //   · 외부 발송용에는 협약을 맺지 않은 곳도 섞여 있어 체결 근거로 쓰지 않는다.
-  //   · 레거시 엑셀의 "전체 협약업체" 명부(등급표)만으로는 승격하지 않는다.
-  //     등급표에는 있으나 시공사 발송용에 없고 내부용 협약체결 칸도 빈 업체가 다수라
-  //     사내 두 기준 모두에서 체결이 확인되지 않기 때문이다.
+  // MOU 체결로 인정하는 근거 (사용자 확정)
+  //   · [협력업체 리스트(시공사 발송용)] 등재 — 가장 강한 근거. 등재 202개사 중 200개사가 체결일 명시.
+  //   · [협력업체 리스트(내부용)] 등재 — 협력이 성사된 업체 원장이므로 체결로 인정한다.
+  //   · [협력업체 리스트(외부 발송용)]는 협약을 맺지 않은 곳도 섞여 있어 근거로 쓰지 않는다.
+  //   · 레거시 엑셀의 "전체 협약업체" 명부(등급표)도 단독으로는 근거로 쓰지 않는다.
   // 체결일은 어느 자료에도 없으므로 날짜를 지어내지 않고 '체결일 미확인'으로 둔다.
   // 신규 MOU 프로세스(진행 현황·허들·보류)에 살아 있는 업체는 절차가 진행 중이므로 건드리지 않는다.
-  if (candidate === STATUS.PARTNER_UNKNOWN && rec.inContractorList) {
+  if (candidate === STATUS.PARTNER_UNKNOWN && (rec.inContractorList || rec.inInternalList)) {
     candidate = STATUS.DONE_NODATE;
     rec.legacyPromoted = true;
     rec.changeHistory.push({
@@ -820,11 +821,15 @@ for (const rec of all) {
       newStatus: STATUS.DONE_NODATE,
       signedAt: null,
       evidence: {
-        basis: '협력업체 리스트(시공사 발송용) 등재',
-        note: '시공사 발송용은 실제 MOU 를 체결한 업체만 담는 명부입니다(등재 202개사 중 200개사가 체결일 명시).',
+        basis: rec.inContractorList
+          ? '협력업체 리스트(시공사 발송용) 등재'
+          : '협력업체 리스트(내부용) 등재',
+        note: rec.inContractorList
+          ? '시공사 발송용은 실제 MOU 를 체결한 업체만 담는 명부입니다(등재 202개사 중 200개사가 체결일 명시).'
+          : '내부용은 협력이 성사된 업체 원장입니다. 다만 협약체결 칸은 비어 있어 체결일은 확인되지 않습니다.',
         legacyRosterGrades: rec.legacyRoster ? rec.legacyRoster.grades : null,
       },
-      reason: '시공사 발송용 명부에서 협약 체결이 확인됨. 체결일은 어느 자료에도 기록이 없어 미확인으로 둠.',
+      reason: (rec.inContractorList ? '시공사 발송용' : '협력업체 리스트(내부용)') + ' 명부에서 협력 관계가 확인됨. 체결일은 어느 자료에도 기록이 없어 미확인으로 둠.',
     });
   }
 
@@ -870,7 +875,7 @@ for (const rec of all) {
     rec.reviews.push('체결 완료로 표시되어 있으나 체결일이 확인되지 않습니다. 날짜를 추정하지 않고 미확인으로 둡니다.');
   }
   if (rec.statusCandidate === STATUS.PARTNER_UNKNOWN) {
-    rec.reviews.push('MOU 체결 명부인 [협력업체 리스트(시공사 발송용)]에 없고, [협력업체 리스트(내부용)]의 협약체결 칸도 비어 있으며, 체결일도 확인되지 않습니다.');
+    rec.reviews.push('협력업체 리스트 [시공사 발송용]·[내부용] 어디에도 없고 체결일도 확인되지 않습니다.');
     if (rec.legacyRoster) {
       rec.reviews.push(`다만 레거시 관리 엑셀의 "전체 협약업체" 명부(등급 ${rec.legacyRoster.grades.join('/') || '미상'})에는 올라 있습니다 — 근거가 서로 어긋나므로 담당자 확인이 필요합니다.`);
     }
@@ -940,7 +945,10 @@ for (const rec of all) {
   }
   if (rec.isStalled) rec.reviews.push(`마지막 진행 기록(${rec.lastActivityAt}) 이후 ${rec.elapsedDays}일간 후속 기록이 없습니다 — 장기 미진행.`);
   if (rec.names.length > 1) {
-    rec.dupNotes.push(`원본에 표기가 다른 ${rec.names.length}건으로 등장하여 업체코드/사업자번호/정규화 업체명 기준으로 한 레코드로 통합했습니다: ${rec.names.join(' / ')}`);
+    // ㈜ / (주) / 띄어쓰기 차이는 이미 한 레코드로 합쳐진 '해결된' 건이다.
+    // '중복 의심'(= 다른 업체일 수 있음)이 아니라 처리 결과이므로 문제 집계에서 뺀다.
+    rec.nameVariantMerged = true;
+    rec.reviews.push(`원본에 표기가 다른 ${rec.names.length}건(${rec.names.join(' / ')})으로 등장하여 한 업체로 통합했습니다 — 표기 차이일 뿐이라 별도 확인은 필요 없습니다.`);
   }
   if (rec.aliasRule) {
     rec.reviews.push(`상호 변경 확인 — 이전 상호 «${rec.formerNames.join(', ')}» 레코드를 «${rec.aliasRule.current}» 로 통합했습니다. 근거: ${rec.aliasRule.basis}`);
@@ -1098,11 +1106,18 @@ const companies = all
         rawLabels: rec.rawLabels,
         partnerListMouMark: rec.partnerMouMark,
         contractorListed: !!rec.inContractorList,
-        evidence: (rec.inContractorList || rec.legacyRoster) ? {
+        internalListed: !!rec.inInternalList,
+        evidence: (rec.inContractorList || rec.inInternalList || rec.legacyRoster) ? {
+          basis: rec.inContractorList ? '협력업체 리스트(시공사 발송용) 등재'
+               : rec.inInternalList ? '협력업체 리스트(내부용) 등재'
+               : '레거시 엑셀 협약 명부 등재(참고)',
           contractorList: !!rec.inContractorList,
+          internalList: !!rec.inInternalList,
           contractorListNote: rec.inContractorList
             ? '협력업체 리스트(시공사 발송용) 등재 — 실제 MOU 체결 명부'
-            : '협력업체 리스트(시공사 발송용) 미등재',
+            : (rec.inInternalList
+                ? '협력업체 리스트(시공사 발송용) 미등재 · 내부용 원장에는 등재'
+                : '협력업체 리스트(시공사 발송용)·(내부용) 모두 미등재'),
           legacyRoster: rec.legacyRoster ? {
             source: LEGACY ? LEGACY.sourceFile : null,
             basis: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.label : null),
@@ -1149,6 +1164,7 @@ const companies = all
 
       validation: {
         possibleDuplicate: dupNotes.length > 0,
+        nameVariantMerged: !!rec.nameVariantMerged,
         multipleCodes: !!rec.multipleCodes,
         nameChangeMerged: !!rec.aliasRule,
         cancelSuspect: !!rec.cancelSuspect,
@@ -1198,10 +1214,12 @@ const summary = {
   graded: c(x => x.grade),
   missingMouDate: c(x => x.validation.missingMouDate),
   possibleDuplicate: c(x => x.validation.possibleDuplicate),
+  nameVariantMerged: c(x => x.validation.nameVariantMerged),
   multipleCodes: c(x => x.validation.multipleCodes),
   cancelSuspect: c(x => x.validation.cancelSuspect),
   notInContractorList: c(x => x.validation.notInContractorList),
   contractorListed: c(x => x.mou.contractorListed),
+  internalListed: c(x => x.mou.internalListed),
   reviewPriority: {
     '높음': c(x => x.reviewPriority === '높음'),
     '보통': c(x => x.reviewPriority === '보통'),

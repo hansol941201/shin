@@ -213,7 +213,7 @@
     var v = company.validation || {};
     var msgs = v.messages || [];
     var flags = [
-      ['중복 의심', v.possibleDuplicate], ['상태 충돌', v.statusConflict], ['날짜 오류', v.dateError],
+      ['중복 의심(미해결)', v.possibleDuplicate], ['표기 차이로 통합(해결)', v.nameVariantMerged], ['상태 충돌', v.statusConflict], ['날짜 오류', v.dateError],
       ['상호 변경 통합', v.nameChangeMerged], ['업체코드 2건 이상', v.multipleCodes], ['협약취소 기재', v.cancelSuspect],
       ['시공사 명부 미등재', v.notInContractorList],
       ['체결일 미확인', v.missingMouDate], ['체결일 담당자 확인 필요', v.mouDateNeedsReview],
@@ -325,8 +325,9 @@
         ]) +
         '<div style="margin-top:14px"></div>' + timeline(company) +
         (has(mou.partnerListMouMark) ? '<p class="pcm-card__source" style="margin-top:8px">협력업체 리스트 협약체결 칸 원본 표기: ' + esc(mou.partnerListMouMark) + '</p>' : '') +
-        '<p class="pcm-card__source">MOU 체결 명부(시공사 발송용): ' +
+        '<p class="pcm-card__source">협력업체 명부: 시공사 발송용 ' +
           (mou.contractorListed ? '<strong>등재</strong>' : '미등재') +
+          ' · 내부용 ' + (mou.internalListed ? '<strong>등재</strong>' : '미등재') +
           (val9.notInContractorList ? ' — 체결일은 있으나 명부에 없습니다(협약 종료 또는 미반영 가능)' : '') + '</p>' +
         (company.reviewPriority
           ? '<p class="pcm-card__source">확인 우선순위: <strong>' + esc(company.reviewPriority) + '</strong> — ' + esc(company.reviewPriorityReason || '') + '</p>' : '') +
