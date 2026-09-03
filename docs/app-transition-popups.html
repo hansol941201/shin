@@ -23,6 +23,10 @@
   --line-soft:#EAF0F6;
   --white:#FFFFFF;
   --page:#EEF2F7;
+  --alert-ink:#96231D;
+  --alert-500:#C3392E;
+  --alert-line:#F0D2CE;
+  --alert-bg:#FDF4F3;
   --sans:"IBM Plex Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --mono:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
@@ -199,16 +203,13 @@ body{
 
 /* 시안 1 — 하단 안내 */
 .notice{
-  margin-top:22px;padding:16px 18px;
-  background:var(--sky-050);border:1px solid var(--line);border-radius:8px;
-  display:flex;gap:14px;
+  margin-top:22px;padding:15px 18px;
+  background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:8px;
+  display:flex;gap:12px;
 }
-.notice .tag{
-  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
-  color:var(--navy-500);padding-top:2px;flex-shrink:0;
-}
+.notice svg{width:19px;height:19px;color:var(--alert-500);flex-shrink:0;margin-top:2px;}
 .notice p{margin:0;font-size:13.5px;color:var(--ink-sub);line-height:1.7;}
-.notice strong{color:var(--navy-900);font-weight:600;}
+.notice strong{display:block;color:var(--alert-ink);font-weight:600;font-size:14px;}
 
 /* 시안 1 — 푸터 */
 .pop-foot{
@@ -452,9 +453,11 @@ body{
         </div>
 
         <div class="notice">
-          <span class="tag">안내</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7.6v5.2"/><path d="M12 16.3h.01"/>
+          </svg>
           <p>
-            <strong>전환 전까지는 현재 플랫폼을 그대로 이용해 주세요.</strong><br>
+            <strong>전환 전까지는 현재 플랫폼을 그대로 이용해 주세요.</strong>
             앱 출시 및 이용 방법은 추후 다시 안내드리겠습니다.
           </p>
         </div>
