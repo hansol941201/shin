@@ -97,7 +97,7 @@ body{
 .layer{
   position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
-  padding:26px 16px 100px;
+  padding:22px 16px 90px;
   overflow-y:auto;
 }
 
@@ -117,7 +117,7 @@ body{
 
 /* 공통 내부 요소 */
 
-.pop-head{padding:34px 48px 0;text-align:center;}
+.pop-head{padding:28px 48px 0;text-align:center;}
 
 .logo-slot{
   display:inline-flex;align-items:center;gap:10px;
@@ -131,19 +131,31 @@ body{
 .logo-sub{font-size:12px;color:var(--ink-sub);letter-spacing:.02em;line-height:1;padding-left:9px;border-left:1px solid var(--line);}
 
 .badge{
-  display:flex;align-items:center;gap:8px;
-  width:fit-content;margin:22px auto 0;
-  padding:6px 12px;
-  background:var(--sky-100);
-  color:var(--navy-700);
-  border-radius:4px;
+  display:flex;align-items:stretch;
+  width:fit-content;margin:24px auto 0;
+  background:var(--navy-900);
+  border-radius:5px;
+  overflow:hidden;
   font-family:var(--mono);
-  font-size:12px;font-weight:600;letter-spacing:.04em;
+  box-shadow:0 3px 10px rgba(11,35,64,.22);
 }
-.badge .dot{width:5px;height:5px;border-radius:50%;background:var(--sky-500);}
+.badge-main{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 15px;
+  color:var(--white);
+  font-size:12.5px;font-weight:600;letter-spacing:.05em;
+}
+.badge .dot{width:5px;height:5px;border-radius:50%;background:var(--sky-200);flex-shrink:0;}
+.badge-count{
+  display:flex;align-items:center;
+  padding:9px 15px;
+  background:var(--sky-500);
+  color:var(--white);
+  font-size:13.5px;font-weight:600;letter-spacing:.1em;
+}
 
 .pop-title{
-  margin:17px 0 0;
+  margin:20px 0 0;
   font-size:24px;font-weight:700;line-height:1.42;
   letter-spacing:-.02em;color:var(--navy-900);
   text-wrap:balance;
@@ -151,7 +163,7 @@ body{
 .pop-title .lead{display:block;font-size:19px;font-weight:600;color:var(--navy-500);margin-bottom:4px;}
 
 .pop-desc{
-  margin:15px auto 0;max-width:436px;
+  margin:13px auto 0;max-width:436px;
   font-size:14.5px;color:var(--ink-sub);line-height:1.75;
   text-wrap:pretty;
 }
@@ -160,7 +172,7 @@ body{
 
 .section-label{
   display:flex;align-items:center;gap:10px;
-  margin:28px 0 12px;
+  margin:24px 0 12px;
   font-size:13px;font-weight:600;color:var(--navy-900);letter-spacing:-.01em;
 }
 .section-label::after{content:"";flex:1;height:1px;background:var(--line-soft);}
@@ -177,7 +189,7 @@ body{
   grid-template-columns:20px 108px 1fr;
   align-items:start;
   gap:0 14px;
-  padding:15px 20px;
+  padding:14px 20px;
   border-bottom:1px solid var(--line-soft);
 }
 .feature:last-child{border-bottom:0;}
@@ -201,7 +213,7 @@ body{
 /* 시안 1 — 푸터 */
 .pop-foot{
   display:flex;align-items:center;justify-content:space-between;gap:20px;
-  margin-top:26px;padding:20px 48px 26px;
+  margin-top:22px;padding:18px 48px 24px;
   border-top:1px solid var(--line-soft);
 }
 .today{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink-sub);cursor:pointer;}
@@ -237,7 +249,7 @@ body{
   grid-template-columns:18px 108px 1fr;
   align-items:start;
   gap:0 14px;
-  padding:14px 2px;
+  padding:12px 2px;
   border-bottom:1px solid var(--line-soft);
 }
 .check-row svg{width:17px;height:17px;color:var(--sky-500);margin-top:3px;}
@@ -245,13 +257,13 @@ body{
 .c-items{font-size:13px;color:var(--ink-sub);line-height:1.65;}
 
 .closing-note{
-  margin:22px 0 0;padding:15px 16px;
+  margin:18px 0 0;padding:14px 16px;
   background:var(--sky-050);border:1px solid var(--line);border-radius:8px;
   font-size:13px;color:var(--ink-sub);line-height:1.65;text-align:center;
 }
 .closing-note strong{color:var(--navy-900);font-weight:600;}
 
-.actions{display:flex;flex-direction:column;gap:10px;padding:24px 48px 32px;}
+.actions{display:flex;flex-direction:column;gap:10px;padding:20px 48px 28px;}
 .helper{margin:2px 0 0;text-align:center;font-size:12.5px;color:var(--ink-mute);}
 
 /* ---------- 시안 확인용 툴바 (실제 팝업에는 포함되지 않음) ---------- */
@@ -371,7 +383,10 @@ body{
           <span class="logo-sub">기술지원</span>
         </div>
 
-        <div class="badge"><span class="dot"></span>앱 전환 사전 안내 · D-21</div>
+        <div class="badge">
+          <span class="badge-main"><span class="dot"></span>앱 전환 사전 안내</span>
+          <span class="badge-count">D-21</span>
+        </div>
 
         <h1 class="pop-title" id="t1">
           <span class="lead">더 편리한 기술지원을 위해</span>
@@ -464,7 +479,9 @@ body{
           <span class="logo-sub">기술지원</span>
         </div>
 
-        <div class="badge"><span class="dot"></span>서비스 전환 안내</div>
+        <div class="badge">
+          <span class="badge-main"><span class="dot"></span>서비스 전환 안내</span>
+        </div>
 
         <h1 class="pop-title" id="t2">
           POUR 기술지원이<br>앱으로 새롭게 전환되었습니다
