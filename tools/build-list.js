@@ -59,6 +59,7 @@ font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-it
 .tile[data-k="s:종결"] b{color:var(--closed)}
 .tile[data-k="s:기존 협력업체·MOU 상태 확인 필요"] b{color:var(--unknown)}
 .tile[data-k="s:상태 충돌·담당자 확인 필요"] b,.tile[data-k^="f:"] b{color:var(--alert)}
+.tile[data-k="f:mouDateResolved"] b{color:var(--done)}
 
 .syncbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:12px;padding:10px 14px;
 background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:12.5px;color:var(--mid)}
@@ -282,8 +283,8 @@ var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',sort:'n',dir:1,til
 function recount(rowsArr){
   var byStatus={}; VOCAB.status.forEach(function(k){byStatus[k]=0;});
   var byStage={}; VOCAB.stage.forEach(function(k){byStage[k]=0;});
-  var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateMismatch:0,missingMouDate:0,
-         missingHoldReason:0,partnerWithoutMouStatus:0,__stalled:0};
+  var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateResolved:0,mouDateNeedsReview:0,
+         missingMouDate:0,missingHoldReason:0,partnerWithoutMouStatus:0,__stalled:0};
   var noStage=0, partners=0, years={};
   rowsArr.forEach(function(r){
     if(byStatus[r.status]!==undefined)byStatus[r.status]++;
@@ -307,7 +308,7 @@ var TILE_DEFS=[
   ['s:상태 충돌·담당자 확인 필요','상태 충돌·담당자 확인',function(){return COUNTS.byStatus['상태 충돌·담당자 확인 필요'];}],
   ['f:possibleDuplicate','중복 의심',function(){return COUNTS.flags.possibleDuplicate;}],
   ['f:dateError','날짜 오류',function(){return COUNTS.flags.dateError;}],
-  ['f:mouDateMismatch','체결일 값 불일치',function(){return COUNTS.flags.mouDateMismatch;}],
+  ['f:mouDateResolved','체결일 자동 확정',function(){return COUNTS.flags.mouDateResolved;}],
   ['f:__stalled','장기 미진행',function(){return COUNTS.flags.__stalled;}]
 ];
 
@@ -331,7 +332,8 @@ function renderControls(){
     ['statusConflict','상태 충돌',COUNTS.flags.statusConflict],
     ['dateError','날짜 오류',COUNTS.flags.dateError],
     ['possibleDuplicate','중복 의심',COUNTS.flags.possibleDuplicate],
-    ['mouDateMismatch','체결일 값 불일치',COUNTS.flags.mouDateMismatch],
+    ['mouDateResolved','체결일 자동 확정(규칙 적용)',COUNTS.flags.mouDateResolved],
+    ['mouDateNeedsReview','체결일 담당자 확인 필요',COUNTS.flags.mouDateNeedsReview],
     ['missingMouDate','체결일 미확인',COUNTS.flags.missingMouDate],
     ['missingHoldReason','허들 사유 미기재',COUNTS.flags.missingHoldReason],
     ['partnerWithoutMouStatus','협력업체·MOU 상태 없음',COUNTS.flags.partnerWithoutMouStatus]
@@ -390,7 +392,8 @@ function badges(r){
   if(r.v.statusConflict)out.push('<span class="tag warn">상태 충돌</span>');
   if(r.v.dateError)out.push('<span class="tag warn">날짜 오류</span>');
   if(r.v.possibleDuplicate)out.push('<span class="tag warn">중복 의심</span>');
-  if(r.v.mouDateMismatch)out.push('<span class="tag warn">체결일 불일치</span>');
+  if(r.v.mouDateResolved)out.push('<span class="tag">체결일 자동 확정</span>');
+  if(r.v.mouDateNeedsReview)out.push('<span class="tag warn">체결일 확인 필요</span>');
   if(r.v.missingMouDate)out.push('<span class="tag warn">체결일 미확인</span>');
   if(r.v.missingHoldReason)out.push('<span class="tag warn">사유 미기재</span>');
   if(r.stalled)out.push('<span class="tag">장기 미진행</span>');
@@ -430,7 +433,10 @@ function detail(r){
   });
   if(raws.length)h+='<ul class="dlist" style="margin-top:8px">'+raws.map(function(t){return '<li class="warn">'+esc(t)+'</li>';}).join('')+'</ul>';
   if(has(r.plMark))h+='<p class="src">협력업체 리스트 협약체결 칸 원본 표기: '+esc(r.plMark)+'</p>';
-  if(r.mouSrc&&r.mouSrc.length)h+='<p class="src">체결일 출처: '+esc(r.mouSrc.map(function(s){return s.menu+' → '+s.date;}).join(' / '))+'</p>';
+  if(r.mouSource)h+='<p class="src">체결일 출처: '+esc(r.mouSource)
+    +(r.dateRes&&r.dateRes.status==='resolved_by_source_priority'
+      ? ' (다른 메뉴에 다른 날짜가 있었으나 확정 규칙에 따라 체결 완료 메뉴 값을 사용. 원본 값은 JSON dateResolution 에 보존)'
+      : '')+'</p>';
   h+='</div>';
 
   if(r.attempts){

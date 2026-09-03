@@ -191,7 +191,8 @@ function toListRows(payload) {
       m2: c.mou.secondMeetingCompletedAt,
       raw: c.mou.rawLabels,
       skipped: c.mou.skippedSteps || [],
-      mouSrc: c.mou.signedAtSources,
+      mouSource: c.mou.signedAtSource,
+      dateRes: c.dateResolution,
       plMark: c.mou.partnerListMouMark,
       attempts: (c.mou.attempts || []).length > 1 ? c.mou.attempts : null,
       last: c.lastActivityAt,
@@ -280,6 +281,20 @@ const rawOf = (v) => { const s = v == null ? '' : String(v).trim(); return s || 
 const daysBetween = (a, b) => (a && b ? Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000) : null);
 
 // 보류 의심 표현 (요구사항: 진행 현황에 있으나 비고가 보류성인 경우)
+/**
+ * MOU 체결일 출처 우선순위 (숫자가 작을수록 우선)
+ *   1 체결 완료 메뉴
+ *   2 MOU 진행 이력 (진행 현황 / 허들·보류) — 체결 관련 원본 자료
+ *   3 협력업체 리스트(내부용)
+ *   4 기타 화면
+ */
+function MOU_DATE_PRIORITY(menu) {
+  if (menu === MENU.DONE) return 1;
+  if (menu === MENU.PROGRESS || menu === MENU.HOLD) return 2;
+  if (menu === MENU.PL_INTERNAL) return 3;
+  return 4;
+}
+
 const HOLD_WORDS = ['협약보류', '협약진행안함', '협약진행x', '진행x', '중단', '종결', '재검토', '추후진행', '연락두절'];
 const squash = (s) => String(s || '').replace(/\s+/g, '').toLowerCase();
 
@@ -362,7 +377,8 @@ function newRec(name) {
     grade: null, gradeSales: null, gradeHistory: [],
     sitesRaw: [],
     identifiedBy: new Set(),
-    conflicts: [], dateErrors: [], dupNotes: [], reviews: [],
+    conflicts: [], dateErrors: [], dupNotes: [], reviews: [], changeHistory: [],
+    dateResolution: null, mouDateSource: null,
     _firstName: String(name).trim(),
   };
 }
@@ -588,11 +604,92 @@ for (const rec of all) {
   }
 
   // 4-2) MOU 체결일 출처 대조
+  // 사용자 확정 규칙에 따라 출처 우선순위로 최종 체결일을 결정한다.
+  //   1순위 체결 완료 메뉴 → 2순위 MOU 진행 이력(진행 현황·허들·보류) → 3순위 협력업체 리스트(내부용) → 4순위 기타
+  // 1순위에 날짜가 있으면 다른 메뉴에 다른 날짜가 있어도 1순위 값을 최종값으로 쓴다.
+  // 다른 메뉴의 원본 값은 지우지 않고 dateResolution.originalValues 에 보존한다.
   const uniqDates = [...new Set(rec.mouSources.map(s => s.date))];
   rec.mouDateMismatch = uniqDates.length > 1;
-  if (rec.mouDateMismatch) {
-    rec.reviews.push('MOU 체결일이 메뉴마다 다르게 기록되어 있습니다 — ' +
-      rec.mouSources.map(s => `${s.menu}: ${s.date}`).join(' / ') + ' (원본 값 그대로 보존, 담당자 확인 필요)');
+
+  const byPriority = rec.mouSources.map(s => ({ ...s, rank: MOU_DATE_PRIORITY(s.menu) }))
+                                   .sort((a, b) => a.rank - b.rank);
+  const completedDates = [...new Set(rec.mouSources.filter(s => s.menu === MENU.DONE).map(s => s.date))];
+  const previousDisplayed = rec.dates.mou;   // 규칙 적용 전 표시값
+
+  if (byPriority.length) {
+    const top = byPriority[0];
+    rec.dates.mou = top.date;
+    rec.mouDateSource = top.menu;
+
+    if (!rec.mouDateMismatch) {
+      rec.dateResolution = {
+        status: 'single_source',
+        selectedDate: top.date,
+        selectedSource: top.menu,
+        originalValues: rec.mouSources.map(s => ({ source: s.menu, value: s.date })),
+        rule: '메뉴 간 불일치 없음 — 기록된 체결일을 그대로 사용',
+        resolutionStatus: 'resolved',
+        resolutionMethod: 'single_source',
+        needsReview: false,
+      };
+    } else if (completedDates.length === 1) {
+      rec.dateResolution = {
+        status: 'resolved_by_source_priority',
+        selectedDate: completedDates[0],
+        selectedSource: MENU.DONE,
+        originalValues: rec.mouSources.map(s => ({ source: s.menu, value: s.date })),
+        rule: '체결 완료 메뉴의 날짜를 최종 체결일로 사용',
+        resolutionStatus: 'resolved',
+        resolutionMethod: 'completed_menu_priority',
+        needsReview: false,
+      };
+      rec.dates.mou = completedDates[0];
+      rec.mouDateSource = MENU.DONE;
+    } else if (completedDates.length > 1) {
+      rec.dateResolution = {
+        status: 'unresolved_multiple_in_completed',
+        selectedDate: top.date,
+        selectedSource: top.menu,
+        originalValues: rec.mouSources.map(s => ({ source: s.menu, value: s.date })),
+        rule: '체결 완료 메뉴 안에서 서로 다른 체결일이 발견되어 자동 확정 불가',
+        resolutionStatus: 'unresolved',
+        resolutionMethod: 'completed_menu_priority',
+        needsReview: true,
+      };
+      rec.reviews.push(`[체결 완료] 메뉴 안에서 서로 다른 MOU 체결일이 발견되었습니다 — ${completedDates.join(' / ')}. 자동 확정할 수 없어 담당자 확인이 필요합니다.`);
+    } else {
+      rec.dateResolution = {
+        status: 'unresolved_no_completed_date',
+        selectedDate: top.date,
+        selectedSource: top.menu,
+        originalValues: rec.mouSources.map(s => ({ source: s.menu, value: s.date })),
+        rule: `체결 완료 메뉴에 체결일이 없어 차순위(${top.menu}) 날짜를 사용 — 담당자 확인 필요`,
+        resolutionStatus: 'unresolved',
+        resolutionMethod: 'fallback_priority',
+        needsReview: true,
+      };
+      rec.reviews.push(`MOU 체결일이 메뉴마다 다른데 [체결 완료] 메뉴에는 체결일이 없습니다 — ${rec.mouSources.map(s => `${s.menu}: ${s.date}`).join(' / ')}. 우선순위에 따라 ${top.menu} 값을 사용했으나 담당자 확인이 필요합니다.`);
+    }
+  } else {
+    rec.dateResolution = null;
+    rec.mouDateSource = null;
+  }
+
+  // 불일치를 규칙으로 처리한 사실을 변경 이력에 남긴다.
+  // 표시값이 실제로 바뀌었는지(changed)까지 기록해 감사 때 구분할 수 있게 한다.
+  if (rec.mouDateMismatch && rec.dateResolution) {
+    rec.changeHistory.push({
+      type: 'mou_date_resolution',
+      previousDisplayedDate: previousDisplayed || null,
+      newDisplayedDate: rec.dates.mou,
+      changed: previousDisplayed !== rec.dates.mou,
+      selectedSource: rec.dateResolution.selectedSource,
+      conflictingValues: rec.dateResolution.originalValues,
+      resolutionStatus: rec.dateResolution.resolutionStatus,
+      reason: rec.dateResolution.needsReview
+        ? '체결 완료 메뉴로 자동 확정할 수 없어 우선순위 차순위 값을 사용 — 담당자 확인 필요'
+        : '사용자 확정 규칙에 따라 체결 완료 메뉴 날짜 우선 적용',
+    });
   }
 
   // 허들·보류 '액션 결정' — 동기화로 Firebase 에서 받아온 경우에만 값이 있다.
@@ -826,6 +923,7 @@ const companies = all
         secondMeetingCompletedAt: rec.dates.m2,
         secondMeetingManager: null,
         signedAt: rec.dates.mou,
+        signedAtSource: rec.mouDateSource,
         signedAtSources: rec.mouSources,
         // 체결 업체 중 날짜 기록이 없는 단계 (생략했거나 기록되지 않음). 오류가 아니라 참고 정보.
         skippedSteps: rec.skippedSteps || [],
@@ -859,8 +957,9 @@ const companies = all
       curriculumHistory: [],
       documents: [],
 
+      dateResolution: rec.dateResolution,
       notes: rec.notes,
-      changeHistory: [],
+      changeHistory: rec.changeHistory,
       sourceTabs: rec.menus,
       lastActivityAt: rec.lastActivityAt,
       dataAsOf: SOURCE_PUBLISHED_AT,
@@ -870,7 +969,11 @@ const companies = all
         statusConflict: conflicts.length > 0,
         dateError: dateErrors.length > 0,
         missingMouDate: rec.statusCandidate === STATUS.DONE_NODATE,
+        // 메뉴 간 체결일이 달랐다는 '사실'. 확정 규칙으로 해결되면 아래 mouDateResolved 가 true 이고
+        // needsReview / dateError 에는 반영하지 않는다.
         mouDateMismatch: !!rec.mouDateMismatch,
+        mouDateResolved: !!(rec.mouDateMismatch && rec.dateResolution && !rec.dateResolution.needsReview),
+        mouDateNeedsReview: !!(rec.dateResolution && rec.dateResolution.needsReview),
         conflictResolvedBySigning: !!rec.conflictResolvedBySigning,
         missingHoldReason: rec.inHold && !rec.holdResolvedBySigning && !rec.holdReason,
         missingNextAction: rec.inHold && !rec.holdResolvedBySigning && !rec.hurdleAction,
@@ -911,6 +1014,8 @@ const summary = {
   statusConflict: c(x => x.validation.statusConflict),
   dateError: c(x => x.validation.dateError),
   mouDateMismatch: c(x => x.validation.mouDateMismatch),
+  mouDateResolved: c(x => x.validation.mouDateResolved),
+  mouDateNeedsReview: c(x => x.validation.mouDateNeedsReview),
   missingHoldReason: c(x => x.validation.missingHoldReason),
   missingNextAction: c(x => x.validation.missingNextAction),
   partnerWithoutMouStatus: c(x => x.validation.partnerWithoutMouStatus),

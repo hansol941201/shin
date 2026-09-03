@@ -214,7 +214,7 @@
     var msgs = v.messages || [];
     var flags = [
       ['중복 의심', v.possibleDuplicate], ['상태 충돌', v.statusConflict], ['날짜 오류', v.dateError],
-      ['체결일 미확인', v.missingMouDate], ['체결일 값 불일치', v.mouDateMismatch],
+      ['체결일 미확인', v.missingMouDate], ['체결일 담당자 확인 필요', v.mouDateNeedsReview],
       ['보류 사유 없음', v.missingHoldReason], ['다음 액션 없음', v.missingNextAction],
       ['협력업체지만 MOU 상태 없음', v.partnerWithoutMouStatus],
     ].filter(function (f) { return f[1]; });
@@ -322,7 +322,10 @@
         ]) +
         '<div style="margin-top:14px"></div>' + timeline(company) +
         (has(mou.partnerListMouMark) ? '<p class="pcm-card__source" style="margin-top:8px">협력업체 리스트 협약체결 칸 원본 표기: ' + esc(mou.partnerListMouMark) + '</p>' : '') +
-        ((mou.signedAtSources || []).length ? '<p class="pcm-card__source">체결일 출처: ' + esc(mou.signedAtSources.map(function (s) { return s.menu + ' → ' + s.date; }).join(' / ')) + '</p>' : '') +
+        (has(mou.signedAtSource) ? '<p class="pcm-card__source">체결일 출처: ' + esc(mou.signedAtSource) +
+          (company.dateResolution && company.dateResolution.status === 'resolved_by_source_priority'
+            ? ' (다른 메뉴에 다른 날짜가 있었으나 확정 규칙에 따라 체결 완료 메뉴 값을 사용합니다. 원본 값은 JSON dateResolution 에 보존)'
+            : '') + '</p>' : '') +
         (attemptsBlock(company) ? section('원본 행별 진행 이력 (값을 섞지 않고 보존)', attemptsBlock(company)) : '') },
       { id: 'hold', name: '허들·보류', html:
         grid([

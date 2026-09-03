@@ -246,13 +246,64 @@
 아직 체결되지 않은 업체의 단계 공백은 입력 누락일 수 있어 확인 필요로 계속 표시합니다.
 원본 사이트도 같은 전제를 두고 있습니다(내부 로직에 `qReplySkipped`/`m1Skipped`/`m2Skipped` 플래그 정의).
 
-### `mou.signedAtSources` / `mou.partnerListMouMark`
-- **표시명** 체결일 출처 / 협력업체 리스트 원본 표기
-- **형식** `{menu, date}[]` / `string | null`
-- **뜻** 체결일이 여러 메뉴에 있을 때 **어디서 온 값인지** 전부 보존합니다.
-- **검증** 값이 서로 다르면 `validation.mouDateMismatch = true` (**25개사**, 대부분 1~4일 차이).
-  대표값은 신규 MOU 프로세스 쪽을 씁니다. **어느 쪽이 맞는지 임의로 정하지 않았습니다.**
-- **카드 위치** 상세 › MOU 타임라인 하단
+### `mou.signedAtSource` / `dateResolution` ★ 체결일 확정 규칙
+
+체결일이 메뉴마다 다르게 기록된 경우, **출처 우선순위**로 최종값을 확정합니다.
+
+| 우선순위 | 출처 |
+|---|---|
+| 1 | **체결 완료** 메뉴의 MOU 체결일 |
+| 2 | MOU 진행 이력 (진행 현황 · 허들·보류) 등 체결 관련 원본 자료 |
+| 3 | 협력업체 리스트(내부용)의 체결일 |
+| 4 | 기타 화면 · 비고 |
+
+**[체결 완료] 메뉴에 체결일이 있으면 다른 메뉴에 다른 날짜가 있어도 반드시 그 값을 씁니다.**
+
+- `mou.signedAt` — 확정된 최종 체결일. **화면에는 이 값만 표시합니다.**
+- `mou.signedAtSource` — 확정값이 온 메뉴 이름 (`"체결 완료"` 등)
+- `mou.signedAtSources` — 원본 그대로의 `{menu, date}[]` (감사용, 화면 표시 금지)
+- `dateResolution` — 확정 과정 기록
+
+```json
+{
+  "mou": { "signedAt": "2025-02-26", "signedAtSource": "체결 완료" },
+  "dateResolution": {
+    "status": "resolved_by_source_priority",
+    "selectedDate": "2025-02-26",
+    "selectedSource": "체결 완료",
+    "originalValues": [
+      { "source": "체결 완료", "value": "2025-02-26" },
+      { "source": "협력업체 리스트(내부용)", "value": "2025-02-14" }
+    ],
+    "rule": "체결 완료 메뉴의 날짜를 최종 체결일로 사용",
+    "resolutionStatus": "resolved",
+    "resolutionMethod": "completed_menu_priority",
+    "needsReview": false
+  }
+}
+```
+
+`dateResolution.status` 값
+
+| 값 | 뜻 | 확인 필요 |
+|---|---|---|
+| `single_source` | 메뉴 간 불일치 없음 | 아니오 |
+| `resolved_by_source_priority` | 불일치를 체결 완료 메뉴 기준으로 확정 | 아니오 |
+| `unresolved_multiple_in_completed` | **체결 완료 메뉴 안에서** 서로 다른 날짜 발견 | **예** |
+| `unresolved_no_completed_date` | 불일치인데 체결 완료 메뉴에 날짜 없음 → 차순위 사용 | **예** |
+
+- **화면 규칙** 카드·목록에는 `mou.signedAt` 하나만 표시합니다. 두 날짜를 나란히 두거나
+  협력업체 리스트의 다른 날짜를 최종값으로 표시하지 않습니다.
+  출처 이름(`signedAtSource`)만 상세에 함께 보여줍니다.
+- **검증** 규칙으로 해결된 불일치는 `needsReview` / `dateError` / `statusConflict` 에 반영하지 않습니다.
+  `validation.mouDateResolved = true` (사실 기록), `validation.mouDateNeedsReview = false`.
+  뒤의 두 `unresolved_*` 상태일 때만 `mouDateNeedsReview = true` 로 담당자 확인 대상이 됩니다.
+- **변경 이력** 처리 결과가 `changeHistory` 에 `type: "mou_date_resolution"` 으로 남습니다
+  (`previousDisplayedDate`, `newDisplayedDate`, `changed`, `selectedSource`, `conflictingValues`, `reason`).
+
+### `mou.partnerListMouMark`
+- **표시명** 협력업체 리스트 원본 표기 · **형식** `string | null` (예 `"ㅇ25.11.07"`)
+- **카드 위치** 상세 › MOU 타임라인 하단 (원본 표기 참고용)
 
 ### `mou.attempts`
 - **표시명** 원본 행별 진행 이력 · **형식** `object[]`
@@ -326,11 +377,13 @@
 | `validation.dateError` | 날짜 순서 오류 | 8 |
 | `validation.conflictResolvedBySigning` | 충돌이 있었으나 체결일로 상태 확정 | 6 |
 | `validation.missingMouDate` | 체결 완료인데 체결일 없음 | 0 |
-| `validation.mouDateMismatch` | 메뉴 간 체결일 값 불일치 | 25 |
+| `validation.mouDateMismatch` | 메뉴 간 체결일이 달랐다는 사실 | 25 |
+| `validation.mouDateResolved` | 그중 확정 규칙으로 해결됨 (문제 아님) | 25 |
+| `validation.mouDateNeedsReview` | 규칙 적용 후에도 담당자 확인 필요 | 0 |
 | `validation.missingHoldReason` | 보류 사유 없음 (결정 대기 중인 업체 기준) | 15 |
 | `validation.missingNextAction` | 다음 액션 없음 (결정 대기 중인 업체 기준) | 17 |
 | `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 71 |
-| `validation.needsReview` | 위 중 하나라도 해당 | 203 |
+| `validation.needsReview` | 위 중 하나라도 해당 | 187 |
 | `validation.messages[]` | `{type, message}` — 사람이 읽을 수 있는 사유 전문 | — |
 
 `messages[].type` 은 `statusConflict` / `dateError` / `possibleDuplicate` / `review` 네 가지입니다.

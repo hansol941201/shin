@@ -120,6 +120,11 @@ ${tbl(['업체', '최종 상태', 'MOU 체결일', '충돌 내용'],
 
 정상 순서: 질문서 발송 → 회신 → 1차 미팅 → 2차 미팅 → MOU 체결
 
+> **§8 의 “체결일 불일치”와는 다른 문제입니다.** 불일치는 *같은 날짜가 메뉴마다 다르게 적힌 것*이고,
+> 여기 날짜 오류는 *단계 순서가 뒤바뀐 것*입니다. 아래 ${dateErrs.length}건은 불일치 해결 여부와 무관하게 남는
+> 실제 순서 오류입니다 — 불일치가 함께 있는 건도 다른 메뉴 날짜를 썼을 때 오히려 더 이른 날짜가 되어
+> 오류가 해소되지 않습니다.
+
 ${tbl(['업체', '오류 내용'], dateErrs.map(c => [nm(c), msgs(c, 'dateError').join('<br>')]))}
 
 ### 단계를 건너뛴 것은 오류로 보지 않습니다
@@ -191,23 +196,68 @@ ${tbl(['업체', '마지막 진행일', '경과일', '단계'],
 
 ---
 
-## 8. MOU 체결일 값 불일치 — ${mismatch.length}개사
+## 8. MOU 체결일 불일치 — 출처 우선순위로 확정
 
-같은 업체의 체결일이 **[체결 완료] 탭과 [협력업체 리스트]에서 서로 다르게** 기록된 건입니다.
-대부분 1~4일 차이로, 체결일과 등록일을 다르게 적었을 가능성이 높습니다.
-어느 쪽이 맞는지 알 수 없어 **양쪽 값을 모두 \`mou.signedAtSources\` 에 보존**하고,
-대표값 \`mou.signedAt\` 은 신규 MOU 프로세스 쪽 값을 사용했습니다.
+같은 업체의 체결일이 메뉴마다 다르게 기록된 경우가 있습니다. **확정 규칙**에 따라 처리했습니다.
 
-> **이 ${mismatch.length}개사는 전건 \`MOU 체결 완료\` 입니다.** 날짜 값만 며칠 어긋난 것이라 상태 분류에는 영향이 없고,
-> 어느 날짜가 맞는지 확인이 필요하다는 데이터 품질 메모입니다.
+### 확정 규칙
 
-${tbl(['업체', '체결 완료 탭', '협력업체 리스트', '차이(일)'],
+| 우선순위 | 출처 |
+|---|---|
+| 1 | **체결 완료** 메뉴의 MOU 체결일 |
+| 2 | MOU 진행 이력 (진행 현황 · 허들·보류) 등 체결 관련 원본 자료 |
+| 3 | 협력업체 리스트(내부용)의 체결일 |
+| 4 | 기타 화면 · 비고에 기록된 날짜 |
+
+**[체결 완료] 메뉴에 체결일이 있으면 다른 메뉴에 다른 날짜가 있어도 반드시 [체결 완료] 값을 최종 체결일로 사용**합니다.
+화면(고객관리카드·업체 목록)에는 **확정된 날짜 하나만** 표시하며 두 날짜를 나란히 보여주지 않습니다.
+다른 메뉴의 원본 값은 지우지 않고 JSON 의 \`dateResolution.originalValues\` 에 보존했습니다.
+
+### 처리 결과
+
+| 항목 | 건수 |
+|---|---|
+| 메뉴별 체결일 불일치가 발견된 업체 | **${S.mouDateMismatch}** |
+| 체결 완료 메뉴 기준으로 자동 해결된 업체 | **${S.mouDateResolved}** |
+| 규칙 적용 후에도 담당자 확인이 필요한 업체 | **${S.mouDateNeedsReview}** |
+
+${S.mouDateNeedsReview === 0
+  ? '**불일치 전건이 자동 해결되었습니다.** 담당자 확인이 필요한 건은 없습니다. 이 ' + S.mouDateMismatch + '개사는 더 이상 상태 충돌·날짜 오류·확인 필요로 집계하지 않습니다(`validation.needsReview = false`, `dateError = false`).'
+  : '**' + S.mouDateNeedsReview + '개사**는 [체결 완료] 메뉴에 체결일이 없거나 그 안에서 서로 다른 날짜가 발견되어 자동 확정하지 못했습니다. 담당자 확인이 필요합니다.'}
+
+> **확인** — 규칙을 명시적으로 적용한 결과, **표시 날짜가 실제로 바뀐 업체는 ${rows(c => (c.changeHistory || []).some(h => h.type === 'mou_date_resolution' && h.changed)).length}개사**입니다.
+> 기존 통합에서도 신규 MOU 프로세스(체결 완료) 값을 대표값으로 쓰고 있어 결과가 이미 규칙과 일치했습니다.
+> 다만 이전에는 그것이 **명시적 규칙이 아니라 병합 순서에 따른 결과**였고 불일치를 “담당자 확인 필요”로 표시했는데,
+> 이제는 출처 우선순위로 확정하고 확인 필요 표시를 없앴습니다.
+
+### 불일치가 있었던 ${mismatch.length}개사
+
+${tbl(['업체', '확정 체결일', '확정 출처', '다른 메뉴 기록(보존)', '차이(일)', '처리'],
   mismatch.map(c => {
-    const a = c.mou.signedAtSources.find(s => s.menu === '체결 완료');
-    const b = c.mou.signedAtSources.find(s => s.menu.indexOf('협력업체') === 0);
-    const diff = (a && b) ? Math.abs(Math.round((Date.parse(a.date) - Date.parse(b.date)) / 86400000)) : '—';
-    return [nm(c), a ? a.date : '—', b ? b.date : '—', diff];
+    const r = c.dateResolution || {};
+    const others = (r.originalValues || []).filter(v => v.value !== c.mou.signedAt);
+    const ds = [...new Set((r.originalValues || []).map(v => v.value))].sort();
+    const diff = ds.length > 1 ? Math.abs(Math.round((Date.parse(ds[ds.length - 1]) - Date.parse(ds[0])) / 86400000)) : 0;
+    return [nm(c), c.mou.signedAt, c.mou.signedAtSource,
+            others.map(v => `${v.source}: ${v.value}`).join('<br>') || '—',
+            diff,
+            r.needsReview ? '⚠️ 담당자 확인 필요' : '✅ 자동 확정'];
   }))}
+
+각 업체의 \`changeHistory\` 에 처리 기록이 남아 있습니다.
+
+\`\`\`json
+{
+  "type": "mou_date_resolution",
+  "previousDisplayedDate": "...",
+  "newDisplayedDate": "...",
+  "changed": false,
+  "selectedSource": "체결 완료",
+  "conflictingValues": [ ... ],
+  "resolutionStatus": "resolved",
+  "reason": "사용자 확정 규칙에 따라 체결 완료 메뉴 날짜 우선 적용"
+}
+\`\`\`
 
 ---
 
@@ -260,7 +310,9 @@ ${d.notCollected.map((n, i) => `### ${i + 1}. ${n.item}\n\n**사유** — ${n.re
 | 상태 충돌·담당자 확인 필요 | ${S.byStatus['상태 충돌·담당자 확인 필요']} |
 | 중복 의심 | ${S.possibleDuplicate} |
 | 날짜 오류 | ${S.dateError} |
-| 체결일 값 불일치 | ${S.mouDateMismatch} |
+| 체결일 불일치 발견 | ${S.mouDateMismatch} |
+| 그중 규칙으로 자동 확정 | ${S.mouDateResolved} |
+| 규칙 적용 후 담당자 확인 필요 | ${S.mouDateNeedsReview} |
 | 보류 사유 미기재 | ${S.missingHoldReason} |
 | 확인 필요 사항이 1건 이상인 업체 | ${S.needsReview} |
 `;
