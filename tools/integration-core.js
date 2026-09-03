@@ -192,6 +192,7 @@ function toListRows(payload) {
       raw: c.mou.rawLabels,
       skipped: c.mou.skippedSteps || [],
       mouSource: c.mou.signedAtSource,
+      evidence: c.mou.evidence,
       dateRes: c.dateResolution,
       plMark: c.mou.partnerListMouMark,
       attempts: (c.mou.attempts || []).length > 1 ? c.mou.attempts : null,
@@ -291,6 +292,7 @@ const daysBetween = (a, b) => (a && b ? Math.round((Date.parse(b + 'T00:00:00Z')
 function MOU_DATE_PRIORITY(menu) {
   if (menu === MENU.DONE) return 1;
   if (menu === MENU.PROGRESS || menu === MENU.HOLD) return 2;
+  if (menu === MENU.LEGACY_XLSX) return 2;   // 체결 관련 원본 자료
   if (menu === MENU.PL_INTERNAL) return 3;
   return 4;
 }
@@ -315,6 +317,7 @@ const MENU = {
   Y25: '연도별 등급(2025)',
   Y24: '연도별 등급(2024)',
   Y23: '연도별 등급(2023)',
+  LEGACY_XLSX: '레거시 관리 엑셀',
 };
 
 const tabProgress = newMou.filter(c => !c.hurdle && !c.mouDone);
@@ -379,6 +382,7 @@ function newRec(name) {
     identifiedBy: new Set(),
     conflicts: [], dateErrors: [], dupNotes: [], reviews: [], changeHistory: [],
     dateResolution: null, mouDateSource: null,
+    legacyRoster: null, legacyPromoted: false,
     _firstName: String(name).trim(),
   };
 }
@@ -580,6 +584,50 @@ absorbYear(y25, MENU.Y25, 2025, ['y25', 'y24', 'y23', 'y22']);
 absorbYear(y24, MENU.Y24, 2024, ['y_cur', 'y_p1', 'y_p2', 'y_p3']);
 absorbYear(y23, MENU.Y23, 2023, ['y_cur', 'y_p1', 'y_p2', 'y_p3']);
 
+// 3-5) 레거시 관리 엑셀 근거 ------------------------------------------
+// 원본 대시보드가 생기기 전에 쓰던 관리 엑셀. MOU 체결 근거만 추출해 반영한다.
+//  · partnerRoster — 이 엑셀이 "전체 협약업체"로 집계하는 업체 목록(등급 표 등재 업체).
+//    등급 정의 자체가 협약 체결을 전제한다(C=협약유지, N=협약 체결 1년 6개월 미만 …).
+//    따라서 명부에 있으면 '협약이 체결된 업체'라는 문서 근거가 된다. 다만 체결일은 없다.
+//  · mouDates — CRM 시트에 적힌 실제 MOU 체결일. 체결일이 기록된 유일한 곳이다.
+const LEGACY = input.legacyEvidence || null;
+const legacyStats = { rosterMatched: 0, datesApplied: 0, companiesAdded: 0, rosterUnmatched: [] };
+
+if (LEGACY) {
+  const rosterByName = new Map();
+  (LEGACY.partnerRoster && LEGACY.partnerRoster.companies || []).forEach(e => {
+    rosterByName.set(normName(e.name), e);
+  });
+
+  for (const rec of all) {
+    for (const n of rec.names) {
+      const hit = rosterByName.get(normName(n));
+      if (hit) { rec.legacyRoster = hit; break; }
+    }
+    if (rec.legacyRoster) legacyStats.rosterMatched++;
+  }
+
+  // CRM 시트의 체결일 — 없는 업체는 새 레코드로 만든다
+  for (const md of (LEGACY.mouDates || [])) {
+    if (!md.name || NEWMOU_EXCLUDE.has(String(md.name).trim())) continue;
+    if (/^허들|^체크$|^구분$/.test(String(md.name).trim())) continue;
+    const key = normName(md.name);
+    let rec = byName.get(key);
+    if (!rec) {
+      rec = resolve(md.name, null, null);
+      legacyStats.companiesAdded++;
+      rec.legacyOnly = true;
+    }
+    addMenu(rec, MENU.LEGACY_XLSX);
+    if (!rec.mouSources.some(x => x.menu === MENU.LEGACY_XLSX && x.date === md.date)) {
+      rec.mouSources.push({ menu: MENU.LEGACY_XLSX, date: md.date });
+      legacyStats.datesApplied++;
+    }
+    if (!rec.dates.mou) rec.dates.mou = md.date;
+    if (!rec.rawLabels.mou) rec.rawLabels.mou = md.raw || null;
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // 4. 레코드별 파생값 / 검증
 // ─────────────────────────────────────────────────────────────
@@ -717,6 +765,28 @@ for (const rec of all) {
   if (rec.inProgress && holdWordHit) {
     rec.conflicts.push(`[진행 현황]에 있으나 비고에 보류성 표현("${holdWordHit}")이 있습니다 — 보류 의심.`);
     rec.holdSuspect = true;
+  }
+
+  // 레거시 엑셀이 "전체 협약업체"로 집계한 업체는 협약 체결 근거가 있다.
+  // 단 체결일은 그 엑셀에도 없으므로 날짜를 지어내지 않고 '체결일 미확인'으로 둔다.
+  // 신규 MOU 프로세스(진행 현황·허들·보류)에 살아 있는 업체는 절차가 진행 중이므로 건드리지 않는다.
+  if (candidate === STATUS.PARTNER_UNKNOWN && rec.legacyRoster) {
+    candidate = STATUS.DONE_NODATE;
+    rec.legacyPromoted = true;
+    rec.changeHistory.push({
+      type: 'mou_status_from_legacy_excel',
+      previousStatus: STATUS.PARTNER_UNKNOWN,
+      newStatus: STATUS.DONE_NODATE,
+      signedAt: null,
+      evidence: {
+        source: LEGACY ? LEGACY.sourceFile : null,
+        basis: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.label : '전체 협약업체') + ' 명부 등재',
+        cell: LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.cell : null,
+        grades: rec.legacyRoster.grades,
+        sheetRefs: rec.legacyRoster.sources,
+      },
+      reason: '원본 대시보드 이전에 쓰던 관리 엑셀의 협약업체 명부에서 확인됨. 체결일은 해당 엑셀에도 기록이 없어 미확인으로 둠.',
+    });
   }
 
   rec.statusCandidate = candidate;
@@ -929,6 +999,14 @@ const companies = all
         skippedSteps: rec.skippedSteps || [],
         rawLabels: rec.rawLabels,
         partnerListMouMark: rec.partnerMouMark,
+        evidence: rec.legacyRoster ? {
+          source: LEGACY ? LEGACY.sourceFile : null,
+          basis: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.label : null),
+          cell: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.cell : null),
+          grades: rec.legacyRoster.grades,
+          sheetRefs: rec.legacyRoster.sources,
+          promotedFromPartnerUnknown: !!rec.legacyPromoted,
+        } : null,
         attempts: rec.attempts,
       },
 
@@ -1016,6 +1094,14 @@ const summary = {
   mouDateMismatch: c(x => x.validation.mouDateMismatch),
   mouDateResolved: c(x => x.validation.mouDateResolved),
   mouDateNeedsReview: c(x => x.validation.mouDateNeedsReview),
+  legacyExcel: LEGACY ? {
+    sourceFile: LEGACY.sourceFile,
+    rosterSize: (LEGACY.partnerRoster && LEGACY.partnerRoster.companies || []).length,
+    rosterMatched: legacyStats.rosterMatched,
+    mouDatesInFile: (LEGACY.mouDates || []).length,
+    companiesAddedFromFile: legacyStats.companiesAdded,
+    promotedToDoneNoDate: c(x => x.mou.evidence && x.mou.evidence.promotedFromPartnerUnknown),
+  } : null,
   missingHoldReason: c(x => x.validation.missingHoldReason),
   missingNextAction: c(x => x.validation.missingNextAction),
   partnerWithoutMouStatus: c(x => x.validation.partnerWithoutMouStatus),
@@ -1025,6 +1111,12 @@ const summary = {
 };
 
 const notCollected = [
+  ...(LEGACY ? [{
+    item: '레거시 관리 엑셀 — 반영됨',
+    reason: `사용자가 제공한 «${LEGACY.sourceFile}» 에서 MOU 체결 근거를 추출해 반영했습니다. 이 엑셀은 등급 표에 오른 업체 전체를 "${LEGACY.partnerRoster.label}"(${LEGACY.partnerRoster.reportedCount}개사, ${LEGACY.partnerRoster.cell})로 집계합니다.`,
+    impact: `협약 명부 근거로 ${c(x => x.mou.evidence && x.mou.evidence.promotedFromPartnerUnknown)}개사를 '기존 협력업체·MOU 상태 확인 필요' → 'MOU 체결 완료·체결일 미확인' 으로 옮겼습니다. 다만 이 엑셀에도 해당 업체들의 체결일은 없어 날짜는 추정하지 않고 미확인으로 두었습니다. 체결일이 적힌 시트는 ${(LEGACY.sheetsWithMouDate || []).join(' / ')} 뿐입니다.`,
+  }] : []),
+
   OVERRIDES_APPLIED
     ? { item: 'Firebase 실시간 수정분 — 동기화로 반영됨',
         reason: '목록 화면의 [원본과 동기화] 로 Firebase Realtime Database 를 직접 읽어 시드에 반영했습니다.',

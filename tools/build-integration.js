@@ -18,6 +18,12 @@ const GENERATED_AT = '2026-09-02';        // 조사·생성 시각
 const SOURCE_PUBLISHED_AT = '2026-07-23'; // 원본 저장소 최신 배포(커밋)일
 const SOURCE_URL = 'https://pourservice.github.io/partner-dashboard/';
 
+// 레거시 관리 엑셀 근거 (있으면 반영)
+const EVIDENCE_PATH = path.join(OUTDIR, 'legacy-excel-evidence.json');
+const legacyEvidence = fs.existsSync(EVIDENCE_PATH)
+  ? JSON.parse(fs.readFileSync(EVIDENCE_PATH, 'utf8'))
+  : null;
+
 const html = fs.readFileSync(SRC, 'utf8');
 const parsed = Core.parseSourceHtml(html);
 
@@ -28,6 +34,7 @@ const payload = Core.build({
   generatedAt: GENERATED_AT,
   sourceUpdatedAt: SOURCE_PUBLISHED_AT,
   sourceUrl: SOURCE_URL,
+  legacyEvidence,
 });
 
 fs.mkdirSync(OUTDIR, { recursive: true });

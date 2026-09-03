@@ -433,6 +433,11 @@ function detail(r){
   });
   if(raws.length)h+='<ul class="dlist" style="margin-top:8px">'+raws.map(function(t){return '<li class="warn">'+esc(t)+'</li>';}).join('')+'</ul>';
   if(has(r.plMark))h+='<p class="src">협력업체 리스트 협약체결 칸 원본 표기: '+esc(r.plMark)+'</p>';
+  if(r.evidence&&r.evidence.promotedFromPartnerUnknown){
+    h+='<p class="src">체결 근거: '+esc(r.evidence.source)+' 의 “'+esc(r.evidence.basis)+'” 명부 ('+esc(r.evidence.cell)+')'
+      +(r.evidence.grades&&r.evidence.grades.length?' · 등급 '+esc(r.evidence.grades.join('/')):'')
+      +' — 해당 엑셀에도 체결일 기록이 없어 미확인</p>';
+  }
   if(r.mouSource)h+='<p class="src">체결일 출처: '+esc(r.mouSource)
     +(r.dateRes&&r.dateRes.status==='resolved_by_source_priority'
       ? ' (다른 메뉴에 다른 날짜가 있었으나 확정 규칙에 따라 체결 완료 메뉴 값을 사용. 원본 값은 JSON dateResolution 에 보존)'

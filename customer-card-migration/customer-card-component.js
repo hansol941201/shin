@@ -322,6 +322,10 @@
         ]) +
         '<div style="margin-top:14px"></div>' + timeline(company) +
         (has(mou.partnerListMouMark) ? '<p class="pcm-card__source" style="margin-top:8px">협력업체 리스트 협약체결 칸 원본 표기: ' + esc(mou.partnerListMouMark) + '</p>' : '') +
+        (mou.evidence && mou.evidence.promotedFromPartnerUnknown
+          ? '<p class="pcm-card__source">체결 근거: ' + esc(mou.evidence.source) + ' 의 “' + esc(mou.evidence.basis) + '” 명부 (' + esc(mou.evidence.cell) + ')' +
+            (mou.evidence.grades && mou.evidence.grades.length ? ' · 등급 ' + esc(mou.evidence.grades.join('/')) : '') +
+            ' · 해당 엑셀에도 체결일 기록은 없어 미확인</p>' : '') +
         (has(mou.signedAtSource) ? '<p class="pcm-card__source">체결일 출처: ' + esc(mou.signedAtSource) +
           (company.dateResolution && company.dateResolution.status === 'resolved_by_source_priority'
             ? ' (다른 메뉴에 다른 날짜가 있었으나 확정 규칙에 따라 체결 완료 메뉴 값을 사용합니다. 원본 값은 JSON dateResolution 에 보존)'

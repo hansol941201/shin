@@ -14,6 +14,7 @@ git clone --depth 1 https://github.com/pourservice/partner-dashboard /경로/par
 ## 실행
 
 ```sh
+node tools/extract-legacy-excel.js <레거시 관리 엑셀 .xlsx>   # 최초 1회 (근거 JSON 생성)
 node tools/build-integration.js [원본 index.html 경로] [출력 폴더]
 node tools/build-preview.js
 node tools/build-docs.js
@@ -28,6 +29,7 @@ node tools/build-list.js
 
 | 스크립트 | 하는 일 | 산출물 |
 |---|---|---|
+| `extract-legacy-excel.js` | 사용자 제공 관리 엑셀에서 MOU 체결 근거만 추출 (매출 등 재무 정보 제외) | `legacy-excel-evidence.json` |
 | `integration-core.js` | **통합 로직 본체.** Node(빌드)와 브라우저(목록의 동기화 버튼)가 같은 코드를 쓰도록 분리한 순수 모듈 | — (다른 스크립트가 사용) |
 | `build-integration.js` | 원본 `index.html` 을 파싱해 코어로 통합 | `companies-integrated.json` |
 | `build-preview.js` | 상태별 샘플 8종을 실제 데이터에서 골라 시안·마크업 생성 | `customer-card-preview.html`, `customer-card-component.html` |
@@ -45,6 +47,13 @@ node tools/build-list.js
 사이트는 로드 시 이 시드 위에 Firebase Realtime Database 와 브라우저 `localStorage` 값을 덮어씁니다.
 **그 두 곳은 비공개라 접근하지 않았고**, 따라서 산출물은 GitHub Pages 에 배포된 공개 기준값입니다.
 자세한 내용은 `customer-card-migration/DATA-VALIDATION-REPORT.md` §10 을 보세요.
+
+## 레거시 관리 엑셀
+
+원본 대시보드가 생기기 전에 쓰던 관리 엑셀에서 MOU 체결 근거를 뽑아
+`customer-card-migration/legacy-excel-evidence.json` 으로 저장하고, 빌드 시 자동으로 반영합니다.
+엑셀 원본은 매출 등 재무 정보를 담고 있어 저장소에 넣지 않습니다 — 판정에 필요한 근거만 남깁니다.
+근거 파일이 없으면 빌드는 엑셀 반영 없이 그대로 동작합니다.
 
 ## 동기화 검증
 

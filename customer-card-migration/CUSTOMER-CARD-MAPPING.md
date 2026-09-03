@@ -301,6 +301,22 @@
 - **변경 이력** 처리 결과가 `changeHistory` 에 `type: "mou_date_resolution"` 으로 남습니다
   (`previousDisplayedDate`, `newDisplayedDate`, `changed`, `selectedSource`, `conflictingValues`, `reason`).
 
+### `mou.evidence` — 레거시 엑셀 체결 근거
+- **표시명** 체결 근거 · **형식** `object | null`
+- **출처** 원본 대시보드 이전에 쓰던 관리 엑셀 (`legacy-excel-evidence.json`)
+- **필드** `source`(파일명) · `basis`(“전체 협약업체”) · `cell`(`보고!B2 / 보고!K2`) ·
+  `grades`(엑셀 등급) · `sheetRefs`(등재된 시트·셀) · `promotedFromPartnerUnknown`(상태가 이전됐는지)
+- **뜻** 이 엑셀은 등급 표에 오른 업체 전체를 “전체 협약업체”(257개사)로 집계합니다.
+  등급 정의(`C=협약유지`, `N=협약 체결 1년 6개월 미만` …)가 협약 체결을 전제하므로,
+  명부 등재는 **협약이 체결됐다는 문서 근거**입니다.
+- **적용 규칙** `기존 협력업체·MOU 상태 확인 필요` 였던 업체 중 명부에 있는 61개사를
+  `MOU 체결 완료·체결일 미확인` 으로 이전했습니다. **신규 MOU 프로세스(진행 현황·허들·보류)에
+  살아 있는 업체는 절차가 진행 중이므로 건드리지 않습니다.**
+- **체결일** 이 엑셀에도 해당 업체들의 체결일은 없습니다. `signedAt` 은 `null` 로 두고
+  날짜를 추정하지 않았습니다.
+- **카드 위치** 상세 › MOU 타임라인 하단 · 검증 탭
+- **변경 이력** `changeHistory` 에 `type: "mou_status_from_legacy_excel"` 로 기록
+
 ### `mou.partnerListMouMark`
 - **표시명** 협력업체 리스트 원본 표기 · **형식** `string | null` (예 `"ㅇ25.11.07"`)
 - **카드 위치** 상세 › MOU 타임라인 하단 (원본 표기 참고용)
@@ -382,8 +398,8 @@
 | `validation.mouDateNeedsReview` | 규칙 적용 후에도 담당자 확인 필요 | 0 |
 | `validation.missingHoldReason` | 보류 사유 없음 (결정 대기 중인 업체 기준) | 15 |
 | `validation.missingNextAction` | 다음 액션 없음 (결정 대기 중인 업체 기준) | 17 |
-| `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 71 |
-| `validation.needsReview` | 위 중 하나라도 해당 | 187 |
+| `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 10 |
+| `validation.needsReview` | 위 중 하나라도 해당 | 계산값 |
 | `validation.messages[]` | `{type, message}` — 사람이 읽을 수 있는 사유 전문 | — |
 
 `messages[].type` 은 `statusConflict` / `dateError` / `possibleDuplicate` / `review` 네 가지입니다.

@@ -32,41 +32,14 @@ samples.push({
   company: pick(c => c.mou.status === 'MOU 체결 완료' && !c.validation.needsReview === false ? false : c.mou.status === 'MOU 체결 완료', richness),
 });
 
-const noDateCount = S.byStatus['MOU 체결 완료·체결일 미확인'];
 samples.push({
   heading: '2. MOU 체결 완료 · 체결일 미확인',
-  note: `이 상태에 해당하는 업체는 원본에 <strong>0건</strong>입니다. 체결 표시(“ㅇ”, mouDone)가 있는 업체는 전건 날짜가 함께 입력되어 있었습니다. 아래 카드는 <strong>날짜를 지어내지 않기 위해 실제 업체가 아닌 스키마 시연용 레코드</strong>이며, 향후 이 상태가 발생했을 때 카드가 어떻게 보이는지만 보여줍니다.`,
-  isPlaceholder: true,
-  company: (() => {
-    const base = pick(c => c.mou.status === 'MOU 체결 완료' && c.isExistingPartner, richness);
-    const demo = JSON.parse(JSON.stringify(base));
-    demo.id = 'DEMO-NODATE';
-    demo.companyName = '(스키마 시연) 체결 완료·체결일 미확인';
-    demo.originalNames = [];
-    demo.companyCode = null;
-    demo.businessNumber = null;
-    demo.profile = { region: null, ceo: null, phone: null, fax: null, email: null, address: null, capital: null, partnerListNo: null, registeredAt: null, registeredYearFromCode: null };
-    demo.contacts = [];
-    demo.sites = []; demo.siteCount = 0;
-    demo.sales = []; demo.salesTotal = null; demo.gradeHistory = []; demo.grade = null;
-    demo.notes = [{ source: '주석', text: '실제 업체가 아닙니다. 상태 ②의 카드 표현을 확인하기 위한 스키마 시연 레코드입니다.' }];
-    demo.mou = Object.assign({}, demo.mou, {
-      status: 'MOU 체결 완료·체결일 미확인', statusCandidate: 'MOU 체결 완료·체결일 미확인',
-      signedAt: null, signedAtSources: [], partnerListMouMark: 'ㅇ',
-      questionnaireSentAt: null, questionnaireReceivedAt: null,
-      firstMeetingCompletedAt: null, secondMeetingCompletedAt: null,
-      rawLabels: { qSent: null, qReply: null, m1: null, m2: null, mou: 'ㅇ' },
-      attempts: [], currentStageDate: null, elapsedDays: null, stage: 'MOU 체결', stageNumber: 5, isStalled: false,
-    });
-    demo.validation = {
-      possibleDuplicate: false, statusConflict: false, dateError: false, missingMouDate: true,
-      mouDateMismatch: false, missingHoldReason: false, missingNextAction: false,
-      partnerWithoutMouStatus: false, needsReview: true,
-      messages: [{ type: 'review', message: '체결 완료 표시는 있으나 체결일이 없습니다. 날짜를 추정하지 않고 미확인으로 둡니다. (현재 원본 데이터에 이 상태의 실제 업체는 0건)' }],
-    };
-    demo.lastActivityAt = null;
-    return demo;
-  })(),
+  note: `실제 수집 데이터 · 이 상태 ${S.byStatus['MOU 체결 완료·체결일 미확인']}개사.<br>
+    레거시 관리 엑셀의 <strong>“전체 협약업체” 명부</strong>에서 협약 체결이 확인됐지만
+    그 엑셀에도 체결일이 없어 <strong>날짜를 추정하지 않고 “미확인”</strong>으로 둔 업체입니다.
+    근거(시트·셀 위치, 등급)는 상세의 [검증] 탭과 JSON 의 <code>mou.evidence</code> 에 있습니다.`,
+  company: pick(c => c.mou.status === 'MOU 체결 완료·체결일 미확인'
+    && c.mou.evidence && c.mou.evidence.promotedFromPartnerUnknown, richness),
 });
 
 samples.push({
