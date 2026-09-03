@@ -124,7 +124,7 @@ body{
 
 /* ---------- 헤더 ---------- */
 
-.pop-head{padding:18px 44px 0;text-align:center;}
+.pop-head{padding:22px 44px 0;text-align:center;}
 
 .logo-slot{
   display:inline-flex;align-items:center;gap:10px;
@@ -139,7 +139,7 @@ body{
 
 .badge{
   display:flex;align-items:stretch;
-  width:fit-content;margin:13px auto 0;
+  width:fit-content;margin:14px auto 0;
   background:var(--navy-900);
   border-radius:5px;
   overflow:hidden;
@@ -179,13 +179,13 @@ body{
   text-wrap:pretty;
 }
 
-.pop-body{padding:0 44px 12px;}
+.pop-body{padding:0 44px 14px;}
 
 /* ---------- 섹션 헤더 ---------- */
 
 .section-label{
   display:flex;align-items:center;gap:12px;
-  margin:13px 0 8px;
+  margin:15px 0 9px;
   font-size:14.5px;font-weight:700;color:var(--navy-900);letter-spacing:-.015em;
 }
 .section-label .rule{flex:1;height:1px;background:var(--line);}
@@ -198,7 +198,7 @@ body{
 /* ---------- 핵심 공지 ---------- */
 
 .key-notice{
-  margin-top:13px;padding:13px 15px;
+  margin-top:15px;padding:14px 16px;
   background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:10px;
   display:flex;gap:12px;
 }
@@ -208,7 +208,7 @@ body{
 .key-notice .date{font-family:var(--mono);letter-spacing:.02em;}
 
 .calm-notice{
-  margin-top:13px;padding:13px 15px;
+  margin-top:15px;padding:14px 16px;
   background:var(--sky-050);border:1px solid var(--sky-200);border-radius:10px;
   display:flex;gap:12px;
 }
@@ -225,8 +225,8 @@ body{
 }
 .keep-item{
   display:flex;align-items:center;gap:10px;
-  background:var(--sky-050);padding:9px 13px;
-  font-size:13px;font-weight:600;color:var(--navy-900);line-height:1.4;
+  background:var(--sky-050);padding:10px 14px;
+  font-size:13.5px;font-weight:600;color:var(--navy-900);line-height:1.4;
 }
 .keep-item svg{width:16px;height:16px;color:var(--sky-500);flex-shrink:0;}
 
@@ -239,7 +239,7 @@ body{
   box-shadow:0 1px 3px rgba(11,35,64,.07);
 }
 .gain{
-  background:var(--white);padding:8px 13px;
+  background:var(--white);padding:10px 14px;
   display:grid;grid-template-columns:28px 1fr;gap:0 10px;align-items:center;
 }
 .gain-ico{
@@ -249,31 +249,13 @@ body{
   grid-row:span 2;
 }
 .gain-ico svg{width:16px;height:16px;color:var(--navy-700);}
-.gain b{font-size:13px;font-weight:700;color:var(--navy-900);line-height:1.35;letter-spacing:-.01em;}
-.gain span{font-size:11.5px;color:var(--ink-body);line-height:1.4;}
-
-/* ---------- 전환일정 ---------- */
-
-.schedule{
-  margin-top:12px;
-  display:flex;
-  background:var(--sky-050);
-  border:1px solid var(--line);border-radius:8px;overflow:hidden;
-}
-.sched{
-  flex:1;padding:9px 6px;text-align:center;
-  border-right:1px solid var(--line);
-  font-size:11.5px;color:var(--ink-sub);line-height:1.3;
-}
-.sched:last-child{border-right:0;}
-.sched em{font-style:normal;}
-.sched strong{margin-left:6px;font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--navy-900);}
-.sched.is-end strong{color:var(--alert-ink);}
+.gain b{font-size:13.5px;font-weight:700;color:var(--navy-900);line-height:1.35;letter-spacing:-.01em;}
+.gain span{font-size:12px;color:var(--ink-body);line-height:1.4;}
 
 /* ---------- 설치 안내 (시안 2) ---------- */
 
 .install{
-  margin-top:14px;padding:13px 15px;
+  margin-top:14px;padding:12px 14px;
   border:1px solid var(--line);border-radius:10px;
   display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:center;
 }
@@ -333,7 +315,7 @@ body{
 
 .actions{
   display:flex;flex-direction:column;gap:9px;
-  padding:14px 44px 19px;
+  padding:13px 44px 17px;
   border-top:1px solid var(--line-soft);
   background:var(--white);border-radius:0 0 16px 16px;
 }
@@ -578,12 +560,6 @@ body{
               <b>휴대전화에서 바로 확인</b>
               <span>현장에서도 즉시 내려받기</span>
             </div>
-          </div>
-
-          <div class="schedule">
-            <div class="sched"><em>준비기간</em><strong>○.○~○.○</strong></div>
-            <div class="sched is-end"><em>플랫폼 종료</em><strong>○월 ○일</strong></div>
-            <div class="sched"><em>앱 단일 운영</em><strong>○월 ○일</strong></div>
           </div>
         </div>
       </div>
