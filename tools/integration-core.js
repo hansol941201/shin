@@ -196,6 +196,9 @@ function toListRows(payload) {
       skipped: c.mou.skippedSteps || [],
       mouSource: c.mou.signedAtSource,
       evidence: c.mou.evidence,
+      contractorListed: !!c.mou.contractorListed,
+      reviewPriority: c.reviewPriority || null,
+      reviewPriorityReason: c.reviewPriorityReason || null,
       dateRes: c.dateResolution,
       plMark: c.mou.partnerListMouMark,
       attempts: (c.mou.attempts || []).length > 1 ? c.mou.attempts : null,
@@ -543,6 +546,7 @@ function absorbPartner(rows, menu, master) {
     const rec = resolve(r.company, r.code, r.bizno);
     addMenu(rec, menu);
     rec.inPartner = true;
+    if (menu === MENU.PL_CONTRACTOR) rec.inContractorList = true;
     if (master) {
       const p = rec.profile;
       // 상호 변경 업체는 '현재 상호' 행의 값이 이깁니다. 이전 상호 행은 빈 칸만 채웁니다.
@@ -800,10 +804,14 @@ for (const rec of all) {
     rec.holdSuspect = true;
   }
 
-  // 레거시 엑셀이 "전체 협약업체"로 집계한 업체는 협약 체결 근거가 있다.
-  // 단 체결일은 그 엑셀에도 없으므로 날짜를 지어내지 않고 '체결일 미확인'으로 둔다.
+  // 실제 MOU 체결 기준은 [협력업체 리스트(시공사 발송용)] 등재다(사용자 확정).
+  //   · 외부 발송용에는 협약을 맺지 않은 곳도 섞여 있어 체결 근거로 쓰지 않는다.
+  //   · 레거시 엑셀의 "전체 협약업체" 명부(등급표)만으로는 승격하지 않는다.
+  //     등급표에는 있으나 시공사 발송용에 없고 내부용 협약체결 칸도 빈 업체가 다수라
+  //     사내 두 기준 모두에서 체결이 확인되지 않기 때문이다.
+  // 체결일은 어느 자료에도 없으므로 날짜를 지어내지 않고 '체결일 미확인'으로 둔다.
   // 신규 MOU 프로세스(진행 현황·허들·보류)에 살아 있는 업체는 절차가 진행 중이므로 건드리지 않는다.
-  if (candidate === STATUS.PARTNER_UNKNOWN && rec.legacyRoster) {
+  if (candidate === STATUS.PARTNER_UNKNOWN && rec.inContractorList) {
     candidate = STATUS.DONE_NODATE;
     rec.legacyPromoted = true;
     rec.changeHistory.push({
@@ -812,13 +820,11 @@ for (const rec of all) {
       newStatus: STATUS.DONE_NODATE,
       signedAt: null,
       evidence: {
-        source: LEGACY ? LEGACY.sourceFile : null,
-        basis: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.label : '전체 협약업체') + ' 명부 등재',
-        cell: LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.cell : null,
-        grades: rec.legacyRoster.grades,
-        sheetRefs: rec.legacyRoster.sources,
+        basis: '협력업체 리스트(시공사 발송용) 등재',
+        note: '시공사 발송용은 실제 MOU 를 체결한 업체만 담는 명부입니다(등재 202개사 중 200개사가 체결일 명시).',
+        legacyRosterGrades: rec.legacyRoster ? rec.legacyRoster.grades : null,
       },
-      reason: '원본 대시보드 이전에 쓰던 관리 엑셀의 협약업체 명부에서 확인됨. 체결일은 해당 엑셀에도 기록이 없어 미확인으로 둠.',
+      reason: '시공사 발송용 명부에서 협약 체결이 확인됨. 체결일은 어느 자료에도 기록이 없어 미확인으로 둠.',
     });
   }
 
@@ -864,7 +870,33 @@ for (const rec of all) {
     rec.reviews.push('체결 완료로 표시되어 있으나 체결일이 확인되지 않습니다. 날짜를 추정하지 않고 미확인으로 둡니다.');
   }
   if (rec.statusCandidate === STATUS.PARTNER_UNKNOWN) {
-    rec.reviews.push('협력업체 리스트/등급 현황에만 존재하고 MOU 진행·체결 근거가 없습니다.');
+    rec.reviews.push('MOU 체결 명부인 [협력업체 리스트(시공사 발송용)]에 없고, [협력업체 리스트(내부용)]의 협약체결 칸도 비어 있으며, 체결일도 확인되지 않습니다.');
+    if (rec.legacyRoster) {
+      rec.reviews.push(`다만 레거시 관리 엑셀의 "전체 협약업체" 명부(등급 ${rec.legacyRoster.grades.join('/') || '미상'})에는 올라 있습니다 — 근거가 서로 어긋나므로 담당자 확인이 필요합니다.`);
+    }
+    if (rec.menus.includes(MENU.PL_EXTERNAL) && !rec.inContractorList) {
+      rec.reviews.push('[협력업체 리스트(외부 발송용)]에는 있으나, 외부 발송용에는 협약을 맺지 않은 곳도 포함되어 있어 체결 근거로 보지 않았습니다.');
+    }
+    // 확인 우선순위 — 실제 거래 실적이 있으면 협약 여부를 먼저 확인해야 한다
+    const g = rec.grade;
+    if (rec.gradeSales || g === 'A' || g === 'B' || g === 'S') {
+      rec.reviewPriority = '높음';
+      rec.reviewPriorityReason = `등급 ${g || '미상'}${rec.gradeSales ? ' · 매출 실적 있음' : ''} — 실제 거래가 있었던 업체라 협약 유무를 먼저 확인해야 합니다.`;
+    } else if (g === 'F') {
+      rec.reviewPriority = '낮음';
+      rec.reviewPriorityReason = 'F등급(이슈·이탈 고객) — 협약이 종료됐을 가능성이 큽니다.';
+    } else if (g) {
+      rec.reviewPriority = '보통';
+      rec.reviewPriorityReason = `등급 ${g}(협약 유지·미가동) — 등급표에는 있으나 체결 근거가 없습니다.`;
+    } else {
+      rec.reviewPriority = '보통';
+      rec.reviewPriorityReason = '등급도 매출도 없어 협약 여부를 판단할 자료가 없습니다.';
+    }
+  }
+  // 체결일은 있으나 시공사 발송용 명부에 없는 경우
+  if (rec.dates.mou && rec.inPartner && !rec.inContractorList) {
+    rec.notInContractorList = true;
+    rec.reviews.push(`MOU 체결일(${rec.dates.mou})은 있으나 [협력업체 리스트(시공사 발송용)]에 없습니다 — 협약이 종료됐거나 최근 체결이라 아직 명부에 반영되지 않았을 수 있습니다.`);
   }
   // 이후 체결이 확인된 허들 이력은 결정을 기다리는 보류가 아니라 지나간 이력이다.
   rec.holdResolvedBySigning = rec.inHold && !!rec.dates.mou;
@@ -1038,6 +1070,8 @@ const companies = all
         registeredYearFromCode: code && /^\d{5}$/.test(code) ? 2000 + Number(code.slice(0, 2)) : null,
       },
 
+      reviewPriority: rec.reviewPriority || null,
+      reviewPriorityReason: rec.reviewPriorityReason || null,
       mou: {
         status: rec.status,
         statusCandidate: rec.statusCandidate,
@@ -1063,12 +1097,19 @@ const companies = all
         skippedSteps: rec.skippedSteps || [],
         rawLabels: rec.rawLabels,
         partnerListMouMark: rec.partnerMouMark,
-        evidence: rec.legacyRoster ? {
-          source: LEGACY ? LEGACY.sourceFile : null,
-          basis: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.label : null),
-          cell: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.cell : null),
-          grades: rec.legacyRoster.grades,
-          sheetRefs: rec.legacyRoster.sources,
+        contractorListed: !!rec.inContractorList,
+        evidence: (rec.inContractorList || rec.legacyRoster) ? {
+          contractorList: !!rec.inContractorList,
+          contractorListNote: rec.inContractorList
+            ? '협력업체 리스트(시공사 발송용) 등재 — 실제 MOU 체결 명부'
+            : '협력업체 리스트(시공사 발송용) 미등재',
+          legacyRoster: rec.legacyRoster ? {
+            source: LEGACY ? LEGACY.sourceFile : null,
+            basis: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.label : null),
+            cell: (LEGACY && LEGACY.partnerRoster ? LEGACY.partnerRoster.cell : null),
+            grades: rec.legacyRoster.grades,
+            sheetRefs: rec.legacyRoster.sources,
+          } : null,
           promotedFromPartnerUnknown: !!rec.legacyPromoted,
         } : null,
         attempts: rec.attempts,
@@ -1111,6 +1152,7 @@ const companies = all
         multipleCodes: !!rec.multipleCodes,
         nameChangeMerged: !!rec.aliasRule,
         cancelSuspect: !!rec.cancelSuspect,
+        notInContractorList: !!rec.notInContractorList,
         statusConflict: conflicts.length > 0,
         dateError: dateErrors.length > 0,
         missingMouDate: rec.statusCandidate === STATUS.DONE_NODATE,
@@ -1158,6 +1200,13 @@ const summary = {
   possibleDuplicate: c(x => x.validation.possibleDuplicate),
   multipleCodes: c(x => x.validation.multipleCodes),
   cancelSuspect: c(x => x.validation.cancelSuspect),
+  notInContractorList: c(x => x.validation.notInContractorList),
+  contractorListed: c(x => x.mou.contractorListed),
+  reviewPriority: {
+    '높음': c(x => x.reviewPriority === '높음'),
+    '보통': c(x => x.reviewPriority === '보통'),
+    '낮음': c(x => x.reviewPriority === '낮음'),
+  },
   statusConflict: c(x => x.validation.statusConflict),
   dateError: c(x => x.validation.dateError),
   mouDateMismatch: c(x => x.validation.mouDateMismatch),

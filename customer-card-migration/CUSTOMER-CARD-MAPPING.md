@@ -319,7 +319,23 @@
 - **변경 이력** 처리 결과가 `changeHistory` 에 `type: "mou_date_resolution"` 으로 남습니다
   (`previousDisplayedDate`, `newDisplayedDate`, `changed`, `selectedSource`, `conflictingValues`, `reason`).
 
-### `mou.evidence` — 레거시 엑셀 체결 근거
+### `mou.contractorListed` ★ MOU 체결 판정 기준
+- **표시명** MOU 체결 명부 등재 · **형식** `boolean` · **출처** 협력업체 리스트(시공사 발송용)
+- **뜻** **시공사 발송용 = 실제 MOU 를 체결한 업체 명부**입니다(사용자 확정).
+  등재 202개사 중 200개사(99%)가 체결일이 명시되어 데이터로도 확인됩니다.
+- **외부 발송용은 근거가 아닙니다.** 협약을 맺지 않은 곳도 섞여 있습니다.
+- **판정 순서** ① 체결일 확인 → `체결 완료` · ② 체결일 없고 시공사 등재 → `체결 완료·체결일 미확인`
+  · ③ 둘 다 아니면 `상태 확인 필요`
+- **검증** 체결일은 있는데 시공사 명부에 없으면 `validation.notInContractorList = true`
+  (협약 종료 또는 명부 미반영 가능성). 체결일이 더 강한 근거이므로 상태는 `체결 완료` 유지.
+
+### `reviewPriority` / `reviewPriorityReason`
+- **표시명** 확인 우선순위 · **형식** `"높음" | "보통" | "낮음" | null`
+- **대상** `기존 협력업체·MOU 상태 확인 필요` 업체
+- **기준** 높음 = S·A·B 등급 또는 매출 실적 있음(실제 거래 있었음) · 낮음 = F등급(이슈·이탈)
+- **카드 위치** 상세 › MOU 타임라인 · 목록의 `확인 우선 높음` 배지
+
+### `mou.evidence` — 체결 근거
 - **표시명** 체결 근거 · **형식** `object | null`
 - **출처** 원본 대시보드 이전에 쓰던 관리 엑셀 (`legacy-excel-evidence.json`)
 - **필드** `source`(파일명) · `basis`(“전체 협약업체”) · `cell`(`보고!B2 / 보고!K2`) ·
@@ -419,7 +435,8 @@
 | `validation.mouDateNeedsReview` | 규칙 적용 후에도 담당자 확인 필요 | 0 |
 | `validation.missingHoldReason` | 보류 사유 없음 (결정 대기 중인 업체 기준) | 15 |
 | `validation.missingNextAction` | 다음 액션 없음 (결정 대기 중인 업체 기준) | 17 |
-| `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 10 |
+| `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 68 |
+| `validation.notInContractorList` | 체결일 있으나 시공사 명부 미등재 | 10 |
 | `validation.needsReview` | 위 중 하나라도 해당 | 계산값 |
 | `validation.messages[]` | `{type, message}` — 사람이 읽을 수 있는 사유 전문 | — |
 

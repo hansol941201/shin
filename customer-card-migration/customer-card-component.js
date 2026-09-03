@@ -215,6 +215,7 @@
     var flags = [
       ['중복 의심', v.possibleDuplicate], ['상태 충돌', v.statusConflict], ['날짜 오류', v.dateError],
       ['상호 변경 통합', v.nameChangeMerged], ['업체코드 2건 이상', v.multipleCodes], ['협약취소 기재', v.cancelSuspect],
+      ['시공사 명부 미등재', v.notInContractorList],
       ['체결일 미확인', v.missingMouDate], ['체결일 담당자 확인 필요', v.mouDateNeedsReview],
       ['보류 사유 없음', v.missingHoldReason], ['다음 액션 없음', v.missingNextAction],
       ['협력업체지만 MOU 상태 없음', v.partnerWithoutMouStatus],
@@ -324,10 +325,11 @@
         ]) +
         '<div style="margin-top:14px"></div>' + timeline(company) +
         (has(mou.partnerListMouMark) ? '<p class="pcm-card__source" style="margin-top:8px">협력업체 리스트 협약체결 칸 원본 표기: ' + esc(mou.partnerListMouMark) + '</p>' : '') +
-        (mou.evidence && mou.evidence.promotedFromPartnerUnknown
-          ? '<p class="pcm-card__source">체결 근거: ' + esc(mou.evidence.source) + ' 의 “' + esc(mou.evidence.basis) + '” 명부 (' + esc(mou.evidence.cell) + ')' +
-            (mou.evidence.grades && mou.evidence.grades.length ? ' · 등급 ' + esc(mou.evidence.grades.join('/')) : '') +
-            ' · 해당 엑셀에도 체결일 기록은 없어 미확인</p>' : '') +
+        '<p class="pcm-card__source">MOU 체결 명부(시공사 발송용): ' +
+          (mou.contractorListed ? '<strong>등재</strong>' : '미등재') +
+          (val9.notInContractorList ? ' — 체결일은 있으나 명부에 없습니다(협약 종료 또는 미반영 가능)' : '') + '</p>' +
+        (company.reviewPriority
+          ? '<p class="pcm-card__source">확인 우선순위: <strong>' + esc(company.reviewPriority) + '</strong> — ' + esc(company.reviewPriorityReason || '') + '</p>' : '') +
         (has(mou.signedAtSource) ? '<p class="pcm-card__source">체결일 출처: ' + esc(mou.signedAtSource) +
           (company.dateResolution && company.dateResolution.status === 'resolved_by_source_priority'
             ? ' (다른 메뉴에 다른 날짜가 있었으나 확정 규칙에 따라 체결 완료 메뉴 값을 사용합니다. 원본 값은 JSON dateResolution 에 보존)'

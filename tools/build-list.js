@@ -292,7 +292,7 @@ function recount(rowsArr){
   var byStatus={}; VOCAB.status.forEach(function(k){byStatus[k]=0;});
   var byStage={}; VOCAB.stage.forEach(function(k){byStage[k]=0;});
   var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateResolved:0,mouDateNeedsReview:0,
-         missingMouDate:0,missingHoldReason:0,partnerWithoutMouStatus:0,__stalled:0};
+         missingMouDate:0,missingHoldReason:0,partnerWithoutMouStatus:0,notInContractorList:0,__stalled:0};
   var noStage=0, partners=0, years={};
   rowsArr.forEach(function(r){
     if(byStatus[r.status]!==undefined)byStatus[r.status]++;
@@ -340,6 +340,7 @@ function renderControls(){
     ['statusConflict','상태 충돌',COUNTS.flags.statusConflict],
     ['dateError','날짜 오류',COUNTS.flags.dateError],
     ['possibleDuplicate','중복 의심',COUNTS.flags.possibleDuplicate],
+    ['notInContractorList','체결일 있으나 시공사 명부 미등재',COUNTS.flags.notInContractorList],
     ['mouDateResolved','체결일 자동 확정(규칙 적용)',COUNTS.flags.mouDateResolved],
     ['mouDateNeedsReview','체결일 담당자 확인 필요',COUNTS.flags.mouDateNeedsReview],
     ['missingMouDate','체결일 미확인',COUNTS.flags.missingMouDate],
@@ -407,6 +408,8 @@ function badges(r){
   if(r.stalled)out.push('<span class="tag">장기 미진행</span>');
   if(r.suspect)out.push('<span class="tag warn">보류 의심</span>');
   if(r.v.cancelSuspect)out.push('<span class="tag warn">협약취소 기재</span>');
+  if(r.v.notInContractorList)out.push('<span class="tag warn">시공사 명부 미등재</span>');
+  if(r.reviewPriority==='높음')out.push('<span class="tag warn">확인 우선 높음</span>');
   if(r.v.nameChangeMerged)out.push('<span class="tag">상호 변경 통합</span>');
   if(r.v.multipleCodes)out.push('<span class="tag warn">업체코드 2건</span>');
   return out.length?out.join(''):'<span class="na">—</span>';
@@ -452,10 +455,16 @@ function detail(r){
       +(r.nameChange.businessNumber?' · 사업자등록번호 '+esc(r.nameChange.businessNumber)+' 일치':'')
       +(r.nameChange.confirmedBy?' · '+esc(r.nameChange.confirmedBy):'')+'</span></li></ul></div>';
   }
-  if(r.evidence&&r.evidence.promotedFromPartnerUnknown){
-    h+='<p class="src">체결 근거: '+esc(r.evidence.source)+' 의 “'+esc(r.evidence.basis)+'” 명부 ('+esc(r.evidence.cell)+')'
-      +(r.evidence.grades&&r.evidence.grades.length?' · 등급 '+esc(r.evidence.grades.join('/')):'')
-      +' — 해당 엑셀에도 체결일 기록이 없어 미확인</p>';
+  h+='<p class="src">MOU 체결 명부(시공사 발송용): '
+    +(r.contractorListed?'<strong>등재</strong> — 실제 체결 업체 명부에 있습니다'
+      :'미등재'+(r.v.notInContractorList?' <strong>(체결일은 있음 — 협약 종료 또는 명부 미반영 가능)</strong>':''))+'</p>';
+  if(r.evidence&&r.evidence.legacyRoster){
+    h+='<p class="src">레거시 엑셀 “'+esc(r.evidence.legacyRoster.basis||'전체 협약업체')+'” 명부: 등재'
+      +(r.evidence.legacyRoster.grades&&r.evidence.legacyRoster.grades.length?' (등급 '+esc(r.evidence.legacyRoster.grades.join('/'))+')':'')
+      +' — 참고 자료이며 단독으로는 체결 근거로 보지 않습니다</p>';
+  }
+  if(r.reviewPriority){
+    h+='<p class="src">확인 우선순위: <strong>'+esc(r.reviewPriority)+'</strong> — '+esc(r.reviewPriorityReason||'')+'</p>';
   }
   if(r.mouSource)h+='<p class="src">체결일 출처: '+esc(r.mouSource)
     +(r.dateRes&&r.dateRes.status==='resolved_by_source_priority'

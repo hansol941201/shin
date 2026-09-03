@@ -94,49 +94,61 @@ ${tbl(['최종 상태', '업체 수', '우선순위만 적용했을 때'],
   사용자가 제공한 레거시 관리 엑셀에서 협약 명부 근거가 확인된 ${S.legacyExcel ? S.legacyExcel.promotedToDoneNoDate : 0}개사가 여기로 옮겨졌습니다(§3-1).
 - **종결 = 0건.** 원본에 종결 상태를 저장하는 필드가 없습니다(§7 참조).
 
-### 3-1. 레거시 관리 엑셀 반영
+### 3-1. MOU 체결 판정 기준 — 협력업체 리스트(시공사 발송용)
 
-${S.legacyExcel ? `
-원본 대시보드가 생기기 전에 쓰던 관리 엑셀 «${S.legacyExcel.sourceFile}» 을 받아 MOU 체결 근거를 확인했습니다.
+**실제 MOU 를 체결한 업체는 [협력업체 리스트(시공사 발송용)] 명부로 판정합니다** (사용자 확정).
 
-**이 엑셀에서 확인된 것**
+| 명부 | 건수 | 체결 근거로 쓰는가 |
+|---|---|---|
+| 협력업체 리스트(**시공사 발송용**) | ${S.contractorListed} | **예 — 실제 체결 업체 명부** |
+| 협력업체 리스트(내부용) | 272 | 협약체결 칸에 날짜가 있을 때만 |
+| 협력업체 리스트(**외부 발송용**) | 253 | **아니오 — 협약을 맺지 않은 곳도 섞여 있음** |
+| 레거시 엑셀 “전체 협약업체” 명부 | ${S.legacyExcel ? S.legacyExcel.rosterSize : '—'} | 참고용 — 단독으로는 근거로 쓰지 않음 |
 
-| 항목 | 내용 |
-|---|---|
-| 협약업체 명부 | \`보고!B2\` = “${d.meta.legacyEvidence ? d.meta.legacyEvidence.label : '전체 협약업체'}”, \`보고!K2\` = ${S.legacyExcel.rosterSize}개사 |
-| 명부 등재 업체 | ${S.legacyExcel.rosterSize}개사 (전건 이번 데이터와 매칭됨) |
-| MOU 체결일이 적힌 시트 | 신규업체 CRM / 신규업체 CRM 26년 — **이 두 시트뿐** |
-| 그 시트의 체결일 | ${S.legacyExcel.mouDatesInFile}건 |
+**이 기준은 데이터로도 확인됩니다.** 시공사 발송용에 등재된 ${S.contractorListed}개사 중
+**${rows(c => c.mou.contractorListed && c.mou.signedAt).length}개사(${(rows(c => c.mou.contractorListed && c.mou.signedAt).length / S.contractorListed * 100).toFixed(1)}%)** 가 체결일이 명시되어 있습니다.
 
-**등급 정의 자체가 협약 체결을 전제합니다.** \`C = 협약유지(미가동)\`, \`N = 협약 체결 1년 6개월 미만\`,
-\`B = 1~2회 사용\`, \`F = 이슈 고객(이탈)\` — 모두 협약이 이미 맺어져 있어야 성립하는 등급입니다.
-따라서 **등급 표에 올라 있으면 협약이 체결된 업체**라는 문서 근거가 됩니다.
+### 판정 규칙
 
-**처리 결과**
+1. **체결일이 확인되면** → \`MOU 체결 완료\` (출처 우선순위는 §8)
+2. 체결일은 없지만 **시공사 발송용에 등재**되어 있으면 → \`MOU 체결 완료·체결일 미확인\`
+3. 둘 다 아니면 → \`기존 협력업체·MOU 상태 확인 필요\`
 
-| 항목 | 건수 |
-|---|---|
-| \`기존 협력업체·MOU 상태 확인 필요\` → \`MOU 체결 완료·체결일 미확인\` 이전 | **${S.legacyExcel.promotedToDoneNoDate}** |
-| 엑셀에만 있어 새로 추가된 업체 | ${S.legacyExcel.companiesAddedFromFile} |
-| 근거를 찾지 못해 그대로 둔 업체 | ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']} |
+> **레거시 엑셀 명부만으로는 승격하지 않습니다.**
+> 앞선 작업에서는 엑셀의 “전체 협약업체” 명부(${S.legacyExcel ? S.legacyExcel.rosterSize : 257}개사)를 근거로 61개사를 체결 완료로 올렸으나,
+> 그중 **59개사가 시공사 발송용에 없고 내부용 협약체결 칸도 전부 비어 있었습니다.**
+> 사내 두 기준 모두에서 체결이 확인되지 않아 \`기존 협력업체·MOU 상태 확인 필요\` 로 되돌렸습니다.
+> 엑셀 명부 등재 사실은 지우지 않고 각 업체의 \`mou.evidence.legacyRoster\` 와 확인 사유에 남겨 두었습니다.
 
-**체결일은 채우지 않았습니다.** 이 엑셀에도 해당 업체들의 체결일은 없습니다.
-날짜를 추정하지 않고 \`signedAt: null\` 로 두어 \`체결일 미확인\` 상태로 분류했습니다.
+### 체결일은 있으나 시공사 발송용에 없는 업체 — ${S.notInContractorList}개사
 
-각 업체의 \`mou.evidence\` 에 근거(시트·셀 위치, 등급)가, \`changeHistory\` 에
-\`type: "mou_status_from_legacy_excel"\` 기록이 남아 있습니다.
+${tbl(['업체', '체결일', '등급', '비고'],
+  rows(c => c.validation.notInContractorList)
+    .sort((a, b) => (b.mou.signedAt || '').localeCompare(a.mou.signedAt || ''))
+    .map(c => [nm(c), c.mou.signedAt, c.grade || '없음',
+      c.grade === 'F' ? 'F등급(이슈·이탈) — 협약 종료 가능성' : '최근 체결이라 명부 미반영 가능성']))}
 
-### 근거를 찾지 못해 그대로 둔 ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']}개사
+**체결일이 시공사 명부 등재보다 강한 근거**이므로 \`MOU 체결 완료\` 를 유지했습니다(사용자 확정).
+다만 ${rows(c => c.validation.notInContractorList && c.grade === 'F').length}개사가 F등급(이슈·이탈)이라 협약이 종료됐을 수 있어 \`validation.notInContractorList\` 로 표시했습니다.
 
-${rows(c => c.mou.status === '기존 협력업체·MOU 상태 확인 필요').map(c =>
-  `- ${nm(c)} — ${c.sourceTabs.join(' / ')}${c.mou.evidence ? '' : ' · 레거시 엑셀 협약 명부에 없음'}`).join('\n')}
+### 확인 필요 ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']}개사 — 확인 우선순위
 
-이 업체들은 협력업체 리스트나 연도별 등급 표에만 이름이 있고, 등급도 매출도 협약 명부 등재도 없습니다.
-**추정하지 않고 “MOU 상태 확인 필요”로 남겨 두었습니다.**
+체결 근거가 없는 업체에 확인 우선순위를 매겼습니다.
 
-` : '레거시 엑셀이 제공되지 않아 반영하지 않았습니다.'}
+| 우선순위 | 업체 수 | 기준 |
+|---|---|---|
+| **높음** | ${S.reviewPriority['높음']} | S·A·B 등급이거나 매출 실적이 있음 — 실제 거래가 있었던 업체 |
+| 보통 | ${S.reviewPriority['보통']} | C·N 등급(협약 유지·미가동) 또는 판단 자료 없음 |
+| 낮음 | ${S.reviewPriority['낮음']} | F등급(이슈·이탈) — 협약이 종료됐을 가능성 |
 
-### 진행 단계 분포
+**우선 확인 대상 (높음 ${S.reviewPriority['높음']}개사)**
+
+${tbl(['업체', '등급', '매출 실적', '등재 명부'],
+  rows(c => c.reviewPriority === '높음').map(c => [nm(c), c.grade || '없음',
+    c.salesTotal ? c.salesTotal.toLocaleString('ko-KR') + '원' : '없음',
+    c.sourceTabs.filter(t => t.indexOf('협력업체') === 0).map(t => t.replace('협력업체 리스트', '').replace(/[()]/g, '')).join(' / ') || '등급표만']))}
+
+### 진행 단계 분포### 진행 단계 분포
 
 ${tbl(['진행 단계', '업체 수'], d.stageVocabulary.map(s => [s, S.byStage[s] || 0]))}
 
@@ -337,7 +349,8 @@ ${tbl(['업체', '확정 체결일', '확정 출처', '다른 메뉴 기록(보�
 
 | 항목 | 건수 | 설명 |
 |---|---|---|
-| 협력업체지만 MOU 상태 확인 불가 | ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']} | 협력업체 리스트/등급 표에만 있고 협약체결 칸도, 레거시 엑셀 협약 명부 등재도 없음. **협력업체라는 이유만으로 체결로 추정하지 않았습니다.** (레거시 엑셀 근거로 ${S.legacyExcel ? S.legacyExcel.promotedToDoneNoDate : 0}개사는 §3-1 에서 이전됨) |
+| 협력업체지만 MOU 상태 확인 불가 | ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']} | MOU 체결 명부(시공사 발송용)에 없고 체결일도 없음. **협력업체라는 이유만으로 체결로 추정하지 않았습니다.** 우선순위는 §3-1 참조 |
+| 체결일은 있으나 시공사 명부 미등재 | ${S.notInContractorList} | 협약 종료 또는 명부 미반영 가능성 |
 | MOU 체결일이 있으나 협력업체 리스트에 없음 | ${doneNoPartner.length} | 체결 후 협력업체 리스트 등록이 누락됐을 가능성 |
 | 장기 미진행(마지막 기록 후 180일 이상) | ${S.stalled} | 진행 중·허들·보류 업체 기준 |
 | 원본 \`stage\` 시드값과 화면 표시 단계 불일치 | ${seedMismatch.length} | 사이트가 로드 시 \`recalcStage()\` 로 단계를 다시 계산하므로 **화면 표시값**을 채택 |
@@ -376,7 +389,8 @@ ${d.notCollected.map((n, i) => `### ${i + 1}. ${n.item}\n\n**사유** — ${n.re
 | 등급 보유 업체 | ${S.graded} |
 | MOU 체결 완료 | ${S.byStatus['MOU 체결 완료']} |
 | 체결일 미확인 | ${S.byStatus['MOU 체결 완료·체결일 미확인']} |
-| 그중 레거시 엑셀 근거로 이전 | ${S.legacyExcel ? S.legacyExcel.promotedToDoneNoDate : 0} |
+| MOU 체결 명부(시공사 발송용) 등재 | ${S.contractorListed} |
+| 체결일 있으나 시공사 명부 미등재 | ${S.notInContractorList} |
 | MOU 진행 중 | ${S.byStatus['MOU 진행 중']} |
 | 허들·보류 | ${S.byStatus['허들·보류']} |
 | 종결 | ${S.byStatus['종결']} |
