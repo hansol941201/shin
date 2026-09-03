@@ -214,6 +214,7 @@
     var msgs = v.messages || [];
     var flags = [
       ['중복 의심', v.possibleDuplicate], ['상태 충돌', v.statusConflict], ['날짜 오류', v.dateError],
+      ['상호 변경 통합', v.nameChangeMerged], ['업체코드 2건 이상', v.multipleCodes], ['협약취소 기재', v.cancelSuspect],
       ['체결일 미확인', v.missingMouDate], ['체결일 담당자 확인 필요', v.mouDateNeedsReview],
       ['보류 사유 없음', v.missingHoldReason], ['다음 액션 없음', v.missingNextAction],
       ['협력업체지만 MOU 상태 없음', v.partnerWithoutMouStatus],
@@ -280,6 +281,7 @@
       { id: 'basic', name: '기본 정보', html:
         grid([
           ['원본 업체명', (company.originalNames || []).join(' / ')],
+          ['이전 상호', (company.formerNames || []).join(' / ')],
           ['업체코드', (company.codes || [company.companyCode]).filter(Boolean).join(', ') || company.companyCode],
           ['사업자등록번호', v.bizno],
           ['지역', (company.profile || {}).region],

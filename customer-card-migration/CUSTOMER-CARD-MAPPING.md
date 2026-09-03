@@ -66,6 +66,24 @@
 - **정규화 규칙(조인 3순위)**: `㈜` `(주)` `주식회사` `(유)` `유한회사` `(사)` `(재)` `(합)` 제거 → 모든 공백 제거 → 소문자화.
   **이 정규화가 일치할 때만 자동 병합**했습니다. 이름이 비슷하다는 이유만으로는 합치지 않았습니다.
 
+### `formerNames` / `nameChange` — 상호 변경
+- **표시명** 이전 상호 · **형식** `string[]` / `object | null`
+- **출처** `company-aliases.json` (사용자가 실제 확인한 상호 변경만 등록)
+- **원칙** 사업자등록번호가 같아도 상호가 다르면 **자동 병합하지 않습니다.** 확인된 건만 합칩니다.
+- **동작** 이전 상호 레코드는 별도 업체로 남지 않습니다. `companyName` 은 현재 상호이고,
+  `originalNames` 에는 현재 상호 표기만, `formerNames` 에 이전 상호가 들어갑니다.
+- **`nameChange`** `{ current, former[], businessNumber, basis, confirmedBy }`
+- **값 충돌** 두 레코드의 대표자·주소·연락처 등이 다르면 **현재 상호 쪽 값을 사용**하고
+  버린 값을 `validation.messages` 에 남깁니다.
+- **카드 위치** 상세 › 기본 정보 «이전 상호» · 검증 탭 (목록의 업체명 칸에는 표시하지 않음, 검색에는 포함)
+- **검증** `validation.nameChangeMerged = true`. 사업자번호 공유로 인한 중복 의심에서는 제외됩니다.
+
+### `codes` / `validation.multipleCodes`
+- **표시명** 업체코드(전체) · **형식** `string[]` / `boolean`
+- **뜻** 상호 변경 전후로 코드가 각각 발급되는 등 한 업체에 코드가 2건 이상인 경우.
+  `companyCode` 는 대표 코드 1건, `codes` 는 전부입니다.
+- **분류** “다른 업체일 수 있다”가 아니라 **코드 정리가 필요하다**는 뜻이라 중복 의심 집계에서 제외했습니다.
+
 ### `identifiedBy`
 - **표시명** 업체 식별 근거 · **형식** `string[]` · **출처** 통합 로직
 - **값** `업체코드` / `사업자등록번호` / `정규화 업체명` 중 실제로 매칭에 쓰인 것
@@ -388,13 +406,16 @@
 
 | 필드 | 뜻 | 건수 |
 |---|---|---|
-| `validation.possibleDuplicate` | 중복 의심 | 17 |
+| `validation.possibleDuplicate` | 중복 의심 | 11 |
+| `validation.nameChangeMerged` | 확인된 상호 변경으로 통합 | 3 |
+| `validation.multipleCodes` | 같은 업체에 업체코드 2건 이상 | 3 |
+| `validation.cancelSuspect` | 체결 완료인데 비고에 협약 취소·해지 표현 | 1 |
 | `validation.statusConflict` | 상태 충돌 (체결일로 정리된 6건 포함) | 7 |
 | `validation.dateError` | 날짜 순서 오류 | 8 |
 | `validation.conflictResolvedBySigning` | 충돌이 있었으나 체결일로 상태 확정 | 6 |
 | `validation.missingMouDate` | 체결 완료인데 체결일 없음 | 0 |
-| `validation.mouDateMismatch` | 메뉴 간 체결일이 달랐다는 사실 | 25 |
-| `validation.mouDateResolved` | 그중 확정 규칙으로 해결됨 (문제 아님) | 25 |
+| `validation.mouDateMismatch` | 메뉴 간 체결일이 달랐다는 사실 | 27 |
+| `validation.mouDateResolved` | 그중 확정 규칙으로 해결됨 (문제 아님) | 27 |
 | `validation.mouDateNeedsReview` | 규칙 적용 후에도 담당자 확인 필요 | 0 |
 | `validation.missingHoldReason` | 보류 사유 없음 (결정 대기 중인 업체 기준) | 15 |
 | `validation.missingNextAction` | 다음 액션 없음 (결정 대기 중인 업체 기준) | 17 |

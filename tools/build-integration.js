@@ -24,6 +24,12 @@ const legacyEvidence = fs.existsSync(EVIDENCE_PATH)
   ? JSON.parse(fs.readFileSync(EVIDENCE_PATH, 'utf8'))
   : null;
 
+// 확인된 상호 변경(이전 상호 → 현재 상호)
+const ALIAS_PATH = path.join(OUTDIR, 'company-aliases.json');
+const companyAliases = fs.existsSync(ALIAS_PATH)
+  ? JSON.parse(fs.readFileSync(ALIAS_PATH, 'utf8'))
+  : null;
+
 const html = fs.readFileSync(SRC, 'utf8');
 const parsed = Core.parseSourceHtml(html);
 
@@ -35,6 +41,7 @@ const payload = Core.build({
   sourceUpdatedAt: SOURCE_PUBLISHED_AT,
   sourceUrl: SOURCE_URL,
   legacyEvidence,
+  companyAliases,
 });
 
 fs.mkdirSync(OUTDIR, { recursive: true });

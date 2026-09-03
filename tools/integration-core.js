@@ -175,6 +175,9 @@ function toListRows(payload) {
       id: c.id,
       name: c.companyName,
       names: c.originalNames,
+      formerNames: c.formerNames || [],
+      nameChange: c.nameChange || null,
+      codes: c.codes || [],
       code: c.companyCode,
       bizno: c.businessNumber,
       status: c.mou.status,
@@ -359,6 +362,17 @@ const menuCounts = [
 //    식별 우선순위: ① 업체코드 → ② 사업자등록번호 → ③ 정규화 업체명
 //    (①②로 이어붙은 경우에도 원본 표기는 전부 보존한다)
 // ─────────────────────────────────────────────────────────────
+// 이전 상호 → 현재 상호. 사용자가 실제 확인한 건만 들어온다(사업자번호만 같다고 자동 병합하지 않는다).
+const ALIASES = (input.companyAliases && input.companyAliases.aliases) || [];
+const aliasToCurrent = new Map();   // 정규화(이전 상호) → { current, rule }
+const currentNameSet = new Set();   // 정규화(현재 상호)
+for (const a of ALIASES) {
+  currentNameSet.add(normName(a.current));
+  for (const f of (a.former || [])) aliasToCurrent.set(normName(f), { current: a.current, rule: a });
+}
+const aliasOf = (name) => aliasToCurrent.get(normName(name)) || null;
+const isCurrentAliasName = (name) => currentNameSet.has(normName(name));
+
 const byName = new Map();   // 정규화 업체명 → rec
 const byCode = new Map();   // 업체코드 → rec
 const byBizno = new Map();  // 사업자번호(숫자) → rec
@@ -383,6 +397,7 @@ function newRec(name) {
     conflicts: [], dateErrors: [], dupNotes: [], reviews: [], changeHistory: [],
     dateResolution: null, mouDateSource: null,
     legacyRoster: null, legacyPromoted: false,
+    formerNames: [], aliasRule: null, profileFromCurrent: {}, currentCodes: [],
     _firstName: String(name).trim(),
   };
 }
@@ -399,6 +414,9 @@ const codeOwners = new Map();   // 업체코드 → [rec, ...]
 const biznoOwners = new Map();  // 사업자번호 → [rec, ...]
 
 function resolve(name, code, bizno) {
+  const alias = aliasOf(name);
+  const originalInput = String(name).trim();
+  if (alias) name = alias.current;          // 이전 상호로 들어온 행은 현재 상호 레코드로 보낸다
   const nk = normName(name);
   const ck = String(code || '').trim();
   const bk = digits(bizno);
@@ -419,6 +437,8 @@ function resolve(name, code, bizno) {
   if (nk && !rec.nameKeys.has(nk)) { rec.nameKeys.add(nk); byName.set(nk, rec); }
   if (ck) {
     if (!rec.codes.includes(ck)) rec.codes.push(ck);
+    // 상호 변경 업체는 '현재 상호' 행에서 온 코드를 대표 코드로 쓴다
+    if (!alias && !rec.currentCodes.includes(ck)) rec.currentCodes.push(ck);
     const owners = codeOwners.get(ck) || [];
     if (!owners.includes(rec)) owners.push(rec);
     codeOwners.set(ck, owners);
@@ -432,6 +452,11 @@ function resolve(name, code, bizno) {
   rec.identifiedBy.add(matchedBy);
   const n = String(name).trim();
   if (n && !rec.names.includes(n)) rec.names.push(n);
+  if (alias) {
+    rec.aliasRule = alias.rule;
+    if (!rec.formerNames.includes(originalInput)) rec.formerNames.push(originalInput);
+    rec.identifiedBy.add('확인된 이전 상호');
+  }
   return rec;
 }
 const addMenu = (rec, m) => { if (!rec.menus.includes(m)) rec.menus.push(m); };
@@ -520,15 +545,23 @@ function absorbPartner(rows, menu, master) {
     rec.inPartner = true;
     if (master) {
       const p = rec.profile;
-      p.partnerNo = r.no ?? p.partnerNo;
-      p.region = rawOf(r.region) || p.region;
-      p.ceo = rawOf(r.ceo) || p.ceo;
-      p.address = rawOf(r.address) || p.address;
-      p.phone = rawOf(r.phone) || p.phone;
-      p.fax = rawOf(r.fax) || p.fax;
-      p.email = rawOf(r.email) || p.email;
-      p.capital = rawOf(r.capital) || p.capital;
-      p.partnerNote = rawOf(r.note) || p.partnerNote;
+      // 상호 변경 업체는 '현재 상호' 행의 값이 이깁니다. 이전 상호 행은 빈 칸만 채웁니다.
+      const fromFormer = !!aliasOf(r.company);
+      const pref = rec.profileFromCurrent;
+      const put = (key, val) => {
+        const v = rawOf(val);
+        if (!v) return;
+        if (fromFormer) { if (!p[key]) { p[key] = v; } }
+        else {
+          if (p[key] && p[key] !== v && pref[key]) return;   // 현재 상호끼리 충돌하면 먼저 값 유지
+          if (p[key] && p[key] !== v && !pref[key]) rec.profileConflicts = (rec.profileConflicts || []).concat([{ field: key, kept: v, dropped: p[key] }]);
+          p[key] = v; pref[key] = true;
+        }
+      };
+      if (!fromFormer || p.partnerNo == null) p.partnerNo = r.no ?? p.partnerNo;
+      put('region', r.region); put('ceo', r.ceo); put('address', r.address);
+      put('phone', r.phone); put('fax', r.fax); put('email', r.email);
+      put('capital', r.capital); put('partnerNote', r.note);
       addNote(rec, menu, r.note);
       const mouRaw = rawOf(r.mou);
       if (mouRaw) {
@@ -863,6 +896,12 @@ for (const rec of all) {
     if (rec.dates.m2 && !rec.dates.m1) rec.reviews.push('2차 미팅 기록은 있으나 1차 미팅일이 비어 있습니다.');
   }
   if (rec.dates.mou && !rec.inPartner) rec.reviews.push('MOU 체결일이 있으나 협력업체 리스트(내부용)에서 확인되지 않습니다.');
+  // 체결 완료인데 비고에 협약 취소·해지 표현이 있으면 현재 유효한 협약인지 확인이 필요하다
+  const cancelNote = rec.notes.find(n => /협약\s*취소|계약\s*취소|해지|파기/.test(n.text));
+  if (rec.dates.mou && cancelNote) {
+    rec.cancelSuspect = true;
+    rec.reviews.push(`MOU 체결일(${rec.dates.mou})이 있으나 비고에 "${cancelNote.text}"(출처: ${cancelNote.source})가 있습니다 — 협약이 현재도 유효한지 담당자 확인이 필요합니다.`);
+  }
   if (rec.inPartner && !rec.codes.length) rec.reviews.push('협력업체 리스트에 있으나 업체코드가 비어 있습니다.');
   if (rec.seedStageMismatch) {
     rec.reviews.push(`원본 HTML 시드에 저장된 stage 값(${rec.seedStage})과 사이트가 화면에 실제로 그리는 단계(${rec.stageNum}: ${STAGE[rec.stageNum]})가 다릅니다. 사이트는 로드 시 recalcStage() 로 단계를 다시 계산하므로 화면 표시값을 채택했습니다.`);
@@ -871,9 +910,24 @@ for (const rec of all) {
   if (rec.names.length > 1) {
     rec.dupNotes.push(`원본에 표기가 다른 ${rec.names.length}건으로 등장하여 업체코드/사업자번호/정규화 업체명 기준으로 한 레코드로 통합했습니다: ${rec.names.join(' / ')}`);
   }
-  if (rec.codes.length > 1) {
-    rec.dupNotes.push(`같은 업체에 서로 다른 업체코드가 ${rec.codes.length}건 있습니다: ${rec.codes.join(', ')}`);
+  if (rec.aliasRule) {
+    rec.reviews.push(`상호 변경 확인 — 이전 상호 «${rec.formerNames.join(', ')}» 레코드를 «${rec.aliasRule.current}» 로 통합했습니다. 근거: ${rec.aliasRule.basis}`);
+    for (const cf of (rec.profileConflicts || [])) {
+      rec.reviews.push(`상호 변경 통합 시 «${cf.field}» 값이 서로 달랐습니다 — 현재 상호 기준 "${cf.kept}" 를 사용하고 "${cf.dropped}" 는 사용하지 않았습니다. 담당자 확인 권장.`);
+    }
   }
+  if (rec.codes.length > 1) {
+    // 같은 업체가 두 코드를 갖고 있다는 뜻이지 '다른 업체일 수 있다'는 뜻이 아니므로
+    // 중복 의심이 아니라 정리 필요 항목으로 분류한다.
+    rec.multipleCodes = true;
+    rec.reviews.push(`같은 업체에 서로 다른 업체코드가 ${rec.codes.length}건 있습니다: ${rec.codes.join(', ')}. 원본에서 코드 정리가 필요합니다.`);
+  }
+}
+
+// 상호 변경으로 확인된 업체는 '중복 의심'이 아니라 확정된 동일 업체다
+for (const rec of all) {
+  if (!rec.aliasRule) continue;
+  rec.dupNotes = rec.dupNotes.filter(m => !/사업자등록번호 .* 다른 상호/.test(m));
 }
 
 // 4-7) 중복 "의심" (자동 병합하지 않음)
@@ -911,7 +965,8 @@ for (const r of plInternal) {
   biznoGroups.get(b).push(r.company);
 }
 for (const [b, names] of biznoGroups) {
-  const uniq = [...new Set(names)];
+  // 사용자가 상호 변경으로 확인한 쌍은 이미 한 레코드로 합쳐졌으므로 중복 의심에서 뺀다
+  const uniq = [...new Set(names)].filter(n => !aliasOf(n));
   if (uniq.length > 1) {
     for (const nm of uniq) {
       const rec = byName.get(normName(nm));
@@ -930,7 +985,7 @@ const slug = (s, i) => 'C' + String(i + 1).padStart(4, '0');
 const companies = all
   .sort((a, b) => a.names[0].localeCompare(b.names[0], 'ko'))
   .map((rec, i) => {
-    const code = rec.codes[0] || null;
+    const code = rec.currentCodes[0] || rec.codes[0] || null;
     const uniq = (arr) => [...new Set(arr)];
     const reviews = uniq(rec.reviews);
     const conflicts = uniq(rec.conflicts);
@@ -951,8 +1006,17 @@ const companies = all
     return {
       id: slug(rec.names[0], i),
       companyCode: code,
+      codes: rec.codes,
       companyName: rec.names[0],
       originalNames: rec.names,
+      formerNames: rec.formerNames,
+      nameChange: rec.aliasRule ? {
+        current: rec.aliasRule.current,
+        former: rec.aliasRule.former,
+        businessNumber: rec.aliasRule.businessNumber || null,
+        basis: rec.aliasRule.basis,
+        confirmedBy: (input.companyAliases && input.companyAliases.confirmedBy) || null,
+      } : null,
       businessNumber: rec.biznos[0] || null,
       identifiedBy: [...rec.identifiedBy],
 
@@ -1044,6 +1108,9 @@ const companies = all
 
       validation: {
         possibleDuplicate: dupNotes.length > 0,
+        multipleCodes: !!rec.multipleCodes,
+        nameChangeMerged: !!rec.aliasRule,
+        cancelSuspect: !!rec.cancelSuspect,
         statusConflict: conflicts.length > 0,
         dateError: dateErrors.length > 0,
         missingMouDate: rec.statusCandidate === STATUS.DONE_NODATE,
@@ -1089,11 +1156,14 @@ const summary = {
   graded: c(x => x.grade),
   missingMouDate: c(x => x.validation.missingMouDate),
   possibleDuplicate: c(x => x.validation.possibleDuplicate),
+  multipleCodes: c(x => x.validation.multipleCodes),
+  cancelSuspect: c(x => x.validation.cancelSuspect),
   statusConflict: c(x => x.validation.statusConflict),
   dateError: c(x => x.validation.dateError),
   mouDateMismatch: c(x => x.validation.mouDateMismatch),
   mouDateResolved: c(x => x.validation.mouDateResolved),
   mouDateNeedsReview: c(x => x.validation.mouDateNeedsReview),
+  nameChangesApplied: c(x => x.nameChange),
   legacyExcel: LEGACY ? {
     sourceFile: LEGACY.sourceFile,
     rosterSize: (LEGACY.partnerRoster && LEGACY.partnerRoster.companies || []).length,

@@ -199,6 +199,26 @@ ${tbl(['업체', '유형', '내용'],
       : msgs(c, 'possibleDuplicate').some(m => m.indexOf('업체코드') > -1) ? '업체코드 공유(미병합)' : '표기 차이(병합함)',
     msgs(c, 'possibleDuplicate').join('<br>')]))}
 
+### 6-1-1. 상호 변경으로 확정 통합한 업체 — ${S.nameChangesApplied}개사
+
+사업자등록번호가 같아도 상호가 다르면 자동 병합하지 않는 것이 기본 원칙이지만,
+**사용자가 실제로 확인한 상호 변경 건**은 \`company-aliases.json\` 에 등록해 한 업체로 합쳤습니다.
+
+${tbl(['현재 상호', '이전 상호', '사업자등록번호', '확인 근거'],
+  rows(c => c.nameChange).map(c => [
+    nm(c), (c.formerNames || []).join(', '),
+    c.nameChange.businessNumber || '—', c.nameChange.basis,
+  ]))}
+
+이전 상호 레코드는 **별도 업체로 남지 않습니다.** 목록·카드의 업체명에도 나오지 않고,
+상세의 «이전 상호» 항목과 JSON 의 \`formerNames\` / \`nameChange\` 에만 남습니다(검색에는 걸립니다).
+
+통합 시 두 레코드의 값이 달랐던 항목은 **현재 상호 쪽 값을 사용**하고, 버린 값은 검증 메시지에 남겼습니다.
+
+${rows(c => c.nameChange && c.validation.messages.some(m => /상호 변경 통합 시/.test(m.message))).map(c =>
+  `**${c.companyName}** — ` + c.validation.messages.filter(m => /상호 변경 통합 시/.test(m.message))
+    .map(m => m.message.replace(/^상호 변경 통합 시 /, '').replace(/ 담당자 확인 권장\.$/, '')).join('<br>')).join('\n\n') || '값이 충돌한 항목은 없습니다.'}
+
 ### 6-2. 같은 업체가 신규 MOU 프로세스에 여러 행으로 존재 — ${multiAttempt.length}개사
 
 1차 시도가 허들 처리된 뒤 재접근해 체결된 케이스입니다.
@@ -208,7 +228,16 @@ ${tbl(['업체', '유형', '내용'],
 ${tbl(['업체', '원본 행'],
   multiAttempt.map(c => [nm(c), c.mou.attempts.map(a => `[${a.menu}] ${a.sourceName} — ${a.stage}${a.dates.mou ? ', 체결 ' + a.dates.mou : ''}`).join('<br>')]))}
 
-### 6-3. 업체코드 누락
+### 6-3. 같은 업체에 업체코드가 2건 — ${S.multipleCodes}개사
+
+${S.multipleCodes ? tbl(['업체', '업체코드', '사유'],
+  rows(c => c.validation.multipleCodes).map(c => [nm(c), (c.codes || []).join(', '),
+    c.validation.nameChangeMerged ? '상호 변경 전후로 코드가 각각 발급됨 — 원본 정리 필요' : '원본에 코드가 중복 발급됨'])) : '해당 없음'}
+
+이 항목은 **“다른 업체일 수 있다”는 중복 의심이 아니라 코드 정리가 필요하다는 뜻**이므로
+\`validation.multipleCodes\` 로 따로 표시하고 중복 의심 집계에서는 뺐습니다.
+
+### 6-4. 업체코드 누락
 
 협력업체 리스트에 있으나 업체코드가 비어 있는 업체: **${noCode.length}개사** ${noCode.length ? '— ' + noCode.map(c => c.companyName).join(', ') : ''}
 
@@ -312,6 +341,7 @@ ${tbl(['업체', '확정 체결일', '확정 출처', '다른 메뉴 기록(보�
 | MOU 체결일이 있으나 협력업체 리스트에 없음 | ${doneNoPartner.length} | 체결 후 협력업체 리스트 등록이 누락됐을 가능성 |
 | 장기 미진행(마지막 기록 후 180일 이상) | ${S.stalled} | 진행 중·허들·보류 업체 기준 |
 | 원본 \`stage\` 시드값과 화면 표시 단계 불일치 | ${seedMismatch.length} | 사이트가 로드 시 \`recalcStage()\` 로 단계를 다시 계산하므로 **화면 표시값**을 채택 |
+| 체결 완료인데 비고에 협약 취소·해지 표현 | ${S.cancelSuspect} | 협약이 현재도 유효한지 담당자 확인 필요 |
 | 등급이 메뉴마다 다른 업체 | ${rows(c => c.gradeHistory.some(g => g.conflictingGrades.length)).length} | 등급 현황과 연도별 등급의 같은 연도 값이 불일치 |
 
 ### 협력업체지만 MOU 상태를 확인할 수 없는 ${partnerNoMou.length}개사 (앞 20개)
@@ -352,7 +382,9 @@ ${d.notCollected.map((n, i) => `### ${i + 1}. ${n.item}\n\n**사유** — ${n.re
 | 종결 | ${S.byStatus['종결']} |
 | 기존 협력업체·상태 확인 필요 | ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']} |
 | 상태 충돌·담당자 확인 필요 | ${S.byStatus['상태 충돌·담당자 확인 필요']} |
+| 상호 변경으로 확정 통합 | ${S.nameChangesApplied} |
 | 중복 의심 | ${S.possibleDuplicate} |
+| 같은 업체에 업체코드 2건 | ${S.multipleCodes} |
 | 날짜 오류 | ${S.dateError} |
 | 체결일 불일치 발견 | ${S.mouDateMismatch} |
 | 그중 규칙으로 자동 확정 | ${S.mouDateResolved} |

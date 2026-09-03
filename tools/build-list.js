@@ -10,6 +10,9 @@ const Core = require('./integration-core.js');
 const d = JSON.parse(fs.readFileSync(path.join(DIR, 'companies-integrated.json'), 'utf8'));
 const S = d.summary;
 const CORE_SRC = fs.readFileSync(path.join(__dirname, 'integration-core.js'), 'utf8');
+const readJson = (f) => { const p2 = path.join(DIR, f); return fs.existsSync(p2) ? JSON.parse(fs.readFileSync(p2, 'utf8')) : null; };
+const LEGACY_EVIDENCE = readJson('legacy-excel-evidence.json');
+const COMPANY_ALIASES = readJson('company-aliases.json');
 
 // 목록 행은 코어가 만든다 — 동기화 시 브라우저에서 도는 함수와 동일하다.
 const rows = Core.toListRows(d);
@@ -246,6 +249,9 @@ tr.detail>td{background:#f7f8fb;padding:14px 16px}
     rawRows: S.rawRowsCollected,
     firebaseUrl: 'https://pour-partner-dashboard-default-rtdb.asia-southeast1.firebasedatabase.app',
   },
+  // 동기화(브라우저)에서도 빌드와 같은 규칙을 쓰도록 함께 싣는다
+  legacyEvidence: LEGACY_EVIDENCE,
+  companyAliases: COMPANY_ALIASES,
 }).replace(/</g, '\\u003c')}</script>
 <script>
 (function(){
@@ -255,6 +261,8 @@ var ROWS = BOOT.rows;
 var SUMMARY = BOOT.summary;
 var VOCAB = { status: BOOT.statusVocabulary, stage: BOOT.stageVocabulary };
 var META = BOOT.meta;
+var LEGACY_EVIDENCE = BOOT.legacyEvidence || null;
+var COMPANY_ALIASES = BOOT.companyAliases || null;
 var BASELINE = BOOT.rows;                 // 내장 스냅샷 (비교 기준)
 var SOURCE = { kind: 'snapshot', at: META.sourceUpdatedAt, note: null };
 var CHANGED = null;                       // 동기화 후 변경된 업체명 집합
@@ -366,7 +374,7 @@ function apply(){
     if(state.partner==='n'&&r.partner)return false;
     if(state.flag&&!flagOf(r,state.flag))return false;
     if(!q)return true;
-    var hay=[r.name,r.code,r.ceo].concat(r.names||[]).join(' ').toLowerCase();
+    var hay=[r.name,r.ceo].concat(r.names||[],r.formerNames||[],r.codes||[]).join(' ').toLowerCase();
     return hay.indexOf(q)>-1;
   });
   var k=state.sort,dir=state.dir;
@@ -398,6 +406,9 @@ function badges(r){
   if(r.v.missingHoldReason)out.push('<span class="tag warn">사유 미기재</span>');
   if(r.stalled)out.push('<span class="tag">장기 미진행</span>');
   if(r.suspect)out.push('<span class="tag warn">보류 의심</span>');
+  if(r.v.cancelSuspect)out.push('<span class="tag warn">협약취소 기재</span>');
+  if(r.v.nameChangeMerged)out.push('<span class="tag">상호 변경 통합</span>');
+  if(r.v.multipleCodes)out.push('<span class="tag warn">업체코드 2건</span>');
   return out.length?out.join(''):'<span class="na">—</span>';
 }
 
@@ -405,7 +416,8 @@ function detail(r){
   function g(l,v){return '<div class="dg"><b>'+esc(l)+'</b><span>'+cell(v)+'</span></div>';}
   var h='<div class="dgrid">'
     +g('원본 업체명',(r.names||[]).join(' / '))
-    +g('업체코드',r.code)+g('사업자등록번호',pii('bizno',r.bizno))
+    +g('이전 상호',(r.formerNames||[]).join(' / '))
+    +g('업체코드',(r.codes&&r.codes.length?r.codes.join(', '):r.code))+g('사업자등록번호',pii('bizno',r.bizno))
     +g('지역',r.region)+g('대표자',pii('ceo',r.ceo))
     +g('연락처',pii('phone',r.phone))+g('이메일',pii('email',r.email))
     +g('주소',pii('addr',r.addr))+g('자본금',r.capital)
@@ -433,6 +445,13 @@ function detail(r){
   });
   if(raws.length)h+='<ul class="dlist" style="margin-top:8px">'+raws.map(function(t){return '<li class="warn">'+esc(t)+'</li>';}).join('')+'</ul>';
   if(has(r.plMark))h+='<p class="src">협력업체 리스트 협약체결 칸 원본 표기: '+esc(r.plMark)+'</p>';
+  if(r.nameChange){
+    h+='<div class="dsec"><h4>상호 변경</h4><ul class="dlist"><li>이전 상호 <strong>'
+      +esc((r.formerNames||[]).join(', '))+'</strong> → 현재 <strong>'+esc(r.nameChange.current)+'</strong>'
+      +'<br><span class="src">근거: '+esc(r.nameChange.basis)
+      +(r.nameChange.businessNumber?' · 사업자등록번호 '+esc(r.nameChange.businessNumber)+' 일치':'')
+      +(r.nameChange.confirmedBy?' · '+esc(r.nameChange.confirmedBy):'')+'</span></li></ul></div>';
+  }
   if(r.evidence&&r.evidence.promotedFromPartnerUnknown){
     h+='<p class="src">체결 근거: '+esc(r.evidence.source)+' 의 “'+esc(r.evidence.basis)+'” 명부 ('+esc(r.evidence.cell)+')'
       +(r.evidence.grades&&r.evidence.grades.length?' · 등급 '+esc(r.evidence.grades.join('/')):'')
@@ -645,6 +664,8 @@ function runSync(sourceHtml,fbJson,label){
     DATA:merged.DATA,
     hurdleActions:merged.hurdleActions,
     overridesApplied:merged.applied,
+    legacyEvidence:LEGACY_EVIDENCE,
+    companyAliases:COMPANY_ALIASES,
     changelog:parsed.changelog,
     checklist:parsed.checklist,
     generatedAt:new Date().toISOString().slice(0,10),
