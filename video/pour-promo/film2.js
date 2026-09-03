@@ -489,7 +489,10 @@ function sectionLabel(parent,text,t,sub2){
     rule.style.opacity=e*(1-c01((T-(CT0+2.55))/.42));
     rule.style.transform=`scaleX(${e.toFixed(3)})`; });
 
-  const badge=mk('div','el',px({left:120,top:132}),S,
+  /* 와이드 1컷(M)이 뒤에 만들어져 문서 순서상 위로 올라온다.
+     예전 모자이크는 y=250 부터라 배지가 그 위 여백에 남았지만
+     풀블리드는 화면을 다 덮으므로 배지를 명시적으로 올린다. */
+  const badge=mk('div','el',px({left:120,top:132,zIndex:20}),S,
     '<div class="kicker" style="margin-bottom:12px">경험과 데이터</div>'+
     '<div style="font-size:56px;font-weight:900;color:var(--ink-1);letter-spacing:-.04em;font-variant-numeric:tabular-nums">'+
     '2,600,000<span style="font-size:34px;font-weight:700;color:var(--blue-600);margin-left:14px;letter-spacing:.1em">세대</span></div>');
@@ -807,9 +810,11 @@ function sectionLabel(parent,text,t,sub2){
   const h3=mk('div','el',px({left:0,top:238,width:1920,textAlign:'center',fontSize:44,fontWeight:800,
     color:'var(--ink-1)',letterSpacing:'-.035em'}),P3,'MOU 체결');
   wipe(h3,C(7)+.10,{d:.52,dir:'up'});
-  const DPAD=26, dfb=fitBox('mou_doc',600-DPAD*2,560-DPAD*2,0.76);
+  /* 문서 액자가 위로 올라와 'MOU 체결' 제목(238~300)을 덮고 있었다.
+     세로 예산을 560->516 으로 줄이고 시작점을 316 으로 내려 제목을 비운다. */
+  const DPAD=26, dfb=fitBox('mou_doc',600-DPAD*2,516-DPAD*2,0.76);
   const dw=dfb.w+DPAD*2, dh=dfb.h+DPAD*2;
-  const doc=mk('div','pedestal el',px({left:960-dw/2,top:290+(560-dh)/2,width:dw,height:dh}),P3);
+  const doc=mk('div','pedestal el',px({left:960-dw/2,top:316+(516-dh)/2,width:dw,height:dh}),P3);
   slot(doc,'mou_doc','POUR공법 특허 사용<br>MOU 체결서',{left:DPAD,top:DPAD,width:dfb.w,height:dfb.h},'contain');
   dropCard(doc,C(7)+.60,{d:.86,rot:-2.2,dy:-70});
   const hs=mk('div','card el',px({left:1330,top:564,width:400,height:286}),P3);
@@ -861,14 +866,37 @@ function sectionLabel(parent,text,t,sub2){
      같은 이야기를 사진 슬롯 7개로 반복할 뿐이었다.
      배경 위에 결론 두 마디만 남긴다. */
   const M=sub(S,C(3)-.15,B.t1,{i:[0,24]});
-  const o1=mk('div','el',px({left:0,top:452,width:1920,textAlign:'center'}),M,
-    '<span style="display:inline-block;padding:18px 46px;border-radius:8px;background:rgba(6,16,31,.80);'+
-    'font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많이 수주</span>');
-  snap(o1,C(3)+.55,{d:.36,s0:.84,out:C(4)+.02,outD:.26});
-  const o2=mk('div','el',px({left:0,top:452,width:1920,textAlign:'center'}),M,
-    '<span style="display:inline-block;padding:18px 46px;border-radius:8px;background:rgba(47,123,232,.92);'+
-    'font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많은 실적</span>');
+  /* 두 마디를 같은 자리에서 갈아끼우던 것을 위아래로 쌓는다.
+     모자이크를 걷어내면서 비게 된 중앙을 결론 자체가 채우게 된다. */
+  const o1=mk('div','el',px({left:0,top:356,width:1920,textAlign:'center'}),M,
+    '<span style="display:inline-block;padding:20px 52px;border-radius:8px;background:rgba(6,16,31,.80);'+
+    'font-size:64px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많이 수주</span>');
+  snap(o1,C(3)+.55,{d:.36,s0:.84});
+  const ar=mk('div','el',px({left:0,top:474,width:1920,textAlign:'center',fontSize:40,fontWeight:800,
+    color:'var(--blue-400)'}),M,'↓');
+  fade(ar,C(4)+.10,.28);
+  const o2=mk('div','el',px({left:0,top:540,width:1920,textAlign:'center'}),M,
+    '<span style="display:inline-block;padding:20px 52px;border-radius:8px;background:rgba(47,123,232,.92);'+
+    'font-size:64px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많은 실적</span>');
   snap(o2,C(4)+.36,{d:.36,s0:.84});
+
+  /* 아래쪽 여백에는 수치 없이 '올라간다'는 방향만 남긴다.
+     눈금도 라벨도 없으므로 없는 실적을 주장하지 않는다. */
+  const gs=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  gs.style.cssText='position:absolute;inset:0'; M.appendChild(gs);
+  const pts=[[500,806],[720,784],[940,758],[1160,730],[1420,700]];
+  const pl=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  pl.setAttribute('points',pts.map(q=>q.join(',')).join(' '));
+  pl.setAttribute('fill','none'); pl.setAttribute('stroke','rgba(125,180,255,.55)');
+  pl.setAttribute('stroke-width',3); pl.setAttribute('stroke-linecap','round');
+  gs.appendChild(pl);
+  let plen=0; for(let i=1;i<pts.length;i++) plen+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+  drawLine(pl,C(3)+.70,1.05,plen);
+  pts.forEach((q,i)=>{
+    const dot=mk('div','el',px({left:q[0]-7,top:q[1]-7,width:14,height:14,borderRadius:7,
+      background:'var(--blue-400)'}),M);
+    snap(dot,C(3)+.86+i*.18,{d:.28,s0:.4});
+  });
 })();
 
 /* ============================ FINAL ============================ */
