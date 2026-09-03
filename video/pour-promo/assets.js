@@ -15,8 +15,9 @@ function hasAlpha(buf){
   return false;                              // JPEG 등
 }
 const SLOTS=['apt_wide_1','diag_1','meet_1','seminar_1','seminar_2','seminar_3','analysis_1',
- 'consulting_1','tech_doc_1','cad_1','construction_1','apt_1','apt_2','apt_3','apt_4','apt_5',
- 'apt_6','apt_7','apt_8','drone_1','drone_2','data_1','ai_1','review_1','factory_yongin',
+ 'consulting_1','tech_doc_1','cad_1','construction_1',
+ /* apt_1~apt_8 (모자이크용) 은 SCENE 2/5 를 와이드 1컷으로 재구성하면서 없앴다 */
+ 'drone_1','drone_2','data_1','ai_1','review_1','factory_yongin',
  'material_1','material_2','material_3','material_4','kakao_1','rooftop_1','netform_doc',
  'hq_meeting','site_visit','mou_doc','handshake','pour_logo',
  /* AI 실사 이미지 (AI_IMAGE_PROMPTS.md 참고) */

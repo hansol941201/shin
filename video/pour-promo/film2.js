@@ -467,7 +467,7 @@ function sectionLabel(parent,text,t,sub2){
   const nbg=mk('div','bg',{opacity:.22},NZ);
   slot(nbg,['ai_city_1','apt_wide_1'],'현대 도시 · 건축물 전경',{left:0,top:0,width:'100%',height:'100%'});
   kenburns(nbg,B.t0,CT0+3.4,1.12,1.02);
-  reg(T=>{ NZ.style.opacity = Math.min(outCubic(c01((T-(B.t0-.2))/.5)), 1-c01((T-(CT0+4.10))/.60)); });
+  reg(T=>{ NZ.style.opacity = Math.min(outCubic(c01((T-(B.t0-.2))/.5)), 1-c01((T-(CT0+2.55))/.50)); });
   const wrapN=mk('div','el',px({left:0,top:300,width:1920,textAlign:'center',zIndex:5}),S);
   const nEl=mk('div','num',px({fontSize:210,lineHeight:'1.22'}),wrapN,'0');
   const uEl=mk('div','el',px({left:0,top:572,width:1920,textAlign:'center',fontSize:56,fontWeight:700,
@@ -504,22 +504,22 @@ function sectionLabel(parent,text,t,sub2){
   onDeep(badge.querySelector('div:nth-child(2)'), [12,44,82], [255,255,255]);
   onDeep(badge.querySelector('span'), [21,87,184], [125,180,255]);
 
-  /* --- site mosaic fills --- */
-  const M=sub(S,CT0+2.6,L('s2',2)+.15,{i:[0,24],o:[0,-24]});
-  const tiles=[[120,250,488,336],[632,250,656,336],[1312,250,488,336],
-               [120,610,316,240],[461,610,316,240],[802,610,316,240],[1143,610,316,240],[1484,610,316,240]];
-  const MT=[0,.26,.52,.86,1.02,1.18,1.34,1.50];
-  tiles.forEach((t,i)=>{
-    const c=mk('div','card el',px({left:t[0],top:t[1],width:t[2],height:t[3]}),M);
-    slot(c,'apt_'+(i+1),'아파트 현장 '+(i+1),{left:0,top:0,width:'100%',height:'100%'});
-    revealCard(c,CT0+2.75+MT[i],{d:.46,dir:['down','right','left','up'][i%4]});
-  });
-  const mcap=mk('div','el',px({left:1080,top:186,width:700,textAlign:'right',opacity:1}),M,
-    '<div class="kicker">전국 아파트 현장</div>');
-  wipe(mcap,CT0+2.9,{d:.44,dir:'left'});
+  /* --- 전국 현장 : 와이드 1컷 ---
+     8칸 모자이크였으나 채워야 할 사진 슬롯이 8개나 되어
+     자료가 붙기 전까지 화면이 빈 액자 벽처럼 보였다.
+     와이드 1컷 + 좌측 워시로 바꿔 사진 슬롯을 하나로 줄인다. */
+  const M=sub(S,CT0+3.10,L('s2',2)+.15,{i:[0,24],o:[0,-24]});
+  const mbg=mk('div','bg',{},M);
+  slot(mbg,['apt_wide_1','ai_city_1'],'전국 아파트 현장 전경',{left:0,top:0,width:'100%',height:'100%'});
+  kenburns(mbg,CT0+3.10,L('s2',2)+.20,1.10,1.01,'50%','56%');
+  mk('div','veil v-wash',{},M);
+  /* 캡션은 배지 바로 아래 좌측 워시 위로. 라벨 / 수치 / 라벨 의 3단 위계가 된다. */
+  const mcap=mk('div','el',px({left:120,top:292,width:760,fontSize:34,fontWeight:600,
+    letterSpacing:'-.025em',opacity:1}),M,'<span>전국 아파트 현장</span>');
+  wipe(mcap,CT0+3.28,{d:.44,dir:'right'});
   /* 모자이크 사진 위 캡션이라 딥 패널이 걷히는 끝자락에서도 배경이 어둡다.
      밝은 쪽 색을 blue-600 보다 한 단계 더 진하게 잡아 3:1 을 확보한다. */
-  onDeep(mcap.querySelector('.kicker'), [17,70,140], [74,147,245]);
+  onDeep(mcap.querySelector('span'), [62,81,105], [205,220,240]);
   reg(T=>{ const f=deepMix(parseFloat(NZ.style.opacity)||0);
     for(const [el,lt,dp] of adapt) el.style.color=lerpCol(lt,dp,f); });
 
@@ -856,15 +856,11 @@ function sectionLabel(parent,text,t,sub2){
     }
   });
 
-  /* 실적으로 채워지는 현장들 */
+  /* 결론 : 7칸 모자이크를 걷어냈다.
+     이 장면은 이미 ai_result_1 을 풀블리드로 깔고 있어서 모자이크는
+     같은 이야기를 사진 슬롯 7개로 반복할 뿐이었다.
+     배경 위에 결론 두 마디만 남긴다. */
   const M=sub(S,C(3)-.15,B.t1,{i:[0,24]});
-  const tiles=[[120,250,544,330],[688,250,544,330],[1256,250,544,330],
-               [120,604,402,246],[546,604,402,246],[972,604,402,246],[1398,604,402,246]];
-  tiles.forEach((t,i)=>{
-    const c=mk('div','card el',px({left:t[0],top:t[1],width:t[2],height:t[3]}),M);
-    slot(c,'apt_'+(i+1),'아파트 현장 '+(i+1),{left:0,top:0,width:'100%',height:'100%'});
-    revealCard(c,C(3)+.05+i*.19,{d:.38,dir:['up','left','down','right'][i%4]});
-  });
   const o1=mk('div','el',px({left:0,top:452,width:1920,textAlign:'center'}),M,
     '<span style="display:inline-block;padding:18px 46px;border-radius:8px;background:rgba(6,16,31,.80);'+
     'font-size:56px;font-weight:900;color:#fff;letter-spacing:-.04em">더 많이 수주</span>');
