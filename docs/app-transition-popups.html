@@ -97,7 +97,7 @@ body{
 .layer{
   position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
-  padding:24px 16px 96px;
+  padding:20px 16px 88px;
   overflow-y:auto;
 }
 
@@ -117,7 +117,7 @@ body{
 
 /* 공통 내부 요소 */
 
-.pop-head{padding:30px 48px 0;text-align:center;}
+.pop-head{padding:26px 48px 0;text-align:center;}
 
 .logo-slot{
   display:inline-flex;align-items:center;gap:10px;
@@ -132,7 +132,7 @@ body{
 
 .badge{
   display:flex;align-items:center;gap:8px;
-  width:fit-content;margin:18px auto 0;
+  width:fit-content;margin:14px auto 0;
   padding:6px 12px;
   background:var(--sky-100);
   color:var(--navy-700);
@@ -143,15 +143,15 @@ body{
 .badge .dot{width:5px;height:5px;border-radius:50%;background:var(--sky-500);}
 
 .pop-title{
-  margin:14px 0 0;
-  font-size:24px;font-weight:700;line-height:1.4;
+  margin:13px 0 0;
+  font-size:24px;font-weight:700;line-height:1.35;
   letter-spacing:-.02em;color:var(--navy-900);
   text-wrap:balance;
 }
 .pop-title .lead{display:block;font-size:19px;font-weight:600;color:var(--navy-500);margin-bottom:4px;}
 
 .pop-desc{
-  margin:13px auto 0;max-width:436px;
+  margin:11px auto 0;max-width:436px;
   font-size:14.5px;color:var(--ink-sub);line-height:1.75;
   text-wrap:pretty;
 }
@@ -160,7 +160,7 @@ body{
 
 .section-label{
   display:flex;align-items:center;gap:10px;
-  margin:26px 0 11px;
+  margin:22px 0 10px;
   font-size:13px;font-weight:600;color:var(--navy-900);letter-spacing:-.01em;
 }
 .section-label::after{content:"";flex:1;height:1px;background:var(--line-soft);}
@@ -184,6 +184,17 @@ body{
 .feature svg{width:22px;height:22px;color:var(--navy-500);flex-shrink:0;margin-top:2px;}
 .feature .f-name{font-size:14px;font-weight:600;color:var(--navy-900);line-height:1.4;}
 .feature .f-desc{font-size:12.5px;color:var(--ink-sub);line-height:1.55;margin-top:3px;}
+
+.feature-extra{
+  grid-column:1 / -1;
+  display:flex;align-items:center;gap:10px;
+  padding:13px 18px;
+  border:0;border-top:1px solid var(--line-soft);
+  background:var(--white);
+  font-size:12.5px;color:var(--ink-sub);line-height:1.55;
+}
+.feature-extra svg{width:17px;height:17px;color:var(--navy-500);flex-shrink:0;}
+.feature-extra strong{color:var(--navy-900);font-weight:600;}
 
 /* 시안 1 — 하단 안내 */
 .notice{
@@ -237,7 +248,7 @@ body{
 }
 .check-item{
   display:flex;align-items:center;gap:12px;
-  padding:9px 2px;
+  padding:8px 2px;
   border-bottom:1px solid var(--line-soft);
   font-size:14px;color:var(--ink);
 }
@@ -250,7 +261,7 @@ body{
 }
 .closing-note strong{color:var(--navy-900);font-weight:600;}
 
-.actions{display:flex;flex-direction:column;gap:9px;padding:18px 48px 26px;}
+.actions{display:flex;flex-direction:column;gap:9px;padding:16px 48px 22px;}
 .helper{margin:2px 0 0;text-align:center;font-size:12.5px;color:var(--ink-mute);}
 
 /* ---------- 시안 확인용 툴바 (실제 팝업에는 포함되지 않음) ---------- */
@@ -433,6 +444,14 @@ body{
               <p class="f-desc">요청·작업중·결과물·승인 단계를 실시간으로 확인</p>
             </div>
           </div>
+
+          <div class="feature-extra">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3.6" y="3.6" width="7" height="7" rx="1.6"/><rect x="13.4" y="3.6" width="7" height="7" rx="1.6"/>
+              <rect x="3.6" y="13.4" width="7" height="7" rx="1.6"/><rect x="13.4" y="13.4" width="7" height="7" rx="1.6"/>
+            </svg>
+            <span><strong>공법순서 · 공지사항 · 모든 문의 내역</strong>도 홈 화면에서 바로 확인</span>
+          </div>
         </div>
 
         <div class="notice">
@@ -502,6 +521,10 @@ body{
           <div class="check-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
             요청 진행상황 및 처리 결과 확인
+          </div>
+          <div class="check-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
+            공법순서 · 공지사항 · 모든 문의 내역 조회
           </div>
         </div>
 
