@@ -389,6 +389,8 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
 .tb-btn:hover{background:var(--navy-mid); border-color:var(--navy-mid);}
 .tb-btn.ghost{background:var(--white); color:var(--text); border-color:var(--line);}
 .tb-btn.ghost:hover{background:var(--head); border-color:var(--line-strong);}
+.tb-btn.danger{background:var(--white); color:var(--danger); border-color:#f3b1a8; margin-right:auto;}
+.tb-btn.danger:hover{background:#FDF0EE; border-color:var(--danger);}
 .tb-btn:disabled{opacity:.42; cursor:not-allowed; box-shadow:none;}
 .tb-btn:disabled:hover{background:var(--navy); border-color:var(--navy);}
 .tb-btn.ghost:disabled:hover{background:var(--white); border-color:var(--line);}
@@ -1052,6 +1054,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   </div>
 
   <div class="panel-foot">
+    <button type="button" class="tb-btn danger edit-only" id="panelDelete" style="display:none;">삭제</button>
     <button type="button" class="tb-btn ghost" id="panelCancel">취소</button>
     <button type="button" class="tb-btn" id="panelSave">공고 등록</button>
   </div>
@@ -2644,6 +2647,21 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     return { ok: true, record: after };
   }
 
+  /**
+   * 자료 한 건을 완전히 지운다(수정 이력 포함). 되돌릴 수 없으므로 화면에서
+   * 업체명(발주처)을 보여주고 확인을 받은 뒤에만 호출해야 한다.
+   */
+  function remove(id, storage) {
+    var all = list(storage);
+    var at = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === id) { at = i; break; } }
+    if (at < 0) return { ok: false, message: "해당 자료를 찾지 못했습니다." };
+    var removed = all[at];
+    all.splice(at, 1);
+    writeAll(all, storage);
+    return { ok: true, record: removed };
+  }
+
   /* --------------------------------------- 특허번호 미기재 알림 */
 
   /**
@@ -3121,6 +3139,7 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
     applyFilters: applyFilters,
     sortRecords: sortRecords,
     update: update,
+    remove: remove,
     buildHistory: buildHistory,
     isPatentResolved: isPatentResolved,
     missingPatentRecords: missingPatentRecords,
@@ -4969,12 +4988,14 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
       $("panelSave").textContent = "공고 등록";
       $("isRebid").parentNode.style.display = "";
       $("fStatus").value = "공고";              // 화면에서 고르지 않고 언제나 공고로 저장
+      $("panelDelete").style.display = "none";
     } else {
       var rec = PourRecords.list(storage).filter(function (r) { return r.id === id; })[0];
       if (!rec) return;
       $("panelTitle").textContent = "자료 수정 — " + (rec.client || "이름 없음");
       $("panelSave").textContent = "수정 저장";
       $("isRebid").parentNode.style.display = "none";
+      $("panelDelete").style.display = "";
 
       $("fClient").value = rec.client;
       $("fProjects").value = rec.projectNames.join("\n");
@@ -5014,6 +5035,19 @@ button,input,select,textarea{font-family:inherit; font-size:14px; color:var(--te
   $("panelClose").addEventListener("click", function () { closePanel("noticePanel", "panelBack"); });
   $("panelCancel").addEventListener("click", function () { closePanel("noticePanel", "panelBack"); });
   $("panelBack").addEventListener("click", function () { closePanel("noticePanel", "panelBack"); });
+
+  /* 자료 삭제 — 되돌릴 수 없으므로 대상 이름을 보여주고 확인을 받는다 */
+  $("panelDelete").addEventListener("click", function () {
+    if (!state.editingId) return;
+    var rec = PourRecords.list(storage).filter(function (r) { return r.id === state.editingId; })[0];
+    var name = (rec && rec.client) || "이름 없음";
+    if (!window.confirm("\"" + name + "\" 자료를 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.")) return;
+    var result = PourRecords.remove(state.editingId, storage);
+    if (!result.ok) { $("panelMsg").className = "form-msg error"; $("panelMsg").textContent = result.message; return; }
+    closePanel("noticePanel", "panelBack");
+    alertFilterIds = null;
+    refresh();
+  });
 
   /* 재공고 */
   $("isRebid").addEventListener("change", function () {
