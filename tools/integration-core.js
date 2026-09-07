@@ -997,6 +997,10 @@ for (const rec of all) {
     rec.nameVariantMerged = true;
     rec.reviews.push(`원본에 표기가 다른 ${rec.names.length}건(${rec.names.join(' / ')})으로 등장하여 한 업체로 통합했습니다 — 표기 차이일 뿐이라 별도 확인은 필요 없습니다.`);
   }
+  if (rec.aliasRule && rec.biznos.length > 1) {
+    rec.biznoMismatch = true;
+    rec.reviews.push(`상호 변경으로 통합했으나 사업자등록번호가 ${rec.biznos.length}건으로 서로 다릅니다: ${rec.biznos.join(', ')}. 상호 변경이면 보통 번호가 유지되므로 별개 법인일 수 있습니다 — 사용자 확인에 따라 병합했고 양쪽 번호를 모두 보존했습니다.`);
+  }
   if (rec.aliasRule) {
     rec.reviews.push(`상호 변경 확인 — 이전 상호 «${rec.formerNames.join(', ')}» 레코드를 «${rec.aliasRule.current}» 로 통합했습니다. 근거: ${rec.aliasRule.basis}`);
     for (const cf of (rec.profileConflicts || [])) {
@@ -1259,6 +1263,7 @@ const companies = all
         confirmedBy: (input.companyAliases && input.companyAliases.confirmedBy) || null,
       } : null,
       businessNumber: rec.biznos[0] || null,
+      businessNumbers: rec.biznos,
       identifiedBy: [...rec.identifiedBy],
 
       isExistingPartner: rec.inPartner,
@@ -1369,6 +1374,8 @@ const companies = all
         mergeCandidate: !!rec.mergeCandidate,
         multipleCodes: !!rec.multipleCodes,
         nameChangeMerged: !!rec.aliasRule,
+        confirmedSeparate: false,
+        biznoMismatch: !!rec.biznoMismatch,
         cancelSuspect: !!rec.cancelSuspect,
         notInContractorList: !!rec.notInContractorList,
         statusConflict: conflicts.length > 0,
@@ -1407,9 +1414,20 @@ for (const [k, v] of Object.entries(STAGE)) byStage[v] = c(x => x.mou.stageNumbe
 
 // 관계의 targetCompanyId 를 실제 id 로 채우고, 관계 생성 이력을 남긴다.
 {
+  // 병합된 업체의 옛 상호로 적힌 관계도 현재 업체로 이어지도록,
+  // 현재 상호·원본 상호뿐 아니라 확정된 옛 상호(aliases/formerNames)까지 색인한다.
+  const allNamesOf = (x) => [
+    x.companyName,
+    ...(x.originalNames || []),
+    ...(x.aliases || []),
+    ...(x.formerNames || []).map(f => (f && f.name) || f),
+  ].filter(Boolean);
   const byAnyName = new Map();
+  // 1순위: 현재 상호·원본 상호 (같은 이름이 겹칠 때 옛 상호가 덮어쓰지 않도록 먼저 넣는다)
   for (const c of companies) for (const n of [c.companyName, ...(c.originalNames || [])]) byAnyName.set(normName(n), c);
+  for (const c of companies) for (const n of allNamesOf(c)) if (!byAnyName.has(normName(n))) byAnyName.set(normName(n), c);
   for (const c of companies) {
+    const kept = [];
     for (const r of (c.relationships || [])) {
       let t = byAnyName.get(normName(r.targetCompanyName));
       let match = t ? 'exact' : null;
@@ -1417,14 +1435,31 @@ for (const [k, v] of Object.entries(STAGE)) byStage[v] = c(x => x.mou.stageNumbe
         // 비고에는 "기림 자회사"처럼 줄여 적는 경우가 있다.
         // 후보가 정확히 하나일 때만 접두 일치로 연결한다(병합이 아니라 링크이므로 되돌리기 쉽다).
         const key = normName(r.targetCompanyName);
-        if (key.length >= 2) {
-          const cands = companies.filter(x => [x.companyName, ...(x.originalNames || [])]
+        if (key.length >= 2 && allNamesOf(c).some(n => normName(n).startsWith(key))) {
+          // 병합된 자기 자신을 줄여 적은 경우(예: 도경 레코드의 "기림 자회사")
+          t = c; match = 'prefix';
+        } else if (key.length >= 2) {
+          const cands = companies.filter(x => x !== c && allNamesOf(x)
             .some(n => normName(n).startsWith(key) && normName(n) !== key));
           if (cands.length === 1) { t = cands[0]; match = 'prefix'; }
         }
       }
       if (t && t !== c) { r.targetCompanyId = t.id; r.linked = true; r.linkMatch = match; }
       else { r.targetCompanyId = null; r.linked = false; r.linkMatch = null; }
+      // 확정 병합으로 두 레코드가 한 업체가 되면 원본 비고의 관계가 자기 자신을 가리키게 된다.
+      // 이런 관계는 화면 표시에서만 제외하고, 원본 기재 사실은 이력으로 보존한다.
+      // (이전 상호 관계는 자기 레코드의 과거 이름을 가리키는 것이 정상이므로 유지한다.)
+      if (t === c && r.type !== 'former_name') {
+        c.changeHistory.push({
+          type: 'relationship_dropped_self',
+          relationshipType: r.type,
+          targetCompanyName: r.targetCompanyName,
+          source: r.source,
+          note: '확정 병합으로 동일 업체가 되어 자기 자신을 가리키는 관계입니다 — 표시에서만 제외하고 원본 비고는 그대로 보존합니다.',
+        });
+        continue;
+      }
+      kept.push(r);
       if (r.type !== 'former_name') {
         c.changeHistory.push({
           type: 'relationship_created',
@@ -1437,6 +1472,7 @@ for (const [k, v] of Object.entries(STAGE)) byStage[v] = c(x => x.mou.stageNumbe
         });
       }
     }
+    c.relationships = kept;
     // 카드 배지용 요약
     const cnt = (t) => (c.relationships || []).filter(r => r.type === t).length;
     c.relationshipSummary = {
@@ -1472,6 +1508,32 @@ for (const [k, v] of Object.entries(STAGE)) byStage[v] = c(x => x.mou.stageNumbe
       }
     }
   }
+
+  // 사용자가 "동일 업체가 아니다"라고 확정한 쌍.
+  // 사업자번호·비고가 비슷해도 다시 병합하지 않도록 근거를 데이터에 남긴다.
+  const SEPARATE = (input.companyAliases && input.companyAliases.confirmedSeparate) || [];
+  for (const s of SEPARATE) {
+    const names = s.companies || [];
+    for (const n of names) {
+      const c = byAnyName.get(normName(n));
+      if (!c) continue;
+      const others = names.filter(x => normName(x) !== normName(c.companyName));
+      if (!others.length) continue;
+      c.validation.confirmedSeparate = true;
+      c.validation.messages.push({
+        type: 'info',
+        message: `사용자 확인: «${others.join(', ')}» 와(과) 별도 업체입니다 — 병합하지 않습니다.` + (s.basis ? ` ${s.basis}` : ''),
+      });
+      c.changeHistory.push({
+        type: 'merge_declined',
+        withCompanies: others,
+        decision: s.decision || '별도 업체 — 병합하지 않음',
+        basis: s.basis || null,
+        note: s.note || null,
+        confirmedAt: s.confirmedAt || null,
+      });
+    }
+  }
 }
 
 const summary = {
@@ -1489,6 +1551,7 @@ const summary = {
   mergeCandidate: c(x => x.validation.mergeCandidate),
   userConfirmedMerge: c(x => x.merge && x.merge.status === 'user_confirmed'),
   relationshipConflict: c(x => x.validation.relationshipConflict),
+  biznoMismatch: c(x => x.validation.biznoMismatch),
   relationships: {
     companiesWithRelations: c(x => (x.relationships || []).length > 0),
     total: companies.reduce((a, x) => a + (x.relationships || []).length, 0),

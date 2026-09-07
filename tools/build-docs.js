@@ -153,7 +153,7 @@ ${tbl(['업체', '등급', '매출 실적', '등재 명부'],
     c.salesTotal ? c.salesTotal.toLocaleString('ko-KR') + '원' : '없음',
     c.sourceTabs.filter(t => t.indexOf('협력업체') === 0).map(t => t.replace('협력업체 리스트', '').replace(/[()]/g, '')).join(' / ') || '등급표만']))}
 
-### 진행 단계 분포### 진행 단계 분포
+### 진행 단계 분포
 
 ${tbl(['진행 단계', '업체 수'], d.stageVocabulary.map(s => [s, S.byStage[s] || 0]))}
 
@@ -287,6 +287,18 @@ ${rows(c => c.nameChange && c.validation.messages.some(m => /상호 변경 통�
 ${S.relationshipConflict
   ? rows(c => c.validation.relationshipConflict).map(c =>
       `- **${c.companyName}** ↔ ${c.relationships.filter(r => r.conflict).map(r => r.targetCompanyName).join(', ')} — 양쪽 비고가 서로를 모회사로 기재. 원본 값은 그대로 두고 확인 대상으로 표시했습니다.`).join('\n')
+  : '없음'}
+
+### 6-1-5. 사용자가 "별도 업체"로 확정한 쌍 — ${rows(c => c.validation.confirmedSeparate).length}개사
+
+사업자등록번호나 비고가 비슷해 병합 후보로 보였지만, 사용자가 **동일 업체가 아니라고 확정**한 건입니다.
+각자 고유 ID와 카드를 유지하며, 재병합을 막기 위해 근거를 \`changeHistory.merge_declined\` 에 남겼습니다.
+
+${rows(c => c.validation.confirmedSeparate).length
+  ? rows(c => c.validation.confirmedSeparate).map(c => {
+      const h = c.changeHistory.find(x => x.type === 'merge_declined') || {};
+      return `- **${c.companyName}** ↔ ${(h.withCompanies || []).join(', ')} — ${h.basis || ''}${h.note ? ' ' + h.note : ''}`;
+    }).join('\n')
   : '없음'}
 
 ### 6-2. 같은 업체가 신규 MOU 프로세스에 여러 행으로 존재 — ${multiAttempt.length}개사

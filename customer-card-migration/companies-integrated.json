@@ -93,6 +93,7 @@
     "mergeCandidate": 0,
     "userConfirmedMerge": 6,
     "relationshipConflict": 2,
+    "biznoMismatch": 0,
     "relationships": {
       "companiesWithRelations": 30,
       "total": 32,
@@ -862,6 +863,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -1067,6 +1069,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -1131,6 +1135,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -1276,6 +1281,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -1333,6 +1340,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -1463,6 +1471,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -1522,6 +1532,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1748601003",
+      "businessNumbers": [
+        "1748601003"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -1718,6 +1731,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -1768,6 +1783,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5038162275",
+      "businessNumbers": [
+        "5038162275"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -1964,6 +1982,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -2014,6 +2034,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6038124019",
+      "businessNumbers": [
+        "6038124019"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -2185,6 +2208,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -2235,6 +2260,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -2431,6 +2457,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -2486,6 +2514,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1118117606",
+      "businessNumbers": [
+        "1118117606"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -2657,6 +2688,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -2712,6 +2745,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1358141010",
+      "businessNumbers": [
+        "1358141010"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -2908,6 +2944,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -2961,6 +2999,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -3091,6 +3130,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -3162,6 +3203,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5828700333",
+      "businessNumbers": [
+        "5828700333"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -3382,6 +3426,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -3430,6 +3476,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -3552,6 +3599,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -3607,6 +3656,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1138152012",
+      "businessNumbers": [
+        "1138152012"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -3809,6 +3861,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -3859,6 +3913,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2078145460",
+      "businessNumbers": [
+        "2078145460"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -4061,6 +4118,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -4111,6 +4170,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -4292,6 +4352,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -4347,6 +4409,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8748102316",
+      "businessNumbers": [
+        "8748102316"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -4549,6 +4614,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -4619,6 +4686,9 @@
       ],
       "nameChange": null,
       "businessNumber": "2508103222",
+      "businessNumbers": [
+        "2508103222"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -4817,6 +4887,16 @@
           "linked": true,
           "source": "원본 비고",
           "note": "(주)도경 자회사"
+        },
+        {
+          "type": "merge_declined",
+          "withCompanies": [
+            "㈜도경"
+          ],
+          "decision": "별도 업체 — 병합하지 않음",
+          "basis": "사용자 확인. 사업자등록번호(250-81-03222 / 424-88-03332)와 대표자(송길영 / 송진영)가 서로 달라 동일 업체로 볼 근거가 없습니다.",
+          "note": "양쪽 비고가 서로를 모회사로 기재해 관계 방향은 여전히 확인 대상입니다. 원본 비고는 지우지 않고 그대로 두었습니다.",
+          "confirmedAt": "2026-09-07"
         }
       ],
       "sourceTabs": [
@@ -4836,6 +4916,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": true,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -4853,6 +4935,10 @@
           {
             "type": "review",
             "message": "«㈜기림이앤씨» 와 «㈜도경» 의 비고가 서로 상대를 모회사로 기재하고 있습니다 — 어느 쪽이 모회사인지 확인이 필요합니다. 원본 값은 그대로 두었습니다."
+          },
+          {
+            "type": "info",
+            "message": "사용자 확인: «㈜도경» 와(과) 별도 업체입니다 — 병합하지 않습니다. 사용자 확인. 사업자등록번호(250-81-03222 / 424-88-03332)와 대표자(송길영 / 송진영)가 서로 달라 동일 업체로 볼 근거가 없습니다."
           }
         ],
         "relationshipConflict": true
@@ -4890,6 +4976,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -5012,6 +5099,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -5071,6 +5160,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6058137261",
+      "businessNumbers": [
+        "6058137261"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -5272,6 +5364,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -5322,6 +5416,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2108127774",
+      "businessNumbers": [
+        "2108127774"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -5565,6 +5662,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -5615,6 +5714,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3828702920",
+      "businessNumbers": [
+        "3828702920"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -5775,6 +5877,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -5830,6 +5934,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1068692501",
+      "businessNumbers": [
+        "1068692501"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -6030,6 +6137,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -6099,6 +6208,9 @@
       ],
       "nameChange": null,
       "businessNumber": "1408196249",
+      "businessNumbers": [
+        "1408196249"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -6300,6 +6412,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -6348,6 +6462,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -6478,6 +6593,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -6537,6 +6654,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8648802491",
+      "businessNumbers": [
+        "8648802491"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -6733,6 +6853,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -6781,6 +6903,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -6903,6 +7026,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -6958,6 +7083,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5028140720",
+      "businessNumbers": [
+        "5028140720"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -7154,6 +7282,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -7204,6 +7334,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7938100644",
+      "businessNumbers": [
+        "7938100644"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -7405,6 +7538,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -7455,6 +7590,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -7630,6 +7766,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -7683,6 +7821,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -7844,6 +7983,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -7899,6 +8040,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6858802904",
+      "businessNumbers": [
+        "6858802904"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -8069,6 +8213,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -8119,6 +8265,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7158101911",
+      "businessNumbers": [
+        "7158101911"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -8295,6 +8444,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -8350,6 +8501,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5038108698",
+      "businessNumbers": [
+        "5038108698"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -8546,6 +8700,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -8601,6 +8757,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6158178084",
+      "businessNumbers": [
+        "6158178084"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -8797,6 +8956,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -8845,6 +9006,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -8975,6 +9137,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -9034,6 +9198,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8368703450",
+      "businessNumbers": [
+        "8368703450"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -9255,6 +9422,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -9305,6 +9474,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1188800857",
+      "businessNumbers": [
+        "1188800857"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -9516,6 +9688,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -9566,6 +9740,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6728702861",
+      "businessNumbers": [
+        "6728702861"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -9768,6 +9945,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -9890,6 +10069,9 @@
         "confirmedBy": "사용자 확인"
       },
       "businessNumber": "6088165960",
+      "businessNumbers": [
+        "6088165960"
+      ],
       "identifiedBy": [
         "정규화 업체명",
         "확인된 이전 상호"
@@ -10095,6 +10277,8 @@
         "mergeCandidate": false,
         "multipleCodes": true,
         "nameChangeMerged": true,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -10158,6 +10342,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6078144583",
+      "businessNumbers": [
+        "6078144583"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -10360,6 +10547,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -10410,6 +10599,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4118703232",
+      "businessNumbers": [
+        "4118703232"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -10574,6 +10766,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -10627,6 +10821,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -10757,6 +10952,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -10828,6 +11025,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1628702326",
+      "businessNumbers": [
+        "1628702326"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -10988,6 +11188,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -11062,6 +11264,9 @@
       ],
       "nameChange": null,
       "businessNumber": "1288655753",
+      "businessNumbers": [
+        "1288655753"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -11311,6 +11516,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -11361,6 +11568,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7918801215",
+      "businessNumbers": [
+        "7918801215"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -11527,6 +11737,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -11582,6 +11794,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6108132730",
+      "businessNumbers": [
+        "6108132730"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -11779,6 +11994,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -11864,6 +12081,9 @@
       ],
       "nameChange": null,
       "businessNumber": "4248803332",
+      "businessNumbers": [
+        "4248803332"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -12114,6 +12334,16 @@
           "linked": true,
           "source": "원본 비고 (역방향)",
           "note": "(주)도경 자회사"
+        },
+        {
+          "type": "merge_declined",
+          "withCompanies": [
+            "㈜기림이앤씨"
+          ],
+          "decision": "별도 업체 — 병합하지 않음",
+          "basis": "사용자 확인. 사업자등록번호(250-81-03222 / 424-88-03332)와 대표자(송길영 / 송진영)가 서로 달라 동일 업체로 볼 근거가 없습니다.",
+          "note": "양쪽 비고가 서로를 모회사로 기재해 관계 방향은 여전히 확인 대상입니다. 원본 비고는 지우지 않고 그대로 두었습니다.",
+          "confirmedAt": "2026-09-07"
         }
       ],
       "sourceTabs": [
@@ -12133,6 +12363,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": true,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -12150,6 +12382,10 @@
           {
             "type": "review",
             "message": "«㈜도경» 와 «㈜기림이앤씨» 의 비고가 서로 상대를 모회사로 기재하고 있습니다 — 어느 쪽이 모회사인지 확인이 필요합니다. 원본 값은 그대로 두었습니다."
+          },
+          {
+            "type": "info",
+            "message": "사용자 확인: «㈜기림이앤씨» 와(과) 별도 업체입니다 — 병합하지 않습니다. 사용자 확인. 사업자등록번호(250-81-03222 / 424-88-03332)와 대표자(송길영 / 송진영)가 서로 달라 동일 업체로 볼 근거가 없습니다."
           }
         ],
         "relationshipConflict": true
@@ -12189,6 +12425,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4098149174",
+      "businessNumbers": [
+        "4098149174"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -12380,6 +12619,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -12435,6 +12676,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6428101762",
+      "businessNumbers": [
+        "6428101762"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -12646,6 +12890,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -12696,6 +12942,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7718801924",
+      "businessNumbers": [
+        "7718801924"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -12898,6 +13147,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -12948,6 +13199,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2158782449",
+      "businessNumbers": [
+        "2158782449"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -13149,6 +13403,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -13199,6 +13455,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6218183850",
+      "businessNumbers": [
+        "6218183850"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -13390,6 +13649,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -13445,6 +13706,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2538801955",
+      "businessNumbers": [
+        "2538801955"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -13597,6 +13861,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -13652,6 +13918,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -13853,6 +14120,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -13903,6 +14172,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2068197475",
+      "businessNumbers": [
+        "2068197475"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -14109,6 +14381,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -14172,6 +14446,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "502283",
+      "businessNumbers": [
+        "502283"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -14368,6 +14645,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -14423,6 +14702,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1638703143",
+      "businessNumbers": [
+        "1638703143"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -14648,6 +14930,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -14701,6 +14985,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -14831,6 +15116,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -14902,6 +15189,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8128102550",
+      "businessNumbers": [
+        "8128102550"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -15112,6 +15402,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -15163,6 +15455,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1588700479",
+      "businessNumbers": [
+        "1588700479"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -15370,6 +15665,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -15423,6 +15720,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -15530,6 +15828,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -15593,6 +15893,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1298640821",
+      "businessNumbers": [
+        "1298640821"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -15799,6 +16102,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -15869,6 +16174,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1228801423",
+      "businessNumbers": [
+        "1228801423"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -16121,6 +16429,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -16176,6 +16486,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3158119531",
+      "businessNumbers": [
+        "3158119531"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -16378,6 +16691,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -16428,6 +16743,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5028198668",
+      "businessNumbers": [
+        "5028198668"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -16630,6 +16948,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -16680,6 +17000,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4458701921",
+      "businessNumbers": [
+        "4458701921"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -16851,6 +17174,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -16901,6 +17226,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1298659539",
+      "businessNumbers": [
+        "1298659539"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -17078,6 +17406,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -17128,6 +17458,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7168703189",
+      "businessNumbers": [
+        "7168703189"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -17404,6 +17737,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -17459,6 +17794,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2158149185",
+      "businessNumbers": [
+        "2158149185"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -17716,6 +18054,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -17775,6 +18115,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2688603437",
+      "businessNumbers": [
+        "2688603437"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -18015,6 +18358,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -18065,6 +18410,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2038803400",
+      "businessNumbers": [
+        "2038803400"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -18293,6 +18641,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -18343,6 +18693,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5028129875",
+      "businessNumbers": [
+        "5028129875"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -18539,6 +18892,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -18589,6 +18944,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3268703012",
+      "businessNumbers": [
+        "3268703012"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -18821,6 +19179,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -18871,6 +19231,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1378142766",
+      "businessNumbers": [
+        "1378142766"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -19072,6 +19435,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -19122,6 +19487,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3148657819",
+      "businessNumbers": [
+        "3148657819"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -19324,6 +19692,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -19374,6 +19744,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1258146527",
+      "businessNumbers": [
+        "1258146527"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -19545,6 +19918,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -19595,6 +19970,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2178118276",
+      "businessNumbers": [
+        "2178118276"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -19798,6 +20176,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -19857,6 +20237,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7688602961",
+      "businessNumbers": [
+        "7688602961"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -20118,6 +20501,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -20171,6 +20556,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -20301,6 +20687,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -20360,6 +20748,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1618103145",
+      "businessNumbers": [
+        "1618103145"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -20495,6 +20886,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -20543,6 +20936,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -20665,6 +21059,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -20739,6 +21135,9 @@
       ],
       "nameChange": null,
       "businessNumber": "7878103011",
+      "businessNumbers": [
+        "7878103011"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -20935,6 +21334,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -20985,6 +21386,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4168121999",
+      "businessNumbers": [
+        "4168121999"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -21187,6 +21591,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -21237,6 +21643,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5918702295",
+      "businessNumbers": [
+        "5918702295"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -21433,6 +21842,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -21483,6 +21894,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "603812",
+      "businessNumbers": [
+        "603812"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -21679,6 +22093,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -21734,6 +22150,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3168602469",
+      "businessNumbers": [
+        "3168602469"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -21936,6 +22355,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -21986,6 +22407,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1308610502",
+      "businessNumbers": [
+        "1308610502"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -22193,6 +22617,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -22243,6 +22669,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6178141434",
+      "businessNumbers": [
+        "6178141434"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -22464,6 +22893,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -22512,6 +22943,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -22634,6 +23066,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -22687,6 +23121,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -22803,6 +23238,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -22858,6 +23295,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6078183311",
+      "businessNumbers": [
+        "6078183311"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -23067,6 +23507,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -23235,6 +23677,9 @@
         "confirmedBy": "사용자 확인"
       },
       "businessNumber": "6158144172",
+      "businessNumbers": [
+        "6158144172"
+      ],
       "identifiedBy": [
         "정규화 업체명",
         "확인된 이전 상호"
@@ -23522,6 +23967,8 @@
         "mergeCandidate": false,
         "multipleCodes": true,
         "nameChangeMerged": true,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -23605,6 +24052,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6208122184",
+      "businessNumbers": [
+        "6208122184"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -23801,6 +24251,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -23854,6 +24306,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -23984,6 +24437,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -24053,6 +24508,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -24175,6 +24631,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -24230,6 +24688,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1108161507",
+      "businessNumbers": [
+        "1108161507"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -24429,6 +24890,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -24479,6 +24942,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1718800033",
+      "businessNumbers": [
+        "1718800033"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -24675,6 +25141,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -24725,6 +25193,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5138144653",
+      "businessNumbers": [
+        "5138144653"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -24932,6 +25403,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -24982,6 +25455,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4118803660",
+      "businessNumbers": [
+        "4118803660"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -25146,6 +25622,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -25209,6 +25687,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2248149608",
+      "businessNumbers": [
+        "2248149608"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -25411,6 +25892,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -25461,6 +25944,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2308802679",
+      "businessNumbers": [
+        "2308802679"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -25668,6 +26154,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -25718,6 +26206,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1358629480",
+      "businessNumbers": [
+        "1358629480"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -25928,6 +26419,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -25991,6 +26484,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1348199372",
+      "businessNumbers": [
+        "1348199372"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -26249,6 +26745,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -26299,6 +26797,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6058161849",
+      "businessNumbers": [
+        "6058161849"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -26495,6 +26996,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -26545,6 +27048,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2958702311",
+      "businessNumbers": [
+        "2958702311"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -26705,6 +27211,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -26758,6 +27266,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -26880,6 +27389,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -26939,6 +27450,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -27110,6 +27622,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -27165,6 +27679,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1398141287",
+      "businessNumbers": [
+        "1398141287"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -27436,6 +27953,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -27506,6 +28025,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4108625541",
+      "businessNumbers": [
+        "4108625541"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -27723,6 +28245,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -27773,6 +28297,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1348651451",
+      "businessNumbers": [
+        "1348651451"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -28001,6 +28528,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -28049,6 +28578,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -28171,6 +28701,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -28230,6 +28762,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8128801638",
+      "businessNumbers": [
+        "8128801638"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -28390,6 +28925,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -28443,6 +28980,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -28565,6 +29103,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -28622,6 +29162,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -28744,6 +29285,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -28803,6 +29346,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2808100492",
+      "businessNumbers": [
+        "2808100492"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -28999,6 +29545,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -29049,6 +29597,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5028157051",
+      "businessNumbers": [
+        "5028157051"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -29245,6 +29796,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -29300,6 +29853,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5048128834",
+      "businessNumbers": [
+        "5048128834"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -29504,6 +30060,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -29561,6 +30119,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -29691,6 +30250,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -29750,6 +30311,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1298166919",
+      "businessNumbers": [
+        "1298166919"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -29952,6 +30516,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -30002,6 +30568,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1898101067",
+      "businessNumbers": [
+        "1898101067"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -30208,6 +30777,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -30258,6 +30829,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7818100938",
+      "businessNumbers": [
+        "7818100938"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -30434,6 +31008,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -30489,6 +31065,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1308630454",
+      "businessNumbers": [
+        "1308630454"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -30762,6 +31341,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -30815,6 +31396,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -30943,6 +31525,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -30998,6 +31582,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7448100550",
+      "businessNumbers": [
+        "7448100550"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -31200,6 +31787,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -31255,6 +31844,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5798701622",
+      "businessNumbers": [
+        "5798701622"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -31457,6 +32049,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -31526,6 +32120,9 @@
       ],
       "nameChange": null,
       "businessNumber": "6088120605",
+      "businessNumbers": [
+        "6088120605"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -31733,6 +32330,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -31783,6 +32382,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3018610098",
+      "businessNumbers": [
+        "3018610098"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -31951,6 +32553,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -32006,6 +32610,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8598800851",
+      "businessNumbers": [
+        "8598800851"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -32192,6 +32799,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -32242,6 +32851,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5478701305",
+      "businessNumbers": [
+        "5478701305"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -32433,6 +33045,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -32488,6 +33102,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6158133715",
+      "businessNumbers": [
+        "6158133715"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -32684,6 +33301,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -32734,6 +33353,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8258100811",
+      "businessNumbers": [
+        "8258100811"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -32969,6 +33591,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -33019,6 +33643,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4048702837",
+      "businessNumbers": [
+        "4048702837"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -33257,6 +33884,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -33326,6 +33955,9 @@
       ],
       "nameChange": null,
       "businessNumber": "4268602320",
+      "businessNumbers": [
+        "4268602320"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -33537,6 +34169,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -33587,6 +34221,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5718700968",
+      "businessNumbers": [
+        "5718700968"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -33789,6 +34426,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -33839,6 +34478,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5148166039",
+      "businessNumbers": [
+        "5148166039"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -34035,6 +34677,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -34109,6 +34753,9 @@
       ],
       "nameChange": null,
       "businessNumber": "6578802651",
+      "businessNumbers": [
+        "6578802651"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -34327,6 +34974,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -34375,6 +35024,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -34497,6 +35147,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -34556,6 +35208,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8978101208",
+      "businessNumbers": [
+        "8978101208"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -34763,6 +35418,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -34813,6 +35470,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1218150636",
+      "businessNumbers": [
+        "1218150636"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -35062,6 +35722,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -35119,6 +35781,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -35241,6 +35904,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -35300,6 +35965,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2648600947",
+      "businessNumbers": [
+        "2648600947"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -35555,6 +36223,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -35610,6 +36280,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6088142308",
+      "businessNumbers": [
+        "6088142308"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -35822,6 +36495,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -35872,6 +36547,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2318111717",
+      "businessNumbers": [
+        "2318111717"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -36007,6 +36685,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -36076,6 +36756,9 @@
       ],
       "nameChange": null,
       "businessNumber": "3698103297",
+      "businessNumbers": [
+        "3698103297"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -36303,6 +36986,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -36364,6 +37049,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4738600783",
+      "businessNumbers": [
+        "4738600783"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -36545,6 +37233,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -36600,6 +37290,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6038167435",
+      "businessNumbers": [
+        "6038167435"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -36802,6 +37495,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -36850,6 +37545,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -37025,6 +37721,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -37092,6 +37790,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7488101658",
+      "businessNumbers": [
+        "7488101658"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -37294,6 +37995,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -37344,6 +38047,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3928700142",
+      "businessNumbers": [
+        "3928700142"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -37585,6 +38291,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -37635,6 +38343,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6048122746",
+      "businessNumbers": [
+        "6048122746"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -37837,6 +38548,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -37887,6 +38600,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5148127206",
+      "businessNumbers": [
+        "5148127206"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -38094,6 +38810,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -38155,6 +38873,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2128603813",
+      "businessNumbers": [
+        "2128603813"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -38367,6 +39088,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -38415,6 +39138,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -38537,6 +39261,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -38596,6 +39322,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1358140160",
+      "businessNumbers": [
+        "1358140160"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -38792,6 +39521,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -38842,6 +39573,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -39044,6 +39776,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -39094,6 +39828,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1198653159",
+      "businessNumbers": [
+        "1198653159"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -39296,6 +40033,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -39346,6 +40085,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6078167243",
+      "businessNumbers": [
+        "6078167243"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -39603,6 +40345,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -39654,6 +40398,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6208127160",
+      "businessNumbers": [
+        "6208127160"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -39906,6 +40653,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -39965,6 +40714,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2298116650",
+      "businessNumbers": [
+        "2298116650"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -40161,6 +40913,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -40211,6 +40965,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6458703330",
+      "businessNumbers": [
+        "6458703330"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -40439,6 +41196,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -40489,6 +41248,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2158115555",
+      "businessNumbers": [
+        "2158115555"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -40666,6 +41428,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -40716,6 +41480,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4088167484",
+      "businessNumbers": [
+        "4088167484"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -40928,6 +41695,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -40983,6 +41752,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6448803784",
+      "businessNumbers": [
+        "6448803784"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -41163,6 +41935,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -41213,6 +41987,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6318700237",
+      "businessNumbers": [
+        "6318700237"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -41415,6 +42192,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -41465,6 +42244,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8618601000",
+      "businessNumbers": [
+        "8618601000"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -41667,6 +42449,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -41717,6 +42501,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8938600444",
+      "businessNumbers": [
+        "8938600444"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -41913,6 +42700,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -41961,6 +42750,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -42091,6 +42881,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -42162,6 +42954,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8088801245",
+      "businessNumbers": [
+        "8088801245"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -42358,6 +43153,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -42408,6 +43205,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4088186574",
+      "businessNumbers": [
+        "4088186574"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -42599,6 +43399,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -42654,6 +43456,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1488700074",
+      "businessNumbers": [
+        "1488700074"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -42850,6 +43655,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -42905,6 +43712,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6158187977",
+      "businessNumbers": [
+        "6158187977"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -43107,6 +43917,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -43162,6 +43974,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2128137545",
+      "businessNumbers": [
+        "2128137545"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -43429,6 +44244,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -43495,6 +44312,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2758100020",
+      "businessNumbers": [
+        "2758100020"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -43707,6 +44527,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -43757,6 +44579,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1108193692",
+      "businessNumbers": [
+        "1108193692"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -43997,6 +44822,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -44045,6 +44872,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -44167,6 +44995,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -44234,6 +45064,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6738702296",
+      "businessNumbers": [
+        "6738702296"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -44439,6 +45272,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -44553,6 +45388,9 @@
         "confirmedBy": "사용자 확인"
       },
       "businessNumber": "1248743193",
+      "businessNumbers": [
+        "1248743193"
+      ],
       "identifiedBy": [
         "정규화 업체명",
         "확인된 이전 상호"
@@ -44773,6 +45611,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": true,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -44828,6 +45668,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8798103270",
+      "businessNumbers": [
+        "8798103270"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -44994,6 +45837,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -45049,6 +45894,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2248115729",
+      "businessNumbers": [
+        "2248115729"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -45319,6 +46167,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -45389,6 +46239,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1318621114",
+      "businessNumbers": [
+        "1318621114"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -45606,6 +46459,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -45656,6 +46511,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6068124814",
+      "businessNumbers": [
+        "6068124814"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -45852,6 +46710,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -45902,6 +46762,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -46091,6 +46952,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -46141,6 +47004,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5588800303",
+      "businessNumbers": [
+        "5588800303"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -46337,6 +47203,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -46387,6 +47255,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6108157482",
+      "businessNumbers": [
+        "6108157482"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -46594,6 +47465,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -46644,6 +47517,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4248701002",
+      "businessNumbers": [
+        "4248701002"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -46855,6 +47731,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -46906,6 +47784,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8758802166",
+      "businessNumbers": [
+        "8758802166"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -47160,6 +48041,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -47216,6 +48099,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1678803142",
+      "businessNumbers": [
+        "1678803142"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -47480,6 +48366,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -47535,6 +48423,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5848101393",
+      "businessNumbers": [
+        "5848101393"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -47751,6 +48642,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -47799,6 +48692,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -47921,6 +48815,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -47980,6 +48876,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3018158194",
+      "businessNumbers": [
+        "3018158194"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -48190,6 +49089,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -48240,6 +49141,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3068110744",
+      "businessNumbers": [
+        "3068110744"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -48409,6 +49313,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -48472,6 +49378,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6048140268",
+      "businessNumbers": [
+        "6048140268"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -48674,6 +49583,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -48724,6 +49635,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6628801974",
+      "businessNumbers": [
+        "6628801974"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -48994,6 +49908,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -49044,6 +49960,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7128603351",
+      "businessNumbers": [
+        "7128603351"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -49226,6 +50145,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -49274,6 +50195,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -49404,6 +50326,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -49475,6 +50399,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4278801503",
+      "businessNumbers": [
+        "4278801503"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -49741,6 +50668,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -49791,6 +50720,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1438118747",
+      "businessNumbers": [
+        "1438118747"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -50054,6 +50986,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -50107,6 +51041,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -50229,6 +51164,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -50282,6 +51219,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -50414,6 +51352,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -50473,6 +51413,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -50717,6 +51658,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -50767,6 +51710,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7128600465",
+      "businessNumbers": [
+        "7128600465"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -50963,6 +51909,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -51032,6 +51980,9 @@
       ],
       "nameChange": null,
       "businessNumber": "6058603558",
+      "businessNumbers": [
+        "6058603558"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -51229,6 +52180,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -51279,6 +52232,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2048620714",
+      "businessNumbers": [
+        "2048620714"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -51485,6 +52441,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -51540,6 +52498,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4108188217",
+      "businessNumbers": [
+        "4108188217"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -51742,6 +52703,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -51792,6 +52755,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7088802363",
+      "businessNumbers": [
+        "7088802363"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -51988,6 +52954,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -52038,6 +53006,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2148806595",
+      "businessNumbers": [
+        "2148806595"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -52234,6 +53205,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -52282,6 +53255,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -52410,6 +53384,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -52465,6 +53441,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6058802155",
+      "businessNumbers": [
+        "6058802155"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -52655,6 +53634,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -52710,6 +53691,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1328606886",
+      "businessNumbers": [
+        "1328606886"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -52938,6 +53922,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -52993,6 +53979,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1148152918",
+      "businessNumbers": [
+        "1148152918"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -53161,6 +54150,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -53216,6 +54207,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2118670264",
+      "businessNumbers": [
+        "2118670264"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -53413,6 +54407,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -53468,6 +54464,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3948101562",
+      "businessNumbers": [
+        "3948101562"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -53682,6 +54681,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -53732,6 +54733,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7348102959",
+      "businessNumbers": [
+        "7348102959"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -53892,6 +54896,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -53945,6 +54951,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -54067,6 +55074,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -54124,6 +55133,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -54254,6 +55264,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -54325,6 +55337,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3828801438",
+      "businessNumbers": [
+        "3828801438"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -54454,6 +55469,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -54507,6 +55524,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -54629,6 +55647,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -54686,6 +55706,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -54865,6 +55886,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -54918,6 +55941,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -55048,6 +56072,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -55119,6 +56145,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1278659455",
+      "businessNumbers": [
+        "1278659455"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -55321,6 +56350,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -55372,6 +56403,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7508802697",
+      "businessNumbers": [
+        "7508802697"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -55658,6 +56692,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -55713,6 +56749,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "605812",
+      "businessNumbers": [
+        "605812"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -55909,6 +56948,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -55964,6 +57005,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6068646905",
+      "businessNumbers": [
+        "6068646905"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -56135,6 +57179,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -56183,6 +57229,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -56318,6 +57365,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -56381,6 +57430,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1138184663",
+      "businessNumbers": [
+        "1138184663"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -56580,6 +57632,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -56639,6 +57693,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7538800965",
+      "businessNumbers": [
+        "7538800965"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -56816,6 +57873,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -56871,6 +57930,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6068116240",
+      "businessNumbers": [
+        "6068116240"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -57071,6 +58133,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -57124,6 +58188,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -57246,6 +58311,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -57314,6 +58381,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2158687883",
+      "businessNumbers": [
+        "2158687883"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -57516,6 +58586,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -57571,6 +58643,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "7348800436",
+      "businessNumbers": [
+        "7348800436"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -57778,6 +58853,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -57828,6 +58905,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -57999,6 +59077,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -58054,6 +59134,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1178144187",
+      "businessNumbers": [
+        "1178144187"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -58266,6 +59349,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -58319,6 +59404,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -58441,6 +59527,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -58515,6 +59603,9 @@
       ],
       "nameChange": null,
       "businessNumber": "3148167724",
+      "businessNumbers": [
+        "3148167724"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -58716,6 +59807,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -58785,6 +59878,9 @@
       ],
       "nameChange": null,
       "businessNumber": "8418803288",
+      "businessNumbers": [
+        "8418803288"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -59010,6 +60106,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -59058,6 +60156,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -59180,6 +60279,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -59233,6 +60334,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -59355,6 +60457,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -59408,6 +60512,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -59530,6 +60635,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -59589,6 +60696,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1298123910",
+      "businessNumbers": [
+        "1298123910"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -59760,6 +60870,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -59810,6 +60922,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1288660727",
+      "businessNumbers": [
+        "1288660727"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -60006,6 +61121,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -60056,6 +61173,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6158132507",
+      "businessNumbers": [
+        "6158132507"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -60233,6 +61353,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -60286,6 +61408,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -60408,6 +61531,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -60461,6 +61586,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -60583,6 +61709,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -60642,6 +61770,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2248146130",
+      "businessNumbers": [
+        "2248146130"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -60870,6 +62001,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -60918,6 +62051,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -61045,6 +62179,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -61108,6 +62244,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5158101645",
+      "businessNumbers": [
+        "5158101645"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -61299,6 +62438,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -61365,6 +62506,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2118623252",
+      "businessNumbers": [
+        "2118623252"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -61654,6 +62798,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -61713,6 +62859,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6078176426",
+      "businessNumbers": [
+        "6078176426"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -61877,6 +63026,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -61925,6 +63076,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -62047,6 +63199,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -62101,6 +63255,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -62284,6 +63439,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -62367,6 +63524,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3178103597",
+      "businessNumbers": [
+        "3178103597"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -62618,6 +63778,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -62668,6 +63830,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5688802894",
+      "businessNumbers": [
+        "5688802894"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -62864,6 +64029,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -62931,6 +64098,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2013194764",
+      "businessNumbers": [
+        "2013194764"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -63122,6 +64292,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -63177,6 +64349,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3058129084",
+      "businessNumbers": [
+        "3058129084"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -63397,6 +64572,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -63447,6 +64624,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2148814722",
+      "businessNumbers": [
+        "2148814722"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -63582,6 +64762,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -63630,6 +64812,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -63752,6 +64935,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -63800,6 +64985,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -63922,6 +65108,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -63981,6 +65169,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1308158423",
+      "businessNumbers": [
+        "1308158423"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -64180,6 +65371,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -64237,6 +65430,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -64367,6 +65561,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -64438,6 +65634,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2298116058",
+      "businessNumbers": [
+        "2298116058"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -64672,6 +65871,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -64722,6 +65923,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4098124474",
+      "businessNumbers": [
+        "4098124474"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -64918,6 +66122,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -64968,6 +66174,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1398601558",
+      "businessNumbers": [
+        "1398601558"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -65170,6 +66379,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -65220,6 +66431,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4158152034",
+      "businessNumbers": [
+        "4158152034"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -65422,6 +66636,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -65472,6 +66688,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4228701724",
+      "businessNumbers": [
+        "4228701724"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -65745,6 +66964,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -65800,6 +67021,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2328602652",
+      "businessNumbers": [
+        "2328602652"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -65996,6 +67220,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -66044,6 +67270,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -66166,6 +67393,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -66221,6 +67450,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4118134747",
+      "businessNumbers": [
+        "4118134747"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -66434,6 +67666,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -66485,6 +67719,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5038146334",
+      "businessNumbers": [
+        "5038146334"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -66756,6 +67993,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -66811,6 +68050,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4098160427",
+      "businessNumbers": [
+        "4098160427"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -66987,6 +68229,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -67046,6 +68290,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8641101073",
+      "businessNumbers": [
+        "8641101073"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -67242,6 +68489,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -67295,6 +68544,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -67425,6 +68675,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -67557,6 +68809,9 @@
         "confirmedBy": "사용자 확인"
       },
       "businessNumber": "6198602728",
+      "businessNumbers": [
+        "6198602728"
+      ],
       "identifiedBy": [
         "정규화 업체명",
         "확인된 이전 상호"
@@ -67805,6 +69060,8 @@
         "mergeCandidate": false,
         "multipleCodes": true,
         "nameChangeMerged": true,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": true,
         "notInContractorList": false,
         "statusConflict": false,
@@ -67870,6 +69127,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -67992,6 +69250,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -68049,6 +69309,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -68179,6 +69440,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -68250,6 +69513,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4108124440",
+      "businessNumbers": [
+        "4108124440"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -68452,6 +69718,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -68502,6 +69770,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4098802784",
+      "businessNumbers": [
+        "4098802784"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -68701,6 +69972,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -68758,6 +70031,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -68880,6 +70154,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -68939,6 +70215,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "122862",
+      "businessNumbers": [
+        "122862"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -69141,6 +70420,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -69191,6 +70472,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2198101811",
+      "businessNumbers": [
+        "2198101811"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -69390,6 +70674,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -69450,6 +70736,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6098130858",
+      "businessNumbers": [
+        "6098130858"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -69692,6 +70981,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -69771,6 +71062,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1238134189",
+      "businessNumbers": [
+        "1238134189"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -69932,6 +71226,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -69987,6 +71283,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3128190078",
+      "businessNumbers": [
+        "3128190078"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -70212,6 +71511,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -70262,6 +71563,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1108603797",
+      "businessNumbers": [
+        "1108603797"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -70464,6 +71768,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -70514,6 +71820,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1228601680",
+      "businessNumbers": [
+        "1228601680"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -70716,6 +72025,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -70766,6 +72077,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -70937,6 +72249,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -70987,6 +72301,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3148171664",
+      "businessNumbers": [
+        "3148171664"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -71213,6 +72530,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -71263,6 +72582,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2298124543",
+      "businessNumbers": [
+        "2298124543"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -71465,6 +72787,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -71513,6 +72837,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -71629,6 +72954,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -71784,6 +73111,9 @@
         "confirmedBy": "사용자 확인"
       },
       "businessNumber": "6078128657",
+      "businessNumbers": [
+        "6078128657"
+      ],
       "identifiedBy": [
         "정규화 업체명",
         "확인된 이전 상호"
@@ -71986,6 +73316,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": true,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -72045,6 +73377,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1258125880",
+      "businessNumbers": [
+        "1258125880"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -72248,6 +73583,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -72324,6 +73661,7 @@
       ],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -72451,6 +73789,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -72521,6 +73861,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4768801539",
+      "businessNumbers": [
+        "4768801539"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -72733,6 +74076,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -72783,6 +74128,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1088146691",
+      "businessNumbers": [
+        "1088146691"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -72985,6 +74333,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -73035,6 +74385,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4168182093",
+      "businessNumbers": [
+        "4168182093"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -73303,6 +74656,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -73353,6 +74708,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1338134207",
+      "businessNumbers": [
+        "1338134207"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -73684,6 +75042,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -73741,6 +75101,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -73891,6 +75252,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -73946,6 +75309,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4088605917",
+      "businessNumbers": [
+        "4088605917"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -74105,6 +75471,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -74153,6 +75521,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -74275,6 +75644,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -74330,6 +75701,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3028118763",
+      "businessNumbers": [
+        "3028118763"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -74526,6 +75900,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -74576,6 +75952,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8658103228",
+      "businessNumbers": [
+        "8658103228"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -74753,6 +76132,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -74820,6 +76201,7 @@
       ],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -74989,6 +76371,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -75044,6 +76428,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4178139148",
+      "businessNumbers": [
+        "4178139148"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -75246,6 +76633,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -75296,6 +76685,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1218117170",
+      "businessNumbers": [
+        "1218117170"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -75498,6 +76890,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -75548,6 +76942,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6028138811",
+      "businessNumbers": [
+        "6028138811"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -75744,6 +77141,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -75794,6 +77193,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1638803010",
+      "businessNumbers": [
+        "1638803010"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -76034,6 +77436,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -76087,6 +77491,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -76217,6 +77622,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -76274,6 +77681,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -76396,6 +77804,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -76455,6 +77865,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4108662736",
+      "businessNumbers": [
+        "4108662736"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -76662,6 +78075,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -76713,6 +78128,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5958702768",
+      "businessNumbers": [
+        "5958702768"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -76915,6 +78333,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -76970,6 +78390,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3148169907",
+      "businessNumbers": [
+        "3148169907"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -77193,6 +78616,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -77246,6 +78671,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -77379,6 +78805,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -77436,6 +78864,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -77586,6 +79015,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -77639,6 +79070,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -77769,6 +79201,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -77840,6 +79274,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6228125789",
+      "businessNumbers": [
+        "6228125789"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -78074,6 +79511,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -78122,6 +79561,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -78238,6 +79678,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -78293,6 +79735,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3148604802",
+      "businessNumbers": [
+        "3148604802"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -78471,6 +79916,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -78519,6 +79966,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -78641,6 +80089,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -78700,6 +80150,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3108113167",
+      "businessNumbers": [
+        "3108113167"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -78871,6 +80324,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -78940,6 +80395,9 @@
       ],
       "nameChange": null,
       "businessNumber": "6128153556",
+      "businessNumbers": [
+        "6128153556"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -79161,6 +80619,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -79211,6 +80671,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -79382,6 +80843,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -79435,6 +80898,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -79557,6 +81021,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -79694,6 +81160,9 @@
         "confirmedBy": "사용자 확인"
       },
       "businessNumber": "1078716750",
+      "businessNumbers": [
+        "1078716750"
+      ],
       "identifiedBy": [
         "정규화 업체명",
         "확인된 이전 상호"
@@ -79869,6 +81338,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": true,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -79924,6 +81395,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "3128148338",
+      "businessNumbers": [
+        "3128148338"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -80138,6 +81612,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -80186,6 +81662,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -80308,6 +81785,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -80367,6 +81846,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -80568,6 +82048,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -80618,6 +82100,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1148146546",
+      "businessNumbers": [
+        "1148146546"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -80814,6 +82299,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -80862,6 +82349,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -80994,6 +82482,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -81053,6 +82543,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5858702174",
+      "businessNumbers": [
+        "5858702174"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -81325,6 +82818,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -81380,6 +82875,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2198108361",
+      "businessNumbers": [
+        "2198108361"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -81571,6 +83069,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -81626,6 +83126,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2348600887",
+      "businessNumbers": [
+        "2348600887"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -81828,6 +83331,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -81878,6 +83383,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "5098801993",
+      "businessNumbers": [
+        "5098801993"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -82158,6 +83666,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -82213,6 +83723,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1380277337",
+      "businessNumbers": [
+        "1380277337"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -82384,6 +83897,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -82439,6 +83954,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6360502914",
+      "businessNumbers": [
+        "6360502914"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -82640,6 +84158,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -82699,6 +84219,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2084171460",
+      "businessNumbers": [
+        "2084171460"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -82875,6 +84398,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -82923,6 +84448,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -83045,6 +84571,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -83100,6 +84628,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2678603259",
+      "businessNumbers": [
+        "2678603259"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -83363,6 +84894,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -83413,6 +84946,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "2158162529",
+      "businessNumbers": [
+        "2158162529"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -83616,6 +85152,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": true,
         "statusConflict": false,
@@ -83675,6 +85213,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6108162025",
+      "businessNumbers": [
+        "6108162025"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -83881,6 +85422,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -83934,6 +85477,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -84160,6 +85704,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -84215,6 +85761,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "8338802968",
+      "businessNumbers": [
+        "8338802968"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -84397,6 +85946,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -84452,6 +86003,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "4611301669",
+      "businessNumbers": [
+        "4611301669"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -84604,6 +86158,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -84659,6 +86215,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6088185160",
+      "businessNumbers": [
+        "6088185160"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -84861,6 +86420,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -84911,6 +86472,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6168701163",
+      "businessNumbers": [
+        "6168701163"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -85113,6 +86677,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -85163,6 +86729,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -85374,6 +86941,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": true,
@@ -85437,6 +87006,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1058123592",
+      "businessNumbers": [
+        "1058123592"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -85712,6 +87284,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -85767,6 +87341,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "6128116809",
+      "businessNumbers": [
+        "6128116809"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -85963,6 +87540,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -86016,6 +87595,7 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": null,
+      "businessNumbers": [],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -86146,6 +87726,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,
@@ -86217,6 +87799,9 @@
       "relations": [],
       "nameChange": null,
       "businessNumber": "1318703165",
+      "businessNumbers": [
+        "1318703165"
+      ],
       "identifiedBy": [
         "정규화 업체명"
       ],
@@ -86394,6 +87979,8 @@
         "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
+        "confirmedSeparate": false,
+        "biznoMismatch": false,
         "cancelSuspect": false,
         "notInContractorList": false,
         "statusConflict": false,

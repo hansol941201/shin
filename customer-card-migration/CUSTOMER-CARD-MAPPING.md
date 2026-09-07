@@ -88,6 +88,9 @@
 - **`relationshipSummary`** 배지용 개수 — `{parent, subsidiary, affiliate, formerName, recommendedBy, nameChangedTo, unknown, total, linked, unlinked}`
 - **카드 위치** **업체명 위** 배지(개수만) → 클릭 시 팝오버. 회사명은 팝오버에서만 나열합니다.
 - **자회사·모회사는 병합 대상이 아닙니다.** 각자 고유 ID와 카드를 유지합니다.
+- **자기 자신을 가리키는 관계는 표시하지 않습니다.** 확정 병합으로 두 레코드가 한 업체가 되면
+  원본 비고의 관계가 자기 자신을 향하게 되므로, 화면에서만 제외하고 원본 기재 사실은
+  `changeHistory` 의 `type: "relationship_dropped_self"` 에 남깁니다.
 - **변경 이력** `changeHistory` 에 `type: "relationship_created"` 로 기록
 
 ### `aliases` / `formerNames` / `merge` / `formerProfile` — 병합
@@ -96,8 +99,18 @@
 - **`merge`** `{status: "user_confirmed" | "none", sourceRecordCount, note, confirmedAt, basis}`
 - **`formerProfile[]`** `{sourceCompanyName, grade, sales, gradeHistory, codes, label}`
   — **이전 상호 당시의 등급·매출은 현재 값으로 덮어쓰지 않습니다.** 현재 값이 없으면 `grade: null`(미확인).
+- **`businessNumbers[]`** 통합된 레코드들이 가지고 있던 사업자등록번호 전체.
+  2건 이상이면 `validation.biznoMismatch = true` 로 표시하고 어느 쪽도 지우지 않습니다.
 - **카드 위치** 업체명 아래 `구 상호: ○○` · 상세 › 등급·매출 탭의 «이전 상호 당시 정보» 패널
 - **변경 이력** `changeHistory` 에 `type: "user_confirmed_merge"`
+
+### `validation.confirmedSeparate` — "동일 업체 아님" 확정
+- 사업자번호나 비고가 비슷해 병합 후보로 보였지만 **사용자가 별도 업체로 확정**한 건입니다.
+- 근거는 `company-aliases.json` 의 `confirmedSeparate[]` 에 두고,
+  각 업체의 `changeHistory` 에 `type: "merge_declined"` (`withCompanies`, `basis`, `note`, `confirmedAt`) 로 남깁니다.
+- 각자 고유 ID와 카드를 그대로 유지하며, 이후 빌드에서도 다시 병합되지 않습니다.
+- 현재 등록: **㈜기림이앤씨 ↔ ㈜도경** (사업자등록번호·대표자가 서로 달라 동일 업체로 볼 근거 없음).
+  두 회사 비고가 서로를 모회사로 적고 있어 **관계 방향은 여전히 확인 대상**입니다.
 
 ### `relations` — (구) 원시 추출 결과, 하위 호환용
 - **표시명** 이전 상호 / 자회사 · **형식** `{type, label, target, note, source, existsAsSeparateRecord}[]`
