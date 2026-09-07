@@ -5616,182 +5616,115 @@ function handleExcelUpload(ev){
      이 위의 코드는 원본 파일에서 단 한 글자도 바꾸지 않았습니다.
 
      이 블록은:
-       - 기존 함수(renderPDFTemplate, capturePDF)를 "호출"만 하고 수정하지 않음
-       - 기존 HTML/CSS/DB/발행 로직을 전혀 건드리지 않음
-       - 화면에 떠 있는 버튼 하나만 새로 추가함 (기존 화면 요소와 안 겹치는 자리)
-       - 비밀번호/키 값은 이 파일 어디에도 없음 (서버 URL만 있음)
+       - 기존 발행 기능(PDF 생성/발행 확정/현장·업체 데이터)과 완전히 독립적으로 동작함
+       - PDF는 사용자가 직접 파일로 골라서 첨부함 (기존 데이터/함수 호출 없음)
+       - Firebase/Firestore 읽기·쓰기 전혀 없음
+       - 화면 오른쪽 아래에 버튼 하나만 새로 추가 (기존 화면 요소와 안 겹침)
+       - 비밀번호/키 값은 이 파일 어디에도 없음 (Cloud Run 서버 URL만 있음)
      ════════════════════════════════════════════════════════════════ -->
+<button id="test-email-fab" style="position:fixed;right:16px;bottom:16px;z-index:99999;
+  padding:12px 18px;border:none;border-radius:999px;background:#7c3aed;color:#fff;
+  font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;
+  font-family:sans-serif;">🧪 테스트 메일 발송</button>
+
+<div id="test-email-modal" style="display:none;position:fixed;inset:0;z-index:100000;
+  background:rgba(0,0,0,.45);align-items:center;justify-content:center;font-family:sans-serif;">
+  <div style="background:#fff;border-radius:12px;padding:20px;width:340px;max-width:90vw;
+    box-shadow:0 12px 32px rgba(0,0,0,.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <strong style="font-size:15px;">🧪 테스트 메일 발송</strong>
+      <span id="test-email-close" style="cursor:pointer;font-size:18px;color:#888;">✕</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+      <label style="color:#666;font-size:12px;">수신 이메일 주소</label>
+      <input id="te-to" type="email" placeholder="test@example.com"
+        style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+
+      <label style="color:#666;font-size:12px;">테스트용 PDF 파일 선택</label>
+      <input id="te-file" type="file" accept="application/pdf"
+        style="padding:6px;border:1px solid #ccc;border-radius:6px;">
+
+      <button id="te-send-btn" style="margin-top:6px;padding:10px;border:none;border-radius:6px;
+        background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">테스트 발송</button>
+      <div id="te-result" style="font-size:12px;line-height:1.5;min-height:18px;word-break:break-all;"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   'use strict';
 
-  // 테스트 메일 발송 서버(Cloud Function) 주소 — 배포 후 이 값만 채우면 됨
-  // (functions/index.js 를 별도 테스트용 프로젝트에 배포하고 나온 URL을 여기에 붙여넣기)
-  const TEST_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app'; // 배포 완료된 Cloud Run 함수 URL
+  // 배포 완료된 테스트 전용 Cloud Run 메일 발송 서비스 (기존 pour-contract 프로젝트/DB와 무관)
+  const TEST_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app';
 
-  function el(tag, attrs, children){
-    const e = document.createElement(tag);
-    if(attrs) for(const k in attrs){
-      if(k==='style') e.style.cssText = attrs[k];
-      else e.setAttribute(k, attrs[k]);
-    }
-    (children||[]).forEach(c => e.appendChild(typeof c==='string' ? document.createTextNode(c) : c));
-    return e;
-  }
+  const fab      = document.getElementById('test-email-fab');
+  const modal    = document.getElementById('test-email-modal');
+  const closeBtn = document.getElementById('test-email-close');
+  const toInput  = document.getElementById('te-to');
+  const fileInput= document.getElementById('te-file');
+  const sendBtn  = document.getElementById('te-send-btn');
+  const result   = document.getElementById('te-result');
 
-  function buildPanel(){
-    const panel = el('div', {
-      id: 'test-email-panel',
-      style: 'position:fixed;right:16px;bottom:16px;z-index:99999;width:320px;' +
-             'background:#fff;border:2px solid #7c3aed;border-radius:12px;' +
-             'box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:sans-serif;font-size:13px;' +
-             'color:#1a1a1a;overflow:hidden;'
-    });
+  fab.addEventListener('click', () => {
+    modal.style.display = 'flex';
+    result.textContent = '';
+  });
+  closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+  modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
 
-    const header = el('div', {
-      style:'background:#7c3aed;color:#fff;padding:10px 14px;font-weight:700;' +
-            'display:flex;justify-content:space-between;align-items:center;cursor:pointer;'
-    }, ['🧪 테스트 이메일 발송 (PoC)']);
-    const toggleBtn = el('span', {style:'font-weight:400;'}, ['접기 ▾']);
-    header.appendChild(toggleBtn);
-
-    const body = el('div', {style:'padding:12px 14px;display:flex;flex-direction:column;gap:8px;'});
-
-    const projSel = el('select', {id:'te-proj', style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
-    const conSel  = el('select', {id:'te-con',  style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
-    const patSel  = el('select', {id:'te-pat',  style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
-    const toInput = el('input', {id:'te-to', type:'email', placeholder:'받는 사람 이메일 (내 메일 주소로 테스트)', style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
-    const subInput = el('input', {id:'te-subject', type:'text', placeholder:'제목', style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
-    const bodyInput = el('textarea', {id:'te-body', rows:'3', placeholder:'본문', style:'padding:6px;border:1px solid #ccc;border-radius:6px;resize:vertical;'});
-    const sendBtn = el('button', {id:'te-send', style:'padding:8px;border:none;border-radius:6px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;'}, ['📧 테스트 이메일 발송']);
-    const status = el('div', {id:'te-status', style:'font-size:12px;line-height:1.5;color:#555;min-height:16px;'});
-
-    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['현장 선택']));
-    body.appendChild(projSel);
-    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['시공사 선택']));
-    body.appendChild(conSel);
-    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['특허/신기술 선택']));
-    body.appendChild(patSel);
-    body.appendChild(el('label', {style:'font-size:11px;color:#666;margin-top:4px;'}, ['수신 이메일']));
-    body.appendChild(toInput);
-    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['제목']));
-    body.appendChild(subInput);
-    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['본문']));
-    body.appendChild(bodyInput);
-    body.appendChild(sendBtn);
-    body.appendChild(status);
-
-    panel.appendChild(header);
-    panel.appendChild(body);
-    document.body.appendChild(panel);
-
-    header.addEventListener('click', () => {
-      const collapsed = body.style.display === 'none';
-      body.style.display = collapsed ? 'flex' : 'none';
-      toggleBtn.textContent = collapsed ? '접기 ▾' : '펼치기 ▸';
-    });
-
-    function fillProjects(){
-      projSel.innerHTML = '';
-      (window.projects||[]).forEach(p => {
-        projSel.appendChild(el('option', {value:p.id}, [p.name]));
-      });
-      fillContractors();
-    }
-    function fillContractors(){
-      conSel.innerHTML = '';
-      const p = (window.projects||[]).find(x => String(x.id)===String(projSel.value));
-      (p?.contractors||[]).forEach(c => {
-        conSel.appendChild(el('option', {value:c.id}, [c.name + (c.email ? ` (${c.email})` : ' (등록된 이메일 없음)')]));
-      });
-      autofillEmail();
-    }
-    function fillPatents(){
-      patSel.innerHTML = '';
-      (window.PATENTS||[]).forEach(pat => {
-        patSel.appendChild(el('option', {value:pat.id}, [pat.num + ' ' + (pat.name||'')]));
-      });
-    }
-    function autofillEmail(){
-      const p = (window.projects||[]).find(x => String(x.id)===String(projSel.value));
-      const c = p?.contractors.find(x => String(x.id)===String(conSel.value));
-      if(c && c.email) toInput.value = c.email; // 참고용 자동채움 — 실제 발송 전 직접 확인/수정 가능
-    }
-    projSel.addEventListener('change', fillContractors);
-    conSel.addEventListener('change', autofillEmail);
-
-    fillProjects();
-    fillPatents();
-
-    function setStatus(msg, isError){
-      status.textContent = msg;
-      status.style.color = isError ? '#dc2626' : '#16a34a';
-    }
-
-    function blobToBase64(blob){
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    sendBtn.addEventListener('click', async () => {
-      const p = (window.projects||[]).find(x => String(x.id)===String(projSel.value));
-      const c = p?.contractors.find(x => String(x.id)===String(conSel.value));
-      const pat = (window.PATENTS||[]).find(x => String(x.id)===String(patSel.value));
-      const to = toInput.value.trim();
-
-      if(!p || !c || !pat){ setStatus('⚠ 현장/시공사/특허를 선택하세요', true); return; }
-      if(!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){ setStatus('⚠ 받는 사람 이메일을 정확히 입력하세요', true); return; }
-      if(TEST_EMAIL_API_URL.indexOf('REGION-PROJECT') !== -1){
-        setStatus('⚠ 아직 서버 URL이 설정되지 않았습니다 (TEST_EMAIL_API_URL 확인)', true);
-        return;
-      }
-
-      sendBtn.disabled = true;
-      setStatus('⏳ PDF 생성 중...', false);
-      try{
-        // 기존에 이미 있는 함수를 그대로 "호출"만 함 — 아래 두 함수는 원본 그대로임
-        await renderPDFTemplate(p, c, pat);
-        const { blob, filename } = await capturePDF(p, c, pat, true);
-
-        setStatus('⏳ 이메일 전송 중...', false);
-        const pdfBase64 = await blobToBase64(blob);
-        const res = await fetch(TEST_EMAIL_API_URL, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            to,
-            subject: subInput.value.trim() || `[테스트] ${patLabel(pat)} 협약서`,
-            text: bodyInput.value.trim() || '테스트 발송입니다.',
-            filename,
-            pdfBase64
-          })
-        });
-        const data = await res.json().catch(()=>({}));
-        if(!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        setStatus(`✅ 발송 성공! (${to} 로 전송됨) — 받은메일함/스팸함 확인`, false);
-      }catch(e){
-        console.error('[test-email-addon]', e);
-        setStatus('❌ 발송 실패: ' + (e.message||e), true);
-      }finally{
-        sendBtn.disabled = false;
-      }
+  function fileToBase64(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 
-  // 기존 데이터(projects/PATENTS) 로딩을 기다렸다가 패널을 띄움 (원본 로딩 흐름 방해 안 함)
-  function waitAndInit(){
-    if(window.projects && window.projects.length && window.PATENTS){
-      buildPanel();
-    } else {
-      setTimeout(waitAndInit, 500);
-    }
+  function setResult(msg, isError){
+    result.textContent = msg;
+    result.style.color = isError ? '#dc2626' : '#16a34a';
   }
-  if(document.readyState === 'complete') waitAndInit();
-  else window.addEventListener('load', () => setTimeout(waitAndInit, 300));
+
+  sendBtn.addEventListener('click', async () => {
+    const to = toInput.value.trim();
+    const file = fileInput.files[0];
+
+    if(!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){
+      setResult('⚠ 수신 이메일 주소를 정확히 입력하세요', true);
+      return;
+    }
+    if(!file){
+      setResult('⚠ 테스트용 PDF 파일을 선택하세요', true);
+      return;
+    }
+
+    sendBtn.disabled = true;
+    setResult('⏳ 전송 중...', false);
+    try{
+      const pdfBase64 = await fileToBase64(file);
+      const res = await fetch(TEST_EMAIL_API_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          to,
+          subject: '[테스트] 협약서 메일 발송 테스트',
+          text: 'Cloud Run 테스트 메일 발송 확인용입니다.',
+          filename: file.name || 'test.pdf',
+          pdfBase64
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setResult('✅ 테스트 메일 발송 성공', false);
+    }catch(e){
+      console.error('[test-email-addon]', e);
+      setResult(e.message || String(e), true);
+    }finally{
+      sendBtn.disabled = false;
+    }
+  });
 })();
 </script>
 
