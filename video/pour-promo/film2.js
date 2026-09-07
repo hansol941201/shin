@@ -138,6 +138,18 @@ function series(prefix,n){
 }
 /* 단계 카드용 라인 아이콘 — 사진이 아니라 기호다.
    원본 사진이 들어오면 이 카드는 통째로 사진으로 대체된다. */
+const PHASE_ICON=(()=>{
+  const w=(d)=>`<svg viewBox="0 0 120 120" style="position:absolute;left:50%;top:34%;width:132px;height:132px;transform:translate(-50%,-50%);overflow:visible">`+
+    `<g fill="none" stroke="#2F7BE8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".80">${d}</g></svg>`;
+  return [
+    /* 공사 전 — 대화 */
+    w('<path d="M18 30h56a8 8 0 018 8v30a8 8 0 01-8 8H44L28 90V76h-10a8 8 0 01-8-8V38a8 8 0 018-8z"/><path d="M86 46h16a8 8 0 018 8v26a8 8 0 01-8 8h-4v12l-14-12"/>'),
+    /* 공사 중 — 롤러/도장 */
+    w('<rect x="18" y="22" width="56" height="26" rx="5"/><path d="M74 35h18v18H56v14"/><rect x="46" y="67" width="20" height="30" rx="4"/>'),
+    /* 공사 후 — 문서 + 체크 */
+    w('<path d="M30 16h40l20 20v68H30z"/><path d="M70 16v20h20"/><path d="M44 68l12 12 22-26"/>'),
+  ];
+})();
 const STEP_ICON=(()=>{
   const w=(d)=>`<svg viewBox="0 0 120 120" style="position:absolute;left:50%;top:50%;width:190px;height:190px;transform:translate(-50%,-58%);overflow:visible">`+
     `<g fill="none" stroke="#2F7BE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity=".82">${d}</g></svg>`;
@@ -334,7 +346,11 @@ function pushPaint(el,t0,t1,d,inD,outD){
 function scene(id){
   const s=mk('div','scene'); s.id=id;
   const b=SCN[id];
-  pushPaint(s,b.t0,b.t1,MOVE[id]||{},.40,.40);
+  /* 마지막 장면은 끝까지 붙잡는다. 예전엔 마지막 0.4초에 딥블루 면이 걷히며
+     밝은 스테이지 배경이 드러나 엔딩이 회색으로 바래 보였다.
+     첫 장면도 0프레임부터 이미 떠 있어야 한다. */
+  const first = b.t0<=0, last = id==='fin';
+  pushPaint(s, b.t0, last? b.t1+2 : b.t1, MOVE[id]||{}, first? .001 : .40, .40);
   return s;
 }
 
@@ -737,7 +753,19 @@ function sectionLabel(parent,text,t,sub2){
     const dot=mk('div','dot',px({opacity:0}),hd);
     const ttl=mk('div','t',px({opacity:0}),hd,t);
     const md=mk('div','media',px({height:352,opacity:0}),bx);
-    slot(md,k,lb,{left:0,top:0,width:'100%',height:'100%'}, k==='netform_doc'?'contain':'cover');
+    const kk = Array.isArray(k) ? (k.find(z=>AVAILABLE[z])||null) : (AVAILABLE[k]?k:null);
+    if(kk){
+      slot(md,kk,lb,{left:0,top:0,width:'100%',height:'100%'}, kk==='netform_doc'?'contain':'cover');
+    }else{
+      /* 빈 패널 세 개가 나란히 서 있으면 화면이 미완성으로 보인다.
+         사진이 들어오기 전까지는 그 단계가 무엇인지를 기호와 한 줄로 보여준다. */
+      const pn=mk('div','',px({position:'absolute',inset:0,
+        background:'linear-gradient(158deg,#F5F8FC 0%,#E7EFF8 56%,#D9E4F1 100%)',
+        display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10}),md);
+      pn.insertAdjacentHTML('beforeend', PHASE_ICON[i]);
+      mk('div','',px({position:'relative',marginTop:118,fontSize:26,fontWeight:700,
+        color:'var(--ink-2)',letterSpacing:'-.02em',textAlign:'center',padding:'0 20px'}),pn,lb);
+    }
     wipe(bx,tt,{d:.38,dir:'down',r:16});
     snap(dot,tt+.14,{d:.26,s0:.2});
     wipe(ttl,tt+.18,{d:.36,dir:'right'});
