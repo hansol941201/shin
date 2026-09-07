@@ -5945,6 +5945,22 @@ function handleExcelUpload(ev){
       <input id="te-file" type="file" accept="application/pdf"
         style="padding:6px;border:1px solid #ccc;border-radius:6px;">
 
+      <!-- 첨부 PDF 확인: 제목(=파일명에서 .pdf만 제거)과 다운로드를 분리해서 표시 -->
+      <div id="te-pdf-confirm" style="display:none;flex-direction:column;gap:6px;padding:10px;
+        background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+        <div style="font-size:11px;color:#666;">첨부 PDF 확인</div>
+        <div id="te-pdf-title" style="font-weight:700;font-size:13px;word-break:break-all;color:#1a1a1a;"></div>
+        <div style="display:flex;gap:8px;">
+          <button id="te-pdf-preview-btn" type="button" style="flex:1;padding:6px;border:1px solid #ccc;
+            border-radius:6px;background:#fff;cursor:pointer;">미리보기</button>
+          <a id="te-pdf-download-link" href="#" style="flex:1;text-align:center;padding:6px;
+            border:1px solid #7c3aed;border-radius:6px;background:#fff;color:#7c3aed;
+            font-weight:600;text-decoration:none;cursor:pointer;">다운로드</a>
+        </div>
+        <iframe id="te-pdf-preview-frame" style="display:none;width:100%;height:260px;
+          border:1px solid #ddd;border-radius:6px;"></iframe>
+      </div>
+
       <button id="te-send-btn" style="margin-top:6px;padding:10px;border:none;border-radius:6px;
         background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">테스트 발송</button>
       <div id="te-result" style="font-size:12px;line-height:1.5;min-height:18px;word-break:break-all;"></div>
@@ -5967,12 +5983,72 @@ function handleExcelUpload(ev){
   const sendBtn  = document.getElementById('te-send-btn');
   const result   = document.getElementById('te-result');
 
+  // ── 첨부 PDF 확인: 제목(파일명에서 ".pdf"만 제거)과 다운로드를 분리 표시 ──
+  const pdfConfirm    = document.getElementById('te-pdf-confirm');
+  const pdfTitleEl    = document.getElementById('te-pdf-title');
+  const pdfPreviewBtn = document.getElementById('te-pdf-preview-btn');
+  const pdfDownloadA  = document.getElementById('te-pdf-download-link');
+  const pdfFrame      = document.getElementById('te-pdf-preview-frame');
+  let _tePdfUrl = null; // 선택된 파일의 objectURL — 재선택/닫기 시 해제
+
+  // 핵심 로직: 파일명 맨 끝의 ".pdf"만 제거 (중간의 점/괄호/언더바/공백은 그대로 유지)
+  function buildPdfTitle(fileName){
+    return String(fileName || '').replace(/\.pdf$/i, '');
+  }
+
+  function resetPdfConfirm(){
+    if(_tePdfUrl){ URL.revokeObjectURL(_tePdfUrl); _tePdfUrl = null; }
+    pdfFrame.src = '';
+    pdfFrame.style.display = 'none';
+    pdfPreviewBtn.textContent = '미리보기';
+    pdfConfirm.style.display = 'none';
+  }
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    resetPdfConfirm();
+    if(!file) return;
+
+    // { fileName, title, url } — title은 fileName에서 자동 파생, fileName은 다운로드용으로 그대로 유지
+    const pdfInfo = {
+      fileName: file.name,
+      title: buildPdfTitle(file.name),
+      url: URL.createObjectURL(file)
+    };
+    _tePdfUrl = pdfInfo.url;
+
+    pdfTitleEl.textContent = pdfInfo.title; // 화면 제목: .pdf 확장자 없이 표시
+    pdfDownloadA.onclick = (e) => {
+      e.preventDefault();
+      const a = document.createElement('a');
+      a.href = pdfInfo.url;
+      a.download = pdfInfo.fileName; // 실제 다운로드 파일명은 .pdf 확장자 그대로 유지
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+    };
+    pdfConfirm.style.display = 'flex';
+  });
+
+  pdfPreviewBtn.addEventListener('click', () => {
+    if(!_tePdfUrl) return;
+    const showing = pdfFrame.style.display !== 'none';
+    if(showing){
+      pdfFrame.style.display = 'none';
+      pdfFrame.src = '';
+      pdfPreviewBtn.textContent = '미리보기';
+    } else {
+      pdfFrame.src = _tePdfUrl;
+      pdfFrame.style.display = 'block';
+      pdfPreviewBtn.textContent = '미리보기 닫기';
+    }
+  });
+
   fab.addEventListener('click', () => {
     modal.style.display = 'flex';
     result.textContent = '';
   });
-  closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
-  modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
+  closeBtn.addEventListener('click', () => { modal.style.display = 'none'; resetPdfConfirm(); fileInput.value=''; });
+  modal.addEventListener('click', (e) => { if(e.target === modal){ modal.style.display = 'none'; resetPdfConfirm(); fileInput.value=''; } });
 
   function fileToBase64(file){
     return new Promise((resolve, reject) => {
