@@ -1,0 +1,12 @@
+{
+  "name": "pour-contract-email-function",
+  "description": "PDF 발행 결과를 하이웍스 메일로 자동 발송하는 Firebase Cloud Function (PoC)",
+  "engines": { "node": "20" },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^5.0.0",
+    "nodemailer": "^6.9.14",
+    "cors": "^2.8.5"
+  },
+  "private": true
+}
