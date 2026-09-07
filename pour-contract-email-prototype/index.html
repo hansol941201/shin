@@ -5627,7 +5627,7 @@ function handleExcelUpload(ev){
 
   // 테스트 메일 발송 서버(Cloud Function) 주소 — 배포 후 이 값만 채우면 됨
   // (functions/index.js 를 별도 테스트용 프로젝트에 배포하고 나온 URL을 여기에 붙여넣기)
-  const TEST_EMAIL_API_URL = 'https://REGION-PROJECT.cloudfunctions.net/sendTestEmail'; // TODO: 배포 후 교체
+  const TEST_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app'; // 배포 완료된 Cloud Run 함수 URL
 
   function el(tag, attrs, children){
     const e = document.createElement(tag);
