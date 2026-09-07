@@ -78,6 +78,15 @@
 - **카드 위치** 상세 › 기본 정보 «이전 상호» · 검증 탭 (목록의 업체명 칸에는 표시하지 않음, 검색에는 포함)
 - **검증** `validation.nameChangeMerged = true`. 사업자번호 공유로 인한 중복 의심에서는 제외됩니다.
 
+### `relations` — 이전 상호 · 자회사 (첫 화면 표시)
+- **표시명** 이전 상호 / 자회사 · **형식** `{type, label, target, note, source, existsAsSeparateRecord}[]`
+- **출처** 원본 비고 칸의 자유 텍스트를 구조화 (`구)○○○`, `○○○ 명칭변경`, `○○○ 자회사`)
+- **`type`** `이전 상호(확인됨)`(별칭 규칙) · `이전 상호`(비고 기재) · `자회사`
+- **카드 위치** **업체명 바로 아래 칩** — `title` 속성에 근거를 넣어 마우스 오버 시 툴팁으로 표시
+  (보라 = 이전 상호, 파랑 = 자회사, 노랑 = 병합 후보)
+- **`existsAsSeparateRecord`** 그 이름의 업체가 목록에 별도로 있으면 `true`
+  → `validation.mergeCandidate = true`. **자동 병합하지 않고 확인 대상으로만 표시합니다.**
+
 ### `codes` / `validation.multipleCodes`
 - **표시명** 업체코드(전체) · **형식** `string[]` / `boolean`
 - **뜻** 상호 변경 전후로 코드가 각각 발급되는 등 한 업체에 코드가 2건 이상인 경우.
@@ -425,6 +434,7 @@
 |---|---|---|
 | `validation.possibleDuplicate` | 중복 의심(미해결) | 0 |
 | `validation.nameVariantMerged` | 표기 차이로 통합(해결) | 11 |
+| `validation.mergeCandidate` | 병합 후보(이전 상호가 별도 업체로 존재) | 6 |
 | `validation.nameChangeMerged` | 확인된 상호 변경으로 통합 | 3 |
 | `validation.multipleCodes` | 같은 업체에 업체코드 2건 이상 | 3 |
 | `validation.cancelSuspect` | 체결 완료인데 비고에 협약 취소·해지 표현 | 1 |

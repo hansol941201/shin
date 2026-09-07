@@ -90,6 +90,7 @@
     "missingMouDate": 58,
     "possibleDuplicate": 0,
     "nameVariantMerged": 11,
+    "mergeCandidate": 6,
     "multipleCodes": 3,
     "cancelSuspect": 1,
     "notInContractorList": 10,
@@ -106,6 +107,9 @@
     "mouDateResolved": 27,
     "mouDateNeedsReview": 0,
     "nameChangesApplied": 3,
+    "withRelations": 21,
+    "subsidiaries": 11,
+    "formerNameInNote": 8,
     "legacyExcel": {
       "sourceFile": "461ca6f3-_______26.04.28.xlsx",
       "rosterSize": 257,
@@ -118,7 +122,7 @@
     "missingNextAction": 17,
     "partnerWithoutMouStatus": 12,
     "stalled": 47,
-    "needsReview": 189,
+    "needsReview": 191,
     "menuCounts": [
       {
         "menu": "진행 현황",
@@ -830,6 +834,7 @@
         "(부)APT건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -1034,6 +1039,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -1066,6 +1072,7 @@
         "(유)가인건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -1200,6 +1207,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -1236,6 +1244,7 @@
         "(유)대광건설산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -1365,6 +1374,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -1403,6 +1413,7 @@
         "㈜가온건설산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1748601003",
       "identifiedBy": [
@@ -1594,6 +1605,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -1623,6 +1635,7 @@
         "㈜강명건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5038162275",
       "identifiedBy": [
@@ -1814,6 +1827,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -1843,6 +1857,7 @@
         "㈜건양산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6038124019",
       "identifiedBy": [
@@ -2011,6 +2026,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -2040,6 +2056,7 @@
         "㈜건인씨엔알"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -2231,6 +2248,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -2265,6 +2283,7 @@
         "㈜경동하우징"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1118117606",
       "identifiedBy": [
@@ -2433,6 +2452,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -2467,6 +2487,7 @@
         "㈜경성기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1358141010",
       "identifiedBy": [
@@ -2658,6 +2679,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -2690,6 +2712,7 @@
         "㈜경원포장건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -2819,6 +2842,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -2869,6 +2893,7 @@
         "㈜경하이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5828700333",
       "identifiedBy": [
@@ -3086,6 +3111,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -3113,6 +3139,7 @@
         "㈜광명건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -3234,6 +3261,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -3268,6 +3296,7 @@
         "㈜국일구조"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1138152012",
       "identifiedBy": [
@@ -3465,6 +3494,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -3494,6 +3524,7 @@
         "㈜국제특수건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2078145460",
       "identifiedBy": [
@@ -3691,6 +3722,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -3720,6 +3752,7 @@
         "㈜금강건설공사"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -3898,6 +3931,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -3932,6 +3966,7 @@
         "㈜금환기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8748102316",
       "identifiedBy": [
@@ -4129,6 +4164,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -4158,6 +4194,15 @@
         "㈜기림이앤씨"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "(주)도경 자회사",
+          "target": "(주)도경",
+          "note": "(주)도경 자회사",
+          "source": "협력업체 리스트(내부용)"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "2508103222",
       "identifiedBy": [
@@ -4360,6 +4405,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -4387,6 +4433,7 @@
         "㈜나눔종합건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -4508,6 +4555,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -4546,6 +4594,7 @@
         "㈜나원"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6058137261",
       "identifiedBy": [
@@ -4742,6 +4791,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -4771,6 +4821,7 @@
         "㈜네오텍건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2108127774",
       "identifiedBy": [
@@ -5012,6 +5063,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -5041,6 +5093,7 @@
         "㈜다산종합건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3828702920",
       "identifiedBy": [
@@ -5199,6 +5252,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -5233,6 +5287,7 @@
         "㈜다수건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1068692501",
       "identifiedBy": [
@@ -5428,6 +5483,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -5457,6 +5513,15 @@
         "㈜다온"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 DH대호건설",
+          "target": "DH대호건설",
+          "note": "구)DH대호건설/ 사업자 x",
+          "source": "협력업체 리스트(내부용)"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "1408196249",
       "identifiedBy": [
@@ -5653,6 +5718,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -5680,6 +5746,7 @@
         "㈜다온기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -5809,6 +5876,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -5847,6 +5915,7 @@
         "㈜다원건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8648802491",
       "identifiedBy": [
@@ -6038,6 +6107,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -6065,6 +6135,7 @@
         "㈜대건건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -6186,6 +6257,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -6220,6 +6292,7 @@
         "㈜대길건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5028140720",
       "identifiedBy": [
@@ -6411,6 +6484,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -6440,6 +6514,7 @@
         "㈜대길산업개발"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7938100644",
       "identifiedBy": [
@@ -6636,6 +6711,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -6665,6 +6741,7 @@
         "(주)대로건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -6837,6 +6914,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -6869,6 +6947,7 @@
         "㈜대륜씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -7029,6 +7108,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -7063,6 +7143,7 @@
         "㈜대륜씨엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6858802904",
       "identifiedBy": [
@@ -7231,6 +7312,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -7260,6 +7342,7 @@
         "㈜대림도장"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7158101911",
       "identifiedBy": [
@@ -7432,6 +7515,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -7466,6 +7550,7 @@
         "㈜대성건업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5038108698",
       "identifiedBy": [
@@ -7657,6 +7742,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -7691,6 +7777,7 @@
         "㈜대성이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6158178084",
       "identifiedBy": [
@@ -7882,6 +7969,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -7909,6 +7997,7 @@
         "㈜대성종합관리"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -8038,6 +8127,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -8076,6 +8166,7 @@
         "㈜대승이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8368703450",
       "identifiedBy": [
@@ -8295,6 +8386,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -8324,6 +8416,7 @@
         "㈜대신엘엔씨건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1188800857",
       "identifiedBy": [
@@ -8533,6 +8626,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -8562,6 +8656,7 @@
         "㈜대신하우징"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6728702861",
       "identifiedBy": [
@@ -8762,6 +8857,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -8793,6 +8889,15 @@
       ],
       "formerNames": [
         "㈜은광비엠씨"
+      ],
+      "relations": [
+        {
+          "type": "이전 상호(확인됨)",
+          "label": "구 ㈜은광비엠씨",
+          "target": "㈜은광비엠씨",
+          "note": "현재 사용하는 이메일 주소에 이전 상호 '은광비엠씨(eunkbmc)'가 남아 있어 동일 업체로 확인",
+          "source": "상호 변경 확인"
+        }
       ],
       "nameChange": {
         "current": "㈜대안이엔씨",
@@ -8994,6 +9099,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": true,
         "nameChangeMerged": true,
         "cancelSuspect": false,
@@ -9036,6 +9142,7 @@
         "㈜대한진단건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6078144583",
       "identifiedBy": [
@@ -9233,6 +9340,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -9262,6 +9370,7 @@
         "㈜더베스트 이앤비"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4118703232",
       "identifiedBy": [
@@ -9424,6 +9533,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -9456,6 +9566,7 @@
         "㈜더블유종합건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -9585,6 +9696,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -9635,6 +9747,7 @@
         "㈜더세움"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1628702326",
       "identifiedBy": [
@@ -9793,6 +9906,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -9827,6 +9941,15 @@
         "㈜더자람"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "진성이앤지 자회사",
+          "target": "진성이앤지",
+          "note": "진성이앤지 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "1288655753",
       "identifiedBy": [
@@ -10065,6 +10188,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -10094,6 +10218,7 @@
         "㈜덕경"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7918801215",
       "identifiedBy": [
@@ -10257,6 +10382,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -10291,6 +10417,7 @@
         "㈜덕일산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6108132730",
       "identifiedBy": [
@@ -10483,6 +10610,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -10517,6 +10645,15 @@
         "㈜도경"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "기림 자회사",
+          "target": "기림",
+          "note": "기림 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "4248803332",
       "identifiedBy": [
@@ -10765,6 +10902,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -10794,6 +10932,7 @@
         "㈜도경이엔지"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4098149174",
       "identifiedBy": [
@@ -10980,6 +11119,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -11014,6 +11154,7 @@
         "㈜도방건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6428101762",
       "identifiedBy": [
@@ -11220,6 +11361,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -11249,6 +11391,7 @@
         "㈜도원씨엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7718801924",
       "identifiedBy": [
@@ -11446,6 +11589,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -11475,6 +11619,7 @@
         "㈜도은건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2158782449",
       "identifiedBy": [
@@ -11671,6 +11816,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -11700,6 +11846,7 @@
         "㈜동건씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6218183850",
       "identifiedBy": [
@@ -11886,6 +12033,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -11920,6 +12068,7 @@
         "㈜동성로라"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2538801955",
       "identifiedBy": [
@@ -12069,6 +12218,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -12103,6 +12253,7 @@
         "㈜동심건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -12299,6 +12450,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -12328,6 +12480,7 @@
         "㈜두루빌엔지니어링"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2068197475",
       "identifiedBy": [
@@ -12532,6 +12685,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -12574,6 +12728,7 @@
         "㈜두영건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "502283",
       "identifiedBy": [
@@ -12765,6 +12920,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -12799,6 +12955,7 @@
         "㈜두영이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1638703143",
       "identifiedBy": [
@@ -13021,6 +13178,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -13053,6 +13211,7 @@
         "㈜디노종합건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -13182,6 +13341,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -13232,6 +13392,7 @@
         "㈜디아이산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8128102550",
       "identifiedBy": [
@@ -13440,6 +13601,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -13470,6 +13632,7 @@
         "디엘씨앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1588700479",
       "identifiedBy": [
@@ -13672,6 +13835,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -13704,6 +13868,7 @@
         "㈜라인탑케이에스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -13810,6 +13975,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -13852,6 +14018,7 @@
         "㈜레인보우테크"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1298640821",
       "identifiedBy": [
@@ -14053,6 +14220,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -14091,6 +14259,7 @@
         "㈜로운건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1228801423",
       "identifiedBy": [
@@ -14330,6 +14499,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -14364,6 +14534,7 @@
         "㈜루아이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3158119531",
       "identifiedBy": [
@@ -14561,6 +14732,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -14590,6 +14762,7 @@
         "㈜명하씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5028198668",
       "identifiedBy": [
@@ -14787,6 +14960,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -14816,6 +14990,7 @@
         "㈜모두건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4458701921",
       "identifiedBy": [
@@ -14984,6 +15159,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -15013,6 +15189,7 @@
         "(주)모아씨앤에스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1298659539",
       "identifiedBy": [
@@ -15187,6 +15364,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -15216,6 +15394,7 @@
         "㈜무한하우징"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7168703189",
       "identifiedBy": [
@@ -15489,6 +15668,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -15523,6 +15703,7 @@
         "㈜미르건축"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2158149185",
       "identifiedBy": [
@@ -15775,6 +15956,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -15813,6 +15995,7 @@
         "㈜미사건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2688603437",
       "identifiedBy": [
@@ -16051,6 +16234,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -16080,6 +16264,7 @@
         "㈜미성건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2038803400",
       "identifiedBy": [
@@ -16305,6 +16490,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -16334,6 +16520,7 @@
         "㈜미화건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5028129875",
       "identifiedBy": [
@@ -16525,6 +16712,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -16554,6 +16742,7 @@
         "㈜바름피앤에스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3268703012",
       "identifiedBy": [
@@ -16783,6 +16972,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -16812,6 +17002,7 @@
         "㈜방수존건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1378142766",
       "identifiedBy": [
@@ -17008,6 +17199,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -17037,6 +17229,7 @@
         "㈜백승"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3148657819",
       "identifiedBy": [
@@ -17234,6 +17427,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -17263,6 +17457,7 @@
         "㈜보고넷"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1258146527",
       "identifiedBy": [
@@ -17431,6 +17626,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -17460,6 +17656,7 @@
         "㈜보라씨엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2178118276",
       "identifiedBy": [
@@ -17658,6 +17855,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -17696,6 +17894,7 @@
         "㈜보람씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7688602961",
       "identifiedBy": [
@@ -17954,6 +18153,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -17986,6 +18186,7 @@
         "㈜보천건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -18115,6 +18316,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -18153,6 +18355,7 @@
         "㈜본이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1618103145",
       "identifiedBy": [
@@ -18287,6 +18490,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -18314,6 +18518,7 @@
         "㈜본이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -18435,6 +18640,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -18469,6 +18675,15 @@
         "㈜부성도장"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "수안건설 자회사",
+          "target": "수안건설",
+          "note": "수안건설 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "7878103011",
       "identifiedBy": [
@@ -18654,6 +18869,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -18683,6 +18899,7 @@
         "㈜부영씨엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4168121999",
       "identifiedBy": [
@@ -18880,6 +19097,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -18909,6 +19127,7 @@
         "㈜비전씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5918702295",
       "identifiedBy": [
@@ -19100,6 +19319,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -19129,6 +19349,7 @@
         "㈜삼강기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "603812",
       "identifiedBy": [
@@ -19320,6 +19541,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -19354,6 +19576,7 @@
         "㈜삼성리페어링"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3168602469",
       "identifiedBy": [
@@ -19551,6 +19774,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -19580,6 +19804,7 @@
         "㈜삼인유엔아이"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1308610502",
       "identifiedBy": [
@@ -19782,6 +20007,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -19811,6 +20037,7 @@
         "㈜삼정엔지니어링"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6178141434",
       "identifiedBy": [
@@ -20030,6 +20257,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -20057,6 +20285,7 @@
         "㈜삼화건설산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -20178,6 +20407,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -20210,6 +20440,7 @@
         "㈜삼흥건축"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -20323,6 +20554,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -20357,6 +20589,7 @@
         "㈜삼흥티에스건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6078183311",
       "identifiedBy": [
@@ -20560,6 +20793,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -20596,6 +20830,22 @@
       ],
       "formerNames": [
         "조양도장산업㈜"
+      ],
+      "relations": [
+        {
+          "type": "이전 상호(확인됨)",
+          "label": "구 조양도장산업㈜",
+          "target": "조양도장산업㈜",
+          "note": "구인공고 사이트의 회사 연혁·소개에 이전 상호 '조양도장산업'이 기재되어 동일 업체로 확인",
+          "source": "상호 변경 확인"
+        },
+        {
+          "type": "자회사",
+          "label": "주원디엔피 자회사",
+          "target": "주원디엔피",
+          "note": "주원디엔피 자회사",
+          "source": "체결 완료"
+        }
       ],
       "nameChange": {
         "current": "㈜새성건설",
@@ -20870,6 +21120,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": true,
         "nameChangeMerged": true,
         "cancelSuspect": false,
@@ -20932,6 +21183,7 @@
         "㈜서린건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6208122184",
       "identifiedBy": [
@@ -21123,6 +21375,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -21155,6 +21408,7 @@
         "㈜서영이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -21284,6 +21538,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -21332,6 +21587,7 @@
         "㈜서전ENC"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -21453,6 +21709,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -21487,6 +21744,7 @@
         "㈜석민이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1108161507",
       "identifiedBy": [
@@ -21681,6 +21939,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -21710,6 +21969,7 @@
         "㈜선진기술공사"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1718800033",
       "identifiedBy": [
@@ -21901,6 +22161,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -21930,6 +22191,7 @@
         "㈜성림건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5138144653",
       "identifiedBy": [
@@ -22132,6 +22394,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -22161,6 +22424,7 @@
         "㈜성일피앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4118803660",
       "identifiedBy": [
@@ -22324,6 +22588,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -22366,6 +22631,7 @@
         "㈜세림산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2248149608",
       "identifiedBy": [
@@ -22563,6 +22829,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -22592,6 +22859,7 @@
         "㈜세영건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2308802679",
       "identifiedBy": [
@@ -22794,6 +23062,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -22823,6 +23092,7 @@
         "㈜세오엔지니어링"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1358629480",
       "identifiedBy": [
@@ -23028,6 +23298,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -23070,6 +23341,7 @@
         "㈜세원"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1348199372",
       "identifiedBy": [
@@ -23325,6 +23597,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -23354,6 +23627,7 @@
         "㈜세원산업개발"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6058161849",
       "identifiedBy": [
@@ -23545,6 +23819,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -23574,6 +23849,7 @@
         "(주)세원티엠"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2958702311",
       "identifiedBy": [
@@ -23732,6 +24008,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -23764,6 +24041,7 @@
         "㈜세정이엔지"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -23885,6 +24163,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -23923,6 +24202,7 @@
         "(주)송주종합건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -24091,6 +24371,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -24125,6 +24406,7 @@
         "㈜수산기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1398141287",
       "identifiedBy": [
@@ -24391,6 +24673,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -24429,6 +24712,7 @@
         "㈜수안건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4108625541",
       "identifiedBy": [
@@ -24631,6 +24915,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -24660,6 +24945,7 @@
         "㈜수주건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1348651451",
       "identifiedBy": [
@@ -24885,6 +25171,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -24912,6 +25199,7 @@
         "㈜수지씨앤에스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -25033,6 +25321,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -25071,6 +25360,7 @@
         "㈜스타건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8128801638",
       "identifiedBy": [
@@ -25229,6 +25519,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -25261,6 +25552,7 @@
         "㈜시스텍이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -25382,6 +25674,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -25418,6 +25711,7 @@
         "㈜신원이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -25539,6 +25833,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -25577,6 +25872,7 @@
         "㈜신정이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2808100492",
       "identifiedBy": [
@@ -25768,6 +26064,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -25797,6 +26094,7 @@
         "㈜신창건업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5028157051",
       "identifiedBy": [
@@ -25988,6 +26286,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -26022,6 +26321,7 @@
         "㈜썬시카방수"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5048128834",
       "identifiedBy": [
@@ -26221,6 +26521,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -26257,6 +26558,7 @@
         "㈜씨앤엠건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -26386,6 +26688,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -26424,6 +26727,7 @@
         "㈜아우리"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1298166919",
       "identifiedBy": [
@@ -26621,6 +26925,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -26650,6 +26955,7 @@
         "㈜아트텍"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1898101067",
       "identifiedBy": [
@@ -26854,6 +27160,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -26883,6 +27190,7 @@
         "㈜에스에스건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7818100938",
       "identifiedBy": [
@@ -27055,6 +27363,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -27089,6 +27398,7 @@
         "㈜에스엠에이"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1308630454",
       "identifiedBy": [
@@ -27359,6 +27669,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -27391,6 +27702,7 @@
         "㈜에스피플래닝"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -27515,6 +27827,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -27549,6 +27862,7 @@
         "㈜에이원건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7448100550",
       "identifiedBy": [
@@ -27746,6 +28060,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -27780,6 +28095,7 @@
         "㈜에이치제이건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5798701622",
       "identifiedBy": [
@@ -27977,6 +28293,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -28006,6 +28323,15 @@
         "(주)에이플러스건설"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 선재건설",
+          "target": "선재건설",
+          "note": "구)선재건설",
+          "source": "협력업체 리스트(내부용)"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "6088120605",
       "identifiedBy": [
@@ -28207,6 +28533,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -28236,6 +28563,7 @@
         "㈜에이피티건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3018610098",
       "identifiedBy": [
@@ -28402,6 +28730,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -28436,6 +28765,7 @@
         "㈜엘에스도장건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8598800851",
       "identifiedBy": [
@@ -28621,6 +28951,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -28650,6 +28981,7 @@
         "㈜엠지건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5478701305",
       "identifiedBy": [
@@ -28836,6 +29168,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -28870,6 +29203,7 @@
         "㈜영성조경"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6158133715",
       "identifiedBy": [
@@ -29061,6 +29395,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -29090,6 +29425,7 @@
         "㈜예랑건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8258100811",
       "identifiedBy": [
@@ -29323,6 +29659,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -29352,6 +29689,7 @@
         "㈜예신건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4048702837",
       "identifiedBy": [
@@ -29588,6 +29926,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -29617,6 +29956,15 @@
         "㈜예운"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 도운건설",
+          "target": "도운건설",
+          "note": "구)도운건설",
+          "source": "협력업체 리스트(내부용)"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "4268602320",
       "identifiedBy": [
@@ -29823,6 +30171,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -29852,6 +30201,7 @@
         "㈜예은건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5718700968",
       "identifiedBy": [
@@ -30049,6 +30399,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -30078,6 +30429,7 @@
         "㈜예화건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5148166039",
       "identifiedBy": [
@@ -30269,6 +30621,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -30303,6 +30656,15 @@
         "㈜오연건설"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "로운건설 자회사",
+          "target": "로운건설",
+          "note": "로운건설 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "6578802651",
       "identifiedBy": [
@@ -30511,6 +30873,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -30538,6 +30901,7 @@
         "㈜와이비엘"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -30659,6 +31023,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -30697,6 +31062,7 @@
         "㈜우단건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8978101208",
       "identifiedBy": [
@@ -30899,6 +31265,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -30926,6 +31293,7 @@
         "㈜우담씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -31039,6 +31407,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": true,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -31058,6 +31427,10 @@
           {
             "type": "review",
             "message": "협력업체 리스트 [시공사 발송용]·[내부용] 어디에도 없고 체결일도 확인되지 않습니다."
+          },
+          {
+            "type": "review",
+            "message": "«㈜지앤필드종합건설» 의 비고에 이 업체명이 이전 상호로 적혀 있습니다(\"구)우담씨앤씨\") — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다."
           }
         ]
       }
@@ -31073,6 +31446,7 @@
         "㈜우영엘디아이"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1218150636",
       "identifiedBy": [
@@ -31317,6 +31691,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -31353,6 +31728,7 @@
         "㈜우인건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -31474,6 +31850,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -31512,6 +31889,7 @@
         "㈜위즈페인팅"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2648600947",
       "identifiedBy": [
@@ -31764,6 +32142,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -31798,6 +32177,7 @@
         "㈜유광씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6088142308",
       "identifiedBy": [
@@ -32008,6 +32388,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -32037,6 +32418,7 @@
         "㈜유니드건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2318111717",
       "identifiedBy": [
@@ -32171,6 +32553,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -32200,6 +32583,15 @@
         "㈜유복건설"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "유일건설 자회사",
+          "target": "유일건설",
+          "note": "유일건설 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "3698103297",
       "identifiedBy": [
@@ -32415,6 +32807,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -32444,6 +32837,7 @@
         "㈜유일건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4738600783",
       "identifiedBy": [
@@ -32613,6 +33007,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -32647,6 +33042,7 @@
         "㈜유진에코"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6038167435",
       "identifiedBy": [
@@ -32844,6 +33240,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -32871,6 +33268,7 @@
         "㈜윤산씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -33041,6 +33439,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -33087,6 +33486,7 @@
         "㈜은성이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7488101658",
       "identifiedBy": [
@@ -33284,6 +33684,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -33313,6 +33714,7 @@
         "㈜은천"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3928700142",
       "identifiedBy": [
@@ -33551,6 +33953,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -33580,6 +33983,7 @@
         "㈜은화"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6048122746",
       "identifiedBy": [
@@ -33777,6 +34181,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -33806,6 +34211,7 @@
         "㈜이두건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5148127206",
       "identifiedBy": [
@@ -34008,6 +34414,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -34037,6 +34444,7 @@
         "㈜이루미건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2128603813",
       "identifiedBy": [
@@ -34234,6 +34642,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -34261,6 +34670,7 @@
         "㈜이스턴퍼시픽"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -34382,6 +34792,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -34420,6 +34831,7 @@
         "㈜이원건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1358140160",
       "identifiedBy": [
@@ -34611,6 +35023,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -34640,6 +35053,7 @@
         "㈜이음건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -34837,6 +35251,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -34866,6 +35281,7 @@
         "㈜인경건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1198653159",
       "identifiedBy": [
@@ -35063,6 +35479,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -35092,6 +35509,7 @@
         "㈜일성기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6078167243",
       "identifiedBy": [
@@ -35347,6 +35765,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -35377,6 +35796,7 @@
         "(주)일진건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6208127160",
       "identifiedBy": [
@@ -35626,6 +36046,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -35664,6 +36085,7 @@
         "㈜자오건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2298116650",
       "identifiedBy": [
@@ -35855,6 +36277,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -35884,6 +36307,7 @@
         "㈜장수씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6458703330",
       "identifiedBy": [
@@ -36110,6 +36534,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -36139,6 +36564,7 @@
         "㈜적산건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2158115555",
       "identifiedBy": [
@@ -36313,6 +36739,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -36342,6 +36769,7 @@
         "㈜정광이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4088167484",
       "identifiedBy": [
@@ -36549,6 +36977,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -36583,6 +37012,7 @@
         "㈜정담"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6448803784",
       "identifiedBy": [
@@ -36762,6 +37192,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -36791,6 +37222,7 @@
         "㈜정문씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6318700237",
       "identifiedBy": [
@@ -36988,6 +37420,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -37017,6 +37450,7 @@
         "㈜정민씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8618601000",
       "identifiedBy": [
@@ -37214,6 +37648,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -37243,6 +37678,7 @@
         "㈜정원아이앤디"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8938600444",
       "identifiedBy": [
@@ -37434,6 +37870,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -37461,6 +37898,7 @@
         "(주)정훈라이테크"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -37590,6 +38028,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -37640,6 +38079,7 @@
         "㈜제이비이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8088801245",
       "identifiedBy": [
@@ -37831,6 +38271,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -37860,6 +38301,7 @@
         "㈜제이에이치건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4088186574",
       "identifiedBy": [
@@ -38046,6 +38488,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -38080,6 +38523,7 @@
         "㈜제이제이ENG"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1488700074",
       "identifiedBy": [
@@ -38271,6 +38715,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -38305,6 +38750,7 @@
         "㈜조광피엔텍"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6158187977",
       "identifiedBy": [
@@ -38502,6 +38948,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -38536,6 +38983,7 @@
         "㈜종명건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2128137545",
       "identifiedBy": [
@@ -38798,6 +39246,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -38832,6 +39281,7 @@
         "㈜주원디엔피"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2758100020",
       "identifiedBy": [
@@ -39029,6 +39479,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -39058,6 +39509,7 @@
         "㈜주태건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1108193692",
       "identifiedBy": [
@@ -39296,6 +39748,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -39323,6 +39776,7 @@
         "㈜중앙공사"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -39444,6 +39898,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -39490,6 +39945,7 @@
         "지건씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6738702296",
       "identifiedBy": [
@@ -39693,6 +40149,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -39739,6 +40196,16 @@
         "㈜지앤필드종합건설"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 우담씨앤씨",
+          "target": "우담씨앤씨",
+          "note": "구)우담씨앤씨",
+          "source": "협력업체 리스트(내부용)",
+          "existsAsSeparateRecord": true
+        }
+      ],
       "nameChange": null,
       "businessNumber": "1248743193",
       "identifiedBy": [
@@ -39926,6 +40393,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": true,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -39940,8 +40408,13 @@
         "missingHoldReason": false,
         "missingNextAction": false,
         "partnerWithoutMouStatus": false,
-        "needsReview": false,
-        "messages": []
+        "needsReview": true,
+        "messages": [
+          {
+            "type": "review",
+            "message": "비고에 이전 상호 \"우담씨앤씨\"(협력업체 리스트(내부용): \"구)우담씨앤씨\")가 적혀 있고, 그 이름의 업체 «㈜우담씨앤씨» 가 별도로 존재합니다 — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다."
+          }
+        ]
       }
     },
     {
@@ -39955,6 +40428,7 @@
         "(주)지온산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8798103270",
       "identifiedBy": [
@@ -40118,6 +40592,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -40152,6 +40627,7 @@
         "㈜지호건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2248115729",
       "identifiedBy": [
@@ -40417,6 +40893,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -40455,6 +40932,7 @@
         "㈜진성이앤지"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1318621114",
       "identifiedBy": [
@@ -40657,6 +41135,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -40686,6 +41165,7 @@
         "㈜진웅건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6068124814",
       "identifiedBy": [
@@ -40877,6 +41357,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -40906,6 +41387,7 @@
         "㈜창건설산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -41094,6 +41576,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -41123,6 +41606,7 @@
         "㈜창대이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5588800303",
       "identifiedBy": [
@@ -41314,6 +41798,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -41343,6 +41828,7 @@
         "㈜창도건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6108157482",
       "identifiedBy": [
@@ -41548,6 +42034,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -41577,6 +42064,7 @@
         "㈜창일건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4248701002",
       "identifiedBy": [
@@ -41783,6 +42271,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -41813,6 +42302,7 @@
         "(주)채도건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8758802166",
       "identifiedBy": [
@@ -42064,6 +42554,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -42099,6 +42590,7 @@
         "(주)청람건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1678803142",
       "identifiedBy": [
@@ -42360,6 +42852,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -42394,6 +42887,7 @@
         "㈜청명이앤디"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5848101393",
       "identifiedBy": [
@@ -42608,6 +43102,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -42635,6 +43130,7 @@
         "㈜청우건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -42756,6 +43252,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -42794,6 +43291,7 @@
         "㈜청우엔지니어링"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3018158194",
       "identifiedBy": [
@@ -43002,6 +43500,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -43031,6 +43530,7 @@
         "㈜청익"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3068110744",
       "identifiedBy": [
@@ -43199,6 +43699,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -43241,6 +43742,7 @@
         "㈜케이씨건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6048140268",
       "identifiedBy": [
@@ -43441,6 +43943,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -43470,6 +43973,7 @@
         "㈜케이원씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6628801974",
       "identifiedBy": [
@@ -43735,6 +44239,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -43764,6 +44269,7 @@
         "㈜케이탑건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7128603351",
       "identifiedBy": [
@@ -43943,6 +44449,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -43970,6 +44477,7 @@
         "㈜케이하우징"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -44099,6 +44607,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -44149,6 +44658,7 @@
         "㈜탑이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4278801503",
       "identifiedBy": [
@@ -44413,6 +44923,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -44442,6 +44953,7 @@
         "㈜태강건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1438118747",
       "identifiedBy": [
@@ -44703,6 +45215,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -44735,6 +45248,7 @@
         "㈜태림건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -44856,6 +45370,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -44888,6 +45403,7 @@
         "㈜태연건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -45018,6 +45534,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -45056,6 +45573,7 @@
         "㈜태영건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -45297,6 +45815,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -45326,6 +45845,7 @@
         "㈜태영씨엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7128600465",
       "identifiedBy": [
@@ -45517,6 +46037,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -45546,6 +46067,15 @@
         "㈜태온산업개발"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "이루미건설 자회사",
+          "target": "이루미건설",
+          "note": "이루미건설 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "6058603558",
       "identifiedBy": [
@@ -45732,6 +46262,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -45761,6 +46292,7 @@
         "㈜탱크마스타"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2048620714",
       "identifiedBy": [
@@ -45962,6 +46494,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -45996,6 +46529,7 @@
         "㈜토형건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4108188217",
       "identifiedBy": [
@@ -46196,6 +46730,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -46225,6 +46760,7 @@
         "㈜파가니건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7088802363",
       "identifiedBy": [
@@ -46416,6 +46952,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -46445,6 +46982,7 @@
         "㈜풍산씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2148806595",
       "identifiedBy": [
@@ -46636,6 +47174,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -46663,6 +47202,7 @@
         "㈜풍전이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -46787,6 +47327,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -46821,6 +47362,7 @@
         "㈜풍전이엔씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6058802155",
       "identifiedBy": [
@@ -47006,6 +47548,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -47040,6 +47583,7 @@
         "㈜피앤텍이엔지"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1328606886",
       "identifiedBy": [
@@ -47266,6 +47810,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -47300,6 +47845,7 @@
         "㈜한국전문건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1148152918",
       "identifiedBy": [
@@ -47466,6 +48012,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -47500,6 +48047,7 @@
         "㈜한림제코"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2118670264",
       "identifiedBy": [
@@ -47692,6 +48240,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -47726,6 +48275,7 @@
         "㈜한빛"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3948101562",
       "identifiedBy": [
@@ -47937,6 +48487,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -47966,6 +48517,7 @@
         "㈜헤븐"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7348102959",
       "identifiedBy": [
@@ -48124,6 +48676,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -48156,6 +48709,7 @@
         "㈜현덕건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -48277,6 +48831,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -48313,6 +48868,7 @@
         "㈜현일건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -48442,6 +48998,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -48492,6 +49049,7 @@
         "㈜현지이앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3828801438",
       "identifiedBy": [
@@ -48620,6 +49178,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -48652,6 +49211,7 @@
         "㈜호남아스콘산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -48773,6 +49333,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -48809,6 +49370,7 @@
         "㈜호연상사\n㈜케이탑건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -48987,6 +49549,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -49019,6 +49582,7 @@
         "㈜황소홀딩스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -49148,6 +49712,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -49198,6 +49763,7 @@
         "㈜효덕산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1278659455",
       "identifiedBy": [
@@ -49395,6 +49961,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -49425,6 +49992,7 @@
         "㈜효성씨앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7508802697",
       "identifiedBy": [
@@ -49709,6 +50277,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -49743,6 +50312,7 @@
         "㈜흥산건설산업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "605812",
       "identifiedBy": [
@@ -49934,6 +50504,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -49968,6 +50539,7 @@
         "가나랜드㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6068646905",
       "identifiedBy": [
@@ -50136,6 +50708,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -50163,6 +50736,7 @@
         "가온알앤씨"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -50297,6 +50871,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -50339,6 +50914,7 @@
         "강남이앤알㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1138184663",
       "identifiedBy": [
@@ -50533,6 +51109,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -50571,6 +51148,7 @@
         "건영이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7538800965",
       "identifiedBy": [
@@ -50745,6 +51323,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -50779,6 +51358,7 @@
         "건진개발㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6068116240",
       "identifiedBy": [
@@ -50974,6 +51554,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -51006,6 +51587,7 @@
         "건진산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -51127,6 +51709,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -51174,6 +51757,7 @@
         "㈜경기이앤에스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2158687883",
       "identifiedBy": [
@@ -51371,6 +51955,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -51405,6 +51990,7 @@
         "경창산업개발㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "7348800436",
       "identifiedBy": [
@@ -51610,6 +52196,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -51639,6 +52226,7 @@
         "광일포장건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -51807,6 +52395,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -51841,6 +52430,7 @@
         "극동에이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1178144187",
       "identifiedBy": [
@@ -52052,6 +52642,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -52084,6 +52675,7 @@
         "근영건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -52205,6 +52797,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -52239,6 +52832,15 @@
         "금보㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 누리온건설㈜",
+          "target": "누리온건설㈜",
+          "note": "구)누리온건설㈜",
+          "source": "협력업체 리스트(내부용)"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "3148167724",
       "identifiedBy": [
@@ -52435,6 +53037,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -52464,6 +53067,15 @@
         "나노지음㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "성훈종합건설 자회사",
+          "target": "성훈종합건설",
+          "note": "성훈종합건설 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "8418803288",
       "identifiedBy": [
@@ -52677,6 +53289,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -52704,6 +53317,7 @@
         "나이스원건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -52825,6 +53439,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -52857,6 +53472,7 @@
         "뉴월드건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -52978,6 +53594,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -53010,6 +53627,7 @@
         "다빈치건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -53131,6 +53749,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -53169,6 +53788,7 @@
         "다우산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1298123910",
       "identifiedBy": [
@@ -53337,6 +53957,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -53366,6 +53987,7 @@
         "다인건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1288660727",
       "identifiedBy": [
@@ -53557,6 +54179,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -53586,6 +54209,7 @@
         "대경건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6158132507",
       "identifiedBy": [
@@ -53760,6 +54384,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -53792,6 +54417,7 @@
         "대길포장건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -53913,6 +54539,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -53945,6 +54572,7 @@
         "대로건설화학㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -54066,6 +54694,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -54104,6 +54733,7 @@
         "대명이엔씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2248146130",
       "identifiedBy": [
@@ -54329,6 +54959,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -54356,6 +54987,7 @@
         "대보특수방수"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -54482,6 +55114,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -54524,6 +55157,7 @@
         "대진건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5158101645",
       "identifiedBy": [
@@ -54710,6 +55344,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -54744,6 +55379,7 @@
         "대표건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2118623252",
       "identifiedBy": [
@@ -55020,6 +55656,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -55058,6 +55695,7 @@
         "대하씨엔디㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6078176426",
       "identifiedBy": [
@@ -55220,6 +55858,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -55247,6 +55886,7 @@
         "대한페인트공사"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -55368,6 +56008,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -55401,6 +56042,7 @@
         "대하C&D"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -55583,6 +56225,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -55645,6 +56288,7 @@
         "대흥씨앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3178103597",
       "identifiedBy": [
@@ -55894,6 +56538,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -55923,6 +56568,7 @@
         "더이스트코리아㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5688802894",
       "identifiedBy": [
@@ -56117,6 +56763,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -56163,6 +56810,7 @@
         "덕산기업"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2013194764",
       "identifiedBy": [
@@ -56349,6 +56997,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -56383,6 +57032,7 @@
         "덕수건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3058129084",
       "identifiedBy": [
@@ -56601,6 +57251,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -56630,6 +57281,7 @@
         "도시이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2148814722",
       "identifiedBy": [
@@ -56764,6 +57416,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -56791,6 +57444,7 @@
         "동강건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -56912,6 +57566,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -56939,6 +57594,7 @@
         "동명기산㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -57060,6 +57716,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -57098,6 +57755,7 @@
         "동양에폭시㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1308158423",
       "identifiedBy": [
@@ -57292,6 +57950,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -57328,6 +57987,7 @@
         "동은건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -57457,6 +58117,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -57507,6 +58168,7 @@
         "동일산건㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2298116058",
       "identifiedBy": [
@@ -57738,6 +58400,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -57767,6 +58430,7 @@
         "동해건업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4098124474",
       "identifiedBy": [
@@ -57958,6 +58622,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -57987,6 +58652,7 @@
         "동현이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1398601558",
       "identifiedBy": [
@@ -58184,6 +58850,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -58213,6 +58880,7 @@
         "두레이엔씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4158152034",
       "identifiedBy": [
@@ -58410,6 +59078,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -58439,6 +59108,7 @@
         "드림종합건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4228701724",
       "identifiedBy": [
@@ -58709,6 +59379,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -58743,6 +59414,7 @@
         "로이스㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2328602652",
       "identifiedBy": [
@@ -58934,6 +59606,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -58961,6 +59634,7 @@
         "로토텍다이아몬드㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -59131,6 +59805,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": true,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -59154,6 +59829,10 @@
           {
             "type": "review",
             "message": "다만 레거시 관리 엑셀의 \"전체 협약업체\" 명부(등급 F(B))에는 올라 있습니다 — 근거가 서로 어긋나므로 담당자 확인이 필요합니다."
+          },
+          {
+            "type": "review",
+            "message": "«성심건설㈜» 의 비고에 이 업체명이 이전 상호로 적혀 있습니다(\"구)로토텍다이아몬드㈜\") — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다."
           }
         ]
       }
@@ -59167,6 +59846,7 @@
         "만보건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -59288,6 +59968,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -59322,6 +60003,7 @@
         "명가건설(유)"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4118134747",
       "identifiedBy": [
@@ -59533,6 +60215,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -59563,6 +60246,7 @@
         "명가종합건설(주)"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5038146334",
       "identifiedBy": [
@@ -59829,6 +60513,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -59863,6 +60548,7 @@
         "명서건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4098160427",
       "identifiedBy": [
@@ -60036,6 +60722,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -60074,6 +60761,7 @@
         "미래건축"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8641101073",
       "identifiedBy": [
@@ -60265,6 +60953,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -60297,6 +60986,7 @@
         "미성산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -60426,6 +61116,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -60478,6 +61169,15 @@
       ],
       "formerNames": [
         "㈜어썸코퍼레이션"
+      ],
+      "relations": [
+        {
+          "type": "이전 상호(확인됨)",
+          "label": "구 ㈜어썸코퍼레이션",
+          "target": "㈜어썸코퍼레이션",
+          "note": "'어썸코퍼레이션' → '베스트건설' 상호 변경 확인, 사업자등록번호 일치",
+          "source": "상호 변경 확인"
+        }
       ],
       "nameChange": {
         "current": "베스트건설㈜",
@@ -60725,6 +61425,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": true,
         "nameChangeMerged": true,
         "cancelSuspect": true,
@@ -60769,6 +61470,7 @@
         "비이건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -60890,6 +61592,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -60926,6 +61629,7 @@
         "삼동건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -61055,6 +61759,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -61105,6 +61810,7 @@
         "삼우건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4108124440",
       "identifiedBy": [
@@ -61302,6 +62008,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -61331,6 +62038,7 @@
         "삼원건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4098802784",
       "identifiedBy": [
@@ -61525,6 +62233,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -61561,6 +62270,7 @@
         "삼은기업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -61682,6 +62392,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -61720,6 +62431,7 @@
         "삼정아이엔지건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "122862",
       "identifiedBy": [
@@ -61917,6 +62629,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -61946,6 +62659,7 @@
         "삼창엔지니어링㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2198101811",
       "identifiedBy": [
@@ -62140,6 +62854,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -62179,6 +62894,7 @@
         "삼호종합건설(주)"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6098130858",
       "identifiedBy": [
@@ -62419,6 +63135,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -62477,6 +63194,7 @@
         "삼흥환경건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1238134189",
       "identifiedBy": [
@@ -62634,6 +63352,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -62668,6 +63387,7 @@
         "상미건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3128190078",
       "identifiedBy": [
@@ -62890,6 +63610,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -62919,6 +63640,7 @@
         "새로이건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1108603797",
       "identifiedBy": [
@@ -63116,6 +63838,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -63145,6 +63868,7 @@
         "색채산업개발㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1228601680",
       "identifiedBy": [
@@ -63342,6 +64066,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -63371,6 +64096,7 @@
         "서현건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -63539,6 +64265,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -63568,6 +64295,7 @@
         "석암산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3148171664",
       "identifiedBy": [
@@ -63792,6 +64520,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -63821,6 +64550,7 @@
         "석진건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2298124543",
       "identifiedBy": [
@@ -64018,6 +64748,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -64045,6 +64776,7 @@
         "선재기업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -64158,6 +64890,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -64192,6 +64925,16 @@
         "성심건설㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 로토텍다이아몬드㈜",
+          "target": "로토텍다이아몬드㈜",
+          "note": "구)로토텍다이아몬드㈜",
+          "source": "협력업체 리스트(내부용)",
+          "existsAsSeparateRecord": true
+        }
+      ],
       "nameChange": null,
       "businessNumber": "6078128657",
       "identifiedBy": [
@@ -64329,6 +65072,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": true,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -64348,6 +65092,10 @@
           {
             "type": "review",
             "message": "MOU 체결일(2023-02-15)은 있으나 [협력업체 리스트(시공사 발송용)]에 없습니다 — 협약이 종료됐거나 최근 체결이라 아직 명부에 반영되지 않았을 수 있습니다."
+          },
+          {
+            "type": "review",
+            "message": "비고에 이전 상호 \"로토텍다이아몬드㈜\"(협력업체 리스트(내부용): \"구)로토텍다이아몬드㈜\")가 적혀 있고, 그 이름의 업체 «로토텍다이아몬드㈜» 가 별도로 존재합니다 — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다."
           }
         ]
       }
@@ -64363,6 +65111,7 @@
         "성진에스솔루션㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1258125880",
       "identifiedBy": [
@@ -64561,6 +65310,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -64597,6 +65347,15 @@
         "성진종합건설㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 세움산업개발",
+          "target": "세움산업개발",
+          "note": "세움산업개발 명칭변경",
+          "source": "진행 현황"
+        }
+      ],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -64723,6 +65482,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -64761,6 +65521,7 @@
         "성훈종합건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4768801539",
       "identifiedBy": [
@@ -64958,6 +65719,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -64987,6 +65749,7 @@
         "신양아이엔지건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1088146691",
       "identifiedBy": [
@@ -65184,6 +65947,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -65213,6 +65977,7 @@
         "신한건설산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4168182093",
       "identifiedBy": [
@@ -65478,6 +66243,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -65507,6 +66273,7 @@
         "신화건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1338134207",
       "identifiedBy": [
@@ -65833,6 +66600,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -65869,6 +66637,7 @@
         "쌍용조겅㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -66018,6 +66787,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -66052,6 +66822,7 @@
         "쌍용조경㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4088605917",
       "identifiedBy": [
@@ -66209,6 +66980,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -66236,6 +67008,7 @@
         "썬위드이엔씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -66357,6 +67130,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -66391,6 +67165,7 @@
         "씨에스청산건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3028118763",
       "identifiedBy": [
@@ -66582,6 +67357,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -66611,6 +67387,7 @@
         "알지씨앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8658103228",
       "identifiedBy": [
@@ -66785,6 +67562,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -66812,6 +67590,15 @@
         "에스에이치㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "은성 자회사",
+          "target": "은성",
+          "note": "은성자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -66970,6 +67757,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -67004,6 +67792,7 @@
         "에이치디건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4178139148",
       "identifiedBy": [
@@ -67201,6 +67990,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -67230,6 +68020,7 @@
         "엘케이개발㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1218117170",
       "identifiedBy": [
@@ -67427,6 +68218,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -67456,6 +68248,7 @@
         "엠에스이앤지㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6028138811",
       "identifiedBy": [
@@ -67647,6 +68440,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -67676,6 +68470,7 @@
         "여름건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1638803010",
       "identifiedBy": [
@@ -67913,6 +68708,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -67945,6 +68741,7 @@
         "연합특수방수㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -68074,6 +68871,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -68110,6 +68908,7 @@
         "영광건설산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -68231,6 +69030,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -68269,6 +69069,7 @@
         "영성건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4108662736",
       "identifiedBy": [
@@ -68474,6 +69275,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -68504,6 +69306,7 @@
         "와이티 파트너스㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5958702768",
       "identifiedBy": [
@@ -68704,6 +69507,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": true,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -68738,6 +69542,7 @@
         "우리방재건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3148169907",
       "identifiedBy": [
@@ -68958,6 +69763,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -68990,6 +69796,7 @@
         "우주티앤아이㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -69121,6 +69928,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -69157,6 +69965,7 @@
         "우주티엔아이㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -69306,6 +70115,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -69338,6 +70148,7 @@
         "원투쓰리방수"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -69467,6 +70278,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -69517,6 +70329,7 @@
         "유현건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6228125789",
       "identifiedBy": [
@@ -69749,6 +70562,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -69776,6 +70590,7 @@
         "이로건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -69891,6 +70706,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -69925,6 +70741,7 @@
         "이산건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3148604802",
       "identifiedBy": [
@@ -70102,6 +70919,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -70129,6 +70947,7 @@
         "인석건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -70250,6 +71069,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -70288,6 +71108,7 @@
         "일오삼지앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3108113167",
       "identifiedBy": [
@@ -70456,6 +71277,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -70485,6 +71307,15 @@
         "자연담은건설㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "자회사",
+          "label": "대표건설 자회사",
+          "target": "대표건설",
+          "note": "대표건설 자회사",
+          "source": "체결 완료"
+        }
+      ],
       "nameChange": null,
       "businessNumber": "6128153556",
       "identifiedBy": [
@@ -70694,6 +71525,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -70723,6 +71555,7 @@
         "제네시스광고기획"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -70891,6 +71724,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -70923,6 +71757,7 @@
         "제비표페인트"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -71044,6 +71879,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -71082,6 +71918,16 @@
         "제이지성신건설㈜"
       ],
       "formerNames": [],
+      "relations": [
+        {
+          "type": "이전 상호",
+          "label": "구 지에스성신건설",
+          "target": "지에스성신건설",
+          "note": "구)지에스성신건설\n상호명 변경으로 재협약체결",
+          "source": "협력업체 리스트(내부용)",
+          "existsAsSeparateRecord": true
+        }
+      ],
       "nameChange": null,
       "businessNumber": "1078716750",
       "identifiedBy": [
@@ -71221,6 +72067,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": true,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -71235,8 +72082,13 @@
         "missingHoldReason": false,
         "missingNextAction": false,
         "partnerWithoutMouStatus": false,
-        "needsReview": false,
-        "messages": []
+        "needsReview": true,
+        "messages": [
+          {
+            "type": "review",
+            "message": "비고에 이전 상호 \"지에스성신건설\"(협력업체 리스트(내부용): \"구)지에스성신건설\n상호명 변경으로 재협약체결\")가 적혀 있고, 그 이름의 업체 «지에스성신건설㈜» 가 별도로 존재합니다 — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다."
+          }
+        ]
       }
     },
     {
@@ -71250,6 +72102,7 @@
         "제일특수케미칼㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "3128148338",
       "identifiedBy": [
@@ -71461,6 +72314,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -71488,6 +72342,7 @@
         "조이건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -71609,6 +72464,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -71645,6 +72501,7 @@
         "지에스성신건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -71781,6 +72638,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": true,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -71804,6 +72662,10 @@
           {
             "type": "review",
             "message": "다만 레거시 관리 엑셀의 \"전체 협약업체\" 명부(등급 C)에는 올라 있습니다 — 근거가 서로 어긋나므로 담당자 확인이 필요합니다."
+          },
+          {
+            "type": "review",
+            "message": "«제이지성신건설㈜» 의 비고에 이 업체명이 이전 상호로 적혀 있습니다(\"구)지에스성신건설\n상호명 변경으로 재협약체결\") — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다."
           }
         ]
       }
@@ -71819,6 +72681,7 @@
         "진수이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -72015,6 +72878,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -72044,6 +72908,7 @@
         "진원피앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1148146546",
       "identifiedBy": [
@@ -72235,6 +73100,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -72262,6 +73128,7 @@
         "채우건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -72392,6 +73259,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -72430,6 +73298,7 @@
         "천강건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5858702174",
       "identifiedBy": [
@@ -72697,6 +73566,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -72731,6 +73601,7 @@
         "청학건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2198108361",
       "identifiedBy": [
@@ -72917,6 +73788,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -72951,6 +73823,7 @@
         "초담건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2348600887",
       "identifiedBy": [
@@ -73148,6 +74021,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -73177,6 +74051,7 @@
         "코지건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "5098801993",
       "identifiedBy": [
@@ -73454,6 +74329,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -73488,6 +74364,7 @@
         "태동건설"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1380277337",
       "identifiedBy": [
@@ -73656,6 +74533,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -73690,6 +74568,7 @@
         "태형산업개발"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6360502914",
       "identifiedBy": [
@@ -73886,6 +74765,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -73924,6 +74804,7 @@
         "퍼펙트방수"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2084171460",
       "identifiedBy": [
@@ -74097,6 +74978,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -74124,6 +75006,7 @@
         "하나건설공사㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -74245,6 +75128,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -74279,6 +75163,7 @@
         "하린이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2678603259",
       "identifiedBy": [
@@ -74540,6 +75425,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -74569,6 +75455,7 @@
         "하은건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "2158162529",
       "identifiedBy": [
@@ -74767,6 +75654,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -74805,6 +75693,7 @@
         "하진건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6108162025",
       "identifiedBy": [
@@ -75006,6 +75895,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -75038,6 +75928,7 @@
         "한별이앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -75263,6 +76154,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -75297,6 +76189,7 @@
         "한별이엔씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "8338802968",
       "identifiedBy": [
@@ -75476,6 +76369,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -75510,6 +76404,7 @@
         "현네트웍스"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "4611301669",
       "identifiedBy": [
@@ -75659,6 +76554,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -75693,6 +76589,7 @@
         "현대도건㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6088185160",
       "identifiedBy": [
@@ -75890,6 +76787,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -75919,6 +76817,7 @@
         "혜성씨앤씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6168701163",
       "identifiedBy": [
@@ -76116,6 +77015,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -76145,6 +77045,7 @@
         "효원이엔씨㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -76351,6 +77252,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -76393,6 +77295,7 @@
         "희민건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1058123592",
       "identifiedBy": [
@@ -76666,6 +77569,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -76700,6 +77604,7 @@
         "K.B건설㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "6128116809",
       "identifiedBy": [
@@ -76891,6 +77796,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -76923,6 +77829,7 @@
         "SG건설산업㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": null,
       "identifiedBy": [
@@ -77052,6 +77959,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,
@@ -77102,6 +78010,7 @@
         "SH㈜"
       ],
       "formerNames": [],
+      "relations": [],
       "nameChange": null,
       "businessNumber": "1318703165",
       "identifiedBy": [
@@ -77276,6 +78185,7 @@
       "validation": {
         "possibleDuplicate": false,
         "nameVariantMerged": false,
+        "mergeCandidate": false,
         "multipleCodes": false,
         "nameChangeMerged": false,
         "cancelSuspect": false,

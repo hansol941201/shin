@@ -214,7 +214,7 @@
     var msgs = v.messages || [];
     var flags = [
       ['중복 의심(미해결)', v.possibleDuplicate], ['표기 차이로 통합(해결)', v.nameVariantMerged], ['상태 충돌', v.statusConflict], ['날짜 오류', v.dateError],
-      ['상호 변경 통합', v.nameChangeMerged], ['업체코드 2건 이상', v.multipleCodes], ['협약취소 기재', v.cancelSuspect],
+      ['상호 변경 통합', v.nameChangeMerged], ['병합 후보(이전 상호 일치)', v.mergeCandidate], ['업체코드 2건 이상', v.multipleCodes], ['협약취소 기재', v.cancelSuspect],
       ['시공사 명부 미등재', v.notInContractorList],
       ['체결일 미확인', v.missingMouDate], ['체결일 담당자 확인 필요', v.mouDateNeedsReview],
       ['보류 사유 없음', v.missingHoldReason], ['다음 액션 없음', v.missingNextAction],
@@ -386,6 +386,18 @@
       '<header class="pcm-card__header">' +
         '<div class="pcm-card__identity">' +
           '<h3 class="pcm-card__name">' + esc(company.companyName) + '</h3>' +
+          (Array.isArray(company.relations) && company.relations.length
+            ? '<div class="pcm-card__relations">' + company.relations.map(function (r) {
+                var cls = r.type === '자회사' ? 'pcm-card__rel--sub'
+                        : (r.existsAsSeparateRecord ? 'pcm-card__rel--cand' : 'pcm-card__rel--former');
+                var tip = r.type === '이전 상호(확인됨)'
+                  ? '확인된 이전 상호 — ' + (r.note || '')
+                  : (r.type === '자회사' ? '모회사 관계' : '이전 상호(비고 기재)') +
+                    ' — 비고: "' + String(r.note || '').replace(/\n/g, ' ') + '" (출처: ' + (r.source || '') + ')' +
+                    (r.existsAsSeparateRecord ? ' · 이 이름의 업체가 별도로 존재 — 병합 후보' : '');
+                return '<span class="pcm-card__rel ' + cls + '" title="' + esc(tip) + '">' + esc(r.label) + '</span>';
+              }).join('') + '</div>'
+            : '') +
           '<div class="pcm-card__submeta">' +
             '<span class="pcm-card__code">업체코드 ' + esc(company.companyCode || NA) + '</span>' +
             '<span>진행 단계 ' + esc(mou.stage || NA) + '</span>' +

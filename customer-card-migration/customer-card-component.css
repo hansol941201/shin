@@ -105,6 +105,23 @@
   flex: 0 1 auto;
 }
 
+/* ── 이전 상호 · 자회사 관계 (업체명 바로 아래) ─────────── */
+.pcm-card__relations { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+.pcm-card__rel {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: help;
+  border: 1px solid transparent;
+}
+.pcm-card__rel--former { background: #f1eefb; color: #4b3183; border-color: #ddd4f2; }
+.pcm-card__rel--sub    { background: #e9f2fb; color: #1c5288; border-color: #c8ddf2; }
+.pcm-card__rel--cand   { background: var(--pcm-nodate-bg); color: var(--pcm-nodate); border-color: #ecd79a; }
+
 /* ── 배지 ───────────────────────────────────────────────── */
 .pcm-badge {
   display: inline-flex;

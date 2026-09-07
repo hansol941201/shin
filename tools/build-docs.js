@@ -10,6 +10,9 @@ const msgs = (c, t) => c.validation.messages.filter(m => m.type === t).map(m => 
 const rows = (f) => C.filter(f);
 const tbl = (head, body) => ['| ' + head.join(' | ') + ' |', '|' + head.map(() => '---').join('|') + '|', ...body.map(r => '| ' + r.join(' | ') + ' |')].join('\n');
 const nm = (c) => c.companyName + (c.companyCode ? ` (${c.companyCode})` : '');
+const LEGAL_RE_DOC = /㈜|\(주\)|（주）|주식회사|\(유\)|유한회사|\(사\)|\(재\)|\(합\)/g;
+const normDoc = (x) => String(x || '').replace(LEGAL_RE_DOC, '').replace(/\s+/g, '').toLowerCase();
+const payloadCompaniesByName = (name) => C.find(c => [c.companyName, ...(c.originalNames || [])].some(n => normDoc(n) === normDoc(name)));
 
 const conflicts = rows(c => c.validation.statusConflict);
 const dateErrs = rows(c => c.validation.dateError);
@@ -244,6 +247,33 @@ ${rows(c => c.nameChange && c.validation.messages.some(m => /상호 변경 통�
   `**${c.companyName}** — ` + c.validation.messages.filter(m => /상호 변경 통합 시/.test(m.message))
     .map(m => m.message.replace(/^상호 변경 통합 시 /, '').replace(/ 담당자 확인 권장\.$/, '')).join('<br>')).join('\n\n') || '값이 충돌한 항목은 없습니다.'}
 
+### 6-1-3. 이전 상호 · 자회사 관계 — ${S.withRelations}개사
+
+원본은 상호 변경과 모회사 관계를 **비고 칸에 자유 텍스트**로 적어 둡니다
+(\`구)누리온건설㈜\`, \`주원디엔피 자회사\` 등). 이걸 구조화해 \`relations\` 에 담고
+**목록·카드 첫 화면의 업체명 바로 아래**에 칩으로 표시합니다(마우스를 올리면 근거가 툴팁으로 뜹니다).
+
+${tbl(['업체', '관계', '근거 비고', '출처'],
+  rows(c => (c.relations || []).length).flatMap(c => (c.relations || []).map(r =>
+    [nm(c), r.label + ' (' + r.type + ')',
+     r.note ? String(r.note).replace(/\n/g, ' ') : '—', r.source])))}
+
+### 6-1-4. 병합 후보 — ${S.mergeCandidate}개사 (${S.mergeCandidate / 2}쌍)
+
+비고에 적힌 이전 상호가 **목록에 별도 업체로도 존재**하는 경우입니다.
+같은 업체일 가능성이 높지만 **자동 병합하지 않고 확인 대상으로만 표시**했습니다.
+
+${tbl(['현재 상호', '비고에 적힌 이전 상호', '별도로 존재하는 업체', '그 업체의 현재 상태'],
+  rows(c => (c.relations || []).some(r => r.existsAsSeparateRecord)).flatMap(c =>
+    (c.relations || []).filter(r => r.existsAsSeparateRecord).map(r => {
+      const other = payloadCompaniesByName(r.target);
+      return [nm(c), r.target, other ? other.companyName : '—', other ? other.mou.status : '—'];
+    })))}
+
+확인해 주시면 \`company-aliases.json\` 에 등록해 한 업체로 합칩니다.
+합치면 \`기존 협력업체·MOU 상태 확인 필요\` 가 ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']}개사에서
+${S.byStatus['기존 협력업체·MOU 상태 확인 필요'] - S.mergeCandidate / 2}개사로 줄어듭니다.
+
 ### 6-2. 같은 업체가 신규 MOU 프로세스에 여러 행으로 존재 — ${multiAttempt.length}개사
 
 1차 시도가 허들 처리된 뒤 재접근해 체결된 케이스입니다.
@@ -412,6 +442,8 @@ ${d.notCollected.map((n, i) => `### ${i + 1}. ${n.item}\n\n**사유** — ${n.re
 | 상호 변경으로 확정 통합 | ${S.nameChangesApplied} |
 | 중복 의심(미해결) | ${S.possibleDuplicate} |
 | 표기 차이로 통합(해결) | ${S.nameVariantMerged} |
+| 이전 상호·자회사 관계 표시 | ${S.withRelations} |
+| 병합 후보(확인 필요) | ${S.mergeCandidate} |
 | 같은 업체에 업체코드 2건 | ${S.multipleCodes} |
 | 날짜 오류 | ${S.dateError} |
 | 체결일 불일치 발견 | ${S.mouDateMismatch} |

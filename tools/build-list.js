@@ -109,7 +109,12 @@ td.c{text-align:center;white-space:nowrap}
 tr.row{cursor:pointer}
 tr.row:hover>td{background:#fafafc}
 tr.row.open>td{background:#f4f6fa}
-.nm{font-weight:700;min-width:150px;word-break:keep-all}
+.nm{font-weight:700;min-width:170px;word-break:keep-all}
+.rel{display:inline-block;margin:3px 3px 0 0;padding:1px 7px;border-radius:999px;font-size:10.5px;
+font-weight:600;white-space:nowrap;cursor:help;border:1px solid}
+.rel.former{background:#f1eefb;color:#4b3183;border-color:#ddd4f2}
+.rel.sub{background:#e9f2fb;color:#1c5288;border-color:#c8ddf2}
+.rel.cand{background:var(--nodateBg);color:var(--nodate);border-color:#ecd79a}
 td.tabs{min-width:150px}
 .nm small{display:block;font-weight:500;color:var(--lt);font-size:11px}
 .st{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid transparent}
@@ -291,7 +296,7 @@ var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',sort:'n',dir:1,til
 function recount(rowsArr){
   var byStatus={}; VOCAB.status.forEach(function(k){byStatus[k]=0;});
   var byStage={}; VOCAB.stage.forEach(function(k){byStage[k]=0;});
-  var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateResolved:0,mouDateNeedsReview:0,nameVariantMerged:0,
+  var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateResolved:0,mouDateNeedsReview:0,nameVariantMerged:0,mergeCandidate:0,
          missingMouDate:0,missingHoldReason:0,partnerWithoutMouStatus:0,notInContractorList:0,__stalled:0};
   var noStage=0, partners=0, years={};
   rowsArr.forEach(function(r){
@@ -341,6 +346,7 @@ function renderControls(){
     ['dateError','날짜 오류',COUNTS.flags.dateError],
     ['possibleDuplicate','중복 의심(미해결)',COUNTS.flags.possibleDuplicate],
     ['nameVariantMerged','표기 차이로 통합(해결)',COUNTS.flags.nameVariantMerged],
+    ['mergeCandidate','병합 후보(이전 상호 일치)',COUNTS.flags.mergeCandidate],
     ['notInContractorList','체결일 있으나 시공사 명부 미등재',COUNTS.flags.notInContractorList],
     ['mouDateResolved','체결일 자동 확정(규칙 적용)',COUNTS.flags.mouDateResolved],
     ['mouDateNeedsReview','체결일 담당자 확인 필요',COUNTS.flags.mouDateNeedsReview],
@@ -397,12 +403,27 @@ var MENU_SHORT={'협력업체 리스트(내부용)':'협력리스트·내부','�
 '연도별 등급(2023)':'연도등급 23'};
 function shortMenu(t){return MENU_SHORT[t]||t;}
 
+// 업체명 옆 관계 표시 — 마우스를 올리면 근거가 툴팁으로 뜬다
+function relChips(r){
+  if(!r.relations||!r.relations.length)return '';
+  return '<div>'+r.relations.map(function(x){
+    var cls = x.type==='자회사' ? 'sub' : (x.existsAsSeparateRecord ? 'cand' : 'former');
+    var tip = x.type==='이전 상호(확인됨)'
+      ? '확인된 이전 상호 — '+(x.note||'')
+      : (x.type==='자회사' ? '모회사 관계' : '이전 상호(비고 기재)')
+        +' — 비고: "'+(x.note||'').replace(/\\n/g,' ')+'" (출처: '+(x.source||'')+')'
+        +(x.existsAsSeparateRecord?' · 이 이름의 업체가 별도로 존재합니다 — 병합 후보':'');
+    return '<span class="rel '+cls+'" title="'+esc(tip)+'">'+esc(x.label)+'</span>';
+  }).join('')+'</div>';
+}
+
 function badges(r){
   var out=[];
   if(r.v.statusConflict)out.push('<span class="tag warn">상태 충돌</span>');
   if(r.v.dateError)out.push('<span class="tag warn">날짜 오류</span>');
   if(r.v.possibleDuplicate)out.push('<span class="tag warn">중복 의심</span>');
   if(r.v.nameVariantMerged)out.push('<span class="tag">표기 통합</span>');
+  if(r.v.mergeCandidate)out.push('<span class="tag warn">병합 후보</span>');
   if(r.v.mouDateResolved)out.push('<span class="tag">체결일 자동 확정</span>');
   if(r.v.mouDateNeedsReview)out.push('<span class="tag warn">체결일 확인 필요</span>');
   if(r.v.missingMouDate)out.push('<span class="tag warn">체결일 미확인</span>');
@@ -450,6 +471,15 @@ function detail(r){
   });
   if(raws.length)h+='<ul class="dlist" style="margin-top:8px">'+raws.map(function(t){return '<li class="warn">'+esc(t)+'</li>';}).join('')+'</ul>';
   if(has(r.plMark))h+='<p class="src">협력업체 리스트 협약체결 칸 원본 표기: '+esc(r.plMark)+'</p>';
+  if(r.relations&&r.relations.length){
+    h+='<div class="dsec"><h4>이전 상호 · 자회사 관계</h4><ul class="dlist">'
+      +r.relations.map(function(x){
+        return '<li><strong>'+esc(x.label)+'</strong> <span class="src">('+esc(x.type)+')</span>'
+          +(x.note?'<br><span class="src">비고: "'+esc(String(x.note).replace(/\\n/g,' '))+'" — 출처 '+esc(x.source||'')+'</span>':'')
+          +(x.existsAsSeparateRecord?'<br><span class="src" style="color:var(--nodate)">이 이름의 업체가 목록에 별도로 있습니다 — 같은 업체일 수 있어 병합 후보입니다(자동 병합 안 함)</span>':'')
+          +'</li>';
+      }).join('')+'</ul></div>';
+  }
   if(r.nameChange){
     h+='<div class="dsec"><h4>상호 변경</h4><ul class="dlist"><li>이전 상호 <strong>'
       +esc((r.formerNames||[]).join(', '))+'</strong> → 현재 <strong>'+esc(r.nameChange.current)+'</strong>'
@@ -533,7 +563,9 @@ function render(){
     var open=!!openIds[r.id];
     html+='<tr class="row'+(open?' open':'')+'" data-id="'+esc(r.id)+'">'
       +'<td class="num left '+v+'">'+r.n+'</td>'
-      +'<td class="nm">'+esc(r.name)+((r.names&&r.names.length>1)?'<small>'+esc(r.names.slice(1).join(' / '))+'</small>':'')+'</td>'
+      +'<td class="nm">'+esc(r.name)
+        +((r.names&&r.names.length>1)?'<small>'+esc(r.names.slice(1).join(' / '))+'</small>':'')
+        +relChips(r)+'</td>'
       +'<td class="c">'+cell(r.code)+'</td>'
       +'<td><span class="st st-'+v+'">'+esc(r.status)+'</span></td>'
       +'<td>'+cell(r.stage)+'</td>'

@@ -176,6 +176,7 @@ function toListRows(payload) {
       name: c.companyName,
       names: c.originalNames,
       formerNames: c.formerNames || [],
+      relations: c.relations || [],
       nameChange: c.nameChange || null,
       codes: c.codes || [],
       code: c.companyCode,
@@ -970,6 +971,66 @@ for (const rec of all) {
   rec.dupNotes = rec.dupNotes.filter(m => !/사업자등록번호 .* 다른 상호/.test(m));
 }
 
+// 4-6-1) 비고에 적힌 관계 정보 추출 (이전 상호 · 자회사)
+// 원본은 상호 변경과 모회사 관계를 비고 칸에 자유 텍스트로 적어 둔다.
+// 첫 화면에서 바로 보이도록 구조화한다. 자동 병합은 하지 않는다.
+for (const rec of all) {
+  const rels = [];
+  const seen = new Set();
+  const push = (type, label, target, note) => {
+    const key = type + '|' + (target || label);
+    if (seen.has(key)) return;
+    seen.add(key);
+    rels.push({ type, label, target: target || null, note: note.text, source: note.source });
+  };
+  const notes = [...(rec.notes || [])];
+  if (rec.profile.partnerNote) notes.push({ source: MENU.PL_INTERNAL, text: rec.profile.partnerNote });
+
+  for (const n of notes) {
+    const t = String(n.text || '');
+    // 구)○○○   ·   ○○○ 명칭변경 / 상호변경
+    let m = t.match(/구\s*\)\s*([^\/\n,·]+)/);
+    if (m) {
+      const former = m[1].trim().replace(/\s*상호명?\s*변경.*$/, '').trim();
+      if (former) push('이전 상호', '구 ' + former, former, n);
+    }
+    m = t.match(/([^\n,·]+?)\s*(?:명칭|상호|사명)\s*변경/);
+    if (m) {
+      const former = m[1].trim();
+      if (former && former.length <= 20 && !/^구\s*\)/.test(former)) push('이전 상호', '구 ' + former, former, n);
+    }
+    // ○○○ 자회사
+    m = t.match(/([^\n,·]+?)\s*자회사/);
+    if (m) {
+      const parent = m[1].trim();
+      if (parent && parent.length <= 20) push('자회사', parent + ' 자회사', parent, n);
+    }
+  }
+  // 사용자 확인으로 통합한 이전 상호는 가장 앞에 둔다
+  for (const f of (rec.formerNames || [])) {
+    rels.unshift({ type: '이전 상호(확인됨)', label: '구 ' + f, target: f,
+                   note: rec.aliasRule ? rec.aliasRule.basis : null, source: '상호 변경 확인' });
+  }
+  rec.relations = rels;
+}
+
+// 비고에 적힌 이전 상호가 별도 업체로도 존재하면 병합 후보로 표시한다(자동 병합하지 않음).
+{
+  const idx = new Map();
+  for (const rec of all) for (const n of rec.names) idx.set(normName(n), rec);
+  for (const rec of all) {
+    for (const r of (rec.relations || [])) {
+      if (r.type !== '이전 상호' || !r.target) continue;
+      const other = idx.get(normName(r.target));
+      if (!other || other === rec) continue;
+      r.existsAsSeparateRecord = true;
+      rec.mergeCandidate = true; other.mergeCandidate = true;
+      rec.reviews.push(`비고에 이전 상호 "${r.target}"(${r.source}: "${r.note}")가 적혀 있고, 그 이름의 업체 «${other.names[0]}» 가 별도로 존재합니다 — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다.`);
+      other.reviews.push(`«${rec.names[0]}» 의 비고에 이 업체명이 이전 상호로 적혀 있습니다("${r.note}") — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다.`);
+    }
+  }
+}
+
 // 4-7) 중복 "의심" (자동 병합하지 않음)
 const looseGroups = new Map();
 for (const rec of all) {
@@ -1050,6 +1111,7 @@ const companies = all
       companyName: rec.names[0],
       originalNames: rec.names,
       formerNames: rec.formerNames,
+      relations: rec.relations || [],
       nameChange: rec.aliasRule ? {
         current: rec.aliasRule.current,
         former: rec.aliasRule.former,
@@ -1165,6 +1227,7 @@ const companies = all
       validation: {
         possibleDuplicate: dupNotes.length > 0,
         nameVariantMerged: !!rec.nameVariantMerged,
+        mergeCandidate: !!rec.mergeCandidate,
         multipleCodes: !!rec.multipleCodes,
         nameChangeMerged: !!rec.aliasRule,
         cancelSuspect: !!rec.cancelSuspect,
@@ -1215,6 +1278,7 @@ const summary = {
   missingMouDate: c(x => x.validation.missingMouDate),
   possibleDuplicate: c(x => x.validation.possibleDuplicate),
   nameVariantMerged: c(x => x.validation.nameVariantMerged),
+  mergeCandidate: c(x => x.validation.mergeCandidate),
   multipleCodes: c(x => x.validation.multipleCodes),
   cancelSuspect: c(x => x.validation.cancelSuspect),
   notInContractorList: c(x => x.validation.notInContractorList),
@@ -1231,6 +1295,9 @@ const summary = {
   mouDateResolved: c(x => x.validation.mouDateResolved),
   mouDateNeedsReview: c(x => x.validation.mouDateNeedsReview),
   nameChangesApplied: c(x => x.nameChange),
+  withRelations: c(x => (x.relations || []).length > 0),
+  subsidiaries: c(x => (x.relations || []).some(r => r.type === '자회사')),
+  formerNameInNote: c(x => (x.relations || []).some(r => r.type === '이전 상호')),
   legacyExcel: LEGACY ? {
     sourceFile: LEGACY.sourceFile,
     rosterSize: (LEGACY.partnerRoster && LEGACY.partnerRoster.companies || []).length,
