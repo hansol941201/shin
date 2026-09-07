@@ -110,11 +110,35 @@ tr.row{cursor:pointer}
 tr.row:hover>td{background:#fafafc}
 tr.row.open>td{background:#f4f6fa}
 .nm{font-weight:700;min-width:170px;word-break:keep-all}
-.rel{display:inline-block;margin:3px 3px 0 0;padding:1px 7px;border-radius:999px;font-size:10.5px;
-font-weight:600;white-space:nowrap;cursor:help;border:1px solid}
-.rel.former{background:#f1eefb;color:#4b3183;border-color:#ddd4f2}
-.rel.sub{background:#e9f2fb;color:#1c5288;border-color:#c8ddf2}
-.rel.cand{background:var(--nodateBg);color:var(--nodate);border-color:#ecd79a}
+.relbadges{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px}
+.relbadge{font:inherit;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;cursor:pointer;
+border:1px solid var(--line2);background:var(--bg);color:var(--mid);white-space:nowrap}
+.relbadge:hover{background:#ecedf1;color:var(--fg)}
+.relbadge.parent{background:#e9f2fb;color:#1c5288;border-color:#c8ddf2}
+.relbadge.sub{background:#eaf5ee;color:#17663f;border-color:#c6e4d3}
+.relbadge.former{background:#f1eefb;color:#4b3183;border-color:#ddd4f2}
+.relbadge.check{background:var(--nodateBg);color:var(--nodate);border-color:#ecd79a}
+.formerline{margin-top:2px;font-size:11px;color:var(--lt);font-weight:500}
+.formerline button{font:inherit;padding:0;border:0;background:none;color:var(--mid);
+text-decoration:underline dotted;cursor:pointer}
+.relanchor{position:relative;display:block}
+.relpop{position:absolute;z-index:60;top:calc(100% + 5px);left:0;min-width:210px;max-width:min(300px,86vw);
+max-height:60vh;overflow:auto;padding:10px 12px 12px;background:#fff;border:1px solid var(--line2);
+border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);text-align:left;font-weight:400;white-space:normal}
+.relpop[hidden]{display:none!important}
+.relpop.fx{left:auto;right:0}
+.relpop.fy{top:auto;bottom:calc(100% + 5px)}
+.relpop h5{margin:0 0 6px;font-size:11.5px;display:flex;justify-content:space-between;align-items:center}
+.relpop h5 button{font:inherit;font-size:14px;line-height:1;border:0;background:none;color:var(--lt);cursor:pointer}
+.relgrp{margin-top:8px}
+.relgrp b{display:block;font-size:10.5px;color:var(--lt);border-bottom:1px solid var(--line);padding-bottom:2px;margin-bottom:4px}
+.relgrp ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.relgrp li{font-size:12px}
+.relgrp button.gotolink{font:inherit;padding:0;border:0;background:none;color:var(--ongoing);
+text-decoration:underline;cursor:pointer}
+.relgrp .kind{font-size:10px;color:var(--lt);margin-left:4px}
+.relnote{margin-top:8px;font-size:10.5px;color:var(--lt);line-height:1.6}
+tr.hl>td{background:#fff8e6!important;transition:background .3s}
 td.tabs{min-width:150px}
 .nm small{display:block;font-weight:500;color:var(--lt);font-size:11px}
 .st{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid transparent}
@@ -195,6 +219,7 @@ tr.detail>td{background:#f7f8fb;padding:14px 16px}
   <select id="fStage" aria-label="진행 단계"></select>
   <select id="fYear" aria-label="체결 연도"></select>
   <select id="fPartner" aria-label="기존 협력업체"></select>
+  <select id="fRel" aria-label="업체 관계"></select>
   <select id="fFlag" aria-label="검증"></select>
   <label class="chk"><input type="checkbox" id="pii"> 개인정보 표시</label>
   <button class="btn" id="reset">필터 초기화</button>
@@ -290,7 +315,7 @@ function mBiz(s){if(!has(s))return s;var x=String(s).replace(/\\D/g,'');return x
 var P={ceo:mName,phone:mPhone,email:mMail,addr:mAddr,bizno:mBiz};
 function pii(k,v){return showPII?v:(P[k]?P[k](v):v);}
 
-var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',sort:'n',dir:1,tile:'all',changedOnly:false};
+var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',rel:'',sort:'n',dir:1,tile:'all',changedOnly:false};
 
 // ── 현재 데이터에서 요약 수치를 다시 계산 (동기화 후에도 화면 숫자가 맞도록) ──
 function recount(rowsArr){
@@ -299,14 +324,23 @@ function recount(rowsArr){
   var f={possibleDuplicate:0,statusConflict:0,dateError:0,mouDateResolved:0,mouDateNeedsReview:0,nameVariantMerged:0,mergeCandidate:0,
          missingMouDate:0,missingHoldReason:0,partnerWithoutMouStatus:0,notInContractorList:0,__stalled:0};
   var noStage=0, partners=0, years={};
+  var rel={sub:0,parent:0,affiliate:0,former:0,check:0,merged:0,conflict:0};
   rowsArr.forEach(function(r){
     if(byStatus[r.status]!==undefined)byStatus[r.status]++;
     if(r.stage){ if(byStage[r.stage]!==undefined)byStage[r.stage]++; } else noStage++;
     if(r.partner)partners++;
     if(r.year)years[r.year]=(years[r.year]||0)+1;
     Object.keys(f).forEach(function(k){ if(k==='__stalled'){ if(r.stalled)f[k]++; } else if(r.v&&r.v[k])f[k]++; });
+    var rs=r.relSummary||{};
+    if(rs.subsidiary)rel.sub++;
+    if(rs.parent)rel.parent++;
+    if(rs.affiliate)rel.affiliate++;
+    if(rs.formerName)rel.former++;
+    if(rs.unknown||(r.relationships||[]).some(function(x){return x.conflict;}))rel.check++;
+    if(r.merge&&r.merge.status==='user_confirmed')rel.merged++;
+    if(r.v&&r.v.multipleCodes)rel.conflict++;
   });
-  return {total:rowsArr.length,byStatus:byStatus,byStage:byStage,noStage:noStage,partners:partners,years:years,flags:f};
+  return {total:rowsArr.length,byStatus:byStatus,byStage:byStage,noStage:noStage,partners:partners,years:years,flags:f,rel:rel};
 }
 var COUNTS = recount(ROWS);
 
@@ -341,6 +375,15 @@ function renderControls(){
   opts('fYear','체결 연도 — 전체',Object.keys(COUNTS.years).sort().reverse()
        .map(function(y){return [y,y+'년',COUNTS.years[y]];}),state.year);
   opts('fPartner','기존 협력업체 — 전체',[['y','예',COUNTS.partners],['n','아니오',COUNTS.total-COUNTS.partners]],state.partner);
+  opts('fRel','업체 관계 — 전체',[
+    ['sub','자회사 있음',COUNTS.rel.sub],
+    ['parent','모회사 있음',COUNTS.rel.parent],
+    ['affiliate','관계사 있음',COUNTS.rel.affiliate],
+    ['former','이전 상호 있음',COUNTS.rel.former],
+    ['check','관계 확인 필요',COUNTS.rel.check],
+    ['merged','사용자 확정 병합',COUNTS.rel.merged],
+    ['conflict','필드값 충돌',COUNTS.rel.conflict]
+  ],state.rel);
   opts('fFlag','검증 — 전체',[
     ['statusConflict','상태 충돌',COUNTS.flags.statusConflict],
     ['dateError','날짜 오류',COUNTS.flags.dateError],
@@ -366,6 +409,17 @@ function renderControls(){
 var view=[];
 var openIds={};
 
+function relOf(r,k){
+  var s2=r.relSummary||{};
+  if(k==='sub')return !!s2.subsidiary;
+  if(k==='parent')return !!s2.parent;
+  if(k==='affiliate')return !!s2.affiliate;
+  if(k==='former')return !!s2.formerName;
+  if(k==='check')return !!s2.unknown||(r.relationships||[]).some(function(x){return x.conflict;});
+  if(k==='merged')return !!(r.merge&&r.merge.status==='user_confirmed');
+  if(k==='conflict')return !!(r.v&&r.v.multipleCodes);
+  return true;
+}
 function flagOf(r,f){
   if(f==='__stalled')return !!r.stalled;
   if(f==='__changed')return !!(CHANGED&&CHANGED.has(r.name));
@@ -381,8 +435,10 @@ function apply(){
     if(state.partner==='y'&&!r.partner)return false;
     if(state.partner==='n'&&r.partner)return false;
     if(state.flag&&!flagOf(r,state.flag))return false;
+    if(state.rel&&!relOf(r,state.rel))return false;
     if(!q)return true;
-    var hay=[r.name,r.ceo].concat(r.names||[],r.formerNames||[],r.codes||[]).join(' ').toLowerCase();
+    var hay=[r.name,r.ceo].concat(r.names||[],r.formerNames||[],r.aliases||[],r.codes||[],
+      (r.relationships||[]).map(function(x){return x.targetCompanyName;})).join(' ').toLowerCase();
     return hay.indexOf(q)>-1;
   });
   var k=state.sort,dir=state.dir;
@@ -403,18 +459,55 @@ var MENU_SHORT={'협력업체 리스트(내부용)':'협력리스트·내부','�
 '연도별 등급(2023)':'연도등급 23'};
 function shortMenu(t){return MENU_SHORT[t]||t;}
 
-// 업체명 옆 관계 표시 — 마우스를 올리면 근거가 툴팁으로 뜬다
-function relChips(r){
-  if(!r.relations||!r.relations.length)return '';
-  return '<div>'+r.relations.map(function(x){
-    var cls = x.type==='자회사' ? 'sub' : (x.existsAsSeparateRecord ? 'cand' : 'former');
-    var tip = x.type==='이전 상호(확인됨)'
-      ? '확인된 이전 상호 — '+(x.note||'')
-      : (x.type==='자회사' ? '모회사 관계' : '이전 상호(비고 기재)')
-        +' — 비고: "'+(x.note||'').replace(/\\n/g,' ')+'" (출처: '+(x.source||'')+')'
-        +(x.existsAsSeparateRecord?' · 이 이름의 업체가 별도로 존재합니다 — 병합 후보':'');
-    return '<span class="rel '+cls+'" title="'+esc(tip)+'">'+esc(x.label)+'</span>';
+// 업체 관계 — 업체명 위 배지(개수만) + 클릭 시 팝오버, 업체명 아래 구 상호
+var REL_KIND={parent:'모회사',subsidiary:'자회사',former_name:'이전 상호',affiliate:'관계사',
+  recommended_by:'추천·소개',name_changed_to:'현재 상호',unknown:'확인 필요'};
+var REL_ORDER=['parent','subsidiary','affiliate','former_name','name_changed_to','recommended_by','unknown'];
+
+function relBadges(r){
+  var s=r.relSummary||{}, rels=r.relationships||[];
+  if(!rels.length)return '';
+  var out=[];
+  if(s.parent)out.push(['parent','모회사'+(s.parent>1?' '+s.parent+'개':'')]);
+  if(s.subsidiary)out.push(['sub','자회사 '+s.subsidiary+'개']);
+  if(s.affiliate)out.push(['','관계사 '+s.affiliate+'개']);
+  if(s.formerName)out.push(['former','이전 상호 있음']);
+  if(s.recommendedBy)out.push(['','추천·소개']);
+  if(s.unknown||rels.some(function(x){return x.conflict;}))out.push(['check','관계 확인 필요']);
+  if(!out.length)return '';
+  return '<div class="relbadges">'+out.map(function(b){
+    return '<button type="button" class="relbadge'+(b[0]?' '+b[0]:'')+'" data-relopen="'+esc(r.id)+'" aria-expanded="false">'+esc(b[1])+'</button>';
   }).join('')+'</div>';
+}
+function relPopover(r){
+  var rels=r.relationships||[];
+  if(!rels.length)return '';
+  var groups=REL_ORDER.map(function(t){return {t:t,items:rels.filter(function(x){return x.type===t;})};})
+    .filter(function(g){return g.items.length;});
+  return '<div class="relpop" id="relpop-'+esc(r.id)+'" role="dialog" aria-label="관련 업체" hidden>'
+    +'<h5><span>관련 업체</span><button type="button" data-relclose aria-label="닫기">&times;</button></h5>'
+    +groups.map(function(g){
+      return '<div class="relgrp"><b>'+esc(REL_KIND[g.t]||g.t)+'</b><ul>'+g.items.map(function(x){
+        var nm2=esc(x.targetCompanyName||'미확인');
+        var lab=(x.linked&&x.targetCompanyId)
+          ? '<button type="button" class="gotolink" data-relgoto="'+esc(x.targetCompanyId)+'">'+nm2+'</button>'
+          : '<span>'+nm2+'</span>';
+        return '<li>'+lab+'<span class="kind">'+esc(REL_KIND[x.type]||x.type)
+          +(x.linked?'':' · 목록에 없음')+(x.conflict?' · '+esc(x.conflict):'')+'</span></li>';
+      }).join('')+'</ul></div>';
+    }).join('')
+    +'<p class="relnote">자회사·모회사는 서로 다른 업체이므로 병합하지 않고 관계로만 연결합니다. 출처는 원본 비고입니다.</p>'
+    +'</div>';
+}
+function formerLine(r){
+  var fn=r.formerNames||[];
+  if(!fn.length)return '';
+  var t=fn.length===1?fn[0]:fn[0]+' 외 '+(fn.length-1)+'개';
+  return '<div class="formerline">구 상호: <button type="button" data-relopen="'+esc(r.id)+'">'+esc(t)+'</button></div>';
+}
+function relChips(r){
+  if(!(r.relationships||[]).length&&!(r.formerNames||[]).length)return '';
+  return '<div class="relanchor">'+relBadges(r)+formerLine(r)+relPopover(r)+'</div>';
 }
 
 function badges(r){
@@ -471,14 +564,17 @@ function detail(r){
   });
   if(raws.length)h+='<ul class="dlist" style="margin-top:8px">'+raws.map(function(t){return '<li class="warn">'+esc(t)+'</li>';}).join('')+'</ul>';
   if(has(r.plMark))h+='<p class="src">협력업체 리스트 협약체결 칸 원본 표기: '+esc(r.plMark)+'</p>';
-  if(r.relations&&r.relations.length){
-    h+='<div class="dsec"><h4>이전 상호 · 자회사 관계</h4><ul class="dlist">'
-      +r.relations.map(function(x){
-        return '<li><strong>'+esc(x.label)+'</strong> <span class="src">('+esc(x.type)+')</span>'
-          +(x.note?'<br><span class="src">비고: "'+esc(String(x.note).replace(/\\n/g,' '))+'" — 출처 '+esc(x.source||'')+'</span>':'')
-          +(x.existsAsSeparateRecord?'<br><span class="src" style="color:var(--nodate)">이 이름의 업체가 목록에 별도로 있습니다 — 같은 업체일 수 있어 병합 후보입니다(자동 병합 안 함)</span>':'')
+  if(r.relationships&&r.relationships.length){
+    h+='<div class="dsec"><h4>업체 관계</h4><ul class="dlist">'
+      +r.relationships.map(function(x){
+        return '<li><strong>'+esc(REL_KIND[x.type]||x.type)+'</strong> — '+esc(x.targetCompanyName||'미확인')
+          +(x.linked?' <span class="src">(목록에 카드 있음)</span>':' <span class="src">(목록에 없음 — 이름만 보존)</span>')
+          +(x.confirmed?' <span class="src">· 사용자 확인</span>':'')
+          +(x.note?'<br><span class="src">근거: "'+esc(String(x.note).replace(/\\n/g,' '))+'" — 출처 '+esc(x.source||'')+'</span>':'')
+          +(x.conflict?'<br><span class="src" style="color:var(--nodate)">'+esc(x.conflict)+'</span>':'')
           +'</li>';
-      }).join('')+'</ul></div>';
+      }).join('')+'</ul>'
+      +'<p class="src">자회사·모회사는 서로 다른 업체이므로 병합하지 않고 관계로만 연결합니다.</p></div>';
   }
   if(r.nameChange){
     h+='<div class="dsec"><h4>상호 변경</h4><ul class="dlist"><li>이전 상호 <strong>'
@@ -521,6 +617,26 @@ function detail(r){
       +'</div></div>';
   }
 
+  if(r.formerProfile&&r.formerProfile.length){
+    h+='<div class="dsec"><h4>이전 상호 당시 정보 (과거 · 현재 값 아님)</h4>'
+      +r.formerProfile.map(function(fp){
+        return '<div style="background:var(--bg);border:1px dashed var(--line2);border-radius:7px;padding:9px 11px;margin-bottom:6px">'
+          +'<div class="src" style="font-weight:700;margin-bottom:4px">출처 업체명: '+esc(fp.sourceCompanyName)+'</div>'
+          +'<div class="dgrid">'+g('당시 등급',fp.grade)+g('당시 매출',fp.sales!=null?fp.sales.toLocaleString('ko-KR')+'원':null)
+          +g('당시 업체코드',(fp.codes||[]).join(', '))+'</div>'
+          +((fp.gradeHistory||[]).length?'<p class="src" style="margin-top:5px">당시 연도별 등급: '
+            +esc(fp.gradeHistory.map(function(x){return x.year+'년 '+x.grade;}).join(' · '))+'</p>':'')
+          +'</div>';
+      }).join('')
+      +'<p class="src">이전 상호를 쓰던 시기의 값입니다. 현재 등급·매출을 덮어쓰지 않고 이력으로 보존합니다.</p></div>';
+  }
+  if(r.merge&&r.merge.status==='user_confirmed'){
+    h+='<div class="dsec"><h4>병합 이력</h4><ul class="dlist"><li>'
+      +'<strong>사용자 확정 병합</strong> — 원본 '+r.merge.sourceRecordCount+'건을 «'+esc(r.name)+'» 기준으로 통합'
+      +(r.merge.confirmedAt?' ('+esc(r.merge.confirmedAt)+')':'')
+      +(r.merge.basis?'<br><span class="src">근거: '+esc(r.merge.basis)+'</span>':'')
+      +'</li></ul></div>';
+  }
   if(r.gh&&r.gh.length){
     h+='<div class="dsec"><h4>연도별 등급</h4><ul class="dlist">'
       +r.gh.map(function(x){return '<li>'+x.year+'년 · '+esc(x.grade)
@@ -563,9 +679,9 @@ function render(){
     var open=!!openIds[r.id];
     html+='<tr class="row'+(open?' open':'')+'" data-id="'+esc(r.id)+'">'
       +'<td class="num left '+v+'">'+r.n+'</td>'
-      +'<td class="nm">'+esc(r.name)
+      +'<td class="nm"><div class="relanchor">'+relBadges(r)+'<div>'+esc(r.name)+'</div>'
         +((r.names&&r.names.length>1)?'<small>'+esc(r.names.slice(1).join(' / '))+'</small>':'')
-        +relChips(r)+'</td>'
+        +formerLine(r)+relPopover(r)+'</div></td>'
       +'<td class="c">'+cell(r.code)+'</td>'
       +'<td><span class="st st-'+v+'">'+esc(r.status)+'</span></td>'
       +'<td>'+cell(r.stage)+'</td>'
@@ -586,7 +702,53 @@ function render(){
 }
 
 // 이벤트
+function closeRelPops(except){
+  document.querySelectorAll('.relpop').forEach(function(p){ if(p!==except){p.hidden=true;p.classList.remove('fx','fy');} });
+  document.querySelectorAll('[data-relopen]').forEach(function(b){
+    if(except&&except.id==='relpop-'+b.getAttribute('data-relopen'))return;
+    b.setAttribute('aria-expanded','false');
+  });
+}
+function clampRelPop(p){
+  p.classList.remove('fx','fy');
+  var r=p.getBoundingClientRect(), vw=document.documentElement.clientWidth, vh=document.documentElement.clientHeight;
+  if(r.right>vw-8)p.classList.add('fx');
+  if(r.bottom>vh-8&&r.top>vh/2)p.classList.add('fy');
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeRelPops(); });
+document.addEventListener('click',function(e){ if(!e.target.closest('.relanchor'))closeRelPops(); });
+
 document.getElementById('tb').addEventListener('click',function(e){
+  // 관계 배지 / 구 상호 → 팝오버
+  var ro=e.target.closest('[data-relopen]');
+  if(ro){
+    e.stopPropagation();
+    var pop=document.getElementById('relpop-'+ro.getAttribute('data-relopen'));
+    if(pop){var open=pop.hidden; closeRelPops(open?pop:null); pop.hidden=!open;
+      ro.setAttribute('aria-expanded',open?'true':'false'); if(open)clampRelPop(pop);}
+    return;
+  }
+  if(e.target.closest('[data-relclose]')){e.stopPropagation();closeRelPops();return;}
+  // 관계 업체 클릭 → 해당 카드로 이동
+  var gt=e.target.closest('[data-relgoto]');
+  if(gt){
+    e.stopPropagation();
+    var id=gt.getAttribute('data-relgoto'); closeRelPops();
+    var row=document.querySelector('tr.row[data-id="'+id+'"]');
+    if(!row){
+      // 필터에 가려져 있으면 필터를 풀고 다시 찾는다
+      state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';state.rel='';
+      ['q','fStatus','fStage','fYear','fPartner','fFlag','fRel'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});
+      syncTiles(); apply();
+      row=document.querySelector('tr.row[data-id="'+id+'"]');
+    }
+    if(row){
+      if(!openIds[id]){openIds[id]=1;render();row=document.querySelector('tr.row[data-id="'+id+'"]');}
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+      row.classList.add('hl'); setTimeout(function(){row.classList.remove('hl');},2000);
+    }
+    return;
+  }
   var tr=e.target.closest('tr.row'); if(!tr)return;
   var id=tr.getAttribute('data-id');
   if(openIds[id])delete openIds[id];else openIds[id]=1;
@@ -621,12 +783,12 @@ document.getElementById('tiles').addEventListener('click',function(e){
 });
 function bindSel(id,key){document.getElementById(id).addEventListener('change',function(){state[key]=this.value;syncTiles();apply();});}
 // 옵션이 다시 그려져도 리스너가 유지되도록 change 는 요소 자체에 건다 (innerHTML 교체는 요소를 지우지 않음)
-bindSel('fStatus','status');bindSel('fStage','stage');bindSel('fYear','year');bindSel('fPartner','partner');bindSel('fFlag','flag');
+bindSel('fStatus','status');bindSel('fStage','stage');bindSel('fYear','year');bindSel('fPartner','partner');bindSel('fFlag','flag');bindSel('fRel','rel');
 document.getElementById('q').addEventListener('input',function(){state.q=this.value;apply();});
 document.getElementById('pii').addEventListener('change',function(){showPII=this.checked;render();});
 document.getElementById('reset').addEventListener('click',function(){
-  state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';
-  ['q','fStatus','fStage','fYear','fPartner','fFlag'].forEach(function(i){document.getElementById(i).value='';});
+  state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';state.rel='';
+  ['q','fStatus','fStage','fYear','fPartner','fFlag','fRel'].forEach(function(i){document.getElementById(i).value='';});
   openIds={};syncTiles();apply();
 });
 document.getElementById('expandAll').addEventListener('click',function(){

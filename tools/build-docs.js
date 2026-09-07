@@ -227,7 +227,7 @@ ${tbl(['업체', '유형', '내용'],
       : msgs(c, 'possibleDuplicate').some(m => m.indexOf('업체코드') > -1) ? '업체코드 공유(미병합)' : '표기 차이(병합함)',
     msgs(c, 'possibleDuplicate').join('<br>')]))}
 
-### 6-1-1. 상호 변경으로 확정 통합한 업체 — ${S.nameChangesApplied}개사
+### 6-1-1. 사용자 확정 병합 — ${S.userConfirmedMerge}개사
 
 사업자등록번호가 같아도 상호가 다르면 자동 병합하지 않는 것이 기본 원칙이지만,
 **사용자가 실제로 확인한 상호 변경 건**은 \`company-aliases.json\` 에 등록해 한 업체로 합쳤습니다.
@@ -238,8 +238,22 @@ ${tbl(['현재 상호', '이전 상호', '사업자등록번호', '확인 근거
     c.nameChange.businessNumber || '—', c.nameChange.basis,
   ]))}
 
-이전 상호 레코드는 **별도 업체로 남지 않습니다.** 목록·카드의 업체명에도 나오지 않고,
-상세의 «이전 상호» 항목과 JSON 의 \`formerNames\` / \`nameChange\` 에만 남습니다(검색에는 걸립니다).
+이전 상호 레코드는 **별도 업체로 남지 않습니다.** 대신 다음이 보존됩니다.
+
+- \`aliases[]\` — 이전 상호 문자열 (검색 대상)
+- \`formerNames[]\` — \`{name, relationshipType: "former_name", confirmed: true, source}\`
+- \`merge\` — \`{status: "user_confirmed", sourceRecordCount, note, confirmedAt, basis}\`
+- \`changeHistory\` — \`type: "user_confirmed_merge"\` 기록
+- \`formerProfile[]\` — **이전 상호 당시의 등급·매출·업체코드** (아래 참조)
+
+**이전 상호 당시의 등급과 매출은 현재 값으로 덮어쓰지 않습니다.**
+현재 상호로 등록된 값이 없으면 현재 등급은 \`null\`(미확인)로 두고, 과거 값은
+\`formerProfile\` 에 «이전 상호 당시 정보»로 분리해 카드에서 구분해 보여줍니다.
+
+${tbl(['업체', '현재 등급', '현재 매출', '이전 상호 당시 등급', '이전 상호 당시 매출', '출처 업체명'],
+  rows(c => (c.formerProfile || []).length).flatMap(c => c.formerProfile.map(fp =>
+    [nm(c), c.grade || '미확인', c.salesTotal ? c.salesTotal.toLocaleString('ko-KR') + '원' : '미확인',
+     fp.grade || '미확인', fp.sales ? fp.sales.toLocaleString('ko-KR') + '원' : '미확인', fp.sourceCompanyName])))}
 
 통합 시 두 레코드의 값이 달랐던 항목은 **현재 상호 쪽 값을 사용**하고, 버린 값은 검증 메시지에 남겼습니다.
 
@@ -247,32 +261,33 @@ ${rows(c => c.nameChange && c.validation.messages.some(m => /상호 변경 통�
   `**${c.companyName}** — ` + c.validation.messages.filter(m => /상호 변경 통합 시/.test(m.message))
     .map(m => m.message.replace(/^상호 변경 통합 시 /, '').replace(/ 담당자 확인 권장\.$/, '')).join('<br>')).join('\n\n') || '값이 충돌한 항목은 없습니다.'}
 
-### 6-1-3. 이전 상호 · 자회사 관계 — ${S.withRelations}개사
+### 6-1-3. 업체 관계 — ${S.relationships.total}건 (${S.relationships.companiesWithRelations}개사)
 
 원본은 상호 변경과 모회사 관계를 **비고 칸에 자유 텍스트**로 적어 둡니다
-(\`구)누리온건설㈜\`, \`주원디엔피 자회사\` 등). 이걸 구조화해 \`relations\` 에 담고
-**목록·카드 첫 화면의 업체명 바로 아래**에 칩으로 표시합니다(마우스를 올리면 근거가 툴팁으로 뜹니다).
+(\`구)누리온건설㈜\`, \`주원디엔피 자회사\` 등). 이를 타입이 있는 \`relationships[]\` 로 구조화했습니다.
 
-${tbl(['업체', '관계', '근거 비고', '출처'],
-  rows(c => (c.relations || []).length).flatMap(c => (c.relations || []).map(r =>
-    [nm(c), r.label + ' (' + r.type + ')',
-     r.note ? String(r.note).replace(/\n/g, ' ') : '—', r.source])))}
+| 관계 유형 | 뜻 | 건수 |
+|---|---|---|
+| \`parent\` | 상대가 나의 **모회사** | ${S.relationships.byType.parent} |
+| \`subsidiary\` | 상대가 나의 **자회사** | ${S.relationships.byType.subsidiary} |
+| \`former_name\` | 상대가 나의 **이전 상호** | ${S.relationships.byType.former_name} |
+| \`affiliate\` | 관계사 | ${S.relationships.byType.affiliate} |
+| \`recommended_by\` | 추천·소개해 준 업체 | ${S.relationships.byType.recommended_by} |
+| \`name_changed_to\` | 상대가 나의 **현재 상호** | ${S.relationships.byType.name_changed_to} |
+| \`unknown\` | 관계 확인 필요 | ${S.relationships.byType.unknown} |
 
-### 6-1-4. 병합 후보 — ${S.mergeCandidate}개사 (${S.mergeCandidate / 2}쌍)
+- **상대 카드와 연결됨**: ${S.relationships.linked}건 (\`linked: true\`, \`targetCompanyId\` 있음 → 클릭 시 해당 카드로 이동)
+- **이름만 보존**: ${S.relationships.unlinked}건 (\`targetCompanyId: null\`, \`linked: false\`)
 
-비고에 적힌 이전 상호가 **목록에 별도 업체로도 존재**하는 경우입니다.
-같은 업체일 가능성이 높지만 **자동 병합하지 않고 확인 대상으로만 표시**했습니다.
+**자회사·모회사는 병합하지 않습니다.** 서로 다른 업체이므로 각자 고유 ID와 카드를 유지하고 관계로만 연결합니다.
+비고에 줄여 적힌 이름(\`기림 자회사\`)은 후보가 정확히 하나일 때만 접두 일치로 연결하고 \`linkMatch: "prefix"\` 를 남깁니다.
 
-${tbl(['현재 상호', '비고에 적힌 이전 상호', '별도로 존재하는 업체', '그 업체의 현재 상태'],
-  rows(c => (c.relations || []).some(r => r.existsAsSeparateRecord)).flatMap(c =>
-    (c.relations || []).filter(r => r.existsAsSeparateRecord).map(r => {
-      const other = payloadCompaniesByName(r.target);
-      return [nm(c), r.target, other ? other.companyName : '—', other ? other.mou.status : '—'];
-    })))}
+### 6-1-4. 관계 방향 충돌 — ${S.relationshipConflict}개사
 
-확인해 주시면 \`company-aliases.json\` 에 등록해 한 업체로 합칩니다.
-합치면 \`기존 협력업체·MOU 상태 확인 필요\` 가 ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']}개사에서
-${S.byStatus['기존 협력업체·MOU 상태 확인 필요'] - S.mergeCandidate / 2}개사로 줄어듭니다.
+${S.relationshipConflict
+  ? rows(c => c.validation.relationshipConflict).map(c =>
+      `- **${c.companyName}** ↔ ${c.relationships.filter(r => r.conflict).map(r => r.targetCompanyName).join(', ')} — 양쪽 비고가 서로를 모회사로 기재. 원본 값은 그대로 두고 확인 대상으로 표시했습니다.`).join('\n')
+  : '없음'}
 
 ### 6-2. 같은 업체가 신규 MOU 프로세스에 여러 행으로 존재 — ${multiAttempt.length}개사
 

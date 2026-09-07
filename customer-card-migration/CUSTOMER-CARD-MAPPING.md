@@ -78,7 +78,28 @@
 - **카드 위치** 상세 › 기본 정보 «이전 상호» · 검증 탭 (목록의 업체명 칸에는 표시하지 않음, 검색에는 포함)
 - **검증** `validation.nameChangeMerged = true`. 사업자번호 공유로 인한 중복 의심에서는 제외됩니다.
 
-### `relations` — 이전 상호 · 자회사 (첫 화면 표시)
+### `relationships[]` — 업체 관계 (첫 화면 표시) ★
+- **형식** `{type, targetCompanyId, targetCompanyName, linked, confirmed, source, note, linkMatch?, conflict?}[]`
+- **`type`** — 상대가 나에게 어떤 관계인가
+  `parent`(모회사) · `subsidiary`(자회사) · `former_name`(이전 상호) · `affiliate`(관계사) ·
+  `recommended_by`(추천·소개) · `name_changed_to`(현재 상호) · `unknown`(확인 필요)
+- **`linked`** 상대 업체가 목록에 있으면 `true` + `targetCompanyId` → 클릭 시 해당 카드로 이동.
+  없으면 `targetCompanyId: null`, `linked: false` 로 **이름만 보존**합니다.
+- **`relationshipSummary`** 배지용 개수 — `{parent, subsidiary, affiliate, formerName, recommendedBy, nameChangedTo, unknown, total, linked, unlinked}`
+- **카드 위치** **업체명 위** 배지(개수만) → 클릭 시 팝오버. 회사명은 팝오버에서만 나열합니다.
+- **자회사·모회사는 병합 대상이 아닙니다.** 각자 고유 ID와 카드를 유지합니다.
+- **변경 이력** `changeHistory` 에 `type: "relationship_created"` 로 기록
+
+### `aliases` / `formerNames` / `merge` / `formerProfile` — 병합
+- **`aliases[]`** 이전 상호 문자열 (검색 대상)
+- **`formerNames[]`** `{name, relationshipType: "former_name", confirmed, source}`
+- **`merge`** `{status: "user_confirmed" | "none", sourceRecordCount, note, confirmedAt, basis}`
+- **`formerProfile[]`** `{sourceCompanyName, grade, sales, gradeHistory, codes, label}`
+  — **이전 상호 당시의 등급·매출은 현재 값으로 덮어쓰지 않습니다.** 현재 값이 없으면 `grade: null`(미확인).
+- **카드 위치** 업체명 아래 `구 상호: ○○` · 상세 › 등급·매출 탭의 «이전 상호 당시 정보» 패널
+- **변경 이력** `changeHistory` 에 `type: "user_confirmed_merge"`
+
+### `relations` — (구) 원시 추출 결과, 하위 호환용
 - **표시명** 이전 상호 / 자회사 · **형식** `{type, label, target, note, source, existsAsSeparateRecord}[]`
 - **출처** 원본 비고 칸의 자유 텍스트를 구조화 (`구)○○○`, `○○○ 명칭변경`, `○○○ 자회사`)
 - **`type`** `이전 상호(확인됨)`(별칭 규칙) · `이전 상호`(비고 기재) · `자회사`
@@ -434,7 +455,8 @@
 |---|---|---|
 | `validation.possibleDuplicate` | 중복 의심(미해결) | 0 |
 | `validation.nameVariantMerged` | 표기 차이로 통합(해결) | 11 |
-| `validation.mergeCandidate` | 병합 후보(이전 상호가 별도 업체로 존재) | 6 |
+| `validation.mergeCandidate` | 병합 후보(이전 상호가 별도 업체로 존재) | 0 |
+| `validation.relationshipConflict` | 관계 방향 충돌(서로를 모회사로 기재) | 2 |
 | `validation.nameChangeMerged` | 확인된 상호 변경으로 통합 | 3 |
 | `validation.multipleCodes` | 같은 업체에 업체코드 2건 이상 | 3 |
 | `validation.cancelSuspect` | 체결 완료인데 비고에 협약 취소·해지 표현 | 1 |
@@ -447,7 +469,7 @@
 | `validation.mouDateNeedsReview` | 규칙 적용 후에도 담당자 확인 필요 | 0 |
 | `validation.missingHoldReason` | 보류 사유 없음 (결정 대기 중인 업체 기준) | 15 |
 | `validation.missingNextAction` | 다음 액션 없음 (결정 대기 중인 업체 기준) | 17 |
-| `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 12 |
+| `validation.partnerWithoutMouStatus` | 협력업체지만 MOU 상태 없음 | 9 |
 | `validation.notInContractorList` | 체결일 있으나 시공사 명부 미등재 | 10 |
 | `validation.needsReview` | 위 중 하나라도 해당 | 계산값 |
 | `validation.messages[]` | `{type, message}` — 사람이 읽을 수 있는 사유 전문 | — |

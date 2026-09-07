@@ -105,22 +105,98 @@
   flex: 0 1 auto;
 }
 
-/* ── 이전 상호 · 자회사 관계 (업체명 바로 아래) ─────────── */
-.pcm-card__relations { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
-.pcm-card__rel {
-  display: inline-block;
+/* ── 업체 관계 (업체명 위 배지 · 팝오버 · 업체명 아래 구 상호) ── */
+.pcm-relation-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.pcm-relation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: 4px;
+  font: inherit;
   font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-weight: 700;
+  line-height: 1.6;
   white-space: nowrap;
-  cursor: help;
-  border: 1px solid transparent;
+  cursor: pointer;
+  border: 1px solid var(--pcm-line-strong);
+  background: var(--pcm-bg-soft);
+  color: var(--pcm-fg-mid);
 }
-.pcm-card__rel--former { background: #f1eefb; color: #4b3183; border-color: #ddd4f2; }
-.pcm-card__rel--sub    { background: #e9f2fb; color: #1c5288; border-color: #c8ddf2; }
-.pcm-card__rel--cand   { background: var(--pcm-nodate-bg); color: var(--pcm-nodate); border-color: #ecd79a; }
+.pcm-relation-badge:hover { background: #ecedf1; color: var(--pcm-fg); }
+.pcm-relation-badge:focus-visible { outline: 2px solid var(--pcm-ongoing); outline-offset: 1px; }
+.pcm-relation-badge--parent { background: #e9f2fb; color: #1c5288; border-color: #c8ddf2; }
+.pcm-relation-badge--sub    { background: #eaf5ee; color: #17663f; border-color: #c6e4d3; }
+.pcm-relation-badge--former { background: #f1eefb; color: #4b3183; border-color: #ddd4f2; }
+.pcm-relation-badge--check  { background: var(--pcm-nodate-bg); color: var(--pcm-nodate); border-color: #ecd79a; }
+
+.pcm-former-name {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--pcm-fg-lt);
+}
+.pcm-former-name button {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pcm-fg-mid);
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
+.pcm-relation-anchor { position: relative; display: inline-block; }
+.pcm-relation-popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  max-width: min(300px, 86vw);
+  max-height: 60vh;
+  overflow: auto;
+  padding: 10px 12px 12px;
+  background: var(--pcm-bg);
+  border: 1px solid var(--pcm-line-strong);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+  text-align: left;
+  cursor: auto;
+}
+.pcm-relation-popover[hidden] { display: none !important; }
+.pcm-relation-popover--flip-x { left: auto; right: 0; }
+.pcm-relation-popover--flip-y { top: auto; bottom: calc(100% + 6px); }
+.pcm-relation-popover__head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11.5px; font-weight: 800; color: var(--pcm-fg); margin-bottom: 6px;
+}
+.pcm-relation-popover__close {
+  font: inherit; font-size: 14px; line-height: 1;
+  border: 0; background: none; color: var(--pcm-fg-lt); cursor: pointer; padding: 0 2px;
+}
+.pcm-relation-popover__close:hover { color: var(--pcm-fg); }
+.pcm-relation-group { margin-top: 8px; }
+.pcm-relation-group__title {
+  font-size: 10.5px; font-weight: 700; color: var(--pcm-fg-lt);
+  border-bottom: 1px solid var(--pcm-line); padding-bottom: 2px; margin-bottom: 4px;
+}
+.pcm-relation-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.pcm-relation-list li { font-size: 12px; display: flex; gap: 5px; align-items: baseline; }
+.pcm-relation-list a, .pcm-relation-list button.pcm-relation-link {
+  font: inherit; padding: 0; border: 0; background: none;
+  color: var(--pcm-ongoing); text-decoration: underline; cursor: pointer; text-align: left;
+}
+.pcm-relation-list .pcm-relation-kind { font-size: 10px; color: var(--pcm-fg-lt); flex: none; }
+.pcm-relation-list .pcm-relation-unlinked { color: var(--pcm-fg-mid); }
+.pcm-relation-note { margin-top: 8px; font-size: 10.5px; color: var(--pcm-fg-lt); line-height: 1.6; }
+
+/* 과거(이전 상호 당시) 정보 */
+.pcm-card__past {
+  margin-top: 8px; padding: 8px 10px;
+  background: var(--pcm-bg-soft); border: 1px dashed var(--pcm-line-strong);
+  border-radius: 7px; font-size: 12px;
+}
+.pcm-card__past-title { font-size: 10.5px; font-weight: 700; color: var(--pcm-fg-lt); margin-bottom: 3px; }
 
 /* ── 배지 ───────────────────────────────────────────────── */
 .pcm-badge {

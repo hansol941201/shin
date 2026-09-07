@@ -175,7 +175,12 @@ function toListRows(payload) {
       id: c.id,
       name: c.companyName,
       names: c.originalNames,
-      formerNames: c.formerNames || [],
+      formerNames: (c.formerNames || []).map(function (f) { return typeof f === 'string' ? f : f.name; }),
+      aliases: c.aliases || [],
+      relationships: c.relationships || [],
+      relSummary: c.relationshipSummary || null,
+      merge: c.merge || null,
+      formerProfile: c.formerProfile || [],
       relations: c.relations || [],
       nameChange: c.nameChange || null,
       codes: c.codes || [],
@@ -402,6 +407,7 @@ function newRec(name) {
     dateResolution: null, mouDateSource: null,
     legacyRoster: null, legacyPromoted: false,
     formerNames: [], aliasRule: null, profileFromCurrent: {}, currentCodes: [],
+    formerProfile: [], formerCodes: [], relationships: [],
     _firstName: String(name).trim(),
   };
 }
@@ -443,6 +449,7 @@ function resolve(name, code, bizno) {
     if (!rec.codes.includes(ck)) rec.codes.push(ck);
     // 상호 변경 업체는 '현재 상호' 행에서 온 코드를 대표 코드로 쓴다
     if (!alias && !rec.currentCodes.includes(ck)) rec.currentCodes.push(ck);
+    if (alias && !rec.formerCodes.includes(ck)) rec.formerCodes.push(ck);
     const owners = codeOwners.get(ck) || [];
     if (!owners.includes(rec)) owners.push(rec);
     codeOwners.set(ck, owners);
@@ -595,27 +602,51 @@ absorbPartner(plExternal, MENU.PL_EXTERNAL, false);
 // 3-3) 등급 현황 --------------------------------------------------------
 for (const g of gradeRows) {
   if (!g.name || NEWMOU_EXCLUDE.has(String(g.name).trim())) continue;
+  const fromFormer = !!aliasOf(g.name);   // 이전 상호로 등재된 행인가
   const rec = resolve(g.name, null, null);
   addMenu(rec, MENU.GRADES);
   rec.inGrades = true;
-  rec.grade = g.grade;
-  if (typeof g.sales === 'number' && g.sales > 0) rec.gradeSales = g.sales;
+  if (fromFormer) {
+    // 이전 상호 당시의 등급·매출은 현재 값으로 덮어쓰지 않고 과거 정보로 남긴다
+    rec.formerProfile = rec.formerProfile || [];
+    let fp = rec.formerProfile.find(x => x.sourceCompanyName === String(g.name).trim());
+    if (!fp) { fp = { sourceCompanyName: String(g.name).trim(), grade: null, sales: null, gradeHistory: [] }; rec.formerProfile.push(fp); }
+    fp.grade = g.grade;
+    if (typeof g.sales === 'number' && g.sales > 0) fp.sales = g.sales;
+  } else {
+    rec.grade = g.grade;
+    if (typeof g.sales === 'number' && g.sales > 0) rec.gradeSales = g.sales;
+  }
   const hist = { 2025: g.y25, 2024: g.y24, 2023: g.y23, 2022: g.y22 };
   for (const [y, v] of Object.entries(hist)) {
-    if (v) rec.gradeHistory.push({ year: +y, grade: v, source: MENU.GRADES });
+    if (!v) continue;
+    const entry = { year: +y, grade: v, source: MENU.GRADES };
+    if (fromFormer) entry.fromFormerName = String(g.name).trim();
+    rec.gradeHistory.push(entry);
   }
 }
 // 3-4) 연도별 등급 ------------------------------------------------------
 function absorbYear(rows, menu, baseYear, keys) {
   for (const r of rows) {
     if (!r || !r.name || NEWMOU_EXCLUDE.has(String(r.name).trim())) continue;
+    const fromFormerY = !!aliasOf(r.name);
     const rec = resolve(r.name, null, null);
     addMenu(rec, menu);
     keys.forEach((k, idx) => {
       const v = r[k];
-      if (v) rec.gradeHistory.push({ year: baseYear - idx, grade: v, source: menu });
+      if (!v) return;
+      const entry = { year: baseYear - idx, grade: v, source: menu };
+      if (fromFormerY) entry.fromFormerName = String(r.name).trim();
+      rec.gradeHistory.push(entry);
     });
-    if (typeof r.sales === 'number' && r.sales > 0 && baseYear === 2025 && rec.gradeSales == null) rec.gradeSales = r.sales;
+    if (typeof r.sales === 'number' && r.sales > 0 && baseYear === 2025) {
+      if (fromFormerY) {
+        rec.formerProfile = rec.formerProfile || [];
+        let fp = rec.formerProfile.find(x => x.sourceCompanyName === String(r.name).trim());
+        if (!fp) { fp = { sourceCompanyName: String(r.name).trim(), grade: null, sales: null, gradeHistory: [] }; rec.formerProfile.push(fp); }
+        if (fp.sales == null) fp.sales = r.sales;
+      } else if (rec.gradeSales == null) rec.gradeSales = r.sales;
+    }
     addNote(rec, menu, r.note);
   }
 }
@@ -674,10 +705,11 @@ for (const rec of all) {
   // 4-1) 등급 이력 정리 (연도별 1건, 출처 병합, 불일치 표시)
   const gh = new Map();
   for (const h of rec.gradeHistory) {
-    if (!gh.has(h.year)) gh.set(h.year, { year: h.year, grade: h.grade, sources: [h.source], conflictingGrades: [] });
+    if (!gh.has(h.year)) gh.set(h.year, { year: h.year, grade: h.grade, sources: [h.source], conflictingGrades: [], fromFormerName: h.fromFormerName || null });
     else {
       const e = gh.get(h.year);
       if (!e.sources.includes(h.source)) e.sources.push(h.source);
+      if (h.fromFormerName && !e.fromFormerName) e.fromFormerName = h.fromFormerName;
       if (e.grade !== h.grade && !e.conflictingGrades.some(x => x.grade === h.grade)) {
         e.conflictingGrades.push({ grade: h.grade, source: h.source });
       }
@@ -760,6 +792,20 @@ for (const rec of all) {
   } else {
     rec.dateResolution = null;
     rec.mouDateSource = null;
+  }
+
+  // 사용자 확정 병합 이력
+  if (rec.aliasRule) {
+    for (const f of (rec.formerNames || [])) {
+      rec.changeHistory.push({
+        type: 'user_confirmed_merge',
+        date: rec.aliasRule.confirmedAt || null,
+        currentCompanyName: rec.aliasRule.current,
+        formerCompanyName: f,
+        reason: '사용자가 동일 업체의 이전 상호임을 확인',
+        basis: rec.aliasRule.basis,
+      });
+    }
   }
 
   // 불일치를 규칙으로 처리한 사실을 변경 이력에 남긴다.
@@ -1014,6 +1060,79 @@ for (const rec of all) {
   rec.relations = rels;
 }
 
+// 4-6-2) 관계(relationships) 구성
+// 자회사·모회사는 서로 다른 업체이므로 병합하지 않고 관계로만 연결한다.
+// type 은 '상대 업체가 나에게 어떤 관계인가'를 뜻한다.
+//   parent(모회사) / subsidiary(자회사) / former_name(이전 상호) /
+//   affiliate(관계사) / recommended_by(추천·소개) / name_changed_to(현재 상호) / unknown
+{
+  const idxRel = new Map();
+  for (const rec of all) for (const n of rec.names) idxRel.set(normName(n), rec);
+  const findRec = (name) => idxRel.get(normName(name)) || null;
+  const idOf = new Map();   // rec → 최종 id 는 나중에 부여되므로 이름으로 연결하고 뒤에서 id 를 채운다
+
+  const addRel = (rec, rel) => {
+    const key = rel.type + '|' + normName(rel.targetCompanyName);
+    if (!rec._relKeys) rec._relKeys = new Set();
+    if (rec._relKeys.has(key)) return;
+    rec._relKeys.add(key);
+    rec.relationships.push(rel);
+  };
+
+  for (const rec of all) {
+    // 확인된 이전 상호
+    for (const f of (rec.formerNames || [])) {
+      addRel(rec, {
+        type: 'former_name', targetCompanyId: null, targetCompanyName: f,
+        linked: false, confirmed: true,
+        source: '사용자 확인 (company-aliases.json)',
+        note: rec.aliasRule ? rec.aliasRule.basis : null,
+      });
+    }
+    for (const r of (rec.relations || [])) {
+      if (r.type === '자회사') {
+        // "○○ 자회사" = 내가 ○○의 자회사 → ○○ 는 나의 모회사
+        const parent = findRec(r.target);
+        addRel(rec, {
+          type: 'parent', targetCompanyId: null, targetCompanyName: parent ? parent.names[0] : r.target,
+          linked: !!parent, confirmed: false, source: '원본 비고', note: r.note,
+        });
+        if (parent && parent !== rec) {
+          addRel(parent, {
+            type: 'subsidiary', targetCompanyId: null, targetCompanyName: rec.names[0],
+            linked: true, confirmed: false, source: '원본 비고 (역방향)', note: r.note,
+          });
+        }
+      } else if (r.type === '이전 상호') {
+        const other = findRec(r.target);
+        addRel(rec, {
+          type: 'former_name', targetCompanyId: null, targetCompanyName: other ? other.names[0] : r.target,
+          linked: !!other, confirmed: false, source: '원본 비고', note: r.note,
+        });
+        if (other && other !== rec) {
+          addRel(other, {
+            type: 'name_changed_to', targetCompanyId: null, targetCompanyName: rec.names[0],
+            linked: true, confirmed: false, source: '원본 비고 (역방향)', note: r.note,
+          });
+        }
+      }
+    }
+    // 소개·추천 관계
+    for (const n of (rec.notes || [])) {
+      const m = String(n.text || '').match(/([^\n,·]+?)\s*소개/);
+      if (!m) continue;
+      const who = m[1].trim();
+      if (!who || who.length > 20 || /협력사|소개유입/.test(who)) continue;
+      const other = findRec(who);
+      addRel(rec, {
+        type: 'recommended_by', targetCompanyId: null,
+        targetCompanyName: other ? other.names[0] : who,
+        linked: !!other, confirmed: false, source: '원본 비고', note: n.text,
+      });
+    }
+  }
+}
+
 // 비고에 적힌 이전 상호가 별도 업체로도 존재하면 병합 후보로 표시한다(자동 병합하지 않음).
 {
   const idx = new Map();
@@ -1023,6 +1142,7 @@ for (const rec of all) {
       if (r.type !== '이전 상호' || !r.target) continue;
       const other = idx.get(normName(r.target));
       if (!other || other === rec) continue;
+      if (rec.aliasRule || other.aliasRule) continue;   // 이미 사용자 확정 병합된 건은 후보가 아니다
       r.existsAsSeparateRecord = true;
       rec.mergeCandidate = true; other.mergeCandidate = true;
       rec.reviews.push(`비고에 이전 상호 "${r.target}"(${r.source}: "${r.note}")가 적혀 있고, 그 이름의 업체 «${other.names[0]}» 가 별도로 존재합니다 — 같은 업체일 수 있어 병합 후보입니다. 자동 병합하지 않았습니다.`);
@@ -1110,7 +1230,26 @@ const companies = all
       codes: rec.codes,
       companyName: rec.names[0],
       originalNames: rec.names,
-      formerNames: rec.formerNames,
+      aliases: rec.aliasRule ? (rec.aliasRule.former || []) : [],
+      formerNames: (rec.formerNames || []).map(f => ({
+        name: f,
+        relationshipType: 'former_name',
+        confirmed: true,
+        source: '원본 비고 및 사용자 확인',
+      })),
+      merge: rec.aliasRule ? {
+        status: 'user_confirmed',
+        sourceRecordCount: 1 + (rec.formerNames || []).length,
+        note: '이전 상호를 현재 상호 기준으로 병합',
+        confirmedAt: rec.aliasRule.confirmedAt || null,
+        basis: rec.aliasRule.basis,
+      } : { status: 'none', sourceRecordCount: 1, note: null },
+      relationships: rec.relationships || [],
+      formerProfile: (rec.formerProfile || []).map(fp => Object.assign({}, fp, {
+        gradeHistory: rec.gradeHistory.filter(g => g.fromFormerName === fp.sourceCompanyName),
+        codes: rec.formerCodes,
+        label: '이전 상호 당시 정보',
+      })),
       relations: rec.relations || [],
       nameChange: rec.aliasRule ? {
         current: rec.aliasRule.current,
@@ -1266,6 +1405,75 @@ for (const s of Object.values(STATUS)) byStatusCandidate[s] = c(x => x.mou.statu
 const byStage = {};
 for (const [k, v] of Object.entries(STAGE)) byStage[v] = c(x => x.mou.stageNumber === +k);
 
+// 관계의 targetCompanyId 를 실제 id 로 채우고, 관계 생성 이력을 남긴다.
+{
+  const byAnyName = new Map();
+  for (const c of companies) for (const n of [c.companyName, ...(c.originalNames || [])]) byAnyName.set(normName(n), c);
+  for (const c of companies) {
+    for (const r of (c.relationships || [])) {
+      let t = byAnyName.get(normName(r.targetCompanyName));
+      let match = t ? 'exact' : null;
+      if (!t) {
+        // 비고에는 "기림 자회사"처럼 줄여 적는 경우가 있다.
+        // 후보가 정확히 하나일 때만 접두 일치로 연결한다(병합이 아니라 링크이므로 되돌리기 쉽다).
+        const key = normName(r.targetCompanyName);
+        if (key.length >= 2) {
+          const cands = companies.filter(x => [x.companyName, ...(x.originalNames || [])]
+            .some(n => normName(n).startsWith(key) && normName(n) !== key));
+          if (cands.length === 1) { t = cands[0]; match = 'prefix'; }
+        }
+      }
+      if (t && t !== c) { r.targetCompanyId = t.id; r.linked = true; r.linkMatch = match; }
+      else { r.targetCompanyId = null; r.linked = false; r.linkMatch = null; }
+      if (r.type !== 'former_name') {
+        c.changeHistory.push({
+          type: 'relationship_created',
+          relationshipType: r.type,
+          targetCompanyName: r.targetCompanyName,
+          targetCompanyId: r.targetCompanyId,
+          linked: r.linked,
+          source: r.source,
+          note: r.note || null,
+        });
+      }
+    }
+    // 카드 배지용 요약
+    const cnt = (t) => (c.relationships || []).filter(r => r.type === t).length;
+    c.relationshipSummary = {
+      parent: cnt('parent'),
+      subsidiary: cnt('subsidiary'),
+      affiliate: cnt('affiliate'),
+      formerName: cnt('former_name'),
+      recommendedBy: cnt('recommended_by'),
+      nameChangedTo: cnt('name_changed_to'),
+      unknown: cnt('unknown'),
+      total: (c.relationships || []).length,
+      linked: (c.relationships || []).filter(r => r.linked).length,
+      unlinked: (c.relationships || []).filter(r => !r.linked).length,
+    };
+  }
+  // 서로 상대를 모회사라고 기재한 순환 관계 검출 (원본 비고가 서로 반대로 쓰인 경우)
+  const byId = new Map(companies.map(x => [x.id, x]));
+  for (const c of companies) {
+    for (const r of (c.relationships || [])) {
+      if (r.type !== 'parent' || !r.targetCompanyId) continue;
+      const p = byId.get(r.targetCompanyId);
+      if (!p) continue;
+      if ((p.relationships || []).some(rr => rr.type === 'parent' && rr.targetCompanyId === c.id)) {
+        r.conflict = '양쪽 비고가 서로를 모회사로 기재 — 방향 확인 필요';
+        c.validation.needsReview = true;
+        if (!c.validation.messages.some(m => m.message.indexOf('서로를 모회사') > -1)) {
+          c.validation.messages.push({
+            type: 'review',
+            message: `«${c.companyName}» 와 «${p.companyName}» 의 비고가 서로 상대를 모회사로 기재하고 있습니다 — 어느 쪽이 모회사인지 확인이 필요합니다. 원본 값은 그대로 두었습니다.`,
+          });
+        }
+        c.validation.relationshipConflict = true;
+      }
+    }
+  }
+}
+
 const summary = {
   totalCompanies: companies.length,
   rawRowsCollected: menuCounts.reduce((a, b) => a + b.collected, 0),
@@ -1279,6 +1487,16 @@ const summary = {
   possibleDuplicate: c(x => x.validation.possibleDuplicate),
   nameVariantMerged: c(x => x.validation.nameVariantMerged),
   mergeCandidate: c(x => x.validation.mergeCandidate),
+  userConfirmedMerge: c(x => x.merge && x.merge.status === 'user_confirmed'),
+  relationshipConflict: c(x => x.validation.relationshipConflict),
+  relationships: {
+    companiesWithRelations: c(x => (x.relationships || []).length > 0),
+    total: companies.reduce((a, x) => a + (x.relationships || []).length, 0),
+    linked: companies.reduce((a, x) => a + (x.relationships || []).filter(r => r.linked).length, 0),
+    unlinked: companies.reduce((a, x) => a + (x.relationships || []).filter(r => !r.linked).length, 0),
+    byType: ['parent', 'subsidiary', 'former_name', 'affiliate', 'recommended_by', 'name_changed_to', 'unknown']
+      .reduce((a, t) => { a[t] = companies.reduce((n, x) => n + (x.relationships || []).filter(r => r.type === t).length, 0); return a; }, {}),
+  },
   multipleCodes: c(x => x.validation.multipleCodes),
   cancelSuspect: c(x => x.validation.cancelSuspect),
   notInContractorList: c(x => x.validation.notInContractorList),

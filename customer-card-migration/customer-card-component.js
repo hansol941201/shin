@@ -199,6 +199,26 @@
     return out.join('');
   }
 
+  /** 이전 상호 당시 정보 — 현재 값으로 덮어쓰지 않고 과거 정보로 구분해 표시 */
+  function pastProfileBlock(company) {
+    var fp = company.formerProfile || [];
+    if (!fp.length) return '';
+    return fp.map(function (p) {
+      return '<div class="pcm-card__past">' +
+        '<div class="pcm-card__past-title">이전 상호 당시 정보 — ' + esc(p.sourceCompanyName) + '</div>' +
+        grid([
+          ['당시 등급', p.grade],
+          ['당시 매출', p.sales != null ? num(p.sales) + '원' : null],
+          ['당시 업체코드', (p.codes || []).join(', ')],
+        ]) +
+        ((p.gradeHistory || []).length
+          ? '<p class="pcm-card__source" style="margin-top:6px">당시 연도별 등급: ' +
+            esc(p.gradeHistory.map(function (g) { return g.year + '년 ' + g.grade; }).join(' · ')) + '</p>'
+          : '') +
+      '</div>';
+    }).join('');
+  }
+
   function sitesBlock(company) {
     var sites = company.sites || [];
     if (!sites.length) return empty('등록된 현장 정보가 없습니다.');
@@ -234,6 +254,75 @@
       }).join('') + '</ul>';
     }
     return out;
+  }
+
+  /* ── 업체 관계: 업체명 위 배지 + 팝오버, 업체명 아래 구 상호 ── */
+  var REL_KIND = {
+    parent: '모회사', subsidiary: '자회사', former_name: '이전 상호',
+    affiliate: '관계사', recommended_by: '추천·소개', name_changed_to: '현재 상호',
+    unknown: '확인 필요',
+  };
+  var REL_ORDER = ['parent', 'subsidiary', 'affiliate', 'former_name', 'name_changed_to', 'recommended_by', 'unknown'];
+
+  /** 업체명 위 배지 — 회사명을 나열하지 않고 개수만 보여준다 */
+  function relationBadges(company, uid) {
+    var sum = company.relationshipSummary || {};
+    var rels = company.relationships || [];
+    if (!rels.length) return '';
+    var out = [];
+    if (sum.parent) out.push(['parent', '모회사' + (sum.parent > 1 ? ' ' + sum.parent + '개' : '')]);
+    if (sum.subsidiary) out.push(['sub', '자회사 ' + sum.subsidiary + '개']);
+    if (sum.affiliate) out.push(['', '관계사 ' + sum.affiliate + '개']);
+    if (sum.formerName) out.push(['former', '이전 상호 있음']);
+    if (sum.recommendedBy) out.push(['', '추천·소개']);
+    if (sum.unknown || rels.some(function (r) { return r.conflict; })) out.push(['check', '관계 확인 필요']);
+    if (!out.length) return '';
+    return '<div class="pcm-relation-anchor">' +
+      '<div class="pcm-relation-badges">' + out.map(function (b) {
+        return '<button type="button" class="pcm-relation-badge' + (b[0] ? ' pcm-relation-badge--' + b[0] : '') +
+          '" data-pcm-rel-open="' + uid + '" aria-expanded="false" aria-haspopup="dialog">' + esc(b[1]) + '</button>';
+      }).join('') + '</div>' +
+      relationPopover(company, uid) +
+    '</div>';
+  }
+
+  /** 관계 팝오버 — 유형별로 묶어 보여주고, 카드가 있는 업체는 클릭해 이동 */
+  function relationPopover(company, uid) {
+    var rels = company.relationships || [];
+    var groups = REL_ORDER.map(function (t) {
+      return { type: t, items: rels.filter(function (r) { return r.type === t; }) };
+    }).filter(function (g) { return g.items.length; });
+
+    var body = groups.map(function (g) {
+      return '<div class="pcm-relation-group">' +
+        '<div class="pcm-relation-group__title">' + esc(REL_KIND[g.type] || g.type) + '</div>' +
+        '<ul class="pcm-relation-list">' + g.items.map(function (r) {
+          var name = esc(r.targetCompanyName || NA);
+          var label = r.linked && r.targetCompanyId
+            ? '<button type="button" class="pcm-relation-link" data-pcm-rel-goto="' + esc(r.targetCompanyId) + '">' + name + '</button>'
+            : '<span class="pcm-relation-unlinked">' + name + '</span>';
+          return '<li>' + label +
+            '<span class="pcm-relation-kind">' + esc(REL_KIND[r.type] || r.type) +
+            (r.linked ? '' : ' · 목록에 없음') +
+            (r.conflict ? ' · ' + esc(r.conflict) : '') + '</span></li>';
+        }).join('') + '</ul></div>';
+    }).join('');
+
+    return '<div class="pcm-relation-popover" id="' + uid + '-relpop" role="dialog" aria-label="관련 업체" hidden>' +
+      '<div class="pcm-relation-popover__head"><span>관련 업체</span>' +
+      '<button type="button" class="pcm-relation-popover__close" data-pcm-rel-close aria-label="닫기">&times;</button></div>' +
+      body +
+      '<p class="pcm-relation-note">자회사·모회사는 서로 다른 업체이므로 병합하지 않고 관계로만 연결합니다. 출처는 원본 비고입니다.</p>' +
+    '</div>';
+  }
+
+  /** 업체명 아래 구 상호 한 줄 */
+  function formerNameLine(company, uid) {
+    var fn = (company.formerNames || []).map(function (f) { return typeof f === 'string' ? f : f.name; });
+    if (!fn.length) return '';
+    var text = fn.length === 1 ? fn[0] : fn[0] + ' 외 ' + (fn.length - 1) + '개';
+    return '<div class="pcm-former-name">구 상호: ' +
+      '<button type="button" data-pcm-rel-open="' + uid + '">' + esc(text) + '</button></div>';
   }
 
   /* ── 카드 하나의 HTML ───────────────────────────────── */
@@ -282,7 +371,9 @@
       { id: 'basic', name: '기본 정보', html:
         grid([
           ['원본 업체명', (company.originalNames || []).join(' / ')],
-          ['이전 상호', (company.formerNames || []).join(' / ')],
+          ['이전 상호', (company.formerNames || []).map(function (f) { return typeof f === 'string' ? f : f.name; }).join(' / ')],
+          ['병합 상태', company.merge && company.merge.status === 'user_confirmed'
+            ? '사용자 확정 병합 (원본 ' + company.merge.sourceRecordCount + '건)' : null],
           ['업체코드', (company.codes || [company.companyCode]).filter(Boolean).join(', ') || company.companyCode],
           ['사업자등록번호', v.bizno],
           ['지역', (company.profile || {}).region],
@@ -347,7 +438,7 @@
           ['담당자 확인 필요', hold.needsOwnerCheck ? '예' : '아니오'],
           ['보류 의심(비고 기준)', hold.isSuspectedHold ? '예' : '아니오'],
         ]) },
-      { id: 'grade', name: '등급·매출', html: gradeBlock(company) },
+      { id: 'grade', name: '등급·매출', html: gradeBlock(company) + pastProfileBlock(company) },
       { id: 'sites', name: '현장 (' + (company.siteCount || 0) + ')', html: sitesBlock(company) },
       { id: 'notes', name: '비고·이력', html:
         section('비고', (company.notes || []).length
@@ -385,19 +476,9 @@
     '<article class="pcm-card pcm-card--' + variant + (opts.open ? ' pcm-is-open' : '') + '" data-pcm-card data-pcm-id="' + esc(company.id) + '">' +
       '<header class="pcm-card__header">' +
         '<div class="pcm-card__identity">' +
+          relationBadges(company, uid) +
           '<h3 class="pcm-card__name">' + esc(company.companyName) + '</h3>' +
-          (Array.isArray(company.relations) && company.relations.length
-            ? '<div class="pcm-card__relations">' + company.relations.map(function (r) {
-                var cls = r.type === '자회사' ? 'pcm-card__rel--sub'
-                        : (r.existsAsSeparateRecord ? 'pcm-card__rel--cand' : 'pcm-card__rel--former');
-                var tip = r.type === '이전 상호(확인됨)'
-                  ? '확인된 이전 상호 — ' + (r.note || '')
-                  : (r.type === '자회사' ? '모회사 관계' : '이전 상호(비고 기재)') +
-                    ' — 비고: "' + String(r.note || '').replace(/\n/g, ' ') + '" (출처: ' + (r.source || '') + ')' +
-                    (r.existsAsSeparateRecord ? ' · 이 이름의 업체가 별도로 존재 — 병합 후보' : '');
-                return '<span class="pcm-card__rel ' + cls + '" title="' + esc(tip) + '">' + esc(r.label) + '</span>';
-              }).join('') + '</div>'
-            : '') +
+          formerNameLine(company, uid) +
           '<div class="pcm-card__submeta">' +
             '<span class="pcm-card__code">업체코드 ' + esc(company.companyCode || NA) + '</span>' +
             '<span>진행 단계 ' + esc(mou.stage || NA) + '</span>' +
@@ -435,7 +516,77 @@
   function bind(container) {
     if (container[BOUND]) return;
     container[BOUND] = true;
+    // ── 관계 팝오버 ──
+    function closeAllPopovers(except) {
+      container.querySelectorAll('.pcm-relation-popover').forEach(function (p) {
+        if (p === except) return;
+        p.hidden = true;
+        p.classList.remove('pcm-relation-popover--flip-x', 'pcm-relation-popover--flip-y');
+      });
+      container.querySelectorAll('[data-pcm-rel-open]').forEach(function (b) {
+        if (except && except.id === b.getAttribute('data-pcm-rel-open') + '-relpop') return;
+        b.setAttribute('aria-expanded', 'false');
+      });
+    }
+    /** 화면 밖으로 나가지 않도록 위치 보정 */
+    function clampPopover(pop) {
+      pop.classList.remove('pcm-relation-popover--flip-x', 'pcm-relation-popover--flip-y');
+      var r = pop.getBoundingClientRect();
+      var vw = document.documentElement.clientWidth;
+      var vh = document.documentElement.clientHeight;
+      if (r.right > vw - 8) pop.classList.add('pcm-relation-popover--flip-x');
+      if (r.bottom > vh - 8 && r.top > vh / 2) pop.classList.add('pcm-relation-popover--flip-y');
+    }
+    container.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeAllPopovers();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeAllPopovers();
+    });
+    document.addEventListener('click', function (e) {
+      if (!container.contains(e.target)) closeAllPopovers();
+      else if (!e.target.closest('.pcm-relation-anchor')) closeAllPopovers();
+    });
+
     container.addEventListener('click', function (e) {
+      // 관계 배지 / 구 상호 클릭 → 팝오버 열기
+      var relBtn = e.target.closest ? e.target.closest('[data-pcm-rel-open]') : null;
+      if (relBtn && container.contains(relBtn)) {
+        e.stopPropagation();
+        var pop = container.querySelector('#' + relBtn.getAttribute('data-pcm-rel-open') + '-relpop');
+        if (pop) {
+          var open = pop.hidden;
+          closeAllPopovers(open ? pop : null);
+          pop.hidden = !open;
+          relBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if (open) clampPopover(pop);
+        }
+        return;
+      }
+      if (e.target.closest && e.target.closest('[data-pcm-rel-close]')) {
+        e.stopPropagation(); closeAllPopovers(); return;
+      }
+      // 관계 업체 이름 클릭 → 해당 카드로 이동
+      var goto = e.target.closest ? e.target.closest('[data-pcm-rel-goto]') : null;
+      if (goto && container.contains(goto)) {
+        e.stopPropagation();
+        var id = goto.getAttribute('data-pcm-rel-goto');
+        closeAllPopovers();
+        var target = container.querySelector('[data-pcm-id="' + id + '"]');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.classList.add('pcm-is-open');
+          var t = target.querySelector('[data-pcm-toggle]');
+          if (t) {
+            t.setAttribute('aria-expanded', 'true');
+            var lbl = t.querySelector('.pcm-card__toggle-text');
+            if (lbl) lbl.textContent = '접기';
+          }
+        } else if (typeof PCMCard.onRelationNavigate === 'function') {
+          PCMCard.onRelationNavigate(id);   // 카드가 화면에 없으면 호스트가 처리
+        }
+        return;
+      }
       var toggle = e.target.closest ? e.target.closest('[data-pcm-toggle]') : null;
       if (toggle && container.contains(toggle)) {
         var card = toggle.closest('[data-pcm-card]');
