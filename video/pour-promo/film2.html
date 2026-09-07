@@ -19,7 +19,7 @@
   --blue-600:#1557B8; --blue-500:#1E6FE0; --blue-400:#4A93F5; --blue-200:#B9D5FA;
   --teal-500:#0FA0C4; --teal-400:#37BBD9;
   /* 기본(밝은 면 기준) */
-  --ink-1:#0C2C52; --ink-2:#3E5169; --ink-3:#6B7C93;
+  --ink-1:#0C2C52; --ink-2:#17324D; --ink-3:#40587A;
   --hair:rgba(12,44,82,.13); --hair-2:rgba(12,44,82,.22);
   --surface:var(--paper);
   --shadow-1:0 10px 26px rgba(7,27,51,.09);
@@ -28,7 +28,7 @@
 }
 /* 딥블루 섹션 — 토큰만 뒤집는다 */
 .deep{
-  --ink-1:#FFFFFF; --ink-2:rgba(255,255,255,.76); --ink-3:rgba(255,255,255,.50);
+  --ink-1:#FFFFFF; --ink-2:rgba(255,255,255,.88); --ink-3:rgba(255,255,255,.68);
   --hair:rgba(255,255,255,.14); --hair-2:rgba(255,255,255,.24);
   --surface:var(--deep-700);
   --blue-400:#7DB4FF; --blue-500:#4A93F5;
@@ -50,8 +50,8 @@ body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:
 .v-wash {background:linear-gradient(90deg,#F7F9FC 0%,rgba(247,249,252,.95) 30%,rgba(247,249,252,.62) 54%,rgba(247,249,252,.12) 82%,rgba(247,249,252,.02) 100%)}
 .v-wash-r{background:linear-gradient(270deg,#F7F9FC 0%,rgba(247,249,252,.95) 30%,rgba(247,249,252,.62) 54%,rgba(247,249,252,.12) 82%,rgba(247,249,252,.02) 100%)}
 /* 딥블루 면 */
-.v-deep {background:linear-gradient(180deg,rgba(12,44,82,.93) 0%,rgba(7,27,51,.96) 100%)}
-.v-deepL{background:linear-gradient(90deg,rgba(7,27,51,.95) 0%,rgba(7,27,51,.82) 46%,rgba(7,27,51,.42) 100%)}
+.v-deep {background:linear-gradient(180deg,rgba(12,44,82,.64) 0%,rgba(7,27,51,.70) 100%)}
+.v-deepL{background:linear-gradient(90deg,rgba(7,27,51,.72) 0%,rgba(7,27,51,.58) 46%,rgba(7,27,51,.26) 100%)}
 .v-hero {background:radial-gradient(120% 92% at 50% 40%,#14406F 0%,#0C2C52 58%,#071B33 100%)}
 .el{position:absolute;opacity:0;will-change:transform,opacity}
 
@@ -99,14 +99,20 @@ body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:
 .row .k{width:12px;height:12px;border:3px solid var(--blue-500);border-radius:50%;flex:none}
 .row .t{font-size:40px;font-weight:700;color:var(--ink-1);letter-spacing:-.03em}
 
-.ph{position:absolute;inset:0;background:
-   repeating-linear-gradient(135deg,rgba(30,111,224,.10) 0 14px,rgba(255,255,255,0) 14px 28px),var(--cool);
-   border:2px dashed rgba(30,111,224,.34);border-radius:8px;
-   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:18px}
-.ph .t{font-size:22px;font-weight:700;color:var(--blue-600);letter-spacing:-.02em;line-height:1.3}
-.ph .s{font-size:16px;font-weight:600;color:rgba(21,87,184,.62);letter-spacing:.06em}
-.deep .ph{background:repeating-linear-gradient(135deg,rgba(122,178,255,.13) 0 14px,rgba(255,255,255,0) 14px 28px),var(--deep-700);
-  border-color:rgba(122,178,255,.42)}
+/* ===== 원본 미확보 슬롯 =====
+   예전에는 점선 상자에 슬롯 이름을 찍어 뒀는데 그게 최종 영상에 그대로 나갔다.
+   이제는 안내 문구 없이 브랜드 톤의 부드러운 면으로만 렌더한다.
+   슬롯 이름을 확인해야 할 때는 PHLABEL=1 로 렌더하면 라벨이 다시 켜진다. */
+.ph{position:absolute;inset:0;border-radius:8px;overflow:hidden;
+  background:linear-gradient(152deg,#EAF0F8 0%,#DDE7F3 48%,#CEDBEC 100%)}
+.ph::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(78% 64% at 28% 24%,rgba(255,255,255,.80),rgba(255,255,255,0) 64%)}
+.deep .ph{background:linear-gradient(152deg,#153E69 0%,#103254 50%,#0A2440 100%)}
+.deep .ph::after{background:radial-gradient(78% 64% at 28% 24%,rgba(122,178,255,.22),rgba(0,0,0,0) 62%)}
+/* 라벨은 개발용. 기본 렌더에서는 아예 만들어지지 않는다. */
+.ph .t{position:relative;font-size:22px;font-weight:700;color:var(--blue-600);letter-spacing:-.02em;line-height:1.3}
+.ph .s{position:relative;font-size:16px;font-weight:600;color:rgba(21,87,184,.62);letter-spacing:.06em}
+.ph:has(.t){display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:18px}
 .deep .ph .t{color:#9BC4FF}.deep .ph .s{color:rgba(155,196,255,.62)}
 
 /* ===== 고정 워드마크 — 모든 장면에서 같은 위치·크기 ===== */
@@ -119,7 +125,7 @@ body{font-family:P,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:
    max-width 가 무시된다. left/right 0 + auto 마진으로 중앙 정렬한다. */
 #sub{position:absolute;left:0;right:0;bottom:116px;
   margin-left:auto;margin-right:auto;width:fit-content;max-width:1560px;padding:22px 44px;border-radius:12px;
-  background:rgba(16,42,67,.90);
+  background:rgba(16,42,67,.92);
   font-size:42px;font-weight:700;color:#FFFFFF;text-align:center;
   letter-spacing:-.02em;line-height:1.35;opacity:0;
   word-break:keep-all;overflow-wrap:break-word;   /* 한국어는 어절 단위로만 줄바꿈 */

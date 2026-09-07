@@ -16,6 +16,7 @@ if(miss.length) console.log(`[assets] 누락(플레이스홀더 처리): ${miss.
   const page=await browser.newPage({viewport:{width:W,height:H},deviceScaleFactor:1});
   await require('./alpha')(browser,A);
   await page.addInitScript(a=>{window.__ASSETS__=a;},A);
+  if(process.env.PHLABEL) await page.addInitScript(()=>{window.__PHLABEL__=true;});
   const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto('file://'+path.resolve(process.env.FILM||'film.html'),{waitUntil:'load'});
   await page.evaluate(()=>document.fonts.ready);

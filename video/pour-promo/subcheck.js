@@ -6,6 +6,7 @@ const {chromium}=require('playwright');const path=require('path');
   const {A}=require('./assets').resolve('assets');
   await require('./alpha')(b,A);
   await p.addInitScript(a=>{window.__ASSETS__=a;},A);
+  if(process.env.PHLABEL) await p.addInitScript(()=>{window.__PHLABEL__=true;});
   await p.goto('file://'+path.resolve(process.env.FILM||'film.html'),{waitUntil:'load'});
   await p.evaluate(()=>document.fonts.ready);
   await p.waitForFunction(()=>typeof window.seek==='function');
