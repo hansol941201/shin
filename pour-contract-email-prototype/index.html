@@ -5632,10 +5632,35 @@ function handleExcelUpload(ev){
        - confirmPreview()의 각 성공 분기(FSA/ZIP/단일)에서, PDF 발행이 실제로
          "성공"한 바로 그 지점에서만 아래 maybeSendPatentEmail(...)을 호출하도록
          confirmPreview() 안에 최소 3곳만 추가로 연결함 (그 외 로직 무변경)
+       - 수신 이메일은 "업체 관리"(getMasterContractors/saveMasterContractors/
+         upsertMasterContractor — 전부 기존 함수 재사용)에 등록된 값을 사용
+       - 업체가 없거나 이메일이 없으면 팝업으로 입력받아 upsertMasterContractor로
+         "업체 관리"에 그대로 저장 (별도 저장소 생성 없음) 후 바로 발송
        - PDF는 새로 만들지 않고, 그 성공 지점에서 이미 갖고 있는 blob을 그대로 재사용
        - 이메일 발송이 실패해도 PDF 발행 결과(상태/저장)는 그대로 유지됨 (여기서 절대 throw 안 함)
-       - 시공사 이메일이 없으면 발송을 건너뛰고 안내만 표시, PDF 발행은 정상 처리
      ════════════════════════════════════════════════════════════════ -->
+<div id="ce-email-modal" style="display:none;position:fixed;inset:0;z-index:100000;
+  background:rgba(0,0,0,.45);align-items:center;justify-content:center;font-family:sans-serif;">
+  <div style="background:#fff;border-radius:12px;padding:20px;width:360px;max-width:90vw;
+    box-shadow:0 12px 32px rgba(0,0,0,.3);font-size:13px;color:#1a1a1a;">
+    <strong id="ce-email-title" style="font-size:15px;">시공사 이메일 등록</strong>
+    <p id="ce-email-desc" style="color:#555;line-height:1.6;margin:10px 0;white-space:pre-line;"></p>
+    <input id="ce-email-input" type="email" placeholder="예: abc@company.com"
+      style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ccc;border-radius:6px;">
+    <div id="ce-email-error" style="color:#dc2626;font-size:12px;min-height:16px;margin-top:4px;"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="ce-email-manage" style="flex:1;padding:9px;border:1px solid #7c3aed;border-radius:6px;
+        background:#fff;color:#7c3aed;font-weight:600;cursor:pointer;">업체 관리 열기</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button id="ce-email-cancel" style="flex:1;padding:9px;border:1px solid #ccc;border-radius:6px;
+        background:#fff;color:#333;cursor:pointer;">취소</button>
+      <button id="ce-email-submit" style="flex:1;padding:9px;border:none;border-radius:6px;
+        background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">이메일 등록 후 발송</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   'use strict';
@@ -5664,15 +5689,19 @@ function handleExcelUpload(ev){
     ].join('\n');
   }
 
-  // ── 시공사 이메일 파싱: 콤마/세미콜론 구분 지원 + 형식 검증 + 중복 제거 ──
-  // (현재 데이터 구조는 c.email 문자열 1개뿐이지만, 나중에 여러 개를 콤마로
-  //  넣는 경우까지 대비해 방어적으로 처리. 임의 하드코딩 주소는 절대 없음)
-  function extractContractorEmails(c){
-    const raw = String((c && c.email) || '').trim();
-    if(!raw) return [];
-    const parts = raw.split(/[,;]/).map(s => s.trim()).filter(Boolean);
-    const valid = parts.filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
-    return Array.from(new Set(valid));
+  function isValidEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s||'').trim()); }
+
+  // ── "업체 관리" 데이터에서 이 시공사의 등록된 이메일을 찾음 (별도 저장소 없음) ──
+  // getMasterContractors() / normalizeCo() 는 기존 함수 그대로 사용
+  function findMasterEntry(c){
+    const name = normalizeCo(c.name);
+    return getMasterContractors().find(x => normalizeCo(x.name) === name) || null;
+  }
+  function extractValidEmails(raw){
+    const s = String(raw || '').trim();
+    if(!s) return [];
+    const parts = s.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+    return Array.from(new Set(parts.filter(isValidEmail)));
   }
 
   function blobToBase64(blob){
@@ -5684,13 +5713,8 @@ function handleExcelUpload(ev){
     });
   }
 
-  // ── PDF 발행이 "성공"한 직후에만 호출됨. 절대 throw하지 않음 (PDF 결과에 영향 금지) ──
-  window.maybeSendPatentEmail = async function(c, p, pat, blob, filename){
-    const emails = extractContractorEmails(c);
-    if(emails.length === 0){
-      showToast(`PDF 발행 완료 / '${c.name}' 이메일 주소가 없어 메일은 발송되지 않았습니다`, true);
-      return { ok:false, skipped:true };
-    }
+  // ── 실제 메일 발송 (이메일이 이미 확보된 상태에서만 호출). 절대 throw 안 함 ──
+  async function sendPatentEmailTo(emails, p, c, pat, blob, filename){
     try{
       const pdfBase64 = await blobToBase64(blob);
       const res = await fetch(CONTRACT_EMAIL_API_URL, {
@@ -5706,13 +5730,93 @@ function handleExcelUpload(ev){
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      showToast(`✓ PDF 발행 및 이메일 발송이 완료되었습니다 (${emails.join(', ')})`);
       return { ok:true };
     }catch(e){
-      console.error('[maybeSendPatentEmail]', e);
-      showToast(`PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: ${e.message||e}`, true);
+      console.error('[sendPatentEmailTo]', e);
       return { ok:false, error: e.message||String(e) };
     }
+  }
+
+  // ── 이메일 등록 팝업 (Promise 기반) — 취소/제출 결과를 돌려줌 ──
+  const ceModal   = document.getElementById('ce-email-modal');
+  const ceTitle   = document.getElementById('ce-email-title');
+  const ceDesc    = document.getElementById('ce-email-desc');
+  const ceInput   = document.getElementById('ce-email-input');
+  const ceError   = document.getElementById('ce-email-error');
+  const ceManage  = document.getElementById('ce-email-manage');
+  const ceCancel  = document.getElementById('ce-email-cancel');
+  const ceSubmit  = document.getElementById('ce-email-submit');
+
+  function askContractorEmail(contractorName, isNewContractor){
+    return new Promise((resolve) => {
+      ceTitle.textContent = isNewContractor ? '업체 관리에 등록되지 않은 시공사' : '시공사 이메일 등록';
+      ceDesc.textContent = isNewContractor
+        ? `'${contractorName}' 시공사가 업체 관리에 등록되어 있지 않습니다.\n이메일 입력 후 업체 관리에 함께 등록하시겠습니까?\n\n입력한 이메일 주소는 업체 관리에도 함께 저장됩니다.`
+        : `'${contractorName}' 시공사는 업체 관리에 이메일 주소가 등록되어 있지 않습니다.\n\n협약서를 이메일로 발송하려면 시공사 이메일 주소를 등록해주세요.\n\n입력한 이메일 주소는 업체 관리에도 함께 저장됩니다.`;
+      ceInput.value = '';
+      ceError.textContent = '';
+      ceModal.style.display = 'flex';
+      setTimeout(() => ceInput.focus(), 50);
+
+      function cleanup(){
+        ceModal.style.display = 'none';
+        ceSubmit.removeEventListener('click', onSubmit);
+        ceCancel.removeEventListener('click', onCancel);
+        ceManage.removeEventListener('click', onManage);
+      }
+      function onCancel(){ cleanup(); resolve({ action:'cancel' }); }
+      function onSubmit(){
+        const email = ceInput.value.trim();
+        if(!isValidEmail(email)){
+          ceError.textContent = '올바른 이메일 주소를 입력해주세요.';
+          return;
+        }
+        cleanup();
+        resolve({ action:'submit', email });
+      }
+      // "업체 관리 열기"는 기존 openContractorManager()를 그대로 호출 (새 화면 만들지 않음)
+      function onManage(){ openContractorManager(); }
+
+      ceSubmit.addEventListener('click', onSubmit);
+      ceCancel.addEventListener('click', onCancel);
+      ceManage.addEventListener('click', onManage);
+    });
+  }
+
+  // ── PDF 발행이 "성공"한 직후에만 호출됨. 절대 throw하지 않음 (PDF 결과에 영향 금지) ──
+  window.maybeSendPatentEmail = async function(c, p, pat, blob, filename){
+    const entry  = findMasterEntry(c);
+    let emails   = entry ? extractValidEmails(entry.email) : [];
+
+    if(emails.length === 0){
+      // CASE 2(업체는 있는데 이메일 없음) / CASE 3(업체 자체가 없음) 공통 처리
+      const choice = await askContractorEmail(c.name, !entry);
+      if(choice.action === 'cancel'){
+        showToast('PDF 발행은 완료되었습니다. 이메일이 등록되지 않아 메일은 발송되지 않았습니다.', true);
+        return { ok:false, skipped:true };
+      }
+      // 기존 "업체 관리" 저장 함수를 그대로 재사용 — 있으면 이메일만 갱신, 없으면 신규 등록
+      // (upsertMasterContractor 내부가 getMasterContractors/saveMasterContractors를 그대로 사용)
+      upsertMasterContractor(c.name, choice.email);
+      emails = [choice.email];
+
+      const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
+      if(sendResult.ok){
+        showToast(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
+      } else {
+        showToast(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
+      }
+      return sendResult;
+    }
+
+    // CASE 1: 업체 관리에 이미 등록된 이메일로 바로 발송
+    const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
+    if(sendResult.ok){
+      showToast(`PDF 발행 및 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
+    } else {
+      showToast(`PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: ${sendResult.error}`, true);
+    }
+    return sendResult;
   };
 })();
 </script>
