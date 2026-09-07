@@ -5704,9 +5704,40 @@ function handleExcelUpload(ev){
   </div>
 </div>
 
+<!-- 메일 발송 결과 알림 — 발행 미리보기 창(z-index 9000)보다 위에, 자동으로 안 사라지고
+     "확인"을 눌러야만 닫힘. 다른 showToast()들(발행 완료 토스트 등)은 그대로 두고,
+     메일 발송 결과 알림에만 사용 -->
+<div id="mail-result-modal" style="display:none;position:fixed;inset:0;z-index:100002;
+  background:rgba(0,0,0,.5);align-items:center;justify-content:center;font-family:sans-serif;">
+  <div style="background:#fff;border-radius:12px;padding:22px;width:360px;max-width:90vw;
+    box-shadow:0 12px 32px rgba(0,0,0,.35);font-size:13.5px;line-height:1.6;color:#1a1a1a;
+    text-align:center;">
+    <div id="mail-result-icon" style="font-size:28px;margin-bottom:10px;"></div>
+    <div id="mail-result-message" style="white-space:pre-line;word-break:break-all;"></div>
+    <button id="mail-result-confirm" style="margin-top:16px;padding:9px 28px;border:none;
+      border-radius:6px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">확인</button>
+  </div>
+</div>
+
 <script>
 (function(){
   'use strict';
+
+  // 메일 발송 결과 전용 알림 — 확인 버튼을 눌러야만 닫힘
+  const mailResultModal   = document.getElementById('mail-result-modal');
+  const mailResultIcon    = document.getElementById('mail-result-icon');
+  const mailResultMessage = document.getElementById('mail-result-message');
+  const mailResultConfirm = document.getElementById('mail-result-confirm');
+
+  function showMailResultModal(message, isError){
+    mailResultIcon.textContent = isError ? '⚠️' : '✅';
+    mailResultMessage.textContent = message;
+    mailResultModal.style.display = 'flex';
+  }
+  mailResultConfirm.addEventListener('click', () => { mailResultModal.style.display = 'none'; });
+  mailResultModal.addEventListener('click', (e) => {
+    if(e.target === mailResultModal) mailResultModal.style.display = 'none';
+  });
 
   // 실제 발송 성공을 이미 확인한 Cloud Run 메일 발송 서비스 (독립 테스트 버튼과 동일한 서버)
   const CONTRACT_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app';
@@ -5852,7 +5883,7 @@ function handleExcelUpload(ev){
       // CASE 2(업체는 있는데 이메일 없음) / CASE 3(업체 자체가 없음) 공통 처리
       const choice = await askContractorEmail(c.name, !entry);
       if(choice.action === 'cancel'){
-        showToast('PDF 발행은 완료되었습니다. 이메일이 등록되지 않아 메일은 발송되지 않았습니다.', true);
+        showMailResultModal('PDF 발행은 완료되었습니다. 이메일이 등록되지 않아 메일은 발송되지 않았습니다.', true);
         return { ok:false, skipped:true };
       }
       // 기존 "업체 관리" 저장 함수를 그대로 재사용 — 있으면 이메일만 갱신, 없으면 신규 등록
@@ -5862,9 +5893,9 @@ function handleExcelUpload(ev){
 
       const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
       if(sendResult.ok){
-        showToast(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
+        showMailResultModal(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
       } else {
-        showToast(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
+        showMailResultModal(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
       }
       return sendResult;
     }
@@ -5872,9 +5903,9 @@ function handleExcelUpload(ev){
     // CASE 1: 업체 관리에 이미 등록된 이메일로 바로 발송
     const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
     if(sendResult.ok){
-      showToast(`PDF 발행 및 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
+      showMailResultModal(`PDF 발행 및 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
     } else {
-      showToast(`PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: ${sendResult.error}`, true);
+      showMailResultModal(`PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: ${sendResult.error}`, true);
     }
     return sendResult;
   };
@@ -5888,7 +5919,7 @@ function handleExcelUpload(ev){
     if(emails.length === 0){
       const choice = await askContractorEmail(c.name, !entry);
       if(choice.action === 'cancel'){
-        showToast('이메일이 등록되지 않아 메일을 발송하지 않았습니다', true);
+        showMailResultModal('이메일이 등록되지 않아 메일을 발송하지 않았습니다', true);
         return { ok:false, skipped:true };
       }
       upsertMasterContractor(c.name, choice.email); // 기존 "업체 관리" 저장 함수 재사용
@@ -5896,18 +5927,18 @@ function handleExcelUpload(ev){
 
       const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
       if(sendResult.ok){
-        showToast(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
+        showMailResultModal(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
       } else {
-        showToast(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
+        showMailResultModal(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
       }
       return sendResult;
     }
 
     const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
     if(sendResult.ok){
-      showToast(`협약서 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
+      showMailResultModal(`협약서 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
     } else {
-      showToast(`이메일 발송에 실패했습니다: ${sendResult.error}`, true);
+      showMailResultModal(`이메일 발송에 실패했습니다: ${sendResult.error}`, true);
     }
     return sendResult;
   };
@@ -5949,7 +5980,7 @@ function handleExcelUpload(ev){
       }
     }catch(e){
       console.error('[handlePreviewMailSend]', e);
-      showToast('메일 발송 중 오류: ' + (e.message||e), true);
+      showMailResultModal('메일 발송 중 오류: ' + (e.message||e), true);
       btn.disabled = false;
       btn.textContent = origText;
     }
