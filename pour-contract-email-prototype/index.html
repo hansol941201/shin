@@ -5590,6 +5590,10 @@ function handleExcelUpload(ev){
     <div class="pv-hd">
       <h3 id="pv-title">📄 발행 미리보기</h3>
       <span class="pv-hd-badge" id="pv-mode-badge">단일 발행</span>
+      <button id="pv-mail-edit-btn" onclick="openMailEditModal()" title="발송될 메일 제목/본문 수정"
+        style="margin-left:auto;margin-right:8px;padding:5px 10px;border:1px solid #c7d2fe;
+        border-radius:6px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:600;
+        cursor:pointer;">✏️ 메일 수정</button>
       <button class="pv-close" onclick="closePreview()">✕</button>
     </div>
     <div class="pv-body" id="pv-body">
@@ -5676,6 +5680,30 @@ function handleExcelUpload(ev){
   </div>
 </div>
 
+<!-- 발행 미리보기 상단 "✏️ 메일 수정" 버튼으로 여는 팝업 — 발송 전 제목/본문을 직접 고칠 수 있음 -->
+<div id="mail-edit-modal" style="display:none;position:fixed;inset:0;z-index:100000;
+  background:rgba(0,0,0,.45);align-items:center;justify-content:center;font-family:sans-serif;">
+  <div style="background:#fff;border-radius:12px;padding:20px;width:420px;max-width:92vw;
+    box-shadow:0 12px 32px rgba(0,0,0,.3);font-size:13px;color:#1a1a1a;">
+    <strong style="font-size:15px;">✏️ 메일 제목/본문 수정</strong>
+    <label style="display:block;color:#666;font-size:12px;margin-top:12px;">제목</label>
+    <input id="mail-edit-subject" type="text"
+      style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ccc;border-radius:6px;margin-top:4px;">
+    <label style="display:block;color:#666;font-size:12px;margin-top:10px;">본문</label>
+    <textarea id="mail-edit-body" rows="10"
+      style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ccc;border-radius:6px;
+      margin-top:4px;font-family:inherit;resize:vertical;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="mail-edit-reset" style="flex:1;padding:9px;border:1px solid #ccc;border-radius:6px;
+        background:#fff;color:#333;cursor:pointer;">기본값으로</button>
+      <button id="mail-edit-cancel" style="flex:1;padding:9px;border:1px solid #ccc;border-radius:6px;
+        background:#fff;color:#333;cursor:pointer;">취소</button>
+      <button id="mail-edit-save" style="flex:1;padding:9px;border:none;border-radius:6px;
+        background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   'use strict';
@@ -5684,8 +5712,9 @@ function handleExcelUpload(ev){
   const CONTRACT_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app';
 
   // ── 메일 문구 템플릿 — 여기만 고치면 제목/본문을 바꿀 수 있음 ──────────────
-  function buildContractEmailSubject(p, c, pat){
-    return `[POUR] ${p.name} 신기술(특허) 기술사용 협약서`;
+  // 제목: 첨부되는 PDF 파일명에서 ".pdf"만 제거한 값을 그대로 사용 (하드코딩 없음)
+  function buildContractEmailSubject(filename){
+    return `[POUR] ${String(filename||'').replace(/\.pdf$/i, '')}`;
   }
   function buildContractEmailBody(p, c, pat){
     // 고정 문구 — 요청에 따라 현장명/시공사명 등은 본문에 자동 삽입하지 않음
@@ -5728,6 +5757,22 @@ function handleExcelUpload(ev){
     });
   }
 
+  // ── "✏️ 메일 수정" 팝업에서 저장한 사용자 수정본 (현재 미리보기 job에만 적용) ──
+  // job(pId,cId,patId)이 바뀌면 자동으로 무시되고 기본 문구로 되돌아감
+  let _mailOverride = null; // { pId, cId, patId, subject, text }
+
+  function sameJob(o, p, c, pat){
+    return !!o && o.pId === p.id && o.cId === c.id && o.patId === pat.id;
+  }
+  function getEffectiveSubject(p, c, pat, filename){
+    if(sameJob(_mailOverride, p, c, pat)) return _mailOverride.subject;
+    return buildContractEmailSubject(filename);
+  }
+  function getEffectiveBody(p, c, pat){
+    if(sameJob(_mailOverride, p, c, pat)) return _mailOverride.text;
+    return buildContractEmailBody(p, c, pat);
+  }
+
   // ── 실제 메일 발송 (이메일이 이미 확보된 상태에서만 호출). 절대 throw 안 함 ──
   async function sendPatentEmailTo(emails, p, c, pat, blob, filename){
     try{
@@ -5737,8 +5782,8 @@ function handleExcelUpload(ev){
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
           to: emails.join(','),
-          subject: buildContractEmailSubject(p, c, pat),
-          text: buildContractEmailBody(p, c, pat),
+          subject: getEffectiveSubject(p, c, pat, filename),
+          text: getEffectiveBody(p, c, pat),
           filename,
           pdfBase64
         })
@@ -5908,6 +5953,65 @@ function handleExcelUpload(ev){
       btn.disabled = false;
       btn.textContent = origText;
     }
+  };
+
+  // ── "✏️ 메일 수정" 팝업 — 발송 전 제목/본문을 직접 고칠 수 있음 ──
+  // capturePDF() 내부와 동일한 규칙으로 파일명을 미리 계산 (새 PDF 생성 없이 제목 미리보기용)
+  function computeExpectedFilename(p, c, pat){
+    return `${patLabel(pat)}_${p.name}_${denormalizeCo(c.name)}.pdf`;
+  }
+
+  const mailEditModal   = document.getElementById('mail-edit-modal');
+  const mailEditSubject = document.getElementById('mail-edit-subject');
+  const mailEditBody    = document.getElementById('mail-edit-body');
+  const mailEditReset   = document.getElementById('mail-edit-reset');
+  const mailEditCancel  = document.getElementById('mail-edit-cancel');
+  const mailEditSave    = document.getElementById('mail-edit-save');
+
+  window.openMailEditModal = function(){
+    if(_preview.mode !== 'single' || _preview.jobs.length !== 1){
+      showToast('메일 수정은 단일 발행 미리보기에서만 가능합니다', true);
+      return;
+    }
+    const { pId, cId, patId } = _preview.jobs[0];
+    const p   = projects.find(x => x.id === pId);
+    const c   = p?.contractors.find(x => x.id === cId);
+    const pat = PATENTS.find(x => x.id === patId);
+    if(!p || !c || !pat){
+      showToast('현장/시공사/특허 정보를 찾을 수 없습니다', true);
+      return;
+    }
+
+    const filename = computeExpectedFilename(p, c, pat);
+    mailEditSubject.value = getEffectiveSubject(p, c, pat, filename);
+    mailEditBody.value    = getEffectiveBody(p, c, pat);
+    mailEditModal.style.display = 'flex';
+
+    function cleanup(){
+      mailEditModal.style.display = 'none';
+      mailEditSave.removeEventListener('click', onSave);
+      mailEditCancel.removeEventListener('click', onCancel);
+      mailEditReset.removeEventListener('click', onReset);
+    }
+    function onCancel(){ cleanup(); }
+    function onSave(){
+      _mailOverride = {
+        pId, cId, patId,
+        subject: mailEditSubject.value,
+        text: mailEditBody.value
+      };
+      cleanup();
+      showToast('메일 제목/본문 수정 내용이 저장되었습니다 (이번 발송에 적용)');
+    }
+    function onReset(){
+      if(sameJob(_mailOverride, p, c, pat)) _mailOverride = null;
+      mailEditSubject.value = buildContractEmailSubject(filename);
+      mailEditBody.value    = buildContractEmailBody(p, c, pat);
+    }
+
+    mailEditSave.addEventListener('click', onSave);
+    mailEditCancel.addEventListener('click', onCancel);
+    mailEditReset.addEventListener('click', onReset);
   };
 })();
 </script>
