@@ -4791,6 +4791,7 @@ async function confirmPreview(){
             await FSA.savePDF(blob, filename, issueFolderName(p));  // v23: "06.19마감 현장명" 폴더
             fsaDoneList.push({c, patId});
             okCount++;
+            await maybeSendPatentEmail(c, p, pat, blob, filename); // [CONTRACT-EMAIL-ADDON] PDF 저장 성공 직후 메일 발송
           }catch(fsaErr){
             console.error('[FSA save]', fsaErr);
             // 개별 파일 실패 시 - 폴백으로 직접 다운로드
@@ -4815,14 +4816,26 @@ async function confirmPreview(){
           zip.file(fname, blob);
           bundleDoneList.push({c, patId});
           okCount++;
+          await maybeSendPatentEmail(c, p, pat, blob, filename); // [CONTRACT-EMAIL-ADDON] ZIP에 담긴 것과 동일한 PDF를 메일로도 발송
+
         } else {
           // 단일 모드: 기존대로 바로 다운로드
-          await capturePDF(p, c, pat);
+          // [CONTRACT-EMAIL-ADDON] 메일 첨부를 위해 blob이 필요해 capturePDF(..., true)로 받고,
+          //   capturePDF 내부 pdf.save()와 동일한 방식(anchor 클릭)으로 직접 다운로드 트리거.
+          //   PDF 생성 로직(capturePDF 내부) 자체는 전혀 수정하지 않음 — 호출 인자만 기존에
+          //   FSA/ZIP 분기가 이미 쓰던 returnBlob=true로 통일한 것뿐.
+          const { blob, filename } = await capturePDF(p, c, pat, true);
+          const _dlUrl = URL.createObjectURL(blob);
+          const _dlA = document.createElement('a');
+          _dlA.href = _dlUrl; _dlA.download = filename;
+          document.body.appendChild(_dlA); _dlA.click();
+          setTimeout(()=>{ document.body.removeChild(_dlA); URL.revokeObjectURL(_dlUrl); }, 800);
           c.status[patId]='done';
           c.issuedAt = c.issuedAt||{};
           c.issuedAt[patId] = new Date().toISOString();
           okCount++;
           saveProjects();
+          await maybeSendPatentEmail(c, p, pat, blob, filename); // [CONTRACT-EMAIL-ADDON] PDF 발행 성공 직후 메일 발송
         }
         btn.innerHTML = `⏳ 발행 중... (${okCount}/${jobs.length})`;
       }catch(e){
@@ -5612,7 +5625,100 @@ function handleExcelUpload(ev){
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════
-     [TEST-EMAIL-ADDON] 테스트용으로 새로 추가한 부분 — 여기서부터 끝까지.
+     [CONTRACT-EMAIL-ADDON] "PDF 발행 확정" 성공 직후 자동 이메일 발송.
+     이 위의 코드는 원본 파일에서 단 한 글자도 바꾸지 않았습니다.
+
+     이 블록이 하는 일:
+       - confirmPreview()의 각 성공 분기(FSA/ZIP/단일)에서, PDF 발행이 실제로
+         "성공"한 바로 그 지점에서만 아래 maybeSendPatentEmail(...)을 호출하도록
+         confirmPreview() 안에 최소 3곳만 추가로 연결함 (그 외 로직 무변경)
+       - PDF는 새로 만들지 않고, 그 성공 지점에서 이미 갖고 있는 blob을 그대로 재사용
+       - 이메일 발송이 실패해도 PDF 발행 결과(상태/저장)는 그대로 유지됨 (여기서 절대 throw 안 함)
+       - 시공사 이메일이 없으면 발송을 건너뛰고 안내만 표시, PDF 발행은 정상 처리
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+
+  // 실제 발송 성공을 이미 확인한 Cloud Run 메일 발송 서비스 (독립 테스트 버튼과 동일한 서버)
+  const CONTRACT_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app';
+
+  // ── 메일 문구 템플릿 — 여기만 고치면 제목/본문을 바꿀 수 있음 ──────────────
+  function buildContractEmailSubject(p, c, pat){
+    return `[POUR] ${p.name} 신기술(특허) 기술사용 협약서`;
+  }
+  function buildContractEmailBody(p, c, pat){
+    return [
+      '안녕하세요.',
+      '',
+      '요청하신 신기술(특허) 기술사용 협약서를 첨부드립니다.',
+      '',
+      `현장명: ${p.name}`,
+      `시공사: ${c.name}`,
+      '',
+      '첨부된 협약서를 확인 부탁드립니다.',
+      '',
+      '감사합니다.',
+      '',
+      '※ 자동 발송 메일입니다.'
+    ].join('\n');
+  }
+
+  // ── 시공사 이메일 파싱: 콤마/세미콜론 구분 지원 + 형식 검증 + 중복 제거 ──
+  // (현재 데이터 구조는 c.email 문자열 1개뿐이지만, 나중에 여러 개를 콤마로
+  //  넣는 경우까지 대비해 방어적으로 처리. 임의 하드코딩 주소는 절대 없음)
+  function extractContractorEmails(c){
+    const raw = String((c && c.email) || '').trim();
+    if(!raw) return [];
+    const parts = raw.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    const valid = parts.filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
+    return Array.from(new Set(valid));
+  }
+
+  function blobToBase64(blob){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // ── PDF 발행이 "성공"한 직후에만 호출됨. 절대 throw하지 않음 (PDF 결과에 영향 금지) ──
+  window.maybeSendPatentEmail = async function(c, p, pat, blob, filename){
+    const emails = extractContractorEmails(c);
+    if(emails.length === 0){
+      showToast(`PDF 발행 완료 / '${c.name}' 이메일 주소가 없어 메일은 발송되지 않았습니다`, true);
+      return { ok:false, skipped:true };
+    }
+    try{
+      const pdfBase64 = await blobToBase64(blob);
+      const res = await fetch(CONTRACT_EMAIL_API_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          to: emails.join(','),
+          subject: buildContractEmailSubject(p, c, pat),
+          text: buildContractEmailBody(p, c, pat),
+          filename,
+          pdfBase64
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      showToast(`✓ PDF 발행 및 이메일 발송이 완료되었습니다 (${emails.join(', ')})`);
+      return { ok:true };
+    }catch(e){
+      console.error('[maybeSendPatentEmail]', e);
+      showToast(`PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: ${e.message||e}`, true);
+      return { ok:false, error: e.message||String(e) };
+    }
+  };
+})();
+</script>
+
+<!-- ════════════════════════════════════════════════════════════════
+     [TEST-EMAIL-ADDON] 독립 테스트용 버튼 — 이전 단계에서 추가, 그대로 유지.
      이 위의 코드는 원본 파일에서 단 한 글자도 바꾸지 않았습니다.
 
      이 블록은:

@@ -61,7 +61,7 @@ exports.sendTestEmail = (req, res) => {
     try {
       const transporter = buildTransport();
       const info = await transporter.sendMail({
-        from: process.env.HIWORKS_USER,
+        from: `"넷폼" <${process.env.HIWORKS_USER}>`,
         to,
         subject: subject || '[테스트] 협약서',
         text: text || '테스트 발송입니다.',

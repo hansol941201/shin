@@ -1,69 +1,91 @@
-# 협약서 PDF → 테스트 이메일 발송 (PoC)
-
-목적: 이미 만들어진 PDF 발행 기능을 그대로 이용해서, "PDF 첨부 이메일이 실제로 발송/수신되는지"만
-확인하는 최소 테스트. 실제 고객 발송이나 자동 발송은 아직 구현하지 않았습니다.
+# 협약서 PDF 발행 → 자동 이메일 발송 (실 연동)
 
 **원본 저장소(`poursolution/pour-contract`)와 운영 사이트는 전혀 수정하지 않았습니다.**
-여기 있는 `index.html`은 사용자가 올려준 프로젝트 원본을 그대로 복사한 것이고,
-파일 맨 끝에 새 `<script>` 블록 하나만 "추가"했습니다. 그 위의 내용은 원본과 한 글자도 다르지 않습니다.
+여기 있는 `index.html`은 사용자가 올려준 프로젝트 원본을 그대로 복사한 것입니다.
 
 ---
+
+## 현재 상태
+
+1. 독립 테스트("🧪 테스트 메일 발송" 버튼, 수동 PDF 첨부)로 Cloud Run → 하이웍스 SMTP → 실제 수신까지 **검증 완료**
+2. 이제 실제 "PDF 발행 확정" 흐름에 자동 발송을 연결한 **실 연동 버전**
 
 ## 1. 분석 결과
 
 | 항목 | 내용 |
 |---|---|
-| PDF는 어디서 만들어지나 | `capturePDF(p, c, pat, returnBlob)` 함수 (index.html 안) |
-| PDF는 Blob인가 File인가 | **Blob** — `returnBlob=true`로 호출하면 `{ blob, filename }`을 반환 (`pdf.output('blob')`) |
-| 기존 이메일 UI가 있나 | 발행 미리보기 모달에 `📧 메일 발송 (준비중)` 버튼이 있지만 **비활성화(disabled)** 상태로, 실제 기능은 없음 |
-| 실제로 수정해야 하는 파일 | **없음** — 기존 파일은 한 줄도 수정하지 않음 |
-| 새로 추가한 파일 | 아래 "새로 만든 파일" 참고 |
+| "PDF 발행 확정" 버튼 핸들러 | `#pv-download-btn`, `onclick="confirmPreview()"` → `async function confirmPreview()` |
+| PDF 실제 생성 함수 | `capturePDF(p, c, pat, returnBlob)` — `returnBlob=true`면 `{ blob, filename }` 반환 |
+| 시공사 이메일 필드 | `c.email` (문자열 1개). 콤마/세미콜론으로 여러 개를 넣는 경우까지 방어적으로 파싱 |
+| 발행완료 상태 저장 | 각 성공 분기에서 `c.status[patId]='done'` → `saveProjects()` |
 
-## 2. 수정한 파일
+## 2. 수정한 파일 / 함수
 
-**없습니다.** 기존 코드/함수/UI/CSS/DB 구조/로그인/파일명/폴더 구조 — 전부 그대로입니다.
+`index.html`의 **기존 함수 `confirmPreview()` 안에 3곳만** 최소 추가 (그 외 원본 코드 무변경):
 
-`index.html`은 원본 대비 **삭제 0줄**, 파일 맨 끝(`</body>` 바로 위)에 새 `<script>` 블록만
-**184줄 추가**했습니다. 그 블록은:
-- 기존 함수 `renderPDFTemplate()`, `capturePDF()`를 그대로 **호출만** 함 (수정 아님)
-- 화면 오른쪽 아래에 새 테스트 패널 하나만 `document.body.appendChild`로 추가함 (기존 요소와 안 겹침)
-- 기존 "발행 확정" 흐름과는 별개로 동작 — 이 패널로 테스트해도 발행 상태/DB는 바뀌지 않음
+1. **FSA(폴더 자동저장) 분기** — `FSA.savePDF()` 성공 직후 `maybeSendPatentEmail(...)` 호출 추가
+2. **ZIP 일괄발행 분기** — `zip.file()`로 담은 직후 `maybeSendPatentEmail(...)` 호출 추가
+3. **단일 발행 분기** — 기존에는 `capturePDF(p,c,pat)`을 blob 없이 호출해 메일 첨부가 불가능했음.
+   → `capturePDF(p,c,pat,true)`로 바꿔 blob을 받고, 기존과 동일한 다운로드를 직접 트리거(jsPDF의
+   `save()`와 동일한 anchor 클릭 방식)한 뒤 `maybeSendPatentEmail(...)` 호출 추가.
+   **`capturePDF` 함수 내부(PDF 생성 로직 자체)는 한 글자도 안 바뀜** — 호출 인자만 FSA/ZIP 분기가
+   이미 쓰던 `true`로 통일한 것.
 
-## 3. 새로 만든 파일
+파일 맨 끝에는 두 개의 독립 `<script>` 블록이 있습니다:
+- `[CONTRACT-EMAIL-ADDON]` — 위 3곳에서 호출하는 `maybeSendPatentEmail()`, 이메일 파싱, 메일 문구 템플릿
+- `[TEST-EMAIL-ADDON]` — 이전 단계의 독립 테스트 버튼 (요청대로 그대로 유지)
+
+## 3. 발송 흐름
+
+```
+발행 미리보기 → PDF 발행 확정 → 기존 PDF 생성/저장 성공
+  → c.email에서 유효한 이메일 추출 (콤마/세미콜론 구분, 중복 제거)
+  → 없으면: "PDF 발행 완료 / 이메일 주소가 없어 메일은 발송되지 않았습니다" (PDF는 정상 처리)
+  → 있으면: 방금 만든 그 PDF blob → base64 → Cloud Run(sendTestEmail) POST
+      → 성공: "PDF 발행 및 이메일 발송이 완료되었습니다"
+      → 실패: "PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: <서버 error>"
+```
+
+이메일 발송 결과는 **PDF 발행 성공/실패와 완전히 분리**되어 있고, `maybeSendPatentEmail()`은
+내부에서 모든 예외를 잡아 절대 밖으로 던지지 않으므로 메일 실패가 발행 상태를 되돌리지 않습니다.
+
+## 4. 중복 발송 방지
+
+기존 `confirmPreview()`가 이미 갖고 있던 중복 클릭 방지(`btn.disabled`, `btn.dataset.busy`) 로직을
+그대로 사용합니다. 새 코드를 추가하지 않았고, 발행 자체가 끝날 때까지 버튼이 잠기므로 이메일도
+같이 한 번만 나갑니다.
+
+## 5. 메일 제목/본문
+
+- 제목: `[POUR] {현장명} 신기술(특허) 기술사용 협약서`
+- 본문: `buildContractEmailBody(p, c, pat)` 함수로 분리 (문구 수정은 이 함수만 고치면 됨)
+
+## 6. 새로 만든 파일
 
 | 파일 | 용도 |
 |---|---|
-| `functions/index.js` | 테스트 메일 1건을 실제로 보내는 것 외에는 아무 기능도 없는 최소 서버 함수. 기존 pour-contract 프로젝트의 Firestore/다른 함수와 무관. **별도 테스트용 Google Cloud 프로젝트**에 배포 |
-| `functions/package.json` | 위 함수가 필요로 하는 라이브러리(nodemailer, cors) 목록 |
-| `TEST_GUIDE.md` | 처음부터 끝까지 마우스 클릭만으로 따라 할 수 있는 배포/테스트 절차 |
+| `functions/index.js` | 메일 발송 전용 Cloud Run 서버 함수. 발신 표시명 `"넷폼" <실제주소>` |
+| `functions/package.json` | 필요 라이브러리(nodemailer, cors) |
+| `TEST_GUIDE.md` | 배포/테스트 절차 |
 
-## 4. 건드리지 않은 부분
+## 7. 건드리지 않은 부분
 
-- ✅ 기존 PDF 생성 로직 — 그대로 호출만 함, 코드 수정 없음
-- ✅ 기존 협약서 발행 기능 — 별개로 동작, 발행 상태/DB 저장 없음
-- ✅ Firebase 데이터베이스 구조 / 기존 데이터 — 읽기만 함 (현장·시공사 목록 표시용), 쓰기 없음
-- ✅ 기존 UI / CSS / 페이지 구조 — 원본 그대로, 새 패널은 화면에 겹치지 않는 자리에 추가만 함
-- ✅ 기존 로그인 기능 — 무관
-- ✅ 기존 파일명 / 폴더 구조 — 변경 없음
+- ✅ PDF 생성 로직(`capturePDF` 내부), 양식/레이아웃 — 무변경
+- ✅ 발행 상태 저장 순서, Firebase 구조/데이터 — 무변경
+- ✅ 기존 UI/CSS, 로그인, 파일명/폴더 구조 — 무변경
+- ✅ 독립 테스트 버튼(`🧪 테스트 메일 발송`) — 요청대로 그대로 유지
 
-## 5. 보안
+## 8. 보안
 
-- 하이웍스 계정/비밀번호, API Key 등은 이 저장소 어디에도 없습니다.
-- `functions/index.js`는 `process.env.HIWORKS_USER` / `process.env.HIWORKS_PASS` 를 읽기만 하며,
-  이 값은 **Cloud Functions 배포 화면에서 환경변수로 직접 입력**합니다 (Git에 올라가지 않음).
-- 이 세션(저)에게 Firebase/Google Cloud 관리자 권한이나 서비스 계정 키를 요청하지 않았고,
-  실제 배포도 요청하지 않았습니다 — `TEST_GUIDE.md`를 보고 직접 배포/테스트하시면 됩니다.
+- 하이웍스 계정/비밀번호는 이 저장소 어디에도 없음. `functions/index.js`는
+  `process.env.HIWORKS_USER` / `HIWORKS_PASS`만 읽으며, 값은 Cloud Run 배포 화면에서
+  환경변수로만 입력 (Git에 올라가지 않음).
+- 브라우저 코드(`index.html`)에는 Cloud Run URL만 존재.
 
-## 6. 사용 흐름 (요청하신 그대로)
+## 9. functions/index.js 변경 — 재배포 필요
 
-1. 기존 데이터(현장/시공사/특허)를 화면에서 선택 → 기존 방식 그대로 PDF 생성
-2. 생성된 PDF Blob 확보 (`capturePDF(..., true)`)
-3. 수신 이메일 입력
-4. 제목 입력
-5. 본문 입력
-6. **'테스트 이메일 발송'** 클릭
-7. 서버(Cloud Function)로 PDF + 이메일 정보 전달
-8. 실제 이메일 발송 (하이웍스 SMTP)
-9. 성공/실패 결과를 패널에 표시
+발신자 표시명을 `"넷폼" <실제주소>`로 바꿨습니다 (실제 주소/환경변수/SMTP 설정은 무변경).
+**Cloud Run 콘솔에서 이 함수를 다시 배포해야 반영됩니다** — 인라인 편집기 `index.js` 내용을
+현재 `functions/index.js`로 교체 후 "배포"만 다시 누르면 됩니다 (환경변수 재입력 불필요).
 
-자세한 실행 방법은 `TEST_GUIDE.md`를 참고하세요.
+자세한 배포 절차는 `TEST_GUIDE.md` 참고.
