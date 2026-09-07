@@ -4791,7 +4791,6 @@ async function confirmPreview(){
             await FSA.savePDF(blob, filename, issueFolderName(p));  // v23: "06.19마감 현장명" 폴더
             fsaDoneList.push({c, patId});
             okCount++;
-            await maybeSendContractEmail(c, p, pat, blob, filename); // v-email(PoC): 저장 성공 시 메일도 자동 발송
           }catch(fsaErr){
             console.error('[FSA save]', fsaErr);
             // 개별 파일 실패 시 - 폴백으로 직접 다운로드
@@ -4816,24 +4815,14 @@ async function confirmPreview(){
           zip.file(fname, blob);
           bundleDoneList.push({c, patId});
           okCount++;
-          await maybeSendContractEmail(c, p, pat, blob, filename); // v-email(PoC): ZIP에 담긴 것과 동일한 PDF를 메일로도 발송
-
         } else {
           // 단일 모드: 기존대로 바로 다운로드
-          // v-email(PoC): 이메일 첨부를 위해 blob이 필요해 capturePDF(..., true)로 받고
-          //   기존과 동일하게 직접 다운로드 트리거 (jsPDF의 save()와 동일한 방식)
-          const { blob, filename } = await capturePDF(p, c, pat, true);
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = filename;
-          document.body.appendChild(a); a.click();
-          setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
+          await capturePDF(p, c, pat);
           c.status[patId]='done';
           c.issuedAt = c.issuedAt||{};
           c.issuedAt[patId] = new Date().toISOString();
           okCount++;
           saveProjects();
-          await maybeSendContractEmail(c, p, pat, blob, filename);
         }
         btn.innerHTML = `⏳ 발행 중... (${okCount}/${jobs.length})`;
       }catch(e){
@@ -4965,14 +4954,6 @@ async function capturePDF(p, c, pat, returnBlob){
   });
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
-  // v27: PDF 버전을 1.4로 통일해 구형 PDF 1.3 + 이미지 마스크 조합을 피하고
-  // 관공서·전자입찰·브라우저 내장 뷰어 간 호환성을 높인다.
-  // 주의: 이는 PDF/A 인증을 의미하지 않으며, 호환성 기준을 PDF 1.4로 올리는 설정이다.
-  if(pdf.__private__ && typeof pdf.__private__.setPdfVersion==='function'){
-    pdf.__private__.setPdfVersion('1.4');
-  }else{
-    throw new Error('PDF 1.4 설정을 지원하지 않는 jsPDF 버전입니다.');
-  }
   const A4_W=210, A4_H=297;
   // v25: PNG → JPEG 로 변경. jsPDF가 PNG 임베드 시 PDF1.3 문서에 SMask(투명 마스크)를
   // 붙이는데, 일부 뷰어(관공서/전자입찰 내장뷰어 등)에서 이 조합이 "화면 공란, 인쇄는 정상"
@@ -4990,51 +4971,6 @@ async function capturePDF(p, c, pat, returnBlob){
 // 레거시 호환: 외부에서 직접 호출되는 genPDF 는 미리보기 경유
 async function genPDF(pId,cId,patId){
   return issueOne(pId, cId, patId);
-}
-
-/* ═══ v-email(PoC): PDF 자동 이메일 발송 ═══════════════
-   - 발행/다운로드 로직은 건드리지 않고, 발행이 끝난 "직후"에 추가로 호출된다.
-   - 브라우저는 SMTP를 직접 못 쓰므로, 하이웍스 SMTP를 대신 호출해주는
-     작은 백엔드(예: Firebase Functions)의 엔드포인트로 PDF를 넘긴다.
-     → 배포 방법/코드는 functions/index.js 참고, 계정 비밀번호는 서버 쪽 환경변수로만 보관.
-   - 이메일 전송이 실패해도 이미 발행(PDF 생성/저장)은 끝난 뒤이므로
-     발행 흐름 자체는 막지 않고 토스트로만 알린다. (재전송은 기존 발송완료 버튼으로 수동 처리) */
-const EMAIL_API_URL = 'https://REGION-PROJECT.cloudfunctions.net/sendContractEmail'; // TODO: 배포 후 실제 함수 URL로 교체
-
-function blobToBase64(blob){
-  return new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result).split(',')[1]); // "data:...;base64," 프리픽스 제거
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function maybeSendContractEmail(c, p, pat, blob, filename){
-  const to = (c.email||'').trim();
-  if(!to){
-    console.warn(`[email] '${c.name}' 수신 이메일 미등록 — 자동 전송 생략`);
-    return { skipped:true };
-  }
-  try{
-    const pdfBase64 = await blobToBase64(blob);
-    const subject = `[${p.name}] ${patLabel(pat)} 협약서`;
-    const res = await fetch(EMAIL_API_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ to, subject, filename, pdfBase64 })
-    });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    c.mailSent = true;
-    c.mailSentAt = new Date().toISOString();
-    saveProjects();
-    showToast(`✉ ${c.name} 메일 전송 완료 (${to})`);
-    return { ok:true };
-  }catch(e){
-    console.error('[email] 전송 실패', e);
-    showToast(`⚠ ${c.name} 메일 자동 전송 실패 — 수동으로 보내주세요`, true);
-    return { ok:false, error:e };
-  }
 }
 
 /* ═══ STAMP POSITION ════════════════════════════════ */
@@ -5674,6 +5610,190 @@ function handleExcelUpload(ev){
   <button class="qbar-btn clear" onclick="clearAllQueued()" title="전체 대기 해제">↺ 해제</button>
   <button class="qbar-btn" onclick="issueAllQueued()" id="qbar-issue-btn">📤 전체 발행</button>
 </div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     [TEST-EMAIL-ADDON] 테스트용으로 새로 추가한 부분 — 여기서부터 끝까지.
+     이 위의 코드는 원본 파일에서 단 한 글자도 바꾸지 않았습니다.
+
+     이 블록은:
+       - 기존 함수(renderPDFTemplate, capturePDF)를 "호출"만 하고 수정하지 않음
+       - 기존 HTML/CSS/DB/발행 로직을 전혀 건드리지 않음
+       - 화면에 떠 있는 버튼 하나만 새로 추가함 (기존 화면 요소와 안 겹치는 자리)
+       - 비밀번호/키 값은 이 파일 어디에도 없음 (서버 URL만 있음)
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+
+  // 테스트 메일 발송 서버(Cloud Function) 주소 — 배포 후 이 값만 채우면 됨
+  // (functions/index.js 를 별도 테스트용 프로젝트에 배포하고 나온 URL을 여기에 붙여넣기)
+  const TEST_EMAIL_API_URL = 'https://REGION-PROJECT.cloudfunctions.net/sendTestEmail'; // TODO: 배포 후 교체
+
+  function el(tag, attrs, children){
+    const e = document.createElement(tag);
+    if(attrs) for(const k in attrs){
+      if(k==='style') e.style.cssText = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    (children||[]).forEach(c => e.appendChild(typeof c==='string' ? document.createTextNode(c) : c));
+    return e;
+  }
+
+  function buildPanel(){
+    const panel = el('div', {
+      id: 'test-email-panel',
+      style: 'position:fixed;right:16px;bottom:16px;z-index:99999;width:320px;' +
+             'background:#fff;border:2px solid #7c3aed;border-radius:12px;' +
+             'box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:sans-serif;font-size:13px;' +
+             'color:#1a1a1a;overflow:hidden;'
+    });
+
+    const header = el('div', {
+      style:'background:#7c3aed;color:#fff;padding:10px 14px;font-weight:700;' +
+            'display:flex;justify-content:space-between;align-items:center;cursor:pointer;'
+    }, ['🧪 테스트 이메일 발송 (PoC)']);
+    const toggleBtn = el('span', {style:'font-weight:400;'}, ['접기 ▾']);
+    header.appendChild(toggleBtn);
+
+    const body = el('div', {style:'padding:12px 14px;display:flex;flex-direction:column;gap:8px;'});
+
+    const projSel = el('select', {id:'te-proj', style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
+    const conSel  = el('select', {id:'te-con',  style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
+    const patSel  = el('select', {id:'te-pat',  style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
+    const toInput = el('input', {id:'te-to', type:'email', placeholder:'받는 사람 이메일 (내 메일 주소로 테스트)', style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
+    const subInput = el('input', {id:'te-subject', type:'text', placeholder:'제목', style:'padding:6px;border:1px solid #ccc;border-radius:6px;'});
+    const bodyInput = el('textarea', {id:'te-body', rows:'3', placeholder:'본문', style:'padding:6px;border:1px solid #ccc;border-radius:6px;resize:vertical;'});
+    const sendBtn = el('button', {id:'te-send', style:'padding:8px;border:none;border-radius:6px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;'}, ['📧 테스트 이메일 발송']);
+    const status = el('div', {id:'te-status', style:'font-size:12px;line-height:1.5;color:#555;min-height:16px;'});
+
+    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['현장 선택']));
+    body.appendChild(projSel);
+    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['시공사 선택']));
+    body.appendChild(conSel);
+    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['특허/신기술 선택']));
+    body.appendChild(patSel);
+    body.appendChild(el('label', {style:'font-size:11px;color:#666;margin-top:4px;'}, ['수신 이메일']));
+    body.appendChild(toInput);
+    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['제목']));
+    body.appendChild(subInput);
+    body.appendChild(el('label', {style:'font-size:11px;color:#666;'}, ['본문']));
+    body.appendChild(bodyInput);
+    body.appendChild(sendBtn);
+    body.appendChild(status);
+
+    panel.appendChild(header);
+    panel.appendChild(body);
+    document.body.appendChild(panel);
+
+    header.addEventListener('click', () => {
+      const collapsed = body.style.display === 'none';
+      body.style.display = collapsed ? 'flex' : 'none';
+      toggleBtn.textContent = collapsed ? '접기 ▾' : '펼치기 ▸';
+    });
+
+    function fillProjects(){
+      projSel.innerHTML = '';
+      (window.projects||[]).forEach(p => {
+        projSel.appendChild(el('option', {value:p.id}, [p.name]));
+      });
+      fillContractors();
+    }
+    function fillContractors(){
+      conSel.innerHTML = '';
+      const p = (window.projects||[]).find(x => String(x.id)===String(projSel.value));
+      (p?.contractors||[]).forEach(c => {
+        conSel.appendChild(el('option', {value:c.id}, [c.name + (c.email ? ` (${c.email})` : ' (등록된 이메일 없음)')]));
+      });
+      autofillEmail();
+    }
+    function fillPatents(){
+      patSel.innerHTML = '';
+      (window.PATENTS||[]).forEach(pat => {
+        patSel.appendChild(el('option', {value:pat.id}, [pat.num + ' ' + (pat.name||'')]));
+      });
+    }
+    function autofillEmail(){
+      const p = (window.projects||[]).find(x => String(x.id)===String(projSel.value));
+      const c = p?.contractors.find(x => String(x.id)===String(conSel.value));
+      if(c && c.email) toInput.value = c.email; // 참고용 자동채움 — 실제 발송 전 직접 확인/수정 가능
+    }
+    projSel.addEventListener('change', fillContractors);
+    conSel.addEventListener('change', autofillEmail);
+
+    fillProjects();
+    fillPatents();
+
+    function setStatus(msg, isError){
+      status.textContent = msg;
+      status.style.color = isError ? '#dc2626' : '#16a34a';
+    }
+
+    function blobToBase64(blob){
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    sendBtn.addEventListener('click', async () => {
+      const p = (window.projects||[]).find(x => String(x.id)===String(projSel.value));
+      const c = p?.contractors.find(x => String(x.id)===String(conSel.value));
+      const pat = (window.PATENTS||[]).find(x => String(x.id)===String(patSel.value));
+      const to = toInput.value.trim();
+
+      if(!p || !c || !pat){ setStatus('⚠ 현장/시공사/특허를 선택하세요', true); return; }
+      if(!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){ setStatus('⚠ 받는 사람 이메일을 정확히 입력하세요', true); return; }
+      if(TEST_EMAIL_API_URL.indexOf('REGION-PROJECT') !== -1){
+        setStatus('⚠ 아직 서버 URL이 설정되지 않았습니다 (TEST_EMAIL_API_URL 확인)', true);
+        return;
+      }
+
+      sendBtn.disabled = true;
+      setStatus('⏳ PDF 생성 중...', false);
+      try{
+        // 기존에 이미 있는 함수를 그대로 "호출"만 함 — 아래 두 함수는 원본 그대로임
+        await renderPDFTemplate(p, c, pat);
+        const { blob, filename } = await capturePDF(p, c, pat, true);
+
+        setStatus('⏳ 이메일 전송 중...', false);
+        const pdfBase64 = await blobToBase64(blob);
+        const res = await fetch(TEST_EMAIL_API_URL, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            to,
+            subject: subInput.value.trim() || `[테스트] ${patLabel(pat)} 협약서`,
+            text: bodyInput.value.trim() || '테스트 발송입니다.',
+            filename,
+            pdfBase64
+          })
+        });
+        const data = await res.json().catch(()=>({}));
+        if(!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        setStatus(`✅ 발송 성공! (${to} 로 전송됨) — 받은메일함/스팸함 확인`, false);
+      }catch(e){
+        console.error('[test-email-addon]', e);
+        setStatus('❌ 발송 실패: ' + (e.message||e), true);
+      }finally{
+        sendBtn.disabled = false;
+      }
+    });
+  }
+
+  // 기존 데이터(projects/PATENTS) 로딩을 기다렸다가 패널을 띄움 (원본 로딩 흐름 방해 안 함)
+  function waitAndInit(){
+    if(window.projects && window.projects.length && window.PATENTS){
+      buildPanel();
+    } else {
+      setTimeout(waitAndInit, 500);
+    }
+  }
+  if(document.readyState === 'complete') waitAndInit();
+  else window.addEventListener('load', () => setTimeout(waitAndInit, 300));
+})();
+</script>
 
 </body>
 </html>

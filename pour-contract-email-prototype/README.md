@@ -1,55 +1,69 @@
-# 협약서 이메일 자동발송 PoC (원본 미변경 복사본)
+# 협약서 PDF → 테스트 이메일 발송 (PoC)
 
-- 원본 사이트: https://poursolution.github.io/pour-contract/
-- 원본 저장소: `poursolution/pour-contract` — **이 작업에서 원본 저장소/운영 사이트는 전혀 건드리지 않았습니다.**
-  여기 있는 `index.html`은 원본을 그대로 복사한 뒤 이 폴더 안에서만 수정한 별도 사본입니다.
+목적: 이미 만들어진 PDF 발행 기능을 그대로 이용해서, "PDF 첨부 이메일이 실제로 발송/수신되는지"만
+확인하는 최소 테스트. 실제 고객 발송이나 자동 발송은 아직 구현하지 않았습니다.
 
-## 무엇이 바뀌었나
+**원본 저장소(`poursolution/pour-contract`)와 운영 사이트는 전혀 수정하지 않았습니다.**
+여기 있는 `index.html`은 사용자가 올려준 프로젝트 원본을 그대로 복사한 것이고,
+파일 맨 끝에 새 `<script>` 블록 하나만 "추가"했습니다. 그 위의 내용은 원본과 한 글자도 다르지 않습니다.
 
-`index.html`에서 PDF 발행이 성공하는 3곳(개별 저장폴더 자동저장 / ZIP 일괄발행 / 단일 다운로드)
-바로 뒤에 `maybeSendContractEmail(...)` 호출을 추가했습니다.
+---
 
-- 업체(`c.email`)에 등록된 이메일이 있으면 → 방금 만든 PDF를 그대로 첨부해서 백엔드로 전송 요청
-- 이메일이 없으면 → 조용히 건너뜀 (기존 발행 동작에는 영향 없음)
-- 전송 성공 → 기존 "발송완료" 상태(`c.mailSent`)를 자동으로 체크
-- 전송 실패 → 발행 자체는 이미 끝난 뒤이므로 막지 않고, 토스트로만 알림 (기존 발송완료 버튼으로 수동 처리 가능)
+## 1. 분석 결과
 
-**브라우저는 SMTP를 직접 호출할 수 없고, 하이웍스 계정 비밀번호를 사이트 코드에 넣는 것도 위험하므로**
-실제 발송은 `functions/` 에 있는 작은 서버(Firebase Cloud Function)가 대신합니다.
-사이트는 PDF를 그 서버로 보내기만 하고, 서버가 하이웍스 SMTP로 로그인해서 메일을 보냅니다.
+| 항목 | 내용 |
+|---|---|
+| PDF는 어디서 만들어지나 | `capturePDF(p, c, pat, returnBlob)` 함수 (index.html 안) |
+| PDF는 Blob인가 File인가 | **Blob** — `returnBlob=true`로 호출하면 `{ blob, filename }`을 반환 (`pdf.output('blob')`) |
+| 기존 이메일 UI가 있나 | 발행 미리보기 모달에 `📧 메일 발송 (준비중)` 버튼이 있지만 **비활성화(disabled)** 상태로, 실제 기능은 없음 |
+| 실제로 수정해야 하는 파일 | **없음** — 기존 파일은 한 줄도 수정하지 않음 |
+| 새로 추가한 파일 | 아래 "새로 만든 파일" 참고 |
 
-```
-브라우저(index.html) → (PDF base64 POST) → Cloud Function(functions/index.js) → 하이웍스 SMTP → 수신자
-```
+## 2. 수정한 파일
 
-## 적용하려면 (원본 저장소에는 그대로 두고 별도로 진행)
+**없습니다.** 기존 코드/함수/UI/CSS/DB 구조/로그인/파일명/폴더 구조 — 전부 그대로입니다.
 
-1. **하이웍스 관리자 페이지 > POP3/SMTP 설정**에서 "메일 전용 비밀번호 설정" 클릭 → SMTP 발송 전용 비밀번호 발급
-   (확인됨: 보내는 서버 `smtps.hiworks.com`, 포트 `465`, SSL 필요 — 코드에 이미 반영)
-2. 이 폴더를 Firebase 프로젝트(현재 pour-contract가 쓰는 것과 같은 프로젝트, 또는 새 프로젝트)에 연결
-3. 발급받은 계정 정보를 서버 쪽에만 저장:
-   ```bash
-   firebase functions:config:set hiworks.user="발송용_아이디@회사도메인" hiworks.pass="위에서 발급한 메일 전용 비밀번호"
-   ```
-4. 함수 배포:
-   ```bash
-   cd functions && npm install
-   firebase deploy --only functions:sendContractEmail
-   ```
-5. 배포 후 나오는 함수 URL을 `index.html` 상단의 `EMAIL_API_URL` 값에 채워 넣기
-6. 이 사본으로 실제 계정으로 테스트 발송 → 문제 없으면, **운영 담당자가 원본 저장소에 정식으로 반영**
+`index.html`은 원본 대비 **삭제 0줄**, 파일 맨 끝(`</body>` 바로 위)에 새 `<script>` 블록만
+**184줄 추가**했습니다. 그 블록은:
+- 기존 함수 `renderPDFTemplate()`, `capturePDF()`를 그대로 **호출만** 함 (수정 아님)
+- 화면 오른쪽 아래에 새 테스트 패널 하나만 `document.body.appendChild`로 추가함 (기존 요소와 안 겹침)
+- 기존 "발행 확정" 흐름과는 별개로 동작 — 이 패널로 테스트해도 발행 상태/DB는 바뀌지 않음
 
-## 확인 완료 / 남은 것
+## 3. 새로 만든 파일
 
-- ✅ 하이웍스 SMTP 외부 발송 허용됨 (POP3/SMTP 설정 "사용 함" 확인)
-- ✅ 보내는 서버 정보 확인: `smtps.hiworks.com` / 포트 `465` (SSL)
-- ⬜ "메일 전용 비밀번호" 발급 — 로그인 비밀번호가 아닌 별도 비밀번호 필요 (OTP 로그인 계정이라 필수)
-- ⬜ 발신자 주소를 "대표 협약서 발송용" 계정으로 통일할지, 실제 발행자 개인 계정으로 할지 결정
+| 파일 | 용도 |
+|---|---|
+| `functions/index.js` | 테스트 메일 1건을 실제로 보내는 것 외에는 아무 기능도 없는 최소 서버 함수. 기존 pour-contract 프로젝트의 Firestore/다른 함수와 무관. **별도 테스트용 Google Cloud 프로젝트**에 배포 |
+| `functions/package.json` | 위 함수가 필요로 하는 라이브러리(nodemailer, cors) 목록 |
+| `TEST_GUIDE.md` | 처음부터 끝까지 마우스 클릭만으로 따라 할 수 있는 배포/테스트 절차 |
 
-## 파일 구성
+## 4. 건드리지 않은 부분
 
-```
-index.html          원본 pour-contract/index.html 사본 + 이메일 발송 훅 추가
-functions/index.js   하이웍스 SMTP로 PDF 첨부 메일을 보내는 Cloud Function
-functions/package.json
-```
+- ✅ 기존 PDF 생성 로직 — 그대로 호출만 함, 코드 수정 없음
+- ✅ 기존 협약서 발행 기능 — 별개로 동작, 발행 상태/DB 저장 없음
+- ✅ Firebase 데이터베이스 구조 / 기존 데이터 — 읽기만 함 (현장·시공사 목록 표시용), 쓰기 없음
+- ✅ 기존 UI / CSS / 페이지 구조 — 원본 그대로, 새 패널은 화면에 겹치지 않는 자리에 추가만 함
+- ✅ 기존 로그인 기능 — 무관
+- ✅ 기존 파일명 / 폴더 구조 — 변경 없음
+
+## 5. 보안
+
+- 하이웍스 계정/비밀번호, API Key 등은 이 저장소 어디에도 없습니다.
+- `functions/index.js`는 `process.env.HIWORKS_USER` / `process.env.HIWORKS_PASS` 를 읽기만 하며,
+  이 값은 **Cloud Functions 배포 화면에서 환경변수로 직접 입력**합니다 (Git에 올라가지 않음).
+- 이 세션(저)에게 Firebase/Google Cloud 관리자 권한이나 서비스 계정 키를 요청하지 않았고,
+  실제 배포도 요청하지 않았습니다 — `TEST_GUIDE.md`를 보고 직접 배포/테스트하시면 됩니다.
+
+## 6. 사용 흐름 (요청하신 그대로)
+
+1. 기존 데이터(현장/시공사/특허)를 화면에서 선택 → 기존 방식 그대로 PDF 생성
+2. 생성된 PDF Blob 확보 (`capturePDF(..., true)`)
+3. 수신 이메일 입력
+4. 제목 입력
+5. 본문 입력
+6. **'테스트 이메일 발송'** 클릭
+7. 서버(Cloud Function)로 PDF + 이메일 정보 전달
+8. 실제 이메일 발송 (하이웍스 SMTP)
+9. 성공/실패 결과를 패널에 표시
+
+자세한 실행 방법은 `TEST_GUIDE.md`를 참고하세요.
