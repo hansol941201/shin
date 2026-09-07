@@ -7,6 +7,7 @@ const SAFE={l:96,r:1824,t:40,b:1044};       // 5% 타이틀 세이프
   const p=await b.newPage({viewport:{width:1920,height:1080}});
   const {A}=require('./assets').resolve('assets');
   await p.addInitScript(a=>{window.__ASSETS__=a;},A);
+  if(process.env.RATE) await p.addInitScript(r=>{window.__RATE__=r;}, +process.env.RATE);
   if(process.env.PHLABEL) await p.addInitScript(()=>{window.__PHLABEL__=true;});
   const errs=[]; p.on('pageerror',e=>errs.push(String(e)));
   await p.goto('file://'+path.resolve(process.env.FILM||'film.html'),{waitUntil:'load'});

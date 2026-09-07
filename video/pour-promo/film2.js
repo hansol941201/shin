@@ -1,6 +1,10 @@
 /* ===== POUR B2B film — deterministic timeline renderer ===== */
 const AVAILABLE = window.__ASSETS__ || {};      // slot -> filename (injected by renderer)
-const RATE = 9.2;                                // 초당 낭독 글자수
+/* 초당 낭독 글자수. 9.2 는 '읽는' 속도라 무음+자막 버전(v16)의 기준이었다.
+   내레이션을 얹으려면 '말하는' 속도여야 한다 — 한국어 기업 내레이션은
+   호흡을 포함해 6자/초 안팎이다. RATE=1 로 렌더하면 영상 전체가 자동으로 다시 잡힌다.
+   모든 모션이 L(scene,idx) 를 참조하므로 이 값 하나로 타임라인 전체가 따라온다. */
+const RATE = (typeof window!=='undefined' && window.__RATE__) || 9.2;
 const PAD  = 0.24;                               // 줄 사이 호흡
 const MINL = 1.34;                               // 자막 최소 노출(짧은 줄도 읽을 시간 확보)
 
