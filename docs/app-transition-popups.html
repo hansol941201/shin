@@ -101,7 +101,7 @@ body{
 .layer{
   position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
-  padding:14px 16px 86px;
+  padding:12px 16px 78px;
   overflow-y:auto;
 }
 
@@ -109,7 +109,7 @@ body{
   display:none;
   flex-direction:column;
   width:600px;max-width:100%;
-  max-height:calc(100vh - 96px);
+  max-height:calc(100vh - 88px);
   background:var(--white);
   border-radius:16px;
   box-shadow:0 28px 64px rgba(6,24,46,.30),0 2px 8px rgba(6,24,46,.14);
@@ -179,13 +179,13 @@ body{
   text-wrap:pretty;
 }
 
-.pop-body{padding:0 44px 14px;}
+.pop-body{padding:0 44px 10px;}
 
 /* ---------- 섹션 헤더 ---------- */
 
 .section-label{
   display:flex;align-items:center;gap:12px;
-  margin:15px 0 9px;
+  margin:14px 0 8px;
   font-size:14.5px;font-weight:700;color:var(--navy-900);letter-spacing:-.015em;
 }
 .section-label .rule{flex:1;height:1px;background:var(--line);}
@@ -198,7 +198,7 @@ body{
 /* ---------- 핵심 공지 ---------- */
 
 .key-notice{
-  margin-top:15px;padding:14px 16px;
+  margin-top:14px;padding:13px 16px;
   background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:10px;
   display:flex;gap:12px;
 }
@@ -225,7 +225,7 @@ body{
 }
 .keep-item{
   display:flex;align-items:center;gap:10px;
-  background:var(--sky-050);padding:10px 14px;
+  background:var(--sky-050);padding:8px 14px;
   font-size:13.5px;font-weight:600;color:var(--navy-900);line-height:1.4;
 }
 .keep-item svg{width:16px;height:16px;color:var(--sky-500);flex-shrink:0;}
@@ -239,7 +239,7 @@ body{
   box-shadow:0 1px 3px rgba(11,35,64,.07);
 }
 .gain{
-  background:var(--white);padding:10px 14px;
+  background:var(--white);padding:8px 14px;
   display:grid;grid-template-columns:28px 1fr;gap:0 10px;align-items:center;
 }
 .gain-ico{
@@ -251,6 +251,28 @@ body{
 .gain-ico svg{width:16px;height:16px;color:var(--navy-700);}
 .gain b{font-size:13.5px;font-weight:700;color:var(--navy-900);line-height:1.35;letter-spacing:-.01em;}
 .gain span{font-size:12px;color:var(--ink-body);line-height:1.4;}
+
+/* ---------- 전환일정 ---------- */
+
+.timeline{
+  margin-top:12px;
+  display:flex;
+  background:var(--sky-050);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;
+}
+.tl{
+  flex:1;padding:9px 8px;text-align:center;
+  border-right:1px solid var(--line);
+}
+.tl:last-child{border-right:0;}
+.tl em{display:block;font-style:normal;font-size:11px;color:var(--ink-sub);line-height:1.3;}
+.tl strong{
+  display:block;margin-top:4px;
+  font-family:var(--mono);font-size:13px;font-weight:600;color:var(--navy-900);
+}
+.tl.is-end{background:var(--alert-bg);}
+.tl.is-end em{color:var(--alert-ink);}
+.tl.is-end strong{color:var(--alert-ink);}
 
 /* ---------- 설치 안내 (시안 2) ---------- */
 
@@ -466,9 +488,14 @@ body{
               <circle cx="12" cy="12" r="9"/><path d="M12 7.6v5.2"/><path d="M12 16.3h.01"/>
             </svg>
             <p>
-              <strong><span class="date">○월 ○일</span>부터 현장등록, 자료 요청 및 기술지원 신청은 POUR 전용 앱을 통해 접수됩니다.</strong>
-              그전까지는 지금 사용하시는 플랫폼을 그대로 이용하시면 됩니다.
+              <strong><span class="date">10월 5일(월)</span>부터 현장등록, 자료 요청 및 기술지원 신청은 POUR 전용 앱을 통해 접수됩니다.</strong>
             </p>
+          </div>
+
+          <div class="timeline">
+            <div class="tl"><em>기존 플랫폼 이용</em><strong>~ 10.2 (금)</strong></div>
+            <div class="tl"><em>앱 접수 시작 · 병행</em><strong>10.5 ~ 10.16</strong></div>
+            <div class="tl is-end"><em>기존 플랫폼 종료</em><strong>10.19 (월)</strong></div>
           </div>
 
           <h2 class="section-label">기존 정보는 그대로 유지됩니다<span class="rule"></span><span class="section-count">재등록 없음</span></h2>
@@ -589,6 +616,7 @@ body{
 
           <div class="badge">
             <span class="badge-main"><span class="dot"></span>기존 플랫폼 운영 종료</span>
+            <span class="badge-count">10.19</span>
           </div>
 
           <h1 class="pop-title" id="t2">
