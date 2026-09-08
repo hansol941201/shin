@@ -341,6 +341,9 @@
     if (mou.status === '상태 충돌·담당자 확인 필요' && has(mou.statusCandidate)) {
       badges.push('<span class="pcm-badge pcm-badge--plain">우선순위 판정: ' + esc(mou.statusCandidate) + '</span>');
     }
+    if (mou.termination) {
+      badges.push('<span class="pcm-badge pcm-badge--hold">' + esc(mou.termination.label) + '</span>');
+    }
     if (has(company.grade)) badges.push('<span class="pcm-badge pcm-badge--grade">등급 ' + esc(company.grade) + '</span>');
     badges.push('<span class="pcm-badge pcm-badge--plain">기존 협력업체 ' + (company.isExistingPartner ? '예' : '아니오') + '</span>');
     if (company.isNewCompany) badges.push('<span class="pcm-badge pcm-badge--plain">신규 유입</span>');
@@ -350,6 +353,10 @@
     var alerts = (val9.messages || []).filter(function (m) {
       return m.type === 'statusConflict' || m.type === 'dateError';
     }).map(function (m) { return { text: m.message, warn: false }; });
+    if (mou.termination) alerts.push({
+      text: mou.termination.source + ' 비고에 "' + mou.termination.rawText + '"가 기재되어 최종 상태를 «종결»로 두었습니다.'
+        + (mou.termination.signedAt ? ' 체결일(' + mou.termination.signedAt + ')과 진행 이력은 그대로 보존했습니다.' : ''),
+      warn: true });
     if (val9.missingMouDate) alerts.push({ text: '체결 완료로 표시되어 있으나 체결일이 확인되지 않습니다.', warn: true });
     if (val9.missingHoldReason) alerts.push({ text: '허들·보류 사유가 기재되어 있지 않습니다.', warn: true });
     if (val9.possibleDuplicate && !alerts.length) alerts.push({ text: '중복 의심 — 상세의 [검증] 탭을 확인하세요.', warn: true });
@@ -407,13 +414,19 @@
       { id: 'timeline', name: 'MOU 타임라인', html:
         grid([
           ['최종 MOU 상태', mou.status],
+        ].concat(mou.termination ? [
+          ['협약 종료·취소', mou.termination.label],
+          ['종료 근거', mou.termination.source + ' 비고 "' + mou.termination.rawText + '"'],
+          ['종료 전 상태', mou.termination.statusBeforeTermination],
+          ['종료 일자', null],
+        ] : []).concat([
           ['현재 진행 단계', mou.stage],
           ['현재 단계 진입일', mou.currentStageDate],
           ['현재 단계 경과일', mou.elapsedDays != null ? mou.elapsedDays + '일' : null, 'pcm-card__value--num'],
           ['다음 액션', mou.nextAction],
           ['다음 액션 예정일', mou.nextActionDueAt],
           ['장기 미진행', mou.isStalled ? '예' : '아니오'],
-        ]) +
+        ])) +
         '<div style="margin-top:14px"></div>' + timeline(company) +
         (has(mou.partnerListMouMark) ? '<p class="pcm-card__source" style="margin-top:8px">협력업체 리스트 협약체결 칸 원본 표기: ' + esc(mou.partnerListMouMark) + '</p>' : '') +
         '<p class="pcm-card__source">협력업체 명부: 시공사 발송용 ' +

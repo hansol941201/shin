@@ -32,7 +32,7 @@ node tools/build-list.js
 | `extract-legacy-excel.js` | 사용자 제공 관리 엑셀에서 MOU 체결 근거만 추출 (매출 등 재무 정보 제외) | `legacy-excel-evidence.json` |
 | `integration-core.js` | **통합 로직 본체.** Node(빌드)와 브라우저(목록의 동기화 버튼)가 같은 코드를 쓰도록 분리한 순수 모듈 | — (다른 스크립트가 사용) |
 | `build-integration.js` | 원본 `index.html` 을 파싱해 코어로 통합 | `companies-integrated.json` |
-| `build-preview.js` | 상태별 샘플 8종을 실제 데이터에서 골라 시안·마크업 생성 | `customer-card-preview.html`, `customer-card-component.html` |
+| `build-preview.js` | 상태별 샘플 10종을 실제 데이터에서 골라 시안·마크업 생성 | `customer-card-preview.html`, `customer-card-component.html` |
 | `build-docs.js` | 검증 수치를 JSON 에서 직접 계산해 보고서 작성 | `DATA-VALIDATION-REPORT.md` |
 | `build-list.js` | 전체 업체 표 목록을 데이터 내장 단일 HTML 로 생성 | `companies-list.html` |
 

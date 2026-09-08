@@ -64,12 +64,26 @@ samples.push({
         || pick(c => c.mou.status === '허들·보류', c => (c.mou.elapsedDays || 0)),
 });
 samples.push({
-  heading: '7. 기존 협력업체 · MOU 상태 확인 필요',
+  heading: '7. 종결 — 협약 종료',
+  note: `실제 수집 데이터 · 협약 종료 ${S.terminated}개사 · 협약 취소 ${S.cancelled}개사.<br>
+    원본 <strong>협력업체 리스트(내부용) 비고</strong>에 “협약종료”·“협약취소”가 적혀 있는 업체입니다.
+    추정이 아니라 원본이 직접 적어 둔 사실이므로 최종 상태를 <strong>종결</strong>로 두되,
+    <strong>체결일과 진행 이력은 지우지 않고 그대로 보존</strong>합니다.
+    종료 일자는 원본에 필드가 없어 “미확인”입니다.`,
+  company: pick(c => c.mou.termination && c.mou.termination.state === 'terminated', richness),
+});
+samples.push({
+  heading: '8. 종결 — 협약 취소',
+  note: `“취소”는 협약이 무효가 된 경우, “종료”는 협약이 끝난 경우로 성격이 달라 목록에서 <strong>별도 탭</strong>으로 나눴습니다.`,
+  company: pick(c => c.mou.termination && c.mou.termination.state === 'cancelled', richness),
+});
+samples.push({
+  heading: '9. 기존 협력업체 · MOU 상태 확인 필요',
   note: `실제 수집 데이터 · 이 상태 ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']}개사.`,
   company: pick(c => c.mou.status === '기존 협력업체·MOU 상태 확인 필요', richness),
 });
 samples.push({
-  heading: '8. 상태 충돌 · 날짜 오류',
+  heading: '10. 상태 충돌 · 날짜 오류',
   note: `실제 수집 데이터 · 충돌 검출 ${S.statusConflict}개사, 날짜 오류 ${S.dateError}개사.<br>
     아래 업체는 [체결 완료]와 [허들·보류]에 동시 등록되어 있지만 <strong>MOU 체결일이 확인되어 최종 상태는 “MOU 체결 완료”</strong>입니다.
     충돌을 지우는 것이 아니라 상태를 먼저 확정하고, 충돌 사실은 빨간 주의 박스와 [검증] 탭에 그대로 남겨 원본 정리 대상으로 추적합니다.

@@ -59,11 +59,11 @@
     "totalCompanies": 348,
     "rawRowsCollected": 1754,
     "byStatus": {
-      "MOU 체결 완료": 219,
+      "MOU 체결 완료": 215,
       "MOU 체결 완료·체결일 미확인": 58,
       "MOU 진행 중": 44,
       "허들·보류": 17,
-      "종결": 0,
+      "종결": 4,
       "기존 협력업체·MOU 상태 확인 필요": 9,
       "상태 충돌·담당자 확인 필요": 1
     },
@@ -111,6 +111,8 @@
     },
     "multipleCodes": 3,
     "cancelSuspect": 1,
+    "terminated": 3,
+    "cancelled": 1,
     "notInContractorList": 10,
     "contractorListed": 202,
     "internalListed": 270,
@@ -905,6 +907,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-18",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -1177,6 +1180,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -1382,6 +1386,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -1576,6 +1581,7 @@
         "secondMeetingManager": null,
         "signedAt": "2020-04-08",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -1827,6 +1833,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -2078,6 +2085,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-04-08",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -2302,6 +2310,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -2558,6 +2567,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -2789,6 +2799,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -3041,6 +3052,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -3247,6 +3259,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-12-30",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -3518,6 +3531,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -3700,6 +3714,7 @@
         "secondMeetingManager": null,
         "signedAt": "2020-12-04",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -3957,6 +3972,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -4212,6 +4228,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -4453,6 +4470,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-04-03",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -4730,6 +4748,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-12-17",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -5018,6 +5037,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -5204,6 +5224,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -5460,6 +5481,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-05-27",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -5758,6 +5780,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -5978,6 +6001,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-01-09",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -6252,6 +6276,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -6504,6 +6529,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -6698,6 +6724,7 @@
         "secondMeetingManager": null,
         "signedAt": "2020-02-13",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -6945,6 +6972,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -7127,6 +7155,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -7378,6 +7407,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-01-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -7632,6 +7662,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -7863,6 +7894,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-24",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -8084,6 +8116,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -8309,6 +8342,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -8545,6 +8579,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -8801,6 +8836,7 @@
         "secondMeetingManager": null,
         "signedAt": "2021-03-09",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -9048,6 +9084,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -9242,6 +9279,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-08",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -9518,6 +9556,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-06",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -9784,6 +9823,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-09-22",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -10114,6 +10154,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -10386,6 +10427,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-12-13",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -10643,6 +10685,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -10863,6 +10906,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -11069,6 +11113,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -11308,6 +11353,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-08-21",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -11612,6 +11658,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -11838,6 +11885,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -12125,6 +12173,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-08",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -12469,6 +12518,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -12720,6 +12770,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -12986,6 +13037,7 @@
         "secondMeetingManager": null,
         "signedAt": "2020-08-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -13243,6 +13295,7 @@
         "secondMeetingManager": null,
         "signedAt": "2021-03-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -13499,6 +13552,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -13750,6 +13804,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -13960,6 +14015,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -14216,6 +14272,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-29",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -14490,6 +14547,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -14746,6 +14804,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-03-14",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -15027,6 +15086,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -15233,6 +15293,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-17",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -15499,6 +15560,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -15762,6 +15824,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -15937,6 +16000,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-23",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -16218,6 +16282,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-05-24",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -16530,6 +16595,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -16787,6 +16853,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -17044,6 +17111,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-01-13",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -17270,6 +17338,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-28",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -17502,6 +17571,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-05-09",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -17838,6 +17908,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -18159,6 +18230,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-31",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -18454,6 +18526,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-06-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -18737,6 +18810,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -18988,6 +19062,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-05-02",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -19275,6 +19350,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-02-20",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -19531,6 +19607,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -19788,6 +19865,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-04-08",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -20014,6 +20092,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -20281,6 +20360,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-03-15",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -20598,6 +20678,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -20792,6 +20873,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-03-09",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -20978,6 +21060,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -21179,6 +21262,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-02-11",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -21430,6 +21514,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-23",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -21687,6 +21772,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-05-11",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -21938,6 +22024,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -22194,6 +22281,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-03-07",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -22451,6 +22539,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-07-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -22713,6 +22802,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-09-22",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -22985,6 +23075,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -23163,6 +23254,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -23339,6 +23431,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -23722,6 +23815,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-03-27",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -24096,6 +24190,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -24348,6 +24443,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -24550,6 +24646,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -24732,6 +24829,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -24986,6 +25084,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -25237,6 +25336,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-03-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -25499,6 +25599,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-04-07",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -25731,6 +25832,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -25988,6 +26090,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -26250,6 +26353,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -26528,6 +26632,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-06-21",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -26841,6 +26946,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-03-07",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -27092,6 +27198,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -27308,6 +27415,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -27492,6 +27600,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -27723,6 +27832,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-12-06",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -28069,6 +28179,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -28341,6 +28452,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-06-25",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -28620,6 +28732,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -28806,6 +28919,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -29022,6 +29136,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -29204,6 +29319,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -29390,6 +29506,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-03-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -29641,6 +29758,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -29897,6 +30015,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -30161,6 +30280,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -30355,6 +30475,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -30612,6 +30733,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-05-15",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -30873,6 +30995,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -31109,6 +31232,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-05-13",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -31438,6 +31562,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -31626,6 +31751,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -31888,6 +32014,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-12-13",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -32164,6 +32291,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-09-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -32407,7 +32535,7 @@
       "reviewPriority": null,
       "reviewPriorityReason": null,
       "mou": {
-        "status": "MOU 체결 완료",
+        "status": "종결",
         "statusCandidate": "MOU 체결 완료",
         "stage": "MOU 체결",
         "stageNumber": 5,
@@ -32426,6 +32554,15 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-17",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": {
+          "state": "terminated",
+          "label": "협약 종료",
+          "note": "협약종료",
+          "source": "협력업체 리스트(내부용)",
+          "rawText": "협약종료",
+          "signedAt": "2025-04-17",
+          "statusBeforeTermination": "MOU 체결 완료"
+        },
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -32539,7 +32676,17 @@
           "text": "협약종료"
         }
       ],
-      "changeHistory": [],
+      "changeHistory": [
+        {
+          "type": "agreement_terminated",
+          "previousStatus": "MOU 체결 완료",
+          "newStatus": "종결",
+          "terminationState": "terminated",
+          "basis": "협력업체 리스트(내부용) 비고 \"협약종료\"",
+          "signedAt": "2025-04-17",
+          "note": "원본에 기재된 사실만 반영했습니다. 체결일과 진행 이력은 지우지 않고 그대로 보존합니다."
+        }
+      ],
       "sourceTabs": [
         "협력업체 리스트(내부용)",
         "등급 현황",
@@ -32572,6 +32719,10 @@
           {
             "type": "review",
             "message": "MOU 체결일(2025-04-17)은 있으나 [협력업체 리스트(시공사 발송용)]에 없습니다 — 협약이 종료됐거나 최근 체결이라 아직 명부에 반영되지 않았을 수 있습니다."
+          },
+          {
+            "type": "review",
+            "message": "비고에 \"협약종료\"(출처: 협력업체 리스트(내부용))가 기재되어 최종 상태를 '종결'(협약 종료)로 두었습니다. 체결일(2025-04-17)과 진행 이력은 지우지 않고 그대로 보존했습니다."
           }
         ]
       },
@@ -32654,6 +32805,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-04-07",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -32895,6 +33047,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -33146,6 +33299,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-04-05",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -33397,6 +33551,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-08",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -33687,6 +33842,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -33999,6 +34155,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-01",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -34265,6 +34422,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -34522,6 +34680,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -34797,6 +34956,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-04-09",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -35066,6 +35226,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -35252,6 +35413,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -35514,6 +35676,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-11-29",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -35823,6 +35986,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -36009,6 +36173,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-11-12",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -36324,6 +36489,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-11-21",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -36591,6 +36757,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-03-06",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -36800,6 +36967,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-07-31",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -37093,6 +37261,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -37334,6 +37503,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -37587,6 +37757,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -37834,6 +38005,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -38091,6 +38263,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-06-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -38387,6 +38560,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -38644,6 +38818,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -38917,6 +39092,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -39180,6 +39356,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -39366,6 +39543,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -39615,6 +39793,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -39872,6 +40051,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -40129,6 +40309,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-09",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -40442,6 +40623,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-09-25",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -40758,6 +40940,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -41009,6 +41192,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-05-20",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -41292,6 +41476,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-09-06",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -41524,6 +41709,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-03-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -41796,6 +41982,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-04-07",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -42031,6 +42218,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -42288,6 +42476,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -42545,6 +42734,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-10-26",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -42792,6 +42982,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -42998,6 +43189,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -43249,6 +43441,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -43500,6 +43693,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -43756,6 +43950,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -44018,6 +44213,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-21",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -44356,6 +44552,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-11-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -44623,6 +44820,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-25",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -44914,6 +45112,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -45108,6 +45307,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -45433,6 +45633,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -45712,6 +45913,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -45938,6 +46140,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-12-06",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -46283,6 +46486,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-20",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -46555,6 +46759,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-04-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -46804,6 +47009,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-04-07",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -47048,6 +47254,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-08-25",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -47299,6 +47506,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-04",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -47561,6 +47769,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -47828,6 +48037,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-31",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -48143,6 +48353,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-29",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -48467,6 +48678,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-05-19",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -48734,6 +48946,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -48920,6 +49133,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-06",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -49185,6 +49399,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-03-04",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -49422,6 +49637,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-25",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -49679,6 +49895,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-20",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -50004,6 +50221,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-11-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -50237,6 +50455,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -50443,6 +50662,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-25",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -50764,6 +50984,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-05-20",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -51083,6 +51304,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -51261,6 +51483,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -51455,6 +51678,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-04-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -51754,6 +51978,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -52024,6 +52249,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-03-12",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -52276,6 +52502,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -52542,6 +52769,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-11-07",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -52799,6 +53027,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-06-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -53050,6 +53279,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -53297,6 +53527,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -53485,6 +53716,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -53735,6 +53967,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-09",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -54004,7 +54237,7 @@
       "reviewPriority": null,
       "reviewPriorityReason": null,
       "mou": {
-        "status": "MOU 체결 완료",
+        "status": "종결",
         "statusCandidate": "MOU 체결 완료",
         "stage": "MOU 체결",
         "stageNumber": 5,
@@ -54023,6 +54256,15 @@
         "secondMeetingManager": null,
         "signedAt": "2025-04-17",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": {
+          "state": "terminated",
+          "label": "협약 종료",
+          "note": "협약종료",
+          "source": "협력업체 리스트(내부용)",
+          "rawText": "협약종료",
+          "signedAt": "2025-04-17",
+          "statusBeforeTermination": "MOU 체결 완료"
+        },
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -54136,7 +54378,17 @@
           "text": "협약종료"
         }
       ],
-      "changeHistory": [],
+      "changeHistory": [
+        {
+          "type": "agreement_terminated",
+          "previousStatus": "MOU 체결 완료",
+          "newStatus": "종결",
+          "terminationState": "terminated",
+          "basis": "협력업체 리스트(내부용) 비고 \"협약종료\"",
+          "signedAt": "2025-04-17",
+          "note": "원본에 기재된 사실만 반영했습니다. 체결일과 진행 이력은 지우지 않고 그대로 보존합니다."
+        }
+      ],
       "sourceTabs": [
         "협력업체 리스트(내부용)",
         "등급 현황",
@@ -54169,6 +54421,10 @@
           {
             "type": "review",
             "message": "MOU 체결일(2025-04-17)은 있으나 [협력업체 리스트(시공사 발송용)]에 없습니다 — 협약이 종료됐거나 최근 체결이라 아직 명부에 반영되지 않았을 수 있습니다."
+          },
+          {
+            "type": "review",
+            "message": "비고에 \"협약종료\"(출처: 협력업체 리스트(내부용))가 기재되어 최종 상태를 '종결'(협약 종료)로 두었습니다. 체결일(2025-04-17)과 진행 이력은 지우지 않고 그대로 보존했습니다."
           }
         ]
       },
@@ -54251,6 +54507,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -54508,6 +54765,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-12-17",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -54777,6 +55035,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -54993,6 +55252,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -55175,6 +55435,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -55381,6 +55642,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -55566,6 +55828,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -55748,6 +56011,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-11-18",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -55983,6 +56247,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -56189,6 +56454,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -56447,6 +56713,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -56793,6 +57060,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -57049,6 +57317,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-06-23",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -57271,6 +57540,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -57474,6 +57744,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -57737,6 +58008,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -57974,6 +58246,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -58230,6 +58503,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -58425,6 +58699,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-28",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -58687,6 +58962,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-07-08",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -58947,6 +59223,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -59178,6 +59455,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-02-02",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -59446,6 +59724,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -59647,6 +59926,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -59922,6 +60202,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-08-20",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -60198,6 +60479,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -60376,6 +60658,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -60554,6 +60837,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -60740,6 +61024,7 @@
         "secondMeetingManager": null,
         "signedAt": "2021-05-04",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -60966,6 +61251,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-11-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -61217,6 +61503,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -61450,6 +61737,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -61628,6 +61916,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -61814,6 +62103,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-11",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -62093,6 +62383,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -62288,6 +62579,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -62550,6 +62842,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-03-08",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -62903,6 +63196,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-10-23",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -63118,6 +63412,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -63297,6 +63592,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-10-23",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -63568,6 +63864,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-05-08",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -63874,6 +64171,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-18",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -64142,6 +64440,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -64393,6 +64692,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-01-31",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -64668,6 +64968,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -64854,6 +65155,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -65027,6 +65329,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -65213,6 +65516,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -65472,6 +65776,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -65678,6 +65983,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-05-17",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -65967,6 +66273,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -66218,6 +66525,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -66475,6 +66783,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -66732,6 +67041,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-28",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -67065,6 +67375,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -67312,6 +67623,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -67494,6 +67806,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-27",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -67763,6 +68076,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -68094,6 +68408,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -68334,6 +68649,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -68586,6 +68902,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -68835,7 +69152,7 @@
       "reviewPriority": null,
       "reviewPriorityReason": null,
       "mou": {
-        "status": "MOU 체결 완료",
+        "status": "종결",
         "statusCandidate": "MOU 체결 완료",
         "stage": "MOU 체결",
         "stageNumber": 5,
@@ -68854,6 +69171,15 @@
         "secondMeetingManager": null,
         "signedAt": "2025-09-02",
         "signedAtSource": "체결 완료",
+        "termination": {
+          "state": "cancelled",
+          "label": "협약 취소",
+          "note": "협약취소",
+          "source": "협력업체 리스트(내부용)",
+          "rawText": "협약취소",
+          "signedAt": "2025-09-02",
+          "statusBeforeTermination": "MOU 체결 완료"
+        },
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -69041,6 +69367,15 @@
           ],
           "resolutionStatus": "resolved",
           "reason": "사용자 확정 규칙에 따라 체결 완료 메뉴 날짜 우선 적용"
+        },
+        {
+          "type": "agreement_terminated",
+          "previousStatus": "MOU 체결 완료",
+          "newStatus": "종결",
+          "terminationState": "cancelled",
+          "basis": "협력업체 리스트(내부용) 비고 \"협약취소\"",
+          "signedAt": "2025-09-02",
+          "note": "원본에 기재된 사실만 반영했습니다. 체결일과 진행 이력은 지우지 않고 그대로 보존합니다."
         }
       ],
       "sourceTabs": [
@@ -69082,7 +69417,7 @@
           },
           {
             "type": "review",
-            "message": "MOU 체결일(2025-09-02)이 있으나 비고에 \"협약취소\"(출처: 협력업체 리스트(내부용))가 있습니다 — 협약이 현재도 유효한지 담당자 확인이 필요합니다."
+            "message": "비고에 \"협약취소\"(출처: 협력업체 리스트(내부용))가 기재되어 최종 상태를 '종결'(협약 취소)로 두었습니다. 체결일(2025-09-02)과 진행 이력은 지우지 않고 그대로 보존했습니다."
           },
           {
             "type": "review",
@@ -69169,6 +69504,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -69351,6 +69687,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -69557,6 +69894,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -69814,6 +70152,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-07-25",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -70073,6 +70412,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -70259,6 +70599,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-03-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -70516,6 +70857,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -70780,6 +71122,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-11-07",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -71106,6 +71449,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -71327,6 +71671,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-08-06",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -71607,6 +71952,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-28",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -71864,6 +72210,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -72119,6 +72466,7 @@
         "secondMeetingManager": null,
         "signedAt": "2020-08-24",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -72345,6 +72693,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-06-05",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -72626,6 +72975,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -72879,6 +73229,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -73156,6 +73507,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -73421,6 +73773,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-04-01",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -73703,6 +74056,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -73905,6 +74259,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-03-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -74172,6 +74527,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-15",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -74429,6 +74785,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-29",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -74752,6 +75109,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-29",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -75143,6 +75501,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-07-21",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -75353,6 +75712,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-07-17",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -75563,6 +75923,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -75745,6 +76106,7 @@
         "secondMeetingManager": null,
         "signedAt": "2021-12-21",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -75996,6 +76358,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-04-26",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -76243,6 +76606,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -76472,6 +76836,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-12-30",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -76729,6 +77094,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -76986,6 +77352,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-06-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -77237,6 +77604,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-04-17",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -77533,6 +77901,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -77723,6 +78092,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -77909,6 +78279,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-19",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -78172,6 +78543,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-04",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -78415,7 +78787,7 @@
       "reviewPriority": null,
       "reviewPriorityReason": null,
       "mou": {
-        "status": "MOU 체결 완료",
+        "status": "종결",
         "statusCandidate": "MOU 체결 완료",
         "stage": "MOU 체결",
         "stageNumber": 5,
@@ -78434,6 +78806,15 @@
         "secondMeetingManager": null,
         "signedAt": "2024-09-24",
         "signedAtSource": "체결 완료",
+        "termination": {
+          "state": "terminated",
+          "label": "협약 종료",
+          "note": "협약종료",
+          "source": "협력업체 리스트(내부용)",
+          "rawText": "협약종료",
+          "signedAt": "2024-09-24",
+          "statusBeforeTermination": "MOU 체결 완료"
+        },
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -78599,7 +78980,17 @@
           "text": "협약종료"
         }
       ],
-      "changeHistory": [],
+      "changeHistory": [
+        {
+          "type": "agreement_terminated",
+          "previousStatus": "MOU 체결 완료",
+          "newStatus": "종결",
+          "terminationState": "terminated",
+          "basis": "협력업체 리스트(내부용) 비고 \"협약종료\"",
+          "signedAt": "2024-09-24",
+          "note": "원본에 기재된 사실만 반영했습니다. 체결일과 진행 이력은 지우지 않고 그대로 보존합니다."
+        }
+      ],
       "sourceTabs": [
         "체결 완료",
         "협력업체 리스트(내부용)",
@@ -78635,6 +79026,10 @@
           {
             "type": "review",
             "message": "MOU 체결일(2024-09-24)은 있으나 [협력업체 리스트(시공사 발송용)]에 없습니다 — 협약이 종료됐거나 최근 체결이라 아직 명부에 반영되지 않았을 수 있습니다."
+          },
+          {
+            "type": "review",
+            "message": "비고에 \"협약종료\"(출처: 협력업체 리스트(내부용))가 기재되어 최종 상태를 '종결'(협약 종료)로 두었습니다. 체결일(2024-09-24)과 진행 이력은 지우지 않고 그대로 보존했습니다."
           }
         ]
       },
@@ -78713,6 +79108,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -78906,6 +79302,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-25",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -79112,6 +79509,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -79318,6 +79716,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-12-31",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -79603,6 +80002,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-05-06",
         "signedAtSource": "레거시 관리 엑셀",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "레거시 관리 엑셀",
@@ -79779,6 +80179,7 @@
         "secondMeetingManager": null,
         "signedAt": "2026-04-17",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -80008,6 +80409,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -80194,6 +80596,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-10-22",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -80439,6 +80842,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-03-26",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -80713,6 +81117,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -80940,6 +81345,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -81205,6 +81611,7 @@
         "secondMeetingManager": null,
         "signedAt": "2019-12-05",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -81439,6 +81846,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-09-06",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -81704,6 +82112,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -81888,6 +82297,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-14",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -82144,6 +82554,7 @@
         "secondMeetingManager": null,
         "signedAt": "2022-12-27",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -82391,6 +82802,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -82587,6 +82999,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-28",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -82919,6 +83332,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -83170,6 +83584,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-04-10",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -83427,6 +83842,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-28",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -83767,6 +84183,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -83998,6 +84415,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -84263,6 +84681,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-02-29",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -84490,6 +84909,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -84672,6 +85092,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-29",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -84990,6 +85411,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-02-16",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -85257,6 +85679,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -85519,6 +85942,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-03-11",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -85805,6 +86229,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-03-11",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -86047,6 +86472,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -86259,6 +86685,7 @@
         "secondMeetingManager": null,
         "signedAt": "2023-05-03",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -86516,6 +86943,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-01-12",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",
@@ -86771,6 +87199,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -87050,6 +87479,7 @@
         "secondMeetingManager": null,
         "signedAt": "2025-02-20",
         "signedAtSource": "체결 완료",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "체결 완료",
@@ -87385,6 +87815,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -87637,6 +88068,7 @@
         "secondMeetingManager": null,
         "signedAt": null,
         "signedAtSource": null,
+        "termination": null,
         "signedAtSources": [],
         "skippedSteps": [],
         "rawLabels": {
@@ -87843,6 +88275,7 @@
         "secondMeetingManager": null,
         "signedAt": "2024-07-26",
         "signedAtSource": "협력업체 리스트(내부용)",
+        "termination": null,
         "signedAtSources": [
           {
             "menu": "협력업체 리스트(내부용)",

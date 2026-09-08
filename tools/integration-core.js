@@ -201,6 +201,7 @@ function toListRows(payload) {
       raw: c.mou.rawLabels,
       skipped: c.mou.skippedSteps || [],
       mouSource: c.mou.signedAtSource,
+      term: c.mou.termination || null,
       evidence: c.mou.evidence,
       contractorListed: !!c.mou.contractorListed,
       reviewPriority: c.reviewPriority || null,
@@ -892,7 +893,13 @@ for (const rec of all) {
 
   // 허들·보류 액션 결정이 '종결'로 확인되면 최종 상태를 '종결'로 둔다.
   // (이 값은 동기화로 Firebase 에서 받아온 경우에만 존재한다.)
-  if (rec.status === STATUS.HOLD && rec.hurdleAction === '종결') rec.status = STATUS.CLOSED;
+  if (rec.status === STATUS.HOLD && rec.hurdleAction === '종결') {
+    rec.status = STATUS.CLOSED;
+    rec.termination = rec.termination || {
+      state: 'terminated', label: '협약 종료',
+      note: '허들·보류 액션 결정: 종결', source: '허들·보류 액션 결정', rawText: '종결',
+    };
+  }
 
   // 4-4) 진행 단계
   if (rec.dates.mou) rec.stageNum = 5;  // 체결일이 확인되면 단계는 MOU 체결 (원본 행별 단계는 attempts 에 보존)
@@ -980,11 +987,42 @@ for (const rec of all) {
     if (rec.dates.m2 && !rec.dates.m1) rec.reviews.push('2차 미팅 기록은 있으나 1차 미팅일이 비어 있습니다.');
   }
   if (rec.dates.mou && !rec.inPartner) rec.reviews.push('MOU 체결일이 있으나 협력업체 리스트(내부용)에서 확인되지 않습니다.');
-  // 체결 완료인데 비고에 협약 취소·해지 표현이 있으면 현재 유효한 협약인지 확인이 필요하다
-  const cancelNote = rec.notes.find(n => /협약\s*취소|계약\s*취소|해지|파기/.test(n.text));
-  if (rec.dates.mou && cancelNote) {
-    rec.cancelSuspect = true;
-    rec.reviews.push(`MOU 체결일(${rec.dates.mou})이 있으나 비고에 "${cancelNote.text}"(출처: ${cancelNote.source})가 있습니다 — 협약이 현재도 유효한지 담당자 확인이 필요합니다.`);
+  // 비고에 적힌 협약 종료·취소. 취소(무효)와 종료(끝남)는 성격이 다르므로 나눠서 표시한다.
+  const TERM_KINDS = [
+    { state: 'cancelled',  label: '협약 취소', re: /협약\s*취소|계약\s*취소|MOU\s*취소/ },
+    { state: 'terminated', label: '협약 종료', re: /협약\s*(종료|해지|만료|파기|해제)|계약\s*(종료|해지|만료|파기|해제)|거래\s*(종료|중단)/ },
+  ];
+  for (const k of TERM_KINDS) {
+    const n = rec.notes.find(x => k.re.test(x.text));
+    if (!n) continue;
+    rec.termNote = { state: k.state, label: k.label, text: n.text, source: n.source };
+    if (k.state === 'cancelled') rec.cancelSuspect = true;
+    rec.reviews.push(`비고에 "${n.text}"(출처: ${n.source})가 기재되어 최종 상태를 '종결'(${k.label})로 두었습니다.`
+      + (rec.dates.mou ? ` 체결일(${rec.dates.mou})과 진행 이력은 지우지 않고 그대로 보존했습니다.` : ''));
+    break;
+  }
+  // 비고에 협약 종료·취소가 기재된 업체는 '종결'로 분류한다.
+  // 원본이 직접 적어 둔 사실이므로 추정이 아니며, 체결일·이력은 지우지 않고 그대로 보존한다.
+  if (rec.termNote) {
+    rec.termination = {
+      state: rec.termNote.state,
+      label: rec.termNote.label,
+      note: rec.termNote.text,
+      source: rec.termNote.source,
+      rawText: rec.termNote.text,
+      signedAt: rec.dates.mou || null,
+      statusBeforeTermination: rec.status,
+    };
+    rec.changeHistory.push({
+      type: 'agreement_terminated',
+      previousStatus: rec.status,
+      newStatus: STATUS.CLOSED,
+      terminationState: rec.termNote.state,
+      basis: `${rec.termNote.source} 비고 "${rec.termNote.text}"`,
+      signedAt: rec.dates.mou || null,
+      note: '원본에 기재된 사실만 반영했습니다. 체결일과 진행 이력은 지우지 않고 그대로 보존합니다.',
+    });
+    rec.status = STATUS.CLOSED;
   }
   if (rec.inPartner && !rec.codes.length) rec.reviews.push('협력업체 리스트에 있으나 업체코드가 비어 있습니다.');
   if (rec.seedStageMismatch) {
@@ -1306,6 +1344,8 @@ const companies = all
         secondMeetingManager: null,
         signedAt: rec.dates.mou,
         signedAtSource: rec.mouDateSource,
+        // 협약 종료·취소. 원본 비고(또는 허들 액션 결정)에 기재된 사실만 담는다.
+        termination: rec.termination || null,
         signedAtSources: rec.mouSources,
         // 체결 업체 중 날짜 기록이 없는 단계 (생략했거나 기록되지 않음). 오류가 아니라 참고 정보.
         skippedSteps: rec.skippedSteps || [],
@@ -1562,6 +1602,8 @@ const summary = {
   },
   multipleCodes: c(x => x.validation.multipleCodes),
   cancelSuspect: c(x => x.validation.cancelSuspect),
+  terminated: c(x => x.mou.termination && x.mou.termination.state === 'terminated'),
+  cancelled: c(x => x.mou.termination && x.mou.termination.state === 'cancelled'),
   notInContractorList: c(x => x.validation.notInContractorList),
   contractorListed: c(x => x.mou.contractorListed),
   internalListed: c(x => x.mou.internalListed),

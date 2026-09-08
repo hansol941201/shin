@@ -10,6 +10,7 @@ const msgs = (c, t) => c.validation.messages.filter(m => m.type === t).map(m => 
 const rows = (f) => C.filter(f);
 const tbl = (head, body) => ['| ' + head.join(' | ') + ' |', '|' + head.map(() => '---').join('|') + '|', ...body.map(r => '| ' + r.join(' | ') + ' |')].join('\n');
 const nm = (c) => c.companyName + (c.companyCode ? ` (${c.companyCode})` : '');
+const NA_DOC = '미확인';
 const LEGAL_RE_DOC = /㈜|\(주\)|（주）|주식회사|\(유\)|유한회사|\(사\)|\(재\)|\(합\)/g;
 const normDoc = (x) => String(x || '').replace(LEGAL_RE_DOC, '').replace(/\s+/g, '').toLowerCase();
 const payloadCompaniesByName = (name) => C.find(c => [c.companyName, ...(c.originalNames || [])].some(n => normDoc(n) === normDoc(name)));
@@ -95,7 +96,10 @@ ${tbl(['최종 상태', '업체 수', '우선순위만 적용했을 때'],
 - **MOU 체결 완료·체결일 미확인 = ${S.byStatus['MOU 체결 완료·체결일 미확인']}건.**
   원본 대시보드만 봤을 때는 0건이었습니다(체결 표시가 있는 업체는 전건 날짜가 함께 있었음).
   사용자가 제공한 레거시 관리 엑셀에서 협약 명부 근거가 확인된 ${S.legacyExcel ? S.legacyExcel.promotedToDoneNoDate : 0}개사가 여기로 옮겨졌습니다(§3-1).
-- **종결 = 0건.** 원본에 종결 상태를 저장하는 필드가 없습니다(§7 참조).
+- **종결 = ${S.byStatus['종결']}건 (협약 종료 ${S.terminated} · 협약 취소 ${S.cancelled}).**
+  원본에 종결 상태를 저장하는 *필드* 는 없지만, 협력업체 리스트(내부용) **비고 칸**에
+  “협약종료”·“협약취소”가 직접 적혀 있는 업체가 있어 그 기재를 근거로 분류했습니다(§3-2).
+  허들·보류 액션 결정(\`종결\`)은 여전히 배포 데이터에 없습니다(§7 참조).
 
 ### 3-1. MOU 체결 판정 기준 — 협력업체 리스트(시공사 발송용)
 
@@ -135,6 +139,28 @@ ${tbl(['업체', '체결일', '등급', '비고'],
 
 **체결일이 시공사 명부 등재보다 강한 근거**이므로 \`MOU 체결 완료\` 를 유지했습니다(사용자 확정).
 다만 ${rows(c => c.validation.notInContractorList && c.grade === 'F').length}개사가 F등급(이슈·이탈)이라 협약이 종료됐을 수 있어 \`validation.notInContractorList\` 로 표시했습니다.
+
+### 3-2. 협약 종료·취소 — ${S.byStatus['종결']}개사
+
+**협력업체 리스트(내부용) 비고 칸**에 협약이 끝났다고 직접 적혀 있는 업체입니다.
+추정이 아니라 원본이 기재해 둔 사실이므로 최종 상태를 \`종결\` 로 두고,
+**목록에서는 성격이 다른 두 가지를 별도 탭으로 나눴습니다.**
+
+| 탭 | 뜻 | 업체 수 |
+|---|---|---|
+| **협약 종료** | 체결했던 협약이 끝남 | ${S.terminated} |
+| **협약 취소** | 체결이 취소·무효가 됨 | ${S.cancelled} |
+
+${tbl(['업체', '구분', '근거(원본 비고)', '체결일', '종료 전 상태', '등급'],
+  rows(c => c.mou.termination).map(c => [nm(c), c.mou.termination.label,
+    `${c.mou.termination.source} — “${c.mou.termination.rawText}”`,
+    c.mou.signedAt || NA_DOC, c.mou.termination.statusBeforeTermination || NA_DOC, c.grade || NA_DOC]))}
+
+- **체결일과 진행 이력은 지우지 않았습니다.** 종료 전까지의 기록은 그대로 남아 있고,
+  종료 사실만 \`mou.termination\` 과 \`changeHistory\` 의 \`agreement_terminated\` 에 추가했습니다.
+- **종료 일자는 ${NA_DOC}입니다.** 원본에 종료일을 적는 필드가 없어 날짜를 지어내지 않았습니다.
+- 이 ${S.byStatus['종결']}개사는 **MOU 체결 완료 집계에서 빠집니다**
+  (그래서 체결 완료가 ${S.byStatus['MOU 체결 완료']}개사입니다).
 
 ### 확인 필요 ${S.byStatus['기존 협력업체·MOU 상태 확인 필요']}개사 — 확인 우선순위
 
@@ -341,7 +367,8 @@ ${S.multipleCodes ? tbl(['업체', '업체코드', '사유'],
 
 **다음 액션이 전건 미입력인 이유**: 원본의 “액션 결정”(재접근/종결/보류 유지/재발송/확인 필요) 셀렉트는
 브라우저 \`localStorage.hurdleActions\` 에만 저장되고 배포 데이터에 포함되지 않습니다.
-값을 추정하지 않고 전건 \`"결정 미입력"\` 으로 두었습니다. **“종결” 상태가 0건인 것도 같은 이유입니다.**
+값을 추정하지 않고 전건 \`"결정 미입력"\` 으로 두었습니다.
+**액션 결정을 근거로 한 종결은 그래서 0건이고**, 현재 종결 ${S.byStatus['종결']}건은 모두 비고 기재를 근거로 한 것입니다(§3-2).
 
 ### 보류 사유가 없는 업체 (${holdNoReason.length}개사)
 

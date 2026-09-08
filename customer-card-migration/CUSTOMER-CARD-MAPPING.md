@@ -216,6 +216,7 @@
 - **표시명** 최종 MOU 상태 · **형식** `enum` · **필수** 예
 - **값** 7종 — `MOU 체결 완료` / `MOU 체결 완료·체결일 미확인` / `MOU 진행 중` / `허들·보류` / `종결` / `기존 협력업체·MOU 상태 확인 필요` / `상태 충돌·담당자 확인 필요`
 - **출처·판정 우선순위**
+  0. 비고에 **협약 종료·취소**가 기재되어 있으면 → `종결` (가장 마지막에 일어난 사실이므로 다른 판정보다 우선)
   1. MOU 체결일이 있으면 → `MOU 체결 완료`
   2. 체결 표시(`mouDone`, 협력업체 리스트 “ㅇ”)는 있는데 날짜가 없으면 → `MOU 체결 완료·체결일 미확인`
   3. 허들·보류 탭에 있으면 → `허들·보류`
@@ -241,6 +242,20 @@
 
 - **검증** 충돌이 있으면 `validation.statusConflict = true` 이고 사유가 `validation.messages` 에 들어 있습니다.
   체결일로 상태가 확정된 경우 `validation.conflictResolvedBySigning = true` 가 함께 붙습니다.
+
+### `mou.termination` — 협약 종료·취소
+- **표시명** 협약 종료 / 협약 취소 · **형식** `{state, label, note, source, rawText, signedAt, statusBeforeTermination} | null`
+- **`state`** `terminated`(협약 종료 — 체결했던 협약이 끝남) · `cancelled`(협약 취소 — 체결이 취소·무효가 됨)
+- **출처** 협력업체 리스트(내부용) **비고 칸**에 적힌 “협약종료”·“협약취소”.
+  허들·보류 액션 결정이 “종결”인 경우(동기화로만 들어옴)도 여기에 담깁니다.
+- **추정하지 않습니다.** 원본이 직접 적어 둔 문구만 근거로 쓰고, 원문을 `rawText` 에 그대로 보존합니다.
+- **기존 데이터를 지우지 않습니다.** `signedAt`(체결일)·진행 단계·타임라인·메뉴 등재 기록은 그대로 두고
+  종료 사실만 덧붙입니다. `statusBeforeTermination` 에 종료 직전 상태가 남습니다.
+- **종료 일자는 `미확인`** 입니다 — 원본에 종료일을 적는 필드가 없어 날짜를 만들지 않았습니다.
+- **카드 위치** 헤더 배지(상태 배지 옆) · 첫 화면 주의 박스 · 상세 › MOU 타임라인 탭 상단
+- **목록 위치** 상단 타일의 **「협약 종료」·「협약 취소」 두 탭** (성격이 달라 합치지 않습니다)
+- **변경 이력** `changeHistory` 에 `type: "agreement_terminated"` (`previousStatus`, `terminationState`, `basis`)
+- **집계** `summary.terminated` / `summary.cancelled`
 
 ### `mou.statusCandidate`
 - **표시명** 우선순위 판정 · **형식** `enum` (위와 동일)

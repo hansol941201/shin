@@ -315,7 +315,7 @@ function mBiz(s){if(!has(s))return s;var x=String(s).replace(/\\D/g,'');return x
 var P={ceo:mName,phone:mPhone,email:mMail,addr:mAddr,bizno:mBiz};
 function pii(k,v){return showPII?v:(P[k]?P[k](v):v);}
 
-var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',rel:'',sort:'n',dir:1,tile:'all',changedOnly:false};
+var state={q:'',status:'',stage:'',year:'',partner:'',flag:'',rel:'',term:'',sort:'n',dir:1,tile:'all',changedOnly:false};
 
 // ── 현재 데이터에서 요약 수치를 다시 계산 (동기화 후에도 화면 숫자가 맞도록) ──
 function recount(rowsArr){
@@ -325,6 +325,7 @@ function recount(rowsArr){
          missingMouDate:0,missingHoldReason:0,partnerWithoutMouStatus:0,notInContractorList:0,__stalled:0};
   var noStage=0, partners=0, years={};
   var rel={sub:0,parent:0,affiliate:0,former:0,check:0,merged:0,conflict:0};
+  var term={terminated:0,cancelled:0};
   rowsArr.forEach(function(r){
     if(byStatus[r.status]!==undefined)byStatus[r.status]++;
     if(r.stage){ if(byStage[r.stage]!==undefined)byStage[r.stage]++; } else noStage++;
@@ -339,8 +340,9 @@ function recount(rowsArr){
     if(rs.unknown||(r.relationships||[]).some(function(x){return x.conflict;}))rel.check++;
     if(r.merge&&r.merge.status==='user_confirmed')rel.merged++;
     if(r.v&&r.v.multipleCodes)rel.conflict++;
+    if(r.term&&term[r.term.state]!==undefined)term[r.term.state]++;
   });
-  return {total:rowsArr.length,byStatus:byStatus,byStage:byStage,noStage:noStage,partners:partners,years:years,flags:f,rel:rel};
+  return {total:rowsArr.length,byStatus:byStatus,byStage:byStage,noStage:noStage,partners:partners,years:years,flags:f,rel:rel,term:term};
 }
 var COUNTS = recount(ROWS);
 
@@ -350,7 +352,8 @@ var TILE_DEFS=[
   ['s:MOU 체결 완료·체결일 미확인','체결일 미확인',function(){return COUNTS.byStatus['MOU 체결 완료·체결일 미확인'];}],
   ['s:MOU 진행 중','MOU 진행 중',function(){return COUNTS.byStatus['MOU 진행 중'];}],
   ['s:허들·보류','허들·보류',function(){return COUNTS.byStatus['허들·보류'];}],
-  ['s:종결','종결',function(){return COUNTS.byStatus['종결'];}],
+  ['t:terminated','협약 종료',function(){return COUNTS.term.terminated;}],
+  ['t:cancelled','협약 취소',function(){return COUNTS.term.cancelled;}],
   ['s:기존 협력업체·MOU 상태 확인 필요','협력업체·상태 확인 필요',function(){return COUNTS.byStatus['기존 협력업체·MOU 상태 확인 필요'];}],
   ['s:상태 충돌·담당자 확인 필요','상태 충돌·담당자 확인',function(){return COUNTS.byStatus['상태 충돌·담당자 확인 필요'];}],
   ['f:possibleDuplicate','중복 의심(미해결)',function(){return COUNTS.flags.possibleDuplicate;}],
@@ -436,6 +439,7 @@ function apply(){
     if(state.partner==='n'&&r.partner)return false;
     if(state.flag&&!flagOf(r,state.flag))return false;
     if(state.rel&&!relOf(r,state.rel))return false;
+    if(state.term&&!(r.term&&r.term.state===state.term))return false;
     if(!q)return true;
     var hay=[r.name,r.ceo].concat(r.names||[],r.formerNames||[],r.aliases||[],r.codes||[],
       (r.relationships||[]).map(function(x){return x.targetCompanyName;})).join(' ').toLowerCase();
@@ -523,7 +527,7 @@ function badges(r){
   if(r.v.missingHoldReason)out.push('<span class="tag warn">사유 미기재</span>');
   if(r.stalled)out.push('<span class="tag">장기 미진행</span>');
   if(r.suspect)out.push('<span class="tag warn">보류 의심</span>');
-  if(r.v.cancelSuspect)out.push('<span class="tag warn">협약취소 기재</span>');
+  if(r.term)out.push('<span class="tag warn">'+esc(r.term.label)+'</span>');
   if(r.v.notInContractorList)out.push('<span class="tag warn">시공사 명부 미등재</span>');
   if(r.reviewPriority==='높음')out.push('<span class="tag warn">확인 우선 높음</span>');
   if(r.v.nameChangeMerged)out.push('<span class="tag">상호 변경 통합</span>');
@@ -544,6 +548,14 @@ function detail(r){
     +g('기존 협력업체',r.partner?'예':'아니오')+g('신규 MOU 유입',r.newco?'예':'아니오')
     +'</div>';
 
+  if(r.term){
+    h+='<div class="dsec"><h4>'+esc(r.term.label)+'</h4><ul class="dlist">'
+      +'<li class="warn">'+esc(r.term.source)+' 비고에 "'+esc(r.term.rawText)+'"가 기재되어 최종 상태를 «종결»로 두었습니다.</li>'
+      +'<li>종료 전 상태: '+esc(r.term.statusBeforeTermination||NA)
+      +(r.term.signedAt?' · 체결일 '+esc(r.term.signedAt)+' (지우지 않고 그대로 보존)':'')+'</li>'
+      +'<li class="src">종료 일자는 원본에 기록이 없어 '+NA+' 입니다. 아래 타임라인은 종료 전까지의 진행 기록입니다.</li>'
+      +'</ul></div>';
+  }
   h+='<div class="dsec"><h4>MOU 타임라인</h4><div class="dgrid">'
     +g('질문서 발송일',r.qs)+g('질문서 회신일',r.qr)
     +g('1차 미팅 완료일',r.m1)+g('2차 미팅 완료일',r.m2)
@@ -737,7 +749,7 @@ document.getElementById('tb').addEventListener('click',function(e){
     var row=document.querySelector('tr.row[data-id="'+id+'"]');
     if(!row){
       // 필터에 가려져 있으면 필터를 풀고 다시 찾는다
-      state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';state.rel='';
+      state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';state.rel='';state.term='';
       ['q','fStatus','fStage','fYear','fPartner','fFlag','fRel'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});
       syncTiles(); apply();
       row=document.querySelector('tr.row[data-id="'+id+'"]');
@@ -766,17 +778,20 @@ document.querySelectorAll('th[data-s]').forEach(function(th){
 function syncTiles(){
   document.querySelectorAll('.tile').forEach(function(t){
     var k=t.getAttribute('data-k');
-    var on=(k==='all')?(!state.status&&!state.flag)
-      :(k.indexOf('s:')===0?state.status===k.slice(2):state.flag===k.slice(2));
+    var on=(k==='all')?(!state.status&&!state.flag&&!state.term)
+      :(k.indexOf('s:')===0?state.status===k.slice(2)
+      :k.indexOf('t:')===0?state.term===k.slice(2)
+      :state.flag===k.slice(2));
     t.classList.toggle('on',on);
   });
 }
 document.getElementById('tiles').addEventListener('click',function(e){
   var t=e.target.closest('.tile'); if(!t)return;
   var k=t.getAttribute('data-k');
-  if(k==='all'){state.status='';state.flag='';}
-  else if(k.indexOf('s:')===0){state.status=(state.status===k.slice(2))?'':k.slice(2);state.flag='';}
-  else{state.flag=(state.flag===k.slice(2))?'':k.slice(2);state.status='';}
+  if(k==='all'){state.status='';state.flag='';state.term='';}
+  else if(k.indexOf('s:')===0){state.status=(state.status===k.slice(2))?'':k.slice(2);state.flag='';state.term='';}
+  else if(k.indexOf('t:')===0){state.term=(state.term===k.slice(2))?'':k.slice(2);state.status='';state.flag='';}
+  else{state.flag=(state.flag===k.slice(2))?'':k.slice(2);state.status='';state.term='';}
   document.getElementById('fStatus').value=state.status;
   document.getElementById('fFlag').value=state.flag;
   syncTiles();apply();
@@ -787,7 +802,7 @@ bindSel('fStatus','status');bindSel('fStage','stage');bindSel('fYear','year');bi
 document.getElementById('q').addEventListener('input',function(){state.q=this.value;apply();});
 document.getElementById('pii').addEventListener('change',function(){showPII=this.checked;render();});
 document.getElementById('reset').addEventListener('click',function(){
-  state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';state.rel='';
+  state.q='';state.status='';state.stage='';state.year='';state.partner='';state.flag='';state.rel='';state.term='';
   ['q','fStatus','fStage','fYear','fPartner','fFlag','fRel'].forEach(function(i){document.getElementById(i).value='';});
   openIds={};syncTiles();apply();
 });
