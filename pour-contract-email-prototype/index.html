@@ -5723,6 +5723,7 @@ function handleExcelUpload(ev){
             <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">발신 → 수신</th>
             <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">제목 / 첨부파일</th>
             <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">결과</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">발신자 알림</th>
           </tr>
         </thead>
         <tbody id="mail-history-tbody"></tbody>
@@ -5794,6 +5795,18 @@ function handleExcelUpload(ev){
     list.push(entry);
     saveMailHistoryList(list.length > MAIL_HISTORY_MAX ? list.slice(list.length - MAIL_HISTORY_MAX) : list);
     return entry;
+  }
+  // [발송 알림] 알림 재전송 결과만 같은 이력 항목의 notify 필드에 반영 (상대방 발송 기록 자체는
+  // 새로 만들지도, 지우지도 않음 — "알림"은 부가 정보이지 새로운 발송 이벤트가 아니므로)
+  function updateMailHistoryNotify(entryId, notifyResult){
+    const list = loadMailHistory();
+    const idx = list.findIndex(h => h.id === entryId);
+    if(idx < 0) return null;
+    const attempts = Array.isArray(list[idx].notifyRetries) ? list[idx].notifyRetries.slice() : [];
+    attempts.push({ at: new Date().toISOString(), ...notifyResult });
+    list[idx] = { ...list[idx], notify: notifyResult, notifyRetries: attempts };
+    saveMailHistoryList(list);
+    return list[idx];
   }
   // 특정 업체의 가장 최근 이력 1건 (최신 발송 시각·수신 주소·결과 요약용)
   function getLatestMailHistoryFor(contractorName){
@@ -5874,6 +5887,7 @@ function handleExcelUpload(ev){
   async function sendPatentEmailTo(emails, p, c, pat, blob, filename){
     // [MAIL-HISTORY] 요청 시점 정보를 먼저 확정 — 결과가 어떻게 나오든 이 정보로 이력 1건을 남김
     const subject = getEffectiveSubject(p, c, pat, filename);
+    const text = getEffectiveBody(p, c, pat);
     const historyBase = {
       id: `mh_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
       requestedAt: new Date().toISOString(),
@@ -5882,6 +5896,7 @@ function handleExcelUpload(ev){
       projectName: p.name,
       contractorName: c.name,
       subject,
+      text, // [발송 알림] 알림 재전송 시 "보낸 메일 본문"을 그대로 재구성하기 위해 저장
       filename
     };
 
@@ -5894,9 +5909,11 @@ function handleExcelUpload(ev){
         body: JSON.stringify({
           to: emails.join(','),
           subject,
-          text: getEffectiveBody(p, c, pat),
+          text,
           filename,
-          pdfBase64
+          pdfBase64,
+          projectName: p.name,      // [발송 알림] 서버가 알림 메일 제목/본문에 사용
+          contractorName: c.name
         })
       });
     }catch(networkErr){
@@ -5913,10 +5930,13 @@ function handleExcelUpload(ev){
     if(res.ok && data && data.ok){
       // [진단용] SMTP 서버의 실제 접수/거부 목록과 원문 응답도 함께 저장 —
       // "성공" 표시가 곧 수신함 도착을 뜻하지 않으므로, 문제 생기면 이 값으로 원인 추적
-      appendMailHistoryEntry({ ...historyBase, status:'accepted', resultAt:new Date().toISOString(),
+      // [발송 알림] notify는 상대방 발송 결과(status)와 별개로 저장 — 알림 실패가
+      // 상대방 발송 성공을 덮어쓰지 않음
+      const entry = appendMailHistoryEntry({ ...historyBase, status:'accepted', resultAt:new Date().toISOString(),
         messageId: data.messageId || null,
-        smtpAccepted: data.accepted || null, smtpRejected: data.rejected || null, smtpResponse: data.smtpResponse || null });
-      return { ok:true };
+        smtpAccepted: data.accepted || null, smtpRejected: data.rejected || null, smtpResponse: data.smtpResponse || null,
+        notify: data.notify || { attempted:false } });
+      return { ok:true, notify: entry.notify };
     }
 
     if(data && data.ok === false){
@@ -5985,6 +6005,13 @@ function handleExcelUpload(ev){
 
   // ── "📧 메일 보내기" 버튼 전용 발송 로직. PDF 발행·저장(confirmPreview)과는 완전히 별개이며,
   //   이 함수는 오직 사용자가 "메일 보내기"를 직접 눌렀을 때만 호출됨 ──
+  // [발송 알림] 상대방 발송 결과와 별개로 알림 결과를 한 줄 덧붙여 보여줌 — 두 결과를 혼동하지 않게
+  function notifySuffix(sendResult){
+    const n = sendResult && sendResult.notify;
+    if(!n || !n.attempted) return '';
+    return n.ok ? ' (발신자 알림 메일도 전송됨)' : ` (다만 발신자 알림 메일 발송에는 실패했습니다: ${n.error||''})`;
+  }
+
   window.sendPatentEmailInteractive = async function(c, p, pat, blob, filename){
     const entry  = findMasterEntry(c);
     let emails   = entry ? extractValidEmails(entry.email) : [];
@@ -6000,7 +6027,7 @@ function handleExcelUpload(ev){
 
       const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
       if(sendResult.ok){
-        showMailResultModal(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
+        showMailResultModal(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}${notifySuffix(sendResult)}`);
       } else {
         showMailResultModal(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
       }
@@ -6009,7 +6036,7 @@ function handleExcelUpload(ev){
 
     const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
     if(sendResult.ok){
-      showMailResultModal(`협약서 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
+      showMailResultModal(`협약서 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}${notifySuffix(sendResult)}`);
     } else {
       showMailResultModal(`이메일 발송에 실패했습니다: ${sendResult.error}`, true);
     }
@@ -6143,7 +6170,7 @@ function handleExcelUpload(ev){
       .sort((a,b) => (a.requestedAt < b.requestedAt ? 1 : -1)); // 최신순
 
     if(!list.length){
-      mhTbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#888;">발송 이력이 없습니다</td></tr>`;
+      mhTbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#888;">발송 이력이 없습니다</td></tr>`;
       return;
     }
 
@@ -6154,12 +6181,33 @@ function handleExcelUpload(ev){
       const resultLine = h.status === 'accepted'
         ? `${mailHistoryStatusLabel(h.status)}${h.messageId ? `<br><span style="color:#888;font-size:10.5px;">ID: ${escH(h.messageId)}</span>` : ''}${smtpLine}`
         : `${mailHistoryStatusLabel(h.status)}<br><span style="color:#b91c1c;font-size:10.5px;word-break:break-all;">${escH(h.error||'')}</span>${smtpLine}`;
+
+      // [발송 알림] 상대방 발송이 실패한 건은 애초에 알림을 시도하지 않으므로 "-" 표시
+      let notifyCell = '<span style="color:#aaa;">-</span>';
+      if(h.status === 'accepted' && h.notify){
+        if(h.notify.attempted && h.notify.ok){
+          notifyCell = `<span style="color:#16a34a;">✅ 알림 전송됨</span>`;
+        } else if(h.notify.attempted && !h.notify.ok){
+          notifyCell = `<span style="color:#dc2626;">❌ 알림 실패</span>
+            <br><span style="color:#dc2626;font-size:10.5px;word-break:break-all;">${escH(h.notify.error||'')}</span>
+            <br><button onclick="retryMailNotify('${h.id}')" data-notify-retry-id="${h.id}"
+              style="margin-top:4px;padding:3px 8px;border:1px solid #dc2626;border-radius:5px;
+              background:#fff;color:#dc2626;font-size:11px;cursor:pointer;">🔔 알림 재전송</button>`;
+        } else {
+          notifyCell = '<span style="color:#aaa;">시도 안 함</span>';
+        }
+        if(Array.isArray(h.notifyRetries) && h.notifyRetries.length){
+          notifyCell += `<br><span style="color:#888;font-size:10px;">재시도 ${h.notifyRetries.length}회</span>`;
+        }
+      }
+
       return `<tr style="border-bottom:1px solid #f2f2f2;">
         <td style="padding:8px;vertical-align:top;white-space:nowrap;">${escH(fmtDateTime(h.requestedAt))}</td>
         <td style="padding:8px;vertical-align:top;">${escH(h.projectName||'')}<br><span style="color:#666;">${escH(h.contractorName||'')}</span></td>
         <td style="padding:8px;vertical-align:top;word-break:break-all;">${escH(h.from||'')}<br>→ ${escH(h.to||'')}</td>
         <td style="padding:8px;vertical-align:top;word-break:break-all;">${escH(h.subject||'')}<br><span style="color:#666;font-size:11px;">${escH(h.filename||'')}</span></td>
         <td style="padding:8px;vertical-align:top;">${resultLine}</td>
+        <td style="padding:8px;vertical-align:top;">${notifyCell}</td>
       </tr>`;
     }).join('');
   }
@@ -6168,6 +6216,44 @@ function handleExcelUpload(ev){
     mhSearch.value = '';
     renderMailHistoryTable();
     mhModal.style.display = 'flex';
+  };
+
+  // [발송 알림] "🔔 알림 재전송" — 상대방에게는 절대 아무것도 다시 보내지 않고,
+  // 발신 계정 본인에게 가는 알림 메일만 다시 시도한다 (notifyOnly:true).
+  // 이 이력 항목이 이미 남긴 subject/text/filename/projectName/contractorName을 그대로 재사용.
+  window.retryMailNotify = async function(entryId){
+    const btn = document.querySelector(`button[data-notify-retry-id="${entryId}"]`);
+    if(btn && btn.disabled) return; // 중복 클릭 방지
+    if(btn){ btn.disabled = true; btn.textContent = '재전송 중...'; }
+
+    const list = loadMailHistory();
+    const entry = list.find(h => h.id === entryId);
+    if(!entry){
+      if(btn){ btn.disabled = false; btn.textContent = '🔔 알림 재전송'; }
+      return;
+    }
+
+    try{
+      const res = await fetch(CONTRACT_EMAIL_API_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          notifyOnly: true,
+          to: entry.to,               // 원래 수신자 — 알림 본문의 "실제 수신 이메일" 표시용일 뿐, 발송 대상 아님
+          subject: entry.subject,
+          text: entry.text || '',
+          filename: entry.filename,
+          projectName: entry.projectName,
+          contractorName: entry.contractorName
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      const notifyResult = (data && data.notify) || { attempted:true, ok:false, error:`HTTP ${res.status}` };
+      updateMailHistoryNotify(entryId, notifyResult);
+    }catch(networkErr){
+      updateMailHistoryNotify(entryId, { attempted:true, ok:false, error: networkErr.message||String(networkErr) });
+    }
+    renderMailHistoryTable(); // 갱신된 알림 상태 + 새 재전송 버튼으로 다시 그림
   };
   function closeMailHistoryModal(){ mhModal.style.display = 'none'; }
   mhClose.addEventListener('click', closeMailHistoryModal);

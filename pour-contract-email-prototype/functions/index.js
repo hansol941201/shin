@@ -13,6 +13,18 @@
  * 환경변수 (배포 화면에서 입력):
  *   HIWORKS_USER = 발송용 계정 아이디 (예: netformb2b@netformrnd.com)
  *   HIWORKS_PASS = 하이웍스 "메일 전용 비밀번호" (로그인 비밀번호 아님)
+ *
+ * [발송 알림 기능]
+ *   하이웍스가 IMAP을 지원하지 않아 "보낸편지함 저장"이 불가능하다는 게 확인되어,
+ *   대신 상대방 발송이 SMTP에 정상 접수된 "직후"에만, 발신 계정 본인
+ *   (HIWORKS_USER)의 받은메일함으로 별도의 알림 메일 1건을 추가로 보낸다.
+ *   - 알림 메일에는 PDF/첨부파일을 절대 넣지 않는다 (요청 사항)
+ *   - 숨은참조(BCC)가 아니라 완전히 별개의 sendMail() 호출이다 (요청 사항)
+ *   - 알림 메일 자체는 다시 알림을 만들지 않는다 (재귀 호출 없음 — 코드 구조상 불가능)
+ *   - 상대방 발송이 실패/불명확하면 알림을 아예 보내지 않는다
+ *   - 상대방 발송 성공 여부와 알림 성공 여부는 응답에서 분리된 필드(ok / notify.ok)로 구분된다
+ *   - notifyOnly:true 로 요청하면 상대방에게는 아무것도 보내지 않고 "알림만" 재시도한다
+ *     (알림 실패 시 상대방에게 협약서를 다시 보내지 않기 위한 재시도 경로)
  */
 const nodemailer = require('nodemailer');
 const cors = require('cors')({ origin: true });
@@ -34,6 +46,52 @@ function buildTransport() {
   });
 }
 
+function nowKST() {
+  return new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+}
+
+// 발신자 본인에게 보낼 알림 메일 본문 — 요청하신 항목만 그대로 표시 (과장된 문구 없음)
+function buildNotifyBody({ fromEmail, to, projectName, contractorName, subject, text, filename }) {
+  return [
+    `발신 이메일: ${fromEmail}`,
+    `실제 수신 이메일: ${to}`,
+    `현장명: ${projectName || ''}`,
+    `업체명: ${contractorName || ''}`,
+    '',
+    `보낸 메일 제목: ${subject || ''}`,
+    '보낸 메일 본문:',
+    text || '',
+    '',
+    `첨부 파일명: ${filename || ''}`,
+    '',
+    `발송 접수 시각(한국시간): ${nowKST()}`,
+    '결과: 발송 서버 접수 완료',
+    '',
+    '※ 이 알림은 수신자의 수신함 도착이나 열람을 확인한 것은 아닙니다.',
+  ].join('\n');
+}
+
+// 발신 계정 본인에게 보내는 알림 메일 — 절대 첨부 없음, BCC 아님, 재귀 호출 없음
+async function sendOwnerNotification(transporter, { to, projectName, contractorName, subject, text, filename }) {
+  const ownerEmail = process.env.HIWORKS_USER;
+  const notifySubject = `[협약서 발송 알림] ${projectName || ''} / ${contractorName || ''}`;
+  const notifyBody = buildNotifyBody({ fromEmail: ownerEmail, to, projectName, contractorName, subject, text, filename });
+  try {
+    const info = await transporter.sendMail({
+      from: `"넷폼" <${ownerEmail}>`,
+      to: ownerEmail, // 발신 계정 본인 받은메일함으로만 발송
+      subject: notifySubject,
+      text: notifyBody,
+      // attachments 없음 — 요청에 따라 알림 메일에는 어떤 파일도 첨부하지 않음
+    });
+    console.log('[sendTestEmail] 알림 메일 발송 성공', JSON.stringify({ messageId: info.messageId, response: info.response }));
+    return { attempted: true, ok: true, messageId: info.messageId, response: info.response };
+  } catch (notifyErr) {
+    console.error('[sendTestEmail] 알림 메일 발송 실패', notifyErr);
+    return { attempted: true, ok: false, error: notifyErr.message || String(notifyErr) };
+  }
+}
+
 /**
  * Cloud Functions (2세대, Node.js 런타임) HTTP 함수.
  * functions-framework 규격: exports.<함수명> = (req, res) => {...}
@@ -44,11 +102,25 @@ exports.sendTestEmail = (req, res) => {
       return res.status(405).json({ ok: false, error: 'POST만 허용됩니다' });
     }
 
-    const { to, subject, text, filename, pdfBase64 } = req.body || {};
+    const { to, subject, text, filename, pdfBase64, projectName, contractorName, notifyOnly } = req.body || {};
 
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return res.status(400).json({ ok: false, error: '수신 이메일이 올바르지 않습니다' });
     }
+
+    // ── notifyOnly 모드: 상대방에게는 아무것도 보내지 않고, "알림만" 재시도 ──
+    // (알림 실패로 협약서를 다시 보내는 일이 없도록 완전히 분리된 경로)
+    if (notifyOnly === true) {
+      try {
+        const transporter = buildTransport();
+        const notify = await sendOwnerNotification(transporter, { to, projectName, contractorName, subject, text, filename });
+        return res.status(notify.ok ? 200 : 502).json({ notifyOnly: true, notify });
+      } catch (err) {
+        console.error('[sendTestEmail:notifyOnly]', err);
+        return res.status(500).json({ notifyOnly: true, notify: { attempted: true, ok: false, error: err.message || String(err) } });
+      }
+    }
+
     if (!pdfBase64 || typeof pdfBase64 !== 'string') {
       return res.status(400).json({ ok: false, error: 'PDF 데이터가 없습니다' });
     }
@@ -60,6 +132,8 @@ exports.sendTestEmail = (req, res) => {
 
     try {
       const transporter = buildTransport();
+
+      // ① 상대방에게 협약서 PDF 첨부 메일 발송 (기존 동작 그대로 유지)
       const info = await transporter.sendMail({
         from: `"넷폼" <${process.env.HIWORKS_USER}>`,
         to,
@@ -71,9 +145,6 @@ exports.sendTestEmail = (req, res) => {
       });
 
       // [진단용] "SMTP가 접수함(250 OK)"과 "실제 수신함 도착"은 다르다.
-      // info.accepted/rejected/response는 SMTP 서버가 실제로 뭐라고 답했는지 보여주는
-      // 유일한 단서이므로 반드시 로그로 남기고, 응답에도 그대로 실어서 클라이언트가
-      // "성공"만 보고 넘어가지 않도록 한다. (비밀번호/인증정보는 여기 없음)
       console.log('[sendTestEmail] SMTP 응답', JSON.stringify({
         to,
         accepted: info.accepted,
@@ -87,7 +158,7 @@ exports.sendTestEmail = (req, res) => {
       const wasAccepted = Array.isArray(info.accepted) && info.accepted.length > 0;
 
       if (hasRejected || !wasAccepted) {
-        // SMTP 서버가 해당 수신자를 명확히 거부했거나, 수락 목록에 없음 — 성공으로 보고하지 않는다.
+        // 상대방 발송이 실패/불명확 — 이 경우 알림 메일은 절대 보내지 않는다
         console.error('[sendTestEmail] 수신자 거부/미수락', info.rejected, info.response);
         return res.status(502).json({
           ok: false,
@@ -98,12 +169,18 @@ exports.sendTestEmail = (req, res) => {
         });
       }
 
+      // ② 상대방 발송이 "정상 접수" 확정된 경우에만 발신 계정 본인에게 알림 발송 시도
+      const notify = await sendOwnerNotification(transporter, { to, projectName, contractorName, subject, text, filename });
+
+      // 상대방 발송 결과(ok)와 알림 결과(notify.ok)는 서로 다른 필드로 분리해서 반환한다.
+      // 알림이 실패해도 상대방 발송은 이미 성공했으므로 ok:true는 그대로 유지한다.
       return res.status(200).json({
         ok: true,
         messageId: info.messageId,
         accepted: info.accepted,
         rejected: info.rejected,
-        smtpResponse: info.response, // SMTP 서버 원문 응답 (예: "250 2.0.0 OK ...") — 실제 접수 근거
+        smtpResponse: info.response,
+        notify,
       });
     } catch (err) {
       console.error('[sendTestEmail]', err);
