@@ -74,7 +74,9 @@ function buildNotifyBody({ fromEmail, to, projectName, contractorName, subject, 
 // 발신 계정 본인에게 보내는 알림 메일 — 절대 첨부 없음, BCC 아님, 재귀 호출 없음
 async function sendOwnerNotification(transporter, { to, projectName, contractorName, subject, text, filename }) {
   const ownerEmail = process.env.HIWORKS_USER;
-  const notifySubject = `[협약서 발송 알림] ${projectName || ''} / ${contractorName || ''}`;
+  // 알림 메일 제목은 상대방에게 실제로 보낸 메일 제목과 동일하게 사용
+  // (예: "[POUR] 특허 제10-0508729호_한솔_한솔테스트")
+  const notifySubject = subject || '[협약서 발송 알림]';
   const notifyBody = buildNotifyBody({ fromEmail: ownerEmail, to, projectName, contractorName, subject, text, filename });
   try {
     const info = await transporter.sendMail({
