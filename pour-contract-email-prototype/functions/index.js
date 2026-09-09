@@ -78,6 +78,9 @@ async function sendOwnerNotification(transporter, { to, projectName, contractorN
   // (예: "[POUR] 특허 제10-0508729호_한솔_한솔테스트")
   const notifySubject = subject || '[협약서 발송 알림]';
   const notifyBody = buildNotifyBody({ fromEmail: ownerEmail, to, projectName, contractorName, subject, text, filename });
+
+  console.log('[sendTestEmail] 알림 메일 발송 시도', JSON.stringify({ ownerEmail, notifySubject }));
+
   try {
     const info = await transporter.sendMail({
       from: `"넷폼" <${ownerEmail}>`,
@@ -86,10 +89,40 @@ async function sendOwnerNotification(transporter, { to, projectName, contractorN
       text: notifyBody,
       // attachments 없음 — 요청에 따라 알림 메일에는 어떤 파일도 첨부하지 않음
     });
-    console.log('[sendTestEmail] 알림 메일 발송 성공', JSON.stringify({ messageId: info.messageId, response: info.response }));
-    return { attempted: true, ok: true, messageId: info.messageId, response: info.response };
+
+    // [버그 수정] 기존에는 sendMail()이 예외 없이 끝나면 무조건 ok:true 로 처리했음 —
+    // 상대방 발송 쪽과 달리 accepted/rejected를 전혀 확인하지 않아, 하이웍스가 실제로는
+    // 이 자기 자신 앞 메일을 거부했더라도 "성공"으로 잘못 보고할 수 있었던 지점.
+    // 이제 상대방 발송 검증과 동일한 기준으로 accepted/rejected를 확인한다.
+    console.log('[sendTestEmail] 알림 메일 SMTP 응답', JSON.stringify({
+      ownerEmail,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      pending: info.pending,
+      envelope: info.envelope,
+      response: info.response,
+      messageId: info.messageId,
+    }));
+
+    const hasRejected = Array.isArray(info.rejected) && info.rejected.length > 0;
+    const wasAccepted = Array.isArray(info.accepted) && info.accepted.length > 0;
+
+    if (hasRejected || !wasAccepted) {
+      console.error('[sendTestEmail] 알림 메일 수신 거부/미수락', info.rejected, info.response);
+      return {
+        attempted: true, ok: false,
+        error: `발신 계정이 알림 메일을 수락하지 않았습니다 (rejected=${JSON.stringify(info.rejected)}, response=${info.response})`,
+        accepted: info.accepted, rejected: info.rejected, response: info.response,
+      };
+    }
+
+    return {
+      attempted: true, ok: true,
+      messageId: info.messageId, accepted: info.accepted, rejected: info.rejected,
+      envelope: info.envelope, response: info.response,
+    };
   } catch (notifyErr) {
-    console.error('[sendTestEmail] 알림 메일 발송 실패', notifyErr);
+    console.error('[sendTestEmail] 알림 메일 발송 실패(예외)', notifyErr);
     return { attempted: true, ok: false, error: notifyErr.message || String(notifyErr) };
   }
 }
