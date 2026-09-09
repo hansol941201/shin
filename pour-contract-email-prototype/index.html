@@ -5911,14 +5911,18 @@ function handleExcelUpload(ev){
     try{ data = await res.json(); }catch(parseErr){ parseFailed = true; }
 
     if(res.ok && data && data.ok){
+      // [진단용] SMTP 서버의 실제 접수/거부 목록과 원문 응답도 함께 저장 —
+      // "성공" 표시가 곧 수신함 도착을 뜻하지 않으므로, 문제 생기면 이 값으로 원인 추적
       appendMailHistoryEntry({ ...historyBase, status:'accepted', resultAt:new Date().toISOString(),
-        messageId: data.messageId || null });
+        messageId: data.messageId || null,
+        smtpAccepted: data.accepted || null, smtpRejected: data.rejected || null, smtpResponse: data.smtpResponse || null });
       return { ok:true };
     }
 
     if(data && data.ok === false){
-      // 서버가 명확히 실패를 응답함
-      appendMailHistoryEntry({ ...historyBase, status:'failed', resultAt:new Date().toISOString(), error: data.error || '알 수 없는 오류' });
+      // 서버가 명확히 실패를 응답함 (SMTP가 수신자를 거부한 경우 포함 — 서버가 502로 알려줌)
+      appendMailHistoryEntry({ ...historyBase, status:'failed', resultAt:new Date().toISOString(), error: data.error || '알 수 없는 오류',
+        smtpAccepted: data.accepted || null, smtpRejected: data.rejected || null, smtpResponse: data.smtpResponse || null });
       return { ok:false, error: data.error || '알 수 없는 오류' };
     }
     if(!res.ok){
@@ -6144,9 +6148,12 @@ function handleExcelUpload(ev){
     }
 
     mhTbody.innerHTML = list.map(h => {
+      // [진단용] SMTP 서버 원문 응답 — "성공" 표시와 별개로 실제 서버가 뭐라고 답했는지 확인용
+      const smtpLine = h.smtpResponse
+        ? `<br><span style="color:#888;font-size:10px;word-break:break-all;">SMTP: ${escH(h.smtpResponse)}</span>` : '';
       const resultLine = h.status === 'accepted'
-        ? `${mailHistoryStatusLabel(h.status)}${h.messageId ? `<br><span style="color:#888;font-size:10.5px;">ID: ${escH(h.messageId)}</span>` : ''}`
-        : `${mailHistoryStatusLabel(h.status)}<br><span style="color:#b91c1c;font-size:10.5px;word-break:break-all;">${escH(h.error||'')}</span>`;
+        ? `${mailHistoryStatusLabel(h.status)}${h.messageId ? `<br><span style="color:#888;font-size:10.5px;">ID: ${escH(h.messageId)}</span>` : ''}${smtpLine}`
+        : `${mailHistoryStatusLabel(h.status)}<br><span style="color:#b91c1c;font-size:10.5px;word-break:break-all;">${escH(h.error||'')}</span>${smtpLine}`;
       return `<tr style="border-bottom:1px solid #f2f2f2;">
         <td style="padding:8px;vertical-align:top;white-space:nowrap;">${escH(fmtDateTime(h.requestedAt))}</td>
         <td style="padding:8px;vertical-align:top;">${escH(h.projectName||'')}<br><span style="color:#666;">${escH(h.contractorName||'')}</span></td>

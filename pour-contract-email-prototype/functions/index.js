@@ -69,7 +69,42 @@ exports.sendTestEmail = (req, res) => {
           { filename: filename || 'test.pdf', content: buffer, contentType: 'application/pdf' },
         ],
       });
-      return res.status(200).json({ ok: true, messageId: info.messageId });
+
+      // [진단용] "SMTP가 접수함(250 OK)"과 "실제 수신함 도착"은 다르다.
+      // info.accepted/rejected/response는 SMTP 서버가 실제로 뭐라고 답했는지 보여주는
+      // 유일한 단서이므로 반드시 로그로 남기고, 응답에도 그대로 실어서 클라이언트가
+      // "성공"만 보고 넘어가지 않도록 한다. (비밀번호/인증정보는 여기 없음)
+      console.log('[sendTestEmail] SMTP 응답', JSON.stringify({
+        to,
+        accepted: info.accepted,
+        rejected: info.rejected,
+        pending: info.pending,
+        response: info.response,
+        messageId: info.messageId,
+      }));
+
+      const hasRejected = Array.isArray(info.rejected) && info.rejected.length > 0;
+      const wasAccepted = Array.isArray(info.accepted) && info.accepted.length > 0;
+
+      if (hasRejected || !wasAccepted) {
+        // SMTP 서버가 해당 수신자를 명확히 거부했거나, 수락 목록에 없음 — 성공으로 보고하지 않는다.
+        console.error('[sendTestEmail] 수신자 거부/미수락', info.rejected, info.response);
+        return res.status(502).json({
+          ok: false,
+          error: `SMTP 서버가 수신자를 수락하지 않았습니다 (rejected=${JSON.stringify(info.rejected)}, response=${info.response})`,
+          accepted: info.accepted,
+          rejected: info.rejected,
+          smtpResponse: info.response,
+        });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+        smtpResponse: info.response, // SMTP 서버 원문 응답 (예: "250 2.0.0 OK ...") — 실제 접수 근거
+      });
     } catch (err) {
       console.error('[sendTestEmail]', err);
       return res.status(500).json({ ok: false, error: err.message || String(err) });
