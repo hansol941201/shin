@@ -98,11 +98,17 @@ async function sendOwnerNotification(transporter, { to, projectName, contractorN
       ownerEmail,
       accepted: info.accepted,
       rejected: info.rejected,
+      rejectedErrors: info.rejectedErrors || null, // 일부 수신자만 거부됐을 때 nodemailer가 채워주는 상세 에러
       pending: info.pending,
       envelope: info.envelope,
       response: info.response,
       messageId: info.messageId,
     }));
+    // [NOTIFY-DEBUG] info 객체 전체를 원본 그대로 남김 — 위 요약에 없는 필드까지 전부 확인하기 위함
+    // (accepted/rejected가 정상으로 찍혀도 실제 미도착이면, 이건 SMTP 프로토콜 밖에서
+    //  하이웍스가 자체적으로 걸러낸 것이라 이 로그로도 원인을 못 볼 수 있음 — 그 경우
+    //  하이웍스 쪽 "배달 추적/로그" 확인이 유일한 방법일 가능성이 높음)
+    try{ console.log('[NOTIFY-DEBUG] info 전체', JSON.stringify(info)); }catch(_e){ console.log('[NOTIFY-DEBUG] info (stringify 실패)', info); }
 
     const hasRejected = Array.isArray(info.rejected) && info.rejected.length > 0;
     const wasAccepted = Array.isArray(info.accepted) && info.accepted.length > 0;
