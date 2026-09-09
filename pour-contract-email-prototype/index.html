@@ -5594,6 +5594,10 @@ function handleExcelUpload(ev){
     <div style="padding:6px 24px 14px;font-size:11.5px;color:var(--tm);text-align:center;">
       ℹ️ PDF는 파일로만 저장됩니다. 이메일 전송은 <b>메일 보내기</b>를 이용하세요.
     </div>
+    <div style="padding:0 24px 14px;font-size:11.5px;color:var(--tm);text-align:center;">
+      <span id="pv-mail-history-summary">이 업체의 발송 이력 없음</span>
+      · <a href="javascript:void(0)" onclick="openMailHistoryModal()" style="color:#7c3aed;font-weight:600;text-decoration:none;">📨 발송 이력 보기</a>
+    </div>
   </div>
 </div>
 
@@ -5694,6 +5698,39 @@ function handleExcelUpload(ev){
   </div>
 </div>
 
+<!-- [MAIL-HISTORY] 메일 발송 이력 — 업체/수신자별 전체 기록 (이 브라우저 localStorage 전용) -->
+<div id="mail-history-modal" style="display:none;position:fixed;inset:0;z-index:100001;
+  background:rgba(0,0,0,.5);align-items:center;justify-content:center;font-family:sans-serif;">
+  <div style="background:#fff;border-radius:12px;padding:20px;width:820px;max-width:95vw;
+    max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(0,0,0,.35);
+    font-size:13px;color:#1a1a1a;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <strong style="font-size:15px;">📨 메일 발송 이력 <span style="font-weight:400;color:#888;font-size:11.5px;">(이 브라우저에만 저장되는 테스트 기록)</span></strong>
+      <span id="mail-history-close" style="cursor:pointer;font-size:18px;color:#888;">✕</span>
+    </div>
+    <div style="display:flex;gap:8px;margin:12px 0;">
+      <input id="mail-history-search" type="text" placeholder="업체명 또는 수신 이메일로 검색"
+        style="flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;">
+      <button id="mail-history-clear" title="이 브라우저의 테스트 이력을 전부 삭제 (실제 발송 기록에는 영향 없음)"
+        style="padding:8px 12px;border:1px solid #ccc;border-radius:6px;background:#fff;color:#b91c1c;cursor:pointer;">이력 초기화</button>
+    </div>
+    <div style="overflow:auto;border:1px solid #eee;border-radius:8px;flex:1;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead style="position:sticky;top:0;background:#f9fafb;">
+          <tr>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">요청 시각</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">현장 / 업체</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">발신 → 수신</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">제목 / 첨부파일</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">결과</th>
+          </tr>
+        </thead>
+        <tbody id="mail-history-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- 메일 발송 결과 알림 — 발행 미리보기 창(z-index 9000)보다 위에, 자동으로 안 사라지고
      "확인"을 눌러야만 닫힘. 다른 showToast()들(발행 완료 토스트 등)은 그대로 두고,
      메일 발송 결과 알림에만 사용 -->
@@ -5731,6 +5768,45 @@ function handleExcelUpload(ev){
 
   // 실제 발송 성공을 이미 확인한 Cloud Run 메일 발송 서비스 (독립 테스트 버튼과 동일한 서버)
   const CONTRACT_EMAIL_API_URL = 'https://send-test-email-664628600328.asia-northeast3.run.app';
+
+  // 표시용 발신 주소 — Cloud Run 환경변수 HIWORKS_USER와 동일한 "주소"만 표시 (비밀번호/키 아님)
+  const SENDER_EMAIL_DISPLAY = 'netformb2b@netformrnd.com';
+
+  // ══ [MAIL-HISTORY] 메일 발송 이력 — 테스트 전용 localStorage 저장소 ══════════
+  //   - 회사 운영 DB(Firebase)는 전혀 쓰지 않음. 이 브라우저에만 저장됨.
+  //   - "메일 보내기"에서 실제 발송 시도가 있을 때만 기록 (PDF 발행·저장만으로는 기록 없음)
+  //   - 재전송해도 기존 기록을 덮어쓰지 않고 새 항목을 추가함
+  //   - 비밀번호/인증키는 절대 저장하지 않음 (이메일 주소/제목/파일명/시각/결과만 저장)
+  const MAIL_HISTORY_KEY = 'pour_test_mail_history_v1';
+  const MAIL_HISTORY_MAX = 500; // 테스트 저장소 용량 보호용 상한
+
+  function loadMailHistory(){
+    try{ return JSON.parse(localStorage.getItem(MAIL_HISTORY_KEY) || '[]'); }
+    catch(e){ console.error('[mail-history] 불러오기 실패', e); return []; }
+  }
+  function saveMailHistoryList(list){
+    try{ localStorage.setItem(MAIL_HISTORY_KEY, JSON.stringify(list)); }
+    catch(e){ console.error('[mail-history] 저장 실패', e); }
+  }
+  // 새 이력 1건 추가 (덮어쓰기 없음) — status: 'accepted' | 'failed' | 'unknown'
+  function appendMailHistoryEntry(entry){
+    const list = loadMailHistory();
+    list.push(entry);
+    saveMailHistoryList(list.length > MAIL_HISTORY_MAX ? list.slice(list.length - MAIL_HISTORY_MAX) : list);
+    return entry;
+  }
+  // 특정 업체의 가장 최근 이력 1건 (최신 발송 시각·수신 주소·결과 요약용)
+  function getLatestMailHistoryFor(contractorName){
+    const norm = normalizeCo(contractorName);
+    const list = loadMailHistory().filter(h => normalizeCo(h.contractorName) === norm);
+    if(!list.length) return null;
+    return list.reduce((a, b) => (a.requestedAt > b.requestedAt ? a : b));
+  }
+  function mailHistoryStatusLabel(status){
+    if(status === 'accepted') return '✅ 발송 접수 완료';
+    if(status === 'failed')   return '❌ 발송 실패';
+    return '⚠️ 결과 확인 필요';
+  }
 
   // ── 메일 문구 템플릿 — 여기만 고치면 제목/본문을 바꿀 수 있음 ──────────────
   // 제목: 첨부되는 PDF 파일명에서 ".pdf"만 제거한 값을 그대로 사용 (하드코딩 없음)
@@ -5796,26 +5872,65 @@ function handleExcelUpload(ev){
 
   // ── 실제 메일 발송 (이메일이 이미 확보된 상태에서만 호출). 절대 throw 안 함 ──
   async function sendPatentEmailTo(emails, p, c, pat, blob, filename){
+    // [MAIL-HISTORY] 요청 시점 정보를 먼저 확정 — 결과가 어떻게 나오든 이 정보로 이력 1건을 남김
+    const subject = getEffectiveSubject(p, c, pat, filename);
+    const historyBase = {
+      id: `mh_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+      requestedAt: new Date().toISOString(),
+      from: SENDER_EMAIL_DISPLAY,
+      to: emails.join(', '),
+      projectName: p.name,
+      contractorName: c.name,
+      subject,
+      filename
+    };
+
+    let res;
     try{
       const pdfBase64 = await blobToBase64(blob);
-      const res = await fetch(CONTRACT_EMAIL_API_URL, {
+      res = await fetch(CONTRACT_EMAIL_API_URL, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
           to: emails.join(','),
-          subject: getEffectiveSubject(p, c, pat, filename),
+          subject,
           text: getEffectiveBody(p, c, pat),
           filename,
           pdfBase64
         })
       });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      return { ok:true };
-    }catch(e){
-      console.error('[sendPatentEmailTo]', e);
-      return { ok:false, error: e.message||String(e) };
+    }catch(networkErr){
+      // 요청 자체가 서버에 도달했는지 알 수 없는 상태 — 실패로 단정하지 않고 "결과 확인 필요"로 기록
+      console.error('[sendPatentEmailTo] 네트워크 오류', networkErr);
+      appendMailHistoryEntry({ ...historyBase, status:'unknown', resultAt:new Date().toISOString(),
+        error: networkErr.message||String(networkErr) });
+      return { ok:false, error: networkErr.message||String(networkErr) };
     }
+
+    let data = null, parseFailed = false;
+    try{ data = await res.json(); }catch(parseErr){ parseFailed = true; }
+
+    if(res.ok && data && data.ok){
+      appendMailHistoryEntry({ ...historyBase, status:'accepted', resultAt:new Date().toISOString(),
+        messageId: data.messageId || null });
+      return { ok:true };
+    }
+
+    if(data && data.ok === false){
+      // 서버가 명확히 실패를 응답함
+      appendMailHistoryEntry({ ...historyBase, status:'failed', resultAt:new Date().toISOString(), error: data.error || '알 수 없는 오류' });
+      return { ok:false, error: data.error || '알 수 없는 오류' };
+    }
+    if(!res.ok){
+      // HTTP 오류 응답 — 서버가 명확히 실패로 응답한 상태
+      const errMsg = `HTTP ${res.status}`;
+      appendMailHistoryEntry({ ...historyBase, status:'failed', resultAt:new Date().toISOString(), error: errMsg });
+      return { ok:false, error: errMsg };
+    }
+    // HTTP 200이지만 응답 형식이 이상함(파싱 실패 등) — 실패 단정 대신 "결과 확인 필요"
+    const unknownMsg = parseFailed ? '서버 응답을 해석할 수 없습니다' : '서버 응답이 예상 형식이 아닙니다';
+    appendMailHistoryEntry({ ...historyBase, status:'unknown', resultAt:new Date().toISOString(), error: unknownMsg });
+    return { ok:false, error: unknownMsg };
   }
 
   // ── 이메일 등록 팝업 (Promise 기반) — 취소/제출 결과를 돌려줌 ──
@@ -5926,6 +6041,7 @@ function handleExcelUpload(ev){
       await renderPDFTemplate(p, c, pat);
       const { blob, filename } = await capturePDF(p, c, pat, true);
       const result = await sendPatentEmailInteractive(c, p, pat, blob, filename);
+      if(typeof refreshPvMailHistorySummary === 'function') refreshPvMailHistorySummary(); // [MAIL-HISTORY] 방금 남긴 이력 반영
       if(result && result.ok){
         btn.textContent = '메일 보내기 완료';
         setTimeout(() => { btn.disabled = false; btn.textContent = origText; }, 2000);
@@ -5999,6 +6115,86 @@ function handleExcelUpload(ev){
     mailEditCancel.addEventListener('click', onCancel);
     mailEditReset.addEventListener('click', onReset);
   };
+
+  // ══ [MAIL-HISTORY] 발송 이력 UI ═══════════════════════════════════════
+  const mhModal   = document.getElementById('mail-history-modal');
+  const mhClose   = document.getElementById('mail-history-close');
+  const mhSearch  = document.getElementById('mail-history-search');
+  const mhClear   = document.getElementById('mail-history-clear');
+  const mhTbody   = document.getElementById('mail-history-tbody');
+  const pvSummary = document.getElementById('pv-mail-history-summary');
+
+  function fmtDateTime(iso){
+    if(!iso) return '-';
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return iso;
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  function renderMailHistoryTable(){
+    const q = (mhSearch.value||'').trim().toLowerCase();
+    const list = loadMailHistory()
+      .filter(h => !q || (h.contractorName||'').toLowerCase().includes(q) || (h.to||'').toLowerCase().includes(q))
+      .sort((a,b) => (a.requestedAt < b.requestedAt ? 1 : -1)); // 최신순
+
+    if(!list.length){
+      mhTbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#888;">발송 이력이 없습니다</td></tr>`;
+      return;
+    }
+
+    mhTbody.innerHTML = list.map(h => {
+      const resultLine = h.status === 'accepted'
+        ? `${mailHistoryStatusLabel(h.status)}${h.messageId ? `<br><span style="color:#888;font-size:10.5px;">ID: ${escH(h.messageId)}</span>` : ''}`
+        : `${mailHistoryStatusLabel(h.status)}<br><span style="color:#b91c1c;font-size:10.5px;word-break:break-all;">${escH(h.error||'')}</span>`;
+      return `<tr style="border-bottom:1px solid #f2f2f2;">
+        <td style="padding:8px;vertical-align:top;white-space:nowrap;">${escH(fmtDateTime(h.requestedAt))}</td>
+        <td style="padding:8px;vertical-align:top;">${escH(h.projectName||'')}<br><span style="color:#666;">${escH(h.contractorName||'')}</span></td>
+        <td style="padding:8px;vertical-align:top;word-break:break-all;">${escH(h.from||'')}<br>→ ${escH(h.to||'')}</td>
+        <td style="padding:8px;vertical-align:top;word-break:break-all;">${escH(h.subject||'')}<br><span style="color:#666;font-size:11px;">${escH(h.filename||'')}</span></td>
+        <td style="padding:8px;vertical-align:top;">${resultLine}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.openMailHistoryModal = function(){
+    mhSearch.value = '';
+    renderMailHistoryTable();
+    mhModal.style.display = 'flex';
+  };
+  function closeMailHistoryModal(){ mhModal.style.display = 'none'; }
+  mhClose.addEventListener('click', closeMailHistoryModal);
+  mhModal.addEventListener('click', (e) => { if(e.target === mhModal) closeMailHistoryModal(); });
+  mhSearch.addEventListener('input', renderMailHistoryTable);
+  mhClear.addEventListener('click', () => {
+    if(!confirm('이 브라우저에 저장된 테스트 발송 이력을 전부 삭제할까요?\n(실제로 발송된 메일 자체에는 영향 없습니다)')) return;
+    saveMailHistoryList([]);
+    renderMailHistoryTable();
+  });
+
+  // 발행 미리보기 하단의 "이 업체 최근 발송" 요약 갱신 — 미리보기가 열릴 때 / 발송 직후 호출
+  function refreshPvMailHistorySummary(){
+    if(!pvSummary) return;
+    if(_preview.mode !== 'single' || _preview.jobs.length !== 1){
+      pvSummary.textContent = '이 업체의 발송 이력 없음';
+      return;
+    }
+    const { cId } = _preview.jobs[0];
+    const c = projects.flatMap(p => p.contractors).find(x => x.id === cId);
+    const latest = c ? getLatestMailHistoryFor(c.name) : null;
+    pvSummary.textContent = latest
+      ? `최근 발송: ${fmtDateTime(latest.requestedAt)} · ${latest.to} · ${mailHistoryStatusLabel(latest.status)}`
+      : '이 업체의 발송 이력 없음';
+  }
+  // 발행 미리보기 모달이 열릴 때(open 클래스 추가)마다 요약을 새로 계산
+  // — openPreview() 원본 코드는 전혀 수정하지 않고, 클래스 변화만 관찰함
+  const pvOverlayEl = document.getElementById('pv-overlay');
+  if(pvOverlayEl && window.MutationObserver){
+    new MutationObserver(() => {
+      if(pvOverlayEl.classList.contains('open')) refreshPvMailHistorySummary();
+    }).observe(pvOverlayEl, { attributes:true, attributeFilter:['class'] });
+  }
+  window.refreshPvMailHistorySummary = refreshPvMailHistorySummary;
 })();
 </script>
 
