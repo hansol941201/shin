@@ -4624,7 +4624,7 @@ function openPreview(opts){
   if(_preview.mode==='single'){
     badge.textContent='단일 발행';
     title.textContent='📄 발행 미리보기';
-    btn.textContent='📥 PDF 발행 확정';
+    btn.textContent='📥 PDF 발행·저장';
   } else if(_preview.mode==='batch-contractor'){
     badge.textContent=`업체 일괄 (${_preview.jobs.length}건)`;
     title.textContent='📄 업체 대기 일괄 발행';
@@ -4791,7 +4791,6 @@ async function confirmPreview(){
             await FSA.savePDF(blob, filename, issueFolderName(p));  // v23: "06.19마감 현장명" 폴더
             fsaDoneList.push({c, patId});
             okCount++;
-            await maybeSendPatentEmail(c, p, pat, blob, filename); // [CONTRACT-EMAIL-ADDON] PDF 저장 성공 직후 메일 발송
           }catch(fsaErr){
             console.error('[FSA save]', fsaErr);
             // 개별 파일 실패 시 - 폴백으로 직접 다운로드
@@ -4816,26 +4815,14 @@ async function confirmPreview(){
           zip.file(fname, blob);
           bundleDoneList.push({c, patId});
           okCount++;
-          await maybeSendPatentEmail(c, p, pat, blob, filename); // [CONTRACT-EMAIL-ADDON] ZIP에 담긴 것과 동일한 PDF를 메일로도 발송
-
         } else {
           // 단일 모드: 기존대로 바로 다운로드
-          // [CONTRACT-EMAIL-ADDON] 메일 첨부를 위해 blob이 필요해 capturePDF(..., true)로 받고,
-          //   capturePDF 내부 pdf.save()와 동일한 방식(anchor 클릭)으로 직접 다운로드 트리거.
-          //   PDF 생성 로직(capturePDF 내부) 자체는 전혀 수정하지 않음 — 호출 인자만 기존에
-          //   FSA/ZIP 분기가 이미 쓰던 returnBlob=true로 통일한 것뿐.
-          const { blob, filename } = await capturePDF(p, c, pat, true);
-          const _dlUrl = URL.createObjectURL(blob);
-          const _dlA = document.createElement('a');
-          _dlA.href = _dlUrl; _dlA.download = filename;
-          document.body.appendChild(_dlA); _dlA.click();
-          setTimeout(()=>{ document.body.removeChild(_dlA); URL.revokeObjectURL(_dlUrl); }, 800);
+          await capturePDF(p, c, pat);
           c.status[patId]='done';
           c.issuedAt = c.issuedAt||{};
           c.issuedAt[patId] = new Date().toISOString();
           okCount++;
           saveProjects();
-          await maybeSendPatentEmail(c, p, pat, blob, filename); // [CONTRACT-EMAIL-ADDON] PDF 발행 성공 직후 메일 발송
         }
         btn.innerHTML = `⏳ 발행 중... (${okCount}/${jobs.length})`;
       }catch(e){
@@ -5601,8 +5588,11 @@ function handleExcelUpload(ev){
     </div>
     <div class="pv-ft">
       <button class="pv-cancel" onclick="closePreview()">✕ 취소</button>
-      <button class="pv-mail" id="pv-mail-btn" title="현재 미리보기 중인 협약서를 이메일로 발송" onclick="handlePreviewMailSend()">📧 메일 발송</button>
-      <button class="pv-download" id="pv-download-btn" onclick="confirmPreview()">📥 PDF 발행 확정</button>
+      <button class="pv-mail" id="pv-mail-btn" title="수신 이메일과 첨부 PDF를 확인한 뒤 이 버튼을 눌러야 메일이 전송됩니다" onclick="handlePreviewMailSend()">📧 메일 보내기</button>
+      <button class="pv-download" id="pv-download-btn" onclick="confirmPreview()">📥 PDF 발행·저장</button>
+    </div>
+    <div style="padding:6px 24px 14px;font-size:11.5px;color:var(--tm);text-align:center;">
+      ℹ️ PDF는 파일로만 저장됩니다. 이메일 전송은 <b>메일 보내기</b>를 이용하세요.
     </div>
   </div>
 </div>
@@ -5629,25 +5619,25 @@ function handleExcelUpload(ev){
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════
-     [CONTRACT-EMAIL-ADDON] 이메일 발송 — 자동(발행 확정 직후) + 수동(미리보기 "메일 발송" 버튼).
+     [CONTRACT-EMAIL-ADDON] 이메일 발송 — 오직 "📧 메일 보내기" 버튼을 직접 눌렀을 때만 동작.
      이 위의 코드는 원본 파일에서 단 한 글자도 바꾸지 않았습니다. 딱 하나 예외:
      발행 미리보기 하단의 기존 "📧 메일 발송 (준비중)" disabled 버튼을 이 기능의
-     목적에 맞게 활성화(disabled 제거, 문구 변경, onclick 연결)했습니다.
+     목적에 맞게 활성화(disabled 제거, 문구 "메일 보내기"로 변경, onclick 연결)했습니다.
      그 버튼이 원래 하던 다른 동작은 없었으므로(클릭 불가 상태였음) 기존 동작 손실 없음.
 
+     [PDF 저장 ↔ 이메일 발송 완전 분리]
+       - confirmPreview()("PDF 발행·저장" 버튼)는 이 블록의 어떤 함수도 호출하지 않음
+         → PDF 생성/미리보기/다운로드만으로는 절대 메일이 나가지 않음
+       - "📧 메일 보내기" 버튼(handlePreviewMailSend)만 이 블록의 발송 로직을 호출하며,
+         confirmPreview()의 발행 상태(c.status)는 절대 건드리지 않음 — 두 기능은 서로 독립
+
      이 블록이 하는 일:
-       - confirmPreview()의 각 성공 분기(FSA/ZIP/단일)에서, PDF 발행이 실제로
-         "성공"한 바로 그 지점에서만 아래 maybeSendPatentEmail(...)을 호출하도록
-         confirmPreview() 안에 최소 3곳만 추가로 연결함 (그 외 로직 무변경)
-       - 발행 미리보기의 "메일 발송" 버튼(handlePreviewMailSend)은 confirmPreview()와
-         완전히 독립적으로 동작 — 현재 미리보기 중인 PDF만 만들어 보낼 뿐,
-         발행 상태(c.status)는 절대 건드리지 않음
        - 수신 이메일은 "업체 관리"(getMasterContractors/saveMasterContractors/
          upsertMasterContractor — 전부 기존 함수 재사용)에 등록된 값을 사용
        - 업체가 없거나 이메일이 없으면 팝업으로 입력받아 upsertMasterContractor로
-         "업체 관리"에 그대로 저장 (별도 저장소 생성 없음) 후 바로 발송
+         "업체 관리"에 그대로 저장 (별도 저장소 생성 없음) 후 "메일 보내기" 버튼으로 발송
        - PDF는 새로 만들지 않고, renderPDFTemplate()/capturePDF() 등 기존 함수만 재사용
-       - 이메일 발송이 실패해도 PDF 발행 결과(상태/저장)는 그대로 유지됨 (여기서 절대 throw 안 함)
+       - 이메일 발송이 실패해도 이미 저장된 PDF/발행 상태에는 영향 없음 (여기서 절대 throw 안 함)
      ════════════════════════════════════════════════════════════════ -->
 <style>
   /* 기존 .pv-mail 클래스 규칙(disabled 느낌의 회색/not-allowed)은 그대로 두고,
@@ -5874,44 +5864,8 @@ function handleExcelUpload(ev){
     });
   }
 
-  // ── PDF 발행이 "성공"한 직후에만 호출됨. 절대 throw하지 않음 (PDF 결과에 영향 금지) ──
-  window.maybeSendPatentEmail = async function(c, p, pat, blob, filename){
-    const entry  = findMasterEntry(c);
-    let emails   = entry ? extractValidEmails(entry.email) : [];
-
-    if(emails.length === 0){
-      // CASE 2(업체는 있는데 이메일 없음) / CASE 3(업체 자체가 없음) 공통 처리
-      const choice = await askContractorEmail(c.name, !entry);
-      if(choice.action === 'cancel'){
-        showMailResultModal('PDF 발행은 완료되었습니다. 이메일이 등록되지 않아 메일은 발송되지 않았습니다.', true);
-        return { ok:false, skipped:true };
-      }
-      // 기존 "업체 관리" 저장 함수를 그대로 재사용 — 있으면 이메일만 갱신, 없으면 신규 등록
-      // (upsertMasterContractor 내부가 getMasterContractors/saveMasterContractors를 그대로 사용)
-      upsertMasterContractor(c.name, choice.email);
-      emails = [choice.email];
-
-      const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
-      if(sendResult.ok){
-        showMailResultModal(`이메일 주소를 업체 관리에 등록하고 협약서 발송까지 완료했습니다. 수신: ${emails.join(', ')}`);
-      } else {
-        showMailResultModal(`이메일 주소는 업체 관리에 저장되었습니다. 다만 메일 발송에 실패했습니다: ${sendResult.error}`, true);
-      }
-      return sendResult;
-    }
-
-    // CASE 1: 업체 관리에 이미 등록된 이메일로 바로 발송
-    const sendResult = await sendPatentEmailTo(emails, p, c, pat, blob, filename);
-    if(sendResult.ok){
-      showMailResultModal(`PDF 발행 및 이메일 발송이 완료되었습니다. 수신: ${emails.join(', ')}`);
-    } else {
-      showMailResultModal(`PDF 발행은 완료되었습니다. 이메일 발송에 실패했습니다: ${sendResult.error}`, true);
-    }
-    return sendResult;
-  };
-
-  // ── 발행 미리보기의 "메일 발송" 버튼 전용 발송 로직. maybeSendPatentEmail과
-  //   이메일 조회/팝업/발송 헬퍼는 그대로 공유하되, 문구만 "PDF 발행" 언급 없이 독립적으로 안내 ──
+  // ── "📧 메일 보내기" 버튼 전용 발송 로직. PDF 발행·저장(confirmPreview)과는 완전히 별개이며,
+  //   이 함수는 오직 사용자가 "메일 보내기"를 직접 눌렀을 때만 호출됨 ──
   window.sendPatentEmailInteractive = async function(c, p, pat, blob, filename){
     const entry  = findMasterEntry(c);
     let emails   = entry ? extractValidEmails(entry.email) : [];
@@ -5943,14 +5897,15 @@ function handleExcelUpload(ev){
     return sendResult;
   };
 
-  // ── "📧 메일 발송" 버튼 click handler. confirmPreview()와 완전히 독립적으로 동작:
-  //   발행 상태(c.status)는 절대 건드리지 않고, 현재 미리보기 중인 PDF만 만들어 보냄 ──
+  // ── "📧 메일 보내기" 버튼 click handler. confirmPreview()(PDF 발행·저장)와 완전히 독립적으로 동작:
+  //   발행 상태(c.status)는 절대 건드리지 않고, 현재 미리보기 중인 PDF만 만들어서 "이 버튼을
+  //   눌렀을 때만" 전송함 — PDF 생성/미리보기/다운로드만으로는 절대 메일이 나가지 않음 ──
   window.handlePreviewMailSend = async function(){
     const btn = document.getElementById('pv-mail-btn');
     if(!btn || btn.disabled) return; // 중복 클릭 방지
 
     if(_preview.mode !== 'single' || _preview.jobs.length !== 1){
-      showToast('메일 발송은 단일 발행 미리보기에서만 가능합니다', true);
+      showToast('메일 보내기는 단일 발행 미리보기에서만 가능합니다', true);
       return;
     }
     const { pId, cId, patId } = _preview.jobs[0];
@@ -5962,9 +5917,9 @@ function handleExcelUpload(ev){
       return;
     }
 
-    const origText = '📧 메일 발송';
+    const origText = '📧 메일 보내기';
     btn.disabled = true;
-    btn.textContent = '메일 발송 중...';
+    btn.textContent = '메일 보내는 중...';
     try{
       // 현재 미리보기 화면에 이미 렌더된 것과 동일한 협약서를 그대로 캡처
       // (renderPDFTemplate/capturePDF 는 기존 함수 그대로 — 새 PDF 생성 로직 없음)
@@ -5972,7 +5927,7 @@ function handleExcelUpload(ev){
       const { blob, filename } = await capturePDF(p, c, pat, true);
       const result = await sendPatentEmailInteractive(c, p, pat, blob, filename);
       if(result && result.ok){
-        btn.textContent = '메일 발송 완료';
+        btn.textContent = '메일 보내기 완료';
         setTimeout(() => { btn.disabled = false; btn.textContent = origText; }, 2000);
       } else {
         btn.disabled = false;
