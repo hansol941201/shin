@@ -153,6 +153,7 @@ body{
   font-size:12.5px;font-weight:600;letter-spacing:.05em;
 }
 .badge .dot{width:5px;height:5px;border-radius:50%;background:var(--sky-200);flex-shrink:0;}
+.badge-count.is-urgent{background:var(--alert-500);}
 .badge-count{
   display:flex;align-items:center;
   padding:9px 15px;
@@ -609,7 +610,82 @@ body{
       </div>
     </section>
 
-    <!-- ============ 시안 2 · 플랫폼 종료 후 앱 전환 완료 ============ -->
+
+    <!-- ============ 시안 2 · 종료 임박 ============ -->
+    <section class="popup" id="popup3" role="dialog" aria-modal="true" aria-labelledby="t3">
+
+      <button class="icon-btn" type="button" id="close3" aria-label="팝업 닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+
+      <div class="pop-scroll">
+        <div class="pop-head">
+          <div class="logo-slot" title="POUR 로고 삽입 위치">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3.5" y="3.5" width="17" height="17" rx="4"/>
+              <path d="M12 7.5c1.9 2.2 3 3.8 3 5.2a3 3 0 0 1-6 0c0-1.4 1.1-3 3-5.2Z"/>
+            </svg>
+            <span class="logo-word">POUR</span>
+            <span class="logo-sub">기술지원</span>
+          </div>
+
+          <div class="badge">
+            <span class="badge-main"><span class="dot"></span>기존 플랫폼 종료 임박</span>
+            <span class="badge-count is-urgent">D-3</span>
+          </div>
+
+          <h1 class="pop-title is-hero" id="t3">
+            10월 19일 이후에는<br>앱에서만 접수됩니다
+          </h1>
+
+          <p class="pop-desc">
+            지금 설치해 두시면 종료 후에도 기다림 없이 바로 이어서 이용하실 수 있습니다.
+          </p>
+        </div>
+
+        <div class="pop-body">
+
+          <div class="calm-notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="m8.4 12.2 2.6 2.6 4.6-5"/>
+            </svg>
+            <p>
+              <strong>기존 아이디로 로그인하시면 됩니다.</strong>
+              기존 현장과 진행내용이 그대로 보이며, 회원가입이나 현장 재등록은 필요하지 않습니다.
+            </p>
+          </div>
+
+          <div class="install">
+            <span class="qr-slot" title="앱 설치 QR코드 삽입 위치">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="5" width="13" height="13" rx="2"/><rect x="30" y="5" width="13" height="13" rx="2"/><rect x="5" y="30" width="13" height="13" rx="2"/>
+                <path d="M24 5v7M24 17v3M30 24h6M41 24h2M24 25v6M24 36v3M30 31h4M35 39h5M24 43h5"/>
+              </svg>
+              <em>QR</em>
+            </span>
+            <p>
+              <strong>휴대전화로 QR을 촬영해 설치해 주세요.</strong>
+              설치와 첫 로그인은 기존 담당자가 안내해 드립니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary btn-block" type="button">
+          지금 앱 설치하기
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="m12.5 5.5 6.5 6.5-6.5 6.5"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-block" type="button" id="later3">종료일까지 기존 플랫폼 이용하기</button>
+        <p class="support">
+          <button class="link" type="button">자주 묻는 질문</button>
+          <span class="sep">|</span>
+          <button class="link" type="button">담당자 문의</button>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 시안 3 · 플랫폼 종료 후 앱 전환 완료 ============ -->
     <section class="popup" id="popup2" role="dialog" aria-modal="true" aria-labelledby="t2">
 
       <div class="pop-scroll">
@@ -715,49 +791,50 @@ body{
 
 <div class="toolbar" role="group" aria-label="시안 전환">
   <span class="tb-label">시안 미리보기</span>
-  <button class="tool-btn" type="button" id="btn1" aria-pressed="true">사전 안내 시안 보기</button>
-  <button class="tool-btn" type="button" id="btn2" aria-pressed="false">종료 후 시안 보기</button>
+  <button class="tool-btn" type="button" id="btn1" aria-pressed="true">① 사전 안내</button>
+  <button class="tool-btn" type="button" id="btn3" aria-pressed="false">② 종료 임박</button>
+  <button class="tool-btn" type="button" id="btn2" aria-pressed="false">③ 종료 후</button>
 </div>
 
 <script>
 (function () {
   var layer = document.getElementById('layer');
-  var pop1 = document.getElementById('popup1');
-  var pop2 = document.getElementById('popup2');
-  var btn1 = document.getElementById('btn1');
-  var btn2 = document.getElementById('btn2');
+  var pops = { 1: 'popup1', 2: 'popup2', 3: 'popup3' };
+  var btns = { 1: 'btn1', 2: 'btn2', 3: 'btn3' };
+  var closable = { 1: true, 2: false, 3: true };
   var current = 1;
 
   function show(n) {
     current = n;
-    pop1.classList.toggle('is-open', n === 1);
-    pop2.classList.toggle('is-open', n === 2);
+    for (var k in pops) {
+      document.getElementById(pops[k]).classList.toggle('is-open', String(k) === String(n));
+      document.getElementById(btns[k]).setAttribute('aria-pressed', String(String(k) === String(n)));
+    }
     layer.classList.remove('is-empty');
-    btn1.setAttribute('aria-pressed', String(n === 1));
-    btn2.setAttribute('aria-pressed', String(n === 2));
     layer.scrollTop = 0;
   }
 
-  // 시안 1만 닫기 동작 — 시안 2는 앱으로 이동해야 진행되는 형태
-  function closeFirst() {
-    if (current !== 1) return;
-    pop1.classList.remove('is-open');
+  // 종료 후 시안은 앱으로 이동해야 진행되는 형태 — 닫히지 않음
+  function closeCurrent() {
+    if (!closable[current]) return;
+    document.getElementById(pops[current]).classList.remove('is-open');
+    document.getElementById(btns[current]).setAttribute('aria-pressed', 'false');
     layer.classList.add('is-empty');
-    btn1.setAttribute('aria-pressed', 'false');
   }
 
-  btn1.addEventListener('click', function () { show(1); });
-  btn2.addEventListener('click', function () { show(2); });
-  document.getElementById('close1').addEventListener('click', closeFirst);
-  document.getElementById('ok1').addEventListener('click', closeFirst);
+  for (var k in btns) {
+    (function (n) {
+      document.getElementById(btns[n]).addEventListener('click', function () { show(n); });
+    })(k);
+  }
 
-  layer.addEventListener('click', function (e) {
-    if (e.target === layer) closeFirst();
+  ['close1', 'ok1', 'close3', 'later3'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', closeCurrent);
   });
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeFirst();
-  });
+  layer.addEventListener('click', function (e) { if (e.target === layer) closeCurrent(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCurrent(); });
 })();
 </script>
 </body>
