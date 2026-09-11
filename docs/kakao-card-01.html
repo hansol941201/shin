@@ -9,62 +9,45 @@ body{width:1080px;height:1080px;overflow:hidden;
   font-family:"IBM Plex Sans KR","Pretendard","Apple SD Gothic Neo",sans-serif;
   word-break:keep-all;-webkit-font-smoothing:antialiased;}
 
-.card{position:relative;width:1080px;height:1080px;background:#0B2340;overflow:hidden;
-  display:flex;flex-direction:column;}
+.card{width:1080px;height:1080px;background:#0B2340;
+  display:flex;flex-direction:column;padding:78px;}
 
-/* 배경 장식 — 브랜드 마크를 크게 흘려 넣음 */
-.mark{position:absolute;right:-130px;bottom:-150px;width:720px;height:720px;
-  color:rgba(255,255,255,.045);}
-.glow{position:absolute;left:-180px;top:-200px;width:760px;height:760px;border-radius:50%;
-  background:radial-gradient(circle,rgba(46,134,200,.30),rgba(46,134,200,0) 68%);}
-
-/* 상단 바 */
-.top{position:relative;display:flex;align-items:center;justify-content:space-between;
-  padding:56px 72px 0;}
-.brand{display:flex;align-items:center;gap:16px;color:#fff;}
-.brand svg{width:44px;height:44px;}
-.brand .wm{font-size:34px;font-weight:700;letter-spacing:.14em;line-height:1;}
-.brand .sub{font-size:20px;color:rgba(255,255,255,.62);line-height:1;
-  padding-left:16px;border-left:1px solid rgba(255,255,255,.24);}
-.page{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;
-  color:rgba(255,255,255,.45);letter-spacing:.08em;}
+/* 상단 */
+.top{display:flex;align-items:center;justify-content:space-between;}
+.brand{display:flex;align-items:center;gap:15px;color:#fff;}
+.brand svg{width:40px;height:40px;}
+.brand .wm{font-size:31px;font-weight:700;letter-spacing:.15em;line-height:1;}
+.brand .sub{font-size:19px;color:rgba(255,255,255,.55);line-height:1;
+  padding-left:15px;border-left:1px solid rgba(255,255,255,.2);}
+.page{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:500;
+  color:rgba(255,255,255,.38);letter-spacing:.1em;}
 
 /* 본문 */
-.body{position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:0 72px;}
-.badge{display:inline-flex;align-items:center;gap:12px;width:fit-content;
-  padding:13px 22px;border-radius:6px;background:#2E86C8;color:#fff;
-  font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:600;letter-spacing:.06em;}
-.badge i{width:8px;height:8px;border-radius:50%;background:#fff;display:block;}
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;}
 
-h1{margin-top:38px;font-size:108px;font-weight:700;line-height:1.16;letter-spacing:-.045em;
-  color:#fff;}
+.label{display:flex;align-items:center;gap:18px;
+  font-family:"IBM Plex Mono",monospace;font-size:23px;font-weight:600;
+  letter-spacing:.1em;color:#7FC0EE;}
+.label::before{content:"";width:40px;height:2px;background:#7FC0EE;display:block;}
+
+h1{margin-top:44px;font-size:116px;font-weight:700;line-height:1.14;
+  letter-spacing:-.05em;color:#fff;}
 h1 em{font-style:normal;color:#7FC0EE;}
-.lead{margin-top:34px;font-size:36px;font-weight:500;line-height:1.5;letter-spacing:-.02em;
-  color:rgba(255,255,255,.80);}
 
-.keeps{margin-top:52px;display:flex;flex-direction:column;gap:20px;}
-.keep{display:flex;align-items:center;gap:18px;font-size:32px;font-weight:600;
-  letter-spacing:-.02em;color:#fff;}
-.keep svg{width:32px;height:32px;color:#7FC0EE;flex-shrink:0;}
+.lede{margin-top:52px;font-size:35px;font-weight:500;line-height:1.55;
+  letter-spacing:-.025em;color:rgba(255,255,255,.72);}
+.lede b{font-weight:600;color:#fff;}
 
-/* 하단 바 */
-.foot{position:relative;background:rgba(255,255,255,.07);
-  border-top:1px solid rgba(255,255,255,.14);
-  padding:40px 72px;display:flex;align-items:center;justify-content:space-between;gap:24px;}
-.foot .date{display:flex;align-items:baseline;gap:16px;}
-.foot .d{font-size:42px;font-weight:700;color:#fff;letter-spacing:-.03em;}
-.foot .t{font-size:28px;font-weight:500;color:rgba(255,255,255,.78);letter-spacing:-.02em;}
-.foot .corp{font-size:22px;color:rgba(255,255,255,.5);white-space:nowrap;}
+/* 하단 */
+.foot{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+  padding-top:34px;border-top:1px solid rgba(255,255,255,.16);}
+.foot .d{font-size:38px;font-weight:700;color:#fff;letter-spacing:-.035em;line-height:1.2;}
+.foot .d span{font-weight:500;color:rgba(255,255,255,.72);}
+.foot .corp{font-size:21px;color:rgba(255,255,255,.42);white-space:nowrap;line-height:2.2;}
 </style>
 </head>
 <body>
 <div class="card">
-  <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <rect x="3.5" y="3.5" width="17" height="17" rx="4"/>
-    <path d="M12 7.5c1.9 2.2 3 3.8 3 5.2a3 3 0 0 1-6 0c0-1.4 1.1-3 3-5.2Z"/>
-  </svg>
-  <div class="glow"></div>
 
   <div class="top">
     <div class="brand">
@@ -79,38 +62,21 @@ h1 em{font-style:normal;color:#7FC0EE;}
   </div>
 
   <div class="body">
-    <span class="badge"><i></i>앱 전환 안내</span>
+    <span class="label">앱 전환 안내</span>
 
     <h1>기존 그대로,<br><em>더 편리하게</em></h1>
 
-    <p class="lead">
-      필요한 자료를 하나씩 찾거나 담당자에게<br>
-      따로 요청하던 불편을 개선했습니다.
+    <p class="lede">
+      <b>현장 · 아이디 · 담당자는 그대로 유지</b>되고,<br>
+      자료를 확인하고 요청하는 방식만 달라집니다.
     </p>
-
-    <div class="keeps">
-      <div class="keep">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
-        기존 현장 그대로 이전
-      </div>
-      <div class="keep">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
-        기존 아이디 그대로 사용
-      </div>
-      <div class="keep">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
-        기존 담당자 계속 지원
-      </div>
-    </div>
   </div>
 
   <div class="foot">
-    <div class="date">
-      <span class="d">10월 5일</span>
-      <span class="t">부터 앱에서 접수 시작</span>
-    </div>
+    <div class="d">10월 5일<span>부터 앱에서 접수 시작</span></div>
     <span class="corp">넷폼알앤디</span>
   </div>
+
 </div>
 </body>
 </html>
