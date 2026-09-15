@@ -203,7 +203,7 @@ body{
 /* ---------- 핵심 공지 ---------- */
 
 .key-notice{
-  margin-top:14px;padding:16px 18px;
+  margin-top:18px;padding:16px 18px;
   background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:10px;
   display:flex;gap:12px;
 }
@@ -226,6 +226,7 @@ body{
 /* ---------- 기존 그대로 유지 ---------- */
 
 .keep-grid.is-single{grid-template-columns:1fr;margin-top:18px;}
+.timeline + .keep-grid.is-single{margin-top:16px;}
 .keep-grid{
   display:grid;grid-template-columns:1fr 1fr;gap:1px;
   background:var(--line-soft);
@@ -517,16 +518,6 @@ body{
 
         <div class="pop-body">
 
-          <div class="keep-grid is-single">
-            <div class="keep-pair">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
-              <div>
-                <b>그대로 유지됩니다</b>
-                <span>이전 진행현장 · 아이디 · 담당자 · 진행내용</span>
-              </div>
-            </div>
-          </div>
-
           <div class="key-notice">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="9"/><path d="M12 7.6v5.2"/><path d="M12 16.3h.01"/>
@@ -539,6 +530,16 @@ body{
           <div class="timeline">
             <div class="tl"><em>앱 접수 시작 · 병행</em><strong>10.5 ~ 10.16</strong></div>
             <div class="tl"><em>기존 플랫폼 종료</em><strong>10.19 (월)</strong></div>
+          </div>
+
+          <div class="keep-grid is-single">
+            <div class="keep-pair">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.4 4.8 4.8L19.5 7"/></svg>
+              <div>
+                <b>그대로 유지됩니다</b>
+                <span>이전 진행현장 · 아이디 · 담당자 · 진행내용</span>
+              </div>
+            </div>
           </div>
 
           <p class="end-note">
