@@ -239,13 +239,18 @@ body{
 .keep-item svg{width:16px;height:16px;color:var(--sky-500);flex-shrink:0;}
 
 .keep-pair{
-  display:flex;align-items:center;gap:13px;
+  display:flex;align-items:flex-start;gap:13px;
   background:var(--sky-050);padding:14px 16px;
 }
-.keep-pair svg{width:18px;height:18px;color:var(--sky-500);flex-shrink:0;}
+.keep-pair svg{width:18px;height:18px;color:var(--sky-500);flex-shrink:0;margin-top:2px;}
 .keep-pair > div{display:flex;align-items:baseline;gap:14px;flex:1;min-width:0;flex-wrap:wrap;}
 .keep-pair b{font-size:13.5px;font-weight:700;color:var(--navy-900);line-height:1.45;white-space:nowrap;}
 .keep-pair span{font-size:12.5px;color:var(--ink-body);line-height:1.5;}
+.keep-pair em{
+  flex-basis:100%;margin-top:7px;padding-top:7px;
+  border-top:1px dashed var(--sky-200);
+  font-style:normal;font-size:12.5px;font-weight:500;color:var(--navy-500);
+}
 
 /* ---------- 앱에서 편리해지는 기능 ---------- */
 
@@ -313,7 +318,7 @@ body{
 .install p{margin:0;font-size:13px;color:var(--ink-sub);line-height:1.65;}
 .install strong{display:block;margin-bottom:3px;color:var(--navy-900);font-weight:700;font-size:14px;}
 
-/* ③ 종료 후 — 항목이 많아 여백을 한 단계 좁힘 */
+/* ②·③ — 항목이 많은 시안은 여백을 한 단계 좁힘 */
 .is-dense .pop-head{padding-top:24px;}
 .is-dense .badge{margin-top:14px;}
 .is-dense .pop-desc.is-headline{margin-top:12px;font-size:22px;line-height:1.4;}
@@ -625,7 +630,7 @@ body{
 
 
     <!-- ============ 시안 2 · 종료 임박 ============ -->
-    <section class="popup" id="popup3" role="dialog" aria-modal="true" aria-labelledby="t3">
+    <section class="popup is-dense" id="popup3" role="dialog" aria-modal="true" aria-labelledby="t3">
 
       <button class="icon-btn" type="button" id="close3" aria-label="팝업 닫기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -661,6 +666,7 @@ body{
               <div>
                 <b>그대로 유지됩니다</b>
                 <span>이전 진행현장 · 아이디 · 담당자 · 진행내용</span>
+                <em>아이디·비밀번호는 담당자가 확인해 드립니다</em>
               </div>
             </div>
           </div>
