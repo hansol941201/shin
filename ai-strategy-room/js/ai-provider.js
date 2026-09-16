@@ -118,6 +118,9 @@ const AiProvider = {
    * meeting-engine.js는 이 함수 하나만 알면 된다.
    * opts.webSearch = true면(외부 벤치마킹 라운드) 로컬 서버가 claude CLI에
    * 웹검색 도구를 허용해서 실행한다.
+   * opts.attachments = [{mimeType, base64}, ...] 를 넘기면 이미지·PDF 원본을
+   * claude -p에 실제로 첨부해서(Claude의 멀티모달 분석 능력으로) 분석하게
+   * 한다(로컬 서버가 임시 파일로 저장한 뒤 파일 경로를 인자로 넘긴다).
    */
   async complete(systemPrompt, userPrompt, opts) {
     if (!this._localServerAvailable) {
@@ -135,7 +138,8 @@ const AiProvider = {
         body: JSON.stringify({
           system: systemPrompt,
           prompt: userPrompt,
-          webSearch: !!opts.webSearch
+          webSearch: !!opts.webSearch,
+          attachments: Array.isArray(opts.attachments) ? opts.attachments : []
         })
       });
     } catch (networkErr) {

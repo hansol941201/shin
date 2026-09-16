@@ -242,7 +242,8 @@ function Invoke-ClaudeComplete {
     param(
         [string]$SystemText,
         [string]$UserText,
-        [bool]$AllowWebSearch
+        [bool]$AllowWebSearch,
+        [array]$Attachments
     )
 
     $callId = [guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -251,6 +252,7 @@ function Invoke-ClaudeComplete {
     $proc = $null
     $outSub = $null
     $errSub = $null
+    $attachmentFiles = @()
 
     try {
         if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
@@ -258,6 +260,25 @@ function Invoke-ClaudeComplete {
 
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($sysFile, $SystemText, $utf8NoBom)
+
+        # 이미지·PDF 첨부(있다면) — base64를 임시 파일로 저장해 claude -p의
+        # 마지막 인자들로 넘긴다. Claude Code CLI는 이렇게 넘긴 파일을 직접 읽어
+        # 멀티모달로 분석한다(이 파일들은 finally에서 항상 삭제한다).
+        if ($Attachments) {
+            foreach ($att in $Attachments) {
+                try {
+                    $ext = [string]$att.extension
+                    if ([string]::IsNullOrWhiteSpace($ext)) { $ext = 'bin' }
+                    $attFile = Join-Path $tempDir ("att-" + [guid]::NewGuid().ToString('N') + "." + $ext)
+                    $bytes = [System.Convert]::FromBase64String([string]$att.base64)
+                    [System.IO.File]::WriteAllBytes($attFile, $bytes)
+                    $attachmentFiles += $attFile
+                    Write-Log "[$callId] 첨부 파일 저장: $($att.fileName) -> $attFile ($($bytes.Length) bytes)"
+                } catch {
+                    Write-Log "[$callId] 첨부 파일 디코딩 실패($($att.fileName)) — 이 파일은 건너뜁니다: $_"
+                }
+            }
+        }
 
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = $claudeCmd.Source
@@ -271,6 +292,11 @@ function Invoke-ClaudeComplete {
             $argParts += @('--allowedTools', 'WebSearch,WebFetch')
         } else {
             $argParts += @('--tools', '')
+        }
+        if ($attachmentFiles.Count -gt 0) {
+            # 첨부 파일 경로는 맨 뒤에 위치 인자로 붙인다(claude -p가 프롬프트는
+            # 표준입력으로 읽고, 뒤에 오는 경로들을 첨부 파일로 인식한다).
+            $argParts += $attachmentFiles
         }
         # ProcessStartInfo.Arguments 는 문자열 하나이므로 각 인자를 안전하게 따옴표 처리한다
         $psi.Arguments = ($argParts | ForEach-Object {
@@ -295,7 +321,7 @@ function Invoke-ClaudeComplete {
         $errSub = Register-ObjectEvent -InputObject $proc -EventName ErrorDataReceived -Action $outAction -MessageData $errSb
 
         $startTime = Get-Date
-        Write-Log "[$callId] claude -p 호출 시작 (webSearch=$AllowWebSearch)"
+        Write-Log "[$callId] claude -p 호출 시작 (webSearch=$AllowWebSearch, 첨부파일=$($attachmentFiles.Count)개)"
 
         [void]$proc.Start()
         $claudePid = $proc.Id
@@ -365,6 +391,7 @@ function Invoke-ClaudeComplete {
         if ($errSub) { Unregister-Event -SourceIdentifier $errSub.Name -ErrorAction SilentlyContinue }
         if ($proc) { try { $proc.Dispose() } catch {} }
         if ($sysFile) { Remove-Item $sysFile -ErrorAction SilentlyContinue }
+        foreach ($attFile in $attachmentFiles) { Remove-Item $attFile -ErrorAction SilentlyContinue }
     }
 }
 
@@ -513,7 +540,7 @@ try {
                 # Invoke-ClaudeComplete는 절대 예외를 던지지 않는다(항상 ok:true/false로만
                 # 돌아온다) — 그래도 방어적으로 이 호출 자체를 try/catch로 한 번 더 감싼다.
                 try {
-                    $result = Invoke-ClaudeComplete -SystemText ([string]$body.system) -UserText ([string]$body.prompt) -AllowWebSearch ([bool]$body.webSearch)
+                    $result = Invoke-ClaudeComplete -SystemText ([string]$body.system) -UserText ([string]$body.prompt) -AllowWebSearch ([bool]$body.webSearch) -Attachments $body.attachments
                 } catch {
                     Write-Log "예상치 못하게 Invoke-ClaudeComplete가 예외를 던짐(claude 프로세스만 실패, 서버는 계속 실행됨): $($_.Exception.GetType().FullName): $($_.Exception.Message)"
                     $result = @{ ok = $false; message = "Claude 호출 중 예기치 못한 오류: $($_.Exception.Message)" }

@@ -114,8 +114,12 @@ const MeetingEngine = {
    * 회의 요약) 1차 프롬프트의 배경 정보로만 포함한다 — 절대 자동으로 주입되지
    * 않으며, 재개(resumeState)일 때는 이미 체크포인트의 context에 포함되어
    * 있으므로 여기서 다시 붙이지 않는다(중복 방지).
+   *
+   * attachments를 넘기면(이미지·PDF 원본) 1차 호출(문제 분석)에만 실제 파일로
+   * 첨부해서 Claude가 직접 읽고 분석하게 한다. 이후 라운드는 1차 분석 결과가
+   * 이미 context에 누적되므로 매 라운드마다 다시 첨부하지 않는다.
    */
-  async run({ topic, attachedText, hasAttachment, onProgress, resumeState, referenceContext }) {
+  async run({ topic, attachedText, hasAttachment, onProgress, resumeState, referenceContext, attachments }) {
     const emit = (roundId, status) => {
       if (typeof onProgress === 'function') onProgress(roundId, status);
     };
@@ -124,7 +128,7 @@ const MeetingEngine = {
       throw new Error('Claude Code가 연결되어 있지 않습니다. AI전략회의실.bat으로 실행했는지 확인해주세요.');
     }
 
-    return await this._runLive({ topic, attachedText, hasAttachment, emit, resumeState, referenceContext });
+    return await this._runLive({ topic, attachedText, hasAttachment, emit, resumeState, referenceContext, attachments });
   },
 
   /** 사용자가 [예시 보기]를 직접 눌렀을 때만 호출되는 데모 실행 경로 */
@@ -405,6 +409,7 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
           topic: meta.topic,
           attachedText: meta.attachedText,
           hasAttachment: meta.hasAttachment,
+          attachments: meta.attachments,
           context,
           transcript,
           roundTexts,
@@ -427,6 +432,7 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
         topic: meta.topic,
         attachedText: meta.attachedText,
         hasAttachment: meta.hasAttachment,
+        attachments: meta.attachments,
         context,
         transcript,
         roundTexts,
@@ -451,6 +457,7 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
       topic: meta.topic,
       attachedText: meta.attachedText,
       hasAttachment: meta.hasAttachment,
+      attachments: meta.attachments,
       context: newContext,
       transcript,
       roundTexts,
@@ -489,10 +496,10 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
     };
   },
 
-  async _runLive({ topic, attachedText, hasAttachment, emit, resumeState, referenceContext }) {
+  async _runLive({ topic, attachedText, hasAttachment, emit, resumeState, referenceContext, attachments }) {
     const mode = hasAttachment ? '근거분석 모드' : '전략회의 모드';
     const byId = Object.fromEntries(EXPERTS.map((e) => [e.id, e]));
-    const meta = { topic, attachedText, hasAttachment };
+    const meta = { topic, attachedText, hasAttachment, attachments: attachments || null };
 
     let context;
     let transcript;
@@ -503,6 +510,12 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
       context = resumeState.context;
       transcript = Array.isArray(resumeState.transcript) ? resumeState.transcript.slice() : [];
       roundTexts = resumeState.roundTexts ? { ...resumeState.roundTexts } : {};
+      // 1차(analyze)가 아직 성공하지 못한 채로 재개하는 경우에만 체크포인트에
+      // 저장돼 있던 첨부 이미지·PDF를 다시 사용한다(이미 성공했다면 더 이상
+      // 필요 없다 — 그 라운드는 재호출되지 않으므로).
+      if (roundTexts.analyze == null && resumeState.attachments) {
+        meta.attachments = resumeState.attachments;
+      }
       // 예전 버전(구조화된 판정 블록 도입 이전)에서 저장된 4차 결과라면 새 형식이
       // 아니므로 안전하게 다시 만들도록 비워둔다(잘못 파싱해서 죽는 것을 방지).
       if (roundTexts.judge && !this._parseJudgeBlock(roundTexts.judge)) {
@@ -518,6 +531,9 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
       if (hasAttachment && attachedText) {
         context += `\n\n[첨부 자료에서 추출한 내용]\n${attachedText.slice(0, 6000)}`;
       }
+      if (meta.attachments && meta.attachments.length) {
+        context += `\n\n[첨부 파일] 이미지·PDF ${meta.attachments.length}개가 1차 분석 라운드에 실제로 첨부된다. 아래 [1차 · 문제 분석 및 1차 의견] 결과에 그 내용에 대한 분석이 반영되어 있다.`;
+      }
       transcript = [];
       roundTexts = {};
       MeetingProgress.clearRetryLog();
@@ -526,13 +542,14 @@ MISSING: FAIL이면 부족한 항목을 "- " bullet로 구체적으로 나열하
 
     // ===== 1차 호출 — 문제 분석 + 대상 판단 + 7인 1차 의견 + 초기 대안 =====
     const allPersonas = this._personaBlock(byId, ['stakeholder', 'ux', 'ops', 'benchmark', 'innovation', 'data', 'judge']);
+    const hasRoundAttachments = !!(meta.attachments && meta.attachments.length);
     context = await this._runStep({
       roundId: 'analyze',
       label: '1차 · 문제 분석 및 1차 의견',
       systemPrompt: `너는 7명의 전문가 역할을 동시에 맡아 하나의 응답 안에서 각자의 진짜 관점으로 말한다. 각 전문가의 정체성과 기준을 그대로 유지하라(요약하거나 뭉뚱그리지 마라):
 
 ${allPersonas}
-
+${hasRoundAttachments ? '\n첨부된 이미지·PDF 파일이 있다면 실제로 열어서 내용을 읽고, 그 안의 구체적인 내용(수치, 화면 구성, 문서 내용 등)을 [문제 분석]에 반드시 근거로 인용하라. 첨부 파일을 읽지 못했다면 그 사실을 명확히 밝혀라.\n' : ''}
 반드시 아래 순서와 형식을 지켜서 답하라. 각 대괄호 제목은 그대로 소제목으로 써라.
 
 [문제 분석]
@@ -554,7 +571,7 @@ ${allPersonas}
 [초기 대안]
 위 의견을 종합해 서로 다른 대안을 2~3개, 각각 구체적으로 제시하라. 대안마다 어떤 전문가의 관점을 반영했는지도 밝혀라.`,
       userPrompt: `${context}\n\n위 내용을 바탕으로 지시된 형식대로 답하라.`,
-      opts: {},
+      opts: hasRoundAttachments ? { attachments: meta.attachments } : {},
       context,
       transcript,
       roundTexts,
@@ -562,6 +579,10 @@ ${allPersonas}
       meta,
       validate: (text) => QualityGuardrails.analyze(text)
     });
+    // 1차 라운드가 끝나면(성공/재사용 여부와 무관하게) 첨부 이미지·PDF는 더 이상
+    // 필요 없다 — 이후 라운드는 위 결과가 누적된 context만으로 진행하므로,
+    // 매 라운드 체크포인트에 큰 base64 데이터를 계속 들고 있지 않도록 비운다.
+    meta.attachments = null;
 
     // ===== 2차 호출 — 이해관계자·운영·벤치마킹이 서로 반박, 약한 대안 폐기/수정 =====
     const debatePersonas = this._personaBlock(byId, ['stakeholder', 'ops', 'benchmark']);

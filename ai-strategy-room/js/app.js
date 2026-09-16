@@ -553,24 +553,41 @@ async function startMeeting({ resumeState } = {}) {
   els.pausedBanner.hidden = true;
   Storage.saveTopic(topic);
 
-  // 이어서 진행이면 저장된 첨부자료 텍스트를 그대로 재사용한다(파일을 다시 올릴 필요 없음).
+  // 이어서 진행이면 저장된 첨부자료를 그대로 재사용한다(파일을 다시 올릴 필요 없음).
   // 새로 시작이면 지금 첨부된 파일을 파싱한다.
   let attachedText = '';
   let hasUsableAttachment = false;
+  let attachments = null;
+  const MAX_ATTACHMENTS = 3; // claude -p 호출 1회에 실제로 첨부하는 이미지/PDF 최대 개수
   if (resumeState) {
     attachedText = resumeState.attachedText || '';
     hasUsableAttachment = !!resumeState.hasAttachment;
+    attachments = resumeState.attachments || null;
   } else if (attachedFiles.length) {
     const results = await parseFiles(attachedFiles);
     const parts = [];
+    const attachResults = [];
     results.forEach((r) => {
-      if (r.ok) {
-        parts.push(`[${r.fileName}]\n${r.text}`);
-        hasUsableAttachment = true;
-      } else {
+      if (!r.ok) {
         showToast(r.message);
+        return;
       }
+      if (r.mode === 'attach') {
+        attachResults.push(r);
+      } else {
+        parts.push(`[${r.fileName}]\n${r.text}`);
+      }
+      hasUsableAttachment = true;
     });
+    if (attachResults.length > MAX_ATTACHMENTS) {
+      showToast(`이미지·PDF는 한 번에 최대 ${MAX_ATTACHMENTS}개까지만 분석에 반영됩니다. 앞의 ${MAX_ATTACHMENTS}개만 첨부합니다.`);
+    }
+    attachments = attachResults.slice(0, MAX_ATTACHMENTS).map((r) => ({
+      fileName: r.fileName,
+      mimeType: r.attachment.mimeType,
+      base64: r.attachment.base64,
+      extension: r.attachment.extension
+    }));
     attachedText = parts.join('\n\n');
   }
 
@@ -609,7 +626,8 @@ async function startMeeting({ resumeState } = {}) {
       hasAttachment: hasUsableAttachment,
       onProgress: updateStep,
       resumeState,
-      referenceContext
+      referenceContext,
+      attachments
     });
   } catch (err) {
     console.error(err);
