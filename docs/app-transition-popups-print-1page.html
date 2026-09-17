@@ -436,6 +436,65 @@ body{
 }
 .layer.is-empty .empty-hint{display:block;}
 
+/* ---------- 문구 편집 모드 (실제 팝업에는 포함되지 않음) ---------- */
+
+.ed{}
+.edit-on .ed{
+  outline:1px dashed var(--sky-200);
+  outline-offset:2px;border-radius:2px;
+  cursor:text;
+}
+.edit-on .ed:hover{outline-color:var(--sky-500);background:var(--sky-050);}
+.edit-on .ed:focus{outline:2px solid var(--sky-500);background:#FFFDF2;}
+.ed.is-changed{background:#FFF6D9;box-shadow:0 0 0 2px #FFF6D9;border-radius:2px;}
+.edit-on .ed.is-changed{outline-color:#E0A800;}
+
+.tool-btn.is-edit{background:rgba(255,255,255,.14);}
+.tool-btn.is-edit[aria-pressed="true"]{background:#FFD66B;color:var(--navy-900);border-color:#FFD66B;}
+
+.tb-edit{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+}
+.tb-cnt{
+  font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+  color:rgba(255,255,255,.72);
+}
+.mini{
+  font-family:inherit;font-size:11.5px;font-weight:600;
+  padding:5px 11px;border-radius:6px;cursor:pointer;
+  background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.2);
+}
+.mini:hover{background:rgba(255,255,255,.22);}
+
+.sheet-back{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(6,24,46,.6);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.sheet-box{
+  width:min(640px,100%);max-height:80vh;
+  display:flex;flex-direction:column;
+  background:var(--white);border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(6,24,46,.4);
+}
+.sheet-top{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 20px;border-bottom:1px solid var(--line-soft);
+}
+.sheet-top b{font-size:15px;font-weight:700;color:var(--navy-900);}
+.sheet-box textarea{
+  flex:1;min-height:240px;margin:0;padding:16px 20px;
+  border:0;resize:none;outline:none;
+  font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--ink);
+  background:var(--sky-050);
+}
+.sheet-foot{
+  display:flex;align-items:center;justify-content:flex-end;gap:9px;
+  padding:14px 20px;border-top:1px solid var(--line-soft);
+}
+.sheet-foot .btn{padding:10px 18px;font-size:13.5px;}
+
 /* ---------- 반응형 ---------- */
 
 @media (max-width:640px){
