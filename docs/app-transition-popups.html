@@ -445,16 +445,20 @@ body{
 
 /* ---------- 문구 편집 모드 (실제 팝업에는 포함되지 않음) ---------- */
 
+/* 편집 표시는 '문구 수정'을 켠 동안에만 보이고, 글자 자리를 넓히지 않는다.
+   (테두리·그림자는 줄 간격을 넘어 윗줄과 겹쳐 보여 배경색만 사용) */
 .ed{}
 .edit-on .ed{
-  outline:1px dashed var(--sky-200);
-  outline-offset:2px;border-radius:2px;
+  background:rgba(46,134,200,.11);
+  border-radius:2px;
   cursor:text;
 }
-.edit-on .ed:hover{outline-color:var(--sky-500);background:var(--sky-050);}
-.edit-on .ed:focus{outline:2px solid var(--sky-500);background:#FFFDF2;}
-.ed.is-changed{background:#FFF6D9;box-shadow:0 0 0 2px #FFF6D9;border-radius:2px;}
-.edit-on .ed.is-changed{outline-color:#E0A800;}
+.edit-on .ed:hover{background:rgba(46,134,200,.22);}
+.edit-on .ed.is-changed{background:rgba(224,168,0,.30);}
+.edit-on .ed:focus{
+  outline:2px solid var(--sky-500);outline-offset:0;
+  background:var(--white);
+}
 
 .tool-btn.is-edit{background:rgba(255,255,255,.14);}
 .tool-btn.is-edit[aria-pressed="true"]{background:#FFD66B;color:var(--navy-900);border-color:#FFD66B;}
