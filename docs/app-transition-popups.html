@@ -975,9 +975,16 @@ body{
      시안 확인용 기능이며 실제 팝업에는 포함되지 않습니다.
      ============================================================ */
 
-  var STORE = 'pour-popup-copy-v1';
+  var STORE = 'pour-popup-copy-v2';
   var SKIP = { svg: 1, path: 1, rect: 1, circle: 1, script: 1, style: 1 };
   var cells = [];
+
+  // 같은 문구가 한 시안에 두 번 나올 때를 구분하기 위한 순번
+  function keyOf(pop, text, seen) {
+    var base = pop + '/' + text;
+    seen[base] = (seen[base] || 0) + 1;
+    return base + '#' + seen[base];
+  }
 
   // 팝업 안의 텍스트 조각을 하나씩 span 으로 감싸 편집 대상으로 만든다
   function wrap(node, pop, order) {
@@ -990,12 +997,15 @@ body{
         var sp = document.createElement('span');
         sp.className = 'ed';
         sp.setAttribute('data-orig', text);
-        sp.setAttribute('data-key', pop + '/' + (order.n++));
+        sp.setAttribute('data-key', keyOf(pop, text, order.seen));
         sp.textContent = text;
         node.replaceChild(sp, n);
         cells.push(sp);
       } else if (n.nodeType === 1 && !SKIP[n.tagName.toLowerCase()]) {
-        if (n.classList && n.classList.contains('ed')) { cells.push(n); order.n++; continue; }
+        if (n.classList && n.classList.contains('ed')) {
+          n.setAttribute('data-key', keyOf(pop, n.getAttribute('data-orig'), order.seen));
+          cells.push(n); continue;
+        }
         wrap(n, pop, order);
       }
     }
@@ -1003,7 +1013,7 @@ body{
 
   var LABEL = { popup1: '① 사전 안내', popup3: '② 종료 임박', popup2: '③ 종료 후' };
   ['popup1', 'popup3', 'popup2'].forEach(function (id) {
-    wrap(document.getElementById(id), id, { n: 0 });
+    wrap(document.getElementById(id), id, { seen: {} });
   });
 
   var body = document.body;
@@ -1030,7 +1040,9 @@ body{
 
   function save() {
     var out = {};
-    changed().forEach(function (c) { out[c.getAttribute('data-key')] = c.textContent.trim(); });
+    changed().forEach(function (c) {
+      out[c.getAttribute('data-key')] = { from: c.getAttribute('data-orig'), to: c.textContent.trim() };
+    });
     try { localStorage.setItem(STORE, JSON.stringify(out)); } catch (e) {}
   }
 
@@ -1041,8 +1053,11 @@ body{
     var map;
     try { map = JSON.parse(raw); } catch (e) { return; }
     cells.forEach(function (c) {
-      var v = map[c.getAttribute('data-key')];
-      if (typeof v === 'string' && v) { c.textContent = v; mark(c); }
+      var e = map[c.getAttribute('data-key')];
+      if (!e || typeof e.to !== 'string' || !e.to) return;
+      if (e.from !== c.getAttribute('data-orig')) return;   // 문구가 바뀐 자리면 건너뛴다
+      c.textContent = e.to;
+      mark(c);
     });
   }
 
