@@ -906,6 +906,7 @@ body{
   <div class="tb-note tb-edit" id="tbEdit" hidden>
     <span class="tb-cnt" id="edCount">수정한 문구 0개</span>
     <button class="mini" type="button" id="edExport">수정 내용 보기</button>
+    <button class="mini" type="button" id="edSave">수정본 저장</button>
     <button class="mini" type="button" id="edReset">원래 문구로</button>
   </div>
 </div>
@@ -990,6 +991,7 @@ body{
         node.replaceChild(sp, n);
         cells.push(sp);
       } else if (n.nodeType === 1 && !SKIP[n.tagName.toLowerCase()]) {
+        if (n.classList && n.classList.contains('ed')) { cells.push(n); order.n++; continue; }
         wrap(n, pop, order);
       }
     }
@@ -1144,6 +1146,34 @@ body{
       }
     });
   }
+
+  // 지금 화면의 문구가 그대로 들어간 HTML 파일을 만들어 내려받는다
+  document.getElementById('edSave').addEventListener('click', function () {
+    var clone = document.documentElement.cloneNode(true);
+    var sheet = clone.querySelector('.sheet-back');
+    if (sheet) sheet.remove();
+    clone.querySelector('body').classList.remove('edit-on');
+    [].forEach.call(clone.querySelectorAll('.ed'), function (c) {
+      c.removeAttribute('contenteditable');
+      c.removeAttribute('spellcheck');
+    });
+    var n = clone.querySelector('#tbNote'); if (n) n.removeAttribute('hidden');
+    var e = clone.querySelector('#tbEdit'); if (e) e.setAttribute('hidden', '');
+    var b = clone.querySelector('#btnEdit');
+    if (b) { b.setAttribute('aria-pressed', 'false'); b.textContent = '문구 수정'; }
+
+    var html = '<!doctype html>\n' + clone.outerHTML;
+    var name = 'POUR_앱전환_팝업시안_수정본.html';
+    try {
+      var url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    } catch (err) {
+      alert('이 화면에서는 파일 저장이 막혀 있습니다. \'수정 내용 보기\'로 복사해 주세요.');
+    }
+  });
 
   restore();
   refresh();
