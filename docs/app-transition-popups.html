@@ -1164,15 +1164,28 @@ body{
 
     var html = '<!doctype html>\n' + clone.outerHTML;
     var name = 'POUR_앱전환_팝업시안_수정본.html';
-    try {
+
+    function byLink() {
       var url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
       var a = document.createElement('a');
       a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-    } catch (err) {
-      alert('이 화면에서는 파일 저장이 막혀 있습니다. \'수정 내용 보기\'로 복사해 주세요.');
     }
+
+    // 클로드 미리보기 화면에서는 링크 저장이 막혀 있어 전용 통로를 쓴다
+    var use = window.claude && window.claude.use;
+    if (!use) { try { byLink(); } catch (e) {} return; }
+
+    Promise.resolve(window.claude.use('downloads')).then(function (dl) {
+      if (!dl) { try { byLink(); } catch (e) {} return; }
+      return dl.save({ filename: name, data: html }).catch(function (err) {
+        if (err && err.code === 'declined') return;
+        try { byLink(); } catch (e) {}
+      });
+    }).catch(function () {
+      try { byLink(); } catch (e) {}
+    });
   });
 
   restore();
